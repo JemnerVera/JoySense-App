@@ -42,11 +42,6 @@ const LoginForm: React.FC = () => {
         <p className="mt-2 text-center text-sm text-gray-600">
           Inicia sesión para acceder al sistema
         </p>
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-xs text-blue-800 text-center">
-            <strong>Acceso Temporal:</strong> Usa <code>patricio.sandoval@migivagroup.com</code> con cualquier contraseña
-          </p>
-        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
