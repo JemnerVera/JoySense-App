@@ -40,7 +40,7 @@ const LoginForm: React.FC = () => {
           JoySense Dashboard
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Inicia sesión para acceder al sistema
+          Inicia sesión con tu cuenta de Supabase
         </p>
       </div>
 

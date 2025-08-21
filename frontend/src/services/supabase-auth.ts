@@ -2,10 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // Configuración de Supabase Auth
 const supabaseUrl = 'https://fagswxnjkcavchfrnrhs.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZ3N3eG5qa2NhdmNoZnJucmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTQzMjcsImV4cCI6MjA2MjczMDMyN30.13bSx7s-r9jt7ZmIKOYsqTreAwGxqFB8_c5A1XrQBqc';
+const supabasePublishableKey = 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
 
 // Crear cliente de Supabase para autenticación
-export const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+export const supabaseAuth = createClient(supabaseUrl, supabasePublishableKey);
 
 // Tipos para autenticación
 export interface AuthUser {
@@ -25,40 +25,58 @@ export const authService = {
   // Iniciar sesión con email y contraseña
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      // TEMPORAL: Permitir acceso con el usuario específico sin verificar contraseña
-      if (email === 'patricio.sandoval@migivagroup.com') {
-        console.log('🔓 Acceso temporal permitido para:', email);
-        return { 
-          user: {
-            id: 'temp-user-id',
-            email: email,
-            user_metadata: {
-              full_name: 'Patricio Sandoval'
-            }
-          }, 
-          error: null 
-        };
-      }
-
-      // Para otros usuarios, intentar autenticación normal
+      console.log('🔐 Intentando autenticación con Supabase Auth...');
+      
       const { data, error } = await supabaseAuth.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('❌ Error de autenticación:', error.message);
         return { user: null, error: { message: error.message } };
       }
 
-      return { 
-        user: data.user ? {
-          id: data.user.id,
-          email: data.user.email || undefined,
-          user_metadata: data.user.user_metadata
-        } : null, 
-        error: null 
-      };
+      if (data.user) {
+        console.log('✅ Usuario autenticado:', data.user.email);
+        
+        // Verificar si el usuario existe en auth.users (ya está verificado por Supabase Auth)
+        // No necesitamos verificar tabla sense.usuario porque usamos auth.users directamente
+        console.log('✅ Usuario verificado en auth.users:', data.user.email);
+
+        if (userError || !userData) {
+          console.error('❌ Usuario no encontrado en sense.usuario:', userError);
+          return { 
+            user: null, 
+            error: { message: 'Usuario no autorizado. Contacte al administrador.' } 
+          };
+        }
+
+        if (!userData.activo) {
+          console.error('❌ Usuario inactivo');
+          return { 
+            user: null, 
+            error: { message: 'Usuario inactivo. Contacte al administrador.' } 
+          };
+        }
+
+        return { 
+          user: {
+            id: data.user.id,
+            email: data.user.email || undefined,
+            user_metadata: {
+              full_name: `${userData.nombre} ${userData.apellido}`,
+              rol: userData.rol,
+              usuarioid: userData.usuarioid
+            }
+          }, 
+          error: null 
+        };
+      }
+
+      return { user: null, error: { message: 'No se pudo autenticar el usuario' } };
     } catch (error) {
+      console.error('❌ Error inesperado durante autenticación:', error);
       return { 
         user: null, 
         error: { message: 'Error inesperado durante el inicio de sesión' } 
@@ -85,14 +103,39 @@ export const authService = {
         return { user: null, error: { message: error.message } };
       }
 
-      return { 
-        user: user ? {
-          id: user.id,
-          email: user.email || undefined,
-          user_metadata: user.user_metadata
-        } : null, 
-        error: null 
-      };
+      if (user) {
+        // Verificar si el usuario existe en la tabla sense.usuario
+        const { data: userData, error: userError } = await supabaseAuth
+          .from('usuario')
+          .select('*')
+          .eq('email', user.email)
+          .single();
+
+        if (userError || !userData) {
+          console.error('❌ Usuario no encontrado en sense.usuario:', userError);
+          return { user: null, error: { message: 'Usuario no autorizado' } };
+        }
+
+        if (!userData.activo) {
+          console.error('❌ Usuario inactivo');
+          return { user: null, error: { message: 'Usuario inactivo' } };
+        }
+
+        return { 
+          user: {
+            id: user.id,
+            email: user.email || undefined,
+            user_metadata: {
+              full_name: `${userData.nombre} ${userData.apellido}`,
+              rol: userData.rol,
+              usuarioid: userData.usuarioid
+            }
+          }, 
+          error: null 
+        };
+      }
+
+      return { user: null, error: null };
     } catch (error) {
       return { 
         user: null, 

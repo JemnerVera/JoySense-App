@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ConnectionTest from './components/ConnectionTest';
 import DynamicHierarchy from './components/DynamicHierarchy';
 import LoginForm from './components/LoginForm';
+import AdminPanel from './components/AdminPanel';
 
 const AppContent: React.FC = () => {
   const { user, loading, signOut } = useAuth();
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   if (loading) {
     return (
@@ -38,13 +40,29 @@ const AppContent: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-900">JoySense Dashboard</h1>
             </div>
             
-            {/* User Info and Logout */}
+            {/* User Info and Actions */}
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-700">
                 <span className="font-medium">
                   {user.user_metadata?.full_name || user.email || 'Usuario'}
                 </span>
+                {user.user_metadata?.rol && (
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {user.user_metadata.rol}
+                  </span>
+                )}
               </div>
+              
+              {/* Admin Panel Button */}
+              {user.user_metadata?.rol === 'admin' && (
+                <button
+                  onClick={() => setShowAdminPanel(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                >
+                  Administración
+                </button>
+              )}
+              
               <button
                 onClick={signOut}
                 className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
@@ -64,6 +82,11 @@ const AppContent: React.FC = () => {
         {/* Dynamic Hierarchy View */}
         <DynamicHierarchy />
       </main>
+
+      {/* Admin Panel Modal */}
+      {showAdminPanel && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 };

@@ -9,10 +9,10 @@ echo 🔐 CONFIRMACIÓN DE SEGURIDAD:
 echo.
 echo ✅ SEGURO de publicar en GitHub:
 echo    - Supabase URL: https://fagswxnjkcavchfrnrhs.supabase.co
-echo    - Supabase Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+echo    - Supabase Publishable Key: sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X
 echo.
 echo ❌ NUNCA publicar (Service Role Key):
-echo    - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZ3N3eG5qa2NhdmNoZnJucmhzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE1NDMyNywiZXhwIjoyMDYyNzMwMzI3fQ.ioeluR-iTWJ7-w_7UAuMl_aPXHJM6nlhv6Nh4hohBjw
+echo    - [CONFIGURAR_EN_VERCEL_UI]
 echo.
 
 echo 🚀 Pasos para Vercel:

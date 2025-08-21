@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
 import SeparateCharts from './SeparateCharts';
+import AdminPanel from './AdminPanel';
+import { useAuth } from '../contexts/AuthContext';
 
 // Funciones helper para obtener nombres y unidades de métricas
 const getMetricaName = (metricaid: number, metricas: any[]) => {
@@ -117,6 +119,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentStep, setCurrentStep] = useState<'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'results'>('pais');
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const { user } = useAuth();
 
   // Cargar países y métricas al inicio
   useEffect(() => {
