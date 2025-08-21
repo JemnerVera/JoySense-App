@@ -4,7 +4,7 @@ import {
 } from '../types';
 
 // Configuración del Backend API
-const BACKEND_URL = 'http://localhost:3001/api';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
 
 // Cliente para llamadas al backend
 export const backendAPI = {
