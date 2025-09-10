@@ -148,10 +148,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
 
   return (
     <div className="bg-blue-900 bg-opacity-30 border border-blue-600 border-opacity-50 rounded-lg p-4 mb-4">
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="text-lg font-bold text-blue-300 text-opacity-80">
-          Entradas de {getTableDisplayName(tableName)} insertado{insertedRecords.length > 1 ? 's' : ''}:
-        </h4>
+      <div className="flex justify-end items-center mb-3">
         <button
           onClick={onClear}
           className="text-gray-400 text-opacity-60 hover:text-opacity-100 transition-all duration-200"
@@ -173,7 +170,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
             </tr>
           </thead>
           <tbody>
-            {insertedRecords.map((record, index) => (
+            {insertedRecords.slice(0, 3).map((record, index) => (
               <tr key={record.id} className="border-b border-blue-600 border-opacity-30 last:border-b-0">
                 {fieldKeys.map(fieldKey => (
                   <td key={fieldKey} className="py-2 px-3 text-blue-200 text-opacity-70">

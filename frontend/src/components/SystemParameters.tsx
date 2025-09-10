@@ -1223,7 +1223,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Función para obtener el valor de visualización (nombres en lugar de IDs)
   // Función para validar datos antes de insertar
   const validateInsertData = (tableName: string, data: any): string | null => {
-    if (tableName === 'sensor') {
+    if (tableName === 'nodo') {
+      if (!data.deveui || data.deveui.trim() === '') return 'Falta ingresar DEVEUI';
+      if (!data.appeui || data.appeui.trim() === '') return 'Falta ingresar APPEUI';
+      if (!data.appkey || data.appkey.trim() === '') return 'Falta ingresar APPKEY';
+      if (!data.atpin || data.atpin.trim() === '') return 'Falta ingresar AT PIN';
+    } else if (tableName === 'sensor') {
       if (!data.nodoid) return 'Debe seleccionar un nodo';
       if (!data.tipoid) return 'Debe seleccionar un tipo';
     } else if (tableName === 'metricasensor') {
@@ -1348,7 +1353,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     // Validar datos antes de insertar
     const validationError = validateInsertData(selectedTable, formData);
     if (validationError) {
-      setMessage({ type: 'error', text: validationError });
+      setMessage({ type: 'warning', text: validationError });
       return;
     }
     
@@ -1469,8 +1474,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Agregar el registro insertado al sistema de mensajes
       addInsertedRecord(preparedData);
       
+      // Limpiar mensajes de alerta después de inserción exitosa
+      setMessage(null);
+      
       loadTableData();
       loadTableInfo();
+      loadUpdateData();
       loadCopyData();
       // Recargar datos relacionados para que aparezcan en comboboxes
       loadRelatedTablesData();
@@ -3059,6 +3068,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         addInsertedRecord(sensor);
       });
       
+      // Limpiar mensajes de alerta después de inserción exitosa
+      setMessage(null);
+      
       // Limpiar formulario
       setMultipleSensors([]);
       setSelectedNodo('');
@@ -3067,6 +3079,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Recargar datos
       loadTableData();
       loadTableInfo();
+      loadUpdateData();
       loadCopyData();
       // Recargar datos relacionados para que aparezcan en comboboxes
       loadRelatedTablesData();
@@ -3240,6 +3253,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         addInsertedRecord(metrica);
       });
       
+      // Limpiar mensajes de alerta después de inserción exitosa
+      setMessage(null);
+      
       // Limpiar formulario
       setMultipleMetricas([]);
       setSelectedNodos([]);
@@ -3248,6 +3264,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Recargar datos
       loadTableData();
       loadTableInfo();
+      loadUpdateData();
       loadCopyData();
       // Recargar datos relacionados para que aparezcan en comboboxes
       loadRelatedTablesData();
@@ -3301,6 +3318,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         addInsertedRecord(localizacion);
       });
       
+      // Limpiar mensajes de alerta después de inserción exitosa
+      setMessage(null);
+      
       // Limpiar formulario
       setMultipleLocalizaciones([]);
       setSelectedUbicaciones([]);
@@ -3313,6 +3333,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Recargar datos
       loadTableData();
       loadTableInfo();
+      loadUpdateData();
       loadCopyData();
       // Recargar datos relacionados para que aparezcan en comboboxes
       loadRelatedTablesData();
