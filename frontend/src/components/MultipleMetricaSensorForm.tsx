@@ -17,6 +17,7 @@ interface MultipleMetricaSensorFormProps {
   onInitializeMetricas: (nodos: string[], metricas: string[]) => Promise<void>;
   onInsertMetricas: () => void;
   onCancel: () => void;
+  getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
   // Prop para indicar si estamos en modo replicación (solo un nodo)
@@ -39,6 +40,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   onInitializeMetricas,
   onInsertMetricas,
   onCancel,
+  getUniqueOptionsForField,
   // Props para replicación
   onReplicateClick,
   isReplicateMode = false
@@ -117,25 +119,25 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                 />
               </div>
               <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {nodosData
-                  .filter(nodo => 
-                    nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                {getUniqueOptionsForField('nodoid')
+                  .filter(option => 
+                    option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                   )
-                  .sort((a, b) => a.nodo.localeCompare(b.nodo))
-                  .map(nodo => (
+                  .sort((a, b) => a.label.localeCompare(b.label))
+                  .map(option => (
                    <label
-                     key={nodo.nodoid}
+                     key={option.value}
                      className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                    >
                      <input
                        type={isReplicateMode ? "radio" : "checkbox"}
                        name={isReplicateMode ? "selectedNodo" : undefined}
-                       checked={selectedNodos.includes(nodo.nodoid.toString())}
+                       checked={selectedNodos.includes(option.value.toString())}
                        onChange={(e) => {
                          if (isReplicateMode) {
                            // En modo replicación, solo permitir un nodo
                            if (e.target.checked) {
-                             const nuevoNodoId = nodo.nodoid.toString();
+                             const nuevoNodoId = option.value.toString();
                              setSelectedNodos([nuevoNodoId]);
                              
                              // Actualizar las métricas existentes con el nuevo nodo
@@ -150,19 +152,19 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                          } else {
                            // Modo normal, permitir múltiples nodos
                            if (e.target.checked) {
-                             setSelectedNodos([...selectedNodos, nodo.nodoid.toString()]);
+                             setSelectedNodos([...selectedNodos, option.value.toString()]);
                            } else {
-                             setSelectedNodos(selectedNodos.filter(id => id !== nodo.nodoid.toString()));
+                             setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
                            }
                          }
                        }}
                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                      />
-                     <span className="text-white text-sm font-mono tracking-wider">{nodo.nodo.toUpperCase()}</span>
+                     <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                    </label>
                  ))}
-                 {nodosData.filter(nodo => 
-                   nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                 {getUniqueOptionsForField('nodoid').filter(option => 
+                   option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                  ).length === 0 && (
                    <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
                      NO SE ENCONTRARON RESULTADOS
@@ -206,33 +208,33 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                 />
               </div>
               <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {metricasData
-                  .filter(metrica => 
-                    metrica.metrica.toLowerCase().includes(metricasSearchTerm.toLowerCase())
+                {getUniqueOptionsForField('metricaid')
+                  .filter(option => 
+                    option.label.toLowerCase().includes(metricasSearchTerm.toLowerCase())
                   )
-                  .sort((a, b) => a.metrica.localeCompare(b.metrica))
-                  .map(metrica => (
+                  .sort((a, b) => a.label.localeCompare(b.label))
+                  .map(option => (
                    <label
-                     key={metrica.metricaid}
+                     key={option.value}
                      className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                    >
                      <input
                        type="checkbox"
-                       checked={selectedMetricas.includes(metrica.metricaid.toString())}
+                       checked={selectedMetricas.includes(option.value.toString())}
                        onChange={(e) => {
                          if (e.target.checked) {
-                           setSelectedMetricas([...selectedMetricas, metrica.metricaid.toString()]);
+                           setSelectedMetricas([...selectedMetricas, option.value.toString()]);
                          } else {
-                           setSelectedMetricas(selectedMetricas.filter(id => id !== metrica.metricaid.toString()));
+                           setSelectedMetricas(selectedMetricas.filter(id => id !== option.value.toString()));
                          }
                        }}
                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                      />
-                     <span className="text-white text-sm font-mono tracking-wider">{metrica.metrica.toUpperCase()}</span>
+                     <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                    </label>
                  ))}
-                 {metricasData.filter(metrica => 
-                   metrica.metrica.toLowerCase().includes(metricasSearchTerm.toLowerCase())
+                 {getUniqueOptionsForField('metricaid').filter(option => 
+                   option.label.toLowerCase().includes(metricasSearchTerm.toLowerCase())
                  ).length === 0 && (
                    <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
                      NO SE ENCONTRARON RESULTADOS

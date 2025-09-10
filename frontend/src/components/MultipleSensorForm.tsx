@@ -21,6 +21,7 @@ interface MultipleSensorFormProps {
   onCancel: () => void;
   onUpdateSensorNodo: (sensorIndex: number, nodoid: number) => void;
   onUpdateAllSensorsNodo: (nodoid: string) => void;
+  getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
 }
@@ -44,6 +45,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
   onCancel,
   onUpdateSensorNodo,
   onUpdateAllSensorsNodo,
+  getUniqueOptionsForField,
   // Props para replicación
   onReplicateClick
 }) => {
@@ -71,7 +73,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                  }
                }
              }}
-             options={nodosData.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }))}
+             options={getUniqueOptionsForField('nodoid')}
              placeholder="Seleccionar nodo"
            />
          </div>
@@ -140,7 +142,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                    <SelectWithPlaceholder
                      value={sensor.tipoid}
                      onChange={(newValue) => onUpdateSensorTipo(sensor.sensorIndex, newValue ? parseInt(newValue.toString()) : 0)}
-                     options={tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }))}
+                     options={getUniqueOptionsForField('tipoid')}
                      placeholder="Seleccionar tipo"
                      className="flex-1 px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
                    />

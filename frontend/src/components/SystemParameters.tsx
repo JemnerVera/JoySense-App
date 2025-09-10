@@ -1942,7 +1942,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       empresaSeleccionada,
       fundoSeleccionado,
       paisesDataLength: paisesData.length,
-      empresasDataLength: empresasData.length
+      empresasDataLength: empresasData.length,
+      fundosDataLength: fundosData.length,
+      ubicacionesDataLength: ubicacionesData.length
     });
     
     switch (columnName) {
@@ -1951,33 +1953,63 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         if (paisSeleccionado) {
           const filteredPaises = paisesData.filter(pais => pais.paisid.toString() === paisSeleccionado);
           console.log('🌍 Filtros globales aplicados a países:', { paisSeleccionado, filteredCount: filteredPaises.length });
-          return filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
+          const paisResult = filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
+          console.log('🌍 Opciones de países devueltas:', paisResult);
+          return paisResult;
         }
-        return paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
+        const paisResultAll = paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
+        console.log('🌍 Opciones de países (sin filtro):', paisResultAll);
+        return paisResultAll;
       case 'empresaid':
-        // Filtrar empresas por país seleccionado
-        const filteredEmpresas = paisSeleccionado 
-          ? empresasData.filter(empresa => empresa.paisid.toString() === paisSeleccionado)
-          : empresasData;
-        return filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
+        // Filtrar empresas por filtros globales
+        let filteredEmpresas = empresasData;
+        if (empresaSeleccionada) {
+          // Si hay empresa seleccionada en filtros globales, devolver solo esa empresa
+          filteredEmpresas = empresasData.filter(empresa => empresa.empresaid.toString() === empresaSeleccionada);
+          console.log('🏢 Filtros globales aplicados a empresas (empresa específica):', { empresaSeleccionada, filteredCount: filteredEmpresas.length });
+        } else if (paisSeleccionado) {
+          // Si no hay empresa específica pero sí hay país, filtrar por país
+          filteredEmpresas = empresasData.filter(empresa => empresa.paisid.toString() === paisSeleccionado);
+          console.log('🏢 Filtros globales aplicados a empresas (por país):', { paisSeleccionado, filteredCount: filteredEmpresas.length });
+        }
+        const empresaResult = filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
+        console.log('🏢 Opciones de empresas devueltas:', empresaResult);
+        return empresaResult;
       case 'fundoid':
-        // Filtrar fundos por empresa seleccionada
-        const filteredFundos = empresaSeleccionada 
-          ? fundosData.filter(fundo => fundo.empresaid.toString() === empresaSeleccionada)
-          : fundosData;
-        return filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
+        // Filtrar fundos por filtros globales
+        let filteredFundos = fundosData;
+        if (fundoSeleccionado) {
+          // Si hay fundo seleccionado en filtros globales, devolver solo ese fundo
+          filteredFundos = fundosData.filter(fundo => fundo.fundoid.toString() === fundoSeleccionado);
+          console.log('🏭 Filtros globales aplicados a fundos (fundo específico):', { fundoSeleccionado, filteredCount: filteredFundos.length });
+        } else if (empresaSeleccionada) {
+          // Si no hay fundo específico pero sí hay empresa, filtrar por empresa
+          filteredFundos = fundosData.filter(fundo => fundo.empresaid.toString() === empresaSeleccionada);
+          console.log('🏭 Filtros globales aplicados a fundos (por empresa):', { empresaSeleccionada, filteredCount: filteredFundos.length });
+        }
+        const fundoResult = filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
+        console.log('🏭 Opciones de fundos devueltas:', fundoResult);
+        return fundoResult;
       case 'ubicacionid':
-        // Filtrar ubicaciones por fundo seleccionado
-        const filteredUbicaciones = fundoSeleccionado 
-          ? ubicacionesData.filter(ubicacion => ubicacion.fundoid.toString() === fundoSeleccionado)
-          : ubicacionesData;
-        return filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
+        // Filtrar ubicaciones por fundo seleccionado en filtros globales
+        let filteredUbicaciones = ubicacionesData;
+        if (fundoSeleccionado) {
+          filteredUbicaciones = ubicacionesData.filter(ubicacion => ubicacion.fundoid.toString() === fundoSeleccionado);
+          console.log('📍 Filtros globales aplicados a ubicaciones:', { fundoSeleccionado, filteredCount: filteredUbicaciones.length });
+        }
+        const ubicacionResult = filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
+        console.log('📍 Opciones de ubicaciones devueltas:', ubicacionResult);
+        return ubicacionResult;
       case 'entidadid':
-        // Filtrar entidades por fundo seleccionado
-        const filteredEntidades = fundoSeleccionado 
-          ? entidadesData.filter(entidad => entidad.fundoid.toString() === fundoSeleccionado)
-          : entidadesData;
-        return filteredEntidades.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
+        // Filtrar entidades por fundo seleccionado en filtros globales
+        let filteredEntidades = entidadesData;
+        if (fundoSeleccionado) {
+          filteredEntidades = entidadesData.filter(entidad => entidad.fundoid.toString() === fundoSeleccionado);
+          console.log('🏛️ Filtros globales aplicados a entidades:', { fundoSeleccionado, filteredCount: filteredEntidades.length });
+        }
+        const entidadResult = filteredEntidades.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
+        console.log('🏛️ Opciones de entidades devueltas:', entidadResult);
+        return entidadResult;
       case 'nodoid':
         // Filtrar nodos por ubicación seleccionada (si hay filtros globales)
         let filteredNodos = nodosData;
@@ -1986,6 +2018,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           const ubicacionesDelFundo = ubicacionesData.filter(u => u.fundoid.toString() === fundoSeleccionado);
           const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
           filteredNodos = nodosData.filter(nodo => ubicacionIds.includes(nodo.ubicacionid));
+          console.log('🔗 Filtros globales aplicados a nodos:', { fundoSeleccionado, ubicacionesDelFundo: ubicacionesDelFundo.length, filteredCount: filteredNodos.length });
         }
         return filteredNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
       case 'tipoid':
@@ -3529,6 +3562,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                              setSelectedTipo('');
                              setSelectedSensorCount(0);
                            }}
+                           getUniqueOptionsForField={getUniqueOptionsForField}
                            onReplicateClick={openReplicateModalForTable}
                          />
                                           ) : selectedTable === 'metricasensor' ? (
@@ -3553,6 +3587,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                             setSelectedMetricas([]);
                             setIsReplicateMode(false);
                           }}
+                          getUniqueOptionsForField={getUniqueOptionsForField}
                           onReplicateClick={openReplicateModalForTable}
                           isReplicateMode={isReplicateMode}
                         />
