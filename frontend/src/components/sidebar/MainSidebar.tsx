@@ -66,7 +66,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     switch (color) {
       case 'green': return 'bg-green-600';
       case 'blue': return 'bg-blue-600';
-      case 'orange': return 'bg-orange-600';
+      case 'orange': return 'bg-orange-500';
       case 'gray': return 'bg-gray-600';
       default: return 'bg-gray-600';
     }

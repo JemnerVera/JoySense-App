@@ -45,6 +45,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 }) => {
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
   const [metricasDropdownOpen, setMetricasDropdownOpen] = React.useState(false);
+  
+  // Estados para términos de búsqueda
+  const [nodosSearchTerm, setNodosSearchTerm] = React.useState('');
+  const [metricasSearchTerm, setMetricasSearchTerm] = React.useState('');
 
   // Cerrar dropdowns cuando se hace clic fuera
   React.useEffect(() => {
@@ -100,14 +104,28 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
              <span className="text-neutral-400">▼</span>
            </div>
            
-           {nodosDropdownOpen && (
-             <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-               {nodosData
-                 .sort((a, b) => a.nodo.localeCompare(b.nodo))
-                 .map(nodo => (
+          {nodosDropdownOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={nodosSearchTerm}
+                  onChange={(e) => setNodosSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {nodosData
+                  .filter(nodo => 
+                    nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.nodo.localeCompare(b.nodo))
+                  .map(nodo => (
                    <label
                      key={nodo.nodoid}
-                     className="flex items-center px-3 py-2 hover:bg-gray-600 cursor-pointer"
+                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                    >
                      <input
                        type={isReplicateMode ? "radio" : "checkbox"}
@@ -138,11 +156,19 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                            }
                          }
                        }}
-                       className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                       className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                      />
-                     <span className="text-white text-opacity-80 text-sm">{nodo.nodo}</span>
+                     <span className="text-white text-sm font-mono tracking-wider">{nodo.nodo.toUpperCase()}</span>
                    </label>
                  ))}
+                 {nodosData.filter(nodo => 
+                   nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                 ).length === 0 && (
+                   <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                     NO SE ENCONTRARON RESULTADOS
+                   </div>
+                 )}
+               </div>
              </div>
            )}
          </div>
@@ -167,14 +193,28 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
              <span className="text-neutral-400">▼</span>
            </div>
            
-           {metricasDropdownOpen && (
-             <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-               {metricasData
-                 .sort((a, b) => a.metrica.localeCompare(b.metrica))
-                 .map(metrica => (
+          {metricasDropdownOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={metricasSearchTerm}
+                  onChange={(e) => setMetricasSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {metricasData
+                  .filter(metrica => 
+                    metrica.metrica.toLowerCase().includes(metricasSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.metrica.localeCompare(b.metrica))
+                  .map(metrica => (
                    <label
                      key={metrica.metricaid}
-                     className="flex items-center px-3 py-2 hover:bg-gray-600 cursor-pointer"
+                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                    >
                      <input
                        type="checkbox"
@@ -186,11 +226,19 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                            setSelectedMetricas(selectedMetricas.filter(id => id !== metrica.metricaid.toString()));
                          }
                        }}
-                       className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                       className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                      />
-                     <span className="text-white text-opacity-80 text-sm">{metrica.metrica}</span>
+                     <span className="text-white text-sm font-mono tracking-wider">{metrica.metrica.toUpperCase()}</span>
                    </label>
                  ))}
+                 {metricasData.filter(metrica => 
+                   metrica.metrica.toLowerCase().includes(metricasSearchTerm.toLowerCase())
+                 ).length === 0 && (
+                   <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                     NO SE ENCONTRARON RESULTADOS
+                   </div>
+                 )}
+               </div>
              </div>
            )}
          </div>

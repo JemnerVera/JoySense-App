@@ -3550,7 +3550,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         }}
                       />
                     ) : (
-                      <div className="space-y-6">
+                      <div className={`space-y-6 ${
+                        selectedTable === 'sensor' || selectedTable === 'metricasensor' 
+                          ? 'min-h-[700px]' 
+                          : selectedTable === 'localizacion'
+                          ? 'min-h-[500px]'
+                          : 'min-h-[400px]'
+                      }`}>
                         
                       <NormalInsertForm
                         visibleColumns={visibleColumns}

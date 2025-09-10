@@ -42,6 +42,11 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   const [ubicacionesDropdownOpen, setUbicacionesDropdownOpen] = React.useState(false);
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
   const [entidadesDropdownOpen, setEntidadesDropdownOpen] = React.useState(false);
+  
+  // Estados para términos de búsqueda
+  const [ubicacionesSearchTerm, setUbicacionesSearchTerm] = React.useState('');
+  const [nodosSearchTerm, setNodosSearchTerm] = React.useState('');
+  const [entidadesSearchTerm, setEntidadesSearchTerm] = React.useState('');
 
   // Cerrar dropdowns cuando se hace clic fuera
   React.useEffect(() => {
@@ -97,10 +102,24 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           </div>
           
           {ubicacionesDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
-              {ubicacionesData
-                .sort((a, b) => a.ubicacion.localeCompare(b.ubicacion))
-                .map(ubicacion => (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={ubicacionesSearchTerm}
+                  onChange={(e) => setUbicacionesSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {ubicacionesData
+                  .filter(ubicacion => 
+                    ubicacion.ubicacion.toLowerCase().includes(ubicacionesSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.ubicacion.localeCompare(b.ubicacion))
+                  .map(ubicacion => (
                   <label
                     key={ubicacion.ubicacionid}
                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
@@ -120,6 +139,14 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                     <span className="text-white text-sm font-mono tracking-wider">{ubicacion.ubicacion.toUpperCase()}</span>
                   </label>
                 ))}
+                {ubicacionesData.filter(ubicacion => 
+                  ubicacion.ubicacion.toLowerCase().includes(ubicacionesSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                    NO SE ENCONTRARON RESULTADOS
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -145,10 +172,24 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           </div>
           
           {nodosDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
-              {nodosData
-                .sort((a, b) => a.nodo.localeCompare(b.nodo))
-                .map(nodo => (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={nodosSearchTerm}
+                  onChange={(e) => setNodosSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {nodosData
+                  .filter(nodo => 
+                    nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.nodo.localeCompare(b.nodo))
+                  .map(nodo => (
                   <label
                     key={nodo.nodoid}
                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
@@ -168,6 +209,14 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                     <span className="text-white text-sm font-mono tracking-wider">{nodo.nodo.toUpperCase()}</span>
                   </label>
                 ))}
+                {nodosData.filter(nodo => 
+                  nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                    NO SE ENCONTRARON RESULTADOS
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -193,10 +242,24 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           </div>
           
           {entidadesDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
-              {entidadesData
-                .sort((a, b) => a.entidad.localeCompare(b.entidad))
-                .map(entidad => (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={entidadesSearchTerm}
+                  onChange={(e) => setEntidadesSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {entidadesData
+                  .filter(entidad => 
+                    entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.entidad.localeCompare(b.entidad))
+                  .map(entidad => (
                   <label
                     key={entidad.entidadid}
                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
@@ -216,6 +279,14 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                     <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
                   </label>
                 ))}
+                {entidadesData.filter(entidad => 
+                  entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                    NO SE ENCONTRARON RESULTADOS
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

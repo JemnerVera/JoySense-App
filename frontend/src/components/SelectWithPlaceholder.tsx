@@ -79,7 +79,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
           </div>
           
           {/* Lista de opciones */}
-          <div className="max-h-32 overflow-y-auto custom-scrollbar">
+          <div className="max-h-24 overflow-y-auto custom-scrollbar">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <div
