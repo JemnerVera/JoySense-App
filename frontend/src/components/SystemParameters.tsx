@@ -2475,7 +2475,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['empresaid', 'fundo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['empresaid', 'fundo', 'fundobrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'ubicacion') {
@@ -3735,6 +3735,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           setSelectedNodosLocalizacion([]);
                           setSelectedEntidades([]);
                         }}
+                        paisSeleccionado={paisSeleccionado}
+                        empresaSeleccionada={empresaSeleccionada}
+                        fundoSeleccionado={fundoSeleccionado}
+                        paisesData={paisesData}
+                        empresasData={empresasData}
+                        fundosData={fundosData}
                       />
                     ) : (
                       <div className={`space-y-6 ${

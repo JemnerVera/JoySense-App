@@ -121,7 +121,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }).filter(Boolean);
 
     if (contextualFields.length > 0) {
-      return (
+  return (
         <div key="contextual-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {contextualFields}
         </div>
@@ -1137,7 +1137,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {visibleColumns.map(col => renderField(col))}
-        </div>
+      </div>
       )}
 
       <div className="flex justify-center items-center mt-8 space-x-4">
@@ -1171,7 +1171,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider"
           >
             PEGAR DESDE PORTAPAPELES
-          </button>
+        </button>
         )}
       </div>
     </div>

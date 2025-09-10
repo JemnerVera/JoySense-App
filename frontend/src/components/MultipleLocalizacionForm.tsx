@@ -18,6 +18,14 @@ interface MultipleLocalizacionFormProps {
   onInitializeLocalizaciones: (ubicaciones: string[], nodos: string[], entidades: string[]) => Promise<void>;
   onInsertLocalizaciones: () => void;
   onCancel: () => void;
+  // Filtros globales para contextualizar
+  paisSeleccionado?: string;
+  empresaSeleccionada?: string;
+  fundoSeleccionado?: string;
+  // Datos para mostrar nombres en lugar de IDs
+  paisesData?: any[];
+  empresasData?: any[];
+  fundosData?: any[];
 }
 
 const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
@@ -37,7 +45,14 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   loading,
   onInitializeLocalizaciones,
   onInsertLocalizaciones,
-  onCancel
+  onCancel,
+  // Filtros globales
+  paisSeleccionado,
+  empresaSeleccionada,
+  fundoSeleccionado,
+  paisesData,
+  empresasData,
+  fundosData
 }) => {
   const [ubicacionesDropdownOpen, setUbicacionesDropdownOpen] = React.useState(false);
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
@@ -76,8 +91,82 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
     }
   }, [selectedUbicaciones, selectedNodos, selectedEntidades, onInitializeLocalizaciones]);
 
+  // Función para obtener el nombre de un país por ID
+  const getPaisName = (paisId: string) => {
+    const pais = paisesData?.find(p => p.paisid.toString() === paisId);
+    return pais ? pais.pais : `País ${paisId}`;
+  };
+
+  // Función para obtener el nombre de una empresa por ID
+  const getEmpresaName = (empresaId: string) => {
+    const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
+    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
+  };
+
+  // Función para obtener el nombre de un fundo por ID
+  const getFundoName = (fundoId: string) => {
+    const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
+    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
+  };
+
+  // Función para renderizar fila contextual con filtros globales
+  const renderContextualRow = () => {
+    const contextualFields = [];
+    
+    if (paisSeleccionado) {
+      contextualFields.push(
+        <div key="pais-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            PAÍS
+          </label>
+          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            {getPaisName(paisSeleccionado)}
+          </div>
+        </div>
+      );
+    }
+    
+    if (empresaSeleccionada) {
+      contextualFields.push(
+        <div key="empresa-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            EMPRESA
+          </label>
+          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            {getEmpresaName(empresaSeleccionada)}
+          </div>
+        </div>
+      );
+    }
+    
+    if (fundoSeleccionado) {
+      contextualFields.push(
+        <div key="fundo-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            FUNDO
+          </label>
+          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            {getFundoName(fundoSeleccionado)}
+          </div>
+        </div>
+      );
+    }
+
+    if (contextualFields.length > 0) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {contextualFields}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
+      
+      {/* Fila contextual con filtros globales */}
+      {renderContextualRow()}
       {/* Selección de Ubicaciones, Nodos, Entidades y Status */}
       <div className="space-y-6">
         {/* Primera fila: Ubicación, Nodo, Entidad */}

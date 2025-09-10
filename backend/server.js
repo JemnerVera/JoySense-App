@@ -391,16 +391,16 @@ const verifyAuth = async (req, res, next) => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token de autorización requerido' });
   }
-  
+
   const token = authHeader.substring(7);
-  
+    
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json({ error: 'Token inválido' });
+        return res.status(401).json({ error: 'Token inválido' });
     }
-    
+
     req.user = user;
     next();
   } catch (error) {
@@ -804,7 +804,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Verificar si el usuario existe en la tabla sense.usuario
     const { data: userData, error: userError } = await supabase
       .from('usuario')
-      .select('*')
+        .select('*')
       .eq('login', email)
       .single();
 
@@ -881,12 +881,12 @@ app.put('/api/sense/pais/:id', async (req, res) => {
       .update(updateData)
       .eq('paisid', id)
       .select();
-    
-    if (error) {
-      console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
-    }
-    
+
+      if (error) {
+        console.error('❌ Error backend:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
     console.log(`✅ Backend: Pais actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -933,12 +933,12 @@ app.put('/api/sense/fundo/:id', async (req, res) => {
       .update(updateData)
       .eq('fundoid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Fundo actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -960,12 +960,12 @@ app.put('/api/sense/ubicacion/:id', async (req, res) => {
       .update(updateData)
       .eq('ubicacionid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Ubicacion actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -986,12 +986,12 @@ app.put('/api/sense/entidad/:id', async (req, res) => {
       .update(updateData)
       .eq('entidadid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Entidad actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1012,12 +1012,12 @@ app.put('/api/sense/metrica/:id', async (req, res) => {
       .update(updateData)
       .eq('metricaid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Metrica actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1038,12 +1038,12 @@ app.put('/api/sense/tipo/:id', async (req, res) => {
       .update(updateData)
       .eq('tipoid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Tipo actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1064,12 +1064,12 @@ app.put('/api/sense/nodo/:id', async (req, res) => {
       .update(updateData)
       .eq('nodoid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Nodo actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1090,12 +1090,12 @@ app.put('/api/sense/criticidad/:id', async (req, res) => {
       .update(updateData)
       .eq('criticidadid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Criticidad actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1116,12 +1116,12 @@ app.put('/api/sense/perfil/:id', async (req, res) => {
       .update(updateData)
       .eq('perfilid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Perfil actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1143,12 +1143,12 @@ app.put('/api/sense/umbral/:id', async (req, res) => {
       .update(updateData)
       .eq('umbralid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Umbral actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1169,12 +1169,12 @@ app.put('/api/sense/medio/:id', async (req, res) => {
       .update(updateData)
       .eq('medioid', id)
       .select();
-    
-    if (error) {
+
+      if (error) {
       console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
-    }
-    
+        return res.status(500).json({ error: error.message });
+      }
+
     console.log(`✅ Backend: Medio actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1255,12 +1255,12 @@ app.put('/api/sense/localizacion/:ubicacionid/:nodoid', async (req, res) => {
       .eq('ubicacionid', ubicacionid)
       .eq('nodoid', nodoid)
       .select();
-    
-    if (error) {
+      
+      if (error) {
       console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
-    }
-    
+        return res.status(500).json({ error: error.message });
+      }
+      
     console.log(`✅ Backend: Localizacion actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -1279,7 +1279,7 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
     console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
     
     const { data, error } = await supabase
-      .from('localizacion')
+        .from('localizacion')
       .update(updateData)
       .eq('ubicacionid', ubicacionid)
       .eq('nodoid', nodoid)
@@ -1319,7 +1319,7 @@ app.put('/api/sense/perfilumbral/:perfilid/:umbralid', async (req, res) => {
     
     console.log(`✅ Backend: Perfilumbral actualizado: ${data.length} registros`);
     res.json(data);
-  } catch (error) {
+      } catch (error) {
     console.error('❌ Error backend:', error);
     res.status(500).json({ error: error.message });
   }
@@ -1569,16 +1569,16 @@ app.get('/api/detect', async (req, res) => {
     const { data: senseData, error: senseError } = await supabase
       .from('pais')
       .select('paisid')
-      .limit(1);
-    
+        .limit(1);
+
     if (!senseError && senseData) {
       console.log('✅ Schema "sense" detectado y disponible');
       res.json({ available: true, schema: 'sense' });
-    } else {
+      } else {
       console.log('❌ Schema "sense" no disponible, usando "public"');
       res.json({ available: false, schema: 'public' });
-    }
-  } catch (error) {
+      }
+    } catch (error) {
     console.error('❌ Error detectando schema:', error);
     res.json({ available: false, schema: 'public' });
   }
@@ -1595,7 +1595,7 @@ app.get('/api/sense/paises', async (req, res) => {
       .select('*')
       .eq('statusid', 1)
       .limit(parseInt(limit));
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -1642,7 +1642,7 @@ app.get('/api/sense/fundos', async (req, res) => {
   try {
     const { limit = 100, empresaId } = req.query;
     console.log(`🔍 Backend: Obteniendo fundos del schema sense...`);
-    
+
     let query = supabase
       .from('fundo')
       .select('*')
@@ -1706,12 +1706,12 @@ app.get('/api/sense/entidades', async (req, res) => {
       .select('*')
       .eq('statusid', 1)
       .limit(parseInt(limit));
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Entidades obtenidas: ${data.length}`);
     res.json(data);
   } catch (error) {
@@ -1751,7 +1751,7 @@ app.get('/api/sense/nodos', async (req, res) => {
     
     const { data, error } = await supabase
       .from('nodo')
-      .select('*')
+        .select('*')
       .eq('statusid', 1)
       .limit(parseInt(limit));
     
@@ -1778,7 +1778,7 @@ app.get('/api/sense/tipos', async (req, res) => {
       .select('*')
       .eq('statusid', 1)
       .limit(parseInt(limit));
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -1826,7 +1826,7 @@ app.get('/api/sense/detect', async (req, res) => {
       .from('pais')
       .select('paisid')
       .limit(1);
-    
+
     if (!senseError && senseData) {
       console.log('✅ Schema "sense" detectado y disponible');
       res.json({ available: true, schema: 'sense' });
@@ -1848,12 +1848,12 @@ app.post('/api/sense/pais', async (req, res) => {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando país...');
     console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
-    
+
     const { data, error } = await supabase
       .from('pais')
       .insert(insertData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -1903,7 +1903,7 @@ app.post('/api/sense/fundo', async (req, res) => {
       .from('fundo')
       .insert(insertData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -1934,12 +1934,12 @@ app.post('/api/sense/ubicacion', async (req, res) => {
       datecreated: insertData.datecreated,
       datemodified: insertData.datemodified
     };
-    
+
     const { data, error } = await supabase
       .from('ubicacion')
       .insert(filteredData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -1989,12 +1989,12 @@ app.post('/api/sense/tipo', async (req, res) => {
       .from('tipo')
       .insert(insertData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Tipo insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2014,12 +2014,12 @@ app.post('/api/sense/nodo', async (req, res) => {
       .from('nodo')
       .insert(insertData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Nodo insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2135,12 +2135,12 @@ app.post('/api/sense/medio', async (req, res) => {
       .from('medio')
       .insert(filteredData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Medio insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2211,7 +2211,7 @@ app.post('/api/sense/usuario', async (req, res) => {
       .from('usuario')
       .insert(filteredData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -2322,7 +2322,7 @@ app.post('/api/sense/usuarioperfil', async (req, res) => {
       .from('usuarioperfil')
       .insert(insertData)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -2344,7 +2344,7 @@ app.post('/api/sense/sensor', async (req, res) => {
     console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
     
     const { data, error } = await supabase
-      .from('sensor')
+        .from('sensor')
       .insert(insertData)
       .select();
     
@@ -2369,7 +2369,7 @@ app.post('/api/sense/metricasensor', async (req, res) => {
     console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
     
     const { data, error } = await supabase
-      .from('metricasensor')
+            .from('metricasensor')
       .insert(insertData)
       .select();
     

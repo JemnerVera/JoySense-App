@@ -93,37 +93,37 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
       } catch (err) {
         console.error('❌ Error cargando mediciones:', err);
         setError('Error al cargar las mediciones');
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
     loadMediciones();
   }, [selectedEntidad, selectedUbicacion, startDate, endDate]);
 
   // Mostrar loading
   if (loading) {
-    return (
+      return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
           <p className="text-neutral-400 font-mono">LOADING DASHBOARD DATA...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   // Mostrar error
   if (error) {
-    return (
+      return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-red-500 text-lg font-semibold mb-2 font-mono">ERROR</div>
           <p className="text-neutral-400 font-mono">{error}</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   // Función para determinar qué filtro falta
   const getMissingFilterMessage = () => {
@@ -136,32 +136,32 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   // Mostrar mensaje si no hay filtros seleccionados
   if (!selectedEntidad || !selectedUbicacion || !startDate || !endDate) {
     const missingFilter = getMissingFilterMessage();
-    return (
+       return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md">
             <h3 className="text-xl font-semibold text-orange-500 mb-2 font-mono tracking-wider">{missingFilter.toUpperCase()}</h3>
             <p className="text-neutral-300 text-sm font-mono">USE HEADER FILTERS TO CONTINUE</p>
           </div>
-        </div>
-      </div>
-    );
-  }
+           </div>
+         </div>
+       );
+     }
 
   // Mostrar mensaje si no hay datos
   if (mediciones.length === 0) {
-    return (
+       return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
           <h3 className="text-xl font-semibold text-white mb-2 font-mono tracking-wider">NO DATA AVAILABLE</h3>
           <p className="text-neutral-400 font-mono">NO MEASUREMENTS FOUND FOR SELECTED FILTERS</p>
-        </div>
-      </div>
-    );
-  }
+           </div>
+         </div>
+       );
+     }
 
-  return (
+                   return (
     <div className="space-y-6">
       {/* Botones de Métricas - Tactical Style */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4">
@@ -172,8 +172,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
               return mediciones.some(m => m.metricaid === metrica.metricaid);
             })
             .map((metrica) => (
-            <button
-              key={metrica.metricaid}
+                   <button
+                     key={metrica.metricaid}
               onClick={() => setSelectedMetrica(metrica.metricaid)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors font-mono tracking-wider ${
                 selectedMetrica === metrica.metricaid
@@ -182,14 +182,14 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
               }`}
             >
               {metrica.metrica.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+                   </button>
+                 ))}
+               </div>
+            </div>
 
       {/* Gráficos - Tactical Style */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
-        <SeparateCharts
+          <SeparateCharts 
           mediciones={mediciones}
           loading={loading}
           selectedMetrica={selectedMetrica}
@@ -197,10 +197,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
           tipos={tipos}
           startDate={startDate}
           endDate={endDate}
-        />
-      </div>
-    </div>
-  );
-};
+          />
+        </div>
+       </div>
+     );
+  };
 
 export default DynamicHierarchy;
