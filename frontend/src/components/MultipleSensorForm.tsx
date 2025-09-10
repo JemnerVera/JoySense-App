@@ -234,19 +234,9 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
            <div className="space-y-4">
              {multipleSensors.map((sensor, index) => (
                <div key={index} className="bg-neutral-700 border border-neutral-600 rounded-lg p-4">
-                 <div className="flex items-center justify-between mb-3">
-                   <div className="flex items-center space-x-3">
-                     <span className="text-orange-500 font-bold font-mono">#{sensor.sensorIndex}</span>
-                     <span className="text-white font-mono">SENSOR {sensor.sensorIndex} PARA {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || `NODO ${selectedNodo}`}</span>
-                   </div>
-                   <div className="flex items-center space-x-2">
-                     <span className="text-neutral-300 text-sm font-mono">NODO: {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || selectedNodo}</span>
-                   </div>
-                 </div>
-                 
-                 {/* Selector de tipo para cada sensor */}
+                 {/* Display simplificado: #1 SENSOR SUELO 20CM▼ */}
                  <div className="flex items-center space-x-3">
-                   <label className="text-white text-sm font-medium font-mono tracking-wider">TIPO:</label>
+                   <span className="text-orange-500 font-bold font-mono">#{sensor.sensorIndex}</span>
                    <SelectWithPlaceholder
                      value={sensor.tipoid}
                      onChange={(newValue) => onUpdateSensorTipo(sensor.sensorIndex, newValue ? parseInt(newValue.toString()) : 0)}

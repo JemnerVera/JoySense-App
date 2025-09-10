@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SelectWithPlaceholder from './SelectWithPlaceholder';
 
 interface ReplicateModalProps {
   isOpen: boolean;
@@ -194,30 +195,22 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           <label className="block text-sm font-medium text-neutral-300 mb-2 font-mono tracking-wider">
             {originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE (CON SENSORES)' : 'SELECCIONAR NODO'}
           </label>
-          <select
-            value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : ''}
-            onChange={(e) => {
-              const selectedId = e.target.value;
+          <SelectWithPlaceholder
+            value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : null}
+            onChange={(newValue) => {
+              const selectedId = newValue?.toString();
               const entry = filteredData.find(entry => {
                 if (tableName === 'nodo') return entry.nodoid.toString() === selectedId;
                 return entry.id.toString() === selectedId;
               });
               setSelectedEntry(entry || null);
             }}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
-          >
-            <option value="" disabled>
-              {originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE...' : 'SELECCIONAR NODO...'}
-            </option>
-            {filteredData.map((entry, index) => (
-              <option 
-                key={tableName === 'nodo' ? entry.nodoid : entry.id || index} 
-                value={tableName === 'nodo' ? entry.nodoid : entry.id}
-              >
-                {getEntryDisplayText(entry)}
-              </option>
-            ))}
-          </select>
+            options={filteredData.map((entry, index) => ({
+              value: tableName === 'nodo' ? entry.nodoid : entry.id,
+              label: getEntryDisplayText(entry)
+            }))}
+            placeholder={originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE...' : 'SELECCIONAR NODO...'}
+          />
         </div>
 
         {/* Tabla de datos del nodo seleccionado */}
