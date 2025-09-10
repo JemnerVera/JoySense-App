@@ -3463,7 +3463,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
                                                            {/* Formulario de inserción */}
                 {activeSubTab === 'insert' && (
-                  <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                  <div className={`bg-neutral-900 border border-neutral-700 rounded-xl p-6 ${
+                    selectedTable === 'sensor' || selectedTable === 'metricasensor' 
+                      ? 'min-h-[800px]' 
+                      : ''
+                  }`}>
                     {/* Mensaje de registros insertados */}
                     <InsertionMessage
                       insertedRecords={insertedRecords}
@@ -3552,7 +3556,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                     ) : (
                       <div className={`space-y-6 ${
                         selectedTable === 'sensor' || selectedTable === 'metricasensor' 
-                          ? 'min-h-[700px]' 
+                          ? 'min-h-[900px]' 
                           : selectedTable === 'localizacion'
                           ? 'min-h-[500px]'
                           : 'min-h-[400px]'

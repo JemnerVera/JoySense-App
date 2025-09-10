@@ -116,7 +116,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
-              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+              <div className="max-h-32 overflow-y-auto custom-scrollbar">
                 {nodosData
                   .filter(nodo => 
                     nodo.nodo.toLowerCase().includes(nodosSearchTerm.toLowerCase())
@@ -205,7 +205,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
-              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+              <div className="max-h-32 overflow-y-auto custom-scrollbar">
                 {metricasData
                   .filter(metrica => 
                     metrica.metrica.toLowerCase().includes(metricasSearchTerm.toLowerCase())
