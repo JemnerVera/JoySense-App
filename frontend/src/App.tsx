@@ -334,8 +334,10 @@ const AppContentInternal: React.FC = () => {
   return (
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-4">Reportes</h2>
-            <p className="text-gray-300">Selecciona una subpestaña para continuar</p>
+            <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES</h2>
+            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA SUBPESTAÑA PARA CONTINUAR</p>
+            </div>
           </div>
         </div>
       );
@@ -346,13 +348,13 @@ const AppContentInternal: React.FC = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              <h2 className="text-2xl font-bold text-white">Seleccionar parametro</h2>
+              <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
             </div>
-            <div className="bg-red-600 bg-opacity-20 border border-red-500 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-gray-300">Selecciona una tabla del menú lateral para continuar</p>
+            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA TABLA DEL MENÚ LATERAL PARA CONTINUAR</p>
             </div>
           </div>
         </div>
@@ -391,8 +393,10 @@ const AppContentInternal: React.FC = () => {
   return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Dashboard</h2>
-          <p className="text-gray-300">Bienvenido al sistema de monitoreo</p>
+          <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+            <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR</p>
+          </div>
         </div>
       </div>
     );
