@@ -20,7 +20,7 @@ interface MultipleMetricaSensorFormProps {
   onInitializeMetricas: (nodos: string[], metricas: string[]) => Promise<void>;
   onInsertMetricas: () => void;
   onCancel: () => void;
-  getUniqueOptionsForField: (columnName: string, filterParams?: { entidadid?: string }) => Array<{value: any, label: string}>;
+  getUniqueOptionsForField: (columnName: string, filterParams?: { entidadid?: string; nodoid?: string }) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
   // Prop para indicar si estamos en modo replicación (solo un nodo)
@@ -381,26 +381,27 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                   />
                 </div>
                 <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                  {entidadesData
-                    .filter(entidad => 
-                      entidad.entidad.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                  {getUniqueOptionsForField('entidadid', { nodoid: selectedNodos.length > 0 ? selectedNodos[0] : undefined })
+                    .filter(option => 
+                      option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
                     )
-                    .map((entidad, index) => (
+                    .map((option, index) => (
                      <div
                        key={index}
                        onClick={() => {
-                         setSelectedEntidad(entidad.entidadid.toString());
+                         setSelectedEntidad(option.value.toString());
                          setEntidadDropdownOpen(false);
                          setEntidadSearchTerm('');
                        }}
                        className="px-3 py-2 cursor-pointer hover:bg-neutral-800 transition-colors"
                      >
-                       <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
+                       <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                      </div>
                    ))}
-                   {entidadesData.filter(entidad => 
-                     entidad.entidad.toLowerCase().includes(entidadSearchTerm.toLowerCase())
-                   ).length === 0 && (
+                   {getUniqueOptionsForField('entidadid', { nodoid: selectedNodos.length > 0 ? selectedNodos[0] : undefined })
+                     .filter(option => 
+                       option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                     ).length === 0 && (
                      <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
                        NO SE ENCONTRARON RESULTADOS
                      </div>

@@ -462,7 +462,7 @@ const AppContentInternal: React.FC = () => {
               <div className="flex items-center gap-4">
                 <div className="text-sm text-neutral-400 font-mono">
                   JOYSENSE APP / <span className="text-orange-500">
-                    {activeTab === 'parameters' 
+                    {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? (selectedTable ? `PARÁMETROS-${getTableNameInSpanish(selectedTable)}` : 'PARÁMETROS')
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }

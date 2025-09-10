@@ -2017,7 +2017,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
-    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string }) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string }) => {
     console.log('🔍 getUniqueOptionsForField Debug:', {
       columnName,
       paisSeleccionado,
@@ -2105,6 +2105,32 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log('🏛️ No hay datos de entidades disponibles');
           return [];
         }
+        
+        // Si estamos en el contexto de metricasensor y hay parámetros de filtro, filtrar entidades
+        if (selectedTable === 'metricasensor' && filterParams && filterParams.nodoid) {
+          const nodoId = filterParams.nodoid;
+          
+          // Obtener los tipos de sensores del nodo seleccionado
+          const sensoresDelNodo = sensorsData.filter((sensor: any) => sensor.nodoid === parseInt(nodoId));
+          const tiposDelNodo = sensoresDelNodo.map((sensor: any) => sensor.tipoid);
+          
+          // Obtener las entidades únicas de esos tipos
+          const entidadesDelNodo = tiposData
+            .filter((tipo: any) => tiposDelNodo.includes(tipo.tipoid))
+            .map((tipo: any) => tipo.entidadid);
+          
+          const entidadesUnicas = Array.from(new Set(entidadesDelNodo));
+          
+          // Filtrar entidades que corresponden a los tipos del nodo
+          const entidadesFiltradas = entidadesData.filter(entidad => 
+            entidadesUnicas.includes(entidad.entidadid)
+          );
+          
+          const entidadResult = entidadesFiltradas.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
+          console.log('🏛️ Opciones de entidades filtradas por nodo:', { nodoId, entidadesFiltradas: entidadResult.length, entidadResult });
+          return entidadResult;
+        }
+        
         // Mostrar todas las entidades disponibles (no filtrar por fundo)
         const entidadResult = entidadesData.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
         console.log('🏛️ Opciones de entidades devueltas (sin filtro):', entidadResult);
