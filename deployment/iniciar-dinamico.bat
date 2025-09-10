@@ -30,34 +30,36 @@ echo ✅ Node.js encontrado en: %NODE_PATH%
 echo ✅ npm encontrado en: %NPM_PATH%
 echo.
 
-REM Cambiar al directorio del proyecto
-cd /d "%~dp0"
+REM Cambiar al directorio raíz del proyecto (un nivel arriba de deployment)
+cd /d "%~dp0.."
 echo 📁 Directorio actual: %CD%
 echo.
 
 REM Verificar que existan los directorios necesarios
 if not exist "backend" (
     echo ❌ Error: No se encuentra el directorio 'backend'
+    echo 📁 Directorio actual: %CD%
     pause
     exit /b 1
 )
 
 if not exist "frontend" (
     echo ❌ Error: No se encuentra el directorio 'frontend'
+    echo 📁 Directorio actual: %CD%
     pause
     exit /b 1
 )
 
 REM Iniciar Backend
 echo 🚀 Iniciando Backend...
-start "JoySense Backend" cmd /k "cd /d "%~dp0\backend" && echo Iniciando servidor backend... && "%NPM_PATH%" install && "%NODE_PATH%" server.js"
+start "JoySense Backend" cmd /k "cd /d "%~dp0..\backend" && echo Iniciando servidor backend... && "%NPM_PATH%" install && "%NODE_PATH%" server.js"
 
 REM Esperar un momento para que el backend se inicie
 timeout /t 3 /nobreak >nul
 
 REM Iniciar Frontend
 echo 🎨 Iniciando Frontend...
-start "JoySense Frontend" cmd /k "cd /d "%~dp0\frontend" && echo Iniciando aplicación frontend... && "%NPM_PATH%" install && "%NPM_PATH%" start"
+start "JoySense Frontend" cmd /k "cd /d "%~dp0..\frontend" && echo Iniciando aplicación frontend... && "%NPM_PATH%" install && "%NPM_PATH%" start"
 
 echo.
 echo ✅ Servicios iniciados correctamente

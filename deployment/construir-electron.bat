@@ -15,7 +15,8 @@ if %errorlevel% neq 0 (
     echo ✅ Node.js encontrado
 )
 
-echo.
+REM Cambiar al directorio raíz del proyecto (un nivel arriba de deployment)
+cd /d "%~dp0.."
 echo 📂 Directorio actual: %CD%
 echo.
 

@@ -25,7 +25,8 @@ if exist "C:\Program Files\nodejs\npm.cmd" (
     exit /b 1
 )
 
-echo.
+REM Cambiar al directorio raíz del proyecto (un nivel arriba de deployment)
+cd /d "%~dp0.."
 echo 📂 Directorio actual: %CD%
 echo.
 
@@ -52,14 +53,14 @@ if not exist "frontend\node_modules\electron" (
 
 echo.
 echo 🚀 Iniciando Backend...
-start "JoySense Backend" cmd /k "set PATH=%PATH%;C:\Program Files\nodejs && cd backend && npm start"
+start "JoySense Backend" cmd /k "set PATH=%PATH%;C:\Program Files\nodejs && cd "%~dp0..\backend" && npm start"
 
 echo ⏳ Esperando que el backend esté listo...
 timeout /t 3 /nobreak >nul
 
 echo 🖥️  Iniciando aplicación Electron...
 cd frontend
-start "JoySense Electron" cmd /k "set PATH=%PATH%;C:\Program Files\nodejs && npm run electron-dev"
+start "JoySense Electron" cmd /k "set PATH=%PATH%;C:\Program Files\nodejs && cd "%~dp0..\frontend" && npm run electron-dev"
 
 echo.
 echo ✅ Aplicación Electron iniciada correctamente
