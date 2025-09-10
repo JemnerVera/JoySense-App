@@ -46,14 +46,14 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`standard-dropdown min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-600 transition-colors ${
-          selectedOption ? 'border-green-500' : ''
+        className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between font-mono min-w-[150px] ${
+          selectedOption ? 'border-orange-500' : ''
         }`}
       >
         <div className="flex items-center space-x-2 min-w-0 flex-1">
           {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}
-          <span className={`${selectedOption ? 'text-white' : 'standard-placeholder'} truncate`}>
-            {selectedOption ? selectedOption.name : placeholder}
+          <span className={`${selectedOption ? 'text-white' : 'text-neutral-400'} truncate tracking-wider`}>
+            {selectedOption ? selectedOption.name.toUpperCase() : placeholder.toUpperCase()}
           </span>
         </div>
         <div className="flex items-center space-x-1">
@@ -80,15 +80,15 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
           {/* Barra de búsqueda */}
-          <div className="p-2 border-b border-gray-600">
+          <div className="p-2 border-b border-neutral-700">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar..."
-              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              placeholder="SEARCH..."
+              className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
               autoFocus
             />
           </div>
@@ -100,14 +100,18 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
                 <button
                   key={option.id}
                   onClick={() => handleSelect(option.id)}
-                  className={`${selectedOption?.id === option.id ? 'standard-dropdown-option-selected' : 'standard-dropdown-option'}`}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                    selectedOption?.id === option.id 
+                      ? 'bg-orange-500 text-white' 
+                      : 'text-neutral-300 hover:bg-neutral-800'
+                  }`}
                 >
-                  {option.name}
+                  {option.name.toUpperCase()}
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-sm text-gray-400">
-                No se encontraron resultados
+              <div className="px-3 py-2 text-sm text-neutral-400 font-mono">
+                NO RESULTS FOUND
               </div>
             )}
           </div>

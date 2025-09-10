@@ -3308,17 +3308,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                    
                    {tableInfo && (
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                       <div className="bg-gray-700 rounded-lg p-4 text-center">
-                         <div className="text-gray-400 text-sm mb-1">Registros</div>
-                          <div className="text-2xl font-bold text-blue-400">{tableData.length}</div>
+                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">RECORDS</div>
+                          <div className="text-2xl font-bold text-orange-500 font-mono">{tableData.length}</div>
                        </div>
-                       <div className="bg-gray-700 rounded-lg p-4 text-center">
-                         <div className="text-gray-400 text-sm mb-1">Última actualización</div>
-                         <div className="text-2xl font-bold text-blue-400">{new Date().toLocaleDateString('es-ES')}</div>
+                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">LAST UPDATE</div>
+                         <div className="text-2xl font-bold text-orange-500 font-mono">{new Date().toLocaleDateString('es-ES')}</div>
                        </div>
-                       <div className="bg-gray-700 rounded-lg p-4 text-center">
-                         <div className="text-gray-400 text-sm mb-1">Último usuario</div>
-                         <div className="text-2xl font-bold text-blue-400">
+                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">LAST USER</div>
+                         <div className="text-2xl font-bold text-orange-500 font-mono">
                            {(() => {
                              // Buscar el último registro modificado
                              const lastModified = tableData
@@ -3347,20 +3347,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                      </div>
                    ) : (
                      <>
-                       {/* Barra de búsqueda */}
+                       {/* Barra de búsqueda - Tactical Style */}
                        <div className="mb-6">
                          <div className="relative">
                            <input
                              type="text"
                              value={statusSearchTerm}
                              onChange={(e) => handleStatusSearch(e.target.value)}
-                             placeholder="🔍 Buscar en todos los campos..."
-                             className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                             placeholder="🔍 SEARCH ALL FIELDS..."
+                             className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
                            />
                          </div>
                          {statusSearchTerm && (
-                           <div className="mt-2 text-sm text-gray-400">
-                             Mostrando {statusFilteredData.length} de {filteredTableData.length} registros
+                           <div className="mt-2 text-sm text-neutral-400 font-mono">
+                             SHOWING {statusFilteredData.length} OF {filteredTableData.length} RECORDS
                            </div>
                          )}
                        </div>
@@ -3782,19 +3782,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                               {/* Búsqueda simple - Igual que en "Estado" */}
                         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                           <div className="space-y-4">
-                            {/* Barra de búsqueda simple como en "Estado" */}
+                            {/* Barra de búsqueda simple como en "Estado" - Tactical Style */}
                             <div className="relative">
                               <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => handleSearchTermChange(e.target.value)}
-                                placeholder="🔍 Buscar en todos los campos..."
-                                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                                placeholder="🔍 SEARCH ALL FIELDS..."
+                                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
                               />
                             </div>
                             {searchTerm && (
-                              <div className="mt-2 text-sm text-gray-400">
-                                Mostrando {updateData.length} registros filtrados
+                              <div className="mt-2 text-sm text-neutral-400 font-mono">
+                                SHOWING {updateData.length} FILTERED RECORDS
                               </div>
                             )}
                           </div>
@@ -3806,15 +3806,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                             <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                               <button
                                 onClick={handleGoToManualUpdateForm}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                🔧 Actualizar {selectedRowsForManualUpdate.length} entrada(s)
+                                🔧 UPDATE {selectedRowsForManualUpdate.length} ENTRY(IES)
                               </button>
                               <button
                                 onClick={handleDeselectAll}
-                                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-mono tracking-wider"
                               >
-                                🗑️ Limpiar Selección
+                                🗑️ CLEAR SELECTION
                               </button>
                             </div>
                           </div>
