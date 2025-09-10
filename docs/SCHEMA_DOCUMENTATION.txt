@@ -1,0 +1,390 @@
+# 📊 SCHEMA DOCUMENTATION - SENSE DATABASE
+
+## 🏗️ ESTRUCTURA GENERAL DE LA BASE DE DATOS
+
+### 📍 TABLAS DE UBICACIÓN (CONFIGURACIÓN)
+- **pais**: Países del sistema
+- **empresa**: Empresas/Organizaciones
+- **fundo**: Fundos/Propiedades agrícolas
+- **ubicacion**: Ubicaciones específicas dentro de fundos
+- **localizacion**: Coordenadas GPS y ubicación geográfica
+- **entidad**: Entidades gubernamentales o reguladoras
+
+### 🔧 TABLAS DE DISPOSITIVOS (OPERACIONALES)
+- **tipo**: Tipos de sensores (ej: Sensor Maceta 10cm, Sensor Suelo 40cm)
+- **nodo**: Nodos de sensores (ej: rls-1111111)
+- **sensor**: Sensores individuales asociados a nodos
+- **metricasensor**: Métricas específicas de cada sensor
+- **metrica**: Definiciones de métricas (ej: Temperatura, Humedad, pH)
+
+### 📊 TABLAS DE DATOS
+- **medicion**: Datos de lecturas de sensores (SOLO LECTURA para Dashboard)
+- **sensor_valor**: Valores específicos de sensores
+- **sensor_valor_error**: Errores en lecturas de sensores
+
+### 🚨 NUEVAS TABLAS DE UMBRAL (ALERTAS)
+- **umbral**: Definición de límites para métricas
+- **perfilumbral**: Perfiles de umbrales para diferentes contextos
+- **audit_log_umbral**: Historial de cambios en umbrales
+- **criticidad**: Niveles de criticidad para alertas
+
+### 👥 NUEVAS TABLAS DE USUARIOS (NOTIFICACIONES)
+- **usuario**: Usuarios del sistema
+- **perfil**: Perfiles de usuario (ej: Administrador, Técnico, Supervisor)
+- **usuarioperfil**: Relación muchos a muchos entre usuarios y perfiles
+- **contacto**: Información de contacto de usuarios
+- **medio**: Medios de comunicación (ej: Email, SMS, WhatsApp)
+- **mensaje**: Plantillas de mensajes para alertas
+
+### 🔔 TABLAS DE ALERTAS
+- **alerta**: Alertas generadas cuando se superan umbrales
+
+## 🔗 RELACIONES PRINCIPALES
+
+### SENSOR → MEDICIÓN
+- Un sensor puede tener múltiples mediciones
+- Las mediciones se comparan contra umbrales para generar alertas
+
+### UMBRAL → ALERTA
+- Los umbrales definen cuándo se debe generar una alerta
+- Las alertas se envían a usuarios según su perfil
+
+### USUARIO → PERFIL → UMBRAL
+- Los usuarios tienen perfiles que determinan qué umbrales monitorean
+- Los perfiles definen qué alertas recibe cada usuario
+
+## 📋 FUNCIONALIDADES A IMPLEMENTAR
+
+### 1. SISTEMA DE UMBRALES
+- Configurar límites mínimos y máximos para cada métrica
+- Definir perfiles de umbral para diferentes contextos (ej: Invernadero, Campo Abierto)
+- Monitorear mediciones en tiempo real contra umbrales
+
+### 2. SISTEMA DE ALERTAS
+- Generar alertas automáticas cuando se superan umbrales
+- Clasificar alertas por criticidad (Baja, Media, Alta, Crítica)
+- Registrar historial de alertas y cambios en umbrales
+
+### 3. SISTEMA DE NOTIFICACIONES
+- Enviar alertas a usuarios según su perfil y responsabilidades
+- Múltiples medios de comunicación (Email, SMS, WhatsApp)
+- Plantillas de mensajes personalizables
+
+## 🎯 OBJETIVOS DE LA IMPLEMENTACIÓN
+
+1. **Monitoreo Automático**: Comparar mediciones contra umbrales en tiempo real
+2. **Alertas Inteligentes**: Notificar solo a usuarios relevantes según el contexto
+3. **Historial Completo**: Mantener registro de todos los eventos y cambios
+4. **Flexibilidad**: Permitir configuración de umbrales por contexto y usuario
+
+## 📝 NOTAS IMPORTANTES
+
+- **medicion**: Solo lectura para Dashboard, no se puede modificar desde la aplicación
+- **RLS**: Todas las tablas tienen Row Level Security habilitado
+- **Permisos**: Usuarios autenticados pueden SELECT, INSERT, UPDATE (NO DELETE)
+- **Backend**: service_role tiene acceso completo para operaciones del sistema
+
+## 🏗️ ANÁLISIS DETALLADO DEL SCHEMA
+
+### **ESTRUCTURA DE TABLAS EXISTENTES (VERIFICADAS)**
+
+#### **Tabla: pais**
+- **Primary Key**: `paisid` (SERIAL/INTEGER)
+- **Campos**: `pais` (VARCHAR), `paisabrev` (VARCHAR), `statusid` (INTEGER)
+- **Constraints**: NOT NULL en campos principales
+- **Relaciones**: Referenciada por `empresa.paisid`
+
+#### **Tabla: empresa**
+- **Primary Key**: `empresaid` (SERIAL/INTEGER)
+- **Foreign Keys**: `paisid` → `pais.paisid`
+- **Campos**: `empresa` (VARCHAR), `empresabrev` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `fundo.empresaid`
+
+#### **Tabla: fundo**
+- **Primary Key**: `fundoid` (SERIAL/INTEGER)
+- **Foreign Keys**: `empresaid` → `empresa.empresaid`
+- **Campos**: `fundo` (VARCHAR), `farmabrev` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `ubicacion.fundoid`
+
+#### **Tabla: ubicacion**
+- **Primary Key**: `ubicacionid` (SERIAL/INTEGER)
+- **Foreign Keys**: `fundoid` → `fundo.fundoid`
+- **Campos**: `ubicacion` (VARCHAR), `ubicacionabrev` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `localizacion.ubicacionid`
+
+#### **Tabla: localizacion**
+- **Primary Key**: `localizacionid` (SERIAL/INTEGER)
+- **Foreign Keys**: 
+  - `ubicacionid` → `ubicacion.ubicacionid`
+  - `nodoid` → `nodo.nodoid`
+  - `entidadid` → `entidad.entidadid`
+- **Campos**: `latitud` (DECIMAL), `longitud` (DECIMAL), `referencia` (TEXT), `statusid` (INTEGER)
+- **Relaciones**: Conecta ubicaciones con nodos y entidades
+
+#### **Tabla: entidad**
+- **Primary Key**: `entidadid` (SERIAL/INTEGER)
+- **Campos**: `entidad` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `tipo.entidadid` y `localizacion.entidadid`
+
+#### **Tabla: tipo**
+- **Primary Key**: `tipoid` (SERIAL/INTEGER)
+- **Foreign Keys**: `entidadid` → `entidad.entidadid`
+- **Campos**: `tipo` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `sensor.tipoid`, `metricasensor.tipoid`, `umbral.tipoid`
+
+#### **Tabla: nodo**
+- **Primary Key**: `nodoid` (SERIAL/INTEGER)
+- **Campos**: `nodo` (VARCHAR), `deveui` (VARCHAR), `appeui` (VARCHAR), `appkey` (VARCHAR), `atpin` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `sensor.nodoid`, `metricasensor.nodoid`, `localizacion.nodoid`
+
+#### **Tabla: metrica**
+- **Primary Key**: `metricaid` (SERIAL/INTEGER)
+- **Campos**: `metrica` (VARCHAR), `unidad` (VARCHAR), `statusid` (INTEGER)
+- **Relaciones**: Referenciada por `metricasensor.metricaid`, `umbral.metricaid`
+
+#### **Tabla: sensor**
+- **Composite Primary Key**: `nodoid` + `tipoid`
+- **Foreign Keys**: 
+  - `nodoid` → `nodo.nodoid`
+  - `tipoid` → `tipo.tipoid`
+- **Campos**: `statusid` (INTEGER)
+- **Relaciones**: Conecta nodos con tipos de sensor
+
+#### **Tabla: metricasensor**
+- **Composite Primary Key**: `nodoid` + `metricaid` + `tipoid`
+- **Foreign Keys**: 
+  - `nodoid` → `nodo.nodoid`
+  - `metricaid` → `metrica.metricaid`
+  - `tipoid` → `tipo.tipoid`
+- **Campos**: `statusid` (INTEGER)
+- **Relaciones**: Define qué métricas mide cada sensor
+
+### **ESTRUCTURA DE NUEVAS TABLAS (ANALIZADAS)**
+
+#### **Tabla: criticidad**
+- **Primary Key**: `criticidadid` (INTEGER)
+- **Campos**: 
+  - `criticidad` (VARCHAR) - "Baja", "Media", "Alta", "Crítica"
+  - `criticidadbrev` (VARCHAR) - Abreviatura del nivel ("B", "M", "A", "C")
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Referenciada por `perfilumbral.criticidadid` y `alerta.criticidadid`
+
+#### **Tabla: medio**
+- **Primary Key**: `medioid` (INTEGER)
+- **Campos**: 
+  - `nombre` (VARCHAR) - "Email", "SMS", "WhatsApp", "Push"
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Referenciada por `contacto.medioid`
+
+#### **Tabla: perfil**
+- **Primary Key**: `perfilid` (INTEGER)
+- **Campos**: 
+  - `perfil` (VARCHAR) - "Administrador", "Supervisor", "Técnico", "Operador"
+  - `nivel` (VARCHAR) - "Alto", "Medio", "Bajo"
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Referenciada por `usuarioperfil.perfilid` y `perfilumbral.perfilid`
+
+#### **Tabla: usuario**
+- **Primary Key**: `usuarioid` (INTEGER)
+- **Campos**: 
+  - `firstname` (VARCHAR) - Nombre del usuario
+  - `lastname` (VARCHAR) - Apellido del usuario
+  - `login` (VARCHAR) - Email único del usuario
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+  - `auth_user_id` (UUID) - ID de autenticación de Supabase
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Referenciada por `usuarioperfil.usuarioid`, `contacto.usuarioid`, `audit_log_umbral.usuarioid`, `alerta.usuarioid`
+
+#### **Tabla: usuarioperfil**
+- **Primary Key**: NO TIENE (tabla de relación pura)
+- **Foreign Keys**: 
+  - `usuarioid` → `usuario.usuarioid`
+  - `perfilid` → `perfil.perfilid`
+- **Campos**: `statusid` (INTEGER, default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Tabla de relación muchos a muchos entre usuarios y perfiles
+
+#### **Tabla: contacto**
+- **Primary Key**: `contactoid` (INTEGER)
+- **Foreign Keys**: 
+  - `usuarioid` → `usuario.usuarioid`
+  - `medioid` → `medio.medioid`
+- **Campos**: 
+  - `celular` (VARCHAR) - Número de teléfono (nullable)
+  - `correo` (VARCHAR) - Dirección de email (nullable)
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Conecta usuarios con sus medios de contacto
+
+#### **Tabla: mensaje**
+- **Primary Key**: `alertaid` (BIGINT)
+- **Foreign Keys**: 
+  - `contactoid` → `contacto.contactoid`
+- **Campos**: 
+  - `mensaje` (TEXT) - Contenido del mensaje de alerta
+  - `fecha` (TIMESTAMP WITH TIME ZONE) - Fecha del mensaje (default: now())
+  - `statusid` (INTEGER) - Estado del registro (default: -1)
+- **Audit Fields**: `usercreatedid`, `datecreated`
+- **Relaciones**: Referenciada por `alerta.alertaid`
+
+#### **Tabla: umbral**
+- **Primary Key**: `umbralid` (BIGINT)
+- **Foreign Keys**: 
+  - `ubicacionid` → `ubicacion.ubicacionid`
+  - `criticidadid` → `criticidad.criticidadid`
+  - `nodoid` → `nodo.nodoid`
+  - `metricaid` → `metrica.metricaid`
+  - `tipoid` → `tipo.tipoid`
+- **Campos**: 
+  - `umbral` (VARCHAR) - Nombre del umbral (ej: "Temperatura", "Humedad", "pH")
+  - `maximo` (DOUBLE PRECISION) - Valor máximo permitido
+  - `minimo` (DOUBLE PRECISION) - Valor mínimo permitido
+  - `statusid` (INTEGER) - Estado del registro (default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Referenciada por `perfilumbral.umbralid` y `alerta.umbralid`
+
+#### **Tabla: perfilumbral**
+- **Primary Key**: NO TIENE (tabla de relación pura)
+- **Foreign Keys**: 
+  - `perfilid` → `perfil.perfilid`
+  - `umbralid` → `umbral.umbralid`
+- **Campos**: `statusid` (INTEGER, default: 1)
+- **Audit Fields**: `usercreatedid`, `datecreated`, `usermodifiedid`, `datemodified`
+- **Relaciones**: Define qué perfiles reciben alertas de qué umbrales
+
+#### **Tabla: audit_log_umbral**
+- **Primary Key**: `auditid` (BIGINT)
+- **Foreign Keys**: 
+  - `umbralid` → `umbral.umbralid`
+  - `modified_by` → `usuario.usuarioid`
+- **Campos**: 
+  - `accion` (VARCHAR) - "CREAR", "ACTUALIZAR", "ELIMINAR"
+  - `old_minimo` (DOUBLE PRECISION) - Valor mínimo anterior
+  - `new_minimo` (DOUBLE PRECISION) - Valor mínimo nuevo
+  - `old_maximo` (DOUBLE PRECISION) - Valor máximo anterior
+  - `new_maximo` (DOUBLE PRECISION) - Valor máximo nuevo
+  - `old_criticidadid` (INTEGER) - Criticidad anterior
+  - `new_criticidadid` (INTEGER) - Criticidad nueva
+  - `modified_at` (TIMESTAMP) - Fecha y hora del cambio (default: CURRENT_TIMESTAMP)
+- **Relaciones**: Registra todos los cambios en umbrales con valores específicos
+
+#### **Tabla: alerta**
+- **Primary Key**: `alertaid` (BIGINT)
+- **Foreign Keys**: 
+  - `umbralid` → `umbral.umbralid`
+  - `medicionid` → `medicion.medicionid`
+- **Campos**: 
+  - `fecha` (TIMESTAMP WITH TIME ZONE) - Cuándo se generó la alerta (default: now())
+  - `statusid` (INTEGER) - Estado del registro (default: -1)
+- **Audit Fields**: `usercreatedid`, `datecreated`
+- **Relaciones**: Registra alertas generadas cuando mediciones superan umbrales
+
+## 🔒 CONSTRAINTS Y VALIDACIONES
+
+### **CONSTRAINTS DE INTEGRIDAD REFERENCIAL**
+- Todas las foreign keys tienen CASCADE UPDATE
+- NO DELETE CASCADE (por seguridad)
+- Campos de estado referencian tabla de estados
+
+### **CONSTRAINTS DE VALIDACIÓN**
+- `umbral.minimo < umbral.maximo`
+- `alerta.medicionid` debe referenciar medición válida
+- `contacto.celular` o `contacto.correo` debe estar presente
+- `audit_log_umbral.old_*` y `new_*` deben ser consistentes
+
+### **CONSTRAINTS DE UNICIDAD (VERIFICADOS)**
+- `usuario.login` debe ser único
+- `nodo.deveui` debe ser único
+- `umbral.umbralid` es PRIMARY KEY (SERIAL) - NO hay constraint único en (metricaid, tipoid)
+- `perfilumbral.perfilid + perfilumbral.umbralid` es PRIMARY KEY compuesta
+- `contacto.usuarioid + medioid` debe ser único por medio
+- `medicion.ubicacionid + nodoid + tipoid + fecha + metricaid` es UNIQUE (unq_medicion)
+
+## 📊 FLUJO DE DATOS Y LÓGICA DE NEGOCIO
+
+### **1. FLUJO DE MONITOREO**
+```
+medicion → comparar con umbral → generar alerta → notificar usuarios
+```
+
+### **2. FLUJO DE NOTIFICACIONES**
+```
+medicion → umbral → alerta → perfilumbral → usuario → contacto → medio → envío
+```
+
+### **3. FLUJO DE AUDITORÍA**
+```
+cambio en umbral → audit_log_umbral → historial completo
+```
+
+## 🚨 CONSIDERACIONES DE IMPLEMENTACIÓN
+
+### **PERFORMANCE**
+- Índices en campos de búsqueda frecuente
+- Particionamiento de tablas de mediciones por fecha
+- Cache de umbrales activos en memoria
+
+### **ESCALABILIDAD**
+- Tablas de mediciones pueden crecer exponencialmente
+- Sistema de archivo de datos históricos
+- Compresión de datos antiguos
+
+### **SEGURIDAD**
+- RLS habilitado en todas las tablas
+- Audit trail completo de cambios
+- Validación de entrada en todos los campos
+
+### **MANTENIMIENTO**
+- Limpieza automática de alertas resueltas antiguas
+- Backup automático de configuraciones críticas
+- Monitoreo de salud del sistema
+
+## 🎯 ESTADO ACTUAL DEL SISTEMA (ACTUALIZADO)
+
+### **✅ IMPLEMENTADO Y FUNCIONANDO**
+- **Trigger de alertas**: Funciona correctamente para nodos con umbrales configurados
+- **Sistema de umbrales**: Configurado para nodos 1, 7 (parcialmente)
+- **Generación de alertas**: 2 alertas generadas exitosamente
+- **Análisis de nodos activos**: 3 nodos activos identificados (2, 6, 7)
+
+### **📊 NODOS ACTIVOS IDENTIFICADOS**
+- **Nodo 2**: Ubicación 2, Métricas 1,2,3, Tipo 1 (SIN umbrales)
+- **Nodo 6**: Ubicación 3, Métricas 1,2,3, Tipos 1,3 (SIN umbrales)  
+- **Nodo 7**: Ubicación 4, Métricas 1,2,3, Tipos 1,3 (CON umbrales parciales)
+
+### **⚠️ PENDIENTE DE IMPLEMENTACIÓN**
+- **Umbrales para nodos 2 y 6**: Necesarios para cobertura completa
+- **Umbrales Tipo 3 para nodo 7**: Completar configuración
+- **Sistema de notificaciones**: Configurar usuarios y contactos
+- **Pruebas con múltiples nodos**: Validar funcionamiento completo
+
+### **🔧 ESTRUCTURA REAL VERIFICADA**
+- **Tablas de referencia**: `nodo`, `ubicacion`, `metrica`, `tipo` (nombres correctos)
+- **Constraints únicos**: `umbral.umbralid` (PK), `perfilumbral(perfilid, umbralid)` (PK compuesta)
+- **Constraint medición**: `unq_medicion` en (ubicacionid, nodoid, tipoid, fecha, metricaid)
+- **Audit fields**: Todos los campos NOT NULL requieren valores por defecto
+
+## 🎯 PRÓXIMOS PASOS TÉCNICOS
+
+### **1. COMPLETAR UMBRALES PARA NODOS ACTIVOS** ✅ EN PROGRESO
+- Crear umbrales para nodo 2 (ubicación 2, métricas 1,2,3, tipo 1)
+- Crear umbrales para nodo 6 (ubicación 3, métricas 1,2,3, tipos 1,3)
+- Completar umbrales para nodo 7 (agregar tipo 3)
+
+### **2. PRUEBAS DEL SISTEMA COMPLETO**
+- Probar trigger con nodos 2 y 6
+- Verificar generación de alertas para todos los nodos activos
+- Validar funcionamiento con diferentes métricas y tipos
+
+### **3. CONFIGURACIÓN DE NOTIFICACIONES**
+- Crear usuarios y perfiles de prueba
+- Configurar contactos y medios de comunicación
+- Probar envío de mensajes de alerta
+
+### **4. OPTIMIZACIÓN Y MONITOREO**
+- Revisar performance del trigger
+- Implementar monitoreo de salud del sistema
+- Configurar alertas de sistema
