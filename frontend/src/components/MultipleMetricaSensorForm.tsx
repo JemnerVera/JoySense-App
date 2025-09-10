@@ -96,6 +96,36 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     };
   }, []);
 
+  // Limpiar estados locales cuando se desmonta el componente
+  React.useEffect(() => {
+    return () => {
+      // Limpiar estados locales al desmontar
+      setNodosDropdownOpen(false);
+      setEntidadDropdownOpen(false);
+      setMetricasDropdownOpen(false);
+      setNodosSearchTerm('');
+      setEntidadSearchTerm('');
+      setMetricasSearchTerm('');
+      setSelectedMetricasCheckboxes([]);
+      setCombinacionesStatus({});
+    };
+  }, []);
+
+  // Limpiar estados locales cuando cambian las props principales
+  React.useEffect(() => {
+    // Limpiar estados locales cuando se resetean las props
+    if (selectedNodos.length === 0 && selectedEntidad === '') {
+      setNodosDropdownOpen(false);
+      setEntidadDropdownOpen(false);
+      setMetricasDropdownOpen(false);
+      setNodosSearchTerm('');
+      setEntidadSearchTerm('');
+      setMetricasSearchTerm('');
+      setSelectedMetricasCheckboxes([]);
+      setCombinacionesStatus({});
+    }
+  }, [selectedNodos, selectedEntidad]);
+
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
     setSelectedMetricas(selectedMetricasCheckboxes);
@@ -132,7 +162,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     } else {
       setMultipleMetricas([]);
     }
-  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData, getUniqueOptionsForField]);
+  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData]);
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -263,7 +293,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                   .filter(option => 
                     option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                   )
-                  .sort((a, b) => a.label.localeCompare(b.label))
                   .map(option => (
                    <label
                      key={option.value}

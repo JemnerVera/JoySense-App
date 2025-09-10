@@ -425,6 +425,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update'>(propActiveSubTab || 'status');
   
+  // Sincronizar estado local con props
+  useEffect(() => {
+    if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
+      setSelectedTable(propSelectedTable);
+    }
+  }, [propSelectedTable]);
+  
+  useEffect(() => {
+    if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
+      setActiveSubTab(propActiveSubTab);
+    }
+  }, [propActiveSubTab]);
+  
   // Función para manejar el cambio de pestaña y limpiar mensajes
   const handleTabChange = (tab: 'status' | 'insert' | 'update') => {
     setActiveSubTab(tab);
