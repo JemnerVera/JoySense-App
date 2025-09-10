@@ -78,32 +78,32 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
         {/* Primera fila: Ubicación, Nodo, Entidad */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <label className="block text-lg font-bold text-white mb-2">Ubicación</label>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">UBICACIÓN</label>
         <div className="relative dropdown-container">
           <div
             onClick={() => setUbicacionesDropdownOpen(!ubicacionesDropdownOpen)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
           >
-            <span className={selectedUbicaciones.length > 0 ? 'text-white' : 'text-gray-400'}>
+            <span className={selectedUbicaciones.length > 0 ? 'text-white' : 'text-neutral-400'}>
               {selectedUbicaciones.length > 0 
                 ? selectedUbicaciones.map(id => {
                     const ubicacion = ubicacionesData.find(u => u.ubicacionid.toString() === id);
-                    return ubicacion ? ubicacion.ubicacion : id;
+                    return ubicacion ? ubicacion.ubicacion.toUpperCase() : id;
                   }).join(', ')
-                 : 'Seleccionar ubicacion'
+                 : 'SELECCIONAR UBICACIÓN'
               }
             </span>
-            <span className="text-gray-400">▼</span>
+            <span className="text-neutral-400">▼</span>
           </div>
           
           {ubicacionesDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
               {ubicacionesData
                 .sort((a, b) => a.ubicacion.localeCompare(b.ubicacion))
                 .map(ubicacion => (
                   <label
                     key={ubicacion.ubicacionid}
-                    className="flex items-center px-3 py-2 hover:bg-gray-500 cursor-pointer"
+                    className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -115,9 +115,9 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                           setSelectedUbicaciones(selectedUbicaciones.filter(id => id !== ubicacion.ubicacionid.toString()));
                         }
                       }}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
-                    <span className="text-white text-opacity-80 text-sm">{ubicacion.ubicacion}</span>
+                    <span className="text-white text-sm font-mono tracking-wider">{ubicacion.ubicacion.toUpperCase()}</span>
                   </label>
                 ))}
             </div>
@@ -126,32 +126,32 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-lg font-bold text-white mb-2">Nodo</label>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODO</label>
         <div className="relative dropdown-container">
           <div
             onClick={() => setNodosDropdownOpen(!nodosDropdownOpen)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
           >
-            <span className={selectedNodos.length > 0 ? 'text-white' : 'text-gray-400'}>
+            <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
               {selectedNodos.length > 0 
                 ? selectedNodos.map(id => {
                     const nodo = nodosData.find(n => n.nodoid.toString() === id);
-                    return nodo ? nodo.nodo : id;
+                    return nodo ? nodo.nodo.toUpperCase() : id;
                   }).join(', ')
-                 : 'Seleccionar nodo'
+                 : 'SELECCIONAR NODO'
               }
             </span>
-            <span className="text-gray-400">▼</span>
+            <span className="text-neutral-400">▼</span>
           </div>
           
           {nodosDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
               {nodosData
                 .sort((a, b) => a.nodo.localeCompare(b.nodo))
                 .map(nodo => (
                   <label
                     key={nodo.nodoid}
-                    className="flex items-center px-3 py-2 hover:bg-gray-500 cursor-pointer"
+                    className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -163,9 +163,9 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                           setSelectedNodos(selectedNodos.filter(id => id !== nodo.nodoid.toString()));
                         }
                       }}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
-                    <span className="text-white text-opacity-80 text-sm">{nodo.nodo}</span>
+                    <span className="text-white text-sm font-mono tracking-wider">{nodo.nodo.toUpperCase()}</span>
                   </label>
                 ))}
             </div>
@@ -174,32 +174,32 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-lg font-bold text-white mb-2">Entidad</label>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
         <div className="relative dropdown-container">
           <div
             onClick={() => setEntidadesDropdownOpen(!entidadesDropdownOpen)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
           >
-            <span className={selectedEntidades.length > 0 ? 'text-white' : 'text-gray-400'}>
+            <span className={selectedEntidades.length > 0 ? 'text-white' : 'text-neutral-400'}>
               {selectedEntidades.length > 0 
                 ? selectedEntidades.map(id => {
                     const entidad = entidadesData.find(e => e.entidadid.toString() === id);
-                    return entidad ? entidad.entidad : id;
+                    return entidad ? entidad.entidad.toUpperCase() : id;
                   }).join(', ')
-                 : 'Seleccionar entidad'
+                 : 'SELECCIONAR ENTIDAD'
               }
             </span>
-            <span className="text-gray-400">▼</span>
+            <span className="text-neutral-400">▼</span>
           </div>
           
           {entidadesDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
               {entidadesData
                 .sort((a, b) => a.entidad.localeCompare(b.entidad))
                 .map(entidad => (
                   <label
                     key={entidad.entidadid}
-                    className="flex items-center px-3 py-2 hover:bg-gray-500 cursor-pointer"
+                    className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -211,9 +211,9 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
                           setSelectedEntidades(selectedEntidades.filter(id => id !== entidad.entidadid.toString()));
                         }
                       }}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
-                    <span className="text-white text-opacity-80 text-sm">{entidad.entidad}</span>
+                    <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
                   </label>
                 ))}
             </div>
@@ -227,17 +227,17 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           <div></div> {/* Espacio vacío */}
           <div></div> {/* Espacio vacío */}
           <div>
-            <label className="block text-lg font-bold text-white mb-2">Status</label>
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">STATUS</label>
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
                 id="localizacion-status"
                 checked={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.checked)}
-                className="w-5 h-5 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+                className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
               />
-              <span className="text-white">
-                {selectedStatus ? 'Activo' : 'Inactivo'}
+              <span className="text-white font-mono tracking-wider">
+                {selectedStatus ? 'ACTIVO' : 'INACTIVO'}
               </span>
             </div>
           </div>
@@ -246,29 +246,29 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
 
       {/* Vista previa de localizaciones a crear */}
       {multipleLocalizaciones.length > 0 && (
-        <div className="bg-gray-700 rounded-lg p-4">
-          <h4 className="text-lg font-bold text-white mb-4">
-            Localizaciones a crear:
+        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
+            LOCALIZACIONES A CREAR: {multipleLocalizaciones.length} ENTRADAS
           </h4>
           <div className="max-h-60 overflow-y-auto space-y-2">
             {multipleLocalizaciones.map((localizacion, index) => (
-              <div key={index} className="bg-gray-600 rounded-lg p-3">
+              <div key={index} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className="text-green-400 font-bold">#{index + 1}</span>
-                    <span className="text-white text-sm">
-                      Ubicación: {ubicacionesData.find(u => u.ubicacionid.toString() === localizacion.ubicacionid.toString())?.ubicacion || localizacion.ubicacionid}
+                    <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
+                    <span className="text-white text-sm font-mono">
+                      UBICACIÓN: {ubicacionesData.find(u => u.ubicacionid.toString() === localizacion.ubicacionid.toString())?.ubicacion?.toUpperCase() || localizacion.ubicacionid}
                     </span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-white text-sm">
-                      Nodo: {nodosData.find(n => n.nodoid.toString() === localizacion.nodoid.toString())?.nodo || localizacion.nodoid}
+                    <span className="text-neutral-300">|</span>
+                    <span className="text-white text-sm font-mono">
+                      NODO: {nodosData.find(n => n.nodoid.toString() === localizacion.nodoid.toString())?.nodo?.toUpperCase() || localizacion.nodoid}
                     </span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-white text-sm">
-                      Entidad: {entidadesData.find(e => e.entidadid.toString() === localizacion.entidadid.toString())?.entidad || localizacion.entidadid}
+                    <span className="text-neutral-300">|</span>
+                    <span className="text-white text-sm font-mono">
+                      ENTIDAD: {entidadesData.find(e => e.entidadid.toString() === localizacion.entidadid.toString())?.entidad?.toUpperCase() || localizacion.entidadid}
                     </span>
                   </div>
-                  <span className="text-green-400">✓</span>
+                  <span className="text-orange-500">✓</span>
                 </div>
               </div>
             ))}
@@ -281,17 +281,17 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
         <button
           onClick={onInsertLocalizaciones}
           disabled={loading || multipleLocalizaciones.length === 0}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'Guardando...' : `Guardar`}</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>Cancelar</span>
+          <span>CANCELAR</span>
         </button>
       </div>
     </div>

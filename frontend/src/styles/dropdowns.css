@@ -1,28 +1,28 @@
 /* Estilos estandarizados para dropdowns y scrollbars */
 
-/* Scrollbar personalizado para todos los elementos */
+/* Scrollbar personalizado para todos los elementos - Estilo Táctico */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #374151; /* gray-700 */
+  background: #404040; /* neutral-700 */
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #6b7280; /* gray-500 */
+  background: #f97316; /* orange-500 */
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af; /* gray-400 */
+  background: #ea580c; /* orange-600 */
 }
 
 /* Para Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #6b7280 #374151;
+  scrollbar-color: #f97316 #404040;
 }
 
 /* Estilos estandarizados para select elements */

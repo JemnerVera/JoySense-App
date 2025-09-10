@@ -45,7 +45,8 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
 
       // Para tablas que no tienen estos campos directamente, buscar en relaciones
       if (tableName === 'nodo' && (empresaSeleccionada || fundoSeleccionado)) {
-        // Los nodos pueden estar relacionados con empresas/fundos a través de ubicaciones
+        // Los nodos están relacionados con ubicaciones a través de localizacion
+        // Si hay filtros de empresa/fundo, necesitamos verificar las ubicaciones relacionadas
         // Por ahora, si no hay campos directos, no filtrar
         // TODO: Implementar lógica de relaciones si es necesario
       }
@@ -59,6 +60,24 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
       if (tableName === 'metricasensor' && (empresaSeleccionada || fundoSeleccionado)) {
         // Similar a sensor
         // TODO: Implementar lógica de relaciones si es necesario
+      }
+
+      // Para tablas que tienen relaciones directas con entidad
+      if (tableName === 'tipo' && fundoSeleccionado) {
+        // Los tipos están relacionados con entidades, que pueden estar relacionadas con fundos
+        if (row.entidadid) {
+          // Verificar si la entidad pertenece al fundo seleccionado
+          // Esto requeriría datos adicionales de entidades
+        }
+      }
+
+      // Para tablas que tienen relaciones directas con ubicación
+      if (tableName === 'localizacion' && fundoSeleccionado) {
+        // Las localizaciones están relacionadas con ubicaciones, que pertenecen a fundos
+        if (row.ubicacionid) {
+          // Verificar si la ubicación pertenece al fundo seleccionado
+          // Esto requeriría datos adicionales de ubicaciones
+        }
       }
 
       return matches;
