@@ -2843,6 +2843,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
    const [selectedNodosLocalizacion, setSelectedNodosLocalizacion] = useState<string[]>([]);
    const [selectedEntidades, setSelectedEntidades] = useState<string[]>([]);
    
+   // Estados para campos adicionales de localización
+   const [latitud, setLatitud] = useState<string>('');
+   const [longitud, setLongitud] = useState<string>('');
+   const [referencia, setReferencia] = useState<string>('');
+   
    // Estado para detectar si estamos en modo replicación
    const [isReplicateMode, setIsReplicateMode] = useState(false);
 
@@ -3127,9 +3132,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                 ubicacionid: parseInt(ubicacionid),
                 nodoid: parseInt(nodoid),
                 entidadid: parseInt(entidadid),
-                latitud: 0, // Valor por defecto
-                longitud: 0, // Valor por defecto
-                referencia: '', // Valor por defecto
+                latitud: latitud ? parseFloat(latitud) : 0,
+                longitud: longitud ? parseFloat(longitud) : 0,
+                referencia: referencia || '',
                 statusid: selectedStatus ? 1 : 0
               });
             }
@@ -3295,6 +3300,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setSelectedUbicaciones([]);
       setSelectedNodosLocalizacion([]);
       setSelectedEntidades([]);
+      setLatitud('');
+      setLongitud('');
+      setReferencia('');
       
       // Recargar datos
       loadTableData();
@@ -3734,6 +3742,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           setSelectedUbicaciones([]);
                           setSelectedNodosLocalizacion([]);
                           setSelectedEntidades([]);
+                          setLatitud('');
+                          setLongitud('');
+                          setReferencia('');
                         }}
                         paisSeleccionado={paisSeleccionado}
                         empresaSeleccionada={empresaSeleccionada}
@@ -3741,6 +3752,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         paisesData={paisesData}
                         empresasData={empresasData}
                         fundosData={fundosData}
+                        latitud={latitud}
+                        setLatitud={setLatitud}
+                        longitud={longitud}
+                        setLongitud={setLongitud}
+                        referencia={referencia}
+                        setReferencia={setReferencia}
                       />
                     ) : (
                       <div className={`space-y-6 ${

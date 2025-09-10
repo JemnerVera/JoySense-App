@@ -26,6 +26,13 @@ interface MultipleLocalizacionFormProps {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  // Campos adicionales para localización
+  latitud?: string;
+  setLatitud?: (value: string) => void;
+  longitud?: string;
+  setLongitud?: (value: string) => void;
+  referencia?: string;
+  setReferencia?: (value: string) => void;
 }
 
 const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
@@ -52,7 +59,14 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   fundoSeleccionado,
   paisesData,
   empresasData,
-  fundosData
+  fundosData,
+  // Campos adicionales
+  latitud,
+  setLatitud,
+  longitud,
+  setLongitud,
+  referencia,
+  setReferencia
 }) => {
   const [ubicacionesDropdownOpen, setUbicacionesDropdownOpen] = React.useState(false);
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
@@ -167,6 +181,49 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
       
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
+      
+      {/* Campos de coordenadas: Latitud, Longitud, Referencia */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            LATITUD
+          </label>
+          <input
+            type="text"
+            value={latitud || ''}
+            onChange={(e) => setLatitud?.(e.target.value)}
+            placeholder="Ej: -12.0464"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            LONGITUD
+          </label>
+          <input
+            type="text"
+            value={longitud || ''}
+            onChange={(e) => setLongitud?.(e.target.value)}
+            placeholder="Ej: -77.0428"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            REFERENCIA
+          </label>
+          <input
+            type="text"
+            value={referencia || ''}
+            onChange={(e) => setReferencia?.(e.target.value)}
+            placeholder="Ej: Cerca del portón principal"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+      </div>
+      
       {/* Selección de Ubicaciones, Nodos, Entidades y Status */}
       <div className="space-y-6">
         {/* Primera fila: Ubicación, Nodo, Entidad */}
