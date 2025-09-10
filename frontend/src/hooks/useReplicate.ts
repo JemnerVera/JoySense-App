@@ -10,6 +10,7 @@ interface ReplicateOptions {
   tiposData?: any[];
   metricasData?: any[];
   originalTable?: string;
+  selectedEntidad?: string;
   onReplicate: (selectedEntry: any) => void;
 }
 

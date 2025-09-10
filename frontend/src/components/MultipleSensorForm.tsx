@@ -275,6 +275,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
          {/* Botón de replicar */}
          <ReplicateButton
            onClick={onReplicateClick || (() => {})}
+           disabled={!selectedNodo || !selectedEntidad}
          />
          
          <button

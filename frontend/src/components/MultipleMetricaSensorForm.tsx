@@ -400,6 +400,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         {/* Botón de replicar */}
         <ReplicateButton
           onClick={onReplicateClick || (() => {})}
+          disabled={selectedNodos.length === 0 || selectedMetricas.length === 0}
         />
         
         <button

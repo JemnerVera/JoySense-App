@@ -14,6 +14,7 @@ interface ReplicateModalProps {
   tiposData?: any[]; // Datos de tipos para búsquedas
   metricasData?: any[]; // Datos de métricas para búsquedas
   originalTable?: string; // Tabla original que se está replicando
+  selectedEntidad?: string; // Entidad seleccionada para filtrar nodos
 }
 
 const ReplicateModal: React.FC<ReplicateModalProps> = ({
@@ -29,7 +30,8 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
   nodosData = [],
   tiposData = [],
   metricasData = [],
-  originalTable = ''
+  originalTable = '',
+  selectedEntidad
 }) => {
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
 
@@ -40,8 +42,27 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
     }
   }, [isOpen]);
 
-  // Usar todos los datos sin filtrado
-  const filteredData = tableData;
+  // Filtrar datos según la entidad seleccionada para sensores
+  const filteredData = (() => {
+    if (originalTable === 'sensor' && selectedEntidad && tableName === 'nodo') {
+      // Filtrar nodos que tienen sensores con la entidad seleccionada
+      const nodosConEntidad = tableData.filter(nodo => {
+        // Buscar sensores de este nodo que tengan la entidad seleccionada
+        const sensoresDelNodo = relatedData.filter(sensor => sensor.nodoid === nodo.nodoid);
+        return sensoresDelNodo.some(sensor => {
+          const tipo = tiposData.find(t => t.tipoid === sensor.tipoid);
+          return tipo && tipo.entidadid && tipo.entidadid.toString() === selectedEntidad;
+        });
+      });
+      console.log('🔍 Nodos filtrados por entidad:', {
+        selectedEntidad,
+        totalNodos: tableData.length,
+        nodosFiltrados: nodosConEntidad.length
+      });
+      return nodosConEntidad;
+    }
+    return tableData;
+  })();
 
   // Función para obtener los sensores del nodo seleccionado
   const getSensorsForSelectedNode = () => {
@@ -156,7 +177,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-orange-500 font-mono tracking-wider">
-            🔄 REPLICAR {tableName.toUpperCase()}
+            🔄 REPLICAR
           </h3>
           <button
             onClick={onClose}
@@ -173,13 +194,6 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           <label className="block text-sm font-medium text-neutral-300 mb-2 font-mono tracking-wider">
             {originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE (CON SENSORES)' : 'SELECCIONAR NODO'}
           </label>
-          {originalTable === 'sensor' && (
-            <div className="mb-3 p-3 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg">
-              <p className="text-blue-300 text-sm font-mono">
-                💡 Selecciona un nodo que ya tenga sensores configurados para replicar sus tipos al nodo destino.
-              </p>
-            </div>
-          )}
           <select
             value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : ''}
             onChange={(e) => {

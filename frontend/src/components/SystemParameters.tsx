@@ -749,6 +749,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       tiposData: tiposData,
       metricasData: metricasData,
       originalTable: selectedTable, // Pasar la tabla original
+      selectedEntidad: selectedTable === 'sensor' ? selectedEntidad : undefined, // Pasar entidad seleccionada para filtrar nodos
       onReplicate: (entry: any) => {
         if (selectedTable === 'sensor') {
           handleReplicateSensor(entry);
@@ -3723,11 +3724,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            onUpdateAllSensorsNodo={updateAllSensorsNodo}
                            onInsertSensors={handleMultipleSensorInsert}
                            onCancel={() => {
-                             setMultipleSensors([]);
-                             setSelectedNodo('');
-                             setSelectedEntidad('');
-                             setSelectedTipo('');
-                             setSelectedSensorCount(0);
+                             setCancelAction(() => () => {
+                               setMultipleSensors([]);
+                               setSelectedNodo('');
+                               setSelectedEntidad('');
+                               setSelectedTipo('');
+                               setSelectedSensorCount(0);
+                               setMessage(null); // Limpiar mensaje de datos copiados
+                             });
+                             setShowCancelModal(true);
                            }}
                            getUniqueOptionsForField={getUniqueOptionsForField}
                            onReplicateClick={openReplicateModalForTable}
@@ -3755,10 +3760,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           onInitializeMetricas={initializeMultipleMetricas}
                           onInsertMetricas={handleMultipleMetricaInsert}
                           onCancel={() => {
-                            setMultipleMetricas([]);
-                            setSelectedNodos([]);
-                            setSelectedMetricas([]);
-                            setIsReplicateMode(false);
+                            setCancelAction(() => () => {
+                              setMultipleMetricas([]);
+                              setSelectedNodos([]);
+                              setSelectedMetricas([]);
+                              setIsReplicateMode(false);
+                              setMessage(null); // Limpiar mensaje de datos copiados
+                            });
+                            setShowCancelModal(true);
                           }}
                           getUniqueOptionsForField={getUniqueOptionsForField}
                           onReplicateClick={openReplicateModalForTable}
@@ -4317,6 +4326,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           tiposData={replicateOptions.tiposData}
           metricasData={replicateOptions.metricasData}
           originalTable={replicateOptions.originalTable}
+          selectedEntidad={replicateOptions.selectedEntidad}
           loading={loading}
         />
       )}
