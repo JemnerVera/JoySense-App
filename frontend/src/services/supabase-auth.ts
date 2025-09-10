@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { AuthUser, AuthError } from '../types';
 
 // Configuración de Supabase Auth
 const supabaseUrl = 'https://fagswxnjkcavchfrnrhs.supabase.co';
@@ -7,74 +8,42 @@ const supabasePublishableKey = 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
 // Crear cliente de Supabase para autenticación
 export const supabaseAuth = createClient(supabaseUrl, supabasePublishableKey);
 
-// Tipos para autenticación
-export interface AuthUser {
-  id: string;
-  email?: string;
-  user_metadata?: {
-    full_name?: string;
-  };
-}
-
-export interface AuthError {
-  message: string;
-}
-
 // Funciones de autenticación
 export const authService = {
-  // Iniciar sesión con email y contraseña
+  // Iniciar sesión usando el backend (modo desarrollo)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      console.log('🔐 Intentando autenticación con Supabase Auth...');
+      console.log('🔐 Intentando autenticar usuario via backend (modo desarrollo):', email);
       
-      const { data, error } = await supabaseAuth.auth.signInWithPassword({
-        email,
-        password,
+      // Usar el backend para autenticación
+      const backendUrl = (window as any).process?.env?.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${backendUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
       });
 
-      if (error) {
-        console.error('❌ Error de autenticación:', error.message);
-        return { user: null, error: { message: error.message } };
-      }
+      const result = await response.json();
 
-      if (data.user) {
-        console.log('✅ Usuario autenticado:', data.user.email);
-        
-        // Verificar si el usuario existe en auth.users (ya está verificado por Supabase Auth)
-        // No necesitamos verificar tabla sense.usuario porque usamos auth.users directamente
-        console.log('✅ Usuario verificado en auth.users:', data.user.email);
-
-        if (userError || !userData) {
-          console.error('❌ Usuario no encontrado en sense.usuario:', userError);
-          return { 
-            user: null, 
-            error: { message: 'Usuario no autorizado. Contacte al administrador.' } 
-          };
-        }
-
-        if (!userData.activo) {
-          console.error('❌ Usuario inactivo');
-          return { 
-            user: null, 
-            error: { message: 'Usuario inactivo. Contacte al administrador.' } 
-          };
-        }
-
+      if (!response.ok || !result.success) {
+        console.error('❌ Error de autenticación:', result.error);
         return { 
-          user: {
-            id: data.user.id,
-            email: data.user.email || undefined,
-            user_metadata: {
-              full_name: `${userData.nombre} ${userData.apellido}`,
-              rol: userData.rol,
-              usuarioid: userData.usuarioid
-            }
-          }, 
-          error: null 
+          user: null, 
+          error: { message: result.error || 'Error de autenticación' } 
         };
       }
 
-      return { user: null, error: { message: 'No se pudo autenticar el usuario' } };
+      console.log('✅ Usuario autenticado via backend:', email);
+      // Guardar el email en localStorage para uso global
+      localStorage.setItem('userEmail', email);
+      console.log('🔍 Debug - Email guardado en localStorage:', localStorage.getItem('userEmail'));
+      return { 
+        user: result.user, 
+        error: null 
+      };
+
     } catch (error) {
       console.error('❌ Error inesperado durante autenticación:', error);
       return { 
@@ -94,47 +63,11 @@ export const authService = {
     }
   },
 
-  // Obtener usuario actual
+  // Obtener usuario actual (modo desarrollo)
   async getCurrentUser(): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      const { data: { user }, error } = await supabaseAuth.auth.getUser();
-      
-      if (error) {
-        return { user: null, error: { message: error.message } };
-      }
-
-      if (user) {
-        // Verificar si el usuario existe en la tabla sense.usuario
-        const { data: userData, error: userError } = await supabaseAuth
-          .from('usuario')
-          .select('*')
-          .eq('email', user.email)
-          .single();
-
-        if (userError || !userData) {
-          console.error('❌ Usuario no encontrado en sense.usuario:', userError);
-          return { user: null, error: { message: 'Usuario no autorizado' } };
-        }
-
-        if (!userData.activo) {
-          console.error('❌ Usuario inactivo');
-          return { user: null, error: { message: 'Usuario inactivo' } };
-        }
-
-        return { 
-          user: {
-            id: user.id,
-            email: user.email || undefined,
-            user_metadata: {
-              full_name: `${userData.nombre} ${userData.apellido}`,
-              rol: userData.rol,
-              usuarioid: userData.usuarioid
-            }
-          }, 
-          error: null 
-        };
-      }
-
+      // En modo desarrollo, no mantenemos sesiones persistentes
+      // El usuario debe iniciar sesión cada vez
       return { user: null, error: null };
     } catch (error) {
       return { 
@@ -150,8 +83,8 @@ export const authService = {
       if (event === 'SIGNED_IN' && session?.user) {
         callback({
           id: session.user.id,
-          email: session.user.email || undefined,
-          user_metadata: session.user.user_metadata
+          email: session.user.email || '',
+          user_metadata: session.user.user_metadata || {}
         });
       } else if (event === 'SIGNED_OUT') {
         callback(null);

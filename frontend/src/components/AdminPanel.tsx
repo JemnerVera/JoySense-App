@@ -15,7 +15,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [records, setRecords] = useState<any[]>([]);
 
   // Verificar si el usuario es administrador
-  if (!user || user.user_metadata?.rol !== 'admin') {
+  if (!user || (user.user_metadata as any)?.rol !== 'admin') {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -104,7 +104,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value
     }));

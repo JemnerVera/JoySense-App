@@ -111,3 +111,21 @@ export interface ApiResponse<T> {
   data: T;
   error?: string;
 }
+
+// Interfaces para autenticación y usuario
+export interface UserMetadata {
+  full_name?: string;
+  rol?: string;
+  usuarioid?: number;
+  auth_user_id?: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  user_metadata: UserMetadata;
+}
+
+export interface AuthError {
+  message: string;
+}

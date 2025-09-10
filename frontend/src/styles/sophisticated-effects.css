@@ -1,0 +1,43 @@
+/* Sophisticated Effects CSS */
+.sophisticated-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.sophisticated-shadow {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.sophisticated-hover {
+  transition: all 0.3s ease;
+}
+
+.sophisticated-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

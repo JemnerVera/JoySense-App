@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService, AuthUser } from '../services/supabase-auth';
+import { authService } from '../services/supabase-auth';
+import { AuthUser } from '../types';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -24,12 +25,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const { user: currentUser, error } = await authService.getCurrentUser();
         if (error) {
-          console.error('Error checking user:', error.message);
+          // Solo mostrar error si no es por falta de sesión
+          if (!error.message.includes('session missing') && !error.message.includes('Auth session missing')) {
+            console.error('Error checking user:', error.message);
+          }
         } else {
           setUser(currentUser);
         }
-      } catch (error) {
-        console.error('Error checking user:', error);
+      } catch (error: any) {
+        // Solo mostrar error si no es por falta de sesión
+        if (!error?.message?.includes('session missing') && !error?.message?.includes('Auth session missing')) {
+          console.error('Error checking user:', error);
+        }
       } finally {
         setLoading(false);
       }

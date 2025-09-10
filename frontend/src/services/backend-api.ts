@@ -4,7 +4,7 @@ import {
 } from '../types';
 
 // Configuración del Backend API
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+const BACKEND_URL = (typeof window !== 'undefined' && (window as any).process?.env?.REACT_APP_BACKEND_URL) || 'http://localhost:3001/api';
 
 // Cliente para llamadas al backend
 export const backendAPI = {
@@ -21,17 +21,97 @@ export const backendAPI = {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
+  },
+
+  async post(endpoint: string, data: any, token?: string) {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async put(endpoint: string, data: any, token?: string) {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  async delete(endpoint: string, token?: string) {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
   }
 };
 
 // Variable global para el schema a usar
 let currentSchema = 'public';
+let schemaCache: string | null = null;
+let schemaDetectionPromise: Promise<string> | null = null;
 
 // Servicios para JoySense Dashboard usando Backend API
 export class JoySenseService {
   
   // Detectar schema disponible (via Backend API)
   static async detectSchema(): Promise<string> {
+    // Retornar schema en caché si ya fue detectado
+    if (schemaCache) {
+      console.log('📋 Using cached schema:', schemaCache);
+      return schemaCache;
+    }
+
+    // Si ya hay una detección en progreso, esperar a que termine
+    if (schemaDetectionPromise) {
+      console.log('📋 Schema detection already in progress, waiting...');
+      return schemaDetectionPromise;
+    }
+
+    // Crear la promesa de detección
+    schemaDetectionPromise = this.performSchemaDetection();
+    
+    try {
+      const result = await schemaDetectionPromise;
+      return result;
+    } finally {
+      schemaDetectionPromise = null;
+    }
+  }
+
+  private static async performSchemaDetection(): Promise<string> {
     try {
       console.log('🔍 Detectando schema disponible...');
       console.log('🌐 Usando Backend API:', BACKEND_URL);
@@ -45,6 +125,7 @@ export class JoySenseService {
       if (senseResult.available) {
         console.log('✅ Schema "sense" detected and available via Backend API');
         currentSchema = 'sense';
+        schemaCache = 'sense';
         return 'sense';
       }
 
@@ -52,10 +133,12 @@ export class JoySenseService {
       console.error('Sense error:', senseResult.error);
       
       currentSchema = 'public';
+      schemaCache = 'public';
       return 'public'; // Fallback
     } catch (error) {
       console.error('❌ Error detecting schema:', error);
       currentSchema = 'public';
+      schemaCache = 'public';
       return 'public'; // Fallback
     }
   }
@@ -63,6 +146,46 @@ export class JoySenseService {
   // Obtener el prefijo del schema actual
   static getSchemaPrefix(): string {
     return currentSchema === 'sense' ? 'sense.' : 'public.';
+  }
+
+  // Autenticación básica con sense.usuario
+  static async authenticateUser(email: string, password: string): Promise<{ user: any | null; error: string | null }> {
+    try {
+      console.log('🔐 Authenticating user with sense.usuario:', email);
+      
+      // Buscar usuario en sense.usuario
+      const users = await this.getTableData('usuario');
+      console.log('📋 Available users:', users);
+      
+      const user = users.find((u: any) => u.email === email);
+      
+      if (!user) {
+        console.log('❌ User not found in sense.usuario');
+        return { user: null, error: 'Usuario no encontrado' };
+      }
+
+      console.log('✅ User found:', user);
+      
+      // Por el momento, aceptar cualquier contraseña
+      console.log('🔓 Accepting any password for development');
+      
+      console.log('✅ User authenticated successfully');
+      return { 
+        user: {
+          id: user.usuarioid || user.id,
+          email: user.email,
+          user_metadata: {
+            full_name: user.nombre || user.full_name || user.email,
+            rol: user.rol || 'user',
+            usuarioid: user.usuarioid || user.id
+          }
+        }, 
+        error: null 
+      };
+    } catch (error) {
+      console.error('❌ Error authenticating user:', error);
+      return { user: null, error: 'Error de autenticación' };
+    }
   }
 
   // Obtener países disponibles del schema sense
@@ -618,6 +741,115 @@ export class JoySenseService {
       }
     } catch (error) {
       console.error('❌ Error in getTableInfo:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para operaciones CRUD genéricas
+  static async getTableData(tableName: string, limit: number = 100): Promise<any[]> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}?limit=${limit}`;
+      const data = await backendAPI.get(endpoint);
+      return Array.isArray(data) ? data : (data?.data || []);
+    } catch (error) {
+      console.error(`Error in getTableData for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+
+  static async getTableColumns(tableName: string): Promise<any[]> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}/columns`;
+      const data = await backendAPI.get(endpoint);
+      const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
+      
+      // Mapear las columnas del backend al formato esperado por el frontend
+      return rawColumns.map((col: any) => ({
+        columnName: col.column_name,
+        dataType: col.data_type,
+        isNullable: col.is_nullable === 'YES',
+        defaultValue: col.column_default,
+        isIdentity: col.column_default?.includes('nextval') || false,
+        isPrimaryKey: false // Se determinará por separado
+      }));
+    } catch (error) {
+      console.error(`Error in getTableColumns for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async getTableInfoByName(tableName: string): Promise<any> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}/info`;
+      const data = await backendAPI.get(endpoint);
+      return data || {};
+    } catch (error) {
+      console.error(`Error in getTableInfoByName for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async getTableConstraints(tableName: string): Promise<any[]> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}/constraints`;
+      const data = await backendAPI.get(endpoint);
+      return Array.isArray(data) ? data : (data?.constraints || []);
+    } catch (error) {
+      console.error(`Error in getTableConstraints for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async insertTableRow(tableName: string, data: Record<string, any>): Promise<any> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}`;
+      const result = await backendAPI.post(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in insertTableRow for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async updateTableRow(tableName: string, id: string, data: Record<string, any>): Promise<any> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}/${id}`;
+      const result = await backendAPI.put(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in updateTableRow for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async updateTableRowByCompositeKey(tableName: string, compositeKey: Record<string, any>, data: Record<string, any>): Promise<any> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const keyParams = new URLSearchParams(compositeKey).toString();
+      const endpoint = `/sense/${tableName}/composite?${keyParams}`;
+      const result = await backendAPI.put(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in updateTableRowByCompositeKey for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async deleteTableRow(tableName: string, id: string): Promise<any> {
+    try {
+      const schemaPrefix = this.getSchemaPrefix();
+      const endpoint = `/sense/${tableName}/${id}`;
+      const result = await backendAPI.delete(endpoint);
+      return result;
+    } catch (error) {
+      console.error(`Error in deleteTableRow for ${tableName}:`, error);
       throw error;
     }
   }
