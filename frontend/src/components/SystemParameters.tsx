@@ -556,26 +556,24 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Funciones para manejar replicación
   const handleReplicateSensor = (nodo: any) => {
-    // Obtener todos los sensores del nodo seleccionado
+    // Obtener todos los sensores del nodo fuente seleccionado
     const sensoresDelNodo = tableData.filter(sensor => sensor.nodoid === nodo.nodoid);
     
     if (sensoresDelNodo.length > 0) {
-      // Configurar el nodo seleccionado
-      setSelectedNodo(nodo.nodoid.toString());
-      
-      // Configurar la cantidad basada en los sensores encontrados
-      setSelectedSensorCount(sensoresDelNodo.length);
-      
-      // Extraer los tipos únicos de los sensores del nodo
+      // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
+      // Solo extraer los tipos únicos de los sensores del nodo fuente
       const tiposUnicos = Array.from(new Set(sensoresDelNodo.map(sensor => sensor.tipoid)));
       
-      // Inicializar sensores con todos los tipos del nodo seleccionado
-      initializeMultipleSensors(nodo.nodoid.toString(), sensoresDelNodo.length, tiposUnicos);
+      // Configurar la cantidad basada en los tipos únicos encontrados
+      setSelectedSensorCount(tiposUnicos.length);
+      
+      // Inicializar sensores con los tipos del nodo fuente, pero para el nodo destino actual
+      if (selectedNodo) {
+        initializeMultipleSensors(selectedNodo, tiposUnicos.length, tiposUnicos);
+      }
     } else {
-      // Si no hay sensores en el nodo, solo configurar el nodo
-      setSelectedNodo(nodo.nodoid.toString());
-      setSelectedSensorCount(0);
-      setSelectedTipo('');
+      // Si no hay sensores en el nodo fuente, mostrar mensaje
+      setMessage({ type: 'warning', text: 'El nodo seleccionado no tiene sensores para replicar.' });
     }
   };
 

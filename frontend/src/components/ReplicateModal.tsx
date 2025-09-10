@@ -171,8 +171,15 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
         {/* Combobox de selección */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-neutral-300 mb-2 font-mono tracking-wider">
-            SELECCIONAR NODO
+            {originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE (CON SENSORES)' : 'SELECCIONAR NODO'}
           </label>
+          {originalTable === 'sensor' && (
+            <div className="mb-3 p-3 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg">
+              <p className="text-blue-300 text-sm font-mono">
+                💡 Selecciona un nodo que ya tenga sensores configurados para replicar sus tipos al nodo destino.
+              </p>
+            </div>
+          )}
           <select
             value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : ''}
             onChange={(e) => {
@@ -186,7 +193,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
           >
             <option value="" disabled>
-              SELECCIONAR NODO...
+              {originalTable === 'sensor' ? 'SELECCIONAR NODO FUENTE...' : 'SELECCIONAR NODO...'}
             </option>
             {filteredData.map((entry, index) => (
               <option 
@@ -239,37 +246,27 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                 </div>
               )}
 
-        {/* Tabla de sensores del nodo seleccionado */}
+        {/* Tabla de tipos de sensores del nodo seleccionado (solo para sensor) */}
               {selectedEntry && tableName === 'nodo' && originalTable === 'sensor' && (
-                <div className="mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-600">
+                <div className="mb-6 p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
             {getSensorsForSelectedNode().length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-600">
-                      {relatedColumns
-                        .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
-                        .map(col => (
-                          <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium">
-                            {getColumnDisplayName(col.columnName)}
-                          </th>
-                        ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getSensorsForSelectedNode().map((sensor, index) => (
-                      <tr key={index} className="border-b border-neutral-600">
-                        {relatedColumns
-                          .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
-                          .map(col => (
-                            <td key={col.columnName} className="py-2 px-2 text-white">
-                              {formatCellValue(sensor[col.columnName], col.columnName, sensor)}
-                            </td>
-                          ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                <h4 className="text-sm font-medium text-neutral-300 mb-3 font-mono tracking-wider">
+                  TIPOS DE SENSORES A REPLICAR:
+                </h4>
+                <div className="space-y-2">
+                  {Array.from(new Set(getSensorsForSelectedNode().map(sensor => sensor.tipoid)))
+                    .map(tipoid => {
+                      const tipo = tiposData?.find(t => t.tipoid === tipoid);
+                      return (
+                        <div key={tipoid} className="flex items-center px-3 py-2 bg-neutral-700 border border-neutral-500 rounded-lg">
+                          <span className="text-white font-mono text-sm">
+                            {tipo ? tipo.tipo : `Tipo ${tipoid}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             ) : (
               <div className="text-neutral-400 text-sm">
