@@ -398,7 +398,7 @@ const AppContentInternal: React.FC = () => {
   };
 
   const layoutContent = (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+    <div className="h-screen bg-black overflow-hidden">
       {/* Skip Link para accesibilidad */}
       {/* <SkipLink targetId="main-content">Saltar al contenido principal</SkipLink> */}
       
@@ -418,42 +418,55 @@ const AppContentInternal: React.FC = () => {
 
         {/* Área principal con header fijo y contenido scrolleable */}
         <div 
-          className={`${getMainContentClasses(sidebarVisible)} bg-gray-900 flex-1`}
+          className={`${getMainContentClasses(sidebarVisible)} bg-black flex-1`}
           onMouseEnter={handleContentMouseEnter}
           onMouseLeave={handleContentMouseLeave}
         >
         {/* Header fijo (freeze pane) - Solo mostrar si no es ventana de bienvenida */}
         {!showWelcomeIntegrated && (
           <div className="flex-shrink-0">
-            <UserHeader 
-              activeTab={activeTab}
-            authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
-              paises={paises}
-              empresas={empresas}
-            selectedPais={null}
-            selectedEmpresa={null}
-              onPaisChange={handlePaisChange}
-              onEmpresaChange={handleEmpresaChange}
-              onResetFilters={handleDashboardReset}
-              selectedTable={selectedTable}
-              onTableSelect={handleTableSelect}
-              activeSubTab={activeSubTab}
-              onSubTabChange={handleSubTabChange}
-              // Props para el dashboard
-            fundos={fundos}
-            ubicaciones={ubicaciones}
-            entidades={entidades}
-              selectedFundo={dashboardSelectedFundo}
-              selectedEntidad={dashboardSelectedEntidad}
-              selectedUbicacion={dashboardSelectedUbicacion}
-              onFundoChange={handleDashboardFundoChange}
-              onEntidadChange={handleDashboardEntidadChange}
-              onUbicacionChange={handleDashboardUbicacionChange}
-              startDate={dashboardStartDate}
-              endDate={dashboardEndDate}
-              onDateFilter={handleDashboardDateFilter}
-              onDashboardFiltersChange={handleDashboardFiltersChange}
-            />
+            {/* Tactical Header */}
+            <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-neutral-400 font-mono">
+                  JOYSENSE COMMAND / <span className="text-orange-500">{activeTab?.toUpperCase() || 'OVERVIEW'}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-neutral-500 font-mono">
+                  LAST UPDATE: {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
+                </div>
+                <UserHeader 
+                  activeTab={activeTab}
+                  authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
+                  paises={paises}
+                  empresas={empresas}
+                  selectedPais={null}
+                  selectedEmpresa={null}
+                  onPaisChange={handlePaisChange}
+                  onEmpresaChange={handleEmpresaChange}
+                  onResetFilters={handleDashboardReset}
+                  selectedTable={selectedTable}
+                  onTableSelect={handleTableSelect}
+                  activeSubTab={activeSubTab}
+                  onSubTabChange={handleSubTabChange}
+                  // Props para el dashboard
+                  fundos={fundos}
+                  ubicaciones={ubicaciones}
+                  entidades={entidades}
+                  selectedFundo={dashboardSelectedFundo}
+                  selectedEntidad={dashboardSelectedEntidad}
+                  selectedUbicacion={dashboardSelectedUbicacion}
+                  onFundoChange={handleDashboardFundoChange}
+                  onEntidadChange={handleDashboardEntidadChange}
+                  onUbicacionChange={handleDashboardUbicacionChange}
+                  startDate={dashboardStartDate}
+                  endDate={dashboardEndDate}
+                  onDateFilter={handleDashboardDateFilter}
+                  onDashboardFiltersChange={handleDashboardFiltersChange}
+                />
+              </div>
+            </div>
             </div>
         )}
 

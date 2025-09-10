@@ -74,16 +74,19 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
   return (
     <div 
-      className="bg-gray-800 border-r border-gray-700 transition-all duration-300 h-full"
+      className="bg-neutral-900 border-r border-neutral-700 transition-all duration-300 h-full"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Logo - Altura uniforme con header */}
-      <div className="h-14 flex items-center justify-center border-b border-gray-700">
+      {/* Logo - Tactical Style */}
+      <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4">
         {isExpanded ? (
           <div className="flex items-center space-x-3">
             <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
-            <img src="/Logo - texto.png" alt="JoySense" className="h-6" />
+            <div>
+              <h1 className="text-orange-500 font-bold text-lg tracking-wider">JOYSENSE</h1>
+              <p className="text-neutral-500 text-xs">v2.1.7 AGRICULTURAL</p>
+            </div>
           </div>
         ) : (
           <div className="flex justify-center">
@@ -94,35 +97,52 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
       {/* Filtros globales */}
       {isExpanded && (
-        <div className="px-4 py-4 border-b border-gray-700">
+        <div className="px-4 py-4 border-b border-neutral-700">
           <SidebarFilters authToken={authToken} />
         </div>
       )}
 
-      {/* Pestañas principales */}
+      {/* Pestañas principales - Tactical Style */}
       <div className="py-4">
-        {mainTabs.map((tab) => {
-          const isActive = activeTab === tab.id || activeTab.startsWith(tab.id + '-');
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`w-full flex items-center px-4 py-3 text-left transition-all duration-200 ${
-                isActive 
-                  ? `${getActiveTabColor(tab.color)} text-white` 
-                  : `${getTabColor(tab.color)} hover:bg-gray-800`
-              }`}
-            >
-              <div className="flex-shrink-0">
-                {tab.icon}
-              </div>
-              {isExpanded && (
-                <span className="ml-3 font-medium">{tab.label}</span>
-              )}
-            </button>
-          );
-        })}
+        <nav className="space-y-2">
+          {mainTabs.map((tab) => {
+            const isActive = activeTab === tab.id || activeTab.startsWith(tab.id + '-');
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                  isActive
+                    ? "bg-orange-500 text-white"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                }`}
+              >
+                <div className="flex-shrink-0">
+                  {tab.icon}
+                </div>
+                {isExpanded && (
+                  <span className="text-sm font-medium tracking-wider">{tab.label.toUpperCase()}</span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
+
+      {/* System Status - Tactical Style */}
+      {isExpanded && (
+        <div className="mt-8 p-4 bg-neutral-800 border border-neutral-700 rounded mx-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <span className="text-xs text-white font-mono">SYSTEM ONLINE</span>
+          </div>
+          <div className="text-xs text-neutral-500 font-mono">
+            <div>UPTIME: 72:14:33</div>
+            <div>SENSORS: 847 ACTIVE</div>
+            <div>ALERTS: 23 ONGOING</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

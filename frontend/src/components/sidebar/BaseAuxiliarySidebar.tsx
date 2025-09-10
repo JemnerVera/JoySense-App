@@ -19,16 +19,16 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 h-full overflow-visible flex-shrink-0 ${
+      className={`bg-neutral-900 border-r border-neutral-700 transition-all duration-300 h-full overflow-visible flex-shrink-0 ${
         isExpanded ? 'w-64' : 'w-16'
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Título - Altura uniforme con header */}
-      <div className="h-14 flex items-center justify-center border-b border-gray-700">
+      {/* Título - Tactical Style */}
+      <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4">
         {isExpanded ? (
-          <h3 className="text-white font-medium">{title}</h3>
+          <h3 className="text-orange-500 font-bold text-sm tracking-wider">{title.toUpperCase()}</h3>
         ) : (
           <div className="w-8 h-8 flex items-center justify-center">
             {icon}

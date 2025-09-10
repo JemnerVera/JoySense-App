@@ -71,22 +71,22 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
 
   return (
     <div 
-      className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 h-full ${
+      className={`bg-neutral-900 border-r border-neutral-700 transition-all duration-300 h-full ${
         isExpanded ? 'w-64' : 'w-16'
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Título - Altura uniforme con header */}
-      <div className="h-14 flex items-center justify-center border-b border-gray-700">
+      {/* Título - Tactical Style */}
+      <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4">
         {isExpanded && (
-          <h3 className="text-white font-medium">Parámetros</h3>
+          <h3 className="text-orange-500 font-bold text-sm tracking-wider">PARÁMETROS</h3>
         )}
       </div>
       
       {/* Selector de tabla */}
       {isExpanded && (
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-neutral-700">
           <TableSelector
             selectedTable={selectedTable}
             onTableSelect={onTableSelect}
@@ -94,31 +94,31 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
         </div>
       )}
       
-      {/* Subpestañas de parámetros */}
+      {/* Subpestañas de parámetros - Tactical Style */}
       <div className="py-4">
-        {subTabs.map((subTab) => {
-          const isActive = activeSubTab === subTab.id;
-          return (
-                        <button
-                          key={subTab.id}
-                          onClick={() => onSubTabChange(subTab.id)}
-                          className={`w-full flex items-center transition-all duration-200 ${
-                            isExpanded ? 'px-4 py-3 text-left' : 'px-4 py-3 justify-center'
-                          } ${
-                            isActive 
-                              ? 'bg-blue-600 text-white' 
-                              : 'text-gray-300 hover:bg-gray-700'
-                          }`}
-                        >
-              <div className="flex-shrink-0">
-                {subTab.icon}
-              </div>
-              {isExpanded && (
-                <span className="ml-3 font-medium">{subTab.label}</span>
-              )}
-            </button>
-          );
-        })}
+        <nav className="space-y-2">
+          {subTabs.map((subTab) => {
+            const isActive = activeSubTab === subTab.id;
+            return (
+              <button
+                key={subTab.id}
+                onClick={() => onSubTabChange(subTab.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                  isActive
+                    ? "bg-orange-500 text-white"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                }`}
+              >
+                <div className="flex-shrink-0">
+                  {subTab.icon}
+                </div>
+                {isExpanded && (
+                  <span className="text-sm font-medium tracking-wider">{subTab.label.toUpperCase()}</span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );
