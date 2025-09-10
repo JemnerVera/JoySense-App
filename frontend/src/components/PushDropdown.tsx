@@ -61,7 +61,7 @@ const OverlayDropdown: React.FC<OverlayDropdownProps> = ({
       >
         <div className="flex items-center space-x-2">
           <span>{icon}</span>
-          <span className={`truncate ${selectedValue ? 'text-white' : 'text-green-400'}`}>
+          <span className={`truncate font-mono tracking-wider ${selectedValue ? 'text-white' : 'text-neutral-400'}`}>
             {selectedValue || placeholder}
           </span>
         </div>

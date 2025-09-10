@@ -46,12 +46,12 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between font-mono min-w-[150px] ${
+        className={`w-full px-2 py-1.5 bg-neutral-800 border border-neutral-600 rounded-md text-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between font-mono ${
           selectedOption ? 'border-orange-500' : ''
         }`}
       >
         <div className="flex items-center space-x-2 min-w-0 flex-1">
-          {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}
+          {icon && <span className="text-gray-400 flex-shrink-0 w-3 h-3">{icon}</span>}
           <span className={`${selectedOption ? 'text-white' : 'text-neutral-400'} truncate tracking-wider`}>
             {selectedOption ? selectedOption.name.toUpperCase() : placeholder.toUpperCase()}
           </span>
@@ -62,13 +62,13 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
               onClick={handleClear}
               className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </span>
           )}
           <svg 
-            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"

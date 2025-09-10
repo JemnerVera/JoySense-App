@@ -107,17 +107,17 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
           {/* Chips de filtros activos */}
           <div className="flex items-center space-x-2">
             {selectedPaisName && (
-              <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap overflow-hidden max-w-[80px] truncate font-mono tracking-wider">
+              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedPaisName.toUpperCase()}
               </span>
             )}
             {selectedEmpresaName && (
-              <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap overflow-hidden max-w-[80px] truncate font-mono tracking-wider">
+              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedEmpresaName.toUpperCase()}
               </span>
             )}
             {selectedFundoName && (
-              <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap overflow-hidden max-w-[80px] truncate font-mono tracking-wider">
+              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedFundoName.toUpperCase()}
               </span>
             )}
