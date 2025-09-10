@@ -828,6 +828,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     
     // Limpiar estado de métricas múltiples
     setMultipleMetricas([]);
+    setSelectedEntidadMetrica('');
+    setSelectedNodos([]);
+    setSelectedMetricas([]);
+    
+    // Limpiar estado de sensores múltiples
+    setMultipleSensors([]);
+    setSelectedNodo('');
+    setSelectedEntidad('');
+    setSelectedTipo('');
+    setSelectedStatus(true);
+    setSelectedSensorCount(0);
     
     if (onTableSelect) {
       onTableSelect(newTable);

@@ -77,6 +77,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   
   // Estado para métricas seleccionadas con checkboxes
   const [selectedMetricasCheckboxes, setSelectedMetricasCheckboxes] = React.useState<string[]>([]);
+  const [combinacionesStatus, setCombinacionesStatus] = React.useState<{[key: string]: boolean}>({});
 
   // Cerrar dropdowns cuando se hace clic fuera
   React.useEffect(() => {
@@ -116,11 +117,12 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         
         selectedNodos.forEach((nodoId) => {
           tiposDisponibles.forEach((tipo) => {
+            const key = `${nodoId}-${metricaId}-${tipo.value}`;
             combinaciones.push({
               nodoid: parseInt(nodoId),
               metricaid: parseInt(metricaId),
               tipoid: parseInt(tipo.value),
-              statusid: selectedStatus ? 1 : 0
+              statusid: combinacionesStatus[key] !== false ? 1 : 0 // Por defecto true (activo)
             });
           });
         });
@@ -130,7 +132,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     } else {
       setMultipleMetricas([]);
     }
-  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, selectedStatus, metricasData, getUniqueOptionsForField]);
+  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData, getUniqueOptionsForField]);
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -226,7 +228,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Selección de Nodos, Entidad y Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS:</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => setNodosDropdownOpen(!nodosDropdownOpen)}
@@ -315,7 +317,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD:</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
            <div className="relative dropdown-container">
              <div
                onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
@@ -374,21 +376,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
          </div>
        </div>
 
-         <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">STATUS:</label>
-        <div className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            id="metrica-status"
-            checked={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.checked)}
-            className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-          />
-          <label htmlFor="metrica-status" className="text-white text-lg font-medium font-mono tracking-wider">
-            ACTIVO
-          </label>
-        </div>
-       </div>
 
 
 
@@ -399,7 +386,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
           {/* Container 1: Métricas disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              📊 MÉTRICAS DISPONIBLES
+              MÉTRICAS DISPONIBLES
             </h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad })
@@ -431,9 +418,9 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
           {/* Container 2: Combinatoria de sensores por métrica */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              🔗 COMBINATORIA DE SENSORES
+              SENSORES CON METRICAS GENERADOS
             </h4>
-            <div className="max-h-60 overflow-y-auto space-y-2">
+            <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
               {selectedMetricasCheckboxes.length > 0 ? (
                 (() => {
                   // Generar todas las combinaciones: nodo + métrica + tipo
@@ -442,6 +429,9 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                     nodo: string;
                     metrica: string;
                     tipo: string;
+                    nodoid: string;
+                    metricaid: string;
+                    tipoid: string;
                   }> = [];
                   let contador = 1;
                   
@@ -459,25 +449,55 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                           id: contador++,
                           nodo: nodo?.nodo || nodoId,
                           metrica: metrica?.metrica || 'N/A',
-                          tipo: tipo.label
+                          tipo: tipo.label,
+                          nodoid: nodoId,
+                          metricaid: metricaId,
+                          tipoid: tipo.value.toString()
                         });
                       });
                     });
                   });
                   
-                  return combinaciones.map((combinacion) => (
-                    <div key={`${combinacion.nodo}-${combinacion.metrica}-${combinacion.tipo}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-orange-500 font-bold font-mono">#{combinacion.id}</span>
-                          <span className="text-white text-sm font-mono">
-                            {combinacion.nodo} | {combinacion.metrica} | {combinacion.tipo}
-                          </span>
-                        </div>
-                        <span className="text-orange-500">✓</span>
+                  // Agrupar por tipo y reordenar
+                  const combinacionesAgrupadas = combinaciones.sort((a, b) => {
+                    // Primero ordenar por tipo, luego por métrica
+                    if (a.tipo !== b.tipo) {
+                      return a.tipo.localeCompare(b.tipo);
+                    }
+                    return a.metrica.localeCompare(b.metrica);
+                  });
+                  
+                  return (
+                    <>
+                      <div className="text-sm text-neutral-400 font-mono mb-2">
+                        ({combinacionesAgrupadas.length} entradas)
                       </div>
-                    </div>
-                  ));
+                      {combinacionesAgrupadas.map((combinacion, index) => (
+                        <div key={`${combinacion.nodo}-${combinacion.metrica}-${combinacion.tipo}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
+                              <span className="text-white text-sm font-mono">
+                                {combinacion.nodo} | {combinacion.metrica} | {combinacion.tipo}
+                              </span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={combinacionesStatus[`${combinacion.nodoid}-${combinacion.metricaid}-${combinacion.tipoid}`] !== false}
+                              className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                              onChange={(e) => {
+                                const key = `${combinacion.nodoid}-${combinacion.metricaid}-${combinacion.tipoid}`;
+                                setCombinacionesStatus(prev => ({
+                                  ...prev,
+                                  [key]: e.target.checked
+                                }));
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  );
                 })()
               ) : (
                 <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
@@ -519,3 +539,4 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 };
 
 export default MultipleMetricaSensorForm;
+
