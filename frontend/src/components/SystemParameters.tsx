@@ -1364,7 +1364,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       if (selectedTable === 'ubicacion') {
         filteredData = {
           ubicacion: preparedData.ubicacion,
-          ubicacionabrev: preparedData.ubicacionabrev,
           fundoid: preparedData.fundoid,
           statusid: preparedData.statusid,
           usercreatedid: preparedData.usercreatedid,
@@ -2476,11 +2475,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['empresaid', 'fundo', 'farmabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['empresaid', 'fundo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'ubicacion') {
-        return ['fundoid', 'ubicacion', 'ubicacionabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'entidad') {
@@ -3746,6 +3745,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         getUniqueOptionsForField={getUniqueOptionsForField}
                           onPasteFromClipboard={handlePasteFromClipboardForInsert}
                         onReplicateClick={openReplicateModalForTable}
+                        paisSeleccionado={paisSeleccionado}
+                        empresaSeleccionada={empresaSeleccionada}
+                        fundoSeleccionado={fundoSeleccionado}
+                        paisesData={paisesData}
+                        empresasData={empresasData}
+                        fundosData={fundosData}
                       />
                       </div>
                     )}

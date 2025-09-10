@@ -14,6 +14,14 @@ interface NormalInsertFormProps {
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   onPasteFromClipboard?: () => void;
   onReplicateClick?: () => void;
+  // Filtros globales para contextualizar
+  paisSeleccionado?: string;
+  empresaSeleccionada?: string;
+  fundoSeleccionado?: string;
+  // Datos para mostrar nombres en lugar de IDs
+  paisesData?: any[];
+  empresasData?: any[];
+  fundosData?: any[];
 }
 
 const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
@@ -27,8 +35,91 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   getColumnDisplayName,
   getUniqueOptionsForField,
   onPasteFromClipboard,
-  onReplicateClick
+  onReplicateClick,
+  paisSeleccionado,
+  empresaSeleccionada,
+  fundoSeleccionado,
+  paisesData,
+  empresasData,
+  fundosData
 }) => {
+
+  // Función para obtener el nombre de un país por ID
+  const getPaisName = (paisId: string) => {
+    console.log('🔍 getPaisName Debug:', { paisId, paisesData: paisesData?.length });
+    const pais = paisesData?.find(p => p.paisid.toString() === paisId);
+    return pais ? pais.pais : `País ${paisId}`;
+  };
+
+  // Función para obtener el nombre de una empresa por ID
+  const getEmpresaName = (empresaId: string) => {
+    const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
+    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
+  };
+
+  // Función para obtener el nombre de un fundo por ID
+  const getFundoName = (fundoId: string) => {
+    const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
+    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
+  };
+
+  // Función para renderizar fila contextual con filtros globales
+  const renderContextualRow = (fields: string[]) => {
+    console.log('🔍 renderContextualRow Debug:', {
+      selectedTable,
+      fields,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado
+    });
+    
+    const contextualFields = fields.map(field => {
+      if (field === 'pais' && paisSeleccionado) {
+        return (
+          <div key="pais-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+              PAÍS
+            </label>
+            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              {getPaisName(paisSeleccionado)}
+            </div>
+          </div>
+        );
+      } else if (field === 'empresa' && empresaSeleccionada) {
+        return (
+          <div key="empresa-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+              EMPRESA
+            </label>
+            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              {getEmpresaName(empresaSeleccionada)}
+            </div>
+          </div>
+        );
+      } else if (field === 'fundo' && fundoSeleccionado) {
+        return (
+          <div key="fundo-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+              FUNDO
+            </label>
+            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              {getFundoName(fundoSeleccionado)}
+            </div>
+          </div>
+        );
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (contextualFields.length > 0) {
+      return (
+        <div key="contextual-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {contextualFields}
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Función para renderizar campos con layout específico
   const renderSpecialLayoutFields = (): React.ReactNode[] => {
@@ -42,8 +133,18 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       return renderUbicacionFields();
     } else if (selectedTable === 'localizacion') {
       return renderLocalizacionFields();
+    } else if (selectedTable === 'entidad') {
+      return renderEntidadFields();
     } else if (selectedTable === 'tipo') {
       return renderTipoFields();
+    } else if (selectedTable === 'nodo') {
+      return renderNodoFields();
+    } else if (selectedTable === 'sensor') {
+      return renderSensorFields();
+    } else if (selectedTable === 'metricasensor') {
+      return renderSensorMetricaFields();
+    } else if (selectedTable === 'metrica') {
+      return renderMetricaFields();
     } else if (selectedTable === 'usuario') {
       return renderStatusRightFields();
     } else {
@@ -150,6 +251,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderFundoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    // Fila contextual: País (si hay filtro global)
+    const contextualRow = renderContextualRow(['pais']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
     // Primera fila: Empresa, Fundo, Abreviatura
     const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
     const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
@@ -184,17 +291,22 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderUbicacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Primera fila: Fundo, Ubicación, Abreviatura
+    // Fila contextual: País, Empresa (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Primera fila: Fundo, Ubicación (sin abreviatura - columna eliminada por DBA)
     const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacion');
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'ubicacionabrev');
     
-    if (fundoField || ubicacionField || abreviaturaField) {
+    if (fundoField || ubicacionField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {fundoField && renderField(fundoField)}
           {ubicacionField && renderField(ubicacionField)}
-          {abreviaturaField && renderField(abreviaturaField)}
+          <div></div> {/* Espacio vacío para mantener grid de 3 columnas */}
         </div>
       );
     }
@@ -218,6 +330,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderTipoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
     // Primera fila: Entidad, Tipo, Status
     const entidadField = visibleColumns.find(c => c.columnName === 'entidadid');
     const tipoField = visibleColumns.find(c => c.columnName === 'tipo');
@@ -229,6 +347,127 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           {entidadField && renderField(entidadField)}
           {tipoField && renderField(tipoField)}
           {statusField && renderField(statusField)}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
+  // Función para renderizar campos de Entidad con layout específico
+  const renderEntidadFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Primera fila: Entidad, Status
+    const entidadField = visibleColumns.find(c => c.columnName === 'entidad');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    
+    if (entidadField || statusField) {
+      result.push(
+        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {entidadField && renderField(entidadField)}
+          <div></div> {/* Espacio vacío */}
+          {statusField && renderField(statusField)}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
+  // Función para renderizar campos de Nodo con layout específico
+  const renderNodoFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Renderizar el resto de campos normalmente
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    if (otherFields.length > 0) {
+      result.push(
+        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {otherFields.map(col => renderField(col))}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
+  // Función para renderizar campos de Sensor con layout específico
+  const renderSensorFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    // Relación: sensor -> nodo -> localizacion -> ubicacion -> fundo -> empresa -> pais
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Renderizar el resto de campos normalmente
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    if (otherFields.length > 0) {
+      result.push(
+        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {otherFields.map(col => renderField(col))}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
+  // Función para renderizar campos de Sensor Metrica con layout específico
+  const renderSensorMetricaFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    // Relación: metricasensor -> nodo -> localizacion -> ubicacion -> fundo -> empresa -> pais
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Renderizar el resto de campos normalmente
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    if (otherFields.length > 0) {
+      result.push(
+        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {otherFields.map(col => renderField(col))}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
+  // Función para renderizar campos de Metrica con layout específico
+  const renderMetricaFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
+    // Renderizar el resto de campos normalmente
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    if (otherFields.length > 0) {
+      result.push(
+        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {otherFields.map(col => renderField(col))}
         </div>
       );
     }
@@ -272,6 +511,21 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderLocalizacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    console.log('🔍 renderLocalizacionFields Debug:', {
+      selectedTable,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado
+    });
+    
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    // Relación: localizacion -> ubicacion -> fundo -> empresa -> pais
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    console.log('🔍 contextualRow result:', contextualRow);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
     // Primera fila: Entidad, Ubicación, Nodo
     const entidadField = visibleColumns.find(c => c.columnName === 'entidadid');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
@@ -287,11 +541,26 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       );
     }
     
-    // Segunda fila: Status al extremo derecho
+    // Segunda fila: Latitud, Longitud, Referencia
+    const latitudField = visibleColumns.find(c => c.columnName === 'latitud');
+    const longitudField = visibleColumns.find(c => c.columnName === 'longitud');
+    const referenciaField = visibleColumns.find(c => c.columnName === 'referencia');
+    
+    if (latitudField || longitudField || referenciaField) {
+      result.push(
+        <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {latitudField && renderField(latitudField)}
+          {longitudField && renderField(longitudField)}
+          {referenciaField && renderField(referenciaField)}
+        </div>
+      );
+    }
+    
+    // Tercera fila: Status al extremo derecho
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     if (statusField) {
       result.push(
-        <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div></div> {/* Espacio vacío */}
           <div></div> {/* Espacio vacío */}
           {renderField(statusField)}
@@ -852,7 +1121,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
   return (
     <div>
-      {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'tipo', 'umbral'].includes(selectedTable) ? (
+      {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral'].includes(selectedTable) ? (
         <div>
           {renderSpecialLayoutFields()}
         </div>
