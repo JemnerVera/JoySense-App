@@ -143,18 +143,8 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   };
 
   return (
-    <div className={`w-full h-14 flex items-center justify-between px-4 bg-gray-800 border-b border-gray-700 ${
-      theme === 'dark' 
-        ? 'bg-gray-800 border-gray-700' 
-        : 'bg-gray-200 border-gray-300'
-    }`}>
-      {/* Controles específicos de la pestaña */}
-      <div className="flex items-center">
-        {renderTabControls()}
-      </div>
-
-      {/* Controles de usuario */}
-      <UserControls />
+    <div className="flex items-center">
+      {renderTabControls()}
     </div>
   );
 };

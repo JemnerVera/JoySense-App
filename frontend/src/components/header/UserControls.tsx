@@ -42,7 +42,7 @@ export const UserControls: React.FC = () => {
       {/* Botón de cambio de tema */}
       <button
         onClick={toggleTheme}
-        className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-all duration-200 border border-gray-600 shadow-lg hover:shadow-xl hover:scale-105"
+        className="w-10 h-10 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center transition-all duration-200 border border-neutral-600 shadow-lg hover:shadow-xl hover:scale-105"
         aria-label={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
       >
         {theme === 'dark' ? (
@@ -52,7 +52,7 @@ export const UserControls: React.FC = () => {
           </svg>
         ) : (
           // Icono de luna para modo oscuro
-          <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
         )}
@@ -62,7 +62,7 @@ export const UserControls: React.FC = () => {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={toggleDropdown}
-          className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center transition-all duration-200 border border-red-400 shadow-lg hover:shadow-xl hover:scale-105"
+          className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-full flex items-center justify-center transition-all duration-200 border border-orange-400 shadow-lg hover:shadow-xl hover:scale-105"
           aria-label="Menú de usuario"
         >
           <span className="text-white text-sm font-bold">
@@ -72,29 +72,29 @@ export const UserControls: React.FC = () => {
 
         {/* Dropdown del usuario */}
         {isDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-200">
-            <div className="p-4 border-b border-gray-700">
+          <div className="absolute right-0 mt-2 w-64 bg-neutral-900 border border-neutral-700 rounded-lg shadow-2xl z-50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-200">
+            <div className="p-4 border-b border-neutral-700">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold font-mono">
                     {user?.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium truncate">{user?.email}</p>
-                  <p className="text-gray-400 text-xs mt-1">{t('user.session.active')}</p>
+                  <p className="text-white text-sm font-medium truncate font-mono">{user?.email}</p>
+                  <p className="text-neutral-400 text-xs mt-1 font-mono tracking-wider">SESIÓN ACTIVA</p>
                 </div>
               </div>
             </div>
             <div className="p-2">
               <button
                 onClick={handleSignOut}
-                className="w-full p-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center justify-center space-x-2 hover:shadow-lg"
+                className="w-full p-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center justify-center space-x-2 hover:shadow-lg font-mono tracking-wider"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                <span>{t('user.logout')}</span>
+                <span>CERRAR SESIÓN</span>
               </button>
             </div>
           </div>

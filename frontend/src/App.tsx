@@ -18,6 +18,7 @@ import { Pais, Empresa } from './types';
 import { ResponsiveContainer } from './components/ResponsiveDesign';
 import { STYLES_CONFIG } from './config/styles';
 import { UserHeader } from './components/UserHeader';
+import { UserControls } from './components/header/UserControls';
 import { useAppSidebar } from './hooks/useAppSidebar';
 
 const AppContentInternal: React.FC = () => {
@@ -431,40 +432,50 @@ const AppContentInternal: React.FC = () => {
                 <div className="text-sm text-neutral-400 font-mono">
                   JOYSENSE APP / <span className="text-orange-500">{activeTab === 'parameters' ? 'PARÁMETROS' : activeTab?.toUpperCase() || 'OVERVIEW'}</span>
                 </div>
+                
+                {/* Dashboard Filters - Solo mostrar en Dashboard */}
+                {(activeTab === 'dashboard' || activeTab === 'reportes-dashboard') && (
+                  <div className="flex items-center gap-4 ml-8">
+                    <UserHeader 
+                      activeTab={activeTab}
+                      authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
+                      paises={paises}
+                      empresas={empresas}
+                      selectedPais={null}
+                      selectedEmpresa={null}
+                      onPaisChange={handlePaisChange}
+                      onEmpresaChange={handleEmpresaChange}
+                      onResetFilters={handleDashboardReset}
+                      selectedTable={selectedTable}
+                      onTableSelect={handleTableSelect}
+                      activeSubTab={activeSubTab}
+                      onSubTabChange={handleSubTabChange}
+                      // Props para el dashboard
+                      fundos={fundos}
+                      ubicaciones={ubicaciones}
+                      entidades={entidades}
+                      selectedFundo={dashboardSelectedFundo}
+                      selectedEntidad={dashboardSelectedEntidad}
+                      selectedUbicacion={dashboardSelectedUbicacion}
+                      onFundoChange={handleDashboardFundoChange}
+                      onEntidadChange={handleDashboardEntidadChange}
+                      onUbicacionChange={handleDashboardUbicacionChange}
+                      startDate={dashboardStartDate}
+                      endDate={dashboardEndDate}
+                      onDateFilter={handleDashboardDateFilter}
+                      onDashboardFiltersChange={handleDashboardFiltersChange}
+                    />
+                  </div>
+                )}
               </div>
+              
               <div className="flex items-center gap-4">
                 <div className="text-xs text-neutral-500 font-mono">
                   ÚLTIMA ACTUALIZACIÓN: {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
                 </div>
-                <UserHeader 
-                  activeTab={activeTab}
-                  authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
-                  paises={paises}
-                  empresas={empresas}
-                  selectedPais={null}
-                  selectedEmpresa={null}
-                  onPaisChange={handlePaisChange}
-                  onEmpresaChange={handleEmpresaChange}
-                  onResetFilters={handleDashboardReset}
-                  selectedTable={selectedTable}
-                  onTableSelect={handleTableSelect}
-                  activeSubTab={activeSubTab}
-                  onSubTabChange={handleSubTabChange}
-                  // Props para el dashboard
-                  fundos={fundos}
-                  ubicaciones={ubicaciones}
-                  entidades={entidades}
-                  selectedFundo={dashboardSelectedFundo}
-                  selectedEntidad={dashboardSelectedEntidad}
-                  selectedUbicacion={dashboardSelectedUbicacion}
-                  onFundoChange={handleDashboardFundoChange}
-                  onEntidadChange={handleDashboardEntidadChange}
-                  onUbicacionChange={handleDashboardUbicacionChange}
-                  startDate={dashboardStartDate}
-                  endDate={dashboardEndDate}
-                  onDateFilter={handleDashboardDateFilter}
-                  onDashboardFiltersChange={handleDashboardFiltersChange}
-                />
+                
+                {/* User Controls - Siempre visibles */}
+                <UserControls />
               </div>
             </div>
             </div>
