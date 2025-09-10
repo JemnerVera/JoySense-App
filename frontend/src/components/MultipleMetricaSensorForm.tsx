@@ -82,26 +82,26 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Selección de Nodos, Métricas y Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div>
-           <label className="block text-lg font-bold text-white mb-2">Nodos:</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS:</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => setNodosDropdownOpen(!nodosDropdownOpen)}
-             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-green-500 flex justify-between items-center"
+             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
            >
-             <span className={selectedNodos.length > 0 ? 'text-white' : 'text-gray-400'}>
+             <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
                {selectedNodos.length > 0 
                  ? selectedNodos.map(id => {
                      const nodo = nodosData.find(n => n.nodoid.toString() === id);
                      return nodo ? nodo.nodo : id;
                    }).join(', ')
-                 : 'Seleccionar nodo'
+                 : 'SELECCIONAR NODO'
                }
              </span>
-             <span className="text-gray-400">▼</span>
+             <span className="text-neutral-400">▼</span>
            </div>
            
            {nodosDropdownOpen && (
-             <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+             <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                {nodosData
                  .sort((a, b) => a.nodo.localeCompare(b.nodo))
                  .map(nodo => (
@@ -149,26 +149,26 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-white mb-2">Métricas:</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">MÉTRICAS:</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => setMetricasDropdownOpen(!metricasDropdownOpen)}
-             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-green-500 flex justify-between items-center"
+             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
            >
-             <span className={selectedMetricas.length > 0 ? 'text-white' : 'text-gray-400'}>
+             <span className={selectedMetricas.length > 0 ? 'text-white' : 'text-neutral-400'}>
                {selectedMetricas.length > 0 
                  ? selectedMetricas.map(id => {
                      const metrica = metricasData.find(m => m.metricaid.toString() === id);
                      return metrica ? metrica.metrica : id;
                    }).join(', ')
-                 : 'Seleccionar metrica'
+                 : 'SELECCIONAR MÉTRICA'
                }
              </span>
-             <span className="text-gray-400">▼</span>
+             <span className="text-neutral-400">▼</span>
            </div>
            
            {metricasDropdownOpen && (
-             <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+             <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                {metricasData
                  .sort((a, b) => a.metrica.localeCompare(b.metrica))
                  .map(metrica => (
@@ -197,17 +197,17 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-white mb-2">Status:</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">STATUS:</label>
         <div className="flex items-center space-x-3">
           <input
             type="checkbox"
             id="metrica-status"
             checked={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.checked)}
-            className="w-4 h-4 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+            className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
           />
-          <label htmlFor="metrica-status" className="text-white text-lg font-medium">
-            Activo
+          <label htmlFor="metrica-status" className="text-white text-lg font-medium font-mono tracking-wider">
+            ACTIVO
           </label>
         </div>
        </div>
@@ -217,29 +217,29 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 
       {/* Vista previa de métricas a crear */}
       {multipleMetricas.length > 0 && (
-        <div className="bg-gray-700 rounded-lg p-4">
-          <h4 className="text-lg font-bold text-white mb-4">
-            📋 Métricas a crear: {multipleMetricas.length} entradas
+        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
+            📋 MÉTRICAS A CREAR: {multipleMetricas.length} ENTRADAS
           </h4>
           <div className="max-h-60 overflow-y-auto space-y-2">
             {multipleMetricas.map((metrica, index) => (
-              <div key={index} className="bg-gray-600 rounded-lg p-3">
+              <div key={index} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className="text-green-400 font-bold">#{index + 1}</span>
-                    <span className="text-white text-sm">
-                      Nodo: {nodosData.find(n => n.nodoid.toString() === metrica.nodoid.toString())?.nodo || metrica.nodoid}
+                    <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
+                    <span className="text-white text-sm font-mono">
+                      NODO: {nodosData.find(n => n.nodoid.toString() === metrica.nodoid.toString())?.nodo || metrica.nodoid}
                     </span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-white text-sm">
-                      Tipo: {tiposData.find(t => t.tipoid === metrica.tipoid)?.tipo || 'N/A'}
+                    <span className="text-neutral-300">|</span>
+                    <span className="text-white text-sm font-mono">
+                      TIPO: {tiposData.find(t => t.tipoid === metrica.tipoid)?.tipo || 'N/A'}
                     </span>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-white text-sm">
-                      Métrica: {metricasData.find(m => m.metricaid.toString() === metrica.metricaid.toString())?.metrica || 'N/A'}
+                    <span className="text-neutral-300">|</span>
+                    <span className="text-white text-sm font-mono">
+                      MÉTRICA: {metricasData.find(m => m.metricaid.toString() === metrica.metricaid.toString())?.metrica || 'N/A'}
                     </span>
                   </div>
-                  <span className="text-green-400">✓</span>
+                  <span className="text-orange-500">✓</span>
                 </div>
               </div>
             ))}
@@ -252,10 +252,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         <button
           onClick={onInsertMetricas}
           disabled={loading || multipleMetricas.length === 0}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'Guardando...' : 'Guardar'}</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         
         {/* Botón de replicar */}
@@ -265,10 +265,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>Cancelar</span>
+          <span>CANCELAR</span>
         </button>
       </div>
     </div>

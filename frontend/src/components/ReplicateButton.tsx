@@ -9,7 +9,7 @@ interface ReplicateButtonProps {
 const ReplicateButton: React.FC<ReplicateButtonProps> = ({
   onClick,
   disabled = false,
-  className = "px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 shadow-lg"
+  className = "px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors flex items-center space-x-2 font-mono tracking-wider"
 }) => {
   return (
     <button
@@ -19,7 +19,7 @@ const ReplicateButton: React.FC<ReplicateButtonProps> = ({
       title="Replicar una entrada existente. Selecciona una entrada de la lista para copiar sus datos."
     >
       <span>🔄</span>
-      <span>Replicar</span>
+      <span>REPLICAR</span>
     </button>
   );
 };

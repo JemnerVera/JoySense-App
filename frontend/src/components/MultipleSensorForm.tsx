@@ -54,8 +54,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
       {/* Selección de Nodo, Cantidad y Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div>
-           <label className="block text-lg font-bold text-white mb-2">
-             Nodo
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+             NODO
            </label>
            <SelectWithPlaceholder
              value={selectedNodo}
@@ -77,8 +77,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
          </div>
 
          <div>
-           <label className="block text-lg font-bold text-white mb-2">
-             Cantidad
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+             CANTIDAD
            </label>
            <SelectWithPlaceholder
              value={selectedSensorCount}
@@ -99,8 +99,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
          </div>
 
          <div>
-           <label className="block text-lg font-bold text-white mb-2">
-             Status
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+             STATUS
            </label>
            <div className="flex items-center space-x-3 mt-2">
              <input
@@ -108,10 +108,10 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                id="sensor-status"
                checked={selectedStatus}
                onChange={(e) => setSelectedStatus(e.target.checked)}
-               className="w-4 h-4 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+               className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
              />
-             <label htmlFor="sensor-status" className="text-white text-lg font-medium">
-               Activo
+             <label htmlFor="sensor-status" className="text-white text-lg font-medium font-mono tracking-wider">
+               ACTIVO
              </label>
            </div>
          </div>
@@ -119,30 +119,30 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
 
              {/* Vista previa de sensores a crear */}
        {multipleSensors.length > 0 && (
-         <div className="bg-gray-700 rounded-lg p-4">
-           <h4 className="text-lg font-bold text-white mb-4">Sensores a crear:</h4>
+         <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">SENSORES A CREAR:</h4>
            <div className="space-y-4">
              {multipleSensors.map((sensor, index) => (
-               <div key={index} className="bg-gray-600 rounded-lg p-4">
+               <div key={index} className="bg-neutral-700 border border-neutral-600 rounded-lg p-4">
                  <div className="flex items-center justify-between mb-3">
                    <div className="flex items-center space-x-3">
-                     <span className="text-green-400 font-bold">#{sensor.sensorIndex}</span>
-                     <span className="text-white">Sensor {sensor.sensorIndex} para {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || `Nodo ${selectedNodo}`}</span>
+                     <span className="text-orange-500 font-bold font-mono">#{sensor.sensorIndex}</span>
+                     <span className="text-white font-mono">SENSOR {sensor.sensorIndex} PARA {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || `NODO ${selectedNodo}`}</span>
                    </div>
                    <div className="flex items-center space-x-2">
-                     <span className="text-gray-300 text-sm">Nodo: {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || selectedNodo}</span>
+                     <span className="text-neutral-300 text-sm font-mono">NODO: {nodosData.find(n => n.nodoid.toString() === selectedNodo)?.nodo || selectedNodo}</span>
                    </div>
                  </div>
                  
                  {/* Selector de tipo para cada sensor */}
                  <div className="flex items-center space-x-3">
-                   <label className="text-white text-sm font-medium">Tipo:</label>
+                   <label className="text-white text-sm font-medium font-mono tracking-wider">TIPO:</label>
                    <SelectWithPlaceholder
                      value={sensor.tipoid}
                      onChange={(newValue) => onUpdateSensorTipo(sensor.sensorIndex, newValue ? parseInt(newValue.toString()) : 0)}
                      options={tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }))}
                      placeholder="Seleccionar tipo"
-                     className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-white text-opacity-80"
+                     className="flex-1 px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
                    />
                  </div>
                </div>
@@ -156,10 +156,10 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
          <button
            onClick={onInsertSensors}
            disabled={loading || multipleSensors.length === 0 || multipleSensors.some(sensor => !sensor.tipoid)}
-           className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
          >
            <span>➕</span>
-           <span>{loading ? 'Guardando...' : 'Guardar'}</span>
+           <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
          </button>
          
          {/* Botón de replicar */}
@@ -169,10 +169,10 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
          
          <button
            onClick={onCancel}
-           className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+           className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
          >
            <span>❌</span>
-           <span>Cancelar</span>
+           <span>CANCELAR</span>
          </button>
        </div>
     </div>

@@ -808,7 +808,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setMessage(null);
     setUpdateMessage(null); // Limpiar mensajes de actualización al cambiar de tabla
     
-
+    // Limpiar estado de métricas múltiples
+    setMultipleMetricas([]);
     
     if (onTableSelect) {
       onTableSelect(newTable);
