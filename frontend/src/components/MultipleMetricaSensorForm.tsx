@@ -4,6 +4,8 @@ import ReplicateButton from './ReplicateButton';
 interface MultipleMetricaSensorFormProps {
   selectedNodos: string[];
   setSelectedNodos: (value: string[]) => void;
+  selectedEntidad: string;
+  setSelectedEntidad: (value: string) => void;
   selectedMetricas: string[];
   setSelectedMetricas: (value: string[]) => void;
   selectedStatus: boolean;
@@ -11,13 +13,14 @@ interface MultipleMetricaSensorFormProps {
   multipleMetricas: any[];
   setMultipleMetricas: (value: any[]) => void;
   nodosData: any[];
+  entidadesData: any[];
   metricasData: any[];
   tiposData: any[];
   loading: boolean;
   onInitializeMetricas: (nodos: string[], metricas: string[]) => Promise<void>;
   onInsertMetricas: () => void;
   onCancel: () => void;
-  getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
+  getUniqueOptionsForField: (columnName: string, filterParams?: { entidadid?: string }) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
   // Prop para indicar si estamos en modo replicación (solo un nodo)
@@ -35,6 +38,8 @@ interface MultipleMetricaSensorFormProps {
 const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   selectedNodos,
   setSelectedNodos,
+  selectedEntidad,
+  setSelectedEntidad,
   selectedMetricas,
   setSelectedMetricas,
   selectedStatus,
@@ -42,6 +47,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   multipleMetricas,
   setMultipleMetricas,
   nodosData,
+  entidadesData,
   metricasData,
   tiposData,
   loading,
@@ -61,11 +67,16 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   fundosData
 }) => {
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
+  const [entidadDropdownOpen, setEntidadDropdownOpen] = React.useState(false);
   const [metricasDropdownOpen, setMetricasDropdownOpen] = React.useState(false);
   
   // Estados para términos de búsqueda
   const [nodosSearchTerm, setNodosSearchTerm] = React.useState('');
+  const [entidadSearchTerm, setEntidadSearchTerm] = React.useState('');
   const [metricasSearchTerm, setMetricasSearchTerm] = React.useState('');
+  
+  // Estado para métricas seleccionadas con checkboxes
+  const [selectedMetricasCheckboxes, setSelectedMetricasCheckboxes] = React.useState<string[]>([]);
 
   // Cerrar dropdowns cuando se hace clic fuera
   React.useEffect(() => {
@@ -73,6 +84,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       const target = event.target as Element;
       if (!target.closest('.dropdown-container')) {
         setNodosDropdownOpen(false);
+        setEntidadDropdownOpen(false);
         setMetricasDropdownOpen(false);
       }
     };
@@ -82,6 +94,43 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
+  React.useEffect(() => {
+    setSelectedMetricas(selectedMetricasCheckboxes);
+    
+    // Generar las combinaciones para multipleMetricas
+    if (selectedNodos.length > 0 && selectedMetricasCheckboxes.length > 0 && selectedEntidad) {
+      const combinaciones: Array<{
+        nodoid: number;
+        metricaid: number;
+        tipoid: number;
+        statusid: number;
+      }> = [];
+      
+      selectedMetricasCheckboxes.forEach((metricaId) => {
+        const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
+        
+        // Obtener tipos disponibles para la entidad seleccionada
+        const tiposDisponibles = getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad });
+        
+        selectedNodos.forEach((nodoId) => {
+          tiposDisponibles.forEach((tipo) => {
+            combinaciones.push({
+              nodoid: parseInt(nodoId),
+              metricaid: parseInt(metricaId),
+              tipoid: parseInt(tipo.value),
+              statusid: selectedStatus ? 1 : 0
+            });
+          });
+        });
+      });
+      
+      setMultipleMetricas(combinaciones);
+    } else {
+      setMultipleMetricas([]);
+    }
+  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, selectedStatus, metricasData, getUniqueOptionsForField]);
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -174,7 +223,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
 
-      {/* Selección de Nodos, Métricas y Status */}
+      {/* Selección de Nodos, Entidad y Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS:</label>
@@ -266,72 +315,62 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">MÉTRICAS:</label>
-         <div className="relative dropdown-container">
-           <div
-             onClick={() => setMetricasDropdownOpen(!metricasDropdownOpen)}
-             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
-           >
-             <span className={selectedMetricas.length > 0 ? 'text-white' : 'text-neutral-400'}>
-               {selectedMetricas.length > 0 
-                 ? selectedMetricas.map(id => {
-                     const metrica = metricasData.find(m => m.metricaid.toString() === id);
-                     return metrica ? metrica.metrica : id;
-                   }).join(', ')
-                 : 'SELECCIONAR MÉTRICA'
-               }
-             </span>
-             <span className="text-neutral-400">▼</span>
-           </div>
-           
-          {metricasDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-              <div className="p-2 border-b border-neutral-700">
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={metricasSearchTerm}
-                  onChange={(e) => setMetricasSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {getUniqueOptionsForField('metricaid')
-                  .filter(option => 
-                    option.label.toLowerCase().includes(metricasSearchTerm.toLowerCase())
-                  )
-                  .sort((a, b) => a.label.localeCompare(b.label))
-                  .map(option => (
-                   <label
-                     key={option.value}
-                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
-                   >
-                     <input
-                       type="checkbox"
-                       checked={selectedMetricas.includes(option.value.toString())}
-                       onChange={(e) => {
-                         if (e.target.checked) {
-                           setSelectedMetricas([...selectedMetricas, option.value.toString()]);
-                         } else {
-                           setSelectedMetricas(selectedMetricas.filter(id => id !== option.value.toString()));
-                         }
-                       }}
-                       className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                     />
-                     <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
-                   </label>
-                 ))}
-                 {getUniqueOptionsForField('metricaid').filter(option => 
-                   option.label.toLowerCase().includes(metricasSearchTerm.toLowerCase())
-                 ).length === 0 && (
-                   <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                     NO SE ENCONTRARON RESULTADOS
-                   </div>
-                 )}
-               </div>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD:</label>
+           <div className="relative dropdown-container">
+             <div
+               onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
+               className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
+             >
+               <span className={selectedEntidad ? 'text-white' : 'text-neutral-400'}>
+                 {selectedEntidad 
+                   ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
+                   : 'SELECCIONAR ENTIDAD'
+                 }
+               </span>
+               <span className="text-neutral-400">▼</span>
              </div>
-           )}
+             
+            {entidadDropdownOpen && (
+              <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+                <div className="p-2 border-b border-neutral-700">
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={entidadSearchTerm}
+                    onChange={(e) => setEntidadSearchTerm(e.target.value)}
+                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <div className="max-h-32 overflow-y-auto custom-scrollbar">
+                  {entidadesData
+                    .filter(entidad => 
+                      entidad.entidad.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                    )
+                    .map((entidad, index) => (
+                     <div
+                       key={index}
+                       onClick={() => {
+                         setSelectedEntidad(entidad.entidadid.toString());
+                         setEntidadDropdownOpen(false);
+                         setEntidadSearchTerm('');
+                       }}
+                       className="px-3 py-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                     >
+                       <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
+                     </div>
+                   ))}
+                   {entidadesData.filter(entidad => 
+                     entidad.entidad.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                   ).length === 0 && (
+                     <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                       NO SE ENCONTRARON RESULTADOS
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
+           </div>
          </div>
        </div>
 
@@ -350,38 +389,102 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
           </label>
         </div>
        </div>
-      </div>
 
 
 
-      {/* Vista previa de métricas a crear */}
-      {multipleMetricas.length > 0 && (
-        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
-          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-            📋 MÉTRICAS A CREAR: {multipleMetricas.length} ENTRADAS
-          </h4>
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {multipleMetricas.map((metrica, index) => (
-              <div key={index} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
-                    <span className="text-white text-sm font-mono">
-                      NODO: {nodosData.find(n => n.nodoid.toString() === metrica.nodoid.toString())?.nodo || metrica.nodoid}
-                    </span>
-                    <span className="text-neutral-300">|</span>
-                    <span className="text-white text-sm font-mono">
-                      TIPO: {tiposData.find(t => t.tipoid === metrica.tipoid)?.tipo || 'N/A'}
-                    </span>
-                    <span className="text-neutral-300">|</span>
-                    <span className="text-white text-sm font-mono">
-                      MÉTRICA: {metricasData.find(m => m.metricaid.toString() === metrica.metricaid.toString())?.metrica || 'N/A'}
-                    </span>
-                  </div>
-                  <span className="text-orange-500">✓</span>
+      {/* Nuevo diseño: 2 containers lado a lado */}
+      {selectedNodos.length > 0 && selectedEntidad && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Container 1: Métricas disponibles con checkboxes */}
+          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
+              📊 MÉTRICAS DISPONIBLES
+            </h4>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad })
+                .map((option) => (
+                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedMetricasCheckboxes.includes(option.value.toString())}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedMetricasCheckboxes([...selectedMetricasCheckboxes, option.value.toString()]);
+                        } else {
+                          setSelectedMetricasCheckboxes(selectedMetricasCheckboxes.filter(id => id !== option.value.toString()));
+                        }
+                      }}
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    />
+                    <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                  </label>
+                ))}
+              {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length === 0 && (
+                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                  NO HAY MÉTRICAS DISPONIBLES PARA ESTA ENTIDAD
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+          </div>
+
+          {/* Container 2: Combinatoria de sensores por métrica */}
+          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
+              🔗 COMBINATORIA DE SENSORES
+            </h4>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {selectedMetricasCheckboxes.length > 0 ? (
+                (() => {
+                  // Generar todas las combinaciones: nodo + métrica + tipo
+                  const combinaciones: Array<{
+                    id: number;
+                    nodo: string;
+                    metrica: string;
+                    tipo: string;
+                  }> = [];
+                  let contador = 1;
+                  
+                  selectedMetricasCheckboxes.forEach((metricaId) => {
+                    const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
+                    
+                    // Obtener tipos disponibles para la entidad seleccionada
+                    const tiposDisponibles = getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad });
+                    
+                    selectedNodos.forEach((nodoId) => {
+                      const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
+                      
+                      tiposDisponibles.forEach((tipo) => {
+                        combinaciones.push({
+                          id: contador++,
+                          nodo: nodo?.nodo || nodoId,
+                          metrica: metrica?.metrica || 'N/A',
+                          tipo: tipo.label
+                        });
+                      });
+                    });
+                  });
+                  
+                  return combinaciones.map((combinacion) => (
+                    <div key={`${combinacion.nodo}-${combinacion.metrica}-${combinacion.tipo}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-orange-500 font-bold font-mono">#{combinacion.id}</span>
+                          <span className="text-white text-sm font-mono">
+                            {combinacion.nodo} | {combinacion.metrica} | {combinacion.tipo}
+                          </span>
+                        </div>
+                        <span className="text-orange-500">✓</span>
+                      </div>
+                    </div>
+                  ));
+                })()
+              ) : (
+                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                  SELECCIONA MÉTRICAS PARA VER LA COMBINATORIA
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

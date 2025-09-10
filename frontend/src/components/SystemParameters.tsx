@@ -2871,6 +2871,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
            // Estados para creación múltiple de métricas sensor
    const [multipleMetricas, setMultipleMetricas] = useState<any[]>([]);
    const [selectedNodos, setSelectedNodos] = useState<string[]>([]);
+   const [selectedEntidadMetrica, setSelectedEntidadMetrica] = useState<string>('');
    const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
 
       // Estados para creación múltiple de localizaciones
@@ -3747,6 +3748,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                                                          <MultipleMetricaSensorForm
                           selectedNodos={selectedNodos}
                           setSelectedNodos={setSelectedNodos}
+                          selectedEntidad={selectedEntidadMetrica}
+                          setSelectedEntidad={setSelectedEntidadMetrica}
                           selectedMetricas={selectedMetricas}
                           setSelectedMetricas={setSelectedMetricas}
                           selectedStatus={selectedStatus}
@@ -3754,6 +3757,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           multipleMetricas={multipleMetricas}
                           setMultipleMetricas={setMultipleMetricas}
                           nodosData={nodosData}
+                          entidadesData={entidadesData}
                           metricasData={metricasData}
                           tiposData={tiposData}
                           loading={loading}
@@ -3763,6 +3767,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                             setCancelAction(() => () => {
                               setMultipleMetricas([]);
                               setSelectedNodos([]);
+                              setSelectedEntidadMetrica('');
                               setSelectedMetricas([]);
                               setIsReplicateMode(false);
                               setMessage(null); // Limpiar mensaje de datos copiados
