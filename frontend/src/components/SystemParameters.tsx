@@ -3250,7 +3250,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       {/* Modal de confirmación para cambio de tabla */}
       {pendingTableChange && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 bg-opacity-90 rounded-xl border border-gray-700 border-opacity-50 p-6 w-full max-w-md">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md">
             <div className="text-center">
               <div className="mb-4">
                 <div className="w-16 h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -3304,7 +3304,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             <div className="space-y-8">
                              {/* Estado de la tabla */}
                {activeSubTab === 'status' && (
-                 <div className="bg-gray-800 bg-opacity-50 rounded-xl border border-gray-700 p-6">
+                 <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                    
                    {tableInfo && (
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -3367,14 +3367,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
                        {/* Tabla con datos */}
                        <div className="overflow-x-auto -mx-2 sm:mx-0">
-                         <table className="w-full text-sm text-left text-gray-300">
-                           <thead className="text-xs text-gray-400 bg-gray-700">
+                         <table className="w-full text-sm text-left text-neutral-300">
+                           <thead className="text-xs text-neutral-400 bg-neutral-800">
                              <tr>
                                {visibleColumns.map(col => {
                                  const displayName = getColumnDisplayName(col.columnName);
                                  return displayName ? (
-                                   <th key={col.columnName} className="px-6 py-3">
-                                     {displayName}
+                                   <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
+                                     {displayName.toUpperCase()}
                                    </th>
                                  ) : null;
                                })}
@@ -3382,11 +3382,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            </thead>
                            <tbody>
                              {getStatusPaginatedData().map((row, index) => (
-                               <tr key={index} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700">
+                               <tr key={index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800">
                                  {visibleColumns.map(col => {
                                    const displayName = getColumnDisplayName(col.columnName);
                                    return displayName ? (
-                                     <td key={col.columnName} className="px-6 py-4 text-xs">
+                                     <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
                                        {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
                                          ? getUserName(row[col.columnName])
                                          : col.columnName === 'statusid'
@@ -3436,7 +3436,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
                                                            {/* Formulario de inserción */}
                 {activeSubTab === 'insert' && (
-                  <div className="bg-gray-800 bg-opacity-50 rounded-xl border border-gray-700 p-6">
+                  <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                     {/* Mensaje de registros insertados */}
                     <InsertionMessage
                       insertedRecords={insertedRecords}
@@ -3780,7 +3780,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                    {!selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
                      <>
                                               {/* Búsqueda simple - Igual que en "Estado" */}
-                        <div className="bg-gray-800 bg-opacity-50 rounded-xl border border-gray-700 p-6">
+                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                           <div className="space-y-4">
                             {/* Barra de búsqueda simple como en "Estado" */}
                             <div className="relative">
@@ -3802,7 +3802,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
                         {/* Botones de selección múltiple para sensor y metricasensor - Solo mostrar cuando hay selecciones */}
                         {(selectedTable === 'sensor' || selectedTable === 'metricasensor') && selectedRowsForManualUpdate.length > 0 && (
-                          <div className="bg-gray-800 bg-opacity-50 rounded-xl border border-gray-700 p-4">
+                          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4">
                             <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                               <button
                                 onClick={handleGoToManualUpdateForm}
@@ -3821,7 +3821,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         )}
 
                        {/* Tabla de datos para actualizar - Usando la misma lógica que "Estado" */}
-                       <div className="bg-gray-800 bg-opacity-50 rounded-xl border border-gray-700 p-6">
+                       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                          <div className="overflow-x-auto -mx-2 sm:mx-0">
                            {updateData.length > 0 ? (
                              <table className="w-full text-sm text-left text-gray-300">
@@ -3885,7 +3885,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      {visibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
-                                         <td key={col.columnName} className="px-6 py-4 text-xs">
+                                         <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
                                            {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
                                              ? getUserName(row[col.columnName])
                                              : col.columnName === 'statusid'
@@ -3954,7 +3954,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       {/* Modal de confirmación para cancelar */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 bg-opacity-90 rounded-xl border border-gray-700 border-opacity-50 p-6 w-full max-w-md">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md">
             <div className="text-center">
               <div className="mb-4">
                 <div className="w-16 h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">

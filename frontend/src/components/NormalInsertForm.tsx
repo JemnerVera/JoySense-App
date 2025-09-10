@@ -833,8 +833,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campo de texto normal
           return (
             <div key={col.columnName} className="mb-4">
-              <label className="block text-lg font-bold text-white mb-2">
-                {displayName}
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                {displayName.toUpperCase()}
               </label>
               <input
                 type="text"
@@ -843,8 +843,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                   ...formData,
                   [col.columnName]: e.target.value
                 })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-white text-opacity-80 placeholder-gray-400 placeholder-opacity-60"
-                placeholder={`Ingrese ${displayName.toLowerCase()}`}
+                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
+                placeholder={`INGRESE ${displayName.toUpperCase()}`}
               />
             </div>
           );
@@ -866,10 +866,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
         <button
           onClick={onInsert}
           disabled={loading}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'Guardando...' : 'Guardar'}</span>
+          <span>{loading ? 'SAVING...' : 'SAVE'}</span>
         </button>
         
         {/* Botón de replicar para nodo */}
@@ -881,18 +881,18 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
         
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>Cancelar</span>
+          <span>CANCEL</span>
         </button>
         
         {selectedTable === 'sensor' && onPasteFromClipboard && (
           <button
             onClick={onPasteFromClipboard}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider"
           >
-            Pegar desde portapapeles
+            PASTE FROM CLIPBOARD
           </button>
         )}
       </div>

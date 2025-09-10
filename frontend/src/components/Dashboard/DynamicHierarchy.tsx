@@ -106,8 +106,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-400">Cargando datos del dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+          <p className="text-neutral-400 font-mono">LOADING DASHBOARD DATA...</p>
         </div>
       </div>
     );
@@ -118,8 +118,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="text-red-500 text-lg font-semibold mb-2">Error</div>
-          <p className="text-gray-400">{error}</p>
+          <div className="text-red-500 text-lg font-semibold mb-2 font-mono">ERROR</div>
+          <p className="text-neutral-400 font-mono">{error}</p>
         </div>
       </div>
     );
@@ -139,9 +139,9 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="bg-red-500 bg-opacity-20 border border-red-500 border-opacity-30 rounded-lg p-6 max-w-md">
-            <h3 className="text-xl font-semibold text-white mb-2">{missingFilter}</h3>
-            <p className="text-gray-300 text-sm">Usa los filtros del header para continuar</p>
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md">
+            <h3 className="text-xl font-semibold text-orange-500 mb-2 font-mono tracking-wider">{missingFilter.toUpperCase()}</h3>
+            <p className="text-neutral-300 text-sm font-mono">USE HEADER FILTERS TO CONTINUE</p>
           </div>
         </div>
       </div>
@@ -154,8 +154,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-xl font-semibold text-white mb-2">No hay datos disponibles</h3>
-          <p className="text-gray-400">No se encontraron mediciones para los filtros seleccionados</p>
+          <h3 className="text-xl font-semibold text-white mb-2 font-mono tracking-wider">NO DATA AVAILABLE</h3>
+          <p className="text-neutral-400 font-mono">NO MEASUREMENTS FOUND FOR SELECTED FILTERS</p>
         </div>
       </div>
     );
@@ -163,8 +163,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Botones de Métricas */}
-      <div className="bg-gray-800 rounded-lg p-4">
+      {/* Botones de Métricas - Tactical Style */}
+      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4">
         <div className="flex flex-wrap gap-2 justify-center">
           {metricas
             .filter(metrica => {
@@ -175,20 +175,20 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
             <button
               key={metrica.metricaid}
               onClick={() => setSelectedMetrica(metrica.metricaid)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors font-mono tracking-wider ${
                 selectedMetrica === metrica.metricaid
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 border border-neutral-600'
               }`}
             >
-              {metrica.metrica}
+              {metrica.metrica.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Gráficos */}
-      <div className="bg-gray-800 rounded-lg p-6">
+      {/* Gráficos - Tactical Style */}
+      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
         <SeparateCharts
           mediciones={mediciones}
           loading={loading}

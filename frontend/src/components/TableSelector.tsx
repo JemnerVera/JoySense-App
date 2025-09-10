@@ -135,11 +135,11 @@ const TableSelector: React.FC<TableSelectorProps> = ({
         {/* Botón principal */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="standard-dropdown w-full flex items-center justify-between hover:bg-gray-600 transition-colors"
+          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-neutral-700 transition-colors flex items-center justify-between font-mono"
         >
           <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <span className={`${selectedOption ? 'text-white' : 'standard-placeholder'} truncate`}>
-              {selectedOption ? selectedOption.label : 'Seleccionar'}
+            <span className={`${selectedOption ? 'text-white' : 'text-neutral-400'} truncate tracking-wider`}>
+              {selectedOption ? selectedOption.label.toUpperCase() : 'SELECCIONAR'}
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -166,15 +166,15 @@ const TableSelector: React.FC<TableSelectorProps> = ({
 
         {/* Dropdown */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
             {/* Barra de búsqueda */}
-            <div className="p-2 border-b border-gray-600">
+            <div className="p-2 border-b border-neutral-700">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="SEARCH..."
+                className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
                 autoFocus
               />
             </div>
@@ -187,15 +187,15 @@ const TableSelector: React.FC<TableSelectorProps> = ({
                     key={table.value}
                     onClick={() => !table.disabled && handleSelect(table.value)}
                     disabled={table.disabled}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
                       table.disabled 
-                        ? 'text-gray-400 bg-gray-700 cursor-not-allowed' 
+                        ? 'text-neutral-400 bg-neutral-800 cursor-not-allowed' 
                         : selectedOption?.value === table.value 
-                          ? 'standard-dropdown-option-selected' 
-                          : 'standard-dropdown-option'
+                          ? 'bg-orange-500 text-white' 
+                          : 'text-neutral-300 hover:bg-neutral-800'
                     }`}
                   >
-                    {table.label}
+                    {table.label.toUpperCase()}
                   </button>
                 ))
               ) : (
