@@ -475,16 +475,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setStatusCurrentPage(1);
   }, [filteredTableData, itemsPerPage]);
 
-  // Aplicar filtros globales a updateData
-  const filteredUpdateData = useGlobalFilterEffect({
-    tableName: selectedTable,
-    data: updateData
-  });
-
-  // Actualizar updateFilteredData cuando cambien los filtros globales
-  useEffect(() => {
-    setUpdateFilteredData(filteredUpdateData);
-  }, [filteredUpdateData]);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -510,6 +500,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [updateFilteredData, setUpdateFilteredData] = useState<any[]>([]);
   const [searchField, setSearchField] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Aplicar filtros globales a updateData
+  const filteredUpdateData = useGlobalFilterEffect({
+    tableName: selectedTable,
+    data: updateData
+  });
+
+  // Actualizar updateFilteredData cuando cambien los filtros globales
+  useEffect(() => {
+    setUpdateFilteredData(filteredUpdateData);
+  }, [filteredUpdateData]);
   const [selectedRowForUpdate, setSelectedRowForUpdate] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
   const [updateLoading, setUpdateLoading] = useState(false);
