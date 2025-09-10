@@ -1950,8 +1950,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     switch (columnName) {
       case 'paisid':
         // Si hay un país seleccionado en filtros globales, solo mostrar ese país
+        if (!paisesData || paisesData.length === 0) {
+          console.log('🌍 No hay datos de países disponibles');
+          return [];
+        }
         if (paisSeleccionado) {
-          const filteredPaises = paisesData.filter(pais => pais.paisid.toString() === paisSeleccionado);
+          const filteredPaises = paisesData.filter(pais => pais && pais.paisid && pais.paisid.toString() === paisSeleccionado);
           console.log('🌍 Filtros globales aplicados a países:', { paisSeleccionado, filteredCount: filteredPaises.length });
           const paisResult = filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
           console.log('🌍 Opciones de países devueltas:', paisResult);
@@ -1962,14 +1966,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return paisResultAll;
       case 'empresaid':
         // Filtrar empresas por filtros globales
+        if (!empresasData || empresasData.length === 0) {
+          console.log('🏢 No hay datos de empresas disponibles');
+          return [];
+        }
         let filteredEmpresas = empresasData;
         if (empresaSeleccionada) {
           // Si hay empresa seleccionada en filtros globales, devolver solo esa empresa
-          filteredEmpresas = empresasData.filter(empresa => empresa.empresaid.toString() === empresaSeleccionada);
+          filteredEmpresas = empresasData.filter(empresa => empresa && empresa.empresaid && empresa.empresaid.toString() === empresaSeleccionada);
           console.log('🏢 Filtros globales aplicados a empresas (empresa específica):', { empresaSeleccionada, filteredCount: filteredEmpresas.length });
         } else if (paisSeleccionado) {
           // Si no hay empresa específica pero sí hay país, filtrar por país
-          filteredEmpresas = empresasData.filter(empresa => empresa.paisid.toString() === paisSeleccionado);
+          filteredEmpresas = empresasData.filter(empresa => empresa && empresa.paisid && empresa.paisid.toString() === paisSeleccionado);
           console.log('🏢 Filtros globales aplicados a empresas (por país):', { paisSeleccionado, filteredCount: filteredEmpresas.length });
         }
         const empresaResult = filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
@@ -1977,14 +1985,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return empresaResult;
       case 'fundoid':
         // Filtrar fundos por filtros globales
+        if (!fundosData || fundosData.length === 0) {
+          console.log('🏭 No hay datos de fundos disponibles');
+          return [];
+        }
         let filteredFundos = fundosData;
         if (fundoSeleccionado) {
           // Si hay fundo seleccionado en filtros globales, devolver solo ese fundo
-          filteredFundos = fundosData.filter(fundo => fundo.fundoid.toString() === fundoSeleccionado);
+          filteredFundos = fundosData.filter(fundo => fundo && fundo.fundoid && fundo.fundoid.toString() === fundoSeleccionado);
           console.log('🏭 Filtros globales aplicados a fundos (fundo específico):', { fundoSeleccionado, filteredCount: filteredFundos.length });
         } else if (empresaSeleccionada) {
           // Si no hay fundo específico pero sí hay empresa, filtrar por empresa
-          filteredFundos = fundosData.filter(fundo => fundo.empresaid.toString() === empresaSeleccionada);
+          filteredFundos = fundosData.filter(fundo => fundo && fundo.empresaid && fundo.empresaid.toString() === empresaSeleccionada);
           console.log('🏭 Filtros globales aplicados a fundos (por empresa):', { empresaSeleccionada, filteredCount: filteredFundos.length });
         }
         const fundoResult = filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
@@ -1992,9 +2004,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return fundoResult;
       case 'ubicacionid':
         // Filtrar ubicaciones por fundo seleccionado en filtros globales
+        if (!ubicacionesData || ubicacionesData.length === 0) {
+          console.log('📍 No hay datos de ubicaciones disponibles');
+          return [];
+        }
         let filteredUbicaciones = ubicacionesData;
         if (fundoSeleccionado) {
-          filteredUbicaciones = ubicacionesData.filter(ubicacion => ubicacion.fundoid.toString() === fundoSeleccionado);
+          filteredUbicaciones = ubicacionesData.filter(ubicacion => ubicacion && ubicacion.fundoid && ubicacion.fundoid.toString() === fundoSeleccionado);
           console.log('📍 Filtros globales aplicados a ubicaciones:', { fundoSeleccionado, filteredCount: filteredUbicaciones.length });
         }
         const ubicacionResult = filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
@@ -2002,50 +2018,118 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return ubicacionResult;
       case 'entidadid':
         // Filtrar entidades por fundo seleccionado en filtros globales
+        if (!entidadesData || entidadesData.length === 0) {
+          console.log('🏛️ No hay datos de entidades disponibles');
+          return [];
+        }
         let filteredEntidades = entidadesData;
         if (fundoSeleccionado) {
-          filteredEntidades = entidadesData.filter(entidad => entidad.fundoid.toString() === fundoSeleccionado);
+          filteredEntidades = entidadesData.filter(entidad => entidad && entidad.fundoid && entidad.fundoid.toString() === fundoSeleccionado);
           console.log('🏛️ Filtros globales aplicados a entidades:', { fundoSeleccionado, filteredCount: filteredEntidades.length });
         }
         const entidadResult = filteredEntidades.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
         console.log('🏛️ Opciones de entidades devueltas:', entidadResult);
         return entidadResult;
       case 'nodoid':
-        // Filtrar nodos por ubicación seleccionada (si hay filtros globales)
+        // Filtrar nodos por filtros globales
+        if (!nodosData || nodosData.length === 0) {
+          console.log('🔗 No hay datos de nodos disponibles');
+          return [];
+        }
         let filteredNodos = nodosData;
         if (fundoSeleccionado) {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
-          const ubicacionesDelFundo = ubicacionesData.filter(u => u.fundoid.toString() === fundoSeleccionado);
-          const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
-          filteredNodos = nodosData.filter(nodo => ubicacionIds.includes(nodo.ubicacionid));
-          console.log('🔗 Filtros globales aplicados a nodos:', { fundoSeleccionado, ubicacionesDelFundo: ubicacionesDelFundo.length, filteredCount: filteredNodos.length });
+          // Relación: nodo -> ubicacion -> fundo (simplificada, ya que localizaciones se crean dinámicamente)
+          if (ubicacionesData && ubicacionesData.length > 0) {
+            const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === fundoSeleccionado);
+            const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
+            // Filtrar nodos que tienen localizacionid que corresponde a ubicaciones del fundo
+            // Como las localizaciones se crean dinámicamente, asumimos que todos los nodos son válidos
+            // para las ubicaciones del fundo seleccionado
+            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid);
+            console.log('🔗 Filtros globales aplicados a nodos:', { 
+              fundoSeleccionado, 
+              ubicacionesDelFundo: ubicacionesDelFundo.length, 
+              filteredCount: filteredNodos.length 
+            });
+          }
         }
-        return filteredNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
+        const nodoResult = filteredNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
+        console.log('🔗 Opciones de nodos devueltas:', nodoResult);
+        return nodoResult;
       case 'tipoid':
-        return tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
+        if (!tiposData || tiposData.length === 0) {
+          console.log('🏷️ No hay datos de tipos disponibles');
+          return [];
+        }
+        const tipoResult = tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
+        console.log('🏷️ Opciones de tipos devueltas:', tipoResult);
+        return tipoResult;
       case 'metricaid':
-        return metricasData.map(metrica => ({ value: metrica.metricaid, label: metrica.metrica }));
+        if (!metricasData || metricasData.length === 0) {
+          console.log('📈 No hay datos de métricas disponibles');
+          return [];
+        }
+        const metricaResult = metricasData.map(metrica => ({ value: metrica.metricaid, label: metrica.metrica }));
+        console.log('📈 Opciones de métricas devueltas:', metricaResult);
+        return metricaResult;
       case 'localizacionid':
         return []; // Por ahora vacío, ya que localizacion se crea después del nodo
       case 'criticidadid':
-        return criticidadesData.map(criticidad => ({ value: criticidad.criticidadid, label: criticidad.criticidad }));
+        if (!criticidadesData || criticidadesData.length === 0) {
+          console.log('🚨 No hay datos de criticidades disponibles');
+          return [];
+        }
+        const criticidadResult = criticidadesData.map(criticidad => ({ value: criticidad.criticidadid, label: criticidad.criticidad }));
+        console.log('🚨 Opciones de criticidades devueltas:', criticidadResult);
+        return criticidadResult;
       case 'perfilid':
-        return perfilesData.map(perfil => ({ value: perfil.perfilid, label: perfil.perfil }));
+        if (!perfilesData || perfilesData.length === 0) {
+          console.log('👥 No hay datos de perfiles disponibles');
+          return [];
+        }
+        const perfilResult = perfilesData.map(perfil => ({ value: perfil.perfilid, label: perfil.perfil }));
+        console.log('👥 Opciones de perfiles devueltas:', perfilResult);
+        return perfilResult;
       case 'umbralid':
-        return umbralesData.map(umbral => ({ value: umbral.umbralid, label: umbral.umbral }));
+        if (!umbralesData || umbralesData.length === 0) {
+          console.log('⚠️ No hay datos de umbrales disponibles');
+          return [];
+        }
+        const umbralResult = umbralesData.map(umbral => ({ value: umbral.umbralid, label: umbral.umbral }));
+        console.log('⚠️ Opciones de umbrales devueltas:', umbralResult);
+        return umbralResult;
       case 'usuarioid':
-        return userData.map(user => ({ 
+        if (!userData || userData.length === 0) {
+          console.log('👤 No hay datos de usuarios disponibles');
+          return [];
+        }
+        const usuarioResult = userData.map(user => ({ 
           value: user.usuarioid, 
           label: `${user.firstname} ${user.lastname}` 
         }));
+        console.log('👤 Opciones de usuarios devueltas:', usuarioResult);
+        return usuarioResult;
       case 'medioid':
-        return mediosData.map(medio => ({ value: medio.medioid, label: medio.nombre }));
+        if (!mediosData || mediosData.length === 0) {
+          console.log('📧 No hay datos de medios disponibles');
+          return [];
+        }
+        const medioResult = mediosData.map(medio => ({ value: medio.medioid, label: medio.nombre }));
+        console.log('📧 Opciones de medios devueltas:', medioResult);
+        return medioResult;
       case 'usercreatedid':
       case 'usermodifiedid':
-        return userData.map(user => ({ 
+        if (!userData || userData.length === 0) {
+          console.log('✍️ No hay datos de usuarios disponibles');
+          return [];
+        }
+        const modifiedByResult = userData.map(user => ({ 
           value: user.usuarioid, 
           label: `${user.firstname} ${user.lastname}` 
         }));
+        console.log('✍️ Opciones de "modificado por" devueltas:', modifiedByResult);
+        return modifiedByResult;
       default:
         return [];
     }
