@@ -43,7 +43,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
     }
   }, [isOpen]);
 
-  // Filtrar datos según la entidad seleccionada para sensores
+  // Filtrar datos según la entidad seleccionada para sensores y métricas sensor
   const filteredData = (() => {
     if (originalTable === 'sensor' && selectedEntidad && tableName === 'nodo') {
       // Filtrar nodos que tienen sensores con la entidad seleccionada
@@ -55,13 +55,32 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           return tipo && tipo.entidadid && tipo.entidadid.toString() === selectedEntidad;
         });
       });
-      console.log('🔍 Nodos filtrados por entidad:', {
+      console.log('🔍 Nodos filtrados por entidad (sensor):', {
         selectedEntidad,
         totalNodos: tableData.length,
         nodosFiltrados: nodosConEntidad.length
       });
       return nodosConEntidad;
     }
+    
+    if (originalTable === 'metricasensor' && selectedEntidad && tableName === 'nodo') {
+      // Filtrar nodos que tienen métricas sensor con la entidad seleccionada
+      const nodosConMetricasEntidad = tableData.filter(nodo => {
+        // Buscar métricas sensor de este nodo que tengan la entidad seleccionada
+        const metricasDelNodo = relatedData.filter(ms => ms.nodoid === nodo.nodoid);
+        return metricasDelNodo.some(ms => {
+          const tipo = tiposData.find(t => t.tipoid === ms.tipoid);
+          return tipo && tipo.entidadid && tipo.entidadid.toString() === selectedEntidad;
+        });
+      });
+      console.log('🔍 Nodos filtrados por entidad (metricasensor):', {
+        selectedEntidad,
+        totalNodos: tableData.length,
+        nodosFiltrados: nodosConMetricasEntidad.length
+      });
+      return nodosConMetricasEntidad;
+    }
+    
     return tableData;
   })();
 
@@ -176,10 +195,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-orange-500 font-mono tracking-wider">
-            🔄 REPLICAR
-          </h3>
+        <div className="flex items-center justify-end mb-6">
           <button
             onClick={onClose}
             className="text-neutral-400 hover:text-white transition-colors p-1"
@@ -292,7 +308,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                   <thead>
                     <tr className="border-b border-neutral-600">
                       {relatedColumns
-                        .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
+                        .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'nodoid', 'statusid'].includes(col.columnName))
                         .map(col => (
                           <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium">
                             {getColumnDisplayName(col.columnName)}
@@ -304,7 +320,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                     {getMetricasForSelectedNode().map((metrica, index) => (
                       <tr key={index} className="border-b border-neutral-600">
                         {relatedColumns
-                          .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
+                          .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'nodoid', 'statusid'].includes(col.columnName))
                           .map(col => (
                             <td key={col.columnName} className="py-2 px-2 text-white">
                               {formatCellValue(metrica[col.columnName], col.columnName, metrica)}

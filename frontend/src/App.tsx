@@ -56,6 +56,33 @@ const AppContentInternal: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update'>('status');
 
+  // Función para convertir nombre de tabla a español
+  const getTableNameInSpanish = (tableName: string): string => {
+    const tableNames: { [key: string]: string } = {
+      'pais': 'PAÍS',
+      'empresa': 'EMPRESA',
+      'fundo': 'FUNDO',
+      'ubicacion': 'UBICACIÓN',
+      'localizacion': 'LOCALIZACIÓN',
+      'entidad': 'ENTIDAD',
+      'tipo': 'TIPO',
+      'nodo': 'NODO',
+      'sensor': 'SENSOR',
+      'metricasensor': 'MÉTRICA SENSOR',
+      'metrica': 'MÉTRICA',
+      'umbral': 'UMBRAL',
+      'perfilumbral': 'PERFIL UMBRAL',
+      'audit_log_umbral': 'AUDIT LOG UMBRAL',
+      'criticidad': 'CRITICIDAD',
+      'medio': 'MEDIO',
+      'contacto': 'CONTACTO',
+      'usuario': 'USUARIO',
+      'usuarioperfil': 'USUARIO PERFIL',
+      'perfil': 'PERFIL'
+    };
+    return tableNames[tableName] || tableName.toUpperCase();
+  };
+
   // Estados para datos
   const [paises, setPaises] = useState<Pais[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -434,7 +461,12 @@ const AppContentInternal: React.FC = () => {
             <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
                 <div className="text-sm text-neutral-400 font-mono">
-                  JOYSENSE APP / <span className="text-orange-500">{activeTab === 'parameters' ? 'PARÁMETROS' : activeTab?.toUpperCase() || 'OVERVIEW'}</span>
+                  JOYSENSE APP / <span className="text-orange-500">
+                    {activeTab === 'parameters' 
+                      ? (selectedTable ? `PARÁMETROS-${getTableNameInSpanish(selectedTable)}` : 'PARÁMETROS')
+                      : activeTab?.toUpperCase() || 'OVERVIEW'
+                    }
+                  </span>
                 </div>
                 
                 {/* Dashboard Filters - Solo mostrar en Dashboard */}

@@ -511,6 +511,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [perfilesData, setPerfilesData] = useState<any[]>([]);
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
   const [mediosData, setMediosData] = useState<any[]>([]);
+  const [sensorsData, setSensorsData] = useState<any[]>([]);
 
   // Estados para actualización con paginación
   const [updateData, setUpdateData] = useState<any[]>([]);
@@ -590,17 +591,34 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
-  const handleReplicateMetricaSensor = (metricasensor: any) => {
+  const handleReplicateMetricaSensor = (nodo: any) => {
     // Activar modo replicación
     setIsReplicateMode(true);
     
-    // Llenar el formulario con los datos de la métrica sensor seleccionada
-    setSelectedNodos([metricasensor.nodoid?.toString() || '']);
-    setSelectedMetricas([metricasensor.metricaid?.toString() || '']);
+    // Obtener todas las métricas sensor del nodo fuente seleccionado
+    const metricasDelNodo = tableData.filter(ms => ms.nodoid === nodo.nodoid);
     
-    // Inicializar métricas con los datos seleccionados
-    if (metricasensor.nodoid && metricasensor.metricaid) {
-      initializeMultipleMetricas([metricasensor.nodoid.toString()], [metricasensor.metricaid.toString()]);
+    if (metricasDelNodo.length > 0) {
+      // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
+      // Solo extraer las métricas únicas de las métricas sensor del nodo fuente
+      const metricasUnicas = Array.from(new Set(metricasDelNodo.map(ms => ms.metricaid)));
+      
+      // Seleccionar automáticamente las métricas encontradas
+      setSelectedMetricas(metricasUnicas.map(id => id.toString()));
+      
+      // Inicializar métricas con las métricas del nodo fuente, pero para el nodo destino actual
+      if (selectedNodos.length > 0) {
+        initializeMultipleMetricas(selectedNodos, metricasUnicas.map(id => id.toString()));
+      }
+      
+      // Mostrar mensaje de confirmación
+      setMessage({ 
+        type: 'success', 
+        text: `Se han seleccionado automáticamente ${metricasUnicas.length} métricas del nodo fuente para replicar.` 
+      });
+    } else {
+      // Si no hay métricas sensor en el nodo fuente, mostrar mensaje
+      setMessage({ type: 'warning', text: 'El nodo seleccionado no tiene métricas sensor para replicar.' });
     }
   };
 
@@ -750,7 +768,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       tableName: modalTableName,
       tableData: modalData,
       visibleColumns: modalVisibleColumns,
-      relatedData: selectedTable === 'sensor' ? tableData : (selectedTable === 'metricasensor' ? tableData : []), // Pasar datos relacionados
+      relatedData: selectedTable === 'sensor' ? tableData : (selectedTable === 'metricasensor' ? sensorsData : []), // Pasar datos relacionados
       relatedColumns: selectedTable === 'sensor' ? columns : (selectedTable === 'metricasensor' ? [
         { columnName: 'nodoid', dataType: 'integer', isNullable: true, defaultValue: null, isIdentity: false, isPrimaryKey: false },
         { columnName: 'tipoid', dataType: 'integer', isNullable: true, defaultValue: null, isIdentity: false, isPrimaryKey: false },
@@ -1069,6 +1087,21 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       });
       
       setTableData(sortedData);
+      
+      // Cargar datos de sensores si estamos en el contexto de metricasensor
+      if (selectedTable === 'metricasensor') {
+        try {
+          const sensorResponse = await JoySenseService.getTableData('sensor', 1000);
+          const sensorData = Array.isArray(sensorResponse) ? sensorResponse : ((sensorResponse as any)?.data || []);
+          setSensorsData(sensorData);
+          console.log(`✅ Datos de sensores cargados para metricasensor: ${sensorData.length} registros`);
+        } catch (error) {
+          console.error('Error cargando datos de sensores:', error);
+          setSensorsData([]);
+        }
+      } else {
+        setSensorsData([]);
+      }
       
              // Los datos filtrados se aplicarán automáticamente por el hook useGlobalFilterEffect
        // Inicializar paginación para la tabla de Estado
@@ -2100,8 +2133,36 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             });
           }
         }
+        // Filtrar nodos según el contexto
+        let finalFilteredNodos = filteredNodos;
+        
+        // Si estamos en el contexto de metricasensor, filtrar nodos que estén en sensor pero no en metricasensor
+        if (selectedTable === 'metricasensor') {
+          // Usar datos de sensores cargados específicamente para metricasensor
+          const sensorData = sensorsData || [];
+          
+          finalFilteredNodos = filteredNodos.filter(nodo => {
+            // Verificar que el nodo esté activo
+            if (nodo.statusid !== 1) {
+              return false;
+            }
+            
+            // Verificar que el nodo tenga sensores (esté en tabla sensor)
+            const tieneSensores = sensorData.some((sensor: any) => sensor.nodoid === nodo.nodoid);
+            if (!tieneSensores) {
+              return false;
+            }
+            
+            // Verificar que el nodo NO tenga métricas sensor asignadas (no esté en tabla metricasensor)
+            const tieneMetricas = tableData.some(ms => ms.nodoid === nodo.nodoid);
+            return !tieneMetricas;
+          });
+          
+          console.log('🔗 Nodos filtrados para metricasensor (con sensores pero sin métricas):', finalFilteredNodos.length);
+        }
+        
         // Ordenar nodos por fecha de modificación (más recientes primero)
-        const sortedNodos = filteredNodos.sort((a: any, b: any) => {
+        const sortedNodos = finalFilteredNodos.sort((a: any, b: any) => {
           const dateA = new Date(a.datemodified || a.datecreated || 0);
           const dateB = new Date(b.datemodified || b.datecreated || 0);
           return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)

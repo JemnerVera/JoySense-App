@@ -126,6 +126,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     }
   }, [selectedNodos, selectedEntidad]);
 
+  // Sincronizar selectedMetricasCheckboxes con selectedMetricas (props)
+  React.useEffect(() => {
+    if (selectedMetricas.length > 0 && JSON.stringify(selectedMetricas) !== JSON.stringify(selectedMetricasCheckboxes)) {
+      setSelectedMetricasCheckboxes(selectedMetricas);
+    }
+  }, [selectedMetricas]);
+
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
     setSelectedMetricas(selectedMetricasCheckboxes);
@@ -552,7 +559,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         {/* Botón de replicar */}
         <ReplicateButton
           onClick={onReplicateClick || (() => {})}
-          disabled={selectedNodos.length === 0 || selectedMetricas.length === 0}
+          disabled={selectedNodos.length === 0 || !selectedEntidad}
         />
         
         <button
