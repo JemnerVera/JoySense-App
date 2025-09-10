@@ -1,0 +1,58 @@
+/* Estilos estandarizados para dropdowns y scrollbars */
+
+/* Scrollbar personalizado para todos los elementos */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #374151; /* gray-700 */
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b7280; /* gray-500 */
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af; /* gray-400 */
+}
+
+/* Para Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #374151;
+}
+
+/* Estilos estandarizados para select elements */
+.standard-select {
+  @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.standard-select option {
+  @apply bg-gray-700 text-white;
+}
+
+/* Estilos para dropdowns personalizados */
+.standard-dropdown {
+  @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.standard-dropdown-option {
+  @apply w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors;
+}
+
+.standard-dropdown-option-selected {
+  @apply bg-blue-600 text-white;
+}
+
+/* Placeholder con opacidad */
+.standard-placeholder {
+  @apply text-gray-400;
+}
+
+/* Texto de filtros globales con opacidad */
+.filter-text {
+  @apply text-gray-300;
+}

@@ -1,0 +1,392 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useFilters } from '../../contexts/FilterContext';
+import { useCompleteFilterData } from '../../hooks/useCompleteFilterData';
+import { JoySenseService } from '../../services/backend-api';
+import OverlayDropdown from '../PushDropdown';
+
+interface DashboardFiltersProps {
+  onFiltersChange?: (filters: {
+    entidadId: number | null;
+    ubicacionId: number | null;
+    startDate: string;
+    endDate: string;
+  }) => void;
+}
+
+export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
+  onFiltersChange
+}) => {
+  const { 
+    paisSeleccionado, 
+    empresaSeleccionada, 
+    fundoSeleccionado,
+    setPaisSeleccionado,
+    setEmpresaSeleccionada,
+    setFundoSeleccionado
+  } = useFilters();
+
+  const { paises, empresas, fundos } = useCompleteFilterData('');
+  
+  // Estados para entidades y ubicaciones filtradas
+  const [entidades, setEntidades] = useState<any[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
+  const [loadingEntidades, setLoadingEntidades] = useState(false);
+  const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
+
+  // Estados locales para filtros del dashboard
+  const [selectedEntidad, setSelectedEntidad] = useState<any>(null);
+  const [selectedUbicacion, setSelectedUbicacion] = useState<any>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  // Estados para dropdowns
+  const [isEntidadDropdownOpen, setIsEntidadDropdownOpen] = useState(false);
+  const [isUbicacionDropdownOpen, setIsUbicacionDropdownOpen] = useState(false);
+  const [isFechasDropdownOpen, setIsFechasDropdownOpen] = useState(false);
+
+  const entidadDropdownRef = useRef<HTMLDivElement>(null);
+  const ubicacionDropdownRef = useRef<HTMLDivElement>(null);
+  const fechasDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdowns cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (entidadDropdownRef.current && !entidadDropdownRef.current.contains(event.target as Node)) {
+        setIsEntidadDropdownOpen(false);
+      }
+      if (ubicacionDropdownRef.current && !ubicacionDropdownRef.current.contains(event.target as Node)) {
+        setIsUbicacionDropdownOpen(false);
+      }
+      if (fechasDropdownRef.current && !fechasDropdownRef.current.contains(event.target as Node)) {
+        setIsFechasDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // No inicializar fechas por defecto - dejar vacías hasta que el usuario las seleccione
+
+  // Notificar cambios de filtros
+  useEffect(() => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        entidadId: selectedEntidad?.entidadid || null,
+        ubicacionId: selectedUbicacion?.ubicacionid || null,
+        startDate,
+        endDate
+      });
+    }
+  }, [selectedEntidad, selectedUbicacion, startDate, endDate, onFiltersChange]);
+
+  // Cargar entidades basadas en el fundo seleccionado
+  useEffect(() => {
+    const cargarEntidades = async () => {
+      if (!fundoSeleccionado) {
+        setEntidades([]);
+        return;
+      }
+
+      try {
+        setLoadingEntidades(true);
+        console.log('🔍 Cargando entidades para fundo:', fundoSeleccionado);
+        
+        // Obtener todas las entidades
+        const entidadesData = await JoySenseService.getTableData('entidad');
+        console.log('📋 Entidades obtenidas:', entidadesData.length);
+        
+        // Obtener ubicaciones del fundo seleccionado
+        const ubicacionesData = await JoySenseService.getTableData('ubicacion');
+        const ubicacionesDelFundo = ubicacionesData.filter((ubicacion: any) => 
+          ubicacion.fundoid === parseInt(fundoSeleccionado)
+        );
+        console.log('📍 Ubicaciones del fundo:', ubicacionesDelFundo.length);
+        
+        // Obtener localizaciones para encontrar entidades relacionadas
+        const localizacionesData = await JoySenseService.getTableData('localizacion');
+        console.log('🗺️ Localizaciones obtenidas:', localizacionesData.length);
+        
+        // Encontrar entidades que tienen ubicaciones en este fundo
+        const entidadIds = new Set();
+        ubicacionesDelFundo.forEach((ubicacion: any) => {
+          const localizacionesDeUbicacion = localizacionesData.filter((loc: any) => 
+            loc.ubicacionid === ubicacion.ubicacionid
+          );
+          localizacionesDeUbicacion.forEach((loc: any) => {
+            entidadIds.add(loc.entidadid);
+          });
+        });
+        
+        console.log('🏢 IDs de entidades encontradas:', Array.from(entidadIds));
+        
+        // Filtrar entidades
+        const entidadesFiltradas = entidadesData.filter((entidad: any) => 
+          entidadIds.has(entidad.entidadid)
+        );
+        
+        console.log('✅ Entidades filtradas:', entidadesFiltradas.length);
+        setEntidades(entidadesFiltradas);
+      } catch (error) {
+        console.error('❌ Error cargando entidades:', error);
+        setEntidades([]);
+      } finally {
+        setLoadingEntidades(false);
+      }
+    };
+
+    cargarEntidades();
+  }, [fundoSeleccionado]);
+
+  // Cargar ubicaciones basadas en el fundo seleccionado y entidad seleccionada
+  useEffect(() => {
+    const cargarUbicaciones = async () => {
+      if (!fundoSeleccionado) {
+        setUbicaciones([]);
+        return;
+      }
+
+      try {
+        setLoadingUbicaciones(true);
+        console.log('🔍 Cargando ubicaciones para fundo:', fundoSeleccionado, 'y entidad:', selectedEntidad?.entidadid);
+        
+        const ubicacionesData = await JoySenseService.getTableData('ubicacion');
+        console.log('📍 Ubicaciones obtenidas:', ubicacionesData.length);
+        
+        // Filtrar ubicaciones del fundo seleccionado
+        let ubicacionesFiltradas = ubicacionesData.filter((ubicacion: any) => 
+          ubicacion.fundoid === parseInt(fundoSeleccionado)
+        );
+        console.log('📍 Ubicaciones del fundo:', ubicacionesFiltradas.length);
+        
+        // Si hay una entidad seleccionada, filtrar también por entidad
+        if (selectedEntidad) {
+          const localizacionesData = await JoySenseService.getTableData('localizacion');
+          console.log('🗺️ Localizaciones obtenidas:', localizacionesData.length);
+          
+          // Obtener ubicaciones que están relacionadas con la entidad seleccionada
+          const ubicacionIds = localizacionesData
+            .filter((loc: any) => loc.entidadid === selectedEntidad.entidadid)
+            .map((loc: any) => loc.ubicacionid);
+          
+          console.log('📍 IDs de ubicaciones de la entidad:', ubicacionIds);
+          
+          // Filtrar ubicaciones que están en el fundo Y en la entidad
+          ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) => 
+            ubicacionIds.includes(ubicacion.ubicacionid)
+          );
+          
+          console.log('✅ Ubicaciones filtradas por entidad:', ubicacionesFiltradas.length);
+        }
+        
+        setUbicaciones(ubicacionesFiltradas);
+      } catch (error) {
+        console.error('❌ Error cargando ubicaciones:', error);
+        setUbicaciones([]);
+      } finally {
+        setLoadingUbicaciones(false);
+      }
+    };
+
+    cargarUbicaciones();
+  }, [fundoSeleccionado, selectedEntidad]);
+
+  // Filtrar entidades basadas en el fundo seleccionado
+  const filteredEntidades = entidades;
+
+  // Las ubicaciones ya están filtradas en el useEffect
+  const filteredUbicaciones = ubicaciones;
+
+  // Limpiar selecciones cuando cambian los filtros padre
+  useEffect(() => {
+    if (selectedEntidad && !filteredEntidades.find((e: any) => e.entidadid === selectedEntidad.entidadid)) {
+      setSelectedEntidad(null);
+    }
+  }, [filteredEntidades, selectedEntidad]);
+
+  useEffect(() => {
+    if (selectedUbicacion && !filteredUbicaciones.find((u: any) => u.ubicacionid === selectedUbicacion.ubicacionid)) {
+      setSelectedUbicacion(null);
+    }
+  }, [filteredUbicaciones, selectedUbicacion]);
+
+
+  const handleEntidadSelect = (entidad: any) => {
+    setSelectedEntidad(entidad);
+    setIsEntidadDropdownOpen(false);
+    // Limpiar ubicación
+    setSelectedUbicacion(null);
+  };
+
+  const handleUbicacionSelect = (ubicacion: any) => {
+    setSelectedUbicacion(ubicacion);
+    setIsUbicacionDropdownOpen(false);
+  };
+
+  const selectedPais = paises.find(p => p.paisid.toString() === paisSeleccionado);
+  const selectedEmpresa = empresas.find(e => e.empresaid.toString() === empresaSeleccionada);
+  const selectedFundo = fundos.find(f => f.fundoid.toString() === fundoSeleccionado);
+
+  // Función para formatear fechas
+  const formatDateRange = () => {
+    if (!startDate || !endDate) return 'Fechas';
+    
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    };
+    
+    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+  };
+
+  const handleFechasToggle = () => {
+    setIsFechasDropdownOpen(!isFechasDropdownOpen);
+  };
+
+  return (
+    <div className="flex items-center space-x-3">
+      {/* Dropdown de Entidad */}
+      <div className="relative" ref={entidadDropdownRef}>
+        <OverlayDropdown
+          isOpen={isEntidadDropdownOpen}
+          onToggle={() => setIsEntidadDropdownOpen(!isEntidadDropdownOpen)}
+          title="Entidad"
+          icon=""
+          selectedValue={selectedEntidad?.entidad}
+          placeholder="Entidad"
+          className="w-full"
+          buttonClassName="standard-dropdown min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-600 transition-colors"
+          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
+        >
+          {loadingEntidades ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-gray-400 text-sm">Cargando entidades...</p>
+            </div>
+          ) : filteredEntidades.length > 0 ? (
+            filteredEntidades.map((entidad: any) => (
+              <button
+                key={entidad.entidadid}
+                onClick={() => handleEntidadSelect(entidad)}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  selectedEntidad?.entidadid === entidad.entidadid
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-white hover:bg-gray-700'
+                }`}
+              >
+                {entidad.entidad}
+              </button>
+            ))
+          ) : (
+            <p className="text-gray-400 text-sm">
+              {!fundoSeleccionado ? 'Selecciona un fundo primero' : 'No hay entidades disponibles'}
+            </p>
+          )}
+        </OverlayDropdown>
+      </div>
+
+      {/* Dropdown de Ubicación */}
+      <div className="relative" ref={ubicacionDropdownRef}>
+        <OverlayDropdown
+          isOpen={isUbicacionDropdownOpen}
+          onToggle={() => setIsUbicacionDropdownOpen(!isUbicacionDropdownOpen)}
+          title="Ubicación"
+          icon=""
+          selectedValue={selectedUbicacion?.ubicacion}
+          placeholder="Ubicación"
+          className="w-full"
+          buttonClassName="standard-dropdown min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-600 transition-colors"
+          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
+        >
+          {loadingUbicaciones ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto mb-2"></div>
+              <p className="text-gray-400 text-sm">Cargando ubicaciones...</p>
+            </div>
+          ) : filteredUbicaciones.length > 0 ? (
+            filteredUbicaciones.map((ubicacion: any) => (
+              <button
+                key={ubicacion.ubicacionid}
+                onClick={() => handleUbicacionSelect(ubicacion)}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  selectedUbicacion?.ubicacionid === ubicacion.ubicacionid
+                    ? 'bg-green-600 text-white' 
+                    : 'text-white hover:bg-gray-700'
+                }`}
+              >
+                {ubicacion.ubicacion}
+              </button>
+            ))
+          ) : (
+            <p className="text-gray-400 text-sm">
+              {!selectedEntidad ? 'Selecciona una entidad primero' : 'No hay ubicaciones disponibles'}
+            </p>
+          )}
+        </OverlayDropdown>
+      </div>
+
+      {/* Dropdown de Fechas */}
+      <div className="relative" ref={fechasDropdownRef}>
+        <button
+          onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
+          disabled={!fundoSeleccionado}
+          className={`standard-dropdown min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-600 transition-colors ${
+            startDate && endDate ? 'border-green-500' : ''
+          }`}
+        >
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
+            <span className={`${startDate && endDate ? 'text-white' : 'text-green-400'} truncate`}>
+              {formatDateRange()}
+            </span>
+          </div>
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${isFechasDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {isFechasDropdownOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
+            {!fundoSeleccionado ? (
+              <div className="px-3 py-2 text-sm text-gray-400">
+                Selecciona un fundo primero
+              </div>
+            ) : (
+              <div className="p-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Fecha Inicial</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Fecha Final</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-green-500 focus:outline-none text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => setIsFechasDropdownOpen(false)}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
