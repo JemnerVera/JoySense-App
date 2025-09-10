@@ -1,0 +1,50 @@
+# JoySense Project Memory
+
+## Project Overview
+JoySense is a sensor monitoring dashboard application for agricultural monitoring systems.
+
+## Tech Stack
+- **Frontend**: React 18 with TypeScript, Tailwind CSS
+- **Backend**: Node.js with Express
+- **Database**: Supabase with PostgreSQL
+- **Deployment**: Electron for desktop app, Vercel for web deployment
+
+## Project Structure
+```
+Sensores/
+├── frontend/          # React application
+├── backend/           # Node.js API server
+├── deployment/        # Deployment scripts
+├── docs/             # Documentation
+├── sql/              # Database scripts
+└── scripts/          # Utility scripts
+```
+
+## Database Schema
+- **Schema**: All tables are in the 'sense' schema
+- **Key Tables**: pais, empresa, fundo, ubicacion, entidad, nodo, sensor, metrica, umbral, etc.
+- **Naming**: Use lowercase with underscores (e.g., user_created_id, date_created)
+
+## Key Components
+- **SystemParameters**: Parameter management interface
+- **Dashboard**: Data visualization and monitoring
+- **Sidebar Components**: Navigation and filtering
+- **Form Components**: Data entry with validation
+
+## Important Conventions
+- Always use 'sense' schema for database queries
+- Follow established error handling patterns
+- Use TypeScript interfaces over types
+- Implement proper loading states and error handling
+- Use Tailwind CSS for styling with established design system
+
+## Authentication
+- Uses Supabase Auth with custom AuthContext
+- Implements Row Level Security (RLS) policies
+- User management through Supabase
+
+## Development Workflow
+- Use deployment scripts in deployment/ directory
+- Follow established component patterns
+- Maintain consistency with existing UI/UX
+- Test all critical user flows

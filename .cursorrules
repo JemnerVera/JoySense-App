@@ -1,0 +1,138 @@
+You are an expert developer in TypeScript, Node.js, React, Supabase, Tailwind CSS, and Electron.
+
+Key Principles
+- Write concise, technical responses with accurate TypeScript examples.
+- Use functional, declarative programming. Avoid classes.
+- Prefer iteration and modularization over duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Use lowercase with dashes for directories (e.g., components/auth-wizard).
+- Favor named exports for components.
+- Use the Receive an Object, Return an Object (RORO) pattern.
+
+JavaScript/TypeScript
+- Use "function" keyword for pure functions. Omit semicolons.
+- Use TypeScript for all code. Prefer interfaces over types.
+- File structure: Exported component, subcomponents, helpers, static content, types.
+- Avoid unnecessary curly braces in conditional statements.
+- For single-line statements in conditionals, omit curly braces.
+- Use concise, one-line syntax for simple conditional statements (e.g., if (condition) doSomething()).
+
+Error Handling and Validation
+- Prioritize error handling and edge cases:
+  - Handle errors and edge cases at the beginning of functions.
+  - Use early returns for error conditions to avoid deeply nested if statements.
+  - Place the happy path last in the function for improved readability.
+  - Avoid unnecessary else statements; use if-return pattern instead.
+  - Use guard clauses to handle preconditions and invalid states early.
+  - Implement proper error logging and user-friendly error messages.
+  - Consider using custom error types or error factories for consistent error handling.
+  - Always validate data from Supabase before processing.
+
+React/TypeScript
+- Use functional components and TypeScript interfaces.
+- Use declarative JSX.
+- Use function, not const, for components.
+- Use Tailwind CSS for components and styling.
+- Implement responsive design with Tailwind CSS.
+- Use mobile-first approach for responsive design.
+- Place static content and interfaces at file end.
+- Use content variables for static content outside render functions.
+- Minimize 'useEffect' and 'setState'. Favor React hooks and context.
+- Use custom hooks for complex state logic.
+- Wrap components in error boundaries for unexpected errors.
+- Implement type-safe form validation with proper error handling.
+- Handle errors gracefully and return appropriate responses.
+
+Supabase Integration
+- Use the Supabase client for database interactions and real-time subscriptions.
+- Implement Row Level Security (RLS) policies for fine-grained access control.
+- Use Supabase Auth for user authentication and management.
+- Leverage Supabase Storage for file uploads and management when needed.
+- Use the 'sense' schema for all database queries (e.g., sense.pais, sense.empresa).
+- Optimize queries to fetch only necessary data.
+- Implement proper authentication and authorization using Supabase RLS and Policies.
+- Always handle Supabase errors gracefully with user-friendly messages.
+- Use proper TypeScript types for Supabase responses.
+
+JoySense Project Specific
+- Follow the established project structure:
+  - Frontend: React with TypeScript in frontend/src/
+  - Backend: Node.js with Express in backend/
+  - Database: Supabase with 'sense' schema
+  - Deployment: Scripts in deployment/ directory
+- Use the established component patterns:
+  - SystemParameters for parameter management
+  - Dashboard components for data visualization
+  - Sidebar components for navigation
+  - Form components with proper validation
+- Maintain consistency with existing UI patterns and styling.
+- Use the established error handling patterns in utils/errorHandler.ts.
+- Follow the existing authentication flow with AuthContext.
+
+Key Conventions
+1. Rely on React Router for navigation and state changes.
+2. Prioritize performance and user experience.
+3. Minimize client-side state management:
+  - Prefer server-side data fetching when possible.
+  - Use React Context for global state.
+  - Avoid unnecessary re-renders.
+4. Follow the established project structure:
+  - Keep frontend code in frontend/src/
+  - Keep backend code in backend/
+  - Keep deployment scripts in deployment/
+  - Keep documentation in docs/
+  - Keep SQL scripts in sql/
+5. Use the established database schema and naming conventions.
+6. Adhere to the defined table relationships and constraints.
+
+Naming Conventions
+- Booleans: Use auxiliary verbs such as 'does', 'has', 'is', and 'should' (e.g., isDisabled, hasError).
+- Filenames: Use PascalCase for components (e.g., SystemParameters.tsx).
+- File extensions: Use .tsx for React components, .ts for utilities, .css for styles.
+- Database: Use lowercase with underscores (e.g., user_created_id, date_created).
+
+Component Structure
+- Break down components into smaller parts with minimal props.
+- Use composition to build complex components.
+- Follow the order: imports, interfaces, component declaration, helpers, exports.
+- Keep components focused on single responsibilities.
+
+Data Fetching and State Management
+- Use React hooks for data fetching and state management.
+- Implement proper loading states and error handling.
+- Use Supabase for real-time data synchronization.
+- Cache frequently accessed data appropriately.
+- Use the established service patterns in services/ directory.
+
+Styling
+- Use Tailwind CSS for styling, following the Utility First approach.
+- Maintain consistency with the established design system.
+- Use the established color scheme and spacing patterns.
+- Implement responsive design for all components.
+
+Testing
+- Implement unit tests for utility functions and hooks.
+- Use integration tests for complex components.
+- Test Supabase interactions with proper mocking.
+- Ensure all critical user flows are tested.
+
+Accessibility
+- Ensure interfaces are keyboard navigable.
+- Implement proper ARIA labels and roles for components.
+- Ensure color contrast ratios meet WCAG standards.
+- Test with screen readers when possible.
+
+Documentation
+- Provide clear and concise comments for complex logic.
+- Use JSDoc comments for functions and components.
+- Keep the README files up-to-date with setup instructions.
+- Document Supabase schema, RLS policies, and API endpoints.
+- Maintain the project documentation in docs/ directory.
+
+Project-Specific Guidelines
+- Always use the 'sense' schema for database queries.
+- Follow the established error handling patterns.
+- Use the existing authentication and authorization system.
+- Maintain consistency with the established UI/UX patterns.
+- Follow the established deployment and build processes.
+- Use the established logging and debugging patterns.
