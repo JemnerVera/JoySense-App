@@ -1224,10 +1224,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Función para validar datos antes de insertar
   const validateInsertData = (tableName: string, data: any): string | null => {
     if (tableName === 'nodo') {
+      if (!data.nodo || data.nodo.trim() === '') return 'Falta ingresar NODO';
       if (!data.deveui || data.deveui.trim() === '') return 'Falta ingresar DEVEUI';
-      if (!data.appeui || data.appeui.trim() === '') return 'Falta ingresar APPEUI';
-      if (!data.appkey || data.appkey.trim() === '') return 'Falta ingresar APPKEY';
-      if (!data.atpin || data.atpin.trim() === '') return 'Falta ingresar AT PIN';
     } else if (tableName === 'sensor') {
       if (!data.nodoid) return 'Debe seleccionar un nodo';
       if (!data.tipoid) return 'Debe seleccionar un tipo';
@@ -3510,7 +3508,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                  message.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
                  message.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
                  'bg-red-600 bg-opacity-20 border border-red-500'
-               } text-white`}>
+               } text-white font-mono tracking-wider`}>
                  {message.text}
                </div>
              )}
@@ -3829,7 +3827,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
                       updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
                       'bg-red-600 bg-opacity-20 border border-red-500'
-                    } text-white`}>
+                    } text-white font-mono tracking-wider`}>
                       {updateMessage.text}
                     </div>
                   )}
