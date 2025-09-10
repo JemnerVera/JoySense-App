@@ -2017,18 +2017,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         console.log('📍 Opciones de ubicaciones devueltas:', ubicacionResult);
         return ubicacionResult;
       case 'entidadid':
-        // Filtrar entidades por fundo seleccionado en filtros globales
+        // Las entidades son independientes de la jerarquía geográfica
+        // Relación: tipo.entidadid -> entidad.entidadid (directa)
         if (!entidadesData || entidadesData.length === 0) {
           console.log('🏛️ No hay datos de entidades disponibles');
           return [];
         }
-        let filteredEntidades = entidadesData;
-        if (fundoSeleccionado) {
-          filteredEntidades = entidadesData.filter(entidad => entidad && entidad.fundoid && entidad.fundoid.toString() === fundoSeleccionado);
-          console.log('🏛️ Filtros globales aplicados a entidades:', { fundoSeleccionado, filteredCount: filteredEntidades.length });
-        }
-        const entidadResult = filteredEntidades.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
-        console.log('🏛️ Opciones de entidades devueltas:', entidadResult);
+        // Mostrar todas las entidades disponibles (no filtrar por fundo)
+        const entidadResult = entidadesData.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
+        console.log('🏛️ Opciones de entidades devueltas (sin filtro):', entidadResult);
         return entidadResult;
       case 'nodoid':
         // Filtrar nodos por filtros globales
