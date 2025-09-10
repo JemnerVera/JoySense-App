@@ -649,19 +649,26 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
     
     if (metricasDelNodo.length > 0) {
-      // Configurar el nodo seleccionado
-      setSelectedNodos([nodo.nodoid.toString()]);
-      
-      // Extraer todas las métricas únicas del nodo
+      // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
+      // Solo extraer las métricas únicas de las métricas sensor del nodo fuente
       const metricasUnicas = Array.from(new Set(metricasDelNodo.map(metrica => metrica.metricaid)));
+      
+      // Seleccionar automáticamente las métricas encontradas
       setSelectedMetricas(metricasUnicas.map(id => id.toString()));
       
-      // Inicializar métricas con todas las combinaciones del nodo
-      initializeMultipleMetricas([nodo.nodoid.toString()], metricasUnicas.map(id => id.toString()));
+      // Inicializar métricas con las métricas del nodo fuente, pero para el nodo destino actual
+      if (selectedNodos.length > 0) {
+        initializeMultipleMetricas(selectedNodos, metricasUnicas.map(id => id.toString()));
+      }
+      
+      // Mostrar mensaje de confirmación
+      setMessage({ 
+        type: 'success', 
+        text: `Se han seleccionado automáticamente ${metricasUnicas.length} métricas del nodo fuente para replicar.` 
+      });
     } else {
-      // Si no hay métricas en el nodo, solo configurar el nodo
-      setSelectedNodos([nodo.nodoid.toString()]);
-      setSelectedMetricas([]);
+      // Si no hay métricas sensor en el nodo fuente, mostrar mensaje
+      setMessage({ type: 'warning', text: 'El nodo seleccionado no tiene métricas sensor para replicar.' });
     }
   };
 
@@ -768,7 +775,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       tableName: modalTableName,
       tableData: modalData,
       visibleColumns: modalVisibleColumns,
-      relatedData: selectedTable === 'sensor' ? tableData : (selectedTable === 'metricasensor' ? sensorsData : []), // Pasar datos relacionados
+      relatedData: selectedTable === 'sensor' ? tableData : (selectedTable === 'metricasensor' ? tableData : []), // Pasar datos relacionados
       relatedColumns: selectedTable === 'sensor' ? columns : (selectedTable === 'metricasensor' ? [
         { columnName: 'nodoid', dataType: 'integer', isNullable: true, defaultValue: null, isIdentity: false, isPrimaryKey: false },
         { columnName: 'tipoid', dataType: 'integer', isNullable: true, defaultValue: null, isIdentity: false, isPrimaryKey: false },
