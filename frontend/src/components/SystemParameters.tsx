@@ -3672,6 +3672,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            }}
                            getUniqueOptionsForField={getUniqueOptionsForField}
                            onReplicateClick={openReplicateModalForTable}
+                           paisSeleccionado={paisSeleccionado}
+                           empresaSeleccionada={empresaSeleccionada}
+                           fundoSeleccionado={fundoSeleccionado}
+                           paisesData={paisesData}
+                           empresasData={empresasData}
+                           fundosData={fundosData}
                          />
                                           ) : selectedTable === 'metricasensor' ? (
                                                                          <MultipleMetricaSensorForm
@@ -3698,6 +3704,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           getUniqueOptionsForField={getUniqueOptionsForField}
                           onReplicateClick={openReplicateModalForTable}
                           isReplicateMode={isReplicateMode}
+                          paisSeleccionado={paisSeleccionado}
+                          empresaSeleccionada={empresaSeleccionada}
+                          fundoSeleccionado={fundoSeleccionado}
+                          paisesData={paisesData}
+                          empresasData={empresasData}
+                          fundosData={fundosData}
                         />
                     ) : selectedTable === 'localizacion' ? (
                       <MultipleLocalizacionForm

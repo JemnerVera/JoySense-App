@@ -43,6 +43,15 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   empresasData,
   fundosData
 }) => {
+  console.log('🔍 NormalInsertForm renderizado:', {
+    selectedTable,
+    paisSeleccionado,
+    empresaSeleccionada,
+    fundoSeleccionado,
+    paisesDataLength: paisesData?.length,
+    empresasDataLength: empresasData?.length,
+    fundosDataLength: fundosData?.length
+  });
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
