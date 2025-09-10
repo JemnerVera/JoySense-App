@@ -83,10 +83,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         {isExpanded ? (
           <div className="flex items-center space-x-3">
             <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
-            <div>
-              <h1 className="text-orange-500 font-bold text-lg tracking-wider">JOYSENSE</h1>
-              <p className="text-neutral-500 text-xs">v2.1.7 AGRICULTURAL</p>
-            </div>
+            <img src="/Logo - texto.png" alt="JoySense" className="h-6 w-auto" />
           </div>
         ) : (
           <div className="flex justify-center">
@@ -134,12 +131,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         <div className="mt-8 p-4 bg-neutral-800 border border-neutral-700 rounded mx-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-xs text-white font-mono">SYSTEM ONLINE</span>
+            <span className="text-xs text-white font-mono">SISTEMA EN LÍNEA</span>
           </div>
           <div className="text-xs text-neutral-500 font-mono">
-            <div>UPTIME: 72:14:33</div>
-            <div>SENSORS: 847 ACTIVE</div>
-            <div>ALERTS: 23 ONGOING</div>
+            <div>TIEMPO ACTIVO: 72:14:33</div>
+            <div>SENSORES: 847 ACTIVOS</div>
+            <div>ALERTAS: 23 EN CURSO</div>
           </div>
         </div>
       )}

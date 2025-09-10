@@ -318,8 +318,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           if (col.columnName === 'statusid') {
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <div className="flex items-center space-x-3">
                   <input
@@ -329,10 +329,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                       ...formData,
                       [col.columnName]: e.target.checked ? 1 : 0
                     })}
-                    className="w-5 h-5 text-green-600 bg-gray-700 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+                    className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-white">
-                    {value === 1 ? 'Activo' : 'Inactivo'}
+                  <span className="text-white font-mono tracking-wider">
+                    {value === 1 ? 'ACTIVO' : 'INACTIVO'}
                   </span>
                 </div>
               </div>

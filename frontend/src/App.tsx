@@ -429,12 +429,12 @@ const AppContentInternal: React.FC = () => {
             <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
                 <div className="text-sm text-neutral-400 font-mono">
-                  JOYSENSE COMMAND / <span className="text-orange-500">{activeTab?.toUpperCase() || 'OVERVIEW'}</span>
+                  JOYSENSE APP / <span className="text-orange-500">{activeTab === 'parameters' ? 'PARÁMETROS' : activeTab?.toUpperCase() || 'OVERVIEW'}</span>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-xs text-neutral-500 font-mono">
-                  LAST UPDATE: {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
+                  ÚLTIMA ACTUALIZACIÓN: {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
                 </div>
                 <UserHeader 
                   activeTab={activeTab}

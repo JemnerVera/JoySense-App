@@ -3309,15 +3309,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                    {tableInfo && (
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">RECORDS</div>
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">REGISTROS</div>
                           <div className="text-2xl font-bold text-orange-500 font-mono">{tableData.length}</div>
                        </div>
                        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">LAST UPDATE</div>
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMA ACTUALIZACIÓN</div>
                          <div className="text-2xl font-bold text-orange-500 font-mono">{new Date().toLocaleDateString('es-ES')}</div>
                        </div>
                        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">LAST USER</div>
+                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMO USUARIO</div>
                          <div className="text-2xl font-bold text-orange-500 font-mono">
                            {(() => {
                              // Buscar el último registro modificado
@@ -3354,13 +3354,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                              type="text"
                              value={statusSearchTerm}
                              onChange={(e) => handleStatusSearch(e.target.value)}
-                             placeholder="🔍 SEARCH ALL FIELDS..."
+                             placeholder="🔍 Buscar en todos los campos..."
                              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
                            />
                          </div>
                          {statusSearchTerm && (
                            <div className="mt-2 text-sm text-neutral-400 font-mono">
-                             SHOWING {statusFilteredData.length} OF {filteredTableData.length} RECORDS
+                             Mostrando {statusFilteredData.length} de {filteredTableData.length} registros
                            </div>
                          )}
                        </div>
@@ -3413,19 +3413,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            <button
                              onClick={() => handleStatusPageChange(statusCurrentPage - 1)}
                              disabled={statusCurrentPage <= 1}
-                             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                             className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                            >
-                             ← Anterior
+                             ← ANTERIOR
                            </button>
-                           <span className="text-white flex items-center px-3">
-                             Página {statusCurrentPage} de {statusTotalPages}
+                           <span className="text-white flex items-center px-3 font-mono tracking-wider">
+                             PÁGINA {statusCurrentPage} DE {statusTotalPages}
                            </span>
                            <button
                              onClick={() => handleStatusPageChange(statusCurrentPage + 1)}
                              disabled={statusCurrentPage >= statusTotalPages}
-                             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                             className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                            >
-                             Siguiente →
+                             SIGUIENTE →
                            </button>
                          </div>
                        )}
@@ -3561,23 +3561,23 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                   {/* Overlay Modal para formulario de actualización */}
                   {(selectedRowForUpdate || selectedRowsForUpdate.length > 0 || isMultipleSelectionMode) && (
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
-                      <div className="bg-gray-800 bg-opacity-95 rounded-xl border border-gray-700 p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+                      <div className="bg-neutral-900 bg-opacity-95 rounded-xl border border-neutral-700 p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
                       
                       {/* Información sobre múltiples filas seleccionadas automáticamente */}
                       {!isMultipleSelectionMode && selectedRowsForUpdate.length > 0 && (
-                        <div className="mb-6 p-4 bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg">
-                          <h3 className="text-lg font-bold text-blue-300 mb-2">
-                            📋 Actualización Múltiple Automática
+                        <div className="mb-6 p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
+                          <h3 className="text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                            📋 ACTUALIZACIÓN MÚLTIPLE AUTOMÁTICA
                           </h3>
-                          <p className="text-blue-200 mb-3">
-                            Se han seleccionado <span className="font-bold">{selectedRowsForUpdate.length}</span> entradas del nodo <span className="font-bold">{selectedRowsForUpdate[0]?.nodoid}</span> para actualizar.
+                          <p className="text-neutral-300 mb-3 font-mono">
+                            Se han seleccionado <span className="font-bold text-orange-500">{selectedRowsForUpdate.length}</span> entradas del nodo <span className="font-bold text-orange-500">{selectedRowsForUpdate[0]?.nodoid}</span> para actualizar.
                             {(selectedTable === 'sensor' || selectedTable === 'metricasensor') && (
-                              <span className="block text-sm text-blue-300 mt-1">
+                              <span className="block text-sm text-neutral-400 mt-1 font-mono">
                                 📅 Timestamp: {new Date(selectedRowsForUpdate[0]?.datecreated).toLocaleString()}
                               </span>
                             )}
                           </p>
-                          <div className="text-sm text-blue-300">
+                          <div className="text-sm text-neutral-400 font-mono">
                             <p>• Los cambios se aplicarán a todas las entradas seleccionadas</p>
                             <p>• Los campos clave no se pueden modificar</p>
                             <p>• Solo se actualizarán los campos que modifiques</p>
@@ -3609,14 +3609,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                              
                              return (
                                <div key={col.columnName} className="mb-4">
-                                 <label className="block text-lg font-bold text-white mb-2">
-                                   {displayName} 🔒
+                                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                   {displayName.toUpperCase()} 🔒
                                  </label>
                                  <input
                                    type="text"
                                    value={displayValue}
                                    readOnly
-                                    className="w-full px-3 py-2 border rounded-lg text-gray-300 cursor-not-allowed bg-gray-600 border-gray-500"
+                                    className="w-full px-3 py-2 border rounded-lg text-neutral-300 cursor-not-allowed bg-neutral-800 border-neutral-600 font-mono"
                                     title="Campo clave - No editable"
                                   />
                                </div>
@@ -3627,8 +3627,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            if (col.columnName === 'statusid') {
                              return (
                                <div key={col.columnName} className="mb-4">
-                                 <label className="block text-lg font-bold text-white mb-2">
-                                   {displayName}
+                                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                   {displayName.toUpperCase()}
                                  </label>
                                  <div className="flex items-center space-x-3">
                                    <input
@@ -3639,10 +3639,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                        ...prev,
                                        [col.columnName]: e.target.checked ? 1 : 0
                                      }))}
-                                     className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                     className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                    />
-                                   <label htmlFor={`update-${col.columnName}`} className="text-white text-lg font-medium">
-                                     Activo
+                                   <label htmlFor={`update-${col.columnName}`} className="text-white text-lg font-medium font-mono tracking-wider">
+                                     ACTIVO
                                    </label>
                                  </div>
                                </div>
@@ -3652,8 +3652,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            // Campos de texto normales (editables)
                            return (
                              <div key={col.columnName} className="mb-4">
-                               <label className="block text-lg font-bold text-white mb-2">
-                                 {displayName}
+                               <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                 {displayName.toUpperCase()}
                                </label>
                                <input
                                  type="text"
@@ -3662,7 +3662,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                    ...prev,
                                    [col.columnName]: e.target.value
                                  }))}
-                                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
+                                 className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
                                />
                              </div>
                            );
@@ -3759,17 +3759,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         <button
                           onClick={handleUpdate}
                           disabled={updateLoading}
-                          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
                         >
                           <span>➕</span>
-                          <span>{updateLoading ? 'Guardando...' : 'Guardar'}</span>
+                          <span>{updateLoading ? 'GUARDANDO...' : 'GUARDAR'}</span>
                         </button>
                         <button
                           onClick={handleCancelUpdate}
-                          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+                          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
                         >
                           <span>❌</span>
-                          <span>Cancelar</span>
+                          <span>CANCELAR</span>
                         </button>
                       </div>
                       </div>
@@ -3788,13 +3788,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => handleSearchTermChange(e.target.value)}
-                                placeholder="🔍 SEARCH ALL FIELDS..."
+                                placeholder="🔍 Buscar en todos los campos..."
                                 className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
                               />
                             </div>
                             {searchTerm && (
                               <div className="mt-2 text-sm text-neutral-400 font-mono">
-                                SHOWING {updateData.length} FILTERED RECORDS
+                                Mostrando {updateData.length} registros filtrados
                               </div>
                             )}
                           </div>
@@ -3808,13 +3808,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 onClick={handleGoToManualUpdateForm}
                                 className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                🔧 UPDATE {selectedRowsForManualUpdate.length} ENTRY(IES)
+                                🔧 Actualizar {selectedRowsForManualUpdate.length} entrada(s)
                               </button>
                               <button
                                 onClick={handleDeselectAll}
                                 className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-mono tracking-wider"
                               >
-                                🗑️ CLEAR SELECTION
+                                🗑️ Limpiar Selección
                               </button>
                             </div>
                           </div>
@@ -3824,8 +3824,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                          <div className="overflow-x-auto -mx-2 sm:mx-0">
                            {updateData.length > 0 ? (
-                             <table className="w-full text-sm text-left text-gray-300">
-                                                                <thead className="text-xs text-gray-400 bg-gray-700">
+                             <table className="w-full text-sm text-left text-neutral-300">
+                                                                <thead className="text-xs text-neutral-400 bg-neutral-800">
                                    <tr>
                                      <th className="px-2 py-3 w-12">
                                        {/* Columna de selección sin título */}
@@ -3833,8 +3833,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      {visibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
-                                         <th key={col.columnName} className="px-6 py-3">
-                                           {displayName}
+                                         <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
+                                           {displayName.toUpperCase()}
                                          </th>
                                        ) : null;
                                      })}
@@ -3855,7 +3855,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      : selectedRowForUpdate === row;
                                    
                                    return (
-                                   <tr key={(currentPage - 1) * itemsPerPage + index} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700 cursor-pointer" onClick={(e) => {
+                                   <tr key={(currentPage - 1) * itemsPerPage + index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer" onClick={(e) => {
                                      // Solo ejecutar si no se hizo clic en el checkbox
                                      if ((e.target as HTMLInputElement).type !== 'checkbox') {
                                      if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
@@ -3879,7 +3879,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                              handleSelectRowForUpdate(row);
                                            }
                                          }}
-                                         className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                         className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                        />
                                      </td>
                                      {visibleColumns.map(col => {
@@ -3918,19 +3918,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                <button
                                  onClick={prevPage}
                                  disabled={!hasPrevPage}
-                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                 className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
-                                 ← Anterior
+                                 ← ANTERIOR
                                </button>
-                               <span className="text-white flex items-center px-3">
-                                 Página {currentPage} de {totalPages}
+                               <span className="text-white flex items-center px-3 font-mono tracking-wider">
+                                 PÁGINA {currentPage} DE {totalPages}
                                </span>
                                <button
                                  onClick={nextPage}
                                  disabled={!hasNextPage}
-                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                 className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
-                                 Siguiente →
+                                 SIGUIENTE →
                                </button>
                              </div>
                            )}

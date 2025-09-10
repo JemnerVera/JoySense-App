@@ -87,7 +87,7 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="SEARCH..."
+              placeholder="Buscar..."
               className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
               autoFocus
             />
@@ -111,7 +111,7 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
               ))
             ) : (
               <div className="px-3 py-2 text-sm text-neutral-400 font-mono">
-                NO RESULTS FOUND
+                No se encontraron resultados
               </div>
             )}
           </div>
