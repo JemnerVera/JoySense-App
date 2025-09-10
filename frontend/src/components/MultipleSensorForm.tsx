@@ -24,7 +24,7 @@ interface MultipleSensorFormProps {
   onCancel: () => void;
   onUpdateSensorNodo: (sensorIndex: number, nodoid: number) => void;
   onUpdateAllSensorsNodo: (nodoid: string) => void;
-  getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
+  getUniqueOptionsForField: (columnName: string, filterParams?: { entidadid?: string }) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
   // Filtros globales para contextualizar
@@ -148,8 +148,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
 
-      {/* Selección de Nodo y Entidad */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Selección de Nodo, Entidad y Cantidad */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
              NODO
@@ -180,10 +180,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
              disabled={!selectedNodo}
            />
          </div>
-      </div>
 
-      {/* Selección de Cantidad y Status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
              CANTIDAD
@@ -206,6 +203,10 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
              disabled={!selectedNodo || !selectedEntidad}
            />
          </div>
+      </div>
+
+      {/* Selección de Status */}
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
 
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -249,7 +250,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                    <SelectWithPlaceholder
                      value={sensor.tipoid}
                      onChange={(newValue) => onUpdateSensorTipo(sensor.sensorIndex, newValue ? parseInt(newValue.toString()) : 0)}
-                     options={getUniqueOptionsForField('tipoid')}
+                     options={getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })}
                      placeholder="Seleccionar tipo"
                      className="flex-1 px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
                    />

@@ -1959,7 +1959,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
-    const getUniqueOptionsForField = (columnName: string) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string }) => {
     console.log('🔍 getUniqueOptionsForField Debug:', {
       columnName,
       paisSeleccionado,
@@ -2090,7 +2090,21 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log('🏷️ No hay datos de tipos disponibles');
           return [];
         }
-        const tipoResult = tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
+        
+        // Filtrar tipos por entidad si se proporciona
+        let filteredTipos = tiposData;
+        if (filterParams?.entidadid) {
+          filteredTipos = tiposData.filter(tipo => 
+            tipo.entidadid && tipo.entidadid.toString() === filterParams.entidadid
+          );
+          console.log('🏷️ Tipos filtrados por entidad:', {
+            entidadid: filterParams.entidadid,
+            totalTipos: tiposData.length,
+            tiposFiltrados: filteredTipos.length
+          });
+        }
+        
+        const tipoResult = filteredTipos.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
         console.log('🏷️ Opciones de tipos devueltas:', tipoResult);
         return tipoResult;
       case 'metricaid':
