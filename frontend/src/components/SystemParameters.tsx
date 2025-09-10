@@ -417,6 +417,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   activeTab
 }) => {
   const { user } = useAuth();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update'>(propActiveSubTab || 'status');
   
@@ -1922,9 +1923,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   };
 
     const getUniqueOptionsForField = (columnName: string) => {
-    // Aplicar filtros globales para jerarquía dinámica
-    const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
-    
     switch (columnName) {
       case 'paisid':
         return paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
