@@ -70,8 +70,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       if (!isReplicateMode) {
         onInitializeMetricas(selectedNodos, selectedMetricas).catch(console.error);
       }
-    } else if (!isReplicateMode) {
-      // Solo limpiar métricas si no estamos en modo replicación
+    } else if (!isReplicateMode && multipleMetricas.length > 0) {
+      // Solo limpiar métricas si no estamos en modo replicación y hay métricas
       setMultipleMetricas([]);
     }
   }, [selectedNodos, selectedMetricas, onInitializeMetricas, isReplicateMode]);

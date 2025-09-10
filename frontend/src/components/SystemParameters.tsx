@@ -2754,7 +2754,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   };
 
      // Función para inicializar métricas múltiples
-   const initializeMultipleMetricas = async (nodos: string[], metricas: string[]) => {
+   const initializeMultipleMetricas = React.useCallback(async (nodos: string[], metricas: string[]) => {
      try {
        // Crear todas las combinaciones válidas (nodoid, metricaid, tipoid)
        const metricasToCreate = [];
@@ -2823,7 +2823,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          text: 'Error al verificar métricas sensor existentes' 
        });
      }
-   };
+   }, [selectedStatus, tiposData, metricasData, nodosData, setMultipleMetricas, setMessage]);
 
   // Función para manejar inserción múltiple de sensores
   const handleMultipleSensorInsert = async () => {
