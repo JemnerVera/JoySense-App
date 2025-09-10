@@ -481,32 +481,32 @@ const AppContentInternal: React.FC = () => {
         >
           {/* Contenido de bienvenida o contenido dinámico */}
               {showWelcomeIntegrated ? (
-                <div className="flex items-center justify-center h-full min-h-screen">
+                <div className="flex items-center justify-center h-full min-h-screen bg-black">
                   <div className="text-center max-w-2xl mx-auto px-6">
-                    {/* Logo o icono de la aplicación */}
+                    {/* Logo táctico */}
                     <div className="mb-12">
-                      <div className="w-32 h-32 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
-                        <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75S7 14 17 8z"/>
-                        </svg>
+                      <div className="w-32 h-32 bg-neutral-900 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                        <img src="/Logo - icono.png" alt="JoySense" className="w-16 h-16" />
                       </div>
                       
-                      <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
-                        {t('welcome.title')}
+                      <h1 className="text-5xl font-bold text-orange-500 mb-4 leading-tight font-mono tracking-wider">
+                        BIENVENIDO A JOYSENSE APP
                       </h1>
                       
-                      <p className="text-2xl text-green-100 mb-12 font-light">
-                        {t('welcome.subtitle')}
+                      <p className="text-2xl text-neutral-300 mb-12 font-mono tracking-wider">
+                        SISTEMA DE MONITOREO INTELIGENTE
                       </p>
                       
-                      {/* Instrucción con mejor diseño */}
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                      {/* Instrucción con diseño táctico */}
+                      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-8">
                         <div className="flex items-center justify-center mb-4">
-                          <svg className="w-8 h-8 text-green-300 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <p className="text-xl text-white font-semibold">
-                            Selecciona una pestaña del menú lateral para comenzar
+                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <p className="text-xl text-white font-mono tracking-wider">
+                            SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR
                           </p>
                         </div>
                         

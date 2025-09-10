@@ -3672,9 +3672,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
                       {/* Tabla de entradas seleccionadas para actualización múltiple */}
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && (
-                        <div className="bg-gray-700 rounded-lg p-4 mb-6">
+                        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
                           <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-lg font-bold text-white">Actualizar Status</h4>
+                            <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">ACTUALIZAR STATUS</h4>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {
@@ -3684,9 +3684,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                     statusid: 1
                                   }));
                                 }}
-                                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                                className="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                ✓ Activar Todo
+                                ✓ ACTIVAR TODO
                               </button>
                               <button
                                 onClick={() => {
@@ -3695,35 +3695,35 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                     statusid: 0
                                   }));
                                 }}
-                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+                                className="px-3 py-1 bg-neutral-700 border border-neutral-600 text-white rounded text-sm hover:bg-neutral-600 transition-colors font-mono tracking-wider"
                               >
-                                ✗ Desactivar Todo
+                                ✗ DESACTIVAR TODO
                               </button>
                             </div>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>
-                                <tr className="border-b border-gray-600">
+                                <tr className="border-b border-neutral-600">
                                   {visibleColumns
                                     .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName))
                                     .map(col => (
-                                      <th key={col.columnName} className="text-left py-2 px-2 text-gray-300 font-medium">
-                                        {getColumnDisplayName(col.columnName)}
+                                      <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">
+                                        {getColumnDisplayName(col.columnName).toUpperCase()}
                                       </th>
                                     ))}
-                                  <th className="text-left py-2 px-2 text-gray-300 font-medium">Status</th>
+                                  <th className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">STATUS</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {(selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate).map((row, index) => (
-                                  <tr key={index} className="border-b border-gray-600">
+                                  <tr key={index} className="border-b border-neutral-600">
                                     {visibleColumns
                                       .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName))
                                       .map(col => (
-                                        <td key={col.columnName} className="py-2 px-2 text-white">
+                                        <td key={col.columnName} className="py-2 px-2 text-white font-mono">
                                           {col.columnName === 'statusid' 
-                                            ? (row[col.columnName] === 1 ? 'Activo' : 'Inactivo')
+                                            ? (row[col.columnName] === 1 ? 'ACTIVO' : 'INACTIVO')
                                             : getDisplayValue(row, col.columnName)
                                           }
                                         </td>
@@ -3737,10 +3737,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                             ...prev,
                                             statusid: e.target.checked ? 1 : 0
                                           }))}
-                                          className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                          className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                         />
-                                        <span className="text-white text-sm">
-                                          {updateFormData.statusid === 1 ? 'Activo' : 'Inactivo'}
+                                        <span className="text-white text-sm font-mono tracking-wider">
+                                          {updateFormData.statusid === 1 ? 'ACTIVO' : 'INACTIVO'}
                                         </span>
                                       </div>
                                     </td>

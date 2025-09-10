@@ -344,8 +344,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -365,8 +365,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -386,8 +386,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -407,8 +407,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -427,8 +427,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -447,8 +447,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -468,8 +468,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -488,8 +488,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -509,8 +509,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -529,8 +529,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -549,8 +549,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -570,8 +570,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -590,8 +590,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -610,8 +610,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -630,8 +630,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -650,8 +650,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -671,8 +671,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -691,8 +691,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -712,8 +712,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -732,8 +732,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -753,8 +753,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -773,8 +773,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -794,8 +794,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -814,8 +814,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             const options = getUniqueOptionsForField(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
-                <label className="block text-lg font-bold text-white mb-2">
-                  {displayName}
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}
                 </label>
                 <SelectWithPlaceholder
                   value={value}
@@ -869,7 +869,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'SAVING...' : 'SAVE'}</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         
         {/* Botón de replicar para nodo */}
@@ -884,7 +884,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>CANCEL</span>
+          <span>CANCELAR</span>
         </button>
         
         {selectedTable === 'sensor' && onPasteFromClipboard && (
@@ -892,7 +892,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             onClick={onPasteFromClipboard}
             className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider"
           >
-            PASTE FROM CLIPBOARD
+            PEGAR DESDE PORTAPAPELES
           </button>
         )}
       </div>
