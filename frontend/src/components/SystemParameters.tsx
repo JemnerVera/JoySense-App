@@ -382,6 +382,8 @@ const usePagination = (data: any[], itemsPerPage: number = 10) => {
   
   const nextPage = () => goToPage(currentPage + 1);
   const prevPage = () => goToPage(currentPage - 1);
+  const firstPage = () => goToPage(1);
+  const lastPage = () => goToPage(totalPages);
   
   // Resetear a página 1 cuando cambian los datos
   useEffect(() => {
@@ -396,6 +398,8 @@ const usePagination = (data: any[], itemsPerPage: number = 10) => {
     goToPage,
     nextPage,
     prevPage,
+    firstPage,
+    lastPage,
     hasNextPage: currentPage < totalPages,
     hasPrevPage: currentPage > 1
   };
@@ -766,7 +770,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [selectedRowsForManualUpdate, setSelectedRowsForManualUpdate] = useState<any[]>([]);
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
-  const { getPaginatedData, goToPage, nextPage, prevPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
   // Función simple para verificar si hay cambios sin guardar
   const hasUnsavedChanges = (): boolean => {
@@ -1033,7 +1037,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Cargar datos con paginación para tablas grandes
       const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
       const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
-      setTableData(data);
+      
+      // Ordenar por fecha de modificación (más recientes primero)
+      const sortedData = data.sort((a: any, b: any) => {
+        const dateA = new Date(a.datemodified || a.datecreated || 0);
+        const dateB = new Date(b.datemodified || b.datecreated || 0);
+        return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
+      });
+      
+      setTableData(sortedData);
       
              // Los datos filtrados se aplicarán automáticamente por el hook useGlobalFilterEffect
        // Inicializar paginación para la tabla de Estado
@@ -3580,6 +3592,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                        {statusTotalPages > 1 && (
                          <div className="flex justify-center gap-2 mt-6">
                            <button
+                             onClick={() => handleStatusPageChange(1)}
+                             disabled={statusCurrentPage <= 1}
+                             className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                             title="Primera página"
+                           >
+                             ⏮️
+                           </button>
+                           <button
                              onClick={() => handleStatusPageChange(statusCurrentPage - 1)}
                              disabled={statusCurrentPage <= 1}
                              className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
@@ -3595,6 +3615,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                              className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                            >
                              SIGUIENTE →
+                           </button>
+                           <button
+                             onClick={() => handleStatusPageChange(statusTotalPages)}
+                             disabled={statusCurrentPage >= statusTotalPages}
+                             className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                             title="Última página"
+                           >
+                             ⏭️
                            </button>
                          </div>
                        )}
@@ -4097,6 +4125,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            {updateFilteredData.length > 0 && totalPages > 1 && (
                              <div className="flex justify-center gap-2 mt-4">
                                <button
+                                 onClick={firstPage}
+                                 disabled={!hasPrevPage}
+                                 className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 title="Primera página"
+                               >
+                                 ⏮️
+                               </button>
+                               <button
                                  onClick={prevPage}
                                  disabled={!hasPrevPage}
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
@@ -4112,6 +4148,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
                                  SIGUIENTE →
+                               </button>
+                               <button
+                                 onClick={lastPage}
+                                 disabled={!hasNextPage}
+                                 className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 title="Última página"
+                               >
+                                 ⏭️
                                </button>
                              </div>
                            )}
