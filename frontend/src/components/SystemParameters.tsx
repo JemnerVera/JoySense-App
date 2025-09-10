@@ -2075,8 +2075,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             });
           }
         }
-        const nodoResult = filteredNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
-        console.log('🔗 Opciones de nodos devueltas:', nodoResult);
+        // Ordenar nodos por fecha de modificación (más recientes primero)
+        const sortedNodos = filteredNodos.sort((a: any, b: any) => {
+          const dateA = new Date(a.datemodified || a.datecreated || 0);
+          const dateB = new Date(b.datemodified || b.datecreated || 0);
+          return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
+        });
+        
+        const nodoResult = sortedNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
+        console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
         return nodoResult;
       case 'tipoid':
         if (!tiposData || tiposData.length === 0) {
@@ -2841,6 +2848,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
      // Estados para creación múltiple de sensores
    const [multipleSensors, setMultipleSensors] = useState<any[]>([]);
    const [selectedNodo, setSelectedNodo] = useState<string>('');
+   const [selectedEntidad, setSelectedEntidad] = useState<string>('');
    const [selectedTipo, setSelectedTipo] = useState<string>('');
    const [selectedStatus, setSelectedStatus] = useState<boolean>(true);
    const [selectedSensorCount, setSelectedSensorCount] = useState<number>(0);
@@ -3682,6 +3690,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                                 <MultipleSensorForm
                            selectedNodo={selectedNodo}
                            setSelectedNodo={setSelectedNodo}
+                           selectedEntidad={selectedEntidad}
+                           setSelectedEntidad={setSelectedEntidad}
                            selectedTipo={selectedTipo}
                            setSelectedTipo={setSelectedTipo}
                            selectedStatus={selectedStatus}
@@ -3690,6 +3700,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            setSelectedSensorCount={setSelectedSensorCount}
                            multipleSensors={multipleSensors}
                            nodosData={nodosData}
+                           entidadesData={entidadesData}
                            tiposData={tiposData}
                            loading={loading}
                            onInitializeSensors={initializeMultipleSensors}
@@ -3700,6 +3711,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            onCancel={() => {
                              setMultipleSensors([]);
                              setSelectedNodo('');
+                             setSelectedEntidad('');
                              setSelectedTipo('');
                              setSelectedSensorCount(0);
                            }}

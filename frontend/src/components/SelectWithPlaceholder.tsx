@@ -6,6 +6,7 @@ interface SelectWithPlaceholderProps {
   options: Array<{ value: any; label: string }>;
   placeholder: string;
   className?: string;
+  disabled?: boolean;
 }
 
 const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
@@ -13,7 +14,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   onChange,
   options,
   placeholder,
-  className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
+  className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono",
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,8 +57,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`${className} cursor-pointer flex justify-between items-center`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center`}
       >
         <span className={value && value !== 0 ? 'text-white' : 'text-neutral-400'} style={{fontFamily: 'monospace'}}>
           {selectedOption ? selectedOption.label.toUpperCase() : placeholder.toUpperCase()}
@@ -64,7 +66,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
         <span className="text-neutral-400">▼</span>
       </div>
       
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
           {/* Barra de búsqueda */}
           <div className="p-2 border-b border-neutral-700">

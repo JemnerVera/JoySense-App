@@ -5,6 +5,8 @@ import ReplicateButton from './ReplicateButton';
 interface MultipleSensorFormProps {
   selectedNodo: string;
   setSelectedNodo: (value: string) => void;
+  selectedEntidad: string;
+  setSelectedEntidad: (value: string) => void;
   selectedTipo: string;
   setSelectedTipo: (value: string) => void;
   selectedStatus: boolean;
@@ -13,6 +15,7 @@ interface MultipleSensorFormProps {
   setSelectedSensorCount: (value: number) => void;
   multipleSensors: any[];
   nodosData: any[];
+  entidadesData: any[];
   tiposData: any[];
   loading: boolean;
   onInitializeSensors: (nodoid: string, count: number, specificTipos?: number[]) => void;
@@ -37,6 +40,8 @@ interface MultipleSensorFormProps {
 const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
   selectedNodo,
   setSelectedNodo,
+  selectedEntidad,
+  setSelectedEntidad,
   selectedTipo,
   setSelectedTipo,
   selectedStatus,
@@ -45,6 +50,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
   setSelectedSensorCount,
   multipleSensors,
   nodosData,
+  entidadesData,
   tiposData,
   loading,
   onInitializeSensors,
@@ -142,8 +148,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
 
-      {/* Selección de Nodo, Cantidad y Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Selección de Nodo y Entidad */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
              NODO
@@ -152,21 +158,32 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
              value={selectedNodo}
              onChange={(newValue) => {
                setSelectedNodo(newValue?.toString() || '');
-               if (newValue) {
-                 // Si ya hay sensores creados, solo actualizar el nodo
-                 if (multipleSensors.length > 0) {
-                   onUpdateAllSensorsNodo(newValue.toString());
-                 } else {
-                   // Si no hay sensores, inicializar normalmente
-                   onInitializeSensors(newValue.toString(), selectedSensorCount);
-                 }
-               }
+               // Limpiar entidad cuando se cambia el nodo
+               setSelectedEntidad('');
              }}
              options={getUniqueOptionsForField('nodoid')}
              placeholder="Seleccionar nodo"
            />
          </div>
 
+         <div>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+             ENTIDAD
+           </label>
+           <SelectWithPlaceholder
+             value={selectedEntidad}
+             onChange={(newValue) => {
+               setSelectedEntidad(newValue?.toString() || '');
+             }}
+             options={getUniqueOptionsForField('entidadid')}
+             placeholder="Seleccionar entidad"
+             disabled={!selectedNodo}
+           />
+         </div>
+      </div>
+
+      {/* Selección de Cantidad y Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
              CANTIDAD
@@ -176,7 +193,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
              onChange={(newValue) => {
                const newCount = newValue ? parseInt(newValue.toString()) : 1;
                setSelectedSensorCount(newCount);
-               if (selectedNodo) {
+               if (selectedNodo && selectedEntidad) {
                  onInitializeSensors(selectedNodo, newCount);
                }
              }}
@@ -186,6 +203,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                { value: 3, label: '3 Sensores' }
              ]}
              placeholder="Seleccionar cantidad"
+             disabled={!selectedNodo || !selectedEntidad}
            />
          </div>
 
