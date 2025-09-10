@@ -2475,7 +2475,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['empresaid', 'fundo', 'fundobrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['empresaid', 'fundo', 'farmabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'ubicacion') {

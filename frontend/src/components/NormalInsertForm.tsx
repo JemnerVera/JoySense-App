@@ -269,7 +269,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     // Primera fila: Empresa, Fundo, Abreviatura
     const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
     const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'fundobrev');
+    const abreviaturaField = visibleColumns.find(c => c.columnName === 'farmabrev');
     
     if (empresaField || fundoField || abreviaturaField) {
       result.push(
