@@ -474,6 +474,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setStatusTotalPages(Math.ceil(filteredTableData.length / itemsPerPage));
     setStatusCurrentPage(1);
   }, [filteredTableData, itemsPerPage]);
+
+  // Aplicar filtros globales a updateData
+  const filteredUpdateData = useGlobalFilterEffect({
+    tableName: selectedTable,
+    data: updateData
+  });
+
+  // Actualizar updateFilteredData cuando cambien los filtros globales
+  useEffect(() => {
+    setUpdateFilteredData(filteredUpdateData);
+  }, [filteredUpdateData]);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -496,6 +507,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Estados para actualización con paginación
   const [updateData, setUpdateData] = useState<any[]>([]);
+  const [updateFilteredData, setUpdateFilteredData] = useState<any[]>([]);
   const [searchField, setSearchField] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRowForUpdate, setSelectedRowForUpdate] = useState<any>(null);
@@ -753,7 +765,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [selectedRowsForManualUpdate, setSelectedRowsForManualUpdate] = useState<any[]>([]);
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
-  const { getPaginatedData, goToPage, nextPage, prevPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateData, itemsPerPage);
+  const { getPaginatedData, goToPage, nextPage, prevPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
   // Función simple para verificar si hay cambios sin guardar
   const hasUnsavedChanges = (): boolean => {
@@ -1470,7 +1482,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setHasSearched(true);
       // Para "Actualizar", usar búsqueda simple como en "Estado"
       // Filtrar los datos localmente en lugar de hacer llamadas al backend
-      const filtered = filteredTableData.filter(row => {
+      const filtered = updateFilteredData.filter(row => {
         return visibleColumns.some(col => {
           const value = row[col.columnName];
           if (value === null || value === undefined) return false;
@@ -3831,7 +3843,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                             </div>
                             {searchTerm && (
                               <div className="mt-2 text-sm text-neutral-400 font-mono">
-                                Mostrando {updateData.length} registros filtrados
+                                Mostrando {updateFilteredData.length} de {updateData.length} registros
                               </div>
                             )}
                           </div>
@@ -3860,7 +3872,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                        {/* Tabla de datos para actualizar - Usando la misma lógica que "Estado" */}
                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
                          <div className="overflow-x-auto -mx-2 sm:mx-0">
-                           {updateData.length > 0 ? (
+                           {updateFilteredData.length > 0 ? (
                              <table className="w-full text-sm text-left text-neutral-300">
                                                                 <thead className="text-xs text-neutral-400 bg-neutral-800">
                                    <tr>
@@ -3950,7 +3962,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                          </div>
                          
                                                     {/* Paginación */}
-                           {updateData.length > 0 && totalPages > 1 && (
+                           {updateFilteredData.length > 0 && totalPages > 1 && (
                              <div className="flex justify-center gap-2 mt-4">
                                <button
                                  onClick={prevPage}
