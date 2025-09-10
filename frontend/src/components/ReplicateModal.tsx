@@ -151,16 +151,16 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white">
-            Replicar {tableName.charAt(0).toUpperCase() + tableName.slice(1)}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-orange-500 font-mono tracking-wider">
+            🔄 REPLICAR {tableName.toUpperCase()}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-neutral-400 hover:text-white transition-colors p-1"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -169,7 +169,10 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
         </div>
 
         {/* Combobox de selección */}
-      <div className="mb-6">
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-neutral-300 mb-2 font-mono tracking-wider">
+            SELECCIONAR NODO
+          </label>
           <select
             value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : ''}
             onChange={(e) => {
@@ -180,10 +183,10 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
               });
               setSelectedEntry(entry || null);
             }}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
           >
             <option value="" disabled>
-              Seleccionar {tableName}...
+              SELECCIONAR NODO...
             </option>
             {filteredData.map((entry, index) => (
               <option 
@@ -198,11 +201,11 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
 
         {/* Tabla de datos del nodo seleccionado */}
               {selectedEntry && tableName === 'nodo' && originalTable === 'nodo' && (
-                <div className="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+                <div className="mb-6 p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-600">
+                        <tr className="border-b border-neutral-600">
                           {Object.entries(selectedEntry)
                             .filter(([key, value]) => 
                               !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(key) &&
@@ -210,14 +213,14 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                             )
                             .slice(0, 5)
                             .map(([key, value]) => (
-                              <th key={key} className="text-left py-2 px-2 text-gray-300 font-medium">
+                              <th key={key} className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">
                                 {getColumnDisplayName(key)}
                               </th>
                             ))}
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="border-b border-gray-600">
+                        <tr className="border-b border-neutral-600">
                           {Object.entries(selectedEntry)
                             .filter(([key, value]) => 
                               !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(key) &&
@@ -238,16 +241,16 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
 
         {/* Tabla de sensores del nodo seleccionado */}
               {selectedEntry && tableName === 'nodo' && originalTable === 'sensor' && (
-                <div className="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+                <div className="mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-600">
             {getSensorsForSelectedNode().length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-600">
+                    <tr className="border-b border-neutral-600">
                       {relatedColumns
                         .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
                         .map(col => (
-                          <th key={col.columnName} className="text-left py-2 px-2 text-gray-300 font-medium">
+                          <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium">
                             {getColumnDisplayName(col.columnName)}
                           </th>
                         ))}
@@ -255,7 +258,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                   </thead>
                   <tbody>
                     {getSensorsForSelectedNode().map((sensor, index) => (
-                      <tr key={index} className="border-b border-gray-600">
+                      <tr key={index} className="border-b border-neutral-600">
                         {relatedColumns
                           .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
                           .map(col => (
@@ -269,7 +272,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                 </table>
               </div>
             ) : (
-              <div className="text-gray-400 text-sm">
+              <div className="text-neutral-400 text-sm">
                 No hay sensores asociados a este nodo.
               </div>
             )}
@@ -278,16 +281,16 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
 
         {/* Tabla de métricas sensor del nodo seleccionado */}
               {selectedEntry && tableName === 'nodo' && originalTable === 'metricasensor' && (
-                <div className="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+                <div className="mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-600">
             {getMetricasForSelectedNode().length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-600">
+                    <tr className="border-b border-neutral-600">
                       {relatedColumns
                         .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
                         .map(col => (
-                          <th key={col.columnName} className="text-left py-2 px-2 text-gray-300 font-medium">
+                          <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium">
                             {getColumnDisplayName(col.columnName)}
                           </th>
                         ))}
@@ -295,7 +298,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                   </thead>
                   <tbody>
                     {getMetricasForSelectedNode().map((metrica, index) => (
-                      <tr key={index} className="border-b border-gray-600">
+                      <tr key={index} className="border-b border-neutral-600">
                         {relatedColumns
                           .filter(col => !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName))
                           .map(col => (
@@ -309,7 +312,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                 </table>
               </div>
             ) : (
-              <div className="text-gray-400 text-sm">
+              <div className="text-neutral-400 text-sm">
                 No hay métricas sensor asociadas a este nodo.
               </div>
             )}
@@ -318,8 +321,8 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
 
         {/* Vista simplificada para otros tipos de tabla */}
         {selectedEntry && tableName !== 'nodo' && (
-          <div className="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
-            <h4 className="text-sm font-medium text-gray-300 mb-3">
+          <div className="mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-600">
+            <h4 className="text-sm font-medium text-neutral-300 mb-3">
               Datos que se replicarán:
             </h4>
             <div className="space-y-2">
@@ -331,7 +334,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
                 .slice(0, 5) // Mostrar máximo 5 campos
                 .map(([key, value]) => (
                   <div key={key} className="flex justify-between text-sm">
-                    <span className="text-gray-400 capitalize">{key}:</span>
+                    <span className="text-neutral-400 capitalize">{key}:</span>
                     <span className="text-white">{value?.toString()}</span>
                   </div>
                 ))}
@@ -344,21 +347,21 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           <button
             onClick={handleReplicate}
             disabled={!selectedEntry}
-            className={`px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+            className={`px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 font-mono tracking-wider ${
               selectedEntry
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-neutral-600 text-neutral-400 cursor-not-allowed'
             }`}
           >
             <span>🔄</span>
-            <span>Replicar</span>
+            <span>REPLICAR</span>
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center space-x-2"
+            className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
           >
             <span>❌</span>
-            <span>Cancelar</span>
+            <span>CANCELAR</span>
           </button>
         </div>
       </div>

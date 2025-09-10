@@ -1150,12 +1150,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         
-        {/* Botón de replicar para nodo */}
-        {selectedTable === 'nodo' && onReplicateClick && (
-          <ReplicateButton
-            onClick={onReplicateClick}
-          />
-        )}
         
         <button
           onClick={onCancel}
