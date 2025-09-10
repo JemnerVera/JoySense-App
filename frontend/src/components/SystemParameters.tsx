@@ -1158,7 +1158,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Para actualizar, cargar todos los datos de la tabla (como en copiar)
       const response = await JoySenseService.getTableData(selectedTable, 1000);
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
-      setUpdateData(data);
+      
+      // Ordenar por fecha de modificación (más recientes primero) - igual que en loadTableData
+      const sortedData = data.sort((a: any, b: any) => {
+        const dateA = new Date(a.datemodified || a.datecreated || 0);
+        const dateB = new Date(b.datemodified || b.datecreated || 0);
+        return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
+      });
+      
+      setUpdateData(sortedData);
     } catch (error) {
       console.error('Error loading update data:', error);
       setUpdateMessage({ type: 'error', text: 'Error cargando datos para actualizar' });
