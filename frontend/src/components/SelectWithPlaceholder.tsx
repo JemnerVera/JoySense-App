@@ -16,6 +16,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Cerrar dropdown cuando se hace clic fuera
@@ -35,6 +36,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   const handleOptionClick = (optionValue: any) => {
     onChange(optionValue);
     setIsOpen(false);
+    setSearchTerm('');
   };
 
   const selectedOption = options.find(option => 
@@ -43,6 +45,11 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       option.value === value?.toString() || 
       option.value?.toString() === value?.toString()
     )
+  );
+
+  // Filtrar opciones basado en el término de búsqueda
+  const filteredOptions = options.filter(option =>
+    option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -58,16 +65,41 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       </div>
       
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {options.map((option) => (
-            <div
-              key={option.value}
-              onClick={() => handleOptionClick(option.value)}
-              className="px-3 py-2 hover:bg-neutral-800 cursor-pointer text-white font-mono tracking-wider"
-            >
-              {option.label.toUpperCase()}
-            </div>
-          ))}
+        <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+          {/* Barra de búsqueda */}
+          <div className="p-2 border-b border-neutral-700">
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          
+          {/* Lista de opciones */}
+          <div className="max-h-32 overflow-y-auto">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <div
+                  key={option.value}
+                  onClick={() => handleOptionClick(option.value)}
+                  className={`px-3 py-2 cursor-pointer text-white font-mono tracking-wider transition-colors ${
+                    selectedOption?.value === option.value 
+                      ? 'bg-orange-500' 
+                      : 'hover:bg-neutral-800'
+                  }`}
+                >
+                  {option.label.toUpperCase()}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                NO SE ENCONTRARON RESULTADOS
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

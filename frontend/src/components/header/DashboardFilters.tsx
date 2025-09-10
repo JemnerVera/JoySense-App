@@ -262,26 +262,26 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         >
           {loadingEntidades ? (
             <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
-              <p className="text-gray-400 text-sm">Cargando entidades...</p>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mx-auto mb-2"></div>
+              <p className="text-neutral-400 text-sm font-mono">CARGANDO ENTIDADES...</p>
             </div>
           ) : filteredEntidades.length > 0 ? (
             filteredEntidades.map((entidad: any) => (
               <button
                 key={entidad.entidadid}
                 onClick={() => handleEntidadSelect(entidad)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedEntidad?.entidadid === entidad.entidadid
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-white hover:bg-gray-700'
+                    ? 'bg-orange-500 text-white' 
+                    : 'text-white hover:bg-neutral-800'
                 }`}
               >
-                {entidad.entidad}
+                {entidad.entidad.toUpperCase()}
               </button>
             ))
           ) : (
-            <p className="text-gray-400 text-sm">
-              {!fundoSeleccionado ? 'Selecciona un fundo primero' : 'No hay entidades disponibles'}
+            <p className="text-neutral-400 text-sm font-mono tracking-wider">
+              {!fundoSeleccionado ? 'SELECCIONA UN FUNDO PRIMERO' : 'NO HAY ENTIDADES DISPONIBLES'}
             </p>
           )}
         </OverlayDropdown>
@@ -302,26 +302,26 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         >
           {loadingUbicaciones ? (
             <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto mb-2"></div>
-              <p className="text-gray-400 text-sm">Cargando ubicaciones...</p>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mx-auto mb-2"></div>
+              <p className="text-neutral-400 text-sm font-mono">CARGANDO UBICACIONES...</p>
             </div>
           ) : filteredUbicaciones.length > 0 ? (
             filteredUbicaciones.map((ubicacion: any) => (
               <button
                 key={ubicacion.ubicacionid}
                 onClick={() => handleUbicacionSelect(ubicacion)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedUbicacion?.ubicacionid === ubicacion.ubicacionid
-                    ? 'bg-green-600 text-white' 
-                    : 'text-white hover:bg-gray-700'
+                    ? 'bg-orange-500 text-white' 
+                    : 'text-white hover:bg-neutral-800'
                 }`}
               >
-                {ubicacion.ubicacion}
+                {ubicacion.ubicacion.toUpperCase()}
               </button>
             ))
           ) : (
-            <p className="text-gray-400 text-sm">
-              {!selectedEntidad ? 'Selecciona una entidad primero' : 'No hay ubicaciones disponibles'}
+            <p className="text-neutral-400 text-sm font-mono tracking-wider">
+              {!selectedEntidad ? 'SELECCIONA UNA ENTIDAD PRIMERO' : 'NO HAY UBICACIONES DISPONIBLES'}
             </p>
           )}
         </OverlayDropdown>

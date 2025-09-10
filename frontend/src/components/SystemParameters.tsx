@@ -14,6 +14,7 @@ import ReplicateModal from './ReplicateModal';
 import ReplicateButton from './ReplicateButton';
 import { useReplicate } from '../hooks/useReplicate';
 import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
+import { useFilters } from '../contexts/FilterContext';
 
 // Hook personalizado para manejar selección múltiple basada en timestamp
 const useMultipleSelection = (selectedTable: string) => {
@@ -1071,7 +1072,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         );
         primaryKey = idColumn ? idColumn.columnName : 'id';
       }
-
+      
       const adaptedInfo: TableInfo = {
         tableName: selectedTable,
         displayName: selectedTable,
@@ -1549,7 +1550,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
     
     console.log('📊 Resultado de búsqueda:', { searchTerm, found: filtered.length, total: filteredTableData.length });
-    setStatusFilteredData(filtered);
+         setStatusFilteredData(filtered);
     setStatusTotalPages(Math.ceil(filtered.length / itemsPerPage));
   };
 
@@ -1921,19 +1922,46 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   };
 
     const getUniqueOptionsForField = (columnName: string) => {
+    // Aplicar filtros globales para jerarquía dinámica
+    const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+    
     switch (columnName) {
       case 'paisid':
         return paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
       case 'empresaid':
-        return empresasData.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
+        // Filtrar empresas por país seleccionado
+        const filteredEmpresas = paisSeleccionado 
+          ? empresasData.filter(empresa => empresa.paisid.toString() === paisSeleccionado)
+          : empresasData;
+        return filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
       case 'fundoid':
-        return fundosData.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
+        // Filtrar fundos por empresa seleccionada
+        const filteredFundos = empresaSeleccionada 
+          ? fundosData.filter(fundo => fundo.empresaid.toString() === empresaSeleccionada)
+          : fundosData;
+        return filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
       case 'ubicacionid':
-        return ubicacionesData.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
+        // Filtrar ubicaciones por fundo seleccionado
+        const filteredUbicaciones = fundoSeleccionado 
+          ? ubicacionesData.filter(ubicacion => ubicacion.fundoid.toString() === fundoSeleccionado)
+          : ubicacionesData;
+        return filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
       case 'entidadid':
-        return entidadesData.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
+        // Filtrar entidades por fundo seleccionado
+        const filteredEntidades = fundoSeleccionado 
+          ? entidadesData.filter(entidad => entidad.fundoid.toString() === fundoSeleccionado)
+          : entidadesData;
+        return filteredEntidades.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
       case 'nodoid':
-        return nodosData.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
+        // Filtrar nodos por ubicación seleccionada (si hay filtros globales)
+        let filteredNodos = nodosData;
+        if (fundoSeleccionado) {
+          // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
+          const ubicacionesDelFundo = ubicacionesData.filter(u => u.fundoid.toString() === fundoSeleccionado);
+          const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
+          filteredNodos = nodosData.filter(nodo => ubicacionIds.includes(nodo.ubicacionid));
+        }
+        return filteredNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
       case 'tipoid':
         return tiposData.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
       case 'metricaid':
@@ -2203,7 +2231,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
           
           result = await JoySenseService.updateTableRowByCompositeKey(
-            selectedTable,
+          selectedTable,
             compositeKey,
             filteredUpdateData
           );
