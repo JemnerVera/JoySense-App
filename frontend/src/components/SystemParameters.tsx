@@ -1936,8 +1936,23 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   };
 
     const getUniqueOptionsForField = (columnName: string) => {
+    console.log('🔍 getUniqueOptionsForField Debug:', {
+      columnName,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado,
+      paisesDataLength: paisesData.length,
+      empresasDataLength: empresasData.length
+    });
+    
     switch (columnName) {
       case 'paisid':
+        // Si hay un país seleccionado en filtros globales, solo mostrar ese país
+        if (paisSeleccionado) {
+          const filteredPaises = paisesData.filter(pais => pais.paisid.toString() === paisSeleccionado);
+          console.log('🌍 Filtros globales aplicados a países:', { paisSeleccionado, filteredCount: filteredPaises.length });
+          return filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
+        }
         return paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
       case 'empresaid':
         // Filtrar empresas por país seleccionado
