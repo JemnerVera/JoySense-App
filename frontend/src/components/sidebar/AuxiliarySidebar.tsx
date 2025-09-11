@@ -98,17 +98,17 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={() => onTabChange(`reportes-${subTab.id}`)}
-                className={`w-full flex items-center px-4 py-3 text-left transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-green-600 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700'
+                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                  isActive
+                    ? "bg-green-600 text-white"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                 }`}
               >
                 <div className="flex-shrink-0">
                   {subTab.icon}
                 </div>
                 {isExpanded && (
-                  <span className="ml-3 font-medium">{subTab.label}</span>
+                  <span className="text-sm font-medium tracking-wider">{subTab.label.toUpperCase()}</span>
                 )}
               </button>
             );

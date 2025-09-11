@@ -87,33 +87,33 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     const contextualFields = fields.map(field => {
       if (field === 'pais' && paisSeleccionado) {
         return (
-          <div key="pais-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+          <div key="pais-contextual">
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               PAÍS
             </label>
-            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
               {getPaisName(paisSeleccionado)}
             </div>
           </div>
         );
       } else if (field === 'empresa' && empresaSeleccionada) {
         return (
-          <div key="empresa-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+          <div key="empresa-contextual">
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               EMPRESA
             </label>
-            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
               {getEmpresaName(empresaSeleccionada)}
             </div>
           </div>
         );
       } else if (field === 'fundo' && fundoSeleccionado) {
         return (
-          <div key="fundo-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+          <div key="fundo-contextual">
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               FUNDO
             </label>
-            <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
               {getFundoName(fundoSeleccionado)}
             </div>
           </div>
@@ -247,11 +247,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
         // Mostrar como texto cuando solo hay una opción
         result.push(
           <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 PAÍS
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
               </div>
             </div>
@@ -312,21 +312,21 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {paisField && (paisOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 PAÍS
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
               </div>
             </div>
           ) : renderField(paisField))}
           {empresaField && (empresaOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 EMPRESA
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {empresaOptions[0].label}
               </div>
             </div>
@@ -382,31 +382,31 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {paisField && (paisOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 PAÍS
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
               </div>
             </div>
           ) : renderField(paisField))}
           {empresaField && (empresaOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 EMPRESA
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {empresaOptions[0].label}
               </div>
             </div>
           ) : renderField(empresaField))}
           {fundoField && (fundoOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 FUNDO
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {fundoOptions[0].label}
               </div>
             </div>
@@ -649,31 +649,31 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {paisField && (paisOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 PAÍS
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
               </div>
             </div>
           ) : renderField(paisField))}
           {empresaField && (empresaOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 EMPRESA
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {empresaOptions[0].label}
               </div>
             </div>
           ) : renderField(empresaField))}
           {fundoField && (fundoOptions.length === 1 ? (
-            <div className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+            <div>
+              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 FUNDO
               </label>
-              <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
                 {fundoOptions[0].label}
               </div>
             </div>
