@@ -75,6 +75,9 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   const [entidadSearchTerm, setEntidadSearchTerm] = React.useState('');
   const [metricasSearchTerm, setMetricasSearchTerm] = React.useState('');
   
+  // Estado para tipos seleccionados
+  const [selectedTiposCheckboxes, setSelectedTiposCheckboxes] = React.useState<string[]>([]);
+  
   // Estado para métricas seleccionadas con checkboxes
   const [selectedMetricasCheckboxes, setSelectedMetricasCheckboxes] = React.useState<string[]>([]);
   const [combinacionesStatus, setCombinacionesStatus] = React.useState<{[key: string]: boolean}>({});
@@ -106,6 +109,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       setNodosSearchTerm('');
       setEntidadSearchTerm('');
       setMetricasSearchTerm('');
+      setSelectedTiposCheckboxes([]);
       setSelectedMetricasCheckboxes([]);
       setCombinacionesStatus({});
     };
@@ -121,6 +125,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       setNodosSearchTerm('');
       setEntidadSearchTerm('');
       setMetricasSearchTerm('');
+      setSelectedTiposCheckboxes([]);
       setSelectedMetricasCheckboxes([]);
       setCombinacionesStatus({});
     }
@@ -133,12 +138,19 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     }
   }, [selectedMetricas]);
 
+  // Limpiar tipos y métricas cuando cambia la entidad
+  React.useEffect(() => {
+    setSelectedTiposCheckboxes([]);
+    setSelectedMetricasCheckboxes([]);
+    setCombinacionesStatus({});
+  }, [selectedEntidad]);
+
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
     setSelectedMetricas(selectedMetricasCheckboxes);
     
     // Generar las combinaciones para multipleMetricas
-    if (selectedNodos.length > 0 && selectedMetricasCheckboxes.length > 0 && selectedEntidad) {
+    if (selectedNodos.length > 0 && selectedMetricasCheckboxes.length > 0 && selectedTiposCheckboxes.length > 0 && selectedEntidad) {
       const combinaciones: Array<{
         nodoid: number;
         metricaid: number;
@@ -149,16 +161,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       selectedMetricasCheckboxes.forEach((metricaId) => {
         const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
         
-        // Obtener tipos disponibles para la entidad seleccionada
-        const tiposDisponibles = getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad });
-        
         selectedNodos.forEach((nodoId) => {
-          tiposDisponibles.forEach((tipo) => {
-            const key = `${nodoId}-${metricaId}-${tipo.value}`;
+          selectedTiposCheckboxes.forEach((tipoId) => {
+            const key = `${nodoId}-${metricaId}-${tipoId}`;
             combinaciones.push({
               nodoid: parseInt(nodoId),
               metricaid: parseInt(metricaId),
-              tipoid: parseInt(tipo.value),
+              tipoid: parseInt(tipoId),
               statusid: combinacionesStatus[key] !== false ? 1 : 0 // Por defecto true (activo)
             });
           });
@@ -169,7 +178,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     } else {
       setMultipleMetricas([]);
     }
-  }, [selectedMetricasCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData]);
+  }, [selectedMetricasCheckboxes, selectedTiposCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData]);
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -423,11 +432,43 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 
 
 
-      {/* Nuevo diseño: 2 containers lado a lado */}
+      {/* Nuevo diseño: 3 containers lado a lado */}
       {selectedNodos.length > 0 && selectedEntidad && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Container 1: Métricas disponibles con checkboxes */}
+          {/* Container 1: Tipos de sensores disponibles con checkboxes */}
+          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
+              TIPOS DE SENSOR
+            </h4>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
+                .map((option) => (
+                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedTiposCheckboxes.includes(option.value.toString())}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTiposCheckboxes([...selectedTiposCheckboxes, option.value.toString()]);
+                        } else {
+                          setSelectedTiposCheckboxes(selectedTiposCheckboxes.filter(id => id !== option.value.toString()));
+                        }
+                      }}
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    />
+                    <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                  </label>
+                ))}
+              {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad }).length === 0 && (
+                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                  NO HAY TIPOS DISPONIBLES PARA ESTA ENTIDAD
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Container 2: Métricas disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
               MÉTRICAS DISPONIBLES
@@ -459,13 +500,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
             </div>
           </div>
 
-          {/* Container 2: Combinatoria de sensores por métrica */}
+          {/* Container 3: Combinatoria de sensores por métrica */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
               SENSORES CON METRICAS GENERADOS
             </h4>
             <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
-              {selectedMetricasCheckboxes.length > 0 ? (
+              {selectedTiposCheckboxes.length > 0 && selectedMetricasCheckboxes.length > 0 ? (
                 (() => {
                   // Generar todas las combinaciones: nodo + métrica + tipo
                   const combinaciones: Array<{
@@ -482,21 +523,20 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                   selectedMetricasCheckboxes.forEach((metricaId) => {
                     const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
                     
-                    // Obtener tipos disponibles para la entidad seleccionada
-                    const tiposDisponibles = getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad });
-                    
                     selectedNodos.forEach((nodoId) => {
                       const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
                       
-                      tiposDisponibles.forEach((tipo) => {
+                      selectedTiposCheckboxes.forEach((tipoId) => {
+                        const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
+                        
                         combinaciones.push({
                           id: contador++,
                           nodo: nodo?.nodo || nodoId,
                           metrica: metrica?.metrica || 'N/A',
-                          tipo: tipo.label,
+                          tipo: tipo?.tipo || 'N/A',
                           nodoid: nodoId,
                           metricaid: metricaId,
-                          tipoid: tipo.value.toString()
+                          tipoid: tipoId
                         });
                       });
                     });
@@ -545,7 +585,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                 })()
               ) : (
                 <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                  SELECCIONA MÉTRICAS PARA VER LA COMBINATORIA
+                  SELECCIONA TIPOS Y MÉTRICAS PARA VER LA COMBINATORIA
                 </div>
               )}
             </div>
@@ -557,7 +597,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       <div className="flex justify-center gap-4 mt-8">
         <button
           onClick={onInsertMetricas}
-          disabled={loading || multipleMetricas.length === 0}
+          disabled={loading || multipleMetricas.length === 0 || selectedTiposCheckboxes.length === 0 || selectedMetricasCheckboxes.length === 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
