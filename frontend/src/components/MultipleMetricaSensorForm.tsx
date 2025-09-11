@@ -336,7 +336,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODO</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => selectedEntidad && setNodosDropdownOpen(!nodosDropdownOpen)}
@@ -439,7 +439,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
           {/* Container 1: Tipos de sensores disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              TIPOS DE SENSOR
+              SENSOR
             </h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
@@ -471,7 +471,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
           {/* Container 2: Métricas disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              MÉTRICAS DISPONIBLES
+              MÉTRICA
             </h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad })
