@@ -45,6 +45,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 }) => {
   console.log('🔍 NormalInsertForm renderizado:', {
     selectedTable,
+    visibleColumnsLength: visibleColumns?.length,
+    visibleColumns: visibleColumns?.map(c => c.columnName),
     paisSeleccionado,
     empresaSeleccionada,
     fundoSeleccionado,
@@ -613,7 +615,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       selectedTable,
       paisSeleccionado,
       empresaSeleccionada,
-      fundoSeleccionado
+      fundoSeleccionado,
+      visibleColumns: visibleColumns.map(c => c.columnName)
     });
     
     // Auto-seleccionar País, Empresa y Fundo si solo hay una opción
