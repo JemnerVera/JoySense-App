@@ -508,75 +508,68 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
             <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
               {selectedTiposCheckboxes.length > 0 && selectedMetricasCheckboxes.length > 0 ? (
                 (() => {
-                  // Generar todas las combinaciones: nodo + métrica + tipo
-                  const combinaciones: Array<{
-                    id: number;
+                  // Agrupar por nodo y tipo, concatenando las métricas
+                  const grupos: Record<string, {
                     nodo: string;
-                    metrica: string;
                     tipo: string;
+                    metricas: string[];
                     nodoid: string;
-                    metricaid: string;
                     tipoid: string;
-                  }> = [];
-                  let contador = 1;
+                    metricaids: string[];
+                  }> = {};
                   
-                  selectedMetricasCheckboxes.forEach((metricaId) => {
-                    const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
+                  selectedNodos.forEach((nodoId) => {
+                    const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
                     
-                    selectedNodos.forEach((nodoId) => {
-                      const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
+                    selectedTiposCheckboxes.forEach((tipoId) => {
+                      const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
                       
-                      selectedTiposCheckboxes.forEach((tipoId) => {
-                        const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
-                        
-                        combinaciones.push({
-                          id: contador++,
+                      const key = `${nodoId}-${tipoId}`;
+                      if (!grupos[key]) {
+                        grupos[key] = {
                           nodo: nodo?.nodo || nodoId,
-                          metrica: metrica?.metrica || 'N/A',
                           tipo: tipo?.tipo || 'N/A',
+                          metricas: [],
                           nodoid: nodoId,
-                          metricaid: metricaId,
-                          tipoid: tipoId
-                        });
+                          tipoid: tipoId,
+                          metricaids: []
+                        };
+                      }
+                      
+                      // Agregar todas las métricas seleccionadas para este nodo-tipo
+                      selectedMetricasCheckboxes.forEach((metricaId) => {
+                        const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
+                        if (metrica && !grupos[key].metricas.includes(metrica.metrica)) {
+                          grupos[key].metricas.push(metrica.metrica);
+                          grupos[key].metricaids.push(metricaId);
+                        }
                       });
                     });
                   });
                   
-                  // Agrupar por tipo y reordenar
-                  const combinacionesAgrupadas = combinaciones.sort((a, b) => {
-                    // Primero ordenar por tipo, luego por métrica
-                    if (a.tipo !== b.tipo) {
-                      return a.tipo.localeCompare(b.tipo);
+                  // Convertir a array y ordenar por nodo y tipo
+                  const gruposArray = Object.values(grupos).sort((a, b) => {
+                    if (a.nodo !== b.nodo) {
+                      return a.nodo.localeCompare(b.nodo);
                     }
-                    return a.metrica.localeCompare(b.metrica);
+                    return a.tipo.localeCompare(b.tipo);
                   });
+                  
+                  // Calcular el total de entradas individuales
+                  const totalEntradas = selectedNodos.length * selectedTiposCheckboxes.length * selectedMetricasCheckboxes.length;
                   
                   return (
                     <>
                       <div className="text-sm text-neutral-400 font-mono mb-2">
-                        ({combinacionesAgrupadas.length} entradas)
+                        ({totalEntradas} entradas)
                       </div>
-                      {combinacionesAgrupadas.map((combinacion, index) => (
-                        <div key={`${combinacion.nodo}-${combinacion.metrica}-${combinacion.tipo}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
-                              <span className="text-white text-sm font-mono">
-                                {combinacion.nodo} | {combinacion.metrica} | {combinacion.tipo}
-                              </span>
-                            </div>
-                            <input
-                              type="checkbox"
-                              checked={combinacionesStatus[`${combinacion.nodoid}-${combinacion.metricaid}-${combinacion.tipoid}`] !== false}
-                              className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-                              onChange={(e) => {
-                                const key = `${combinacion.nodoid}-${combinacion.metricaid}-${combinacion.tipoid}`;
-                                setCombinacionesStatus(prev => ({
-                                  ...prev,
-                                  [key]: e.target.checked
-                                }));
-                              }}
-                            />
+                      {gruposArray.map((grupo, index) => (
+                        <div key={`${grupo.nodoid}-${grupo.tipoid}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
+                            <span className="text-white text-sm font-mono">
+                              {grupo.nodo} | {grupo.tipo} | {grupo.metricas.join(', ')}
+                            </span>
                           </div>
                         </div>
                       ))}

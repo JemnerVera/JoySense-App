@@ -514,6 +514,79 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [mediosData, setMediosData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
 
+  // Función para agrupar datos de metricasensor por nodo
+  const groupMetricaSensorData = (data: any[]) => {
+    if (selectedTable !== 'metricasensor') {
+      return data;
+    }
+
+    // Agrupar por nodoid
+    const groupedData = data.reduce((acc: any, row: any) => {
+      const nodoid = row.nodoid;
+      if (!acc[nodoid]) {
+        // Buscar el nombre del nodo
+        const nodo = nodosData?.find(n => n.nodoid === nodoid);
+        
+        acc[nodoid] = {
+          nodoid: row.nodoid,
+          nodo: nodo?.nodo || `Nodo ${nodoid}`,
+          tipos: new Set(),
+          metricas: new Set(),
+          usercreatedid: row.usercreatedid,
+          datecreated: row.datecreated,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified,
+          statusid: row.statusid,
+          // Mantener referencia a las filas originales para el formulario de edición
+          originalRows: []
+        };
+      }
+      
+      // Buscar el nombre del tipo
+      const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
+      if (tipo?.tipo) {
+        acc[nodoid].tipos.add(tipo.tipo);
+      }
+      
+      // Buscar el nombre de la métrica
+      const metrica = metricasData?.find(m => m.metricaid === row.metricaid);
+      if (metrica?.metrica) {
+        acc[nodoid].metricas.add(metrica.metrica);
+      }
+      
+      // Crear fila original con nombres incluidos
+      const enrichedRow = {
+        ...row,
+        tipo: tipo?.tipo || `Tipo ${row.tipoid}`,
+        metrica: metrica?.metrica || `Métrica ${row.metricaid}`,
+        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`
+      };
+      
+      
+      // Agregar fila original enriquecida
+      acc[nodoid].originalRows.push(enrichedRow);
+      
+      return acc;
+    }, {});
+
+    // Convertir a array y formatear tipos y métricas
+    const result = Object.values(groupedData).map((group: any) => ({
+      ...group,
+      tipos: Array.from(group.tipos).join(', '),
+      metricas: Array.from(group.metricas).join(', '),
+      // Para compatibilidad con el sistema de selección
+      tipoid: group.originalRows[0]?.tipoid,
+      metricaid: group.originalRows[0]?.metricaid
+    }));
+
+    // Ordenar por fecha de modificación más reciente primero
+    return result.sort((a: any, b: any) => {
+      const dateA = new Date(a.datemodified || a.datecreated || 0);
+      const dateB = new Date(b.datemodified || b.datecreated || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
   // Estados para actualización con paginación
   const [updateData, setUpdateData] = useState<any[]>([]);
   const [updateFilteredData, setUpdateFilteredData] = useState<any[]>([]);
@@ -691,7 +764,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const openReplicateModalForTable = async () => {
     let modalData = tableData;
     let modalTableName = selectedTable;
-    let modalVisibleColumns = visibleColumns;
+    let modalVisibleColumns = updateVisibleColumns;
     
     console.log('🔍 openReplicateModalForTable - selectedTable:', selectedTable);
     console.log('🔍 openReplicateModalForTable - tableData:', tableData);
@@ -823,6 +896,22 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
   const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+
+  // Para metricasensor, calcular totalPages basado en datos agrupados
+  const getTotalPagesForMetricaSensor = () => {
+    if (selectedTable === 'metricasensor' && updateFilteredData.length > 0) {
+      const groupedData = groupMetricaSensorData(updateFilteredData);
+      return Math.ceil(groupedData.length / itemsPerPage);
+    }
+    return totalPages;
+  };
+
+  // Total de páginas corregido para metricasensor
+  const correctedTotalPages = getTotalPagesForMetricaSensor();
+
+  // Funciones de navegación corregidas para metricasensor
+  const correctedHasNextPage = selectedTable === 'metricasensor' ? currentPage < correctedTotalPages : hasNextPage;
+  const correctedHasPrevPage = selectedTable === 'metricasensor' ? currentPage > 1 : hasPrevPage;
 
   // Función simple para verificar si hay cambios sin guardar
   const hasUnsavedChanges = (): boolean => {
@@ -1594,7 +1683,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Para "Actualizar", usar búsqueda simple como en "Estado"
       // Filtrar los datos localmente en lugar de hacer llamadas al backend
       const filtered = updateFilteredData.filter(row => {
-        return visibleColumns.some(col => {
+        return statusVisibleColumns.some(col => {
           const value = row[col.columnName];
           if (value === null || value === undefined) return false;
           
@@ -1647,7 +1736,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     console.log('🔍 Búsqueda en Estado:', { searchTerm, totalRows: filteredTableData.length });
     
     const filtered = filteredTableData.filter(row => {
-      return visibleColumns.some(col => {
+      return statusVisibleColumns.some(col => {
         const value = row[col.columnName];
         if (value === null || value === undefined) return false;
         
@@ -1691,7 +1780,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
     
     const filtered = copyData.filter(row => {
-      return visibleColumns.some(col => {
+      return statusVisibleColumns.some(col => {
         const value = row[col.columnName];
         if (value === null || value === undefined) return false;
         
@@ -1727,97 +1816,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     return statusFilteredData.slice(startIndex, endIndex);
   };
 
-  // Función para agrupar datos de metricasensor por nodo
-  const groupMetricaSensorData = (data: any[]) => {
-    if (selectedTable !== 'metricasensor') {
-      return data;
-    }
-
-    // Agrupar por nodoid
-    const groupedData = data.reduce((acc: any, row: any) => {
-      const nodoid = row.nodoid;
-      if (!acc[nodoid]) {
-        // Buscar el nombre del nodo
-        const nodo = nodosData?.find(n => n.nodoid === nodoid);
-        
-        acc[nodoid] = {
-          nodoid: row.nodoid,
-          nodo: nodo?.nodo || `Nodo ${nodoid}`,
-          tipos: new Set(),
-          metricas: new Set(),
-          usercreatedid: row.usercreatedid,
-          datecreated: row.datecreated,
-          usermodifiedid: row.usermodifiedid,
-          datemodified: row.datemodified,
-          statusid: row.statusid,
-          // Mantener referencia a las filas originales para el formulario de edición
-          originalRows: []
-        };
-      }
-      
-      // Buscar el nombre del tipo
-      const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
-      if (tipo?.tipo) {
-        acc[nodoid].tipos.add(tipo.tipo);
-      }
-      
-      // Buscar el nombre de la métrica
-      const metrica = metricasData?.find(m => m.metricaid === row.metricaid);
-      if (metrica?.metrica) {
-        acc[nodoid].metricas.add(metrica.metrica);
-      }
-      
-      // Crear fila original con nombres incluidos
-      const enrichedRow = {
-        ...row,
-        tipo: tipo?.tipo || `Tipo ${row.tipoid}`,
-        metrica: metrica?.metrica || `Métrica ${row.metricaid}`,
-        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`
-      };
-      
-      
-      // Agregar fila original enriquecida
-      acc[nodoid].originalRows.push(enrichedRow);
-      
-      return acc;
-    }, {});
-
-    // Convertir a array y formatear tipos y métricas
-    const result = Object.values(groupedData).map((group: any) => ({
-      ...group,
-      tipos: Array.from(group.tipos).join(', '),
-      metricas: Array.from(group.metricas).join(', '),
-      // Para compatibilidad con el sistema de selección
-      tipoid: group.originalRows[0]?.tipoid,
-      metricaid: group.originalRows[0]?.metricaid
-    }));
-
-    // Ordenar por fecha de modificación más reciente primero
-    return result.sort((a: any, b: any) => {
-      const dateA = new Date(a.datemodified || a.datecreated || 0);
-      const dateB = new Date(b.datemodified || b.datecreated || 0);
-      return dateB.getTime() - dateA.getTime();
-    });
-  };
 
   // Función para obtener los datos paginados de la tabla de Actualizar
   const getUpdatePaginatedData = () => {
     const data = getPaginatedData();
-    // Para metricasensor, mostrar datos agrupados por nodo
+    // Para metricasensor, mostrar datos agrupados por nodo SOLO en la tabla de Actualizar
     if (selectedTable === 'metricasensor') {
-      console.log('🔄 Agrupando datos de metricasensor:', {
-        dataLength: data.length,
-        nodosDataLength: nodosData?.length,
-        tiposDataLength: tiposData?.length,
-        metricasDataLength: metricasData?.length
-      });
       const groupedData = groupMetricaSensorData(data);
-      console.log('✅ Datos agrupados:', {
-        originalLength: data.length,
-        groupedLength: groupedData.length,
-        firstGroup: groupedData[0]
-      });
-      return groupedData;
+      
+      // Aplicar paginación a los datos agrupados
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedGroupedData = groupedData.slice(startIndex, endIndex);
+      
+      return paginatedGroupedData;
     }
     return data;
   };
@@ -1830,6 +1842,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setUpdateData(groupedData);
     }
   }, [nodosData, tiposData, metricasData, selectedTable]);
+
+  // Asegurar que los datos relacionados se carguen para metricasensor
+  useEffect(() => {
+    if (selectedTable === 'metricasensor' && tableData.length > 0) {
+      console.log('🔄 Cargando datos relacionados para metricasensor:', {
+        tableDataLength: tableData.length,
+        nodosDataLength: nodosData?.length,
+        tiposDataLength: tiposData?.length,
+        metricasDataLength: metricasData?.length
+      });
+    }
+  }, [selectedTable, tableData, nodosData, tiposData, metricasData]);
 
   // Función para obtener los datos paginados de la tabla de Copiar
   const getCopyPaginatedData = () => {
@@ -2015,7 +2039,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Preparar datos para copiar (excluir campos de auditoría)
       const dataToCopy = selectedRowsForCopy.map(row => {
         const cleanRow: any = {};
-        visibleColumns.forEach(col => {
+        statusVisibleColumns.forEach(col => {
           if (!['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at'].includes(col.columnName)) {
             cleanRow[col.columnName] = row[col.columnName];
           }
@@ -3065,11 +3089,16 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     return reorderedColumns;
   };
 
-  const visibleColumns = getVisibleColumns();
+  // Columnas para la tabla de Estado (individuales)
+  const statusVisibleColumns = getVisibleColumns(false);
+  
+  // Columnas para la tabla de Actualizar (agrupadas para metricasensor)
+  const updateVisibleColumns = getVisibleColumns(true);
   
   // Debug: verificar que los campos de auditoría estén incluidos
   console.log('🔍 Debug - Tabla seleccionada:', selectedTable);
-  console.log('🔍 Debug - Columnas visibles:', visibleColumns.map(col => col.columnName));
+  console.log('🔍 Debug - Columnas visibles (Estado):', statusVisibleColumns.map(col => col.columnName));
+  console.log('🔍 Debug - Columnas visibles (Actualizar):', updateVisibleColumns.map(col => col.columnName));
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
    const getSearchableColumns = () => {
@@ -4102,7 +4131,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                          <table className="w-full text-sm text-left text-neutral-300">
                            <thead className="text-xs text-neutral-400 bg-neutral-800">
                              <tr>
-                               {visibleColumns.map(col => {
+                               {statusVisibleColumns.map(col => {
                                  const displayName = getColumnDisplayName(col.columnName);
                                  return displayName ? (
                                    <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
@@ -4115,7 +4144,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            <tbody>
                              {getStatusPaginatedData().map((row, index) => (
                                <tr key={index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800">
-                                 {visibleColumns.map(col => {
+                                 {statusVisibleColumns.map(col => {
                                    const displayName = getColumnDisplayName(col.columnName);
                                    return displayName ? (
                                      <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
@@ -4356,7 +4385,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       {/* Formulario normal para actualización de una sola entrada */}
                       {selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                        {visibleColumns.map(col => {
+                        {updateVisibleColumns.map(col => {
                           const displayName = getColumnDisplayName(col.columnName);
                           if (!displayName) return null;
                           
@@ -4473,7 +4502,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="border-b border-neutral-600">
-                                  {visibleColumns
+                                  {updateVisibleColumns
                                     .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'statusid'].includes(col.columnName))
                                     .map(col => (
                                       <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">
@@ -4486,7 +4515,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                               <tbody>
                                 {(selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate).map((row, index) => (
                                   <tr key={index} className="border-b border-neutral-600">
-                                    {visibleColumns
+                                    {updateVisibleColumns
                                       .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'statusid'].includes(col.columnName))
                                       .map(col => (
                                         <td key={col.columnName} className="py-2 px-2 text-white font-mono">
@@ -4598,7 +4627,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      <th className="px-2 py-3 w-12">
                                        {/* Columna de selección sin título */}
                                      </th>
-                                     {visibleColumns.map(col => {
+                                     {updateVisibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
                                          <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
@@ -4650,7 +4679,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                          className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                        />
                                      </td>
-                                     {visibleColumns.map(col => {
+                                     {updateVisibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
                                          <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
@@ -4693,24 +4722,24 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                </button>
                                <button
                                  onClick={prevPage}
-                                 disabled={!hasPrevPage}
+                                 disabled={!correctedHasPrevPage}
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
                                  ← ANTERIOR
                                </button>
                                <span className="text-white flex items-center px-3 font-mono tracking-wider">
-                                 PÁGINA {currentPage} DE {totalPages}
+                                 PÁGINA {currentPage} DE {correctedTotalPages}
                                </span>
                                <button
                                  onClick={nextPage}
-                                 disabled={!hasNextPage}
+                                 disabled={!correctedHasNextPage}
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
                                  SIGUIENTE →
                                </button>
                                <button
                                  onClick={lastPage}
-                                 disabled={!hasNextPage}
+                                 disabled={!correctedHasNextPage}
                                  className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                  title="Última página"
                                >
