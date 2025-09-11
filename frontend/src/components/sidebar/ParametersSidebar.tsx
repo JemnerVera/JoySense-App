@@ -55,8 +55,21 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
     }
   ];
 
-  // Todas las subpestañas están disponibles para todas las tablas
-  const subTabs = allSubTabs;
+  // Filtrar subpestañas según la tabla seleccionada
+  const getSubTabs = () => {
+    if (selectedTable === 'audit_log_umbral') {
+      // Solo Estado para AUDIT LOG UMBRAL
+      return allSubTabs.filter(tab => tab.id === 'status');
+    } else if (selectedTable === 'usuario') {
+      // Solo Estado y Actualizar para USUARIO (sin Crear)
+      return allSubTabs.filter(tab => tab.id !== 'insert');
+    } else {
+      // Todas las subpestañas para otras tablas
+      return allSubTabs;
+    }
+  };
+  
+  const subTabs = getSubTabs();
 
   // Debug para verificar el estado del sidebar
   console.log('🔍 ParametersSidebar renderizado:', {

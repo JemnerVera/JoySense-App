@@ -2826,12 +2826,67 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
     }
     
+    // Reordenar columnas según los requerimientos específicos
     const reorderedColumns = [];
     const statusColumn = injectedColumns.find(col => col.columnName === 'statusid');
-    const otherColumns = injectedColumns.filter(col => col.columnName !== 'statusid');
+    const auditColumns = injectedColumns.filter(col => ['usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
+    const otherColumns = injectedColumns.filter(col => !['statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
     
-    // Primero las otras columnas, luego statusid
-    reorderedColumns.push(...otherColumns);
+    // Reordenar según la tabla específica
+    if (selectedTable === 'empresa') {
+      // Pais, Empresa, Abreviatura
+      reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
+    } else if (selectedTable === 'fundo') {
+      // Empresa, Fundo, Abreviatura (sin Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['farmabrev'].includes(col.columnName)));
+    } else if (selectedTable === 'ubicacion') {
+      // Fundo, Ubicacion (sin Empresa y Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
+    } else if (selectedTable === 'localizacion') {
+      // Entidad, Ubicacion, Nodo (sin Fundo, Empresa y Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
+    } else if (selectedTable === 'tipo') {
+      // Entidad, Tipo
+      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
+    } else if (selectedTable === 'metricasensor') {
+      // Nodo, Tipo, Metrica
+      reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['tipoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
+    } else if (selectedTable === 'umbral') {
+      // Ubicacion, Nodo, Tipo, Metrica, Nombre Umbral, Criticidad, Valor Minimo, Valor Maximo, Status
+      reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['tipoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['umbral'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['criticidadid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['minimo'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['maximo'].includes(col.columnName)));
+    } else if (selectedTable === 'usuario') {
+      // Usuario, Nombre, Apellido
+      reorderedColumns.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
+    } else {
+      // Para otras tablas, mantener el orden original
+      reorderedColumns.push(...otherColumns);
+    }
+    
+    // Agregar columnas de auditoría
+    reorderedColumns.push(...auditColumns);
+    
+    // Agregar status al final
     if (statusColumn) {
       reorderedColumns.push(statusColumn);
     }
