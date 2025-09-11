@@ -453,6 +453,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setSelectedRowForUpdate(null);
       setSelectedRowsForUpdate([]);
       setUpdateFormData({});
+      setIndividualRowStatus({});
       setSearchField('');
       setSearchTerm('');
     }
@@ -557,6 +558,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [selectedRowsForUpdate, setSelectedRowsForUpdate] = useState<any[]>([]);
   const [bulkUpdateField, setBulkUpdateField] = useState<string>('');
   const [bulkUpdateValue, setBulkUpdateValue] = useState<any>('');
+  const [individualRowStatus, setIndividualRowStatus] = useState<{[key: string]: boolean}>({});
   
   // Estados para modal de confirmación
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -860,6 +862,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setSelectedRowForUpdate(null);
     setSelectedRowsForUpdate([]);
     setUpdateFormData({});
+    setIndividualRowStatus({});
     clearCopySelectionOnTableChange();
     setMessage(null);
     setUpdateMessage(null); // Limpiar mensajes de actualización al cambiar de tabla
@@ -1738,6 +1741,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         // Deseleccionar todas las entradas con el mismo timestamp
         setSelectedRowsForUpdate([]);
         setUpdateFormData({});
+        setIndividualRowStatus({});
         setMessage({ type: 'success', text: 'Selección cancelada' });
         return;
       }
@@ -1877,6 +1881,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setSelectedRowsForUpdate([]);
       setSelectedRowsForManualUpdate([]);
     setUpdateFormData({});
+    setIndividualRowStatus({});
       setIsMultipleSelectionMode(false);
       setShowCancelModal(false);
     });
@@ -2169,6 +2174,22 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         // Filtrar nodos según el contexto
         let finalFilteredNodos = filteredNodos;
         
+        // Si estamos en el contexto de sensor, filtrar nodos que estén en nodo pero no en sensor
+        if (selectedTable === 'sensor') {
+          finalFilteredNodos = filteredNodos.filter(nodo => {
+            // Verificar que el nodo esté activo
+            if (nodo.statusid !== 1) {
+              return false;
+            }
+            
+            // Verificar que el nodo NO tenga sensores asignados (no esté en tabla sensor)
+            const tieneSensores = tableData.some(sensor => sensor.nodoid === nodo.nodoid);
+            return !tieneSensores;
+          });
+          
+          console.log('🔗 Nodos filtrados para sensor (sin sensores asignados):', finalFilteredNodos.length);
+        }
+        
         // Si estamos en el contexto de metricasensor, filtrar nodos que estén en sensor pero no en metricasensor
         if (selectedTable === 'metricasensor') {
           // Usar datos de sensores cargados específicamente para metricasensor
@@ -2399,11 +2420,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             ? { nodoid: row.nodoid, tipoid: row.tipoid }
             : { nodoid: row.nodoid, tipoid: row.tipoid, metricaid: row.metricaid };
           
+          // Usar el estado individual de cada fila para el statusid
+          const rowKey = `${row.nodoid || row.id || i}`;
+          const individualStatus = individualRowStatus[rowKey];
+          
           // Filtrar solo los campos que realmente necesitamos actualizar
           const fieldsToUpdate = ['statusid']; // Solo actualizar statusid por ahora
           const filteredUpdateData: Record<string, any> = {};
           fieldsToUpdate.forEach(field => {
-            if (updateFormData[field] !== undefined) {
+            if (field === 'statusid') {
+              // Usar el estado individual de la fila
+              filteredUpdateData[field] = individualStatus ? 1 : 0;
+            } else if (updateFormData[field] !== undefined) {
               filteredUpdateData[field] = updateFormData[field];
             }
           });
@@ -2575,6 +2603,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setUpdateFormData({});
       setSelectedRowsForUpdate([]);
       setSelectedRowsForManualUpdate([]);
+      setIndividualRowStatus({});
       setIsMultipleSelectionMode(false);
       
       // Recargar datos
@@ -2628,11 +2657,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['empresaid', 'fundo', 'farmabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['paisid', 'empresaid', 'fundo', 'farmabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'ubicacion') {
-        return ['fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'entidad') {
@@ -2648,7 +2677,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'localizacion') {
-        return ['ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'sensor') {
@@ -2716,9 +2745,90 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
     
     // Reordenar para que statusid aparezca al final
+    // INYECTAR COLUMNAS FALTANTES PARA FORMULARIOS
+    const injectedColumns = [...filteredColumns];
+    
+    if (selectedTable === 'fundo') {
+      // Inyectar paisid si no existe
+      if (!injectedColumns.some(col => col.columnName === 'paisid')) {
+        injectedColumns.unshift({
+          columnName: 'paisid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+    }
+    
+    if (selectedTable === 'ubicacion') {
+      // Inyectar paisid y empresaid si no existen
+      if (!injectedColumns.some(col => col.columnName === 'paisid')) {
+        injectedColumns.unshift({
+          columnName: 'paisid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+      if (!injectedColumns.some(col => col.columnName === 'empresaid')) {
+        injectedColumns.unshift({
+          columnName: 'empresaid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+    }
+    
+    if (selectedTable === 'localizacion') {
+      // Inyectar paisid, empresaid, fundoid si no existen
+      if (!injectedColumns.some(col => col.columnName === 'paisid')) {
+        injectedColumns.unshift({
+          columnName: 'paisid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+      if (!injectedColumns.some(col => col.columnName === 'empresaid')) {
+        injectedColumns.unshift({
+          columnName: 'empresaid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+      if (!injectedColumns.some(col => col.columnName === 'fundoid')) {
+        injectedColumns.unshift({
+          columnName: 'fundoid',
+          dataType: 'integer',
+          isNullable: false,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: true,
+          defaultValue: null
+        });
+      }
+    }
+    
     const reorderedColumns = [];
-    const statusColumn = filteredColumns.find(col => col.columnName === 'statusid');
-    const otherColumns = filteredColumns.filter(col => col.columnName !== 'statusid');
+    const statusColumn = injectedColumns.find(col => col.columnName === 'statusid');
+    const otherColumns = injectedColumns.filter(col => col.columnName !== 'statusid');
     
     // Primero las otras columnas, luego statusid
     reorderedColumns.push(...otherColumns);
@@ -3844,10 +3954,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            onInsertSensors={handleMultipleSensorInsert}
                            onCancel={() => {
                              setCancelAction(() => () => {
-                               setMultipleSensors([]);
-                               setSelectedNodo('');
+                             setMultipleSensors([]);
+                             setSelectedNodo('');
                                setSelectedEntidad('');
-                               setSelectedTipo('');
+                             setSelectedTipo('');
                                setSelectedSensorCount(0);
                                setMessage(null); // Limpiar mensaje de datos copiados
                              });
@@ -3883,10 +3993,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           onInsertMetricas={handleMultipleMetricaInsert}
                           onCancel={() => {
                             setCancelAction(() => () => {
-                              setMultipleMetricas([]);
-                              setSelectedNodos([]);
+                            setMultipleMetricas([]);
+                            setSelectedNodos([]);
                               setSelectedEntidadMetrica('');
-                              setSelectedMetricas([]);
+                            setSelectedMetricas([]);
                               setIsReplicateMode(false);
                               setMessage(null); // Limpiar mensaje de datos copiados
                             });
@@ -4111,25 +4221,25 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                               <button
                                 onClick={() => {
                                   const allRows = selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate;
-                                  setUpdateFormData(prev => ({
-                                    ...prev,
-                                    statusid: 1
-                                  }));
+                                  const allSelected = allRows.every((row, index) => {
+                                    const rowKey = `${row.nodoid || row.id || index}`;
+                                    return individualRowStatus[rowKey] === true;
+                                  });
+                                  
+                                  // Toggle: si todos están seleccionados, deseleccionar todos; si no, seleccionar todos
+                                  const newStatus = !allSelected;
+                                  const newIndividualStatus: {[key: string]: boolean} = {};
+                                  
+                                  allRows.forEach((row, index) => {
+                                    const rowKey = `${row.nodoid || row.id || index}`;
+                                    newIndividualStatus[rowKey] = newStatus;
+                                  });
+                                  
+                                  setIndividualRowStatus(newIndividualStatus);
                                 }}
                                 className="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                ✓ ACTIVAR TODO
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setUpdateFormData(prev => ({
-                                    ...prev,
-                                    statusid: 0
-                                  }));
-                                }}
-                                className="px-3 py-1 bg-neutral-700 border border-neutral-600 text-white rounded text-sm hover:bg-neutral-600 transition-colors font-mono tracking-wider"
-                              >
-                                ✗ DESACTIVAR TODO
+                                TODO
                               </button>
                             </div>
                           </div>
@@ -4138,7 +4248,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                               <thead>
                                 <tr className="border-b border-neutral-600">
                                   {visibleColumns
-                                    .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName))
+                                    .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'statusid'].includes(col.columnName))
                                     .map(col => (
                                       <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">
                                         {getColumnDisplayName(col.columnName).toUpperCase()}
@@ -4151,28 +4261,28 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 {(selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate).map((row, index) => (
                                   <tr key={index} className="border-b border-neutral-600">
                                     {visibleColumns
-                                      .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName))
+                                      .filter(col => !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'statusid'].includes(col.columnName))
                                       .map(col => (
                                         <td key={col.columnName} className="py-2 px-2 text-white font-mono">
-                                          {col.columnName === 'statusid' 
-                                            ? (row[col.columnName] === 1 ? 'ACTIVO' : 'INACTIVO')
-                                            : getDisplayValue(row, col.columnName)
-                                          }
+                                          {getDisplayValue(row, col.columnName)}
                                         </td>
                                       ))}
                                     <td className="py-2 px-2">
                                       <div className="flex items-center space-x-2">
                                         <input
                                           type="checkbox"
-                                          checked={updateFormData.statusid === 1}
-                                          onChange={(e) => setUpdateFormData(prev => ({
-                                            ...prev,
-                                            statusid: e.target.checked ? 1 : 0
-                                          }))}
+                                          checked={individualRowStatus[`${row.nodoid || row.id || index}`] || false}
+                                          onChange={(e) => {
+                                            const rowKey = `${row.nodoid || row.id || index}`;
+                                            setIndividualRowStatus(prev => ({
+                                              ...prev,
+                                              [rowKey]: e.target.checked
+                                            }));
+                                          }}
                                           className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                         />
                                         <span className="text-white text-sm font-mono tracking-wider">
-                                          {updateFormData.statusid === 1 ? 'ACTIVO' : 'INACTIVO'}
+                                          {individualRowStatus[`${row.nodoid || row.id || index}`] ? 'ACTIVO' : 'INACTIVO'}
                                         </span>
                                       </div>
                                     </td>

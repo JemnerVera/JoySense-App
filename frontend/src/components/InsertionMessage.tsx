@@ -142,6 +142,26 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     return String(value);
   };
 
+  // Para sensor y metricasensor, mostrar solo un mensaje simple
+  if (tableName === 'sensor' || tableName === 'metricasensor') {
+    return (
+      <div className="bg-blue-900 bg-opacity-30 border border-blue-600 border-opacity-50 rounded-lg p-4 mb-4">
+        <div className="flex justify-between items-center">
+          <div className="text-blue-200 text-opacity-70 font-medium">
+            Se insertaron {insertedRecords.length} entradas
+          </div>
+          <button
+            onClick={onClear}
+            className="text-gray-400 text-opacity-60 hover:text-opacity-100 transition-all duration-200"
+            title="Limpiar mensaje"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Obtener los campos importantes del primer registro para crear los headers
   const firstRecordFields = getImportantFields(insertedRecords[0]?.fields || {});
   const fieldKeys = Object.keys(firstRecordFields);
