@@ -182,52 +182,80 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
       
-      {/* Campos de coordenadas: Latitud, Longitud, Referencia */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div>
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            LATITUD
-          </label>
-          <input
-            type="text"
-            value={latitud || ''}
-            onChange={(e) => setLatitud?.(e.target.value)}
-            placeholder="Ej: -12.0464"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            LONGITUD
-          </label>
-          <input
-            type="text"
-            value={longitud || ''}
-            onChange={(e) => setLongitud?.(e.target.value)}
-            placeholder="Ej: -77.0428"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            REFERENCIA
-          </label>
-          <input
-            type="text"
-            value={referencia || ''}
-            onChange={(e) => setReferencia?.(e.target.value)}
-            placeholder="Ej: Cerca del portón principal"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
-          />
-        </div>
-      </div>
-      
       {/* Selección de Ubicaciones, Nodos, Entidades y Status */}
       <div className="space-y-6">
-        {/* Primera fila: Ubicación, Nodo, Entidad */}
+        {/* Segunda fila: Entidad, Ubicación, Nodo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
+        <div className="relative dropdown-container">
+          <div
+            onClick={() => setEntidadesDropdownOpen(!entidadesDropdownOpen)}
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
+          >
+            <span className={selectedEntidades.length > 0 ? 'text-white' : 'text-neutral-400'}>
+              {selectedEntidades.length > 0 
+                ? selectedEntidades.map(id => {
+                    const entidad = entidadesData.find(e => e.entidadid.toString() === id);
+                    return entidad ? entidad.entidad.toUpperCase() : id;
+                  }).join(', ')
+                 : 'SELECCIONAR ENTIDAD'
+              }
+            </span>
+            <span className="text-neutral-400">▼</span>
+          </div>
+          
+          {entidadesDropdownOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={entidadesSearchTerm}
+                  onChange={(e) => setEntidadesSearchTerm(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                {entidadesData
+                  .filter(entidad => 
+                    entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => a.entidad.localeCompare(b.entidad))
+                  .map(entidad => (
+                  <label
+                    key={entidad.entidadid}
+                    className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedEntidades.includes(entidad.entidadid.toString())}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedEntidades([...selectedEntidades, entidad.entidadid.toString()]);
+                        } else {
+                          setSelectedEntidades(selectedEntidades.filter(id => id !== entidad.entidadid.toString()));
+                        }
+                      }}
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    />
+                    <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
+                  </label>
+                ))}
+                {entidadesData.filter(entidad => 
+                  entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                    NO SE ENCONTRARON RESULTADOS
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        </div>
+
         <div>
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">UBICACIÓN</label>
         <div className="relative dropdown-container">
@@ -367,98 +395,8 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           )}
         </div>
         </div>
-
-        <div>
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
-        <div className="relative dropdown-container">
-          <div
-            onClick={() => setEntidadesDropdownOpen(!entidadesDropdownOpen)}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
-          >
-            <span className={selectedEntidades.length > 0 ? 'text-white' : 'text-neutral-400'}>
-              {selectedEntidades.length > 0 
-                ? selectedEntidades.map(id => {
-                    const entidad = entidadesData.find(e => e.entidadid.toString() === id);
-                    return entidad ? entidad.entidad.toUpperCase() : id;
-                  }).join(', ')
-                 : 'SELECCIONAR ENTIDAD'
-              }
-            </span>
-            <span className="text-neutral-400">▼</span>
-          </div>
-          
-          {entidadesDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-              <div className="p-2 border-b border-neutral-700">
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={entidadesSearchTerm}
-                  onChange={(e) => setEntidadesSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="max-h-24 overflow-y-auto custom-scrollbar">
-                {entidadesData
-                  .filter(entidad => 
-                    entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
-                  )
-                  .sort((a, b) => a.entidad.localeCompare(b.entidad))
-                  .map(entidad => (
-                  <label
-                    key={entidad.entidadid}
-                    className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedEntidades.includes(entidad.entidadid.toString())}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedEntidades([...selectedEntidades, entidad.entidadid.toString()]);
-                        } else {
-                          setSelectedEntidades(selectedEntidades.filter(id => id !== entidad.entidadid.toString()));
-                        }
-                      }}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                    />
-                    <span className="text-white text-sm font-mono tracking-wider">{entidad.entidad.toUpperCase()}</span>
-                  </label>
-                ))}
-                {entidadesData.filter(entidad => 
-                  entidad.entidad.toLowerCase().includes(entidadesSearchTerm.toLowerCase())
-                ).length === 0 && (
-                  <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                    NO SE ENCONTRARON RESULTADOS
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-        </div>
         </div>
 
-        {/* Segunda fila: Status al extremo derecho */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div></div> {/* Espacio vacío */}
-          <div></div> {/* Espacio vacío */}
-          <div>
-            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">STATUS</label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="localizacion-status"
-                checked={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.checked)}
-                className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-              />
-              <span className="text-white font-mono tracking-wider">
-                {selectedStatus ? 'ACTIVO' : 'INACTIVO'}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Vista previa de localizaciones a crear */}
@@ -492,6 +430,69 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
           </div>
         </div>
       )}
+
+      {/* Tercera fila: Campos de coordenadas - Latitud, Longitud, Referencia */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            LATITUD
+          </label>
+          <input
+            type="text"
+            value={latitud || ''}
+            onChange={(e) => setLatitud?.(e.target.value)}
+            placeholder="Ej: -12.0464"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            LONGITUD
+          </label>
+          <input
+            type="text"
+            value={longitud || ''}
+            onChange={(e) => setLongitud?.(e.target.value)}
+            placeholder="Ej: -77.0428"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            REFERENCIA
+          </label>
+          <input
+            type="text"
+            value={referencia || ''}
+            onChange={(e) => setReferencia?.(e.target.value)}
+            placeholder="Ej: Cerca del portón principal"
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
+          />
+        </div>
+      </div>
+
+      {/* Cuarta fila: Status */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div></div> {/* Espacio vacío */}
+        <div></div> {/* Espacio vacío */}
+        <div>
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">STATUS</label>
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="localizacion-status"
+              checked={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.checked)}
+              className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+            />
+            <span className="text-white font-mono tracking-wider">
+              {selectedStatus ? 'ACTIVO' : 'INACTIVO'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Botones de acción */}
       <div className="flex justify-center items-center mt-8 space-x-4">

@@ -134,6 +134,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
   // Función para renderizar campos con layout específico
   const renderSpecialLayoutFields = (): React.ReactNode[] => {
+    console.log('🔍 renderSpecialLayoutFields Debug:', {
+      selectedTable,
+      visibleColumnsLength: visibleColumns?.length
+    });
+    
     if (selectedTable === 'umbral') {
       return renderUmbralFields();
     } else if (selectedTable === 'empresa') {
@@ -143,6 +148,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     } else if (selectedTable === 'ubicacion') {
       return renderUbicacionFields();
     } else if (selectedTable === 'localizacion') {
+      console.log('🔍 Llamando renderLocalizacionFields');
       return renderLocalizacionFields();
     } else if (selectedTable === 'entidad') {
       return renderEntidadFields();
