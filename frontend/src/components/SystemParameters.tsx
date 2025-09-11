@@ -530,6 +530,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   useEffect(() => {
     setUpdateFilteredData(filteredUpdateData);
   }, [filteredUpdateData]);
+
+  // Reagrupar datos de metricasensor cuando cambien los datos relacionados
+  useEffect(() => {
+    if (selectedTable === 'metricasensor' && updateData.length > 0 && nodosData.length > 0 && tiposData.length > 0 && metricasData.length > 0) {
+      // Los datos ya están agrupados en getUpdatePaginatedData, no necesitamos hacer nada aquí
+      console.log('🔄 Datos relacionados cargados para metricasensor:', {
+        updateDataLength: updateData.length,
+        nodosDataLength: nodosData.length,
+        tiposDataLength: tiposData.length,
+        metricasDataLength: metricasData.length
+      });
+    }
+  }, [selectedTable, updateData, nodosData, tiposData, metricasData]);
   const [selectedRowForUpdate, setSelectedRowForUpdate] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
   const [updateLoading, setUpdateLoading] = useState(false);
@@ -1407,6 +1420,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
     }
 
+    // Manejar columnas virtuales para metricasensor agrupado
+    if (columnName === 'tipos' || columnName === 'metricas') {
+      return row[columnName] || 'N/A';
+    }
+
     // Si no es un campo de ID o no existe la relación, mostrar el valor original
     return row[columnName];
   };
@@ -1709,10 +1727,109 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     return statusFilteredData.slice(startIndex, endIndex);
   };
 
+  // Función para agrupar datos de metricasensor por nodo
+  const groupMetricaSensorData = (data: any[]) => {
+    if (selectedTable !== 'metricasensor') {
+      return data;
+    }
+
+    // Agrupar por nodoid
+    const groupedData = data.reduce((acc: any, row: any) => {
+      const nodoid = row.nodoid;
+      if (!acc[nodoid]) {
+        // Buscar el nombre del nodo
+        const nodo = nodosData?.find(n => n.nodoid === nodoid);
+        
+        acc[nodoid] = {
+          nodoid: row.nodoid,
+          nodo: nodo?.nodo || `Nodo ${nodoid}`,
+          tipos: new Set(),
+          metricas: new Set(),
+          usercreatedid: row.usercreatedid,
+          datecreated: row.datecreated,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified,
+          statusid: row.statusid,
+          // Mantener referencia a las filas originales para el formulario de edición
+          originalRows: []
+        };
+      }
+      
+      // Buscar el nombre del tipo
+      const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
+      if (tipo?.tipo) {
+        acc[nodoid].tipos.add(tipo.tipo);
+      }
+      
+      // Buscar el nombre de la métrica
+      const metrica = metricasData?.find(m => m.metricaid === row.metricaid);
+      if (metrica?.metrica) {
+        acc[nodoid].metricas.add(metrica.metrica);
+      }
+      
+      // Crear fila original con nombres incluidos
+      const enrichedRow = {
+        ...row,
+        tipo: tipo?.tipo || `Tipo ${row.tipoid}`,
+        metrica: metrica?.metrica || `Métrica ${row.metricaid}`,
+        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`
+      };
+      
+      
+      // Agregar fila original enriquecida
+      acc[nodoid].originalRows.push(enrichedRow);
+      
+      return acc;
+    }, {});
+
+    // Convertir a array y formatear tipos y métricas
+    const result = Object.values(groupedData).map((group: any) => ({
+      ...group,
+      tipos: Array.from(group.tipos).join(', '),
+      metricas: Array.from(group.metricas).join(', '),
+      // Para compatibilidad con el sistema de selección
+      tipoid: group.originalRows[0]?.tipoid,
+      metricaid: group.originalRows[0]?.metricaid
+    }));
+
+    // Ordenar por fecha de modificación más reciente primero
+    return result.sort((a: any, b: any) => {
+      const dateA = new Date(a.datemodified || a.datecreated || 0);
+      const dateB = new Date(b.datemodified || b.datecreated || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
   // Función para obtener los datos paginados de la tabla de Actualizar
   const getUpdatePaginatedData = () => {
-    return getPaginatedData();
+    const data = getPaginatedData();
+    // Para metricasensor, mostrar datos agrupados por nodo
+    if (selectedTable === 'metricasensor') {
+      console.log('🔄 Agrupando datos de metricasensor:', {
+        dataLength: data.length,
+        nodosDataLength: nodosData?.length,
+        tiposDataLength: tiposData?.length,
+        metricasDataLength: metricasData?.length
+      });
+      const groupedData = groupMetricaSensorData(data);
+      console.log('✅ Datos agrupados:', {
+        originalLength: data.length,
+        groupedLength: groupedData.length,
+        firstGroup: groupedData[0]
+      });
+      return groupedData;
+    }
+    return data;
   };
+
+  // Asegurar que groupMetricaSensorData tenga acceso a los datos relacionados
+  useEffect(() => {
+    if (selectedTable === 'metricasensor' && updateData.length > 0 && nodosData && tiposData && metricasData) {
+      console.log('🔄 Reagrupando datos de metricasensor con datos relacionados disponibles');
+      const groupedData = groupMetricaSensorData(updateData);
+      setUpdateData(groupedData);
+    }
+  }, [nodosData, tiposData, metricasData, selectedTable]);
 
   // Función para obtener los datos paginados de la tabla de Copiar
   const getCopyPaginatedData = () => {
@@ -2349,9 +2466,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return `${row.nodoid}-${row.tipoid}`;
       }
     } else if (tableName === 'metricasensor') {
-      // Para metricasensor, la clave compuesta es (nodoid, metricaid, tipoid)
-      if (row.nodoid !== undefined && row.metricaid !== undefined && row.tipoid !== undefined) {
-        return `${row.nodoid}-${row.metricaid}-${row.tipoid}`;
+      // Para metricasensor agrupado, usar solo nodoid como identificador único
+      if (row.nodoid !== undefined) {
+        return `grouped-${row.nodoid}`;
       }
     } else if (tableName === 'localizacion') {
       // Para localizacion, la clave compuesta es (ubicacionid, nodoid)
@@ -2418,8 +2535,16 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
       if (isMultipleSelectionMode && selectedRowsForManualUpdate.length > 0) {
         // Modo de selección manual múltiple
-        rowsToUpdate = selectedRowsForManualUpdate;
-        console.log('🔧 Actualizando entradas seleccionadas manualmente:', rowsToUpdate.length);
+        if (selectedTable === 'metricasensor') {
+          // Para metricasensor agrupado, expandir las filas originales
+          rowsToUpdate = selectedRowsForManualUpdate.flatMap(row => 
+            row.originalRows ? row.originalRows : [row]
+          );
+          console.log('🔧 Actualizando entradas agrupadas de metricasensor:', rowsToUpdate.length);
+        } else {
+          rowsToUpdate = selectedRowsForManualUpdate;
+          console.log('🔧 Actualizando entradas seleccionadas manualmente:', rowsToUpdate.length);
+        }
       } else if (selectedRowsForUpdate && selectedRowsForUpdate.length > 0) {
         // Modo de selección automática (legacy)
         rowsToUpdate = selectedRowsForUpdate;
@@ -2883,10 +3008,27 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
       } else if (selectedTable === 'metricasensor') {
-        // Nodo, Tipo, Metrica
+        // Para metricasensor agrupado: Nodo, Tipos, Metricas
         reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['tipoid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
+        // Agregar columnas virtuales para tipos y métricas agrupadas
+        reorderedColumns.push({
+          columnName: 'tipos',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
+        reorderedColumns.push({
+          columnName: 'metricas',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
       } else if (selectedTable === 'umbral') {
         // Ubicacion, Nodo, Tipo, Metrica, Nombre Umbral, Criticidad, Valor Minimo, Valor Maximo, Status
         reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
@@ -2957,6 +3099,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       'nodoid': 'Nodo',
       'tipoid': 'Tipo',
       'metricaid': 'Métrica',
+      'tipos': 'Tipo',
+      'metricas': 'Métrica',
       'localizacionid': 'Localización',
       'criticidadid': 'Criticidad',
       'perfilid': 'Perfil',
@@ -3705,21 +3849,54 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     console.log('🔍 handleSelectRowForManualUpdate:', { 
       rowId, 
       isSelected, 
-      currentSelection: selectedRowsForManualUpdate.length 
+      currentSelection: selectedRowsForManualUpdate.length,
+      hasOriginalRows: row.originalRows?.length
     });
     
     if (isSelected) {
-      // Verificar si ya está seleccionada para evitar duplicados
-      if (!selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === rowId)) {
-        setSelectedRowsForManualUpdate(prev => [...prev, row]);
-        console.log('✅ Fila agregada a la selección');
+      // Para metricasensor, si es una fila agrupada, expandir las originalRows
+      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
+        console.log('🔄 Expandir fila agrupada de metricasensor:', row.originalRows.length, 'entradas');
+        
+        // Verificar si alguna de las filas originales ya está seleccionada
+        const isAnyOriginalSelected = row.originalRows.some((originalRow: any) => 
+          selectedRowsForManualUpdate.some(selectedRow => 
+            getRowIdForSelection(selectedRow) === getRowIdForSelection(originalRow)
+          )
+        );
+        
+        if (!isAnyOriginalSelected) {
+          console.log('✅ Agregando todas las filas originales a la selección');
+          // Agregar todas las filas originales a la selección
+          setSelectedRowsForManualUpdate(prev => [...prev, ...row.originalRows]);
+        } else {
+          console.log('⚠️ Algunas filas originales ya están seleccionadas');
+        }
       } else {
-        console.log('⚠️ Fila ya estaba seleccionada');
+        // Lógica normal para otras tablas o filas no agrupadas
+        if (!selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === rowId)) {
+          setSelectedRowsForManualUpdate(prev => [...prev, row]);
+          console.log('✅ Fila agregada a la selección');
+        } else {
+          console.log('⚠️ Fila ya estaba seleccionada');
+        }
       }
     } else {
-      // Remover de la selección
-      setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
-      console.log('❌ Fila removida de la selección');
+      // Para metricasensor, si es una fila agrupada, remover todas las originalRows
+      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
+        console.log('🔄 Removiendo todas las filas originales de la selección');
+        setSelectedRowsForManualUpdate(prev => 
+          prev.filter(selectedRow => 
+            !row.originalRows.some((originalRow: any) => 
+              getRowIdForSelection(selectedRow) === getRowIdForSelection(originalRow)
+            )
+          )
+        );
+      } else {
+        // Lógica normal para otras tablas o filas no agrupadas
+        setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
+        console.log('❌ Fila removida de la selección');
+      }
     }
   };
 
