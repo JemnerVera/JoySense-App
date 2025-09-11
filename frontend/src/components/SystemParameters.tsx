@@ -4012,52 +4012,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           empresasData={empresasData}
                           fundosData={fundosData}
                         />
-                    ) : selectedTable === 'localizacion' ? (
-                      <MultipleLocalizacionForm
-                        selectedUbicaciones={selectedUbicaciones}
-                        setSelectedUbicaciones={setSelectedUbicaciones}
-                        selectedNodos={selectedNodosLocalizacion}
-                        setSelectedNodos={setSelectedNodosLocalizacion}
-                        selectedEntidades={selectedEntidades}
-                        setSelectedEntidades={setSelectedEntidades}
-                        selectedStatus={selectedStatus}
-                        setSelectedStatus={setSelectedStatus}
-                        multipleLocalizaciones={multipleLocalizaciones}
-                        setMultipleLocalizaciones={setMultipleLocalizaciones}
-                        ubicacionesData={ubicacionesData}
-                        nodosData={nodosData}
-                        entidadesData={entidadesData}
-                        loading={loading}
-                        onInitializeLocalizaciones={initializeMultipleLocalizaciones}
-                        onInsertLocalizaciones={handleMultipleLocalizacionInsert}
-                        onCancel={() => {
-                          setMultipleLocalizaciones([]);
-                          setSelectedUbicaciones([]);
-                          setSelectedNodosLocalizacion([]);
-                          setSelectedEntidades([]);
-                          setLatitud('');
-                          setLongitud('');
-                          setReferencia('');
-                        }}
-                        paisSeleccionado={paisSeleccionado}
-                        empresaSeleccionada={empresaSeleccionada}
-                        fundoSeleccionado={fundoSeleccionado}
-                        paisesData={paisesData}
-                        empresasData={empresasData}
-                        fundosData={fundosData}
-                        latitud={latitud}
-                        setLatitud={setLatitud}
-                        longitud={longitud}
-                        setLongitud={setLongitud}
-                        referencia={referencia}
-                        setReferencia={setReferencia}
-                      />
                     ) : (
                       <div className={`space-y-6 ${
                         selectedTable === 'sensor' || selectedTable === 'metricasensor' 
                           ? 'min-h-[900px]' 
-                          : selectedTable === 'localizacion'
-                          ? 'min-h-[500px]'
                           : 'min-h-[400px]'
                       }`}>
                         
