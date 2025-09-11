@@ -209,11 +209,11 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     
     if (paisSeleccionado) {
       contextualFields.push(
-        <div key="pais-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+        <div key="pais-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
             PAÍS
           </label>
-          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
             {getPaisName(paisSeleccionado)}
           </div>
         </div>
@@ -222,11 +222,11 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     
     if (empresaSeleccionada) {
       contextualFields.push(
-        <div key="empresa-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+        <div key="empresa-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
             EMPRESA
           </label>
-          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
             {getEmpresaName(empresaSeleccionada)}
           </div>
         </div>
@@ -235,11 +235,11 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     
     if (fundoSeleccionado) {
       contextualFields.push(
-        <div key="fundo-contextual" className="bg-neutral-800/50 border border-neutral-600 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2 font-mono tracking-wider">
+        <div key="fundo-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
             FUNDO
           </label>
-          <div className="text-white font-mono text-sm bg-neutral-700 p-3 rounded border border-neutral-500">
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
             {getFundoName(fundoSeleccionado)}
           </div>
         </div>

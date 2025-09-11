@@ -137,11 +137,12 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   if (!selectedEntidad || !selectedUbicacion || !startDate || !endDate) {
     const missingFilter = getMissingFilterMessage();
        return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md">
-            <h3 className="text-xl font-semibold text-orange-500 mb-2 font-mono tracking-wider">{missingFilter.toUpperCase()}</h3>
-            <p className="text-neutral-300 text-sm font-mono">USE HEADER FILTERS TO CONTINUE</p>
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">DASHBOARD</h2>
+            <p className="text-neutral-300 font-mono tracking-wider">{missingFilter.toUpperCase()}</p>
+            <p className="text-neutral-300 font-mono tracking-wider">USA LOS FILTROS DEL HEADER PARA CONTINUAR</p>
           </div>
            </div>
          </div>

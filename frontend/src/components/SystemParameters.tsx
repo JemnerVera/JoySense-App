@@ -3210,10 +3210,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           // Usar los tipos copiados como predeterminados
           selectedTipos = copiedTipos.slice(0, count);
           
-          setMessage({ 
-            type: 'success', 
-            text: `📋 Datos copiados detectados. Se han seleccionado los mismos tipos que se copiaron. Puedes modificar los tipos individualmente si es necesario.` 
-          });
+          // Mensaje de datos copiados eliminado por solicitud del usuario
         }
       } else {
         // Filtrar tipos disponibles (excluir los que ya están en uso)
@@ -3407,6 +3404,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
      setMultipleSensors(prev => prev.map(sensor => 
        sensor.sensorIndex === sensorIndex 
          ? { ...sensor, tipoid: tipoid }
+         : sensor
+     ));
+   };
+
+   // Función para toggle del estado de eliminación de un sensor
+   const toggleSensorDelete = (sensorIndex: number, toDelete: boolean) => {
+     setMultipleSensors(prev => prev.map(sensor => 
+       sensor.sensorIndex === sensorIndex 
+         ? { ...sensor, toDelete: toDelete }
          : sensor
      ));
    };
@@ -4009,6 +4015,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            loading={loading}
                            onInitializeSensors={initializeMultipleSensors}
                            onUpdateSensorTipo={updateSensorTipo}
+                           onToggleSensorDelete={toggleSensorDelete}
                            onUpdateSensorNodo={updateSensorNodo}
                            onUpdateAllSensorsNodo={updateAllSensorsNodo}
                            onInsertSensors={handleMultipleSensorInsert}

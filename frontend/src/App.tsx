@@ -312,7 +312,7 @@ const AppContentInternal: React.FC = () => {
         case 'dashboard':
           return (
             <Suspense fallback={
-              <div className="flex items-center justify-center h-64">
+              <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
                   <p className="text-gray-400">Cargando Dashboard...</p>
@@ -359,10 +359,10 @@ const AppContentInternal: React.FC = () => {
     
     if (activeTab === 'reportes') {
   return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES</h2>
             <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES</h2>
               <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA SUBPESTAÑA PARA CONTINUAR</p>
             </div>
           </div>
@@ -372,16 +372,16 @@ const AppContentInternal: React.FC = () => {
 
     if (activeTab === 'parameters') {
       return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
-            </div>
             <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA TABLA DEL MENÚ LATERAL PARA CONTINUAR</p>
+              <div className="flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
+              </div>
+              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
             </div>
           </div>
         </div>
@@ -391,7 +391,7 @@ const AppContentInternal: React.FC = () => {
     if (activeTab === 'dashboard') {
       return (
         <Suspense fallback={
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
               <p className="text-gray-400">Cargando Dashboard...</p>
@@ -418,10 +418,10 @@ const AppContentInternal: React.FC = () => {
 
     // Contenido por defecto
   return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
             <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR</p>
           </div>
         </div>
@@ -464,6 +464,16 @@ const AppContentInternal: React.FC = () => {
                   JOYSENSE APP / <span className="text-orange-500">
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? (selectedTable ? `PARÁMETROS / ${getTableNameInSpanish(selectedTable)}` : 'PARÁMETROS')
+                      : activeTab?.startsWith('reportes-')
+                      ? (() => {
+                          const reporteTab = activeTab.replace('reportes-', '');
+                          const reporteNames: { [key: string]: string } = {
+                            'dashboard': 'DASHBOARD',
+                            'alertas': 'ALERTAS',
+                            'mensajes': 'MENSAJES'
+                          };
+                          return `REPORTES / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
+                        })()
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>
