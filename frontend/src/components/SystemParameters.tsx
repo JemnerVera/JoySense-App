@@ -2209,7 +2209,31 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             
             // Verificar que el nodo NO tenga métricas sensor asignadas (no esté en tabla metricasensor)
             const tieneMetricas = tableData.some(ms => ms.nodoid === nodo.nodoid);
-            return !tieneMetricas;
+            if (tieneMetricas) {
+              return false;
+            }
+            
+            // Si hay filtro por entidad, verificar que el nodo tenga sensores con tipos de esa entidad
+            if (filterParams && filterParams.entidadid) {
+              const entidadId = parseInt(filterParams.entidadid);
+              
+              // Obtener los sensores del nodo
+              const sensoresDelNodo = sensorData.filter((sensor: any) => sensor.nodoid === nodo.nodoid);
+              
+              // Obtener los tipos de esos sensores
+              const tiposDelNodo = sensoresDelNodo.map((sensor: any) => sensor.tipoid);
+              
+              // Verificar que al menos uno de esos tipos pertenezca a la entidad seleccionada
+              const tieneTiposDeEntidad = tiposData.some((tipo: any) => 
+                tiposDelNodo.includes(tipo.tipoid) && tipo.entidadid === entidadId
+              );
+              
+              if (!tieneTiposDeEntidad) {
+                return false;
+              }
+            }
+            
+            return true;
           });
           
           console.log('🔗 Nodos filtrados para metricasensor (con sensores pero sin métricas):', finalFilteredNodos.length);
@@ -2421,7 +2445,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             : { nodoid: row.nodoid, tipoid: row.tipoid, metricaid: row.metricaid };
           
           // Usar el estado individual de cada fila para el statusid
-          const rowKey = `${row.nodoid || row.id || i}`;
+          const rowKey = `${row.nodoid || row.id || i}-${i}`;
           const individualStatus = individualRowStatus[rowKey];
           
           // Filtrar solo los campos que realmente necesitamos actualizar
@@ -4247,7 +4271,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 onClick={() => {
                                   const allRows = selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate;
                                   const allSelected = allRows.every((row, index) => {
-                                    const rowKey = `${row.nodoid || row.id || index}`;
+                                    const rowKey = `${row.nodoid || row.id || index}-${index}`;
                                     return individualRowStatus[rowKey] === true;
                                   });
                                   
@@ -4256,7 +4280,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                   const newIndividualStatus: {[key: string]: boolean} = {};
                                   
                                   allRows.forEach((row, index) => {
-                                    const rowKey = `${row.nodoid || row.id || index}`;
+                                    const rowKey = `${row.nodoid || row.id || index}-${index}`;
                                     newIndividualStatus[rowKey] = newStatus;
                                   });
                                   
@@ -4296,9 +4320,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                       <div className="flex items-center space-x-2">
                                         <input
                                           type="checkbox"
-                                          checked={individualRowStatus[`${row.nodoid || row.id || index}`] || false}
+                                          checked={individualRowStatus[`${row.nodoid || row.id || index}-${index}`] || false}
                                           onChange={(e) => {
-                                            const rowKey = `${row.nodoid || row.id || index}`;
+                                            const rowKey = `${row.nodoid || row.id || index}-${index}`;
                                             setIndividualRowStatus(prev => ({
                                               ...prev,
                                               [rowKey]: e.target.checked
@@ -4307,7 +4331,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                           className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                         />
                                         <span className="text-white text-sm font-mono tracking-wider">
-                                          {individualRowStatus[`${row.nodoid || row.id || index}`] ? 'ACTIVO' : 'INACTIVO'}
+                                          {individualRowStatus[`${row.nodoid || row.id || index}-${index}`] ? 'ACTIVO' : 'INACTIVO'}
                                         </span>
                                       </div>
                                     </td>

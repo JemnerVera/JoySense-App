@@ -262,14 +262,80 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
 
-      {/* Selección de Nodos, Entidad y Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Selección de Entidad y Nodos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <div>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
+         <div className="relative dropdown-container">
+             <div
+               onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
+               className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
+             >
+               <span className={selectedEntidad ? 'text-white' : 'text-neutral-400'}>
+                 {selectedEntidad 
+                   ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
+                   : 'SELECCIONAR ENTIDAD'
+                 }
+               </span>
+               <span className="text-neutral-400">▼</span>
+             </div>
+             
+            {entidadDropdownOpen && (
+              <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+                <div className="p-2 border-b border-neutral-700">
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={entidadSearchTerm}
+                    onChange={(e) => setEntidadSearchTerm(e.target.value)}
+                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <div className="max-h-32 overflow-y-auto custom-scrollbar">
+                  {getUniqueOptionsForField('entidadid')
+                    .filter(option => 
+                      option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                    )
+                    .map((option, index) => (
+                     <div
+                       key={index}
+                       onClick={() => {
+                         setSelectedEntidad(option.value.toString());
+                         setEntidadDropdownOpen(false);
+                         setEntidadSearchTerm('');
+                         // Limpiar nodos seleccionados cuando se cambia la entidad
+                         setSelectedNodos([]);
+                       }}
+                       className="px-3 py-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                     >
+                       <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                     </div>
+                   ))}
+                   {getUniqueOptionsForField('entidadid')
+                     .filter(option => 
+                       option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
+                     ).length === 0 && (
+                     <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                       NO SE ENCONTRARON RESULTADOS
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
+           </div>
+       </div>
+
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODOS</label>
          <div className="relative dropdown-container">
            <div
-             onClick={() => setNodosDropdownOpen(!nodosDropdownOpen)}
-             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
+             onClick={() => selectedEntidad && setNodosDropdownOpen(!nodosDropdownOpen)}
+             className={`w-full px-3 py-2 border rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono ${
+               selectedEntidad 
+                 ? 'bg-neutral-800 border-neutral-600' 
+                 : 'bg-neutral-700 border-neutral-700 cursor-not-allowed opacity-50'
+             }`}
            >
              <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
                {selectedNodos.length > 0 
@@ -277,13 +343,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                      const nodo = nodosData.find(n => n.nodoid.toString() === id);
                      return nodo ? nodo.nodo : id;
                    }).join(', ')
-                 : 'SELECCIONAR NODO'
+                 : selectedEntidad ? 'SELECCIONAR NODO' : 'SELECCIONAR ENTIDAD PRIMERO'
                }
              </span>
              <span className="text-neutral-400">▼</span>
            </div>
            
-          {nodosDropdownOpen && (
+          {nodosDropdownOpen && selectedEntidad && (
             <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
               <div className="p-2 border-b border-neutral-700">
                 <input
@@ -296,7 +362,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                 />
               </div>
               <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {getUniqueOptionsForField('nodoid')
+                {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
                   .filter(option => 
                     option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                   )
@@ -339,78 +405,19 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                      <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                    </label>
                  ))}
-                 {getUniqueOptionsForField('nodoid').filter(option => 
-                   option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
-                 ).length === 0 && (
+                 {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
+                   .filter(option => 
+                     option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
+                   ).length === 0 && (
                    <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                     NO SE ENCONTRARON RESULTADOS
+                     NO HAY NODOS DISPONIBLES PARA ESTA ENTIDAD
                    </div>
                  )}
-               </div>
-             </div>
-           )}
+              </div>
+            </div>
+          )}
          </div>
        </div>
-
-         <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
-           <div className="relative dropdown-container">
-             <div
-               onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
-               className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
-             >
-               <span className={selectedEntidad ? 'text-white' : 'text-neutral-400'}>
-                 {selectedEntidad 
-                   ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
-                   : 'SELECCIONAR ENTIDAD'
-                 }
-               </span>
-               <span className="text-neutral-400">▼</span>
-             </div>
-             
-            {entidadDropdownOpen && (
-              <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-                <div className="p-2 border-b border-neutral-700">
-                  <input
-                    type="text"
-                    placeholder="Buscar..."
-                    value={entidadSearchTerm}
-                    onChange={(e) => setEntidadSearchTerm(e.target.value)}
-                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                  {getUniqueOptionsForField('entidadid', { nodoid: selectedNodos.length > 0 ? selectedNodos[0] : undefined })
-                    .filter(option => 
-                      option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
-                    )
-                    .map((option, index) => (
-                     <div
-                       key={index}
-                       onClick={() => {
-                         setSelectedEntidad(option.value.toString());
-                         setEntidadDropdownOpen(false);
-                         setEntidadSearchTerm('');
-                       }}
-                       className="px-3 py-2 cursor-pointer hover:bg-neutral-800 transition-colors"
-                     >
-                       <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
-                     </div>
-                   ))}
-                   {getUniqueOptionsForField('entidadid', { nodoid: selectedNodos.length > 0 ? selectedNodos[0] : undefined })
-                     .filter(option => 
-                       option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
-                     ).length === 0 && (
-                     <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                       NO SE ENCONTRARON RESULTADOS
-                     </div>
-                   )}
-                 </div>
-               </div>
-             )}
-           </div>
-         </div>
        </div>
 
 
