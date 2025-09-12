@@ -426,6 +426,65 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   
   // Función para manejar el cambio de pestaña y limpiar mensajes
   const handleTabChange = (tab: 'status' | 'insert' | 'update') => {
+    // Si hay cambios sin guardar, mostrar modal de confirmación
+    if (hasUnsavedChanges()) {
+      setCancelAction(() => () => {
+        // Ejecutar el cambio de pestaña
+        setActiveSubTab(tab);
+        // Limpiar mensajes al cambiar de pestaña
+        setMessage(null);
+        setUpdateMessage(null);
+        setCopyMessage(null);
+        // Limpiar mensajes de inserción al cambiar de pestaña
+        clearOnTabChange();
+        
+        // Limpiar selecciones específicas según la pestaña
+        if (tab === 'update') {
+          setSelectedRowForUpdate(null);
+          setSelectedRowsForUpdate([]);
+          setUpdateFormData({});
+          setIndividualRowStatus({});
+          setSearchField('');
+          setSearchTerm('');
+        }
+        
+        // Limpiar formularios específicos según la tabla
+        if (selectedTable === 'usuarioperfil') {
+          if (tab === 'insert') {
+            setMultipleUsuarioPerfiles([]);
+            setSelectedUsuarios([]);
+            setSelectedPerfiles([]);
+          }
+        } else if (selectedTable === 'metricasensor') {
+          if (tab === 'insert') {
+            setMultipleMetricas([]);
+            setSelectedNodos([]);
+            setSelectedEntidadMetrica('');
+            setSelectedMetricas([]);
+            setIsReplicateMode(false);
+          }
+        } else if (selectedTable === 'sensor') {
+          if (tab === 'insert') {
+            setMultipleSensors([]);
+            setSelectedNodo('');
+            setSelectedEntidad('');
+            setSelectedTipo('');
+            setSelectedSensorCount(0);
+          }
+        }
+        
+        // Llamar a la función del padre si está disponible
+        if (onSubTabChange) {
+          onSubTabChange(tab);
+        }
+        
+        setShowCancelModal(false);
+      });
+      setShowCancelModal(true);
+      return;
+    }
+    
+    // Si no hay cambios sin guardar, proceder normalmente
     setActiveSubTab(tab);
     // Limpiar mensajes al cambiar de pestaña
     setMessage(null);
@@ -1028,13 +1087,31 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const hasUnsavedChanges = (): boolean => {
     // Verificar pestaña "Crear"
     if (activeSubTab === 'insert') {
-      return Object.keys(formData).some(key => {
-        const value = formData[key];
-        if (key === 'statusid') {
-          return value !== 1;
-        }
-        return value !== '' && value !== null && value !== undefined;
-      });
+      // Para formularios normales (no múltiples)
+      if (selectedTable !== 'usuarioperfil' && selectedTable !== 'metricasensor' && selectedTable !== 'sensor') {
+        return Object.keys(formData).some(key => {
+          const value = formData[key];
+          if (key === 'statusid') {
+            return value !== 1;
+          }
+          return value !== '' && value !== null && value !== undefined;
+        });
+      }
+      
+      // Para Usuario Perfil - Crear
+      if (selectedTable === 'usuarioperfil') {
+        return selectedUsuarios.length > 0 || selectedPerfiles.length > 0 || multipleUsuarioPerfiles.length > 0;
+      }
+      
+      // Para Sensor Métrica - Crear
+      if (selectedTable === 'metricasensor') {
+        return selectedNodos.length > 0 || selectedEntidadMetrica !== '' || selectedMetricas.length > 0 || multipleMetricas.length > 0;
+      }
+      
+      // Para Sensor - Crear
+      if (selectedTable === 'sensor') {
+        return selectedNodo !== '' || selectedEntidad !== '' || selectedTipo !== '' || selectedSensorCount > 0 || multipleSensors.length > 0;
+      }
     }
     
     // Verificar pestaña "Actualizar"
@@ -1054,12 +1131,16 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         return true;
       }
       
+      // Verificar si hay filas seleccionadas para actualización manual
+      if (selectedRowsForManualUpdate.length > 0) {
+        return true;
+      }
+      
       // Verificar si hay cambios en el formulario de actualización
       if (Object.keys(updateFormData).length > 0) {
         return true;
       }
     }
-    
     
     return false;
   };
@@ -5399,9 +5480,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                         </div>
-                <h3 className="text-xl font-bold text-white text-opacity-90 mb-2">¿Confirmar cancelación?</h3>
+                <h3 className="text-xl font-bold text-white text-opacity-90 mb-2">¿Confirmar cambio de pestaña?</h3>
                 <p className="text-gray-300 text-opacity-80 mb-6">
-                  Se perderá toda la información ingresada en los campos del formulario. Esta acción no se puede deshacer.
+                  Se perderá toda la información ingresada en el formulario actual. Esta acción no se puede deshacer.
                 </p>
                     </div>
               <div className="flex gap-3 justify-center">
@@ -5409,7 +5490,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                   onClick={handleConfirmCancel}
                   className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                         >
-                  Sí, cancelar
+                  Sí, cambiar pestaña
                         </button>
                         <button
                   onClick={handleCancelModal}

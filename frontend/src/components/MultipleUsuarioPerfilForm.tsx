@@ -1,4 +1,5 @@
 import React from 'react';
+import ReplicateButton from './ReplicateButton';
 
 interface MultipleUsuarioPerfilFormProps {
   selectedUsuarios: string[];
@@ -379,40 +380,29 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
       {/* Botones de acción */}
       <div className="flex justify-center gap-4 mt-6">
-        {onReplicateClick && !isReplicateMode && (
-          <button
-            onClick={onReplicateClick}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors font-mono"
-          >
-            🔄 REPLICAR
-          </button>
-        )}
-        <button
-          onClick={onCancel}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"
-        >
-          ❌ CANCELAR
-        </button>
         <button
           onClick={onInsertUsuarioPerfiles}
           disabled={loading || multipleUsuarioPerfiles.length === 0}
-          className={`px-6 py-2 font-bold rounded-lg transition-colors font-mono flex items-center space-x-2 ${
-            loading || multipleUsuarioPerfiles.length === 0
-              ? 'bg-orange-600 text-white cursor-not-allowed' 
-              : 'bg-orange-500 hover:bg-orange-600 text-white'
-          }`}
+          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span>CREANDO...</span>
-            </>
-          ) : (
-            <>
-              <span>➕</span>
-              <span>CREAR</span>
-            </>
-          )}
+          <span>➕</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
+        </button>
+        
+        {/* Botón de replicar */}
+        {onReplicateClick && !isReplicateMode && (
+          <ReplicateButton
+            onClick={onReplicateClick}
+            disabled={selectedUsuariosCheckboxes.length === 0 || selectedPerfilesCheckboxes.length === 0}
+          />
+        )}
+        
+        <button
+          onClick={onCancel}
+          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+        >
+          <span>❌</span>
+          <span>CANCELAR</span>
         </button>
       </div>
     </div>
