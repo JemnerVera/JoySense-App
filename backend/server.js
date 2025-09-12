@@ -1374,7 +1374,7 @@ app.put('/api/sense/usuarioperfil/:usuarioid/:perfilid', async (req, res) => {
     }
     
     console.log(`✅ Backend: Usuarioperfil actualizado: ${data.length} registros`);
-    res.json(data);
+    res.json({ success: true, data: data });
   } catch (error) {
     console.error('❌ Error backend:', error);
     res.status(500).json({ error: error.message });
@@ -1403,7 +1403,7 @@ app.put('/api/sense/usuarioperfil/composite', async (req, res) => {
     }
     
     console.log(`✅ Backend: Usuarioperfil actualizado: ${data.length} registros`);
-    res.json(data);
+    res.json({ success: true, data: data });
   } catch (error) {
     console.error('❌ Error backend:', error);
     res.status(500).json({ error: error.message });

@@ -588,6 +588,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       return data;
     }
 
+    console.log('🔍 Debug - groupUsuarioPerfilData input:', data.length);
+    console.log('🔍 Debug - groupUsuarioPerfilData sample:', data[0]);
+    console.log('🔍 Debug - usuariosData:', usuariosData?.length);
+    console.log('🔍 Debug - perfilesData:', perfilesData?.length);
+    console.log('🔍 Debug - All input data:', data);
+    console.log('🔍 Debug - All usuariosData:', usuariosData);
+    console.log('🔍 Debug - All perfilesData:', perfilesData);
+
     // Agrupar por usuarioid
     const groupedData = data.reduce((acc: any, row: any) => {
       const usuarioid = row.usuarioid;
@@ -597,7 +605,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         
         acc[usuarioid] = {
           usuarioid: row.usuarioid,
-          usuario: usuario?.nombre || `Usuario ${usuarioid}`,
+          usuario: usuario?.login || `Usuario ${usuarioid}`, // Usar login (email) en lugar de nombre
           email: usuario?.email || '',
           perfiles: new Set(),
           usercreatedid: row.usercreatedid,
@@ -614,17 +622,21 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       const perfil = perfilesData?.find(p => p.perfilid === row.perfilid);
       
       // Solo agregar perfiles si están activos (statusid: 1)
+      console.log(`🔍 Debug - Processing row: usuarioid=${row.usuarioid}, perfilid=${row.perfilid}, statusid=${row.statusid}, perfil=${perfil?.perfil}`);
       if (row.statusid === 1) {
         if (perfil?.perfil) {
           acc[usuarioid].perfiles.add(perfil.perfil);
+          console.log(`🔍 Debug - Added active profile: ${perfil.perfil} for user ${usuarioid}`);
         }
+      } else {
+        console.log(`🔍 Debug - Skipping inactive profile: ${perfil?.perfil} (statusid=${row.statusid}) for user ${usuarioid}`);
       }
       
       // Crear fila original con nombres incluidos
       const enrichedRow = {
         ...row,
         perfil: perfil?.perfil || `Perfil ${row.perfilid}`,
-        usuario: acc[usuarioid].usuario || `Usuario ${row.usuarioid}`,
+        usuario: acc[usuarioid].usuario || `Usuario ${row.usuarioid}`, // Ya usa login desde arriba
         email: acc[usuarioid].email || ''
       };
       
@@ -645,6 +657,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         perfilid: group.originalRows[0]?.perfilid
       };
     });
+
+    console.log('🔍 Debug - groupUsuarioPerfilData result:', result.length);
+    console.log('🔍 Debug - groupUsuarioPerfilData result sample:', result[0]);
 
     // Ordenar por fecha de modificación más reciente primero
     return result.sort((a: any, b: any) => {
@@ -1954,10 +1969,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         ? groupMetricaSensorData(updateData)
         : groupUsuarioPerfilData(updateData);
       
+      console.log('🔍 Debug - updateData original:', updateData.length);
+      console.log('🔍 Debug - groupedData:', groupedData.length);
+      console.log('🔍 Debug - groupedData sample:', groupedData[0]);
+      
       // Aplicar paginación a los datos agrupados
       const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedGroupedData = groupedData.slice(startIndex, endIndex);
+      
+      console.log('🔍 Debug - paginatedGroupedData:', paginatedGroupedData.length);
+      console.log('🔍 Debug - paginatedGroupedData sample:', paginatedGroupedData[0]);
       
       return paginatedGroupedData;
     }
@@ -2789,11 +2811,28 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         console.log(`📊 Datos a actualizar:`, updateData);
         
         try {
-          const result = await JoySenseService.updateTableRowByCompositeKey(
-            selectedTable,
-            compositeKey,
-            updateData
-          );
+          let result;
+          
+          // Si es una nueva entrada (sin usercreatedid), usar upsert
+          if (!row.usercreatedid) {
+            console.log(`🔄 Insertando nueva entrada usuarioperfil ${i + 1}/${updatedEntries.length}`);
+            result = await JoySenseService.insertTableRow(selectedTable, {
+              usuarioid: row.usuarioid,
+              perfilid: row.perfilid,
+              statusid: row.statusid,
+              usercreatedid: getCurrentUserId(),
+              datecreated: new Date().toISOString(),
+              usermodifiedid: getCurrentUserId(),
+              datemodified: new Date().toISOString()
+            });
+          } else {
+            // Si es una entrada existente, usar update
+            result = await JoySenseService.updateTableRowByCompositeKey(
+              selectedTable,
+              compositeKey,
+              updateData
+            );
+          }
           
           console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
           
@@ -3189,7 +3228,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'usuarioperfil') {
-        return ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        const isIncluded = ['usuarioid', 'perfilid', 'usuario', 'perfiles', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        console.log('🔍 Debug - getVisibleColumns usuarioperfil:', { columnName: col.columnName, isIncluded });
+        return isIncluded;
       }
       
       if (selectedTable === 'contacto') {
@@ -3370,6 +3411,26 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         reorderedColumns.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
+      } else if (selectedTable === 'usuarioperfil') {
+        // Usuario, Perfiles (columnas agrupadas) - solo las columnas agrupadas, no usuarioid
+        reorderedColumns.push({
+          columnName: 'usuario',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
+        reorderedColumns.push({
+          columnName: 'perfiles',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
       } else {
         // Para otras tablas, mantener el orden original
         reorderedColumns.push(...otherColumns);
@@ -3387,6 +3448,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       reorderedColumns.push(statusColumn);
     }
     
+    // Debug log para usuarioperfil
+    if (selectedTable === 'usuarioperfil') {
+      console.log('🔍 Debug - getVisibleColumns result for usuarioperfil:', reorderedColumns.map(col => col.columnName));
+    }
+    
     return reorderedColumns;
   };
 
@@ -3395,6 +3461,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   
   // Columnas para la tabla de Actualizar (agrupadas para metricasensor)
   const updateVisibleColumns = getVisibleColumns(true);
+  
+  // Debug: verificar columnas para usuarioperfil
+  if (selectedTable === 'usuarioperfil') {
+    console.log('🔍 Debug - updateVisibleColumns for usuarioperfil:', updateVisibleColumns.map(col => col.columnName));
+  }
   
   // Debug: verificar que los campos de auditoría estén incluidos
   // console.log('🔍 Debug - Tabla seleccionada:', selectedTable);
@@ -5114,7 +5185,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                    </tr>
                                  </thead>
                                                                <tbody>
-                                 {getUpdatePaginatedData().map((row, index) => {
+                                 {(() => {
+                                   const data = getUpdatePaginatedData();
+                                   console.log('🔍 Debug - getUpdatePaginatedData result:', data.length);
+                                   console.log('🔍 Debug - getUpdatePaginatedData sample:', data[0]);
+                                   return data;
+                                 })().map((row, index) => {
                                    
                                    const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') 
                                      ? selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === getRowIdForSelection(row))
@@ -5155,24 +5231,55 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      {updateVisibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
-                                         <td key={col.columnName} className={`px-6 py-4 text-xs font-mono ${col.columnName === 'tipos' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
-                                           {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
-                                             ? getUserName(row[col.columnName])
-                                             : col.columnName === 'statusid'
-                                             ? (
-                                               <span className={row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                                                 {row[col.columnName] === 1 ? 'Activo' : 'Inactivo'}
-                                               </span>
-                                             )
-                                             : col.columnName === 'datecreated' || col.columnName === 'datemodified'
-                                             ? formatDate(row[col.columnName])
-                                             : col.columnName === 'tipos'
-                                             ? (
-                                               <div className="whitespace-normal break-words">
-                                                 {getDisplayValue(row, col.columnName)}
-                                               </div>
-                                             )
-                                             : getDisplayValue(row, col.columnName)}
+                                         <td key={col.columnName} className={`px-6 py-4 text-xs font-mono ${col.columnName === 'tipos' || col.columnName === 'perfiles' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
+                                           {(() => {
+                                             // Log para debuggear qué columna se está procesando
+                                             console.log('🔍 Debug - Processing column:', { columnName: col.columnName, selectedTable, rowUsuarioid: row.usuarioid });
+                                             
+                                             if (col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid') {
+                                               return getUserName(row[col.columnName]);
+                                             }
+                                             
+                                             if (col.columnName === 'statusid') {
+                                               return (
+                                                 <span className={row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                                   {row[col.columnName] === 1 ? 'Activo' : 'Inactivo'}
+                                                 </span>
+                                               );
+                                             }
+                                             
+                                             if (col.columnName === 'datecreated' || col.columnName === 'datemodified') {
+                                               return formatDate(row[col.columnName]);
+                                             }
+                                             
+                                             if (col.columnName === 'tipos' && selectedTable === 'metricasensor') {
+                                               return (
+                                                 <div className="whitespace-normal break-words">
+                                                   {row.tipos || getDisplayValue(row, col.columnName)}
+                                                 </div>
+                                               );
+                                             }
+                                             
+                                             if (col.columnName === 'perfiles' && selectedTable === 'usuarioperfil') {
+                                               console.log('🔍 Debug - Rendering perfiles for row:', { usuarioid: row.usuarioid, perfiles: row.perfiles, columnName: col.columnName });
+                                               return (
+                                                 <div className="whitespace-normal break-words">
+                                                   {row.perfiles || getDisplayValue(row, col.columnName)}
+                                                 </div>
+                                               );
+                                             }
+                                             
+                                             if (col.columnName === 'usuario' && selectedTable === 'usuarioperfil') {
+                                               console.log('🔍 Debug - Rendering usuario for row:', { usuarioid: row.usuarioid, usuario: row.usuario, columnName: col.columnName });
+                                               return (
+                                                 <div className="whitespace-normal break-words">
+                                                   {row.usuario || getDisplayValue(row, col.columnName)}
+                                                 </div>
+                                               );
+                                             }
+                                             
+                                             return getDisplayValue(row, col.columnName);
+                                           })()}
                                          </td>
                                        ) : null;
                                      })}

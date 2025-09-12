@@ -21,12 +21,18 @@ export function AdvancedUsuarioPerfilUpdateForm({
   const getUsuarioFromSelectedRows = () => {
     if (selectedRows.length === 0) return null;
     
+    console.log('🔍 Debug - selectedRows:', selectedRows);
+    console.log('🔍 Debug - usuariosData:', usuariosData);
+    
     // Obtener el primer usuarioid de las filas seleccionadas
     const firstUsuarioid = selectedRows[0]?.usuarioid;
+    console.log('🔍 Debug - firstUsuarioid:', firstUsuarioid);
+    
     if (!firstUsuarioid) return null;
     
     // Buscar el usuario
     const usuario = usuariosData.find(u => u.usuarioid === firstUsuarioid);
+    console.log('🔍 Debug - usuario encontrado:', usuario);
     return usuario;
   };
   
@@ -36,9 +42,6 @@ export function AdvancedUsuarioPerfilUpdateForm({
   // Estados para los perfiles seleccionados
   const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
-  
-  // Estados para dropdowns
-  const [perfilesDropdownOpen, setPerfilesDropdownOpen] = useState(false);
   
   // Estados para búsqueda
   const [perfilesSearchTerm, setPerfilesSearchTerm] = useState('');
@@ -87,12 +90,15 @@ export function AdvancedUsuarioPerfilUpdateForm({
     setIsUpdating(true);
     
     try {
-      // Crear entradas para actualizar
-      const updatedEntries = selectedRows.map(originalRow => {
+      // Crear entradas para actualizar - incluir tanto perfiles existentes como nuevos
+      const updatedEntries: any[] = [];
+      
+      // 1. Actualizar perfiles existentes
+      selectedRows.forEach(originalRow => {
         const perfilId = originalRow.perfilid;
         const isSelected = selectedPerfiles.includes(perfilId.toString());
         
-        return {
+        updatedEntries.push({
           usuarioid: originalRow.usuarioid,
           perfilid: originalRow.perfilid,
           statusid: isSelected ? 1 : 0, // 1 = activo, 0 = inactivo
@@ -100,7 +106,23 @@ export function AdvancedUsuarioPerfilUpdateForm({
           datecreated: originalRow.datecreated,
           usermodifiedid: originalRow.usermodifiedid,
           datemodified: new Date().toISOString()
-        };
+        });
+      });
+      
+      // 2. Agregar nuevos perfiles seleccionados que no estaban en las filas originales
+      const existingPerfilIds = selectedRows.map(row => row.perfilid.toString());
+      const newPerfiles = selectedPerfiles.filter(perfilId => !existingPerfilIds.includes(perfilId));
+      
+      newPerfiles.forEach(perfilId => {
+        updatedEntries.push({
+          usuarioid: usuarioid,
+          perfilid: parseInt(perfilId),
+          statusid: 1, // Nuevo perfil = activo
+          usercreatedid: null, // Se asignará en el backend
+          datecreated: new Date().toISOString(),
+          usermodifiedid: null, // Se asignará en el backend
+          datemodified: new Date().toISOString()
+        });
       });
       
       console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
@@ -135,100 +157,70 @@ export function AdvancedUsuarioPerfilUpdateForm({
         </div>
       </div>
 
-      {/* Perfiles */}
-      <div className="mb-4">
-        <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+      {/* Container Perfiles */}
+      <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
+        <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
           PERFILES
-        </label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setPerfilesDropdownOpen(!perfilesDropdownOpen)}
-            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 hover:bg-neutral-600 transition-colors"
-          >
-            {selectedPerfiles.length > 0 
-              ? `${selectedPerfiles.length} perfil(es) seleccionado(s)`
-              : 'Seleccionar perfiles...'
-            }
-          </button>
-          
-          {perfilesDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-neutral-800 border border-neutral-600 rounded shadow-lg">
-              <div className="p-2">
-                <input
-                  type="text"
-                  placeholder="Buscar perfiles..."
-                  value={perfilesSearchTerm}
-                  onChange={(e) => setPerfilesSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto">
-                {filteredPerfiles.map((perfil) => (
-                  <label
-                    key={perfil.perfilid}
-                    className="flex items-center p-3 hover:bg-neutral-700 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPerfiles.includes(perfil.perfilid.toString())}
-                      onChange={() => handlePerfilToggle(perfil.perfilid.toString())}
-                      className="mr-3 text-orange-500 focus:ring-orange-500"
-                    />
-                    <div className="flex-1">
-                      <div className="text-white font-medium">{perfil.perfil}</div>
-                      <div className="text-neutral-400 text-sm">{perfil.descripcion}</div>
-                    </div>
-                  </label>
-                ))}
-                {filteredPerfiles.length === 0 && (
-                  <div className="p-3 text-neutral-400 text-center">
-                    {perfilesSearchTerm ? 'No se encontraron perfiles' : 'No hay perfiles disponibles'}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Información de las filas seleccionadas */}
-      <div className="mb-6">
-        <h4 className="text-lg font-bold text-orange-500 mb-3 font-mono tracking-wider">
-          COMBINACIONES SELECCIONADAS
         </h4>
-        <div className="bg-neutral-800 border border-neutral-600 rounded p-4">
-          <div className="space-y-2">
-            {selectedRows.map((row, index) => {
-              const perfil = perfilesData.find(p => p.perfilid === row.perfilid);
-              const isSelected = selectedPerfiles.includes(row.perfilid.toString());
-              
-              return (
-                <div
-                  key={`${row.usuarioid}-${row.perfilid}`}
-                  className={`flex items-center justify-between p-2 rounded ${
-                    isSelected ? 'bg-green-900/20 border border-green-700' : 'bg-red-900/20 border border-red-700'
-                  }`}
-                >
-                  <div className="flex-1">
-                    <div className="text-white font-medium">
-                      {perfil?.perfil || `Perfil ${row.perfilid}`}
-                    </div>
-                    <div className="text-neutral-400 text-sm">
-                      {perfil?.descripcion || 'Sin descripción'}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <span className={`text-sm font-medium ${
-                      isSelected ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {isSelected ? 'ACTIVO' : 'INACTIVO'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        
+        {/* Búsqueda */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="🔍 Buscar perfiles..."
+            value={perfilesSearchTerm}
+            onChange={(e) => setPerfilesSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+          />
+        </div>
+        
+        <div className="max-h-60 overflow-y-auto space-y-2">
+          {/* Perfiles de las filas seleccionadas */}
+          {getUniquePerfilesFromRows().map((perfilId) => {
+            const perfil = perfilesData.find(p => p.perfilid.toString() === perfilId);
+            return (
+              <label key={perfilId} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                <input
+                  type="checkbox"
+                  checked={selectedPerfiles.includes(perfilId)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedPerfiles([...selectedPerfiles, perfilId]);
+                    } else {
+                      setSelectedPerfiles(selectedPerfiles.filter(id => id !== perfilId));
+                    }
+                  }}
+                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                />
+                <span className="text-white text-sm font-mono tracking-wider">{perfil?.perfil?.toUpperCase() || perfilId}</span>
+              </label>
+            );
+          })}
+          
+          {/* Perfiles adicionales disponibles */}
+          {getPerfilesDisponibles()
+            .filter(perfil => !getUniquePerfilesFromRows().includes(perfil.perfilid.toString()))
+            .filter(perfil => 
+              perfil.perfil?.toLowerCase().includes(perfilesSearchTerm.toLowerCase()) ||
+              perfil.descripcion?.toLowerCase().includes(perfilesSearchTerm.toLowerCase())
+            )
+            .map((perfil) => (
+              <label key={perfil.perfilid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                <input
+                  type="checkbox"
+                  checked={selectedPerfiles.includes(perfil.perfilid.toString())}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedPerfiles([...selectedPerfiles, perfil.perfilid.toString()]);
+                    } else {
+                      setSelectedPerfiles(selectedPerfiles.filter(id => id !== perfil.perfilid.toString()));
+                    }
+                  }}
+                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                />
+                <span className="text-white text-sm font-mono tracking-wider">{perfil.perfil?.toUpperCase() || perfil.perfilid}</span>
+              </label>
+            ))}
         </div>
       </div>
 
@@ -236,16 +228,30 @@ export function AdvancedUsuarioPerfilUpdateForm({
       <div className="flex justify-end gap-4">
         <button
           onClick={onCancel}
-          className="px-4 py-2 bg-neutral-600 text-white rounded hover:bg-neutral-700 transition-colors"
+          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"
         >
-          Cancelar
+          ❌ CANCELAR
         </button>
         <button
           onClick={handleUpdate}
           disabled={isUpdating}
-          className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={`px-6 py-2 font-bold rounded-lg transition-colors font-mono flex items-center space-x-2 ${
+            isUpdating 
+              ? 'bg-orange-600 text-white cursor-not-allowed' 
+              : 'bg-orange-500 hover:bg-orange-600 text-white'
+          }`}
         >
-          {isUpdating ? 'Actualizando...' : 'Actualizar'}
+          {isUpdating ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span>GUARDANDO...</span>
+            </>
+          ) : (
+            <>
+              <span>➕</span>
+              <span>GUARDAR</span>
+            </>
+          )}
         </button>
       </div>
     </div>
