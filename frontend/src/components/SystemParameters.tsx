@@ -526,16 +526,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         };
       }
       
-      // Buscar el nombre del tipo
+      // Buscar el nombre del tipo y métrica (siempre para enriquecer la fila)
       const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
-      if (tipo?.tipo) {
-        acc[nodoid].tipos.add(tipo.tipo);
-      }
-      
-      // Buscar el nombre de la métrica
       const metrica = metricasData?.find(m => m.metricaid === row.metricaid);
-      if (metrica?.metrica) {
-        acc[nodoid].metricas.add(metrica.metrica);
+      
+      // Solo agregar tipos y métricas si están activos (statusid: 1)
+      if (row.statusid === 1) {
+        if (tipo?.tipo) {
+          acc[nodoid].tipos.add(tipo.tipo);
+        }
+        
+        if (metrica?.metrica) {
+          acc[nodoid].metricas.add(metrica.metrica);
+        }
       }
       
       // Crear fila original con nombres incluidos
@@ -555,14 +558,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }, {});
 
     // Convertir a array y formatear tipos y métricas
-    const result = Object.values(groupedData).map((group: any) => ({
-      ...group,
-      tipos: Array.from(group.tipos).join(', '),
-      metricas: Array.from(group.metricas).join(', '),
-      // Para compatibilidad con el sistema de selección
-      tipoid: group.originalRows[0]?.tipoid,
-      metricaid: group.originalRows[0]?.metricaid
-    }));
+    const result = Object.values(groupedData).map((group: any) => {
+      const hasActiveMetrics = group.tipos.size > 0 && group.metricas.size > 0;
+      
+      return {
+        ...group,
+        tipos: hasActiveMetrics ? Array.from(group.tipos).join(', ') : 'Sin sensores activos',
+        metricas: hasActiveMetrics ? Array.from(group.metricas).join(', ') : '',
+        // Para compatibilidad con el sistema de selección
+        tipoid: group.originalRows[0]?.tipoid,
+        metricaid: group.originalRows[0]?.metricaid
+      };
+    });
 
     // Ordenar por fecha de modificación más reciente primero
     return result.sort((a: any, b: any) => {
