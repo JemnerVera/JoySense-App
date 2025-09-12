@@ -119,11 +119,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   return (
     <div className="bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Consola de Selección de Nodo</h3>
+        <h3 className="text-lg font-bold text-orange-500 font-mono tracking-wider">CONSOLA DE SELECCIÓN DE NODO</h3>
         <div className="flex space-x-2">
           <button
             onClick={() => setActiveTab('dropdown')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-bold transition-colors font-mono tracking-wider ${
               activeTab === 'dropdown'
                 ? 'bg-orange-500 text-white'
                 : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
@@ -133,7 +133,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('map')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-bold transition-colors font-mono tracking-wider ${
               activeTab === 'map'
                 ? 'bg-orange-500 text-white'
                 : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
@@ -148,7 +148,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-4 py-3 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 hover:bg-neutral-600 transition-colors"
+            className="w-full px-4 py-3 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-orange-500 hover:bg-neutral-600 transition-colors font-mono"
           >
             {selectedNode ? (
               <div>

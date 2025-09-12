@@ -415,21 +415,21 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                          metric.id === 'humedad' ? '💧' : '⚡'}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white">{metric.title}</h3>
+                        <h3 className="text-lg font-bold text-white font-mono tracking-wider">{metric.title}</h3>
                       </div>
                     </div>
                     {!hasData && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full border bg-gray-900 text-gray-300 border-gray-700">
-                        Sin datos
+                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-gray-900 text-gray-300 border-gray-700 font-mono tracking-wider">
+                        SIN DATOS
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-baseline space-x-2 mb-4">
-                    <span className="text-3xl font-bold text-orange-500">
+                    <span className="text-3xl font-bold text-orange-500 font-mono">
                       {hasData && typeof currentValue === "number" ? currentValue.toFixed(1) : "--"}
                     </span>
-                    <span className="text-sm text-neutral-400">{metric.unit}</span>
+                    <span className="text-sm text-neutral-400 font-mono">{metric.unit}</span>
                   </div>
 
                   <div className="h-32 mb-4">
@@ -440,7 +440,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "Inter, system-ui, sans-serif" }}
+                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                             interval="preserveStartEnd"
                           />
                           <YAxis hide />
@@ -461,7 +461,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                               border: "1px solid #374151",
                               borderRadius: "8px",
                               color: "#ffffff",
-                              fontFamily: "Inter, system-ui, sans-serif"
+                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
                             }}
                           />
                         </LineChart>
@@ -470,7 +470,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                       <div className="flex items-center justify-center h-full bg-neutral-700/30 rounded-lg">
                         <div className="text-center text-neutral-500">
                           <div className="text-2xl mb-2">📊</div>
-                          <div className="text-sm">Sin datos disponibles</div>
+                          <div className="text-sm font-mono tracking-wider">SIN DATOS DISPONIBLES</div>
                         </div>
                       </div>
                     )}
@@ -598,12 +598,12 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "Inter, system-ui, sans-serif" }}
+                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                           />
                           <YAxis 
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "Inter, system-ui, sans-serif" }}
+                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                           />
                           <Line
                             type="monotone"
@@ -621,7 +621,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                               border: "1px solid #374151",
                               borderRadius: "8px",
                               color: "#ffffff",
-                              fontFamily: "Inter, system-ui, sans-serif"
+                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
                             }}
                           />
                         </LineChart>
@@ -634,16 +634,6 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
           </div>
         )}
 
-        {/* No Data State */}
-        {!loading && !error && mediciones.length === 0 && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-semibold text-white mb-2">No hay datos disponibles</h3>
-              <p className="text-neutral-400">Selecciona una entidad y ubicación para ver las mediciones</p>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   )
