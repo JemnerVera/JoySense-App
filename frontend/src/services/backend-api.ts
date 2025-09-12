@@ -853,4 +853,20 @@ export class JoySenseService {
       throw error;
     }
   }
+
+  // Obtener nodos con localizaciones completas (para mapa)
+  static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
+    try {
+      const detectedSchema = await this.detectSchema();
+      if (detectedSchema === 'sense') {
+        const data = await backendAPI.get(`/sense/nodos-con-localizacion?limit=${limit}`);
+        return data || [];
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error in getNodosConLocalizacion:', error);
+      throw error;
+    }
+  }
 }

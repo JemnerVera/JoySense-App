@@ -362,7 +362,7 @@ const AppContentInternal: React.FC = () => {
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="text-center">
             <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES</h2>
+              <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">REPORTES</h2>
               <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA SUBPESTAÑA PARA CONTINUAR</p>
             </div>
           </div>
@@ -381,6 +381,19 @@ const AppContentInternal: React.FC = () => {
                 </svg>
                 <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
               </div>
+              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === 'umbrales') {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <div className="text-center">
+            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">CONFIGURACIÓN</h2>
               <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
             </div>
           </div>
@@ -421,7 +434,7 @@ const AppContentInternal: React.FC = () => {
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-            <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
+            <h2 className="text-2xl font-bold text-white mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
             <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR</p>
           </div>
         </div>
@@ -461,11 +474,22 @@ const AppContentInternal: React.FC = () => {
             <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
                 <div className="text-sm text-neutral-400 font-mono">
-                  JOYSENSE APP / <span className="text-orange-500">
+                  JOYSENSE APP / <span className={
+                    activeTab === 'parameters' || activeTab?.startsWith('parameters-')
+                      ? 'text-orange-500' // Naranja para Parámetros
+                      : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
+                      ? 'text-green-500' // Verde para Reportes
+                      : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
+                      ? 'text-blue-500' // Azul para Configuración
+                      : 'text-orange-500' // Naranja por defecto
+                  }>
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? (selectedTable ? `PARÁMETROS / ${getTableNameInSpanish(selectedTable)}` : 'PARÁMETROS')
-                      : activeTab?.startsWith('reportes-')
+                      : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
                       ? (() => {
+                          if (activeTab === 'reportes') {
+                            return 'REPORTES';
+                          }
                           const reporteTab = activeTab.replace('reportes-', '');
                           const reporteNames: { [key: string]: string } = {
                             'dashboard': 'DASHBOARD',
@@ -474,6 +498,8 @@ const AppContentInternal: React.FC = () => {
                           };
                           return `REPORTES / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
                         })()
+                      : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
+                      ? 'CONFIGURACIÓN'
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>

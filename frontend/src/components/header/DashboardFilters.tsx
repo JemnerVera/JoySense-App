@@ -11,10 +11,12 @@ interface DashboardFiltersProps {
     startDate: string;
     endDate: string;
   }) => void;
+  showDateFilters?: boolean; // Nueva prop para controlar si mostrar filtros de fecha
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
-  onFiltersChange
+  onFiltersChange,
+  showDateFilters = true // Por defecto mostrar filtros de fecha
 }) => {
   const { 
     paisSeleccionado, 
@@ -327,66 +329,68 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         </OverlayDropdown>
       </div>
 
-      {/* Dropdown de Fechas */}
-      <div className="relative" ref={fechasDropdownRef}>
-        <button
-          onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
-          disabled={!fundoSeleccionado}
-          className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white font-mono ${
-            startDate && endDate ? 'border-orange-500' : ''
-          }`}
-        >
-          <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <span className={`${startDate && endDate ? 'text-white' : 'text-neutral-400'} truncate`}>
-              {formatDateRange()}
-            </span>
-          </div>
-          <svg className={`w-4 h-4 text-neutral-400 transition-transform ${isFechasDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+      {/* Dropdown de Fechas - Solo mostrar si showDateFilters es true */}
+      {showDateFilters && (
+        <div className="relative" ref={fechasDropdownRef}>
+          <button
+            onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
+            disabled={!fundoSeleccionado}
+            className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white font-mono ${
+              startDate && endDate ? 'border-orange-500' : ''
+            }`}
+          >
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <span className={`${startDate && endDate ? 'text-white' : 'text-neutral-400'} truncate`}>
+                {formatDateRange()}
+              </span>
+            </div>
+            <svg className={`w-4 h-4 text-neutral-400 transition-transform ${isFechasDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-        {isFechasDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
-            {!fundoSeleccionado ? (
-              <div className="px-3 py-2 text-sm text-neutral-400 font-mono">
-                SELECCIONA UN FUNDO PRIMERO
-              </div>
-            ) : (
-              <div className="p-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-neutral-300 mb-1 font-mono tracking-wider">FECHA INICIAL</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-neutral-800 text-white rounded-lg border border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-neutral-300 mb-1 font-mono tracking-wider">FECHA FINAL</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-neutral-800 text-white rounded-lg border border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
-                    />
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button
-                      onClick={() => setIsFechasDropdownOpen(false)}
-                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors font-mono tracking-wider"
-                    >
-                      APLICAR
-                    </button>
+          {isFechasDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
+              {!fundoSeleccionado ? (
+                <div className="px-3 py-2 text-sm text-neutral-400 font-mono">
+                  SELECCIONA UN FUNDO PRIMERO
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-neutral-300 mb-1 font-mono tracking-wider">FECHA INICIAL</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-800 text-white rounded-lg border border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-neutral-300 mb-1 font-mono tracking-wider">FECHA FINAL</label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-800 text-white rounded-lg border border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
+                      />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={() => setIsFechasDropdownOpen(false)}
+                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors font-mono tracking-wider"
+                      >
+                        APLICAR
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

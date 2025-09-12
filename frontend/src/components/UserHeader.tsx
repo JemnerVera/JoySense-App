@@ -115,6 +115,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
               onDashboardFiltersChange(filters);
             }
           }}
+          showDateFilters={false} // No mostrar filtros de fecha en la vista inicial
         />
       );
     }
@@ -129,6 +130,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
               onDashboardFiltersChange(filters);
             }
           }}
+          showDateFilters={false} // No mostrar filtros de fecha en la vista inicial
         />
       );
     }

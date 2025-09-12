@@ -7,6 +7,7 @@ interface BaseAuxiliarySidebarProps {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
+  color?: 'orange' | 'green' | 'blue';
 }
 
 const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
@@ -15,7 +16,8 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
   onMouseLeave,
   title,
   icon,
-  children
+  children,
+  color = 'orange'
 }) => {
   return (
     <div 
@@ -28,10 +30,15 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
       {/* Título - Tactical Style */}
       <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4">
         {isExpanded ? (
-          <h3 className="text-orange-500 font-bold text-sm tracking-wider">{title.toUpperCase()}</h3>
+          <h3 className={`font-bold text-sm tracking-wider ${
+            color === 'green' ? 'text-green-500' :
+            color === 'blue' ? 'text-blue-500' :
+            'text-orange-500'
+          }`}>{title.toUpperCase()}</h3>
         ) : (
-          <div className="w-8 h-8 flex items-center justify-center">
-            {icon}
+          <div className="flex flex-col items-center justify-center text-white">
+            <div className="text-xs font-bold tracking-wider">Joy</div>
+            <div className="text-xs font-bold tracking-wider">Sense</div>
           </div>
         )}
       </div>

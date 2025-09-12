@@ -1819,6 +1819,70 @@ app.get('/api/sense/localizaciones', async (req, res) => {
   }
 });
 
+// Endpoint para obtener nodos con localizaciones completas (para mapa)
+app.get('/api/sense/nodos-con-localizacion', async (req, res) => {
+  try {
+    const { limit = 1000 } = req.query;
+    console.log(`🔍 Backend: Obteniendo nodos con localizaciones del schema sense...`);
+    
+    const { data, error } = await supabase
+      .from('localizacion')
+      .select(`
+        *,
+        nodo: nodoid (
+          nodoid,
+          nodo,
+          deveui,
+          statusid
+        ),
+        ubicacion: ubicacionid (
+          ubicacionid,
+          ubicacion,
+          ubicacionabrev,
+          fundoid,
+          statusid,
+          fundo: fundoid (
+            fundoid,
+            fundo,
+            farmabrev,
+            empresaid,
+            empresa: empresaid (
+              empresaid,
+              empresa,
+              empresabrev,
+              paisid,
+              pais: paisid (
+                paisid,
+                pais,
+                paisabrev
+              )
+            )
+          )
+        ),
+        entidad: entidadid (
+          entidadid,
+          entidad,
+          statusid
+        )
+      `)
+      .eq('statusid', 1)
+      .not('latitud', 'is', null)
+      .not('longitud', 'is', null)
+      .limit(parseInt(limit));
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log(`✅ Backend: Nodos con localizaciones obtenidos: ${data.length}`);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Error backend:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Ruta para detectar schema disponible (alias para sense)
 app.get('/api/sense/detect', async (req, res) => {
   try {

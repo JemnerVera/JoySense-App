@@ -89,6 +89,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         onMouseLeave={onMouseLeave}
         title="Reportes"
         icon={reportesIcon}
+        color="green"
       >
         {/* Subpestañas de reportes */}
         <div className="py-4">

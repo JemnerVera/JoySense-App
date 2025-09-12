@@ -6,6 +6,8 @@ import { TableInfo, ColumnInfo, Message } from '../types/systemParameters';
 import { STYLES_CONFIG } from '../config/styles';
 import MultipleSensorForm from './MultipleSensorForm';
 import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
+import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
+import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 import MultipleLocalizacionForm from './MultipleLocalizacionForm';
 import NormalInsertForm from './NormalInsertForm';
 import InsertionMessage from './InsertionMessage';
@@ -490,10 +492,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [ubicacionesData, setUbicacionesData] = useState<any[]>([]);
   const [entidadesData, setEntidadesData] = useState<any[]>([]);
   const [nodosData, setNodosData] = useState<any[]>([]);
+  const [usuariosData, setUsuariosData] = useState<any[]>([]);
+  const [perfilesData, setPerfilesData] = useState<any[]>([]);
   const [tiposData, setTiposData] = useState<any[]>([]);
   const [metricasData, setMetricasData] = useState<any[]>([]);
   const [criticidadesData, setCriticidadesData] = useState<any[]>([]);
-  const [perfilesData, setPerfilesData] = useState<any[]>([]);
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
   const [mediosData, setMediosData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
@@ -568,6 +571,78 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         // Para compatibilidad con el sistema de selección
         tipoid: group.originalRows[0]?.tipoid,
         metricaid: group.originalRows[0]?.metricaid
+      };
+    });
+
+    // Ordenar por fecha de modificación más reciente primero
+    return result.sort((a: any, b: any) => {
+      const dateA = new Date(a.datemodified || a.datecreated || 0);
+      const dateB = new Date(b.datemodified || b.datecreated || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
+  // Función para agrupar datos de usuarioperfil por usuario
+  const groupUsuarioPerfilData = (data: any[]) => {
+    if (selectedTable !== 'usuarioperfil') {
+      return data;
+    }
+
+    // Agrupar por usuarioid
+    const groupedData = data.reduce((acc: any, row: any) => {
+      const usuarioid = row.usuarioid;
+      if (!acc[usuarioid]) {
+        // Buscar el nombre del usuario
+        const usuario = usuariosData?.find(u => u.usuarioid === usuarioid);
+        
+        acc[usuarioid] = {
+          usuarioid: row.usuarioid,
+          usuario: usuario?.nombre || `Usuario ${usuarioid}`,
+          email: usuario?.email || '',
+          perfiles: new Set(),
+          usercreatedid: row.usercreatedid,
+          datecreated: row.datecreated,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified,
+          statusid: row.statusid,
+          // Mantener referencia a las filas originales para el formulario de edición
+          originalRows: []
+        };
+      }
+      
+      // Buscar el nombre del perfil
+      const perfil = perfilesData?.find(p => p.perfilid === row.perfilid);
+      
+      // Solo agregar perfiles si están activos (statusid: 1)
+      if (row.statusid === 1) {
+        if (perfil?.perfil) {
+          acc[usuarioid].perfiles.add(perfil.perfil);
+        }
+      }
+      
+      // Crear fila original con nombres incluidos
+      const enrichedRow = {
+        ...row,
+        perfil: perfil?.perfil || `Perfil ${row.perfilid}`,
+        usuario: acc[usuarioid].usuario || `Usuario ${row.usuarioid}`,
+        email: acc[usuarioid].email || ''
+      };
+      
+      // Agregar fila original enriquecida
+      acc[usuarioid].originalRows.push(enrichedRow);
+      
+      return acc;
+    }, {});
+
+    // Convertir a array y formatear perfiles
+    const result = Object.values(groupedData).map((group: any) => {
+      const hasActivePerfiles = group.perfiles.size > 0;
+      
+      return {
+        ...group,
+        perfiles: hasActivePerfiles ? Array.from(group.perfiles).join(', ') : 'Sin perfiles activos',
+        // Para compatibilidad con el sistema de selección
+        perfilid: group.originalRows[0]?.perfilid
       };
     });
 
@@ -881,10 +956,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
   const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
-  // Para metricasensor, calcular totalPages basado en datos agrupados
-  const getTotalPagesForMetricaSensor = () => {
-    if (selectedTable === 'metricasensor' && updateData.length > 0) {
-      const groupedData = groupMetricaSensorData(updateData);
+  // Para metricasensor y usuarioperfil, calcular totalPages basado en datos agrupados
+  const getTotalPagesForGroupedTable = () => {
+    if ((selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && updateData.length > 0) {
+      const groupedData = selectedTable === 'metricasensor' 
+        ? groupMetricaSensorData(updateData)
+        : groupUsuarioPerfilData(updateData);
       const calculatedPages = Math.ceil(groupedData.length / itemsPerPage);
       
       return calculatedPages;
@@ -892,12 +969,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     return totalPages;
   };
 
-  // Total de páginas corregido para metricasensor
-  const correctedTotalPages = getTotalPagesForMetricaSensor();
+  // Total de páginas corregido para tablas agrupadas
+  const correctedTotalPages = getTotalPagesForGroupedTable();
 
-  // Funciones de navegación corregidas para metricasensor
-  const correctedHasNextPage = selectedTable === 'metricasensor' ? paginationCurrentPage < correctedTotalPages : hasNextPage;
-  const correctedHasPrevPage = selectedTable === 'metricasensor' ? paginationCurrentPage > 1 : hasPrevPage;
+  // Funciones de navegación corregidas para tablas agrupadas
+  const correctedHasNextPage = (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage < correctedTotalPages : hasNextPage;
+  const correctedHasPrevPage = (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage > 1 : hasPrevPage;
 
   // Funciones de navegación personalizadas para metricasensor
   const handleMetricaSensorPageChange = (page: number) => {
@@ -1134,7 +1211,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          criticidadesResponse,
          perfilesResponse,
          umbralesResponse,
-         mediosResponse
+         mediosResponse,
+         usuariosResponse
        ] = await Promise.all([
          JoySenseService.getTableData('pais', 500),
          JoySenseService.getTableData('empresa', 500),
@@ -1147,7 +1225,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          JoySenseService.getTableData('criticidad', 500),
          JoySenseService.getTableData('perfil', 500),
          JoySenseService.getTableData('umbral', 500),
-         JoySenseService.getTableData('medio', 500)
+         JoySenseService.getTableData('medio', 500),
+         JoySenseService.getTableData('usuario', 500)
        ]);
       
       const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
@@ -1162,6 +1241,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
        const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
        const medios = Array.isArray(mediosResponse) ? mediosResponse : ((mediosResponse as any)?.data || []);
+       const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
        
        setPaisesData(paises);
        setEmpresasData(empresas);
@@ -1175,11 +1255,41 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        setPerfilesData(perfiles);
        setUmbralesData(umbrales);
        setMediosData(medios);
+       setUsuariosData(usuarios);
       
       const endTime = performance.now();
       console.log(`✅ Datos de tablas relacionadas cargados en ${(endTime - startTime).toFixed(2)}ms`);
     } catch (error) {
       console.error('Error loading related tables data:', error);
+    }
+  };
+
+  // Función específica para obtener opciones únicas para usuarioperfil
+  const getUniqueOptionsForUsuarioPerfilField = (columnName: string, filterParams?: { usuarioid?: string; perfilid?: string }) => {
+    console.log('🔍 getUniqueOptionsForUsuarioPerfilField Debug:', {
+      columnName,
+      filterParams,
+      usuariosDataLength: usuariosData.length,
+      perfilesDataLength: perfilesData.length
+    });
+
+    switch (columnName) {
+      case 'usuarioid':
+        return usuariosData
+          .filter(usuario => usuario.statusid === 1)
+          .map(usuario => ({
+            value: usuario.usuarioid,
+            label: `${usuario.nombre} (${usuario.email})`
+          }));
+      case 'perfilid':
+        return perfilesData
+          .filter(perfil => perfil.statusid === 1)
+          .map(perfil => ({
+            value: perfil.perfilid,
+            label: `${perfil.perfil} - ${perfil.descripcion || 'Sin descripción'}`
+          }));
+      default:
+        return [];
     }
   };
 
@@ -1838,9 +1948,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Función para obtener los datos paginados de la tabla de Actualizar
   const getUpdatePaginatedData = () => {
-    // Para metricasensor, agrupar TODOS los datos primero, luego paginar
-    if (selectedTable === 'metricasensor') {
-      const groupedData = groupMetricaSensorData(updateData);
+    // Para metricasensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
+    if (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+      const groupedData = selectedTable === 'metricasensor' 
+        ? groupMetricaSensorData(updateData)
+        : groupUsuarioPerfilData(updateData);
       
       // Aplicar paginación a los datos agrupados
       const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
@@ -2634,6 +2746,97 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
     } catch (error) {
       console.error('❌ Error general en actualización avanzada:', error);
+      setUpdateMessage({ 
+        type: 'error', 
+        text: 'Error al actualizar las entradas' 
+      });
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  // Función específica para manejar actualizaciones del formulario avanzado de usuarioperfil
+  const handleAdvancedUsuarioPerfilUpdate = async (updatedEntries: any[]) => {
+    try {
+      setUpdateLoading(true);
+      
+      console.log('🔧 Actualizando entradas del formulario avanzado usuarioperfil:', updatedEntries.length);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < updatedEntries.length; i++) {
+        const row = updatedEntries[i];
+        const compositeKey = { 
+          usuarioid: row.usuarioid, 
+          perfilid: row.perfilid
+        };
+        
+        // Preparar datos para actualización
+        const updateData: any = {
+          statusid: row.statusid,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified
+        };
+        
+        // Si es una nueva entrada, incluir datos de creación
+        if (row.usercreatedid && row.datecreated) {
+          updateData.usercreatedid = row.usercreatedid;
+          updateData.datecreated = row.datecreated;
+        }
+        
+        console.log(`🔄 Actualizando usuarioperfil ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
+        console.log(`📊 Datos a actualizar:`, updateData);
+        
+        try {
+          const result = await JoySenseService.updateTableRowByCompositeKey(
+            selectedTable,
+            compositeKey,
+            updateData
+          );
+          
+          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
+          
+          if (result && result.success) {
+            successCount++;
+            console.log(`✅ Actualización ${i + 1} exitosa`);
+          } else {
+            errorCount++;
+            console.error(`❌ Error en actualización ${i + 1}:`, result?.error || 'Resultado undefined');
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Error en actualización ${i + 1}:`, error);
+        }
+      }
+      
+      if (successCount > 0) {
+        setUpdateMessage({ 
+          type: 'success', 
+          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+        });
+        
+        // Recargar datos después de la actualización
+        await loadUpdateData();
+        await loadTableData();
+        
+        // Limpiar selección
+        setSelectedRowsForUpdate([]);
+        setSelectedRowsForManualUpdate([]);
+        setSelectedRowForUpdate(null);
+        setUpdateFormData({});
+        setIsMultipleSelectionMode(false);
+      }
+      
+      if (errorCount > 0) {
+        setUpdateMessage({ 
+          type: 'error', 
+          text: `❌ ${errorCount} entradas fallaron al actualizar` 
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error general en actualización avanzada usuarioperfil:', error);
       setUpdateMessage({ 
         type: 'error', 
         text: 'Error al actualizar las entradas' 
@@ -3457,6 +3660,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
    const [selectedEntidadMetrica, setSelectedEntidadMetrica] = useState<string>('');
    const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
 
+   // Estados para creación múltiple de usuario perfil
+   const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
+   const [selectedUsuarios, setSelectedUsuarios] = useState<string[]>([]);
+   const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
+
       // Estados para creación múltiple de localizaciones
    const [multipleLocalizaciones, setMultipleLocalizaciones] = useState<any[]>([]);
    const [selectedUbicaciones, setSelectedUbicaciones] = useState<string[]>([]);
@@ -3888,6 +4096,115 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
+  // Función para inicializar usuario perfiles múltiples
+  const initializeMultipleUsuarioPerfiles = React.useCallback(async (usuarios: string[], perfiles: string[]) => {
+    try {
+      // Crear todas las combinaciones válidas (usuarioid, perfilid)
+      const usuarioPerfilesToCreate = [];
+      let index = 1;
+      
+      for (const usuarioid of usuarios) {
+        for (const perfilid of perfiles) {
+          const usuarioInfo = usuariosData.find(u => u.usuarioid.toString() === usuarioid);
+          const perfilInfo = perfilesData.find(p => p.perfilid.toString() === perfilid);
+          
+          console.log(`✅ Creando nueva combinación usuario perfil: ${usuarioInfo?.nombre || usuarioid} - ${perfilInfo?.perfil || perfilid}`);
+          
+          usuarioPerfilesToCreate.push({
+            usuarioPerfilIndex: index++,
+            label: `${usuarioInfo?.nombre || usuarioid} - ${perfilInfo?.perfil || perfilid}`,
+            usuarioid: parseInt(usuarioid),
+            perfilid: parseInt(perfilid),
+            statusid: selectedStatus ? 1 : 0
+          });
+        }
+      }
+      
+      setMultipleUsuarioPerfiles(usuarioPerfilesToCreate);
+      
+      if (usuarioPerfilesToCreate.length > 0) {
+        // Mensaje eliminado - no es necesario
+      } else {
+        setMessage({ 
+          type: 'warning', 
+          text: 'No hay combinaciones únicas disponibles para crear nuevos usuario perfiles' 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error inicializando usuario perfiles múltiples:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Error al verificar usuario perfiles existentes' 
+      });
+    }
+  }, [selectedStatus, usuariosData, perfilesData, setMultipleUsuarioPerfiles, setMessage]);
+
+  // Función para manejar inserción múltiple de usuario perfiles
+  const handleMultipleUsuarioPerfilInsert = async () => {
+    if (!selectedTable || !user || multipleUsuarioPerfiles.length === 0) return;
+    
+    try {
+      setLoading(true);
+      const usuarioid = getCurrentUserId();
+      
+      // Preparar datos para cada usuario perfil (limpiar campos que no están en la tabla)
+      const usuarioPerfilesToInsert = multipleUsuarioPerfiles.map(usuarioPerfil => {
+        const { usuarioPerfilIndex, label, ...cleanUsuarioPerfil } = usuarioPerfil; // Remover campos que no están en la tabla
+        return {
+          ...cleanUsuarioPerfil,
+          usercreatedid: usuarioid,
+          datecreated: new Date().toISOString(),
+          usermodifiedid: usuarioid,
+          datemodified: new Date().toISOString()
+        };
+      });
+
+      // Insertar usuario perfiles simultáneamente (ahora que los datos están limpios)
+      console.log(`🔄 Insertando ${usuarioPerfilesToInsert.length} usuario perfiles simultáneamente...`);
+      const insertPromises = usuarioPerfilesToInsert.map((usuarioPerfil, index) => 
+        JoySenseService.insertTableRow(selectedTable, usuarioPerfil)
+          .then(result => {
+            console.log(`✅ Usuario perfil ${index + 1} insertado exitosamente:`, usuarioPerfil);
+            return result;
+          })
+          .catch(error => {
+            console.error(`❌ Error insertando usuario perfil ${index + 1}:`, usuarioPerfil, error);
+            throw error;
+          })
+      );
+      
+      const results = await Promise.all(insertPromises);
+     
+     // Agregar cada usuario perfil insertado al sistema de mensajes
+     usuarioPerfilesToInsert.forEach(usuarioPerfil => {
+       addInsertedRecord(usuarioPerfil);
+     });
+     
+     // Limpiar mensajes de alerta después de inserción exitosa
+     setMessage(null);
+     
+     // Limpiar formulario
+     setMultipleUsuarioPerfiles([]);
+     setSelectedUsuarios([]);
+     setSelectedPerfiles([]);
+     
+     // Recargar datos
+     loadTableData();
+     loadTableInfo();
+     loadUpdateData();
+     loadCopyData();
+     // Recargar datos relacionados para que aparezcan en comboboxes
+     loadRelatedTablesData();
+     
+   } catch (error: any) {
+     const errorResponse = handleMultipleInsertError(error, 'usuario perfiles');
+     setMessage({ type: errorResponse.type, text: errorResponse.message });
+   } finally {
+     setLoading(false);
+   }
+ };
+
   // Función para manejar inserción múltiple de localizaciones
   const handleMultipleLocalizacionInsert = async () => {
     if (!selectedTable || !user || multipleLocalizaciones.length === 0) return;
@@ -3981,9 +4298,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
     
     if (isSelected) {
-      // Para metricasensor, si es una fila agrupada, expandir las originalRows
-      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
-        console.log('🔄 Expandir fila agrupada de metricasensor:', row.originalRows.length, 'entradas');
+      // Para metricasensor y usuarioperfil, si es una fila agrupada, expandir las originalRows
+      if ((selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && row.originalRows && row.originalRows.length > 0) {
+        console.log('🔄 Expandir fila agrupada:', row.originalRows.length, 'entradas');
         
         // Verificar si alguna de las filas originales ya está seleccionada
         const isAnyOriginalSelected = row.originalRows.some((originalRow: any) => 
@@ -4039,10 +4356,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     
     // Validar que los datos relacionados estén cargados
     const needsRelatedData = selectedRowsForManualUpdate.some(row => 
-      row.nodoid || row.tipoid || row.metricaid || row.ubicacionid
+      row.nodoid || row.tipoid || row.metricaid || row.ubicacionid || row.usuarioid || row.perfilid
     );
     
-    if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData)) {
+    if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData || !usuariosData || !perfilesData)) {
       setMessage({ type: 'warning', text: 'Cargando datos relacionados... Por favor espera un momento.' });
       // Recargar datos relacionados si es necesario
       loadRelatedTablesData();
@@ -4407,6 +4724,39 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                           empresasData={empresasData}
                           fundosData={fundosData}
                         />
+                                          ) : selectedTable === 'usuarioperfil' ? (
+                                                                         <MultipleUsuarioPerfilForm
+                          selectedUsuarios={selectedUsuarios}
+                          setSelectedUsuarios={setSelectedUsuarios}
+                          selectedPerfiles={selectedPerfiles}
+                          setSelectedPerfiles={setSelectedPerfiles}
+                          selectedStatus={selectedStatus}
+                          setSelectedStatus={setSelectedStatus}
+                          multipleUsuarioPerfiles={multipleUsuarioPerfiles}
+                          setMultipleUsuarioPerfiles={setMultipleUsuarioPerfiles}
+                          usuariosData={usuariosData}
+                          perfilesData={perfilesData}
+                          loading={loading}
+                          onInitializeUsuarioPerfiles={initializeMultipleUsuarioPerfiles}
+                          onInsertUsuarioPerfiles={handleMultipleUsuarioPerfilInsert}
+                          onCancel={() => {
+                            setCancelAction(() => () => {
+                            setMultipleUsuarioPerfiles([]);
+                            setSelectedUsuarios([]);
+                            setSelectedPerfiles([]);
+                              setMessage(null); // Limpiar mensaje de datos copiados
+                            });
+                            setShowCancelModal(true);
+                          }}
+                          getUniqueOptionsForField={getUniqueOptionsForUsuarioPerfilField}
+                          onReplicateClick={openReplicateModalForTable}
+                          paisSeleccionado={paisSeleccionado}
+                          empresaSeleccionada={empresaSeleccionada}
+                          fundoSeleccionado={fundoSeleccionado}
+                          paisesData={paisesData}
+                          empresasData={empresasData}
+                          fundosData={fundosData}
+                        />
                     ) : (
                       <div className={`space-y-6 ${
                         selectedTable === 'sensor' || selectedTable === 'metricasensor' 
@@ -4579,8 +4929,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         />
                       )}
 
+                      {/* Formulario avanzado para usuarioperfil */}
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'usuarioperfil' && (
+                        <AdvancedUsuarioPerfilUpdateForm
+                          selectedRows={selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate}
+                          onUpdate={handleAdvancedUsuarioPerfilUpdate}
+                          onCancel={handleCancelUpdate}
+                          getUniqueOptionsForField={getUniqueOptionsForUsuarioPerfilField}
+                          usuariosData={usuariosData}
+                          perfilesData={perfilesData}
+                        />
+                      )}
+
                       {/* Tabla de entradas seleccionadas para actualización múltiple (otras tablas) */}
-                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && (
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && selectedTable !== 'usuarioperfil' && (
                         <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
                           <div className="flex justify-between items-center mb-4">
                             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">ACTUALIZAR STATUS</h4>
@@ -4664,7 +5026,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
 
                       {/* Botones de acción - Solo para tablas que no sean metricasensor */}
-                      {selectedTable !== 'metricasensor' && (
+                      {selectedTable !== 'metricasensor' && selectedTable !== 'usuarioperfil' && (
                         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center">
                           <button
                             onClick={handleUpdate}
@@ -4712,7 +5074,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         </div>
 
                         {/* Botones de selección múltiple para sensor y metricasensor - Solo mostrar cuando hay selecciones */}
-                        {(selectedTable === 'sensor' || selectedTable === 'metricasensor') && selectedRowsForManualUpdate.length > 0 && (
+                        {(selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && selectedRowsForManualUpdate.length > 0 && (
                           <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4">
                             <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                               <button
@@ -4754,18 +5116,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                                                <tbody>
                                  {getUpdatePaginatedData().map((row, index) => {
                                    
-                                   const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor') 
+                                   const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') 
                                      ? selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === getRowIdForSelection(row))
                                      : selectedRowForUpdate === row;
                                    
-                                   // Detectar si no hay métricas activas (tipos === "Sin sensores activos")
+                                   // Detectar si no hay métricas activas o perfiles activos
                                    const hasNoActiveMetrics = row.tipos === 'Sin sensores activos';
+                                   const hasNoActivePerfiles = row.perfiles === 'Sin perfiles activos';
                                    
                                    return (
-                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics ? 'text-red-400' : ''}`} onClick={(e) => {
+                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics || hasNoActivePerfiles ? 'text-red-400' : ''}`} onClick={(e) => {
                                      // Solo ejecutar si no se hizo clic en el checkbox
                                      if ((e.target as HTMLInputElement).type !== 'checkbox') {
-                                     if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
+                                     if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
                                        // Toggle selection: if selected, unselect; if not selected, select
                                        handleSelectRowForManualUpdate(row, !isSelected);
                                      } else {
@@ -4779,7 +5142,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                          checked={isSelected}
                                          onChange={(e) => {
                                            e.stopPropagation();
-                                           if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
+                                           if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
                                              // Toggle selection: if selected, unselect; if not selected, select
                                              handleSelectRowForManualUpdate(row, !isSelected);
                                            } else {
