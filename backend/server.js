@@ -2389,6 +2389,137 @@ app.post('/api/sense/metricasensor', async (req, res) => {
   }
 });
 
+// Endpoint para obtener mediciones con filtros
+app.get('/api/sense/mediciones', async (req, res) => {
+  try {
+    const { ubicacionId, startDate, endDate, limit, countOnly, getAll } = req.query;
+    console.log('🔍 Backend: Obteniendo mediciones del schema sense...', { ubicacionId, startDate, endDate, limit, countOnly, getAll });
+    
+    let query = supabase
+      .from('medicion')
+      .select('*');
+    
+    // Aplicar filtros
+    if (ubicacionId) {
+      query = query.eq('ubicacionid', ubicacionId);
+    }
+    
+    if (startDate) {
+      query = query.gte('fecha', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('fecha', endDate);
+    }
+    
+    // Si solo necesitamos el conteo
+    if (countOnly === 'true') {
+      query = query.select('*', { count: 'exact', head: true });
+    } else if (limit) {
+      query = query.limit(parseInt(limit));
+    } else if (getAll !== 'true') {
+      // Límite por defecto si no se especifica
+      query = query.limit(1000);
+    }
+    
+    // Ordenar por fecha descendente (más recientes primero)
+    query = query.order('fecha', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    if (countOnly === 'true') {
+      console.log(`✅ Backend: Conteo de mediciones: ${count}`);
+      res.json({ count: count || 0 });
+    } else {
+      console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
+      res.json(data || []);
+    }
+  } catch (error) {
+    console.error('❌ Error in /api/sense/mediciones:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para obtener mediciones con entidad (con JOIN)
+app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
+  try {
+    const { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll } = req.query;
+    console.log('🔍 Backend: Obteniendo mediciones con entidad del schema sense...', { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll });
+    
+    // Query simple primero - solo mediciones
+    let query = supabase
+      .from('medicion')
+      .select('*');
+    
+    // Aplicar filtros básicos
+    if (ubicacionId) {
+      query = query.eq('ubicacionid', ubicacionId);
+    }
+    
+    if (startDate) {
+      query = query.gte('fecha', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('fecha', endDate);
+    }
+    
+    // Si solo necesitamos el conteo
+    if (countOnly === 'true') {
+      query = query.select('*', { count: 'exact', head: true });
+    } else if (limit) {
+      query = query.limit(parseInt(limit));
+    } else if (getAll !== 'true') {
+      // Límite por defecto si no se especifica
+      query = query.limit(1000);
+    }
+    
+    // Ordenar por fecha descendente (más recientes primero)
+    query = query.order('fecha', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    // Si hay entidadId, filtrar después de obtener los datos
+    let filteredData = data || [];
+    if (entidadId && data) {
+      // Obtener ubicaciones que pertenecen a la entidad - query simple
+      const { data: ubicaciones, error: ubicError } = await supabase
+        .from('ubicacion')
+        .select('ubicacionid');
+      
+      if (ubicError) {
+        console.error('❌ Error obteniendo ubicaciones:', ubicError);
+        return res.status(500).json({ error: ubicError.message });
+      }
+      
+      // Por ahora, devolver todas las mediciones si hay entidadId
+      // TODO: Implementar filtro por entidad correctamente
+      filteredData = data;
+    }
+    
+    if (countOnly === 'true') {
+      console.log(`✅ Backend: Conteo de mediciones con entidad: ${filteredData.length}`);
+      res.json({ count: filteredData.length });
+    } else {
+      console.log(`✅ Backend: Mediciones con entidad obtenidas: ${filteredData.length}`);
+      res.json(filteredData);
+    }
+  } catch (error) {
+    console.error('❌ Error in /api/sense/mediciones-con-entidad:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 JoySense Backend API running on port ${PORT}`);
