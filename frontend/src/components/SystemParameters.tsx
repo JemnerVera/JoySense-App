@@ -351,31 +351,15 @@ const usePagination = (data: any[], itemsPerPage: number = 10) => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(data.length / itemsPerPage);
   
-  console.log('📊 usePagination Debug:', { 
-    dataLength: data.length, 
-    itemsPerPage, 
-    totalPages, 
-    currentPage 
-  });
-  
   const getPaginatedData = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = data.slice(startIndex, endIndex);
     
-    console.log('📄 getPaginatedData:', { 
-      startIndex, 
-      endIndex, 
-      paginatedDataLength: paginatedData.length,
-      currentPage,
-      totalPages
-    });
-    
     return paginatedData;
   };
   
   const goToPage = (page: number) => {
-    console.log('🔄 goToPage:', { from: currentPage, to: page, totalPages });
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
@@ -388,7 +372,6 @@ const usePagination = (data: any[], itemsPerPage: number = 10) => {
   
   // Resetear a página 1 cuando cambian los datos
   useEffect(() => {
-    console.log('🔄 Pagination reset to page 1 due to data change');
     setCurrentPage(1);
   }, [data.length]);
   
@@ -648,6 +631,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   
   // Hook para manejar replicación
   const { showModal, replicateOptions, openReplicateModal, closeReplicateModal, handleReplicate } = useReplicate();
+  
 
   // Funciones para manejar replicación
   const handleReplicateSensor = (nodo: any) => {
@@ -886,7 +870,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Estados para selección manual múltiple
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
   const [selectedRowsForManualUpdate, setSelectedRowsForManualUpdate] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
   const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
@@ -897,13 +880,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       const groupedData = groupMetricaSensorData(updateData);
       const calculatedPages = Math.ceil(groupedData.length / itemsPerPage);
       
-      console.log('🔍 Debug - Cálculo de páginas para metricasensor:', {
-        updateDataLength: updateData.length,
-        groupedDataLength: groupedData.length,
-        itemsPerPage,
-        calculatedPages
-      });
-      
       return calculatedPages;
     }
     return totalPages;
@@ -913,60 +889,40 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const correctedTotalPages = getTotalPagesForMetricaSensor();
 
   // Funciones de navegación corregidas para metricasensor
-  const correctedHasNextPage = selectedTable === 'metricasensor' ? currentPage < correctedTotalPages : hasNextPage;
-  const correctedHasPrevPage = selectedTable === 'metricasensor' ? currentPage > 1 : hasPrevPage;
+  const correctedHasNextPage = selectedTable === 'metricasensor' ? paginationCurrentPage < correctedTotalPages : hasNextPage;
+  const correctedHasPrevPage = selectedTable === 'metricasensor' ? paginationCurrentPage > 1 : hasPrevPage;
 
   // Funciones de navegación personalizadas para metricasensor
   const handleMetricaSensorPageChange = (page: number) => {
-    if (selectedTable === 'metricasensor') {
-      setCurrentPage(page);
-    } else {
-      goToPage(page);
-    }
+    goToPage(page);
   };
 
   const handleMetricaSensorNextPage = () => {
-    if (selectedTable === 'metricasensor') {
-      if (currentPage < correctedTotalPages) {
-        setCurrentPage(currentPage + 1);
-      }
-    } else {
-      nextPage();
+    if (paginationCurrentPage < correctedTotalPages) {
+      goToPage(paginationCurrentPage + 1);
     }
   };
 
   const handleMetricaSensorPrevPage = () => {
-    if (selectedTable === 'metricasensor') {
-      if (currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    } else {
-      prevPage();
+    if (paginationCurrentPage > 1) {
+      goToPage(paginationCurrentPage - 1);
     }
   };
 
   const handleMetricaSensorFirstPage = () => {
-    if (selectedTable === 'metricasensor') {
-      setCurrentPage(1);
-    } else {
-      firstPage();
-    }
+    goToPage(1);
   };
 
   const handleMetricaSensorLastPage = () => {
-    if (selectedTable === 'metricasensor') {
-      setCurrentPage(correctedTotalPages);
-    } else {
-      lastPage();
-    }
+    goToPage(correctedTotalPages);
   };
 
-  // Usar currentPage local para metricasensor, paginationCurrentPage para otras tablas
-  const effectiveCurrentPage = selectedTable === 'metricasensor' ? currentPage : paginationCurrentPage;
+  // Usar paginationCurrentPage para todas las tablas
+  const effectiveCurrentPage = paginationCurrentPage;
 
   // Resetear página cuando cambie la tabla
   useEffect(() => {
-    setCurrentPage(1);
+    goToPage(1);
   }, [selectedTable]);
 
   // Función simple para verificar si hay cambios sin guardar
@@ -1879,23 +1835,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     if (selectedTable === 'metricasensor') {
       const groupedData = groupMetricaSensorData(updateData);
       
-      console.log('🔍 Debug - Datos agrupados para metricasensor:', {
-        totalUpdateData: updateData.length,
-        totalGroupedData: groupedData.length,
-        currentPage: effectiveCurrentPage,
-        itemsPerPage
-      });
-      
       // Aplicar paginación a los datos agrupados
       const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedGroupedData = groupedData.slice(startIndex, endIndex);
-      
-      console.log('🔍 Debug - Datos paginados:', {
-        startIndex,
-        endIndex,
-        paginatedDataLength: paginatedGroupedData.length
-      });
       
       return paginatedGroupedData;
     }
@@ -2601,6 +2544,98 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     return idFields.length > 0 ? row[idFields[0]] : null;
   };
 
+  // Función específica para manejar actualizaciones del formulario avanzado de metricasensor
+  const handleAdvancedMetricaSensorUpdate = async (updatedEntries: any[]) => {
+    try {
+      setUpdateLoading(true);
+      
+      console.log('🔧 Actualizando entradas del formulario avanzado:', updatedEntries.length);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < updatedEntries.length; i++) {
+        const row = updatedEntries[i];
+        const compositeKey = { 
+          nodoid: row.nodoid, 
+          tipoid: row.tipoid, 
+          metricaid: row.metricaid 
+        };
+        
+        // Preparar datos para actualización
+        const updateData: any = {
+          statusid: row.statusid,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified
+        };
+        
+        // Si es una nueva entrada, incluir datos de creación
+        if (row.usercreatedid && row.datecreated) {
+          updateData.usercreatedid = row.usercreatedid;
+          updateData.datecreated = row.datecreated;
+        }
+        
+        console.log(`🔄 Actualizando metricasensor ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
+        console.log(`📊 Datos a actualizar:`, updateData);
+        
+        try {
+          const result = await JoySenseService.updateTableRowByCompositeKey(
+            selectedTable,
+            compositeKey,
+            updateData
+          );
+          
+          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
+          
+          if (result && result.success) {
+            successCount++;
+            console.log(`✅ Actualización ${i + 1} exitosa`);
+          } else {
+            errorCount++;
+            console.error(`❌ Error en actualización ${i + 1}:`, result?.error || 'Resultado undefined');
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Error en actualización ${i + 1}:`, error);
+        }
+      }
+      
+      if (successCount > 0) {
+        setUpdateMessage({ 
+          type: 'success', 
+          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+        });
+        
+        // Recargar datos después de la actualización
+        await loadUpdateData();
+        await loadTableData();
+        
+        // Limpiar selección
+        setSelectedRowsForUpdate([]);
+        setSelectedRowsForManualUpdate([]);
+        setSelectedRowForUpdate(null);
+        setUpdateFormData({});
+        setIsMultipleSelectionMode(false);
+      }
+      
+      if (errorCount > 0) {
+        setUpdateMessage({ 
+          type: 'error', 
+          text: `❌ ${errorCount} entradas fallaron al actualizar` 
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error general en actualización avanzada:', error);
+      setUpdateMessage({ 
+        type: 'error', 
+        text: 'Error al actualizar las entradas' 
+      });
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!updateFormData || Object.keys(updateFormData).length === 0) {
       setUpdateMessage({ type: 'error', text: 'No hay datos para actualizar' });
@@ -3152,9 +3187,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const updateVisibleColumns = getVisibleColumns(true);
   
   // Debug: verificar que los campos de auditoría estén incluidos
-  console.log('🔍 Debug - Tabla seleccionada:', selectedTable);
-  console.log('🔍 Debug - Columnas visibles (Estado):', statusVisibleColumns.map(col => col.columnName));
-  console.log('🔍 Debug - Columnas visibles (Actualizar):', updateVisibleColumns.map(col => col.columnName));
+  // console.log('🔍 Debug - Tabla seleccionada:', selectedTable);
+  // console.log('🔍 Debug - Columnas visibles (Estado):', statusVisibleColumns.map(col => col.columnName));
+  // console.log('🔍 Debug - Columnas visibles (Actualizar):', updateVisibleColumns.map(col => col.columnName));
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
    const getSearchableColumns = () => {
@@ -4527,7 +4562,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'metricasensor' && (
                         <AdvancedMetricaSensorUpdateForm
                           selectedRows={selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate}
-                          onUpdate={handleUpdate}
+                          onUpdate={handleAdvancedMetricaSensorUpdate}
                           onCancel={handleCancelUpdate}
                           getUniqueOptionsForField={getUniqueOptionsForField}
                           entidadesData={entidadesData}
@@ -4711,20 +4746,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                  </thead>
                                                                <tbody>
                                  {getUpdatePaginatedData().map((row, index) => {
-                                   console.log('📋 Renderizando fila:', { 
-                                     index, 
-                                     nodoid: row.nodoid, 
-                                     tipoid: row.tipoid,
-                                     currentPage,
-                                     totalPages
-                                   });
                                    
                                    const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor') 
                                      ? selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === getRowIdForSelection(row))
                                      : selectedRowForUpdate === row;
                                    
                                    return (
-                                   <tr key={(currentPage - 1) * itemsPerPage + index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer" onClick={(e) => {
+                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer" onClick={(e) => {
                                      // Solo ejecutar si no se hizo clic en el checkbox
                                      if ((e.target as HTMLInputElement).type !== 'checkbox') {
                                      if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
@@ -4896,6 +4924,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           loading={loading}
         />
       )}
+      
     </div>
   );
 };

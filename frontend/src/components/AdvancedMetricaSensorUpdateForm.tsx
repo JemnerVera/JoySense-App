@@ -42,14 +42,15 @@ export function AdvancedMetricaSensorUpdateForm({
   const entidad = useMemo(() => getEntidadFromSelectedRows(), [selectedRows]);
   const entidadId = entidad?.entidadid;
   
-  console.log('🔍 Debug - Filas seleccionadas:', selectedRows);
-  console.log('🔍 Debug - Primer tipoid:', selectedRows[0]?.tipoid);
-  console.log('🔍 Debug - Entidad encontrada:', entidad);
+  // console.log('🔍 Debug - Filas seleccionadas:', selectedRows);
+  // console.log('🔍 Debug - Primer tipoid:', selectedRows[0]?.tipoid);
+  // console.log('🔍 Debug - Entidad encontrada:', entidad);
   
   // Estados para los tipos, nodos y métricas seleccionados
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
   const [selectedNodos, setSelectedNodos] = useState<string[]>([]);
   const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Estados para dropdowns
   const [tiposDropdownOpen, setTiposDropdownOpen] = useState(false);
@@ -74,7 +75,7 @@ export function AdvancedMetricaSensorUpdateForm({
   const getNodosFromSelectedRows = () => {
     if (selectedRows.length === 0) return [];
     
-    // Extraer nodoid únicos de las filas seleccionadas
+    // Extraer nodoid únicos de las filas seleccionadas (solo los nodos que están en las filas seleccionadas)
     const nodosSet = new Set(selectedRows.map(row => row.nodoid?.toString()).filter(Boolean));
     return Array.from(nodosSet);
   };
@@ -101,19 +102,19 @@ export function AdvancedMetricaSensorUpdateForm({
       const nodosUnicos = getNodosFromSelectedRows();
       const metricasUnicas = getMetricasFromSelectedRows();
       
-      console.log('🔍 Debug - Tipos extraídos:', tiposUnicos);
-      console.log('🔍 Debug - Nodos extraídos:', nodosUnicos);
-      console.log('🔍 Debug - Métricas extraídas:', metricasUnicas);
-      console.log('🔍 Debug - Filas seleccionadas completas:', selectedRows);
+      // console.log('🔍 Debug - Tipos extraídos:', tiposUnicos);
+      // console.log('🔍 Debug - Nodos extraídos:', nodosUnicos);
+      // console.log('🔍 Debug - Métricas extraídas:', metricasUnicas);
+      // console.log('🔍 Debug - Filas seleccionadas completas:', selectedRows);
       
       // Debug: Mostrar el status de las filas originales
       const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
-      console.log('🔍 Debug - Filas originales con status:', allOriginalRows.map(row => ({
-        nodoid: row.nodoid,
-        tipoid: row.tipoid,
-        metricaid: row.metricaid,
-        statusid: row.statusid
-      })));
+      // console.log('🔍 Debug - Filas originales con status:', allOriginalRows.map(row => ({
+      //   nodoid: row.nodoid,
+      //   tipoid: row.tipoid,
+      //   metricaid: row.metricaid,
+      //   statusid: row.statusid
+      // })));
       
       setSelectedTipos(tiposUnicos);
       setSelectedNodos(nodosUnicos);
@@ -121,20 +122,29 @@ export function AdvancedMetricaSensorUpdateForm({
     }
   }, [selectedRows.length, selectedRows[0]?.tipoid, selectedRows[0]?.nodoid, selectedRows[0]?.metricaid]);
 
-  const handleUpdate = () => {
-    // Crear las entradas actualizadas
-    const updatedEntries: any[] = [];
-    const firstRow = selectedRows[0]; // Obtener la primera fila para datos de auditoría
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    
+    try {
+      // Crear las entradas actualizadas
+      const updatedEntries: any[] = [];
+      const firstRow = selectedRows[0]; // Obtener la primera fila para datos de auditoría
+    
+    // Obtener todas las filas originales (individuales) de las filas agrupadas
+    const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
     
     console.log('🔍 Debug - handleUpdate:', {
       selectedNodos,
       selectedTipos,
       selectedMetricas,
-      selectedRowsLength: selectedRows.length
+      selectedRowsLength: selectedRows.length,
+      allOriginalRows: allOriginalRows.map(row => ({
+        nodoid: row.nodoid,
+        tipoid: row.tipoid,
+        metricaid: row.metricaid,
+        statusid: row.statusid
+      }))
     });
-    
-    // Obtener todas las filas originales (individuales) de las filas agrupadas
-    const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
     
     console.log('🔍 Debug - Filas originales:', allOriginalRows);
     
@@ -158,7 +168,7 @@ export function AdvancedMetricaSensorUpdateForm({
               datemodified: new Date().toISOString()
             });
           } else {
-            // Crear nueva entrada
+            // Crear nueva entrada solo si no existe
             updatedEntries.push({
               nodoid: parseInt(nodoId),
               tipoid: parseInt(tipoId),
@@ -186,16 +196,28 @@ export function AdvancedMetricaSensorUpdateForm({
         // Esta entrada ya no está seleccionada, desactivarla
         updatedEntries.push({
           ...originalRow,
-          statusid: 2, // Inactivo
+          statusid: 0, // Inactivo
           usermodifiedid: firstRow?.usermodifiedid,
           datemodified: new Date().toISOString()
         });
       }
     });
     
-    console.log('🔍 Debug - Entradas actualizadas:', updatedEntries);
-    
-    onUpdate(updatedEntries);
+    console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
+      console.log('🔍 Debug - Entradas a enviar:', updatedEntries.map(entry => ({
+        nodoid: entry.nodoid,
+        tipoid: entry.tipoid,
+        metricaid: entry.metricaid,
+        statusid: entry.statusid,
+        isNew: !entry.usercreatedid ? 'NUEVA' : 'EXISTENTE'
+      })));
+      
+      await onUpdate(updatedEntries);
+    } catch (error) {
+      console.error('❌ Error en handleUpdate:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -310,26 +332,7 @@ export function AdvancedMetricaSensorUpdateForm({
               );
             })}
             
-            {/* Nodos adicionales disponibles para la entidad */}
-            {entidadId && getUniqueOptionsForField('nodoid', { entidadid: entidadId })
-              .filter(option => !getNodosFromSelectedRows().includes(option.value.toString()))
-              .map((option) => (
-                <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedNodos.includes(option.value.toString())}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedNodos([...selectedNodos, option.value.toString()]);
-                      } else {
-                        setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
-                      }
-                    }}
-                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                  />
-                  <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
-                </label>
-              ))}
+            {/* Solo mostrar nodos de las filas seleccionadas - no nodos adicionales */}
           </div>
         </div>
 
@@ -389,9 +392,24 @@ export function AdvancedMetricaSensorUpdateForm({
       <div className="flex justify-center gap-4">
         <button
           onClick={handleUpdate}
-          className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-colors font-mono"
+          disabled={isUpdating}
+          className={`px-6 py-2 text-white font-bold rounded-lg transition-all duration-200 font-mono flex items-center space-x-2 ${
+            isUpdating 
+              ? 'bg-orange-400 cursor-not-allowed opacity-75' 
+              : 'bg-orange-600 hover:bg-orange-700 active:bg-orange-800 active:scale-95'
+          }`}
         >
-          ➕ GUARDAR
+          {isUpdating ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span>GUARDANDO...</span>
+            </>
+          ) : (
+            <>
+              <span>➕</span>
+              <span>GUARDAR</span>
+            </>
+          )}
         </button>
         <button
           onClick={onCancel}

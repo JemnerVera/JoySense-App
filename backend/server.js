@@ -1450,22 +1450,25 @@ app.put('/api/sense/metricasensor/composite', async (req, res) => {
     // No hay restricción de entidad como en sensor, solo validamos que no haya conflictos
     // La tabla metricasensor no tiene columna entidadid
 
+    // Usar upsert para crear o actualizar la entrada
     const { data, error } = await supabase
       .from('metricasensor')
-      .update(updateData)
-      .eq('nodoid', nodoid)
-      .eq('metricaid', metricaid)
-      .eq('tipoid', tipoid)
+      .upsert({
+        nodoid: parseInt(nodoid),
+        metricaid: parseInt(metricaid),
+        tipoid: parseInt(tipoid),
+        ...updateData
+      })
       .select();
     if (error) {
       console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ success: false, error: error.message });
     }
     console.log(`✅ Backend: Metricasensor actualizado: ${data.length} registros`);
-    res.json(data);
+    res.json({ success: true, data: data });
   } catch (error) {
     console.error('❌ Error backend:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
