@@ -1530,7 +1530,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
     // Manejar columnas virtuales para metricasensor agrupado
     if (columnName === 'tipos' || columnName === 'metricas') {
-      return row[columnName] || 'N/A';
+      return row[columnName] || '';
     }
 
     // Si no es un campo de ID o no existe la relación, mostrar el valor original
@@ -4758,8 +4758,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      ? selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === getRowIdForSelection(row))
                                      : selectedRowForUpdate === row;
                                    
+                                   // Detectar si no hay métricas activas (tipos === "Sin sensores activos")
+                                   const hasNoActiveMetrics = row.tipos === 'Sin sensores activos';
+                                   
                                    return (
-                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer" onClick={(e) => {
+                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics ? 'text-red-400' : ''}`} onClick={(e) => {
                                      // Solo ejecutar si no se hizo clic en el checkbox
                                      if ((e.target as HTMLInputElement).type !== 'checkbox') {
                                      if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
