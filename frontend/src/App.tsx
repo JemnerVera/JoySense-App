@@ -12,6 +12,7 @@ import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
 import { SystemParametersLazy, ConfigurationLazy, UmbralesMainLazy, DashboardLazy } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
+import MensajesMain from './components/Reportes/MensajesMain';
 import MensajesDashboard from './components/Umbrales/MensajesDashboard';
 import { JoySenseService } from './services/backend-api';
 import { Pais, Empresa } from './types';
@@ -339,7 +340,7 @@ const AppContentInternal: React.FC = () => {
         case 'alertas':
           return <AlertasMain />;
         case 'mensajes':
-          return <MensajesDashboard />;
+          return <MensajesMain />;
         default:
           return (
             <div className="p-6">

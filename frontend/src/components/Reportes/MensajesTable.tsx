@@ -1,66 +1,59 @@
 import React, { useState, useEffect, startTransition } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 
-interface AlertaData {
+interface MensajeData {
   alertaid: number;
-  umbralid: number;
-  medicionid: number;
+  contactoid: number;
+  mensaje: string;
   fecha: string;
   usercreatedid: number;
   datecreated: string;
   statusid: number;
   // Campos relacionados (se obtendrán de joins)
-  nodo?: string;
-  metrica?: string;
-  tipo?: string;
-  criticidad?: string;
-  ubicacion?: string;
-  valor_medido?: number;
-  umbral_minimo?: number;
-  umbral_maximo?: number;
-  mensaje?: string;
+  contacto?: string;
+  alerta?: string;
 }
 
-const AlertasTable: React.FC = () => {
-  const [alertas, setAlertas] = useState<AlertaData[]>([]);
+const MensajesTable: React.FC = () => {
+  const [mensajes, setMensajes] = useState<MensajeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
 
-  const loadAlertas = async () => {
+  const loadMensajes = async () => {
     try {
       setLoading(true);
       setError(null);
 
       // Usar startTransition para evitar el error de Suspense
       startTransition(() => {
-        JoySenseService.getTableData('alerta', 1000)
+        JoySenseService.getTableData('mensaje', 1000)
           .then(data => {
             if (Array.isArray(data)) {
-              setAlertas(data);
+              setMensajes(data);
             } else {
-              setAlertas([]);
+              setMensajes([]);
             }
           })
           .catch(err => {
-            console.error('Error cargando alertas:', err);
-            setError('Error al cargar las alertas');
-            setAlertas([]);
+            console.error('Error cargando mensajes:', err);
+            setError('Error al cargar los mensajes');
+            setMensajes([]);
           })
           .finally(() => {
             setLoading(false);
           });
       });
     } catch (err) {
-      console.error('Error en loadAlertas:', err);
-      setError('Error al cargar las alertas');
+      console.error('Error en loadMensajes:', err);
+      setError('Error al cargar los mensajes');
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAlertas();
+    loadMensajes();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -92,7 +85,7 @@ const AlertasTable: React.FC = () => {
       case -1:
         return (
           <span className="px-2 py-1 text-xs font-bold rounded-full bg-yellow-900 text-yellow-300 border border-yellow-700 font-mono tracking-wider">
-            PROCESADA
+            PROCESADO
           </span>
         );
       default:
@@ -104,19 +97,18 @@ const AlertasTable: React.FC = () => {
     }
   };
 
-
   // Paginación
-  const totalPages = Math.ceil(alertas.length / itemsPerPage);
+  const totalPages = Math.ceil(mensajes.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentAlertas = alertas.slice(startIndex, endIndex);
+  const currentMensajes = mensajes.slice(startIndex, endIndex);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-neutral-400 font-mono tracking-wider">CARGANDO ALERTAS...</p>
+          <p className="text-neutral-400 font-mono tracking-wider">CARGANDO MENSAJES...</p>
         </div>
       </div>
     );
@@ -130,7 +122,7 @@ const AlertasTable: React.FC = () => {
           <h3 className="text-xl font-bold text-red-500 mb-2 font-mono tracking-wider">ERROR</h3>
           <p className="text-neutral-400 mb-4">{error}</p>
           <button
-            onClick={loadAlertas}
+            onClick={loadMensajes}
             className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
           >
             REINTENTAR
@@ -140,13 +132,13 @@ const AlertasTable: React.FC = () => {
     );
   }
 
-  if (alertas.length === 0) {
+  if (mensajes.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-xl font-bold text-white mb-2 font-mono tracking-wider">NO HAY ALERTAS</h3>
-          <p className="text-neutral-400 font-mono tracking-wider">No se encontraron registros de alertas en la base de datos</p>
+          <h3 className="text-xl font-bold text-white mb-2 font-mono tracking-wider">NO HAY MENSAJES</h3>
+          <p className="text-neutral-400 font-mono tracking-wider">No se encontraron registros de mensajes en la base de datos</p>
         </div>
       </div>
     );
@@ -157,10 +149,10 @@ const AlertasTable: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
-          REGISTRO DE ALERTAS
+          REGISTRO DE MENSAJES
         </h2>
         <div className="text-sm text-neutral-400 font-mono">
-          {alertas.length} ALERTA(S) TOTAL
+          {mensajes.length} MENSAJE(S) TOTAL
         </div>
       </div>
 
@@ -169,30 +161,32 @@ const AlertasTable: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-700">
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ID ALERTA</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">UMBRAL ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MEDICIÓN ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA ALERTA</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ALERTA ID</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">CONTACTO ID</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MENSAJE</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA</th>
               <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">USUARIO CREADOR</th>
               <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA CREACIÓN</th>
               <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">STATUS</th>
             </tr>
           </thead>
           <tbody>
-            {currentAlertas.map((alerta) => (
-              <tr key={alerta.alertaid} className="border-b border-neutral-800 hover:bg-neutral-800/50">
-                <td className="py-3 px-4 text-white font-mono">{alerta.alertaid}</td>
-                <td className="py-3 px-4 text-white font-mono">{alerta.umbralid}</td>
-                <td className="py-3 px-4 text-white font-mono">{alerta.medicionid}</td>
-                <td className="py-3 px-4 text-white font-mono">
-                  {formatDate(alerta.fecha)}
+            {currentMensajes.map((mensaje, index) => (
+              <tr key={`${mensaje.alertaid}-${mensaje.contactoid}-${index}`} className="border-b border-neutral-800 hover:bg-neutral-800/50">
+                <td className="py-3 px-4 text-white font-mono">{mensaje.alertaid}</td>
+                <td className="py-3 px-4 text-white font-mono">{mensaje.contactoid}</td>
+                <td className="py-3 px-4 text-white font-mono max-w-md truncate" title={mensaje.mensaje}>
+                  {mensaje.mensaje}
                 </td>
-                <td className="py-3 px-4 text-white font-mono">{alerta.usercreatedid || 'N/A'}</td>
                 <td className="py-3 px-4 text-white font-mono">
-                  {formatDate(alerta.datecreated)}
+                  {formatDate(mensaje.fecha)}
+                </td>
+                <td className="py-3 px-4 text-white font-mono">{mensaje.usercreatedid || 'N/A'}</td>
+                <td className="py-3 px-4 text-white font-mono">
+                  {formatDate(mensaje.datecreated)}
                 </td>
                 <td className="py-3 px-4">
-                  {getStatusBadge(alerta.statusid)}
+                  {getStatusBadge(mensaje.statusid)}
                 </td>
               </tr>
             ))}
@@ -228,4 +222,4 @@ const AlertasTable: React.FC = () => {
   );
 };
 
-export default AlertasTable;
+export default MensajesTable;

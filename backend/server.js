@@ -397,6 +397,23 @@ const tableMetadata = {
         { constraint_name: 'alerta_umbralid_fkey', constraint_type: 'FOREIGN KEY' },
         { constraint_name: 'alerta_medicionid_fkey', constraint_type: 'FOREIGN KEY' }
       ]
+    },
+    mensaje: {
+      columns: [
+        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'contactoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'mensaje', data_type: 'text', is_nullable: 'NO', column_default: null },
+        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' }
+      ],
+      info: { table_name: 'mensaje', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'mensaje_pkey', constraint_type: 'PRIMARY KEY' },
+        { constraint_name: 'mensaje_alertaid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'mensaje_contactoid_fkey', constraint_type: 'FOREIGN KEY' }
+      ]
     }
 };
 console.log('✅ Cliente Supabase configurado');
@@ -732,6 +749,38 @@ app.get('/api/sense/usuario', async (req, res) => {
     console.log('✅ Usuarios encontrados:', data?.length || 0);
     res.json(data || []);
   } catch (error) { console.error('❌ Error in /api/sense/usuario:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Ruta para alerta - usada por el frontend
+app.get('/api/sense/alerta', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    console.log('🔍 Obteniendo alertas de sense.alerta...');
+    const { data, error } = await supabase
+      .from('alerta')
+      .select('*')
+      .order('alertaid', { ascending: false })
+      .limit(parseInt(limit));
+    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
+    console.log('✅ Alertas encontradas:', data?.length || 0);
+    res.json(data || []);
+  } catch (error) { console.error('❌ Error in /api/sense/alerta:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Ruta para mensaje - usada por el frontend
+app.get('/api/sense/mensaje', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    console.log('🔍 Obteniendo mensajes de sense.mensaje...');
+    const { data, error } = await supabase
+      .from('mensaje')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(parseInt(limit));
+    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
+    console.log('✅ Mensajes encontrados:', data?.length || 0);
+    res.json(data || []);
+  } catch (error) { console.error('❌ Error in /api/sense/mensaje:', error); res.status(500).json({ error: error.message }); }
 });
 
 // Rutas para obtener información de las tablas (usadas por el frontend de parámetros)
