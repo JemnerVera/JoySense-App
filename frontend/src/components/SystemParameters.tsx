@@ -9,6 +9,7 @@ import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
 import MultipleLocalizacionForm from './MultipleLocalizacionForm';
 import NormalInsertForm from './NormalInsertForm';
 import InsertionMessage from './InsertionMessage';
+import { AdvancedMetricaSensorUpdateForm } from './AdvancedMetricaSensorUpdateForm';
 import { useInsertionMessages } from '../hooks/useInsertionMessages';
 import ReplicateModal from './ReplicateModal';
 import ReplicateButton from './ReplicateButton';
@@ -559,7 +560,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         ...row,
         tipo: tipo?.tipo || `Tipo ${row.tipoid}`,
         metrica: metrica?.metrica || `Métrica ${row.metricaid}`,
-        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`
+        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`,
+        entidadid: tipo?.entidadid || row.entidadid // Obtener entidadid del tipo
       };
       
       
@@ -605,17 +607,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   }, [filteredUpdateData]);
 
   // Reagrupar datos de metricasensor cuando cambien los datos relacionados
-  useEffect(() => {
-    if (selectedTable === 'metricasensor' && updateData.length > 0 && nodosData.length > 0 && tiposData.length > 0 && metricasData.length > 0) {
-      // Los datos ya están agrupados en getUpdatePaginatedData, no necesitamos hacer nada aquí
-      console.log('🔄 Datos relacionados cargados para metricasensor:', {
-        updateDataLength: updateData.length,
-        nodosDataLength: nodosData.length,
-        tiposDataLength: tiposData.length,
-        metricasDataLength: metricasData.length
-      });
-    }
-  }, [selectedTable, updateData, nodosData, tiposData, metricasData]);
+  // Este useEffect se eliminó para evitar bucles infinitos
+  // Los datos relacionados se cargan automáticamente cuando se necesita
   const [selectedRowForUpdate, setSelectedRowForUpdate] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
   const [updateLoading, setUpdateLoading] = useState(false);
@@ -893,15 +886,25 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Estados para selección manual múltiple
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
   const [selectedRowsForManualUpdate, setSelectedRowsForManualUpdate] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
-  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
   // Para metricasensor, calcular totalPages basado en datos agrupados
   const getTotalPagesForMetricaSensor = () => {
-    if (selectedTable === 'metricasensor' && updateFilteredData.length > 0) {
-      const groupedData = groupMetricaSensorData(updateFilteredData);
-      return Math.ceil(groupedData.length / itemsPerPage);
+    if (selectedTable === 'metricasensor' && updateData.length > 0) {
+      const groupedData = groupMetricaSensorData(updateData);
+      const calculatedPages = Math.ceil(groupedData.length / itemsPerPage);
+      
+      console.log('🔍 Debug - Cálculo de páginas para metricasensor:', {
+        updateDataLength: updateData.length,
+        groupedDataLength: groupedData.length,
+        itemsPerPage,
+        calculatedPages
+      });
+      
+      return calculatedPages;
     }
     return totalPages;
   };
@@ -912,6 +915,59 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Funciones de navegación corregidas para metricasensor
   const correctedHasNextPage = selectedTable === 'metricasensor' ? currentPage < correctedTotalPages : hasNextPage;
   const correctedHasPrevPage = selectedTable === 'metricasensor' ? currentPage > 1 : hasPrevPage;
+
+  // Funciones de navegación personalizadas para metricasensor
+  const handleMetricaSensorPageChange = (page: number) => {
+    if (selectedTable === 'metricasensor') {
+      setCurrentPage(page);
+    } else {
+      goToPage(page);
+    }
+  };
+
+  const handleMetricaSensorNextPage = () => {
+    if (selectedTable === 'metricasensor') {
+      if (currentPage < correctedTotalPages) {
+        setCurrentPage(currentPage + 1);
+      }
+    } else {
+      nextPage();
+    }
+  };
+
+  const handleMetricaSensorPrevPage = () => {
+    if (selectedTable === 'metricasensor') {
+      if (currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    } else {
+      prevPage();
+    }
+  };
+
+  const handleMetricaSensorFirstPage = () => {
+    if (selectedTable === 'metricasensor') {
+      setCurrentPage(1);
+    } else {
+      firstPage();
+    }
+  };
+
+  const handleMetricaSensorLastPage = () => {
+    if (selectedTable === 'metricasensor') {
+      setCurrentPage(correctedTotalPages);
+    } else {
+      lastPage();
+    }
+  };
+
+  // Usar currentPage local para metricasensor, paginationCurrentPage para otras tablas
+  const effectiveCurrentPage = selectedTable === 'metricasensor' ? currentPage : paginationCurrentPage;
+
+  // Resetear página cuando cambie la tabla
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTable]);
 
   // Función simple para verificar si hay cambios sin guardar
   const hasUnsavedChanges = (): boolean => {
@@ -1819,41 +1875,41 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Función para obtener los datos paginados de la tabla de Actualizar
   const getUpdatePaginatedData = () => {
-    const data = getPaginatedData();
-    // Para metricasensor, mostrar datos agrupados por nodo SOLO en la tabla de Actualizar
+    // Para metricasensor, agrupar TODOS los datos primero, luego paginar
     if (selectedTable === 'metricasensor') {
-      const groupedData = groupMetricaSensorData(data);
+      const groupedData = groupMetricaSensorData(updateData);
+      
+      console.log('🔍 Debug - Datos agrupados para metricasensor:', {
+        totalUpdateData: updateData.length,
+        totalGroupedData: groupedData.length,
+        currentPage: effectiveCurrentPage,
+        itemsPerPage
+      });
       
       // Aplicar paginación a los datos agrupados
-      const startIndex = (currentPage - 1) * itemsPerPage;
+      const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedGroupedData = groupedData.slice(startIndex, endIndex);
       
+      console.log('🔍 Debug - Datos paginados:', {
+        startIndex,
+        endIndex,
+        paginatedDataLength: paginatedGroupedData.length
+      });
+      
       return paginatedGroupedData;
     }
-    return data;
+    // Para otras tablas, usar la paginación normal
+    return getPaginatedData();
   };
 
   // Asegurar que groupMetricaSensorData tenga acceso a los datos relacionados
-  useEffect(() => {
-    if (selectedTable === 'metricasensor' && updateData.length > 0 && nodosData && tiposData && metricasData) {
-      console.log('🔄 Reagrupando datos de metricasensor con datos relacionados disponibles');
-      const groupedData = groupMetricaSensorData(updateData);
-      setUpdateData(groupedData);
-    }
-  }, [nodosData, tiposData, metricasData, selectedTable]);
+  // Este useEffect se eliminó para evitar bucles infinitos
+  // El agrupamiento se maneja directamente en getUpdatePaginatedData
 
   // Asegurar que los datos relacionados se carguen para metricasensor
-  useEffect(() => {
-    if (selectedTable === 'metricasensor' && tableData.length > 0) {
-      console.log('🔄 Cargando datos relacionados para metricasensor:', {
-        tableDataLength: tableData.length,
-        nodosDataLength: nodosData?.length,
-        tiposDataLength: tiposData?.length,
-        metricasDataLength: metricasData?.length
-      });
-    }
-  }, [selectedTable, tableData, nodosData, tiposData, metricasData]);
+  // Este useEffect se eliminó para evitar bucles infinitos
+  // Los datos relacionados se cargan automáticamente cuando se necesita
 
   // Función para obtener los datos paginados de la tabla de Copiar
   const getCopyPaginatedData = () => {
@@ -4467,8 +4523,22 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       </div>
                       )}
 
-                      {/* Tabla de entradas seleccionadas para actualización múltiple */}
-                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && (
+                      {/* Formulario avanzado para metricasensor */}
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'metricasensor' && (
+                        <AdvancedMetricaSensorUpdateForm
+                          selectedRows={selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate}
+                          onUpdate={handleUpdate}
+                          onCancel={handleCancelUpdate}
+                          getUniqueOptionsForField={getUniqueOptionsForField}
+                          entidadesData={entidadesData}
+                          tiposData={tiposData}
+                          nodosData={nodosData}
+                          metricasData={metricasData}
+                        />
+                      )}
+
+                      {/* Tabla de entradas seleccionadas para actualización múltiple (otras tablas) */}
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && (
                         <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
                           <div className="flex justify-between items-center mb-4">
                             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">ACTUALIZAR STATUS</h4>
@@ -4551,24 +4621,26 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
 
 
-                      {/* Botones de acción */}
-                      <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center">
-                        <button
-                          onClick={handleUpdate}
-                          disabled={updateLoading}
-                          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
-                        >
-                          <span>➕</span>
-                          <span>{updateLoading ? 'GUARDANDO...' : 'GUARDAR'}</span>
-                        </button>
-                        <button
-                          onClick={handleCancelUpdate}
-                          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
-                        >
-                          <span>❌</span>
-                          <span>CANCELAR</span>
-                        </button>
-                      </div>
+                      {/* Botones de acción - Solo para tablas que no sean metricasensor */}
+                      {selectedTable !== 'metricasensor' && (
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center">
+                          <button
+                            onClick={handleUpdate}
+                            disabled={updateLoading}
+                            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
+                          >
+                            <span>➕</span>
+                            <span>{updateLoading ? 'GUARDANDO...' : 'GUARDAR'}</span>
+                          </button>
+                          <button
+                            onClick={handleCancelUpdate}
+                            className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+                          >
+                            <span>❌</span>
+                            <span>CANCELAR</span>
+                          </button>
+                        </div>
+                      )}
                       </div>
                     </div>
                   )}
@@ -4630,7 +4702,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      {updateVisibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
-                                         <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
+                                         <th key={col.columnName} className={`px-6 py-3 font-mono tracking-wider ${col.columnName === 'tipos' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
                                            {displayName.toUpperCase()}
                                          </th>
                                        ) : null;
@@ -4682,7 +4754,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                      {updateVisibleColumns.map(col => {
                                        const displayName = getColumnDisplayName(col.columnName);
                                        return displayName ? (
-                                         <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
+                                         <td key={col.columnName} className={`px-6 py-4 text-xs font-mono ${col.columnName === 'tipos' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
                                            {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
                                              ? getUserName(row[col.columnName])
                                              : col.columnName === 'statusid'
@@ -4693,6 +4765,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                              )
                                              : col.columnName === 'datecreated' || col.columnName === 'datemodified'
                                              ? formatDate(row[col.columnName])
+                                             : col.columnName === 'tipos'
+                                             ? (
+                                               <div className="whitespace-normal break-words">
+                                                 {getDisplayValue(row, col.columnName)}
+                                               </div>
+                                             )
                                              : getDisplayValue(row, col.columnName)}
                                          </td>
                                        ) : null;
@@ -4713,32 +4791,32 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                            {updateFilteredData.length > 0 && totalPages > 1 && (
                              <div className="flex justify-center gap-2 mt-4">
                                <button
-                                 onClick={firstPage}
-                                 disabled={!hasPrevPage}
+                                 onClick={handleMetricaSensorFirstPage}
+                                 disabled={!correctedHasPrevPage}
                                  className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                  title="Primera página"
                                >
                                  ⏮️
                                </button>
                                <button
-                                 onClick={prevPage}
+                                 onClick={handleMetricaSensorPrevPage}
                                  disabled={!correctedHasPrevPage}
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
                                  ← ANTERIOR
                                </button>
                                <span className="text-white flex items-center px-3 font-mono tracking-wider">
-                                 PÁGINA {currentPage} DE {correctedTotalPages}
+                                 PÁGINA {effectiveCurrentPage} DE {correctedTotalPages}
                                </span>
                                <button
-                                 onClick={nextPage}
+                                 onClick={handleMetricaSensorNextPage}
                                  disabled={!correctedHasNextPage}
                                  className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                >
                                  SIGUIENTE →
                                </button>
                                <button
-                                 onClick={lastPage}
+                                 onClick={handleMetricaSensorLastPage}
                                  disabled={!correctedHasNextPage}
                                  className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
                                  title="Última página"

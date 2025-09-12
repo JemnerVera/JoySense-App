@@ -145,6 +145,15 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     setCombinacionesStatus({});
   }, [selectedEntidad]);
 
+  // Seleccionar automáticamente todos los tipos cuando se selecciona una entidad
+  React.useEffect(() => {
+    if (selectedEntidad) {
+      const tiposDisponibles = getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad });
+      const todosLosTipos = tiposDisponibles.map(tipo => tipo.value.toString());
+      setSelectedTiposCheckboxes(todosLosTipos);
+    }
+  }, [selectedEntidad]);
+
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
     setSelectedMetricas(selectedMetricasCheckboxes);
@@ -336,7 +345,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">NODO</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">TIPO</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => selectedEntidad && setNodosDropdownOpen(!nodosDropdownOpen)}
@@ -346,13 +355,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                  : 'bg-neutral-700 border-neutral-700 cursor-not-allowed opacity-50'
              }`}
            >
-             <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
-               {selectedNodos.length > 0 
-                 ? selectedNodos.map(id => {
-                     const nodo = nodosData.find(n => n.nodoid.toString() === id);
-                     return nodo ? nodo.nodo : id;
+             <span className={selectedTiposCheckboxes.length > 0 ? 'text-white' : 'text-neutral-400'}>
+               {selectedTiposCheckboxes.length > 0 
+                 ? selectedTiposCheckboxes.map(id => {
+                     const tipo = tiposData.find(t => t.tipoid.toString() === id);
+                     return tipo ? tipo.tipo : id;
                    }).join(', ')
-                 : selectedEntidad ? 'SELECCIONAR NODO' : 'SELECCIONAR ENTIDAD PRIMERO'
+                 : selectedEntidad ? 'SELECCIONAR TIPO' : 'SELECCIONAR ENTIDAD PRIMERO'
                }
              </span>
              <span className="text-neutral-400">▼</span>
@@ -363,7 +372,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
               <div className="p-2 border-b border-neutral-700">
                 <input
                   type="text"
-                  placeholder="Buscar..."
+                  placeholder="🔍 Buscar tipos..."
                   value={nodosSearchTerm}
                   onChange={(e) => setNodosSearchTerm(e.target.value)}
                   className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
@@ -371,7 +380,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                 />
               </div>
               <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
+                {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
                   .filter(option => 
                     option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                   )
@@ -381,32 +390,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                      className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
                    >
                      <input
-                       type={isReplicateMode ? "radio" : "checkbox"}
-                       name={isReplicateMode ? "selectedNodo" : undefined}
-                       checked={selectedNodos.includes(option.value.toString())}
+                       type="checkbox"
+                       checked={selectedTiposCheckboxes.includes(option.value.toString())}
                        onChange={(e) => {
-                         if (isReplicateMode) {
-                           // En modo replicación, solo permitir un nodo
-                           if (e.target.checked) {
-                             const nuevoNodoId = option.value.toString();
-                             setSelectedNodos([nuevoNodoId]);
-                             
-                             // Actualizar las métricas existentes con el nuevo nodo
-                             if (multipleMetricas.length > 0) {
-                               const metricasActualizadas = multipleMetricas.map(metrica => ({
-                                 ...metrica,
-                                 nodoid: parseInt(nuevoNodoId)
-                               }));
-                               setMultipleMetricas(metricasActualizadas);
-                             }
-                           }
+                         if (e.target.checked) {
+                           setSelectedTiposCheckboxes([...selectedTiposCheckboxes, option.value.toString()]);
                          } else {
-                           // Modo normal, permitir múltiples nodos
-                           if (e.target.checked) {
-                             setSelectedNodos([...selectedNodos, option.value.toString()]);
-                           } else {
-                             setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
-                           }
+                           setSelectedTiposCheckboxes(selectedTiposCheckboxes.filter(id => id !== option.value.toString()));
                          }
                        }}
                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
@@ -414,12 +404,12 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                      <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                    </label>
                  ))}
-                 {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
+                 {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
                    .filter(option => 
                      option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
                    ).length === 0 && (
                    <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                     NO HAY NODOS DISPONIBLES PARA ESTA ENTIDAD
+                     NO HAY TIPOS DISPONIBLES PARA ESTA ENTIDAD
                    </div>
                  )}
               </div>
@@ -432,27 +422,27 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 
 
 
-      {/* Nuevo diseño: 3 containers lado a lado */}
-      {selectedNodos.length > 0 && selectedEntidad && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Nuevo diseño: 2 containers lado a lado */}
+      {selectedEntidad && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Container 1: Tipos de sensores disponibles con checkboxes */}
+          {/* Container 1: Nodos disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              SENSOR
+              NODO
             </h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
-              {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
+              {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
                 .map((option) => (
                   <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                     <input
                       type="checkbox"
-                      checked={selectedTiposCheckboxes.includes(option.value.toString())}
+                      checked={selectedNodos.includes(option.value.toString())}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedTiposCheckboxes([...selectedTiposCheckboxes, option.value.toString()]);
+                          setSelectedNodos([...selectedNodos, option.value.toString()]);
                         } else {
-                          setSelectedTiposCheckboxes(selectedTiposCheckboxes.filter(id => id !== option.value.toString()));
+                          setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
                         }
                       }}
                       className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
@@ -460,9 +450,9 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                     <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                   </label>
                 ))}
-              {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad }).length === 0 && (
+              {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad }).length === 0 && (
                 <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                  NO HAY TIPOS DISPONIBLES PARA ESTA ENTIDAD
+                  NO HAY NODOS DISPONIBLES PARA ESTA ENTIDAD
                 </div>
               )}
             </div>
@@ -495,90 +485,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length === 0 && (
                 <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
                   NO HAY MÉTRICAS DISPONIBLES PARA ESTA ENTIDAD
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Container 3: Combinatoria de sensores por métrica */}
-          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
-            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              SENSORES CON METRICAS GENERADOS
-            </h4>
-            <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
-              {selectedTiposCheckboxes.length > 0 && selectedMetricasCheckboxes.length > 0 ? (
-                (() => {
-                  // Agrupar por nodo y tipo, concatenando las métricas
-                  const grupos: Record<string, {
-                    nodo: string;
-                    tipo: string;
-                    metricas: string[];
-                    nodoid: string;
-                    tipoid: string;
-                    metricaids: string[];
-                  }> = {};
-                  
-                  selectedNodos.forEach((nodoId) => {
-                    const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
-                    
-                    selectedTiposCheckboxes.forEach((tipoId) => {
-                      const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
-                      
-                      const key = `${nodoId}-${tipoId}`;
-                      if (!grupos[key]) {
-                        grupos[key] = {
-                          nodo: nodo?.nodo || nodoId,
-                          tipo: tipo?.tipo || 'N/A',
-                          metricas: [],
-                          nodoid: nodoId,
-                          tipoid: tipoId,
-                          metricaids: []
-                        };
-                      }
-                      
-                      // Agregar todas las métricas seleccionadas para este nodo-tipo
-                      selectedMetricasCheckboxes.forEach((metricaId) => {
-                        const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
-                        if (metrica && !grupos[key].metricas.includes(metrica.metrica)) {
-                          grupos[key].metricas.push(metrica.metrica);
-                          grupos[key].metricaids.push(metricaId);
-                        }
-                      });
-                    });
-                  });
-                  
-                  // Convertir a array y ordenar por nodo y tipo
-                  const gruposArray = Object.values(grupos).sort((a, b) => {
-                    if (a.nodo !== b.nodo) {
-                      return a.nodo.localeCompare(b.nodo);
-                    }
-                    return a.tipo.localeCompare(b.tipo);
-                  });
-                  
-                  // Calcular el total de entradas individuales
-                  const totalEntradas = selectedNodos.length * selectedTiposCheckboxes.length * selectedMetricasCheckboxes.length;
-                  
-                  return (
-                    <>
-                      <div className="text-sm text-neutral-400 font-mono mb-2">
-                        ({totalEntradas} entradas)
-                      </div>
-                      {gruposArray.map((grupo, index) => (
-                        <div key={`${grupo.nodoid}-${grupo.tipoid}`} className="bg-neutral-700 border border-neutral-600 rounded-lg p-3">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-orange-500 font-bold font-mono">#{index + 1}</span>
-                            <span className="text-white text-sm font-mono">
-                              {grupo.nodo} | {grupo.tipo} | {grupo.metricas.join(', ')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()
-              ) : (
-                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                  SELECCIONA TIPOS Y MÉTRICAS PARA VER LA COMBINATORIA
                 </div>
               )}
             </div>
