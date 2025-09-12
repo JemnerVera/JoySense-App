@@ -46,12 +46,22 @@ export function AdvancedUsuarioPerfilUpdateForm({
   // Estados para búsqueda
   const [perfilesSearchTerm, setPerfilesSearchTerm] = useState('');
 
-  // Función robusta para obtener perfiles únicos de las filas seleccionadas
+  // Función robusta para obtener perfiles únicos ACTIVOS de las filas seleccionadas
   const getUniquePerfilesFromRows = () => {
     const perfilesSet = new Set<number>();
     selectedRows.forEach(row => {
-      if (row.perfilid) {
-        perfilesSet.add(row.perfilid);
+      // Si es una fila agrupada, buscar en originalRows
+      if (row.originalRows && row.originalRows.length > 0) {
+        row.originalRows.forEach((originalRow: any) => {
+          if (originalRow.perfilid && originalRow.statusid === 1) {
+            perfilesSet.add(originalRow.perfilid);
+          }
+        });
+      } else {
+        // Si es una fila individual, verificar directamente
+        if (row.perfilid && row.statusid === 1) {
+          perfilesSet.add(row.perfilid);
+        }
       }
     });
     return Array.from(perfilesSet).map(perfilid => perfilid.toString());
@@ -93,8 +103,15 @@ export function AdvancedUsuarioPerfilUpdateForm({
       // Crear entradas para actualizar - incluir tanto perfiles existentes como nuevos
       const updatedEntries: any[] = [];
       
+      // Obtener todas las filas originales (expandir las agrupadas)
+      const allOriginalRows = selectedRows.flatMap(row => 
+        row.originalRows && row.originalRows.length > 0 ? row.originalRows : [row]
+      );
+      
+      console.log('🔍 Debug - allOriginalRows:', allOriginalRows);
+      
       // 1. Actualizar perfiles existentes
-      selectedRows.forEach(originalRow => {
+      allOriginalRows.forEach(originalRow => {
         const perfilId = originalRow.perfilid;
         const isSelected = selectedPerfiles.includes(perfilId.toString());
         
@@ -110,7 +127,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
       });
       
       // 2. Agregar nuevos perfiles seleccionados que no estaban en las filas originales
-      const existingPerfilIds = selectedRows.map(row => row.perfilid.toString());
+      const existingPerfilIds = allOriginalRows.map(row => row.perfilid.toString());
       const newPerfiles = selectedPerfiles.filter(perfilId => !existingPerfilIds.includes(perfilId));
       
       newPerfiles.forEach(perfilId => {
@@ -153,7 +170,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
           USUARIO
         </label>
         <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-neutral-400 font-mono">
-          {usuario?.nombre || 'N/A'} ({usuario?.email || 'N/A'})
+          {usuario?.login || 'N/A'}
         </div>
       </div>
 

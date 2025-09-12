@@ -2905,6 +2905,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             row.originalRows ? row.originalRows : [row]
           );
           console.log('🔧 Actualizando entradas agrupadas de metricasensor:', rowsToUpdate.length);
+        } else if (selectedTable === 'usuarioperfil') {
+          // Para usuarioperfil agrupado, expandir las filas originales
+          rowsToUpdate = selectedRowsForManualUpdate.flatMap(row => 
+            row.originalRows ? row.originalRows : [row]
+          );
+          console.log('🔧 Actualizando entradas agrupadas de usuarioperfil:', rowsToUpdate.length);
         } else {
           rowsToUpdate = selectedRowsForManualUpdate;
           console.log('🔧 Actualizando entradas seleccionadas manualmente:', rowsToUpdate.length);
@@ -4369,9 +4375,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
     
     if (isSelected) {
-      // Para metricasensor y usuarioperfil, si es una fila agrupada, expandir las originalRows
-      if ((selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && row.originalRows && row.originalRows.length > 0) {
-        console.log('🔄 Expandir fila agrupada:', row.originalRows.length, 'entradas');
+      // Para metricasensor, expandir las originalRows; para usuarioperfil, mantener la fila agrupada
+      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
+        console.log('🔄 Expandir fila agrupada de metricasensor:', row.originalRows.length, 'entradas');
         
         // Verificar si alguna de las filas originales ya está seleccionada
         const isAnyOriginalSelected = row.originalRows.some((originalRow: any) => 
@@ -4386,6 +4392,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           setSelectedRowsForManualUpdate(prev => [...prev, ...row.originalRows]);
         } else {
           console.log('⚠️ Algunas filas originales ya están seleccionadas');
+        }
+      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
+        // Para usuarioperfil, mantener la fila agrupada
+        console.log('🔄 Mantener fila agrupada de usuarioperfil');
+        if (!selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === rowId)) {
+          setSelectedRowsForManualUpdate(prev => [...prev, row]);
+          console.log('✅ Fila agrupada agregada a la selección');
+        } else {
+          console.log('⚠️ Fila agrupada ya estaba seleccionada');
         }
       } else {
         // Lógica normal para otras tablas o filas no agrupadas
@@ -4407,6 +4422,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             )
           )
         );
+      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
+        // Para usuarioperfil, remover la fila agrupada
+        console.log('🔄 Removiendo fila agrupada de usuarioperfil de la selección');
+        setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
       } else {
         // Lógica normal para otras tablas o filas no agrupadas
         setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
@@ -4417,6 +4436,25 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   const handleDeselectAll = () => {
     setSelectedRowsForManualUpdate([]);
+  };
+
+  // Función para calcular el número correcto de entradas para el botón de actualización
+  const getUpdateButtonCount = () => {
+    if (selectedTable === 'usuarioperfil') {
+      // Para usuarioperfil, contar las filas activas dentro de las filas agrupadas
+      return selectedRowsForManualUpdate.reduce((total, row) => {
+        if (row.originalRows && row.originalRows.length > 0) {
+          // Contar solo las filas activas (statusid === 1)
+          return total + row.originalRows.filter((originalRow: any) => originalRow.statusid === 1).length;
+        } else {
+          // Si no es una fila agrupada, contar 1 si está activa
+          return total + (row.statusid === 1 ? 1 : 0);
+        }
+      }, 0);
+    } else {
+      // Para otras tablas, usar el conteo normal
+      return selectedRowsForManualUpdate.length;
+    }
   };
 
   const handleGoToManualUpdateForm = () => {
@@ -5152,7 +5190,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 onClick={handleGoToManualUpdateForm}
                                 className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                🔧 Actualizar {selectedRowsForManualUpdate.length} entrada(s)
+                                🔧 Actualizar {getUpdateButtonCount()} entrada(s)
                               </button>
                               <button
                                 onClick={handleDeselectAll}
