@@ -160,9 +160,6 @@ export function AdvancedUsuarioPerfilUpdateForm({
 
   return (
     <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
-      <h3 className="text-xl font-bold text-orange-500 mb-6 font-mono tracking-wider">
-        ACTUALIZAR USUARIO PERFIL
-      </h3>
       
       {/* Usuario (solo lectura) */}
       <div className="mb-4">
@@ -242,7 +239,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
       </div>
 
       {/* Botones de acción */}
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-center gap-4">
         <button
           onClick={onCancel}
           className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"

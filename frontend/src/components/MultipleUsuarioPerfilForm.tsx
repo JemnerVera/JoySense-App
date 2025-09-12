@@ -210,9 +210,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
   return (
     <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
-      <h3 className="text-xl font-bold text-orange-500 mb-6 font-mono tracking-wider">
-        CREAR USUARIO PERFIL
-      </h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Contenedor 1: Usuarios sin perfil */}
@@ -381,27 +378,41 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
       </div>
 
       {/* Botones de acción */}
-      <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-neutral-700">
+      <div className="flex justify-center gap-4 mt-6">
         {onReplicateClick && !isReplicateMode && (
           <button
             onClick={onReplicateClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors font-mono"
           >
-            Replicar
+            🔄 REPLICAR
           </button>
         )}
         <button
           onClick={onCancel}
-          className="px-4 py-2 bg-neutral-600 text-white rounded hover:bg-neutral-700 transition-colors"
+          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"
         >
-          Cancelar
+          ❌ CANCELAR
         </button>
         <button
           onClick={onInsertUsuarioPerfiles}
           disabled={loading || multipleUsuarioPerfiles.length === 0}
-          className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={`px-6 py-2 font-bold rounded-lg transition-colors font-mono flex items-center space-x-2 ${
+            loading || multipleUsuarioPerfiles.length === 0
+              ? 'bg-orange-600 text-white cursor-not-allowed' 
+              : 'bg-orange-500 hover:bg-orange-600 text-white'
+          }`}
         >
-          {loading ? 'Creando...' : 'Crear Combinaciones'}
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span>CREANDO...</span>
+            </>
+          ) : (
+            <>
+              <span>➕</span>
+              <span>CREAR</span>
+            </>
+          )}
         </button>
       </div>
     </div>
