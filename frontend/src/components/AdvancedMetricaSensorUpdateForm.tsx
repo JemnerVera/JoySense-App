@@ -83,8 +83,14 @@ export function AdvancedMetricaSensorUpdateForm({
   const getMetricasFromSelectedRows = () => {
     if (selectedRows.length === 0) return [];
     
-    // Extraer metricaid únicos de las filas seleccionadas
-    const metricasSet = new Set(selectedRows.map(row => row.metricaid?.toString()).filter(Boolean));
+    // Extraer metricaid únicos de las filas seleccionadas que están ACTIVAS
+    const metricasSet = new Set(
+      selectedRows
+        .flatMap(row => row.originalRows || [row])
+        .filter(row => row.statusid === 1) // Solo métricas activas
+        .map(row => row.metricaid?.toString())
+        .filter(Boolean)
+    );
     return Array.from(metricasSet);
   };
 
@@ -98,6 +104,16 @@ export function AdvancedMetricaSensorUpdateForm({
       console.log('🔍 Debug - Tipos extraídos:', tiposUnicos);
       console.log('🔍 Debug - Nodos extraídos:', nodosUnicos);
       console.log('🔍 Debug - Métricas extraídas:', metricasUnicas);
+      console.log('🔍 Debug - Filas seleccionadas completas:', selectedRows);
+      
+      // Debug: Mostrar el status de las filas originales
+      const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
+      console.log('🔍 Debug - Filas originales con status:', allOriginalRows.map(row => ({
+        nodoid: row.nodoid,
+        tipoid: row.tipoid,
+        metricaid: row.metricaid,
+        statusid: row.statusid
+      })));
       
       setSelectedTipos(tiposUnicos);
       setSelectedNodos(nodosUnicos);
@@ -110,22 +126,36 @@ export function AdvancedMetricaSensorUpdateForm({
     const updatedEntries: any[] = [];
     const firstRow = selectedRows[0]; // Obtener la primera fila para datos de auditoría
     
-    // Para cada combinación de nodo-tipo-métrica
+    console.log('🔍 Debug - handleUpdate:', {
+      selectedNodos,
+      selectedTipos,
+      selectedMetricas,
+      selectedRowsLength: selectedRows.length
+    });
+    
+    // Obtener todas las filas originales (individuales) de las filas agrupadas
+    const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
+    
+    console.log('🔍 Debug - Filas originales:', allOriginalRows);
+    
+    // Para cada combinación de nodo-tipo-métrica seleccionada
     selectedNodos.forEach(nodoId => {
       selectedTipos.forEach(tipoId => {
         selectedMetricas.forEach(metricaId => {
-          // Verificar si esta combinación ya existe en las filas seleccionadas
-          const existingRow = selectedRows.find(row => 
+          // Verificar si esta combinación ya existe en las filas originales
+          const existingRow = allOriginalRows.find(row => 
             row.nodoid?.toString() === nodoId && 
             row.tipoid?.toString() === tipoId && 
             row.metricaid?.toString() === metricaId
           );
           
           if (existingRow) {
-            // Mantener la entrada existente con status activo
+            // Actualizar la entrada existente con status activo
             updatedEntries.push({
               ...existingRow,
-              statusid: 1 // Activo
+              statusid: 1, // Activo
+              usermodifiedid: firstRow?.usermodifiedid,
+              datemodified: new Date().toISOString()
             });
           } else {
             // Crear nueva entrada
@@ -145,7 +175,7 @@ export function AdvancedMetricaSensorUpdateForm({
     });
     
     // Agregar entradas desactivadas para métricas que se deseleccionaron
-    selectedRows.forEach(originalRow => {
+    allOriginalRows.forEach(originalRow => {
       const stillExists = updatedEntries.some(entry => 
         entry.nodoid === originalRow.nodoid &&
         entry.tipoid === originalRow.tipoid &&
@@ -156,10 +186,14 @@ export function AdvancedMetricaSensorUpdateForm({
         // Esta entrada ya no está seleccionada, desactivarla
         updatedEntries.push({
           ...originalRow,
-          statusid: 2 // Inactivo
+          statusid: 2, // Inactivo
+          usermodifiedid: firstRow?.usermodifiedid,
+          datemodified: new Date().toISOString()
         });
       }
     });
+    
+    console.log('🔍 Debug - Entradas actualizadas:', updatedEntries);
     
     onUpdate(updatedEntries);
   };
