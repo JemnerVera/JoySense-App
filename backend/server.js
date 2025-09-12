@@ -380,6 +380,23 @@ const tableMetadata = {
         { constraint_name: 'audit_log_umbral_pkey', constraint_type: 'PRIMARY KEY' },
         { constraint_name: 'audit_log_umbral_umbralid_fkey', constraint_type: 'FOREIGN KEY' }
       ]
+    },
+    alerta: {
+      columns: [
+        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.alerta_alertaid_seq\'::regclass)' },
+        { column_name: 'umbralid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'medicionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' }
+      ],
+      info: { table_name: 'alerta', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'alerta_pkey', constraint_type: 'PRIMARY KEY' },
+        { constraint_name: 'alerta_umbralid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alerta_medicionid_fkey', constraint_type: 'FOREIGN KEY' }
+      ]
     }
 };
 console.log('✅ Cliente Supabase configurado');
