@@ -177,8 +177,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     
     const result: React.ReactNode[] = [];
     
-    // Primera fila: Ubicación, Nodo, Métrica
-    const firstRowFields = ['ubicacionid', 'nodoid', 'metricaid'];
+    // Primera fila: Ubicación, Nodo, Tipo
+    const firstRowFields = ['ubicacionid', 'nodoid', 'tipoid'];
     const firstRow = firstRowFields.map(fieldName => {
       const col = visibleColumns.find(c => c.columnName === fieldName);
       return col ? renderField(col) : null;
@@ -192,37 +192,37 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       );
     }
 
-    // Segunda fila: Criticidad, Valor Mínimo, Valor Máximo (con contenedor especial)
-    const secondRowFields = ['criticidadid', 'minimo', 'maximo'];
-    const criticidadField = visibleColumns.find(c => c.columnName === 'criticidadid');
+    // Segunda fila: Métrica, (Valor Mínimo, Valor Máximo), Criticidad
+    const metricaField = visibleColumns.find(c => c.columnName === 'metricaid');
     const minimoField = visibleColumns.find(c => c.columnName === 'minimo');
     const maximoField = visibleColumns.find(c => c.columnName === 'maximo');
+    const criticidadField = visibleColumns.find(c => c.columnName === 'criticidadid');
     
-    if (criticidadField || minimoField || maximoField) {
+    if (metricaField || minimoField || maximoField || criticidadField) {
       result.push(
         <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {criticidadField && renderField(criticidadField)}
+          {metricaField && renderField(metricaField)}
           <div className="bg-gray-600 bg-opacity-40 p-3 rounded-lg border border-gray-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {minimoField && renderField(minimoField)}
               {maximoField && renderField(maximoField)}
             </div>
           </div>
+          {criticidadField && renderField(criticidadField)}
         </div>
       );
     }
 
-    // Tercera fila: Nombre Umbral, Tipo, Status
-    const thirdRowFields = ['umbral', 'tipoid', 'statusid'];
-    const thirdRow = thirdRowFields.map(fieldName => {
-      const col = visibleColumns.find(c => c.columnName === fieldName);
-      return col ? renderField(col) : null;
-    }).filter(Boolean);
+    // Tercera fila: Nombre Umbral, (vacío), Status
+    const umbralField = visibleColumns.find(c => c.columnName === 'umbral');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    if (thirdRow.length > 0) {
+    if (umbralField || statusField) {
       result.push(
         <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {thirdRow}
+          {umbralField && renderField(umbralField)}
+          <div></div> {/* Espacio vacío */}
+          {statusField && renderField(statusField)}
         </div>
       );
     }
