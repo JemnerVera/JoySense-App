@@ -66,7 +66,8 @@ const UmbralesPage: React.FC = () => {
     umbral: '',
     maximo: '',
     minimo: '',
-    tipoid: ''
+    tipoid: '',
+    statusid: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +104,8 @@ const UmbralesPage: React.FC = () => {
       umbral: umbral.umbral,
       maximo: umbral.maximo.toString(),
       minimo: umbral.minimo.toString(),
-      tipoid: umbral.tipoid.toString()
+      tipoid: umbral.tipoid.toString(),
+      statusid: umbral.statusid.toString()
     });
     setShowForm(true);
   };
@@ -131,7 +133,8 @@ const UmbralesPage: React.FC = () => {
       umbral: '',
       maximo: '',
       minimo: '',
-      tipoid: ''
+      tipoid: '',
+      statusid: ''
     });
     setEditingUmbral(null);
   };
@@ -219,159 +222,186 @@ const UmbralesPage: React.FC = () => {
             {editingUmbral ? 'Editar Umbral' : 'Crear Nuevo Umbral'}
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             {/* Nombre del umbral */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Nombre del Umbral *
-                 </label>
-                 <input
-                   type="text"
-                   value={formData.umbral}
-                   onChange={(e) => setFormData({...formData, umbral: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 />
-               </div>
-
-                             {/* Ubicación */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Ubicación *
-                 </label>
-                 <select
-                   value={formData.ubicacionid}
-                   onChange={(e) => setFormData({...formData, ubicacionid: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 >
-                                     <option value="">Seleccionar ubicación</option>
-                   {Array.isArray(ubicaciones) && ubicaciones.map(ubicacion => {
-                     const fundo = Array.isArray(fundos) ? fundos.find(f => f.fundoid === ubicacion.fundoid) : null;
-                     const empresa = fundo && Array.isArray(empresas) ? empresas.find(e => e.empresaid === fundo.empresaid) : null;
-                     const displayName = empresa && fundo 
-                       ? `${empresa.empresa} - ${fundo.fundo} - ${ubicacion.ubicacion}`
-                       : ubicacion.ubicacion;
-                     
-                     return (
-                       <option key={ubicacion.ubicacionid} value={ubicacion.ubicacionid}>
-                         {displayName}
-                       </option>
-                     );
-                   })}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Fila 1: Ubicacion, Nodo, Tipo */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Ubicación */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Ubicación *
+                </label>
+                <select
+                  value={formData.ubicacionid}
+                  onChange={(e) => setFormData({...formData, ubicacionid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar ubicación</option>
+                  {Array.isArray(ubicaciones) && ubicaciones.map(ubicacion => {
+                    const fundo = Array.isArray(fundos) ? fundos.find(f => f.fundoid === ubicacion.fundoid) : null;
+                    const empresa = fundo && Array.isArray(empresas) ? empresas.find(e => e.empresaid === fundo.empresaid) : null;
+                    const displayName = empresa && fundo 
+                      ? `${empresa.empresa} - ${fundo.fundo} - ${ubicacion.ubicacion}`
+                      : ubicacion.ubicacion;
+                    
+                    return (
+                      <option key={ubicacion.ubicacionid} value={ubicacion.ubicacionid}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
-                             {/* Nodo */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Nodo *
-                 </label>
-                 <select
-                   value={formData.nodoid}
-                   onChange={(e) => setFormData({...formData, nodoid: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 >
-                                     <option value="">Seleccionar nodo</option>
-                   {Array.isArray(nodos) && nodos.map(nodo => (
-                     <option key={nodo.nodoid} value={nodo.nodoid}>
-                       {nodo.nodo}
-                     </option>
-                   ))}
+              {/* Nodo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Nodo *
+                </label>
+                <select
+                  value={formData.nodoid}
+                  onChange={(e) => setFormData({...formData, nodoid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar nodo</option>
+                  {Array.isArray(nodos) && nodos.map(nodo => (
+                    <option key={nodo.nodoid} value={nodo.nodoid}>
+                      {nodo.nodo}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-                             {/* Métrica */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Métrica *
-                 </label>
-                 <select
-                   value={formData.metricaid}
-                   onChange={(e) => setFormData({...formData, metricaid: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 >
-                                     <option value="">Seleccionar métrica</option>
-                   {Array.isArray(metricas) && metricas.map(metrica => (
-                     <option key={metrica.metricaid} value={metrica.metricaid}>
-                       {metrica.metrica}
-                     </option>
-                   ))}
+              {/* Tipo de sensor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Tipo de Sensor *
+                </label>
+                <select
+                  value={formData.tipoid}
+                  onChange={(e) => setFormData({...formData, tipoid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar tipo</option>
+                  {Array.isArray(tipos) && tipos.map(tipo => (
+                    <option key={tipo.tipoid} value={tipo.tipoid}>
+                      {tipo.tipo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Fila 2: Metrica, (valor minimo, valor maximo), Criticidad */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Métrica */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Métrica *
+                </label>
+                <select
+                  value={formData.metricaid}
+                  onChange={(e) => setFormData({...formData, metricaid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar métrica</option>
+                  {Array.isArray(metricas) && metricas.map(metrica => (
+                    <option key={metrica.metricaid} value={metrica.metricaid}>
+                      {metrica.metrica}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-                             {/* Tipo de sensor */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Tipo de Sensor *
-                 </label>
-                 <select
-                   value={formData.tipoid}
-                   onChange={(e) => setFormData({...formData, tipoid: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 >
-                                     <option value="">Seleccionar tipo</option>
-                   {Array.isArray(tipos) && tipos.map(tipo => (
-                     <option key={tipo.tipoid} value={tipo.tipoid}>
-                       {tipo.tipo}
-                     </option>
-                   ))}
-                </select>
+              {/* Valores mínimo y máximo en un contenedor */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Valor Mínimo *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.minimo}
+                    onChange={(e) => setFormData({...formData, minimo: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Valor Máximo *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.maximo}
+                    onChange={(e) => setFormData({...formData, maximo: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                    required
+                  />
+                </div>
               </div>
 
-                             {/* Criticidad */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Nivel de Criticidad *
-                 </label>
-                 <select
-                   value={formData.criticidadid}
-                   onChange={(e) => setFormData({...formData, criticidadid: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 >
-                                     <option value="">Seleccionar criticidad</option>
-                   {Array.isArray(criticidades) && criticidades.map(criticidad => (
-                     <option key={criticidad.criticidadid} value={criticidad.criticidadid}>
-                       {criticidad.criticidad} ({criticidad.criticidadbrev})
-                     </option>
-                   ))}
+              {/* Criticidad */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Nivel de Criticidad *
+                </label>
+                <select
+                  value={formData.criticidadid}
+                  onChange={(e) => setFormData({...formData, criticidadid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar criticidad</option>
+                  {Array.isArray(criticidades) && criticidades.map(criticidad => (
+                    <option key={criticidad.criticidadid} value={criticidad.criticidadid}>
+                      {criticidad.criticidad} ({criticidad.criticidadbrev})
+                    </option>
+                  ))}
                 </select>
               </div>
+            </div>
 
-                             {/* Valor mínimo */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Valor Mínimo *
-                 </label>
-                 <input
-                   type="number"
-                   step="0.01"
-                   value={formData.minimo}
-                   onChange={(e) => setFormData({...formData, minimo: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 />
-               </div>
+            {/* Fila 3: Nombre umbral, , Status */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Nombre del umbral */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Nombre del Umbral *
+                </label>
+                <input
+                  type="text"
+                  value={formData.umbral}
+                  onChange={(e) => setFormData({...formData, umbral: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                />
+              </div>
 
-                             {/* Valor máximo */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                   Valor Máximo *
-                 </label>
-                 <input
-                   type="number"
-                   step="0.01"
-                   value={formData.maximo}
-                   onChange={(e) => setFormData({...formData, maximo: e.target.value})}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
-                   required
-                 />
-               </div>
+              {/* Campo vacío para mantener el layout */}
+              <div></div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Status *
+                </label>
+                <select
+                  value={formData.statusid}
+                  onChange={(e) => setFormData({...formData, statusid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-gray-700 text-white"
+                  required
+                >
+                  <option value="">Seleccionar status</option>
+                  <option value="1">Activo</option>
+                  <option value="0">Inactivo</option>
+                </select>
+              </div>
             </div>
 
             {/* Botones del formulario */}
