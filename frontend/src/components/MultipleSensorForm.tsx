@@ -150,85 +150,86 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
       {/* Fila contextual con filtros globales */}
       {renderContextualRow()}
 
-      {/* Layout condicional: 2 columnas cuando hay sensores, 1 columna cuando no */}
-      {multipleSensors.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Primera columna: Campos y botones */}
-          <div className="space-y-6">
-            {/* Fila 2: Nodo */}
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                NODO
-              </label>
-              <SelectWithPlaceholder
-                value={selectedNodo}
-                onChange={(newValue) => {
-                  setSelectedNodo(newValue?.toString() || '');
-                  // Limpiar entidad cuando se cambia el nodo
-                  setSelectedEntidad('');
-                }}
-                options={getUniqueOptionsForField('nodoid')}
-                placeholder="Seleccionar nodo"
-              />
-            </div>
-
-            {/* Fila 3: Entidad */}
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                ENTIDAD
-              </label>
-              <SelectWithPlaceholder
-                value={selectedEntidad}
-                onChange={(newValue) => {
-                  setSelectedEntidad(newValue?.toString() || '');
-                  // Generar sensores automáticamente cuando se selecciona entidad
-                  if (selectedNodo && newValue) {
-                    // Obtener tipos disponibles para la entidad seleccionada
-                    const tiposParaEntidad = getUniqueOptionsForField('tipoid', { entidadid: newValue.toString() });
-                    const tiposIds = tiposParaEntidad.map(tipo => tipo.value);
-                    
-                    // Generar sensores con los tipos de la entidad seleccionada
-                    onInitializeSensors(selectedNodo, Math.min(3, tiposIds.length), tiposIds);
-                  }
-                }}
-                options={getUniqueOptionsForField('entidadid')}
-                placeholder="Seleccionar entidad"
-                disabled={!selectedNodo}
-              />
-            </div>
-
-            {/* Fila 4: Botones */}
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                onClick={onInsertSensors}
-                disabled={loading || multipleSensors.length === 0 || multipleSensors.filter(sensor => !sensor.toDelete).some(sensor => !sensor.tipoid)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider text-sm"
-              >
-                <span>➕</span>
-                <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
-              </button>
-              
-              {/* Botón de replicar */}
-              <ReplicateButton
-                onClick={onReplicateClick || (() => {})}
-                disabled={!selectedNodo || !selectedEntidad}
-              />
-              
-              <button
-                onClick={onCancel}
-                className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider text-sm"
-              >
-                <span>❌</span>
-                <span>CANCELAR</span>
-              </button>
-            </div>
+      {/* Layout fijo: Siempre 2 columnas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Primera columna: Campos y botones */}
+        <div className="space-y-6">
+          {/* Fila 2: Nodo */}
+          <div>
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              NODO
+            </label>
+            <SelectWithPlaceholder
+              value={selectedNodo}
+              onChange={(newValue) => {
+                setSelectedNodo(newValue?.toString() || '');
+                // Limpiar entidad cuando se cambia el nodo
+                setSelectedEntidad('');
+              }}
+              options={getUniqueOptionsForField('nodoid')}
+              placeholder="Seleccionar nodo"
+            />
           </div>
 
-          {/* Segunda columna: Container de sensores */}
+          {/* Fila 3: Entidad */}
+          <div>
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              ENTIDAD
+            </label>
+            <SelectWithPlaceholder
+              value={selectedEntidad}
+              onChange={(newValue) => {
+                setSelectedEntidad(newValue?.toString() || '');
+                // Generar sensores automáticamente cuando se selecciona entidad
+                if (selectedNodo && newValue) {
+                  // Obtener tipos disponibles para la entidad seleccionada
+                  const tiposParaEntidad = getUniqueOptionsForField('tipoid', { entidadid: newValue.toString() });
+                  const tiposIds = tiposParaEntidad.map(tipo => tipo.value);
+                  
+                  // Generar sensores con los tipos de la entidad seleccionada
+                  onInitializeSensors(selectedNodo, Math.min(3, tiposIds.length), tiposIds);
+                }
+              }}
+              options={getUniqueOptionsForField('entidadid')}
+              placeholder="Seleccionar entidad"
+              disabled={!selectedNodo}
+            />
+          </div>
+
+          {/* Fila 4: Botones */}
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              onClick={onInsertSensors}
+              disabled={loading || multipleSensors.length === 0 || multipleSensors.filter(sensor => !sensor.toDelete).some(sensor => !sensor.tipoid)}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider text-sm"
+            >
+              <span>➕</span>
+              <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
+            </button>
+            
+            {/* Botón de replicar */}
+            <ReplicateButton
+              onClick={onReplicateClick || (() => {})}
+              disabled={!selectedNodo || !selectedEntidad}
+            />
+            
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider text-sm"
+            >
+              <span>❌</span>
+              <span>CANCELAR</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Segunda columna: Container de sensores */}
+        <div>
+          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">SENSORES A CREAR:</h4>
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
-            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">SENSORES A CREAR:</h4>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {multipleSensors.map((sensor, index) => (
+            {multipleSensors.length > 0 ? (
+              multipleSensors.map((sensor, index) => (
                 <div key={index} className={`rounded-lg p-3 transition-colors ${
                   sensor.toDelete 
                     ? 'bg-red-900/30 border border-red-600' 
@@ -281,73 +282,18 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                  SELECCIONA NODO Y ENTIDAD PARA CREAR SENSORES
+                </div>
+              </div>
+            )}
             </div>
           </div>
         </div>
-      ) : (
-        /* Layout inicial: 1 columna cuando no hay sensores */
-        <div className="space-y-6">
-          {/* Selección de Nodo y Entidad */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                NODO
-              </label>
-              <SelectWithPlaceholder
-                value={selectedNodo}
-                onChange={(newValue) => {
-                  setSelectedNodo(newValue?.toString() || '');
-                  // Limpiar entidad cuando se cambia el nodo
-                  setSelectedEntidad('');
-                }}
-                options={getUniqueOptionsForField('nodoid')}
-                placeholder="Seleccionar nodo"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                ENTIDAD
-              </label>
-              <SelectWithPlaceholder
-                value={selectedEntidad}
-                onChange={(newValue) => {
-                  setSelectedEntidad(newValue?.toString() || '');
-                  // Generar sensores automáticamente cuando se selecciona entidad
-                  if (selectedNodo && newValue) {
-                    // Obtener tipos disponibles para la entidad seleccionada
-                    const tiposParaEntidad = getUniqueOptionsForField('tipoid', { entidadid: newValue.toString() });
-                    const tiposIds = tiposParaEntidad.map(tipo => tipo.value);
-                    
-                    // Generar sensores con los tipos de la entidad seleccionada
-                    onInitializeSensors(selectedNodo, Math.min(3, tiposIds.length), tiposIds);
-                  }
-                }}
-                options={getUniqueOptionsForField('entidadid')}
-                placeholder="Seleccionar entidad"
-                disabled={!selectedNodo}
-              />
-            </div>
-          </div>
-
-          {/* Botones de acción iniciales */}
-          <div className="flex justify-center gap-4">
-            <ReplicateButton
-              onClick={onReplicateClick || (() => {})}
-              disabled={!selectedNodo || !selectedEntidad}
-            />
-            
-            <button
-              onClick={onCancel}
-              className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
-            >
-              <span>❌</span>
-              <span>CANCELAR</span>
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
