@@ -50,8 +50,8 @@ export const ParametersControls: React.FC<ParametersControlsProps> = ({
         <span>✏️</span>
         <span>Actualizar</span>
       </button>
-      {/* Botón de Masivo - Solo visible para sensor, metricasensor y usuarioperfil */}
-      {['sensor', 'metricasensor', 'usuarioperfil'].includes(selectedTable) && (
+      {/* Botón de Masivo - Solo visible para sensor, metricasensor, usuarioperfil y umbral */}
+      {['sensor', 'metricasensor', 'usuarioperfil', 'umbral'].includes(selectedTable) && (
         <button 
           onClick={() => onSubTabChange?.('massive')}
           className={`px-3 py-2 rounded-lg font-medium text-sm flex items-center space-x-1 header-button depth-effect transition-colors ${

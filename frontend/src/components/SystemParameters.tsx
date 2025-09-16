@@ -7,13 +7,14 @@ import { STYLES_CONFIG } from '../config/styles';
 import MultipleSensorForm from './MultipleSensorForm';
 import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
+import { MassiveSensorForm } from './MassiveSensorForm';
+import { MassiveUmbralForm } from './MassiveUmbralForm';
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 import MultipleLocalizacionForm from './MultipleLocalizacionForm';
 import NormalInsertForm from './NormalInsertForm';
 import InsertionMessage from './InsertionMessage';
 import { AdvancedMetricaSensorUpdateForm } from './AdvancedMetricaSensorUpdateForm';
 import { AdvancedSensorUpdateForm } from './AdvancedSensorUpdateForm';
-import { MassiveSensorForm } from './MassiveSensorForm';
 import { useInsertionMessages } from '../hooks/useInsertionMessages';
 import ReplicateModal from './ReplicateModal';
 import ReplicateButton from './ReplicateButton';
@@ -4416,6 +4417,51 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
+  // Función para manejar la creación masiva de umbrales
+  const handleMassiveUmbralCreation = async (dataToApply: any[]) => {
+    if (!selectedTable || !user || selectedTable !== 'umbral') return;
+    
+    try {
+      setLoading(true);
+      
+      const usuarioid = getCurrentUserId();
+      const currentTimestamp = new Date().toISOString();
+      
+      // Preparar datos con campos de auditoría
+      const preparedData = dataToApply.map(item => ({
+        ...item,
+        usercreatedid: usuarioid,
+        usermodifiedid: usuarioid,
+        datecreated: currentTimestamp,
+        datemodified: currentTimestamp
+      }));
+      
+      // Realizar inserciones individuales (lógica UPSERT)
+      for (const record of preparedData) {
+        await JoySenseService.insertTableRow(selectedTable, record);
+      }
+      
+      // Recargar datos
+      loadTableData();
+      loadTableInfo();
+      loadUpdateData();
+      loadCopyData();
+      loadRelatedTablesData();
+      
+      setMessage({ 
+        type: 'success', 
+        text: `Se crearon ${preparedData.length} umbrales exitosamente` 
+      });
+      
+    } catch (error: any) {
+      console.error('Error en creación masiva de umbrales:', error);
+      const errorResponse = handleMultipleInsertError(error, 'umbrales');
+      setMessage({ type: errorResponse.type, text: errorResponse.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
      // Función para actualizar el tipo de un sensor específico
    const updateSensorTipo = (sensorIndex: number, tipoid: number) => {
      setMultipleSensors(prev => prev.map(sensor => 
@@ -5853,6 +5899,18 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         (Próximamente)
                       </div>
                     </div>
+                  ) : selectedTable === 'umbral' ? (
+                    <MassiveUmbralForm
+                      getUniqueOptionsForField={getUniqueOptionsForField}
+                      onApply={handleMassiveUmbralCreation}
+                      onCancel={() => {
+                        setCancelAction(() => () => {
+                          setMessage(null);
+                        });
+                        setShowCancelModal(true);
+                      }}
+                      loading={loading}
+                    />
                   ) : (
                     <div className="text-center py-8">
                       <div className="text-neutral-400 text-lg font-mono tracking-wider">

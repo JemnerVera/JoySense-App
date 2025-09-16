@@ -73,7 +73,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
     } else if (selectedTable === 'usuario') {
       // Solo Estado y Actualizar para USUARIO (sin Crear)
       return allSubTabs.filter(tab => tab.id !== 'insert' && tab.id !== 'massive');
-    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil' || selectedTable === 'umbral') {
       // Para tablas de multiple insert: Estado, Crear, Actualizar y Masivo
       return allSubTabs;
     } else {
