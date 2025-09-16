@@ -4674,65 +4674,50 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       rowId, 
       isSelected, 
       currentSelection: selectedRowsForManualUpdate.length,
-      hasOriginalRows: row.originalRows?.length
+      hasOriginalRows: row.originalRows?.length,
+      selectedTable
     });
     
-    if (isSelected) {
-      // Para metricasensor, expandir las originalRows; para usuarioperfil, mantener la fila agrupada
-      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
-        console.log('🔄 Expandir fila agrupada de metricasensor:', row.originalRows.length, 'entradas');
+    // Para tablas agrupadas (sensor, metricasensor, usuarioperfil), implementar selección única
+    if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+      if (isSelected) {
+        // Limpiar selección anterior y seleccionar solo esta fila
+        console.log('🔄 Selección única: limpiando selección anterior y seleccionando nueva fila');
         
-        // Verificar si alguna de las filas originales ya está seleccionada
-        const isAnyOriginalSelected = row.originalRows.some((originalRow: any) => 
-          selectedRowsForManualUpdate.some(selectedRow => 
-            getRowIdForSelection(selectedRow) === getRowIdForSelection(originalRow)
-          )
-        );
-        
-        if (!isAnyOriginalSelected) {
-          console.log('✅ Agregando todas las filas originales a la selección');
-          // Agregar todas las filas originales a la selección
-          setSelectedRowsForManualUpdate(prev => [...prev, ...row.originalRows]);
+        if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
+          // Para metricasensor, expandir las originalRows
+          setSelectedRowsForManualUpdate([...row.originalRows]);
+          console.log('✅ Agregando todas las filas originales de metricasensor a la selección');
+        } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
+          // Para usuarioperfil, mantener la fila agrupada
+          setSelectedRowsForManualUpdate([row]);
+          console.log('✅ Fila agrupada de usuarioperfil agregada a la selección');
+        } else if (selectedTable === 'sensor' && row.originalRows && row.originalRows.length > 0) {
+          // Para sensor, mantener la fila agrupada
+          setSelectedRowsForManualUpdate([row]);
+          console.log('✅ Fila agrupada de sensor agregada a la selección');
         } else {
-          console.log('⚠️ Algunas filas originales ya están seleccionadas');
-        }
-      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
-        // Para usuarioperfil, mantener la fila agrupada
-        console.log('🔄 Mantener fila agrupada de usuarioperfil');
-        if (!selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === rowId)) {
-          setSelectedRowsForManualUpdate(prev => [...prev, row]);
-          console.log('✅ Fila agrupada agregada a la selección');
-        } else {
-          console.log('⚠️ Fila agrupada ya estaba seleccionada');
+          // Lógica normal para filas no agrupadas
+          setSelectedRowsForManualUpdate([row]);
+          console.log('✅ Fila agregada a la selección');
         }
       } else {
-        // Lógica normal para otras tablas o filas no agrupadas
+        // Deseleccionar (limpiar toda la selección)
+        setSelectedRowsForManualUpdate([]);
+        console.log('❌ Selección limpiada');
+      }
+    } else {
+      // Para otras tablas, mantener la lógica original de selección múltiple
+      if (isSelected) {
         if (!selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === rowId)) {
           setSelectedRowsForManualUpdate(prev => [...prev, row]);
-          console.log('✅ Fila agregada a la selección');
+          console.log('✅ Fila agregada a la selección múltiple');
         } else {
           console.log('⚠️ Fila ya estaba seleccionada');
         }
-      }
-    } else {
-      // Para metricasensor, si es una fila agrupada, remover todas las originalRows
-      if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
-        console.log('🔄 Removiendo todas las filas originales de la selección');
-        setSelectedRowsForManualUpdate(prev => 
-          prev.filter(selectedRow => 
-            !row.originalRows.some((originalRow: any) => 
-              getRowIdForSelection(selectedRow) === getRowIdForSelection(originalRow)
-            )
-          )
-        );
-      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
-        // Para usuarioperfil, remover la fila agrupada
-        console.log('🔄 Removiendo fila agrupada de usuarioperfil de la selección');
-        setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
       } else {
-        // Lógica normal para otras tablas o filas no agrupadas
         setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
-        console.log('❌ Fila removida de la selección');
+        console.log('❌ Fila removida de la selección múltiple');
       }
     }
   };
@@ -5506,7 +5491,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                 onClick={handleGoToManualUpdateForm}
                                 className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
                               >
-                                🔧 Actualizar {getUpdateButtonCount()} entrada(s)
+                                🔧 Actualizar
                               </button>
                               <button
                                 onClick={handleDeselectAll}
