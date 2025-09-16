@@ -12,6 +12,7 @@ import MultipleLocalizacionForm from './MultipleLocalizacionForm';
 import NormalInsertForm from './NormalInsertForm';
 import InsertionMessage from './InsertionMessage';
 import { AdvancedMetricaSensorUpdateForm } from './AdvancedMetricaSensorUpdateForm';
+import { AdvancedSensorUpdateForm } from './AdvancedSensorUpdateForm';
 import { useInsertionMessages } from '../hooks/useInsertionMessages';
 import ReplicateModal from './ReplicateModal';
 import ReplicateButton from './ReplicateButton';
@@ -641,6 +642,79 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     });
   };
 
+  // Función para agrupar datos de sensor por nodo
+  const groupSensorData = (data: any[]) => {
+    if (selectedTable !== 'sensor') {
+      return data;
+    }
+
+    // Agrupar por nodoid
+    const groupedData = data.reduce((acc: any, row: any) => {
+      const nodoid = row.nodoid;
+      if (!acc[nodoid]) {
+        // Buscar el nombre del nodo
+        const nodo = nodosData?.find(n => n.nodoid === nodoid);
+        
+        acc[nodoid] = {
+          nodoid: row.nodoid,
+          nodo: nodo?.nodo || `Nodo ${nodoid}`,
+          tipos: new Set(),
+          usercreatedid: row.usercreatedid,
+          datecreated: row.datecreated,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified,
+          statusid: row.statusid,
+          // Mantener referencia a las filas originales para el formulario de edición
+          originalRows: []
+        };
+      }
+      
+      // Buscar el nombre del tipo
+      const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
+      
+      // Solo agregar tipos si están activos (statusid: 1)
+      if (row.statusid === 1) {
+        if (tipo?.tipo) {
+          acc[nodoid].tipos.add(tipo.tipo);
+        }
+      }
+      
+      // Crear fila original con nombres incluidos
+      const enrichedRow = {
+        ...row,
+        tipo: tipo?.tipo || `Tipo ${row.tipoid}`,
+        nodo: acc[nodoid].nodo || `Nodo ${row.nodoid}`,
+        entidadid: tipo?.entidadid || row.entidadid // Obtener entidadid del tipo
+      };
+      
+      // Agregar fila original enriquecida
+      acc[nodoid].originalRows.push(enrichedRow);
+      
+      return acc;
+    }, {});
+
+    // Convertir a array y formatear tipos
+    const result = Object.values(groupedData).map((group: any) => {
+      const hasActiveTypes = group.tipos.size > 0;
+      
+      return {
+        ...group,
+        tipos: hasActiveTypes ? Array.from(group.tipos).join(', ') : 'Sin sensores activos',
+        // Para compatibilidad con el sistema de selección
+        tipoid: group.originalRows[0]?.tipoid,
+        // Agregar todos los tipos para mostrar en la tabla
+        allTipos: Array.from(group.tipos).join(', ')
+      };
+    });
+
+    // Ordenar por fecha de modificación más reciente primero
+    return result.sort((a: any, b: any) => {
+      const dateA = new Date(a.datemodified || a.datecreated || 0);
+      const dateB = new Date(b.datemodified || b.datecreated || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
   // Función para agrupar datos de usuarioperfil por usuario
   const groupUsuarioPerfilData = (data: any[]) => {
     if (selectedTable !== 'usuarioperfil') {
@@ -1030,11 +1104,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
   const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
-  // Para metricasensor y usuarioperfil, calcular totalPages basado en datos agrupados
+  // Para metricasensor, sensor y usuarioperfil, calcular totalPages basado en datos agrupados
   const getTotalPagesForGroupedTable = () => {
-    if ((selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && updateData.length > 0) {
+    if ((selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') && updateData.length > 0) {
       const groupedData = selectedTable === 'metricasensor' 
         ? groupMetricaSensorData(updateData)
+        : selectedTable === 'sensor'
+        ? groupSensorData(updateData)
         : groupUsuarioPerfilData(updateData);
       const calculatedPages = Math.ceil(groupedData.length / itemsPerPage);
       
@@ -1047,8 +1123,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const correctedTotalPages = getTotalPagesForGroupedTable();
 
   // Funciones de navegación corregidas para tablas agrupadas
-  const correctedHasNextPage = (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage < correctedTotalPages : hasNextPage;
-  const correctedHasPrevPage = (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage > 1 : hasPrevPage;
+  const correctedHasNextPage = (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage < correctedTotalPages : hasNextPage;
+  const correctedHasPrevPage = (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage > 1 : hasPrevPage;
 
   // Funciones de navegación personalizadas para metricasensor
   const handleMetricaSensorPageChange = (page: number) => {
@@ -1399,7 +1475,60 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
              // Primero cargar las columnas
        const cols = await JoySenseService.getTableColumns(selectedTable);
-       setColumns(cols || []);
+       
+       // Agregar columnas virtuales para tablas agrupadas
+       if (selectedTable === 'sensor') {
+         // Agregar columna virtual 'tipos' para mostrar todos los tipos concatenados
+         const tiposColumn = {
+           columnName: 'tipos',
+           dataType: 'text',
+           isNullable: true,
+           defaultValue: null,
+           isIdentity: false,
+           isPrimaryKey: false
+         };
+         setColumns([...cols, tiposColumn]);
+       } else if (selectedTable === 'metricasensor') {
+         // Agregar columnas virtuales para metricasensor
+         const tiposColumn = {
+           columnName: 'tipos',
+           dataType: 'text',
+           isNullable: true,
+           defaultValue: null,
+           isIdentity: false,
+           isPrimaryKey: false
+         };
+         const metricasColumn = {
+           columnName: 'metricas',
+           dataType: 'text',
+           isNullable: true,
+           defaultValue: null,
+           isIdentity: false,
+           isPrimaryKey: false
+         };
+         setColumns([...cols, tiposColumn, metricasColumn]);
+       } else if (selectedTable === 'usuarioperfil') {
+         // Agregar columnas virtuales para usuarioperfil
+         const usuarioColumn = {
+           columnName: 'usuario',
+           dataType: 'text',
+           isNullable: true,
+           defaultValue: null,
+           isIdentity: false,
+           isPrimaryKey: false
+         };
+         const perfilesColumn = {
+           columnName: 'perfiles',
+           dataType: 'text',
+           isNullable: true,
+           defaultValue: null,
+           isIdentity: false,
+           isPrimaryKey: false
+         };
+         setColumns([...cols, usuarioColumn, perfilesColumn]);
+       } else {
+         setColumns(cols || []);
+       }
       
       // Inicializar formData
       const initialFormData: Record<string, any> = {};
@@ -2044,10 +2173,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Función para obtener los datos paginados de la tabla de Actualizar
   const getUpdatePaginatedData = () => {
-    // Para metricasensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
-    if (selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+    // Para metricasensor, sensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
+    if (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') {
       const groupedData = selectedTable === 'metricasensor' 
         ? groupMetricaSensorData(updateData)
+        : selectedTable === 'sensor'
+        ? groupSensorData(updateData)
         : groupUsuarioPerfilData(updateData);
       
       console.log('🔍 Debug - updateData original:', updateData.length);
@@ -2858,6 +2989,97 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
+  // Función específica para manejar actualizaciones del formulario avanzado de sensor
+  const handleAdvancedSensorUpdate = async (updatedEntries: any[]) => {
+    try {
+      setUpdateLoading(true);
+      
+      console.log('🔧 Actualizando entradas del formulario avanzado de sensor:', updatedEntries.length);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < updatedEntries.length; i++) {
+        const row = updatedEntries[i];
+        const compositeKey = { 
+          nodoid: row.nodoid, 
+          tipoid: row.tipoid
+        };
+        
+        // Preparar datos para actualización
+        const updateData: any = {
+          statusid: row.statusid,
+          usermodifiedid: row.usermodifiedid,
+          datemodified: row.datemodified
+        };
+        
+        // Si es una nueva entrada, incluir datos de creación
+        if (row.usercreatedid && row.datecreated) {
+          updateData.usercreatedid = row.usercreatedid;
+          updateData.datecreated = row.datecreated;
+        }
+        
+        console.log(`🔄 Actualizando sensor ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
+        console.log(`📊 Datos a actualizar:`, updateData);
+        
+        try {
+          const result = await JoySenseService.updateTableRowByCompositeKey(
+            selectedTable,
+            compositeKey,
+            updateData
+          );
+          
+          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
+          
+          if (result && result.success) {
+            successCount++;
+            console.log(`✅ Actualización ${i + 1} exitosa`);
+          } else {
+            errorCount++;
+            console.error(`❌ Error en actualización ${i + 1}:`, result?.error || 'Resultado undefined');
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Error en actualización ${i + 1}:`, error);
+        }
+      }
+      
+      if (successCount > 0) {
+        setUpdateMessage({ 
+          type: 'success', 
+          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+        });
+        
+        // Recargar datos después de la actualización
+        await loadUpdateData();
+        await loadTableData();
+        
+        // Limpiar selección
+        setSelectedRowsForUpdate([]);
+        setSelectedRowsForManualUpdate([]);
+        setSelectedRowForUpdate(null);
+        setUpdateFormData({});
+        setIsMultipleSelectionMode(false);
+      }
+      
+      if (errorCount > 0) {
+        setUpdateMessage({ 
+          type: 'error', 
+          text: `❌ ${errorCount} entradas fallaron al actualizar` 
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error general en actualización avanzada de sensor:', error);
+      setUpdateMessage({ 
+        type: 'error', 
+        text: 'Error al actualizar las entradas de sensor' 
+      });
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   // Función específica para manejar actualizaciones del formulario avanzado de usuarioperfil
   const handleAdvancedUsuarioPerfilUpdate = async (updatedEntries: any[]) => {
     try {
@@ -3281,11 +3503,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'sensor') {
-        return ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['nodoid', 'tipos', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'metricasensor') {
-        return ['nodoid', 'metricaid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['nodoid', 'metricaid', 'tipoid', 'tipos', 'metricas', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       // NUEVAS TABLAS DE UMBRAL (ALERTAS)
@@ -5119,6 +5341,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         />
                       )}
 
+                      {/* Formulario avanzado para sensor */}
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'sensor' && (
+                        <AdvancedSensorUpdateForm
+                          selectedRows={selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate}
+                          onUpdate={handleAdvancedSensorUpdate}
+                          onCancel={handleCancelUpdate}
+                          getUniqueOptionsForField={getUniqueOptionsForField}
+                          entidadesData={entidadesData}
+                          tiposData={tiposData}
+                          nodosData={nodosData}
+                        />
+                      )}
+
                       {/* Formulario avanzado para usuarioperfil */}
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'usuarioperfil' && (
                         <AdvancedUsuarioPerfilUpdateForm
@@ -5132,7 +5367,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       )}
 
                       {/* Tabla de entradas seleccionadas para actualización múltiple (otras tablas) */}
-                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && selectedTable !== 'usuarioperfil' && (
+                      {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && selectedTable !== 'sensor' && selectedTable !== 'usuarioperfil' && (
                         <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
                           <div className="flex justify-between items-center mb-4">
                             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">ACTUALIZAR STATUS</h4>
@@ -5215,8 +5450,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
 
 
-                      {/* Botones de acción - Solo para tablas que no sean metricasensor */}
-                      {selectedTable !== 'metricasensor' && selectedTable !== 'usuarioperfil' && (
+                      {/* Botones de acción - Solo para tablas que no sean metricasensor, sensor o usuarioperfil */}
+                      {selectedTable !== 'metricasensor' && selectedTable !== 'sensor' && selectedTable !== 'usuarioperfil' && (
                         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center">
                           <button
                             onClick={handleUpdate}
@@ -5372,6 +5607,14 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                                              }
                                              
                                              if (col.columnName === 'tipos' && selectedTable === 'metricasensor') {
+                                               return (
+                                                 <div className="whitespace-normal break-words">
+                                                   {row.tipos || getDisplayValue(row, col.columnName)}
+                                                 </div>
+                                               );
+                                             }
+                                             
+                                             if (col.columnName === 'tipos' && selectedTable === 'sensor') {
                                                return (
                                                  <div className="whitespace-normal break-words">
                                                    {row.tipos || getDisplayValue(row, col.columnName)}
