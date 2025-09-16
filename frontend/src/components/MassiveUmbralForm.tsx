@@ -88,7 +88,7 @@ export function MassiveUmbralForm({
   // Cargar nodos cuando se selecciona un fundo
   useEffect(() => {
     if (formData.fundoid) {
-      const nodosOptions = getUniqueOptionsForField('nodoid', { fundoid: formData.fundoid });
+      const nodosOptions = getUniqueOptionsForField('nodoid', { fundoid: formData.fundoid.toString() });
       const nodesData: SelectedNode[] = nodosOptions.map(option => ({
         nodoid: parseInt(option.value.toString()),
         nodo: option.label,
@@ -346,11 +346,11 @@ export function MassiveUmbralForm({
             NODO
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg max-h-96 overflow-y-auto custom-scrollbar">
             {selectedNodes.length > 0 ? (
-              <div className="space-y-1">
-                {/* Header del grid */}
-                <div className="grid grid-cols-12 gap-4 px-3 py-2 bg-neutral-800 rounded border-b border-neutral-600">
+              <div>
+                {/* Header del grid - Sticky */}
+                <div className="sticky top-0 z-10 grid grid-cols-12 gap-4 px-4 py-3 bg-neutral-900 border-b border-neutral-600">
                   <div className="col-span-1">
                     <input
                       type="checkbox"
@@ -373,7 +373,7 @@ export function MassiveUmbralForm({
                 
                 {/* Filas de nodos */}
                 {selectedNodes.map((node) => (
-                  <div key={node.nodoid} className="grid grid-cols-12 gap-4 px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                  <label key={node.nodoid} className="grid grid-cols-12 gap-4 px-4 py-2 hover:bg-neutral-700 cursor-pointer transition-colors">
                     <div className="col-span-1 flex items-center">
                       <input
                         type="checkbox"
@@ -389,7 +389,7 @@ export function MassiveUmbralForm({
                     </div>
                     <div className="col-span-5 flex items-center">
                       <span className="text-neutral-300 text-sm font-mono">
-                        {node.datecreated ? new Date(node.datecreated).toLocaleDateString('es-ES', {
+                        {node.datecreated ? new Date(node.datecreated).toLocaleDateString('es-PE', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -398,7 +398,7 @@ export function MassiveUmbralForm({
                         }) : 'N/A'}
                       </span>
                     </div>
-                  </div>
+                  </label>
                 ))}
               </div>
             ) : (
@@ -620,20 +620,23 @@ export function MassiveUmbralForm({
       )}
 
       {/* Botones */}
-      <div className="flex justify-center space-x-4 pt-6">
-        <button
-          onClick={handleCancel}
-          disabled={loading}
-          className="px-6 py-3 bg-neutral-700 hover:bg-neutral-600 text-white font-mono tracking-wider rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          CANCELAR
-        </button>
+      <div className="flex justify-center items-center mt-8 space-x-4">
         <button
           onClick={handleApply}
           disabled={!isFormValid() || loading}
-          className="px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-mono tracking-wider rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
-          {loading ? 'APLICANDO...' : 'APLICAR'}
+          <span>➕</span>
+          <span>{loading ? 'APLICANDO...' : 'APLICAR'}</span>
+        </button>
+        
+        <button
+          onClick={handleCancel}
+          disabled={loading}
+          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+        >
+          <span>❌</span>
+          <span>CANCELAR</span>
         </button>
       </div>
     </div>

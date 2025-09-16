@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 
-interface MassiveSensorFormProps {
+interface MassiveMetricaSensorFormProps {
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
   onApply: (data: any[]) => void;
   onCancel: () => void;
@@ -15,22 +15,37 @@ interface SelectedNode {
   datecreated?: string;
 }
 
+interface SelectedTipo {
+  tipoid: number;
+  tipo: string;
+  selected: boolean;
+}
+
+interface MetricaData {
+  metricaid: number;
+  metrica: string;
+  unidad: string;
+  selected: boolean;
+}
+
 interface FormData {
   fundoid: number | null;
   entidadid: number | null;
-  selectedTipos: number[];
+  selectedTipos: SelectedTipo[];
+  metricasData: MetricaData[];
 }
 
-export function MassiveSensorForm({
+export function MassiveMetricaSensorForm({
   getUniqueOptionsForField,
   onApply,
   onCancel,
   loading = false
-}: MassiveSensorFormProps) {
+}: MassiveMetricaSensorFormProps) {
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
     entidadid: null,
-    selectedTipos: []
+    selectedTipos: [],
+    metricasData: []
   });
 
   const [selectedNodes, setSelectedNodes] = useState<SelectedNode[]>([]);
@@ -52,6 +67,10 @@ export function MassiveSensorForm({
     return [];
   }, [getUniqueOptionsForField, formData.entidadid]);
 
+  const metricasOptions = useMemo(() => 
+    getUniqueOptionsForField('metricaid'), [getUniqueOptionsForField]
+  );
+
   // Cargar nodos cuando se selecciona un fundo
   useEffect(() => {
     if (formData.fundoid) {
@@ -69,6 +88,22 @@ export function MassiveSensorForm({
       setAllNodesSelected(false);
     }
   }, [formData.fundoid, getUniqueOptionsForField]);
+
+  // Inicializar métricas cuando se cargan las opciones
+  useEffect(() => {
+    if (metricasOptions.length > 0 && formData.metricasData.length === 0) {
+      const initialMetricasData: MetricaData[] = metricasOptions.map(option => ({
+        metricaid: parseInt(option.value.toString()),
+        metrica: option.label,
+        unidad: option.unidad || '',
+        selected: false
+      }));
+      setFormData(prev => ({
+        ...prev,
+        metricasData: initialMetricasData
+      }));
+    }
+  }, [metricasOptions, formData.metricasData.length]);
 
   // Manejar selección de nodos individuales
   const handleNodeSelection = (nodoid: number, selected: boolean) => {
@@ -101,17 +136,37 @@ export function MassiveSensorForm({
   // Manejar selección de tipos
   const handleTipoSelection = (tipoid: number, selected: boolean) => {
     if (selected) {
-      setFormData(prev => ({
-        ...prev,
-        selectedTipos: [...prev.selectedTipos, tipoid]
-      }));
+      const tipo = tiposOptions.find(t => parseInt(t.value.toString()) === tipoid);
+      if (tipo) {
+        setFormData(prev => ({
+          ...prev,
+          selectedTipos: [...prev.selectedTipos, {
+            tipoid,
+            tipo: tipo.label,
+            selected: true
+          }]
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
-        selectedTipos: prev.selectedTipos.filter(id => id !== tipoid)
+        selectedTipos: prev.selectedTipos.filter(t => t.tipoid !== tipoid)
       }));
     }
   };
+
+  // Manejar selección de métrica
+  const handleMetricaSelection = (metricaid: number, selected: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      metricasData: prev.metricasData.map(metrica =>
+        metrica.metricaid === metricaid
+          ? { ...metrica, selected: selected }
+          : metrica
+      )
+    }));
+  };
+
 
   // Obtener nodos seleccionados
   const getSelectedNodes = () => {
@@ -120,10 +175,15 @@ export function MassiveSensorForm({
 
   // Validar formulario
   const isFormValid = () => {
+    const hasNodes = getSelectedNodes().length > 0;
+    const hasTipos = formData.selectedTipos.length > 0;
+    const hasMetricas = formData.metricasData.some(metrica => metrica.selected);
+    
     return formData.fundoid && 
            formData.entidadid && 
-           formData.selectedTipos.length > 0 && 
-           getSelectedNodes().length > 0;
+           hasNodes && 
+           hasTipos && 
+           hasMetricas;
   };
 
   // Manejar aplicación de cambios
@@ -133,15 +193,20 @@ export function MassiveSensorForm({
     const selectedNodesData = getSelectedNodes();
     const dataToApply = [];
 
-    // Crear datos para cada combinación de nodo-tipo
+    // Crear datos para cada combinación de nodo-tipo-métrica
     for (const node of selectedNodesData) {
-      for (const tipoid of formData.selectedTipos) {
-        dataToApply.push({
-          nodoid: node.nodoid,
-          tipoid: tipoid,
-          entidadid: formData.entidadid,
-          statusid: 1 // Activo por defecto
-        });
+      for (const tipo of formData.selectedTipos) {
+        for (const metrica of formData.metricasData) {
+          // Solo procesar métricas seleccionadas
+          if (metrica.selected) {
+            dataToApply.push({
+              nodoid: node.nodoid,
+              tipoid: tipo.tipoid,
+              metricaid: metrica.metricaid,
+              statusid: 1 // Activo por defecto
+            });
+          }
+        }
       }
     }
 
@@ -153,7 +218,8 @@ export function MassiveSensorForm({
     setFormData({
       fundoid: null,
       entidadid: null,
-      selectedTipos: []
+      selectedTipos: [],
+      metricasData: []
     });
     setSelectedNodes([]);
     setAllNodesSelected(false);
@@ -161,11 +227,11 @@ export function MassiveSensorForm({
   };
 
   const selectedNodesCount = getSelectedNodes().length;
-  const totalCombinations = selectedNodesCount * formData.selectedTipos.length;
+  const totalCombinations = selectedNodesCount * formData.selectedTipos.length * 
+    formData.metricasData.filter(m => m.selected).length;
 
   return (
     <div className="space-y-6">
-
       {/* Fila 1: Fundo y Entidad */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Fundo */}
@@ -210,15 +276,15 @@ export function MassiveSensorForm({
         </div>
       </div>
 
-      {/* Fila 2: Nodos y Tipos */}
+      {/* Fila 2: Nodo (izquierda) y Sensor + Métricas (derecha) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Nodos */}
+        {/* Nodos - Columna izquierda */}
         <div>
           <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
             NODO
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg h-96 overflow-y-auto custom-scrollbar">
             {selectedNodes.length > 0 ? (
               <div>
                 {/* Header del grid - Sticky */}
@@ -283,37 +349,70 @@ export function MassiveSensorForm({
           </div>
         </div>
 
-        {/* Tipos */}
-        <div>
-          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-            SENSOR
-          </h4>
-          
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
-            {formData.entidadid ? (
-              <div className="space-y-2">
-                {tiposOptions.map((option) => (
-                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.selectedTipos.includes(parseInt(option.value.toString()))}
-                      onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                    />
-                    <span className="text-white text-sm font-mono tracking-wider">
-                      {option.label.toUpperCase()}
-                    </span>
-                  </label>
-                ))}
+        {/* Columna derecha: Sensor y Métricas */}
+        <div className="space-y-6">
+          {/* Tipos de sensor */}
+          {formData.entidadid && (
+            <div>
+              <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
+                SENSOR
+              </h4>
+              
+              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
+                {formData.entidadid ? (
+                  <div className="space-y-2">
+                    {tiposOptions.map((option) => (
+                      <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedTipos.some(t => t.tipoid === parseInt(option.value.toString()))}
+                          onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
+                          className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                        />
+                        <span className="text-white text-sm font-mono tracking-wider">
+                          {option.label.toUpperCase()}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                      SELECCIONA UNA ENTIDAD PARA VER LOS TIPOS
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
-                  SELECCIONA UNA ENTIDAD PARA VER LOS TIPOS
+            </div>
+          )}
+
+          {/* Métricas */}
+          {formData.selectedTipos.length > 0 && (
+            <div>
+              <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
+                MÉTRICAS
+              </h4>
+              
+              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
+                <div className="space-y-2">
+                  {formData.metricasData.map((metrica) => (
+                    <label key={metrica.metricaid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                      <input
+                        type="checkbox"
+                        checked={metrica.selected}
+                        onChange={(e) => handleMetricaSelection(metrica.metricaid, e.target.checked)}
+                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                        disabled={loading}
+                      />
+                      <span className="text-white text-sm font-mono tracking-wider">
+                        {metrica.metrica.toUpperCase()}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -323,7 +422,7 @@ export function MassiveSensorForm({
           <h5 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
             RESUMEN DE SELECCIÓN
           </h5>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-mono">
             <div>
               <span className="text-orange-400">Nodos seleccionados:</span>
               <span className="text-white ml-2">{selectedNodesCount}</span>
@@ -333,7 +432,11 @@ export function MassiveSensorForm({
               <span className="text-white ml-2">{formData.selectedTipos.length}</span>
             </div>
             <div>
-              <span className="text-orange-400">Total de sensores a crear:</span>
+              <span className="text-orange-400">Métricas configuradas:</span>
+              <span className="text-white ml-2">{formData.metricasData.filter(m => m.selected).length}</span>
+            </div>
+            <div>
+              <span className="text-orange-400">Total de métricas a crear:</span>
               <span className="text-white ml-2 font-bold">{totalCombinations}</span>
             </div>
           </div>

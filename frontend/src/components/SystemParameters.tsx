@@ -9,6 +9,7 @@ import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
 import { MassiveSensorForm } from './MassiveSensorForm';
 import { MassiveUmbralForm } from './MassiveUmbralForm';
+import { MassiveMetricaSensorForm } from './MassiveMetricaSensorForm';
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 import MultipleLocalizacionForm from './MultipleLocalizacionForm';
 import NormalInsertForm from './NormalInsertForm';
@@ -2762,7 +2763,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log('🔗 Nodos filtrados para sensor (sin sensores asignados):', finalFilteredNodos.length);
         }
         
-        // Si estamos en el contexto de metricasensor, filtrar nodos que estén en sensor pero no en metricasensor
+        // Si estamos en el contexto de metricasensor, mostrar TODOS los nodos (tanto los que tienen métricas sensor como los que no)
         if (selectedTable === 'metricasensor') {
           // Usar datos de sensores cargados específicamente para metricasensor
           const sensorData = sensorsData || [];
@@ -2776,12 +2777,6 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             // Verificar que el nodo tenga sensores (esté en tabla sensor)
             const tieneSensores = sensorData.some((sensor: any) => sensor.nodoid === nodo.nodoid);
             if (!tieneSensores) {
-              return false;
-            }
-            
-            // Verificar que el nodo NO tenga métricas sensor asignadas (no esté en tabla metricasensor)
-            const tieneMetricas = tableData.some(ms => ms.nodoid === nodo.nodoid);
-            if (tieneMetricas) {
               return false;
             }
             
@@ -2808,7 +2803,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             return true;
           });
           
-          console.log('🔗 Nodos filtrados para metricasensor (con sensores pero sin métricas):', finalFilteredNodos.length);
+          console.log('🔗 Nodos filtrados para metricasensor (todos los nodos con sensores):', finalFilteredNodos.length);
         }
         
         // Ordenar nodos por fecha de modificación (más recientes primero)
@@ -3611,11 +3606,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'sensor') {
-        return ['nodoid', 'tipos', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'metricasensor') {
-        return ['nodoid', 'metricaid', 'tipoid', 'tipos', 'metricas', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['nodoid', 'metricaid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       // NUEVAS TABLAS DE UMBRAL (ALERTAS)
@@ -3645,9 +3640,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'usuarioperfil') {
-        const isIncluded = ['usuarioid', 'perfilid', 'usuario', 'perfiles', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
-        console.log('🔍 Debug - getVisibleColumns usuarioperfil:', { columnName: col.columnName, isIncluded });
-        return isIncluded;
+        return ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'contacto') {
@@ -4456,6 +4449,51 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     } catch (error: any) {
       console.error('Error en creación masiva de umbrales:', error);
       const errorResponse = handleMultipleInsertError(error, 'umbrales');
+      setMessage({ type: errorResponse.type, text: errorResponse.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para manejar la creación masiva de métricas sensor
+  const handleMassiveMetricaSensorCreation = async (dataToApply: any[]) => {
+    if (!selectedTable || !user || selectedTable !== 'metricasensor') return;
+    
+    try {
+      setLoading(true);
+      
+      const usuarioid = getCurrentUserId();
+      const currentTimestamp = new Date().toISOString();
+      
+      // Preparar datos con campos de auditoría
+      const preparedData = dataToApply.map(item => ({
+        ...item,
+        usercreatedid: usuarioid,
+        usermodifiedid: usuarioid,
+        datecreated: currentTimestamp,
+        datemodified: currentTimestamp
+      }));
+      
+      // Realizar inserciones individuales (lógica UPSERT)
+      for (const record of preparedData) {
+        await JoySenseService.insertTableRow(selectedTable, record);
+      }
+      
+      // Recargar datos
+      loadTableData();
+      loadTableInfo();
+      loadUpdateData();
+      loadCopyData();
+      loadRelatedTablesData();
+      
+      setMessage({ 
+        type: 'success', 
+        text: `Se crearon ${preparedData.length} métricas sensor exitosamente` 
+      });
+      
+    } catch (error: any) {
+      console.error('Error en creación masiva de métricas sensor:', error);
+      const errorResponse = handleMultipleInsertError(error, 'métricas sensor');
       setMessage({ type: errorResponse.type, text: errorResponse.message });
     } finally {
       setLoading(false);
@@ -5882,14 +5920,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       loading={loading}
                     />
                   ) : selectedTable === 'metricasensor' ? (
-                    <div className="text-center py-8">
-                      <div className="text-neutral-400 text-lg font-mono tracking-wider">
-                        CREACIÓN MASIVA DE MÉTRICAS SENSOR
-                      </div>
-                      <div className="text-neutral-500 text-sm font-mono mt-2">
-                        (Próximamente)
-                      </div>
-                    </div>
+                    <MassiveMetricaSensorForm
+                      getUniqueOptionsForField={getUniqueOptionsForField}
+                      onApply={handleMassiveMetricaSensorCreation}
+                      onCancel={() => {
+                        setCancelAction(() => () => {
+                          setMessage(null);
+                        });
+                        setShowCancelModal(true);
+                      }}
+                      loading={loading}
+                    />
                   ) : selectedTable === 'usuarioperfil' ? (
                     <div className="text-center py-8">
                       <div className="text-neutral-400 text-lg font-mono tracking-wider">
