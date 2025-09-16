@@ -1527,7 +1527,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          };
          setColumns([...cols, usuarioColumn, perfilesColumn]);
        } else {
-         setColumns(cols || []);
+       setColumns(cols || []);
        }
       
       // Inicializar formData
@@ -2165,18 +2165,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Función para obtener los datos paginados de la tabla de Estado
   const getStatusPaginatedData = () => {
-    // Para tablas agrupadas, usar datos agrupados
-    if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
-      const groupedData = selectedTable === 'sensor'
-        ? groupSensorData(tableData)
-        : selectedTable === 'metricasensor'
-        ? groupMetricaSensorData(tableData)
-        : groupUsuarioPerfilData(tableData);
-      
-      const startIndex = (statusCurrentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      return groupedData.slice(startIndex, endIndex);
-    }
+    // Para la tabla de Estado, siempre mostrar datos desagregados (sin agrupar)
     
     // Para otras tablas, usar datos normales
     const startIndex = (statusCurrentPage - 1) * itemsPerPage;
@@ -3708,71 +3697,80 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     const auditColumns = injectedColumns.filter(col => ['usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
     const otherColumns = injectedColumns.filter(col => !['statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
     
-    if (forTable) {
-      // Para las tablas, reordenar según los requerimientos específicos
-      if (selectedTable === 'pais') {
-        // Pais, Abreviatura
-        reorderedColumns.push(...otherColumns.filter(col => ['pais'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['paisabrev'].includes(col.columnName)));
-      } else if (selectedTable === 'empresa') {
-        // Pais, Empresa, Abreviatura
-        reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
-      } else if (selectedTable === 'fundo') {
-        // Empresa, Fundo, Abreviatura (sin Pais)
-        reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
-      } else if (selectedTable === 'ubicacion') {
-        // Fundo, Ubicacion (sin Empresa y Pais)
-        reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
-      } else if (selectedTable === 'localizacion') {
-        // Entidad, Ubicacion, Nodo (sin Fundo, Empresa y Pais)
-        reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
-      } else if (selectedTable === 'tipo') {
-        // Entidad, Tipo
-        reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
-      } else if (selectedTable === 'metricasensor') {
-        // Para metricasensor agrupado: Nodo, Tipos, Metricas
-        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-        // Agregar columnas virtuales para tipos y métricas agrupadas
-        reorderedColumns.push({
-          columnName: 'tipos',
-          dataType: 'varchar',
-          isNullable: true,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: false,
-          defaultValue: null
-        });
-        reorderedColumns.push({
-          columnName: 'metricas',
-          dataType: 'varchar',
-          isNullable: true,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: false,
-          defaultValue: null
-        });
+    // Para las tablas, reordenar según los requerimientos específicos (tanto para Estado como para Actualizar)
+    if (selectedTable === 'pais') {
+      // Pais, Abreviatura
+      reorderedColumns.push(...otherColumns.filter(col => ['pais'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['paisabrev'].includes(col.columnName)));
+    } else if (selectedTable === 'empresa') {
+      // Pais, Empresa, Abreviatura
+      reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
+    } else if (selectedTable === 'fundo') {
+      // Empresa, Fundo, Abreviatura (sin Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
+    } else if (selectedTable === 'ubicacion') {
+      // Fundo, Ubicacion (sin Empresa y Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
+    } else if (selectedTable === 'localizacion') {
+      // Entidad, Ubicacion, Nodo (sin Fundo, Empresa y Pais)
+      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
+    } else if (selectedTable === 'tipo') {
+      // Entidad, Tipo
+      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+      reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
+    } else if (selectedTable === 'metricasensor') {
+        if (forTable) {
+          // Para metricasensor agrupado en Actualizar: Nodo, Tipos, Metricas
+          reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+          // Agregar columnas virtuales para tipos y métricas agrupadas
+          reorderedColumns.push({
+            columnName: 'tipos',
+            dataType: 'varchar',
+            isNullable: true,
+            isIdentity: false,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            defaultValue: null
+          });
+          reorderedColumns.push({
+            columnName: 'metricas',
+            dataType: 'varchar',
+            isNullable: true,
+            isIdentity: false,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            defaultValue: null
+          });
+        } else {
+          // Para metricasensor desagregado en Estado: mantener orden original
+          reorderedColumns.push(...otherColumns);
+        }
       } else if (selectedTable === 'sensor') {
-        // Para sensor agrupado: Nodo, Tipos
-        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-        // Agregar columna virtual para tipos agrupados
-        reorderedColumns.push({
-          columnName: 'tipos',
-          dataType: 'varchar',
-          isNullable: true,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: false,
-          defaultValue: null
-        });
+        if (forTable) {
+          // Para sensor agrupado en Actualizar: Nodo, Tipos
+          reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+          // Agregar columna virtual para tipos agrupados
+          reorderedColumns.push({
+            columnName: 'tipos',
+            dataType: 'varchar',
+            isNullable: true,
+            isIdentity: false,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            defaultValue: null
+          });
+        } else {
+          // Para sensor desagregado en Estado: mantener orden original
+          reorderedColumns.push(...otherColumns);
+        }
       } else if (selectedTable === 'umbral') {
         // Ubicacion, Nodo, Tipo, Metrica, Valor Minimo, Valor Maximo, Criticidad, Nombre Umbral, Status
         reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
@@ -3790,33 +3788,34 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         reorderedColumns.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
       } else if (selectedTable === 'usuarioperfil') {
-        // Usuario, Perfiles (columnas agrupadas) - solo las columnas agrupadas, no usuarioid
-        reorderedColumns.push({
-          columnName: 'usuario',
-          dataType: 'varchar',
-          isNullable: true,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: false,
-          defaultValue: null
-        });
-        reorderedColumns.push({
-          columnName: 'perfiles',
-          dataType: 'varchar',
-          isNullable: true,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: false,
-          defaultValue: null
-        });
+        if (forTable) {
+          // Para usuarioperfil agrupado en Actualizar: Usuario, Perfiles (columnas agrupadas)
+          reorderedColumns.push({
+            columnName: 'usuario',
+            dataType: 'varchar',
+            isNullable: true,
+            isIdentity: false,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            defaultValue: null
+          });
+          reorderedColumns.push({
+            columnName: 'perfiles',
+            dataType: 'varchar',
+            isNullable: true,
+            isIdentity: false,
+            isPrimaryKey: false,
+            isForeignKey: false,
+            defaultValue: null
+          });
+        } else {
+          // Para usuarioperfil desagregado en Estado: mantener orden original
+          reorderedColumns.push(...otherColumns);
+        }
       } else {
         // Para otras tablas, mantener el orden original
         reorderedColumns.push(...otherColumns);
       }
-    } else {
-      // Para formularios, mantener todas las columnas incluyendo las contextuales
-      reorderedColumns.push(...otherColumns);
-    }
     
     // Agregar columnas de auditoría
     reorderedColumns.push(...auditColumns);
@@ -4749,7 +4748,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     
     // Para tablas agrupadas (sensor, metricasensor, usuarioperfil), implementar selección única
     if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
-      if (isSelected) {
+    if (isSelected) {
         // Limpiar selección anterior y seleccionar solo esta fila
         console.log('🔄 Selección única: limpiando selección anterior y seleccionando nueva fila');
         
@@ -4757,8 +4756,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           // Para metricasensor, expandir las originalRows
           setSelectedRowsForManualUpdate([...row.originalRows]);
           console.log('✅ Agregando todas las filas originales de metricasensor a la selección');
-        } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
-          // Para usuarioperfil, mantener la fila agrupada
+      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
+        // Para usuarioperfil, mantener la fila agrupada
           setSelectedRowsForManualUpdate([row]);
           console.log('✅ Fila agrupada de usuarioperfil agregada a la selección');
         } else if (selectedTable === 'sensor' && row.originalRows && row.originalRows.length > 0) {
@@ -4783,8 +4782,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log('✅ Fila agregada a la selección múltiple');
         } else {
           console.log('⚠️ Fila ya estaba seleccionada');
-        }
-      } else {
+      }
+    } else {
         setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
         console.log('❌ Fila removida de la selección múltiple');
       }
