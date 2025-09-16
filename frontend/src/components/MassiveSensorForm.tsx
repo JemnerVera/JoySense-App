@@ -12,6 +12,7 @@ interface SelectedNode {
   nodoid: number;
   nodo: string;
   selected: boolean;
+  datecreated?: string;
 }
 
 interface FormData {
@@ -44,9 +45,12 @@ export function MassiveSensorForm({
     getUniqueOptionsForField('entidadid'), [getUniqueOptionsForField]
   );
 
-  const tiposOptions = useMemo(() => 
-    getUniqueOptionsForField('tipoid'), [getUniqueOptionsForField]
-  );
+  const tiposOptions = useMemo(() => {
+    if (formData.entidadid) {
+      return getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid });
+    }
+    return [];
+  }, [getUniqueOptionsForField, formData.entidadid]);
 
   // Cargar nodos cuando se selecciona un fundo
   useEffect(() => {
@@ -55,7 +59,8 @@ export function MassiveSensorForm({
       const nodesData: SelectedNode[] = nodosOptions.map(option => ({
         nodoid: parseInt(option.value.toString()),
         nodo: option.label,
-        selected: false
+        selected: false,
+        datecreated: option.datecreated || undefined
       }));
       setSelectedNodes(nodesData);
       setAllNodesSelected(false);
@@ -160,21 +165,12 @@ export function MassiveSensorForm({
 
   return (
     <div className="space-y-6">
-      {/* Título */}
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
-          CREACIÓN MASIVA DE SENSORES
-        </h3>
-        <p className="text-neutral-400 text-sm font-mono mt-2">
-          Selecciona un fundo, nodos y tipos para crear sensores masivamente
-        </p>
-      </div>
 
       {/* Fila 1: Fundo y Entidad */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Fundo */}
         <div>
-          <label className="block text-sm font-medium text-orange-500 font-mono tracking-wider mb-2">
+          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
             FUNDO
           </label>
           <SelectWithPlaceholder
@@ -195,7 +191,7 @@ export function MassiveSensorForm({
 
         {/* Entidad */}
         <div>
-          <label className="block text-sm font-medium text-orange-500 font-mono tracking-wider mb-2">
+          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
             ENTIDAD
           </label>
           <SelectWithPlaceholder
@@ -218,40 +214,63 @@ export function MassiveSensorForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Nodos */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-              NODOS DISPONIBLES
-            </h4>
-            {selectedNodes.length > 0 && (
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allNodesSelected}
-                  onChange={(e) => handleSelectAllNodes(e.target.checked)}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-                />
-                <span className="text-sm text-orange-500 font-mono tracking-wider">
-                  SELECCIONAR TODO
-                </span>
-              </label>
-            )}
-          </div>
+          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
+            NODO
+          </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             {selectedNodes.length > 0 ? (
-              <div className="space-y-2">
-                {selectedNodes.map((node) => (
-                  <label key={node.nodoid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+              <div className="space-y-1">
+                {/* Header del grid */}
+                <div className="grid grid-cols-12 gap-4 px-3 py-2 bg-neutral-800 rounded border-b border-neutral-600">
+                  <div className="col-span-1">
                     <input
                       type="checkbox"
-                      checked={node.selected}
-                      onChange={(e) => handleNodeSelection(node.nodoid, e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                      checked={allNodesSelected}
+                      onChange={(e) => handleSelectAllNodes(e.target.checked)}
+                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                     />
-                    <span className="text-white text-sm font-mono tracking-wider">
-                      {node.nodo.toUpperCase()}
+                  </div>
+                  <div className="col-span-6">
+                    <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
+                      NODO
                     </span>
-                  </label>
+                  </div>
+                  <div className="col-span-5">
+                    <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
+                      FECHA DE CREACIÓN
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Filas de nodos */}
+                {selectedNodes.map((node) => (
+                  <div key={node.nodoid} className="grid grid-cols-12 gap-4 px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                    <div className="col-span-1 flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={node.selected}
+                        onChange={(e) => handleNodeSelection(node.nodoid, e.target.checked)}
+                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                      />
+                    </div>
+                    <div className="col-span-6 flex items-center">
+                      <span className="text-white text-sm font-mono tracking-wider">
+                        {node.nodo.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="col-span-5 flex items-center">
+                      <span className="text-neutral-300 text-sm font-mono">
+                        {node.datecreated ? new Date(node.datecreated).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -267,10 +286,10 @@ export function MassiveSensorForm({
         {/* Tipos */}
         <div>
           <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-            TIPOS DE SENSOR
+            SENSOR
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             {formData.entidadid ? (
               <div className="space-y-2">
                 {tiposOptions.map((option) => (
@@ -335,7 +354,7 @@ export function MassiveSensorForm({
           disabled={!isFormValid() || loading}
           className="px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-mono tracking-wider rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'APLICANDO...' : 'APLICAR CREACIÓN MASIVA'}
+          {loading ? 'APLICANDO...' : 'APLICAR'}
         </button>
       </div>
     </div>

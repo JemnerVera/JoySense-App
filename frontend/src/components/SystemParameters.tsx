@@ -2817,7 +2817,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
         });
         
-        const nodoResult = sortedNodos.map(nodo => ({ value: nodo.nodoid, label: nodo.nodo }));
+        const nodoResult = sortedNodos.map(nodo => ({ 
+          value: nodo.nodoid, 
+          label: nodo.nodo,
+          datecreated: nodo.datecreated 
+        }));
         console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
         return nodoResult;
       case 'tipoid':
@@ -2825,6 +2829,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           console.log('🏷️ No hay datos de tipos disponibles');
           return [];
         }
+        
+        console.log('🏷️ Datos de tipos disponibles:', tiposData.slice(0, 3)); // Mostrar primeros 3 tipos para debug
         
         // Filtrar tipos por entidad si se proporciona
         let filteredTipos = tiposData;
@@ -2849,13 +2855,16 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             tiposFiltrados: filteredTipos.length
           });
         } else if (filterParams?.entidadid) {
+          // Filtrar tipos por entidad usando la columna entidadid de la tabla tipo
           filteredTipos = tiposData.filter(tipo => 
-            tipo.entidadid && tipo.entidadid.toString() === filterParams.entidadid
+            tipo.entidadid && tipo.entidadid.toString() === filterParams.entidadid?.toString()
           );
+          
           console.log('🏷️ Tipos filtrados por entidad:', {
             entidadid: filterParams.entidadid,
             totalTipos: tiposData.length,
-            tiposFiltrados: filteredTipos.length
+            tiposFiltrados: filteredTipos.length,
+            tiposFiltradosData: filteredTipos
           });
         }
         
