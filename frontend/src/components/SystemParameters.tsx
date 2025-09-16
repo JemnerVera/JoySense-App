@@ -2584,7 +2584,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
-    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string }) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string }) => {
     console.log('🔍 getUniqueOptionsForField Debug:', {
       columnName,
       paisSeleccionado,
@@ -2727,19 +2727,39 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             nodosConLocalizacion: nodosConLocalizacion.length,
             filteredCount: filteredNodos.length 
           });
-        } else if (fundoSeleccionado) {
+        } else if (filterParams?.fundoid) {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
-          // Relación: nodo -> ubicacion -> fundo (simplificada, ya que localizaciones se crean dinámicamente)
+          // Relación: nodo -> ubicacion -> fundo
+          if (ubicacionesData && ubicacionesData.length > 0) {
+            const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === filterParams.fundoid);
+            const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
+            
+            // Para simplificar, mostrar todos los nodos activos del fundo
+            // (asumiendo que todos los nodos pueden ser asignados a cualquier ubicación del fundo)
+            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+            
+            console.log('🔗 Nodos filtrados por fundo (simplificado):', { 
+              fundoid: filterParams.fundoid, 
+              ubicacionesDelFundo: ubicacionesDelFundo.length,
+              ubicacionIds: ubicacionIds.length,
+              filteredCount: filteredNodos.length 
+            });
+          }
+        } else if (fundoSeleccionado) {
+          // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado (filtros globales)
+          // Relación: nodo -> ubicacion -> fundo
           if (ubicacionesData && ubicacionesData.length > 0) {
             const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === fundoSeleccionado);
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
-            // Filtrar nodos que tienen localizacionid que corresponde a ubicaciones del fundo
-            // Como las localizaciones se crean dinámicamente, asumimos que todos los nodos son válidos
-            // para las ubicaciones del fundo seleccionado
-            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid);
-            console.log('🔗 Filtros globales aplicados a nodos:', { 
+            
+            // Para simplificar, mostrar todos los nodos activos del fundo
+            // (asumiendo que todos los nodos pueden ser asignados a cualquier ubicación del fundo)
+            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+            
+            console.log('🔗 Filtros globales aplicados a nodos (simplificado):', { 
               fundoSeleccionado, 
-              ubicacionesDelFundo: ubicacionesDelFundo.length, 
+              ubicacionesDelFundo: ubicacionesDelFundo.length,
+              ubicacionIds: ubicacionIds.length,
               filteredCount: filteredNodos.length 
             });
           }
