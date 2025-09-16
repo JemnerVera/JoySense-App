@@ -169,25 +169,26 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }
   };
 
-  // Función para renderizar campos de umbral con layout específico
+  // Función para renderizar campos de umbral con layout específico y cascada
   const renderUmbralFields = (): React.ReactNode[] => {
-
-    // Definir el orden específico para umbral
-    const umbralFieldOrder = ['ubicacionid', 'nodoid', 'metricaid', 'criticidadid', 'minimo', 'maximo', 'umbral', 'tipoid', 'statusid'];
-    
     const result: React.ReactNode[] = [];
     
     // Primera fila: Ubicación, Nodo, Tipo
-    const firstRowFields = ['ubicacionid', 'nodoid', 'tipoid'];
-    const firstRow = firstRowFields.map(fieldName => {
-      const col = visibleColumns.find(c => c.columnName === fieldName);
-      return col ? renderField(col) : null;
-    }).filter(Boolean);
+    const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
+    const nodoField = visibleColumns.find(c => c.columnName === 'nodoid');
+    const tipoField = visibleColumns.find(c => c.columnName === 'tipoid');
     
-    if (firstRow.length > 0) {
+    if (ubicacionField || nodoField || tipoField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {firstRow}
+          {/* Ubicación - siempre habilitada */}
+          {ubicacionField && renderUmbralField(ubicacionField, true)}
+          
+          {/* Nodo - habilitado solo si hay ubicación seleccionada */}
+          {nodoField && renderUmbralField(nodoField, !!formData.ubicacionid)}
+          
+          {/* Tipo - habilitado solo si hay nodo seleccionado */}
+          {tipoField && renderUmbralField(tipoField, !!formData.nodoid)}
         </div>
       );
     }
@@ -201,14 +202,19 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     if (metricaField || minimoField || maximoField || criticidadField) {
       result.push(
         <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {metricaField && renderField(metricaField)}
+          {/* Métrica - habilitada solo si hay tipo seleccionado */}
+          {metricaField && renderUmbralField(metricaField, !!formData.tipoid)}
+          
+          {/* Valores - habilitados solo si hay métrica seleccionada */}
           <div className="bg-gray-600 bg-opacity-40 p-3 rounded-lg border border-gray-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {minimoField && renderField(minimoField)}
-              {maximoField && renderField(maximoField)}
+              {minimoField && renderUmbralField(minimoField, !!formData.metricaid)}
+              {maximoField && renderUmbralField(maximoField, !!formData.metricaid)}
             </div>
           </div>
-          {criticidadField && renderField(criticidadField)}
+          
+          {/* Criticidad - habilitada solo si hay métrica seleccionada */}
+          {criticidadField && renderUmbralField(criticidadField, !!formData.metricaid)}
         </div>
       );
     }
@@ -220,14 +226,158 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     if (umbralField || statusField) {
       result.push(
         <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {umbralField && renderField(umbralField)}
+          {/* Nombre Umbral - habilitado solo si hay métrica seleccionada */}
+          {umbralField && renderUmbralField(umbralField, !!formData.metricaid)}
+          
           <div></div> {/* Espacio vacío */}
-          {statusField && renderField(statusField)}
+          
+          {/* Status - habilitado solo si hay métrica seleccionada */}
+          {statusField && renderUmbralField(statusField, !!formData.metricaid)}
         </div>
       );
     }
 
     return result;
+  };
+
+  // Función para renderizar un campo de umbral con lógica de cascada
+  const renderUmbralField = (col: any, isEnabled: boolean): React.ReactNode => {
+    const displayName = getColumnDisplayName(col.columnName);
+    if (!displayName) return null;
+    
+    const value = formData[col.columnName] || '';
+    
+    // Campos automáticos - NO mostrar en formulario
+    if (['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName)) {
+      return null;
+    }
+
+    // Campo statusid como checkbox
+    if (col.columnName === 'statusid') {
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+            isEnabled ? 'text-orange-500' : 'text-gray-500'
+          }`}>
+            {displayName.toUpperCase()}
+          </label>
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={value === 1}
+              disabled={!isEnabled}
+              onChange={(e) => {
+                if (isEnabled) {
+                  setFormData({
+                    ...formData,
+                    [col.columnName]: e.target.checked ? 1 : 0
+                  });
+                }
+              }}
+              className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+                !isEnabled ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            />
+            <span className={`font-mono tracking-wider ${
+              isEnabled ? 'text-white' : 'text-gray-500'
+            }`}>
+              {value === 1 ? 'ACTIVO' : 'INACTIVO'}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Campos de texto (umbral, minimo, maximo)
+    if (['umbral', 'minimo', 'maximo'].includes(col.columnName)) {
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+            isEnabled ? 'text-orange-500' : 'text-gray-500'
+          }`}>
+            {displayName.toUpperCase()}
+          </label>
+          <input
+            type={col.columnName === 'umbral' ? 'text' : 'number'}
+            value={value}
+            disabled={!isEnabled}
+            onChange={(e) => {
+              if (isEnabled) {
+                setFormData({
+                  ...formData,
+                  [col.columnName]: e.target.value
+                });
+              }
+            }}
+            placeholder={col.columnName === 'umbral' ? 'Ingrese nombre umbral' : `Ingrese ${col.columnName}`}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-700 text-white ${
+              !isEnabled ? 'opacity-50 cursor-not-allowed border-gray-600' : 'border-gray-300'
+            }`}
+          />
+        </div>
+      );
+    }
+
+    // Campos de selección (ubicacionid, nodoid, tipoid, metricaid, criticidadid)
+    const options = getUniqueOptionsForField(col.columnName);
+    const placeholder = `Seleccionar ${displayName.toLowerCase()}`;
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+          isEnabled ? 'text-orange-500' : 'text-gray-500'
+        }`}>
+          {displayName.toUpperCase()}
+        </label>
+        <SelectWithPlaceholder
+          value={value}
+          onChange={(newValue) => {
+            if (isEnabled) {
+              // Limpiar campos dependientes cuando cambia un campo padre
+              const newFormData: any = { ...formData, [col.columnName]: newValue ? parseInt(newValue.toString()) : null };
+              
+              // Limpiar campos dependientes según la cascada
+              if (col.columnName === 'ubicacionid') {
+                newFormData['nodoid'] = null;
+                newFormData['tipoid'] = null;
+                newFormData['metricaid'] = null;
+                newFormData['criticidadid'] = null;
+                newFormData['minimo'] = '';
+                newFormData['maximo'] = '';
+                newFormData['umbral'] = '';
+                newFormData['statusid'] = 1; // Mantener status por defecto
+              } else if (col.columnName === 'nodoid') {
+                newFormData['tipoid'] = null;
+                newFormData['metricaid'] = null;
+                newFormData['criticidadid'] = null;
+                newFormData['minimo'] = '';
+                newFormData['maximo'] = '';
+                newFormData['umbral'] = '';
+                newFormData['statusid'] = 1; // Mantener status por defecto
+              } else if (col.columnName === 'tipoid') {
+                newFormData['metricaid'] = null;
+                newFormData['criticidadid'] = null;
+                newFormData['minimo'] = '';
+                newFormData['maximo'] = '';
+                newFormData['umbral'] = '';
+                newFormData['statusid'] = 1; // Mantener status por defecto
+              } else if (col.columnName === 'metricaid') {
+                newFormData['criticidadid'] = null;
+                newFormData['minimo'] = '';
+                newFormData['maximo'] = '';
+                newFormData['umbral'] = '';
+                newFormData['statusid'] = 1; // Mantener status por defecto
+              }
+              
+              setFormData(newFormData);
+            }
+          }}
+          options={options}
+          placeholder={placeholder}
+          disabled={!isEnabled}
+        />
+      </div>
+    );
   };
 
   // Función para renderizar campos de Empresa con layout específico

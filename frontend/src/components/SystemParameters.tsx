@@ -2165,6 +2165,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
   // Función para obtener los datos paginados de la tabla de Estado
   const getStatusPaginatedData = () => {
+    // Para tablas agrupadas, usar datos agrupados
+    if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+      const groupedData = selectedTable === 'sensor'
+        ? groupSensorData(tableData)
+        : selectedTable === 'metricasensor'
+        ? groupMetricaSensorData(tableData)
+        : groupUsuarioPerfilData(tableData);
+      
+      const startIndex = (statusCurrentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return groupedData.slice(startIndex, endIndex);
+    }
+    
+    // Para otras tablas, usar datos normales
     const startIndex = (statusCurrentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return statusFilteredData.slice(startIndex, endIndex);
@@ -2641,13 +2655,31 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         console.log('🏛️ Opciones de entidades devueltas (sin filtro):', entidadResult);
         return entidadResult;
       case 'nodoid':
-        // Filtrar nodos por filtros globales
+        // Filtrar nodos por filtros globales y por ubicación seleccionada (para umbral)
         if (!nodosData || nodosData.length === 0) {
           console.log('🔗 No hay datos de nodos disponibles');
           return [];
         }
         let filteredNodos = nodosData;
-        if (fundoSeleccionado) {
+        
+        // Para umbral, filtrar nodos por ubicación seleccionada
+        if (selectedTable === 'umbral' && formData.ubicacionid) {
+          // Obtener nodos que tienen localizaciones en la ubicación seleccionada
+          const localizacionesData = tableData || [];
+          const nodosConLocalizacion = localizacionesData
+            .filter(loc => loc.ubicacionid && loc.ubicacionid.toString() === formData.ubicacionid.toString())
+            .map(loc => loc.nodoid);
+          
+          filteredNodos = nodosData.filter(nodo => 
+            nodo && nodo.nodoid && nodosConLocalizacion.includes(nodo.nodoid)
+          );
+          
+          console.log('🔗 Nodos filtrados por ubicación para umbral:', { 
+            ubicacionid: formData.ubicacionid, 
+            nodosConLocalizacion: nodosConLocalizacion.length,
+            filteredCount: filteredNodos.length 
+          });
+        } else if (fundoSeleccionado) {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
           // Relación: nodo -> ubicacion -> fundo (simplificada, ya que localizaciones se crean dinámicamente)
           if (ubicacionesData && ubicacionesData.length > 0) {
@@ -2750,7 +2782,27 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         
         // Filtrar tipos por entidad si se proporciona
         let filteredTipos = tiposData;
-        if (filterParams?.entidadid) {
+        
+        // Para umbral, filtrar tipos por nodo seleccionado
+        if (selectedTable === 'umbral' && formData.nodoid) {
+          // Obtener tipos que están asociados al nodo seleccionado a través de sensores
+          const sensoresDelNodo = sensorsData.filter(sensor => 
+            sensor.nodoid && sensor.nodoid.toString() === formData.nodoid.toString()
+          );
+          const tiposDelNodo = sensoresDelNodo.map(sensor => sensor.tipoid);
+          
+          filteredTipos = tiposData.filter(tipo => 
+            tipo.tipoid && tiposDelNodo.includes(tipo.tipoid)
+          );
+          
+          console.log('🏷️ Tipos filtrados por nodo para umbral:', {
+            nodoid: formData.nodoid,
+            sensoresDelNodo: sensoresDelNodo.length,
+            tiposDelNodo: tiposDelNodo.length,
+            totalTipos: tiposData.length,
+            tiposFiltrados: filteredTipos.length
+          });
+        } else if (filterParams?.entidadid) {
           filteredTipos = tiposData.filter(tipo => 
             tipo.entidadid && tipo.entidadid.toString() === filterParams.entidadid
           );
@@ -3479,11 +3531,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['paisid', 'empresaid', 'fundo', 'farmabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'ubicacion') {
-        return ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'entidad') {
@@ -3499,7 +3551,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'localizacion') {
-        return ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'sensor') {
@@ -3658,7 +3710,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     
     if (forTable) {
       // Para las tablas, reordenar según los requerimientos específicos
-      if (selectedTable === 'empresa') {
+      if (selectedTable === 'pais') {
+        // Pais, Abreviatura
+        reorderedColumns.push(...otherColumns.filter(col => ['pais'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['paisabrev'].includes(col.columnName)));
+      } else if (selectedTable === 'empresa') {
         // Pais, Empresa, Abreviatura
         reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
@@ -3667,7 +3723,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         // Empresa, Fundo, Abreviatura (sin Pais)
         reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['farmabrev'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
       } else if (selectedTable === 'ubicacion') {
         // Fundo, Ubicacion (sin Empresa y Pais)
         reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
@@ -3704,16 +3760,29 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           isForeignKey: false,
           defaultValue: null
         });
+      } else if (selectedTable === 'sensor') {
+        // Para sensor agrupado: Nodo, Tipos
+        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+        // Agregar columna virtual para tipos agrupados
+        reorderedColumns.push({
+          columnName: 'tipos',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
       } else if (selectedTable === 'umbral') {
-        // Ubicacion, Nodo, Tipo, Metrica, Nombre Umbral, Criticidad, Valor Minimo, Valor Maximo, Status
+        // Ubicacion, Nodo, Tipo, Metrica, Valor Minimo, Valor Maximo, Criticidad, Nombre Umbral, Status
         reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['tipoid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['umbral'].includes(col.columnName)));
-        reorderedColumns.push(...otherColumns.filter(col => ['criticidadid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['minimo'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['maximo'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['criticidadid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['umbral'].includes(col.columnName)));
       } else if (selectedTable === 'usuario') {
         // Usuario, Nombre, Apellido
         reorderedColumns.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
