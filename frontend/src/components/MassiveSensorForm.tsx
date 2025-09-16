@@ -139,7 +139,6 @@ export function MassiveSensorForm({
         dataToApply.push({
           nodoid: node.nodoid,
           tipoid: tipoid,
-          entidadid: formData.entidadid,
           statusid: 1 // Activo por defecto
         });
       }

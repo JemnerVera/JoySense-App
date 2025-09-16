@@ -2054,6 +2054,43 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
 
       console.log('🔍 Frontend: Datos para creación masiva de sensores:', JSON.stringify(preparedData, null, 2));
       console.log('🔍 Frontend: Total de sensores a crear:', preparedData.length);
+      
+      // Verificar si hay duplicados antes de enviar
+      const duplicates = preparedData.filter((item, index, self) => 
+        index !== self.findIndex(t => 
+          t.nodoid === item.nodoid && 
+          t.tipoid === item.tipoid
+        )
+      );
+      
+      if (duplicates.length > 0) {
+        console.warn('⚠️ Se encontraron duplicados en los datos de sensores:', duplicates);
+        // Eliminar duplicados
+        const uniqueData = preparedData.filter((item, index, self) => 
+          index === self.findIndex(t => 
+            t.nodoid === item.nodoid && 
+            t.tipoid === item.tipoid
+          )
+        );
+        console.log('🔍 Frontend: Datos únicos después de eliminar duplicados:', uniqueData.length);
+        preparedData.length = 0;
+        preparedData.push(...uniqueData);
+      }
+      
+      // Verificar que los nodoid y tipoid existen
+      const nodosExistentes = nodosData?.map(n => n.nodoid) || [];
+      const tiposExistentes = tiposData?.map(t => t.tipoid) || [];
+      
+      const nodosInvalidos = preparedData.filter(item => !nodosExistentes.includes(item.nodoid));
+      const tiposInvalidos = preparedData.filter(item => !tiposExistentes.includes(item.tipoid));
+      
+      if (nodosInvalidos.length > 0) {
+        console.error('❌ Nodos inválidos encontrados:', nodosInvalidos);
+      }
+      
+      if (tiposInvalidos.length > 0) {
+        console.error('❌ Tipos inválidos encontrados:', tiposInvalidos);
+      }
 
       // Realizar inserción masiva usando insertTableRow para cada registro
       for (const record of preparedData) {
@@ -2824,6 +2861,16 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           });
           
           console.log('🔗 Nodos filtrados para metricasensor (todos los nodos con sensores):', finalFilteredNodos.length);
+        }
+        
+        // Si estamos en el contexto de sensor, mostrar TODOS los nodos activos (sin importar si ya tienen sensores)
+        if (selectedTable === 'sensor') {
+          finalFilteredNodos = filteredNodos.filter(nodo => {
+            // Solo verificar que el nodo esté activo
+            return nodo.statusid === 1;
+          });
+          
+          console.log('🔗 Nodos filtrados para sensor (todos los nodos activos):', finalFilteredNodos.length);
         }
         
         // Ordenar nodos por fecha de modificación (más recientes primero)
@@ -4494,7 +4541,34 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         datemodified: currentTimestamp
       }));
       
-      // Realizar inserciones individuales (lógica UPSERT)
+      console.log('🔍 Frontend: Datos para crear métricas sensor:', JSON.stringify(preparedData, null, 2));
+      console.log('🔍 Frontend: Total de entradas a crear:', preparedData.length);
+      
+      // Verificar si hay duplicados antes de enviar
+      const duplicates = preparedData.filter((item, index, self) => 
+        index !== self.findIndex(t => 
+          t.nodoid === item.nodoid && 
+          t.tipoid === item.tipoid && 
+          t.metricaid === item.metricaid
+        )
+      );
+      
+      if (duplicates.length > 0) {
+        console.warn('⚠️ Se encontraron duplicados en los datos:', duplicates);
+        // Eliminar duplicados
+        const uniqueData = preparedData.filter((item, index, self) => 
+          index === self.findIndex(t => 
+            t.nodoid === item.nodoid && 
+            t.tipoid === item.tipoid && 
+            t.metricaid === item.metricaid
+          )
+        );
+        console.log('🔍 Frontend: Datos únicos después de eliminar duplicados:', uniqueData.length);
+        preparedData.length = 0;
+        preparedData.push(...uniqueData);
+      }
+      
+      // Realizar inserciones individuales
       for (const record of preparedData) {
         await JoySenseService.insertTableRow(selectedTable, record);
       }
