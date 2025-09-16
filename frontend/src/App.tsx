@@ -56,7 +56,7 @@ const AppContentInternal: React.FC = () => {
 
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
-  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update'>('status');
+  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>('status');
 
   // Función para convertir nombre de tabla a español
   const getTableNameInSpanish = (tableName: string): string => {
@@ -218,8 +218,8 @@ const AppContentInternal: React.FC = () => {
     });
   };
 
-  const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'copy') => {
-    setActiveSubTab(subTab as 'status' | 'insert' | 'update');
+  const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive') => {
+    setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
   };
 
   // Handlers para el dashboard
@@ -522,8 +522,6 @@ const AppContentInternal: React.FC = () => {
                       onResetFilters={handleDashboardReset}
                       selectedTable={selectedTable}
                       onTableSelect={handleTableSelect}
-                      activeSubTab={activeSubTab}
-                      onSubTabChange={handleSubTabChange}
                       // Props para el dashboard
                       fundos={fundos}
                       ubicaciones={ubicaciones}

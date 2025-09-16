@@ -11,7 +11,7 @@ interface SidebarContainerProps {
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({

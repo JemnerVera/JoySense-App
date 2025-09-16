@@ -4,8 +4,8 @@ interface ParametersControlsProps {
   selectedTable: string;
   onTableSelect: (table: string) => void;
   // Props para sub-pestañas
-  activeSubTab?: 'status' | 'insert' | 'update' | 'copy';
-  onSubTabChange?: (tab: 'status' | 'insert' | 'update' | 'copy') => void;
+  activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
+  onSubTabChange?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
 }
 
 export const ParametersControls: React.FC<ParametersControlsProps> = ({
@@ -50,18 +50,18 @@ export const ParametersControls: React.FC<ParametersControlsProps> = ({
         <span>✏️</span>
         <span>Actualizar</span>
       </button>
-      {/* Botón de Copiar - Solo visible para nodo, sensor y metricasensor */}
-      {['nodo', 'sensor', 'metricasensor'].includes(selectedTable) && (
+      {/* Botón de Masivo - Solo visible para sensor, metricasensor y usuarioperfil */}
+      {['sensor', 'metricasensor', 'usuarioperfil'].includes(selectedTable) && (
         <button 
-          onClick={() => onSubTabChange?.('copy')}
+          onClick={() => onSubTabChange?.('massive')}
           className={`px-3 py-2 rounded-lg font-medium text-sm flex items-center space-x-1 header-button depth-effect transition-colors ${
-            activeSubTab === 'copy'
+            activeSubTab === 'massive'
               ? 'bg-blue-600 text-white'
               : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
           }`}
         >
-          <span>📋</span>
-          <span>Copiar</span>
+          <span>⚡</span>
+          <span>Masivo</span>
         </button>
       )}
     </div>

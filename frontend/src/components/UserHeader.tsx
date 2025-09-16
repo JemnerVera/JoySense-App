@@ -19,8 +19,6 @@ interface UserHeaderProps {
   onResetFilters?: () => void;
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
-  activeSubTab?: 'status' | 'insert' | 'update' | 'copy';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'copy') => void;
   // Nuevas props para el dashboard
   fundos?: any[];
   ubicaciones?: any[];
@@ -55,8 +53,6 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   onResetFilters,
   selectedTable,
   onTableSelect,
-  activeSubTab,
-  onSubTabChange,
   // Nuevas props para el dashboard
   fundos = [],
   ubicaciones = [],

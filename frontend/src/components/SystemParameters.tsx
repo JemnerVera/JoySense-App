@@ -13,6 +13,7 @@ import NormalInsertForm from './NormalInsertForm';
 import InsertionMessage from './InsertionMessage';
 import { AdvancedMetricaSensorUpdateForm } from './AdvancedMetricaSensorUpdateForm';
 import { AdvancedSensorUpdateForm } from './AdvancedSensorUpdateForm';
+import { MassiveSensorForm } from './MassiveSensorForm';
 import { useInsertionMessages } from '../hooks/useInsertionMessages';
 import ReplicateModal from './ReplicateModal';
 import ReplicateButton from './ReplicateButton';
@@ -395,8 +396,8 @@ const usePagination = (data: any[], itemsPerPage: number = 10) => {
 interface SystemParametersProps {
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
-  activeSubTab?: 'status' | 'insert' | 'update';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   activeTab?: string;
 }
 
@@ -410,7 +411,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
-  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update'>(propActiveSubTab || 'status');
+  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>(propActiveSubTab || 'status');
   
   // Sincronizar estado local con props
   useEffect(() => {
@@ -426,7 +427,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   }, [propActiveSubTab]);
   
   // Función para manejar el cambio de pestaña y limpiar mensajes
-  const handleTabChange = (tab: 'status' | 'insert' | 'update') => {
+  const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
     // Si hay cambios sin guardar, mostrar modal de confirmación
     if (hasUnsavedChanges()) {
       setCancelAction(() => () => {
@@ -2024,6 +2025,62 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
     } catch (error: any) {
       const errorResponse = handleInsertError(error);
+      setMessage({ type: errorResponse.type, text: errorResponse.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para manejar la creación masiva de sensores
+  const handleMassiveSensorCreation = async (dataToApply: any[]) => {
+    if (!selectedTable || !user || selectedTable !== 'sensor') return;
+    
+    try {
+      setLoading(true);
+      
+      const usuarioid = getCurrentUserId();
+      const currentTimestamp = new Date().toISOString();
+      
+      // Preparar datos con información de auditoría
+      const preparedData = dataToApply.map(item => ({
+        ...item,
+        usercreatedid: usuarioid,
+        usermodifiedid: usuarioid,
+        datecreated: currentTimestamp,
+        datemodified: currentTimestamp
+      }));
+
+      console.log('🔍 Frontend: Datos para creación masiva de sensores:', JSON.stringify(preparedData, null, 2));
+      console.log('🔍 Frontend: Total de sensores a crear:', preparedData.length);
+
+      // Realizar inserción masiva usando insertTableRow para cada registro
+      for (const record of preparedData) {
+        await JoySenseService.insertTableRow(selectedTable, record);
+      }
+      
+      // Agregar registros insertados al sistema de mensajes
+      preparedData.forEach(record => {
+        addInsertedRecord(record);
+      });
+      
+      // Limpiar mensajes de alerta después de inserción exitosa
+      setMessage(null);
+      
+      // Recargar datos
+      loadTableData();
+      loadTableInfo();
+      loadUpdateData();
+      loadCopyData();
+      loadRelatedTablesData();
+      
+      setMessage({ 
+        type: 'success', 
+        text: `Se crearon ${preparedData.length} sensores exitosamente` 
+      });
+      
+    } catch (error: any) {
+      console.error('Error en creación masiva de sensores:', error);
+      const errorResponse = handleMultipleInsertError(error, 'sensores');
       setMessage({ type: errorResponse.type, text: errorResponse.message });
     } finally {
       setLoading(false);
@@ -5751,6 +5808,52 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                        </div>
                      </>
                    )}
+                </div>
+              )}
+
+              {/* Formulario de creación masiva */}
+              {activeSubTab === 'massive' && (
+                <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                  {selectedTable === 'sensor' ? (
+                    <MassiveSensorForm
+                      getUniqueOptionsForField={getUniqueOptionsForField}
+                      onApply={handleMassiveSensorCreation}
+                      onCancel={() => {
+                        setCancelAction(() => () => {
+                          setMessage(null);
+                        });
+                        setShowCancelModal(true);
+                      }}
+                      loading={loading}
+                    />
+                  ) : selectedTable === 'metricasensor' ? (
+                    <div className="text-center py-8">
+                      <div className="text-neutral-400 text-lg font-mono tracking-wider">
+                        CREACIÓN MASIVA DE MÉTRICAS SENSOR
+                      </div>
+                      <div className="text-neutral-500 text-sm font-mono mt-2">
+                        (Próximamente)
+                      </div>
+                    </div>
+                  ) : selectedTable === 'usuarioperfil' ? (
+                    <div className="text-center py-8">
+                      <div className="text-neutral-400 text-lg font-mono tracking-wider">
+                        CREACIÓN MASIVA DE USUARIO PERFIL
+                      </div>
+                      <div className="text-neutral-500 text-sm font-mono mt-2">
+                        (Próximamente)
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-neutral-400 text-lg font-mono tracking-wider">
+                        CREACIÓN MASIVA NO DISPONIBLE
+                      </div>
+                      <div className="text-neutral-500 text-sm font-mono mt-2">
+                        Esta funcionalidad solo está disponible para tablas de inserción múltiple
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

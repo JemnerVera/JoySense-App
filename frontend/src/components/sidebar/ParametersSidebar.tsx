@@ -6,7 +6,7 @@ interface ParametersSidebarProps {
   selectedTable: string;
   onTableSelect: (table: string) => void;
   activeSubTab: string;
-  onSubTabChange: (subTab: 'status' | 'insert' | 'update') => void;
+  onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -23,7 +23,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
 }) => {
   // Definir todas las subpestañas disponibles
   const allSubTabs: Array<{
-    id: 'status' | 'insert' | 'update';
+    id: 'status' | 'insert' | 'update' | 'massive';
     label: string;
     icon: React.ReactNode;
   }> = [
@@ -53,6 +53,15 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
       )
+    },
+    {
+      id: 'massive',
+      label: 'Masivo',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      )
     }
   ];
 
@@ -63,10 +72,13 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
       return allSubTabs.filter(tab => tab.id === 'status');
     } else if (selectedTable === 'usuario') {
       // Solo Estado y Actualizar para USUARIO (sin Crear)
-      return allSubTabs.filter(tab => tab.id !== 'insert');
-    } else {
-      // Todas las subpestañas para otras tablas
+      return allSubTabs.filter(tab => tab.id !== 'insert' && tab.id !== 'massive');
+    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
+      // Para tablas de multiple insert: Estado, Crear, Actualizar y Masivo
       return allSubTabs;
+    } else {
+      // Para otras tablas: Estado, Crear, Actualizar (sin Masivo)
+      return allSubTabs.filter(tab => tab.id !== 'massive');
     }
   };
   
