@@ -564,6 +564,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
   const [mediosData, setMediosData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
+  const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
 
   // Función para agrupar datos de metricasensor por nodo
   const groupMetricaSensorData = (data: any[]) => {
@@ -1389,7 +1390,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          perfilesResponse,
          umbralesResponse,
          mediosResponse,
-         usuariosResponse
+         usuariosResponse,
+         metricasensorResponse
        ] = await Promise.all([
          JoySenseService.getTableData('pais', 500),
          JoySenseService.getTableData('empresa', 500),
@@ -1404,7 +1406,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          JoySenseService.getTableData('perfil', 500),
          JoySenseService.getTableData('umbral', 500),
          JoySenseService.getTableData('medio', 500),
-         JoySenseService.getTableData('usuario', 500)
+         JoySenseService.getTableData('usuario', 500),
+         JoySenseService.getTableData('metricasensor', 500)
        ]);
       
       const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
@@ -1421,6 +1424,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
        const medios = Array.isArray(mediosResponse) ? mediosResponse : ((mediosResponse as any)?.data || []);
        const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
+       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
        
        setPaisesData(paises);
        setEmpresasData(empresas);
@@ -1436,6 +1440,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        setUmbralesData(umbrales);
        setMediosData(medios);
        setUsuariosData(usuarios);
+       setMetricasensorData(metricasensor);
       
       const endTime = performance.now();
       console.log(`✅ Datos de tablas relacionadas cargados en ${(endTime - startTime).toFixed(2)}ms`);
@@ -4586,7 +4591,38 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         
         console.log(`✅ Combinaciones a activar para nodo ${nodoid}:`, Array.from(combinacionesAActivar));
         
-        // Inactivar umbrales existentes que NO están en las combinaciones a activar
+        // PRIMERO: Crear entradas en metricasensor si no existen
+        console.log(`🔧 Creando entradas en metricasensor para nodo ${nodoid}...`);
+        for (const dato of datosDelNodo) {
+          const combinacion = `${dato.tipoid}-${dato.metricaid}`;
+          
+          // Verificar si ya existe en metricasensor
+          const metricaSensorExistente = metricasensorData?.find((ms: any) => 
+            ms.nodoid === nodoid && ms.tipoid === dato.tipoid && ms.metricaid === dato.metricaid
+          );
+          
+          if (!metricaSensorExistente) {
+            console.log(`➕ Creando metricasensor: ${combinacion} para nodo ${nodoid}`);
+            
+            const metricaSensorData = {
+              nodoid: nodoid,
+              tipoid: dato.tipoid,
+              metricaid: dato.metricaid,
+              statusid: 1,
+              usercreatedid: usuarioid,
+              usermodifiedid: usuarioid,
+              datecreated: currentTimestamp,
+              datemodified: currentTimestamp
+            };
+            
+            await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
+            console.log(`✅ Metricasensor creado: ${combinacion}`);
+          } else {
+            console.log(`✅ Metricasensor ya existe: ${combinacion}`);
+          }
+        }
+        
+        // SEGUNDO: Inactivar umbrales existentes que NO están en las combinaciones a activar
         for (const umbralExistente of umbralesExistentes) {
           const combinacion = `${umbralExistente.tipoid}-${umbralExistente.metricaid}`;
           
