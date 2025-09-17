@@ -22,6 +22,7 @@ import ReplicateButton from './ReplicateButton';
 import { useReplicate } from '../hooks/useReplicate';
 import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
 import { useFilters } from '../contexts/FilterContext';
+import LostDataModal from './LostDataModal';
 
 // Hook personalizado para manejar selección múltiple basada en timestamp
 const useMultipleSelection = (selectedTable: string) => {
@@ -432,63 +433,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
     // Si hay cambios sin guardar, mostrar modal de confirmación
     if (hasUnsavedChanges()) {
-      setCancelAction(() => () => {
-        // Ejecutar el cambio de pestaña
-        setActiveSubTab(tab);
-        // Limpiar mensajes al cambiar de pestaña
-        setMessage(null);
-        setUpdateMessage(null);
-        setCopyMessage(null);
-        // Limpiar mensajes de inserción al cambiar de pestaña
-        clearOnTabChange();
-        
-        // Limpiar selecciones específicas según la pestaña
-        if (tab === 'update') {
-          setSelectedRowForUpdate(null);
-          setSelectedRowsForUpdate([]);
-          setUpdateFormData({});
-          setIndividualRowStatus({});
-          setSearchField('');
-          setSearchTerm('');
-        }
-        
-        // Limpiar formularios específicos según la tabla
-        if (selectedTable === 'usuarioperfil') {
-          if (tab === 'insert') {
-            setMultipleUsuarioPerfiles([]);
-            setSelectedUsuarios([]);
-            setSelectedPerfiles([]);
-          }
-        } else if (selectedTable === 'metricasensor') {
-          if (tab === 'insert') {
-            setMultipleMetricas([]);
-            setSelectedNodos([]);
-            setSelectedEntidadMetrica('');
-            setSelectedMetricas([]);
-            setIsReplicateMode(false);
-          }
-        } else if (selectedTable === 'sensor') {
-          if (tab === 'insert') {
-            setMultipleSensors([]);
-            setSelectedNodo('');
-            setSelectedEntidad('');
-            setSelectedTipo('');
-            setSelectedSensorCount(0);
-          }
-        }
-        
-        // Llamar a la función del padre si está disponible
-        if (onSubTabChange) {
-          onSubTabChange(tab);
-        }
-        
-        setShowCancelModal(false);
-      });
-      setShowCancelModal(true);
+      setPendingTabChange(tab);
+      setShowLostDataModal(true);
       return;
     }
     
     // Si no hay cambios sin guardar, proceder normalmente
+    executeTabChange(tab);
+  };
+
+  // Función para ejecutar el cambio de pestaña
+  const executeTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
     setActiveSubTab(tab);
     // Limpiar mensajes al cambiar de pestaña
     setMessage(null);
@@ -505,6 +460,31 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       setIndividualRowStatus({});
       setSearchField('');
       setSearchTerm('');
+    }
+    
+    // Limpiar formularios específicos según la tabla
+    if (selectedTable === 'usuarioperfil') {
+      if (tab === 'insert') {
+        setMultipleUsuarioPerfiles([]);
+        setSelectedUsuarios([]);
+        setSelectedPerfiles([]);
+      }
+    } else if (selectedTable === 'metricasensor') {
+      if (tab === 'insert') {
+        setMultipleMetricas([]);
+        setSelectedNodos([]);
+        setSelectedEntidadMetrica('');
+        setSelectedMetricas([]);
+        setIsReplicateMode(false);
+      }
+    } else if (selectedTable === 'sensor') {
+      if (tab === 'insert') {
+        setMultipleSensors([]);
+        setSelectedNodo('');
+        setSelectedEntidad('');
+        setSelectedTipo('');
+        setSelectedSensorCount(0);
+      }
     }
     
     // Llamar a la función del padre si está disponible
@@ -860,6 +840,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Estados para modal de confirmación
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelAction, setCancelAction] = useState<(() => void) | null>(null);
+  
+  // Estados para modal de pérdida de datos
+  const [showLostDataModal, setShowLostDataModal] = useState(false);
+  const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
   
   // Hook para manejar mensajes de inserción
   const { insertedRecords, addInsertedRecord, clearInsertedRecords, clearOnTabChange } = useInsertionMessages(activeSubTab, activeTab, selectedTable);
@@ -1220,6 +1204,43 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Verificar si hay cambios en el formulario de actualización
       if (Object.keys(updateFormData).length > 0) {
         return true;
+      }
+    }
+    
+    // Verificar pestaña "Masivo"
+    if (activeSubTab === 'massive') {
+      // Para Umbral - Masivo
+      if (selectedTable === 'umbral') {
+        // Verificar si hay datos en el formulario masivo de umbral
+        return Object.keys(formData).some(key => {
+          const value = formData[key];
+          // Excluir campos referenciales
+          const referentialFields = ['paisid', 'empresaid', 'fundoid', 'entidadid'];
+          if (referentialFields.includes(key)) return false;
+          
+          // Verificar si hay datos significativos
+          if (typeof value === 'string' && value.trim() !== '') return true;
+          if (typeof value === 'number' && value !== null && value !== undefined) return true;
+          if (Array.isArray(value) && value.length > 0) return true;
+          if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return Object.keys(value).some(objKey => {
+              const objValue = value[objKey];
+              return objValue !== null && objValue !== undefined && objValue !== '';
+            });
+          }
+          if (typeof value === 'boolean' && value === true) return true;
+          return false;
+        });
+      }
+      
+      // Para Sensor - Masivo
+      if (selectedTable === 'sensor') {
+        return multipleSensors.length > 0 || selectedNodo !== '' || selectedEntidad !== '' || selectedTipo !== '' || selectedSensorCount > 0;
+      }
+      
+      // Para Métrica Sensor - Masivo
+      if (selectedTable === 'metricasensor') {
+        return multipleMetricas.length > 0 || selectedNodos.length > 0 || selectedEntidadMetrica !== '' || selectedMetricas.length > 0;
       }
     }
     
@@ -5460,6 +5481,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setCancelAction(null);
   };
 
+  // Funciones para manejar el modal de pérdida de datos
+  const handleConfirmLostData = () => {
+    if (pendingTabChange) {
+      executeTabChange(pendingTabChange as 'status' | 'insert' | 'update' | 'massive');
+    }
+    setShowLostDataModal(false);
+    setPendingTabChange(null);
+  };
+
+  const handleCancelLostData = () => {
+    setShowLostDataModal(false);
+    setPendingTabChange(null);
+  };
+
   // Función para manejar cancelación del formulario de inserción
   const handleCancelInsert = () => {
     setCancelAction(() => () => {
@@ -6474,6 +6509,15 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             </div>
           </div>
         )}
+
+      {/* Modal de pérdida de datos */}
+      <LostDataModal
+        isOpen={showLostDataModal}
+        onConfirm={handleConfirmLostData}
+        onCancel={handleCancelLostData}
+        currentTab={activeSubTab === 'insert' ? 'Crear' : activeSubTab === 'massive' ? 'Masivo' : activeSubTab === 'update' ? 'Actualizar' : 'Estado'}
+        targetTab={pendingTabChange === 'insert' ? 'Crear' : pendingTabChange === 'massive' ? 'Masivo' : pendingTabChange === 'update' ? 'Actualizar' : 'Estado'}
+      />
 
       {/* Modal de replicación */}
       {replicateOptions && (
