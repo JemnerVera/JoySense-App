@@ -553,6 +553,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const [empresasData, setEmpresasData] = useState<any[]>([]);
   const [fundosData, setFundosData] = useState<any[]>([]);
   const [ubicacionesData, setUbicacionesData] = useState<any[]>([]);
+  const [localizacionesData, setLocalizacionesData] = useState<any[]>([]);
   const [entidadesData, setEntidadesData] = useState<any[]>([]);
   const [nodosData, setNodosData] = useState<any[]>([]);
   const [usuariosData, setUsuariosData] = useState<any[]>([]);
@@ -1379,6 +1380,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          empresasResponse, 
          fundosResponse,
          ubicacionesResponse,
+        localizacionesResponse,
          entidadesResponse,
          nodosResponse,
          tiposResponse,
@@ -1393,6 +1395,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          JoySenseService.getTableData('empresa', 500),
          JoySenseService.getTableData('fundo', 500),
          JoySenseService.getTableData('ubicacion', 500),
+        JoySenseService.getTableData('localizacion', 500),
          JoySenseService.getTableData('entidad', 500),
          JoySenseService.getTableData('nodo', 500),
          JoySenseService.getTableData('tipo', 500),
@@ -1408,6 +1411,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
       const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
       const ubicaciones = Array.isArray(ubicacionesResponse) ? ubicacionesResponse : ((ubicacionesResponse as any)?.data || []);
+      const localizaciones = Array.isArray(localizacionesResponse) ? localizacionesResponse : ((localizacionesResponse as any)?.data || []);
       const entidades = Array.isArray(entidadesResponse) ? entidadesResponse : ((entidadesResponse as any)?.data || []);
       const nodos = Array.isArray(nodosResponse) ? nodosResponse : ((nodosResponse as any)?.data || []);
              const tipos = Array.isArray(tiposResponse) ? tiposResponse : ((tiposResponse as any)?.data || []);
@@ -1422,6 +1426,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        setEmpresasData(empresas);
        setFundosData(fundos);
        setUbicacionesData(ubicaciones);
+       setLocalizacionesData(localizaciones);
        setEntidadesData(entidades);
        setNodosData(nodos);
        setTiposData(tipos);
@@ -2795,7 +2800,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             
             console.log('🔗 Filtros globales aplicados a nodos (simplificado):', { 
               fundoSeleccionado, 
-              ubicacionesDelFundo: ubicacionesDelFundo.length,
+              ubicacionesDelFundo: ubicacionesDelFundo.length, 
               ubicacionIds: ubicacionIds.length,
               filteredCount: filteredNodos.length 
             });
@@ -2880,11 +2885,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
         });
         
-        const nodoResult = sortedNodos.map(nodo => ({ 
-          value: nodo.nodoid, 
-          label: nodo.nodo,
-          datecreated: nodo.datecreated 
-        }));
+        console.log('🔍 localizacionesData disponible:', localizacionesData?.length || 0);
+        console.log('🔍 Primeras 3 localizaciones:', localizacionesData?.slice(0, 3));
+        
+        const nodoResult = sortedNodos.map(nodo => {
+          // Buscar la localización del nodo para obtener ubicacionid
+          const localizacion = localizacionesData?.find(loc => loc.nodoid === nodo.nodoid);
+          console.log(`🔍 Nodo ${nodo.nodoid}: localizacion encontrada:`, localizacion);
+          return { 
+            value: nodo.nodoid, 
+            label: nodo.nodo,
+            datecreated: nodo.datecreated,
+            ubicacionid: localizacion?.ubicacionid || null
+          };
+        }).filter(nodo => nodo.ubicacionid !== null); // Solo incluir nodos con ubicacionid
         console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
         return nodoResult;
       case 'tipoid':
@@ -3830,52 +3844,52 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       reorderedColumns.push(...otherColumns.filter(col => ['pais'].includes(col.columnName)));
       reorderedColumns.push(...otherColumns.filter(col => ['paisabrev'].includes(col.columnName)));
     } else if (selectedTable === 'empresa') {
-      // Pais, Empresa, Abreviatura
-      reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
-    } else if (selectedTable === 'fundo') {
-      // Empresa, Fundo, Abreviatura (sin Pais)
-      reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
+        // Pais, Empresa, Abreviatura
+        reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
+      } else if (selectedTable === 'fundo') {
+        // Empresa, Fundo, Abreviatura (sin Pais)
+        reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
       reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
-    } else if (selectedTable === 'ubicacion') {
-      // Fundo, Ubicacion (sin Empresa y Pais)
-      reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
-    } else if (selectedTable === 'localizacion') {
-      // Entidad, Ubicacion, Nodo (sin Fundo, Empresa y Pais)
-      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
-    } else if (selectedTable === 'tipo') {
-      // Entidad, Tipo
-      reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
-    } else if (selectedTable === 'metricasensor') {
+      } else if (selectedTable === 'ubicacion') {
+        // Fundo, Ubicacion (sin Empresa y Pais)
+        reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
+      } else if (selectedTable === 'localizacion') {
+        // Entidad, Ubicacion, Nodo (sin Fundo, Empresa y Pais)
+        reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
+      } else if (selectedTable === 'tipo') {
+        // Entidad, Tipo
+        reorderedColumns.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));
+      } else if (selectedTable === 'metricasensor') {
         if (forTable) {
           // Para metricasensor agrupado en Actualizar: Nodo, Tipos, Metricas
-          reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-          // Agregar columnas virtuales para tipos y métricas agrupadas
-          reorderedColumns.push({
-            columnName: 'tipos',
-            dataType: 'varchar',
-            isNullable: true,
-            isIdentity: false,
-            isPrimaryKey: false,
-            isForeignKey: false,
-            defaultValue: null
-          });
-          reorderedColumns.push({
-            columnName: 'metricas',
-            dataType: 'varchar',
-            isNullable: true,
-            isIdentity: false,
-            isPrimaryKey: false,
-            isForeignKey: false,
-            defaultValue: null
-          });
+        reorderedColumns.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
+        // Agregar columnas virtuales para tipos y métricas agrupadas
+        reorderedColumns.push({
+          columnName: 'tipos',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
+        reorderedColumns.push({
+          columnName: 'metricas',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
         } else {
           // Para metricasensor desagregado en Estado: mantener orden original
           reorderedColumns.push(...otherColumns);
@@ -3917,32 +3931,32 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       } else if (selectedTable === 'usuarioperfil') {
         if (forTable) {
           // Para usuarioperfil agrupado en Actualizar: Usuario, Perfiles (columnas agrupadas)
-          reorderedColumns.push({
-            columnName: 'usuario',
-            dataType: 'varchar',
-            isNullable: true,
-            isIdentity: false,
-            isPrimaryKey: false,
-            isForeignKey: false,
-            defaultValue: null
-          });
-          reorderedColumns.push({
-            columnName: 'perfiles',
-            dataType: 'varchar',
-            isNullable: true,
-            isIdentity: false,
-            isPrimaryKey: false,
-            isForeignKey: false,
-            defaultValue: null
-          });
-        } else {
-          // Para usuarioperfil desagregado en Estado: mantener orden original
-          reorderedColumns.push(...otherColumns);
-        }
+        reorderedColumns.push({
+          columnName: 'usuario',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
+        reorderedColumns.push({
+          columnName: 'perfiles',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        });
       } else {
-        // Para otras tablas, mantener el orden original
+          // Para usuarioperfil desagregado en Estado: mantener orden original
         reorderedColumns.push(...otherColumns);
       }
+    } else {
+        // Para otras tablas, mantener el orden original
+      reorderedColumns.push(...otherColumns);
+    }
     
     // Agregar columnas de auditoría
     reorderedColumns.push(...auditColumns);
@@ -4496,9 +4510,112 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         datemodified: currentTimestamp
       }));
       
-      // Realizar inserciones individuales (lógica UPSERT)
-      for (const record of preparedData) {
-        await JoySenseService.insertTableRow(selectedTable, record);
+      console.log('🔍 Frontend: Datos para creación masiva de umbrales:', JSON.stringify(preparedData, null, 2));
+      console.log('🔍 Frontend: Total de umbrales a crear:', preparedData.length);
+      
+      // Verificar campos requeridos
+      const camposRequeridos = ['ubicacionid', 'nodoid', 'tipoid', 'metricaid', 'criticidadid', 'umbral'];
+      const registrosInvalidos = preparedData.filter(record => 
+        camposRequeridos.some(campo => !record[campo] || record[campo] === null || record[campo] === undefined)
+      );
+      
+      if (registrosInvalidos.length > 0) {
+        console.error('❌ Registros con campos requeridos faltantes:', registrosInvalidos);
+        throw new Error(`Faltan campos requeridos en ${registrosInvalidos.length} registros`);
+      }
+      
+      // Verificar que los IDs existen en las tablas referenciadas
+      const ubicacionesExistentes = ubicacionesData?.map(u => u.ubicacionid) || [];
+      const nodosExistentes = nodosData?.map(n => n.nodoid) || [];
+      const tiposExistentes = tiposData?.map(t => t.tipoid) || [];
+      const metricasExistentes = metricasData?.map(m => m.metricaid) || [];
+      const criticidadesExistentes = criticidadesData?.map(c => c.criticidadid) || [];
+      
+      const referenciasInvalidas = preparedData.filter(record => 
+        !ubicacionesExistentes.includes(record.ubicacionid) ||
+        !nodosExistentes.includes(record.nodoid) ||
+        !tiposExistentes.includes(record.tipoid) ||
+        !metricasExistentes.includes(record.metricaid) ||
+        !criticidadesExistentes.includes(record.criticidadid)
+      );
+      
+      if (referenciasInvalidas.length > 0) {
+        console.error('❌ Registros con referencias inválidas:', referenciasInvalidas);
+        throw new Error(`Referencias inválidas en ${referenciasInvalidas.length} registros`);
+      }
+      
+      // Obtener nodos únicos de los datos a aplicar
+      const nodosUnicos = Array.from(new Set(preparedData.map(item => item.nodoid)));
+      console.log('🔍 Nodos únicos a procesar:', nodosUnicos);
+      
+      // Para cada nodo, obtener umbrales existentes y aplicar lógica UPSERT
+      for (const nodoid of nodosUnicos) {
+        console.log(`🔄 Procesando nodo ${nodoid}...`);
+        
+        // Obtener umbrales existentes para este nodo
+        const umbralesExistentes = umbralesData?.filter(umbral => 
+          umbral.nodoid === nodoid && umbral.statusid === 1
+        ) || [];
+        
+        console.log(`📋 Umbrales existentes para nodo ${nodoid}:`, umbralesExistentes.length);
+        
+        // Obtener datos a aplicar para este nodo
+        const datosDelNodo = preparedData.filter(item => item.nodoid === nodoid);
+        console.log(`📝 Datos a aplicar para nodo ${nodoid}:`, datosDelNodo.length);
+        
+        // Crear conjunto de combinaciones únicas que se van a activar
+        const combinacionesAActivar = new Set(
+          datosDelNodo.map(item => `${item.tipoid}-${item.metricaid}`)
+        );
+        
+        console.log(`✅ Combinaciones a activar para nodo ${nodoid}:`, Array.from(combinacionesAActivar));
+        
+        // Inactivar umbrales existentes que NO están en las combinaciones a activar
+        for (const umbralExistente of umbralesExistentes) {
+          const combinacion = `${umbralExistente.tipoid}-${umbralExistente.metricaid}`;
+          
+          if (!combinacionesAActivar.has(combinacion)) {
+            console.log(`❌ Inactivando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid})`);
+            
+            // Inactivar el umbral existente
+            await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+              statusid: 0,
+              usermodifiedid: usuarioid,
+              datemodified: currentTimestamp
+            });
+          }
+        }
+        
+        // Insertar/actualizar umbrales para las combinaciones a activar
+        for (const dato of datosDelNodo) {
+          const combinacion = `${dato.tipoid}-${dato.metricaid}`;
+          
+          // Buscar si ya existe un umbral para esta combinación
+          const umbralExistente = umbralesExistentes.find(umbral => 
+            umbral.tipoid === dato.tipoid && umbral.metricaid === dato.metricaid
+          );
+          
+          if (umbralExistente) {
+            // Actualizar umbral existente
+            console.log(`🔄 Actualizando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid})`);
+            
+            await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+              ubicacionid: dato.ubicacionid,
+              criticidadid: dato.criticidadid,
+              umbral: dato.umbral,
+              minimo: dato.minimo,
+              maximo: dato.maximo,
+              statusid: 1,
+              usermodifiedid: usuarioid,
+              datemodified: currentTimestamp
+            });
+          } else {
+            // Crear nuevo umbral
+            console.log(`➕ Creando nuevo umbral: ${combinacion}`);
+            
+            await JoySenseService.insertTableRow('umbral', dato);
+          }
+        }
       }
       
       // Recargar datos
@@ -4510,7 +4627,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
       setMessage({ 
         type: 'success', 
-        text: `Se crearon ${preparedData.length} umbrales exitosamente` 
+        text: `Se procesaron ${preparedData.length} umbrales exitosamente` 
       });
       
     } catch (error: any) {
@@ -6055,7 +6172,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         Esta funcionalidad solo está disponible para tablas de inserción múltiple
                       </div>
                     </div>
-                  )}
+                   )}
                 </div>
               )}
 

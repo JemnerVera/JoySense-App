@@ -248,14 +248,27 @@ export function MassiveUmbralForm({
 
     // Crear datos para cada combinación de nodo-tipo-métrica
     for (const node of selectedNodesData) {
+      console.log('🔍 Nodo seleccionado:', { nodoid: node.nodoid, ubicacionid: node.ubicacionid });
+      
       for (const tipo of formData.selectedTipos) {
         for (const metrica of formData.metricasData) {
           // Solo procesar métricas no desactivadas
           if (!metrica.disabled) {
             const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid];
+            console.log('🔍 Verificando umbral para tipo:', { 
+              metrica: metrica.metrica, 
+              tipo: tipo.tipo, 
+              umbralTipo: umbralTipo 
+            });
+            
             // Solo incluir si el umbral para este tipo tiene todos los campos requeridos
             if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
-              dataToApply.push({
+              if (!node.ubicacionid) {
+                console.error('❌ Nodo sin ubicacionid:', node);
+                continue; // Saltar este nodo si no tiene ubicacionid
+              }
+              
+              const umbralData = {
                 ubicacionid: node.ubicacionid,
                 nodoid: node.nodoid,
                 tipoid: tipo.tipoid,
@@ -265,6 +278,19 @@ export function MassiveUmbralForm({
                 minimo: parseFloat(umbralTipo.minimo),
                 maximo: parseFloat(umbralTipo.maximo),
                 statusid: 1 // Activo por defecto
+              };
+              
+              console.log('✅ Agregando umbral:', umbralData);
+              dataToApply.push(umbralData);
+            } else {
+              console.log('❌ Umbral incompleto para tipo:', { 
+                metrica: metrica.metrica, 
+                tipo: tipo.tipo, 
+                umbralTipo: umbralTipo,
+                tieneMinimo: !!umbralTipo?.minimo,
+                tieneMaximo: !!umbralTipo?.maximo,
+                tieneCriticidad: !!umbralTipo?.criticidadid,
+                tieneUmbral: !!umbralTipo?.umbral
               });
             }
           }
