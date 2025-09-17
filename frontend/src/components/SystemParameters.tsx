@@ -1391,6 +1391,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          umbralesResponse,
          mediosResponse,
          usuariosResponse,
+         sensorsResponse,
          metricasensorResponse
        ] = await Promise.all([
          JoySenseService.getTableData('pais', 500),
@@ -1407,6 +1408,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
          JoySenseService.getTableData('umbral', 500),
          JoySenseService.getTableData('medio', 500),
          JoySenseService.getTableData('usuario', 500),
+         JoySenseService.getTableData('sensor', 500),
          JoySenseService.getTableData('metricasensor', 500)
        ]);
       
@@ -1424,6 +1426,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
        const medios = Array.isArray(mediosResponse) ? mediosResponse : ((mediosResponse as any)?.data || []);
        const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
+       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
        const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
        
        setPaisesData(paises);
@@ -1440,6 +1443,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        setUmbralesData(umbrales);
        setMediosData(medios);
        setUsuariosData(usuarios);
+       setSensorsData(sensors);
        setMetricasensorData(metricasensor);
       
       const endTime = performance.now();
@@ -4591,8 +4595,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         
         console.log(`✅ Combinaciones a activar para nodo ${nodoid}:`, Array.from(combinacionesAActivar));
         
-        // PRIMERO: Crear entradas en sensor si no existen
-        console.log(`🔧 Creando entradas en sensor para nodo ${nodoid}...`);
+        // PRIMERO: Crear/actualizar entradas en sensor usando UPSERT
+        console.log(`🔧 Creando/actualizando entradas en sensor para nodo ${nodoid}...`);
+        console.log(`🔍 sensorsData disponible:`, sensorsData?.length || 0, 'registros');
         const tiposUnicos = Array.from(new Set(datosDelNodo.map(dato => dato.tipoid)));
         
         for (const tipoid of tiposUnicos) {
@@ -4600,29 +4605,60 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           const sensorExistente = sensorsData?.find((s: any) => 
             s.nodoid === nodoid && s.tipoid === tipoid
           );
+          console.log(`🔍 Buscando sensor: nodo ${nodoid}, tipo ${tipoid}, encontrado:`, !!sensorExistente);
           
-          if (!sensorExistente) {
-            console.log(`➕ Creando sensor: nodo ${nodoid}, tipo ${tipoid}`);
-            
-            const sensorData = {
-              nodoid: nodoid,
-              tipoid: tipoid,
+          const sensorData = {
+            nodoid: nodoid,
+            tipoid: tipoid,
+            statusid: 1,
+            usercreatedid: usuarioid,
+            usermodifiedid: usuarioid,
+            datecreated: currentTimestamp,
+            datemodified: currentTimestamp
+          };
+          
+          if (sensorExistente) {
+            console.log(`🔄 Actualizando sensor existente: nodo ${nodoid}, tipo ${tipoid}`);
+            // Actualizar sensor existente
+            await JoySenseService.updateTableRow('sensor', `${nodoid}-${tipoid}`, {
               statusid: 1,
-              usercreatedid: usuarioid,
               usermodifiedid: usuarioid,
-              datecreated: currentTimestamp,
               datemodified: currentTimestamp
-            };
-            
-            await JoySenseService.insertTableRow('sensor', sensorData);
-            console.log(`✅ Sensor creado: nodo ${nodoid}, tipo ${tipoid}`);
+            });
+            console.log(`✅ Sensor actualizado: nodo ${nodoid}, tipo ${tipoid}`);
           } else {
-            console.log(`✅ Sensor ya existe: nodo ${nodoid}, tipo ${tipoid}`);
+            console.log(`➕ Intentando crear nuevo sensor: nodo ${nodoid}, tipo ${tipoid}`);
+            try {
+              // Intentar crear nuevo sensor
+              await JoySenseService.insertTableRow('sensor', sensorData);
+              console.log(`✅ Sensor creado: nodo ${nodoid}, tipo ${tipoid}`);
+            } catch (error: any) {
+              console.log(`❌ Error al crear sensor:`, error);
+              console.log(`❌ Error message:`, error.message);
+              console.log(`❌ Error response:`, error.response);
+              
+              // Si falla por duplicado, actualizar el existente
+              if (error.message?.includes('duplicate key') || 
+                  error.message?.includes('already exists') ||
+                  error.message?.includes('23505') ||
+                  error.message?.includes('pk_sensor') ||
+                  (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
+                console.log(`🔄 Sensor ya existe, actualizando: nodo ${nodoid}, tipo ${tipoid}`);
+                await JoySenseService.updateTableRow('sensor', `${nodoid}-${tipoid}`, {
+                  statusid: 1,
+                  usermodifiedid: usuarioid,
+                  datemodified: currentTimestamp
+                });
+                console.log(`✅ Sensor actualizado: nodo ${nodoid}, tipo ${tipoid}`);
+              } else {
+                throw error; // Re-lanzar si es otro tipo de error
+              }
+            }
           }
         }
         
-        // SEGUNDO: Crear entradas en metricasensor si no existen
-        console.log(`🔧 Creando entradas en metricasensor para nodo ${nodoid}...`);
+        // SEGUNDO: Crear/actualizar entradas en metricasensor usando UPSERT
+        console.log(`🔧 Creando/actualizando entradas en metricasensor para nodo ${nodoid}...`);
         for (const dato of datosDelNodo) {
           const combinacion = `${dato.tipoid}-${dato.metricaid}`;
           
@@ -4631,24 +4667,54 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
             ms.nodoid === nodoid && ms.tipoid === dato.tipoid && ms.metricaid === dato.metricaid
           );
           
-          if (!metricaSensorExistente) {
-            console.log(`➕ Creando metricasensor: ${combinacion} para nodo ${nodoid}`);
-            
-            const metricaSensorData = {
-              nodoid: nodoid,
-              tipoid: dato.tipoid,
-              metricaid: dato.metricaid,
+          const metricaSensorData = {
+            nodoid: nodoid,
+            tipoid: dato.tipoid,
+            metricaid: dato.metricaid,
+            statusid: 1,
+            usercreatedid: usuarioid,
+            usermodifiedid: usuarioid,
+            datecreated: currentTimestamp,
+            datemodified: currentTimestamp
+          };
+          
+          if (metricaSensorExistente) {
+            console.log(`🔄 Actualizando metricasensor existente: ${combinacion} para nodo ${nodoid}`);
+            // Actualizar metricasensor existente
+            await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
               statusid: 1,
-              usercreatedid: usuarioid,
               usermodifiedid: usuarioid,
-              datecreated: currentTimestamp,
               datemodified: currentTimestamp
-            };
-            
-            await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
-            console.log(`✅ Metricasensor creado: ${combinacion}`);
+            });
+            console.log(`✅ Metricasensor actualizado: ${combinacion}`);
           } else {
-            console.log(`✅ Metricasensor ya existe: ${combinacion}`);
+            console.log(`➕ Intentando crear nuevo metricasensor: ${combinacion} para nodo ${nodoid}`);
+            try {
+              // Intentar crear nuevo metricasensor
+              await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
+              console.log(`✅ Metricasensor creado: ${combinacion}`);
+            } catch (error: any) {
+              console.log(`❌ Error al crear metricasensor:`, error);
+              console.log(`❌ Error message:`, error.message);
+              console.log(`❌ Error response:`, error.response);
+              
+              // Si falla por duplicado, actualizar el existente
+              if (error.message?.includes('duplicate key') || 
+                  error.message?.includes('already exists') ||
+                  error.message?.includes('23505') ||
+                  error.message?.includes('pk_metricasensor') ||
+                  (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
+                console.log(`🔄 Metricasensor ya existe, actualizando: ${combinacion} para nodo ${nodoid}`);
+                await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
+                  statusid: 1,
+                  usermodifiedid: usuarioid,
+                  datemodified: currentTimestamp
+                });
+                console.log(`✅ Metricasensor actualizado: ${combinacion}`);
+              } else {
+                throw error; // Re-lanzar si es otro tipo de error
+              }
+            }
           }
         }
         
