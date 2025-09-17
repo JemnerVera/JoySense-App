@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 import { JoySenseService } from '../services/backend-api';
@@ -404,17 +404,23 @@ interface SystemParametersProps {
   activeTab?: string;
 }
 
-const SystemParameters: React.FC<SystemParametersProps> = ({ 
+export interface SystemParametersRef {
+  hasUnsavedChanges: () => boolean;
+  handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+}
+
+const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(({ 
   selectedTable: propSelectedTable, 
   onTableSelect,
   activeSubTab: propActiveSubTab,
   onSubTabChange,
   activeTab
-}) => {
+}, ref) => {
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>(propActiveSubTab || 'status');
+  
   
   // Sincronizar estado local con props
   useEffect(() => {
@@ -431,14 +437,25 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   
   // Función para manejar el cambio de pestaña y limpiar mensajes
   const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
+    console.log('🔄 handleTabChange called:', { 
+      currentTab: activeSubTab, 
+      targetTab: tab, 
+      selectedTable 
+    });
+    
     // Si hay cambios sin guardar, mostrar modal de confirmación
-    if (hasUnsavedChanges()) {
+    const hasChanges = hasUnsavedChanges();
+    console.log('🔄 hasUnsavedChanges result:', hasChanges);
+    
+    if (hasChanges) {
+      console.log('🔄 Showing lost data modal');
       setPendingTabChange(tab);
       setShowLostDataModal(true);
       return;
     }
     
     // Si no hay cambios sin guardar, proceder normalmente
+    console.log('🔄 No changes, proceeding with tab change');
     executeTabChange(tab);
   };
 
@@ -501,6 +518,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     setCopyMessage(null);
     clearOnTabChange();
   }, [activeSubTab]);
+
   const [pendingTableChange, setPendingTableChange] = useState<string>('');
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
@@ -1152,13 +1170,37 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   const hasUnsavedChanges = (): boolean => {
     console.log('🔍 hasUnsavedChanges - activeSubTab:', activeSubTab, 'selectedTable:', selectedTable);
     console.log('🔍 formData:', formData);
+    console.log('🔍 formData keys:', Object.keys(formData));
+    console.log('🔍 formData values:', Object.values(formData));
     
     // Verificar pestaña "Crear"
     if (activeSubTab === 'insert') {
       // Para formularios normales (no múltiples)
       if (selectedTable !== 'usuarioperfil' && selectedTable !== 'metricasensor' && selectedTable !== 'sensor') {
         // Campos referenciales que no deben considerarse para detección de cambios
-        const referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+        // Definir campos referenciales específicos por tabla
+        let referentialFields: string[] = [];
+        
+        if (selectedTable === 'pais') {
+          // Para pais: pais y paisabrev son campos de entrada
+          referentialFields = ['paisid', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+          console.log('🔍 Pais table - referentialFields:', referentialFields);
+        } else if (selectedTable === 'fundo') {
+          // Para fundo: fundo y fundoabrev son campos de entrada
+          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'entidadid', 'entidad'];
+        } else if (selectedTable === 'ubicacion') {
+          // Para ubicacion: ubicacion es campo de entrada
+          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+        } else if (selectedTable === 'localizacion') {
+          // Para localizacion: localizacion es campo de entrada
+          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+        } else if (selectedTable === 'entidad') {
+          // Para entidad: entidad es campo de entrada
+          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid'];
+        } else {
+          // Para otras tablas, usar la lista completa
+          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+        }
         
         const hasChanges = Object.keys(formData).some(key => {
           const value = formData[key];
@@ -1169,6 +1211,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           if (referentialFields.includes(key)) {
             console.log(`🔍 Excluding referential field: ${key}`);
             return false;
+          }
+          
+          // Log específico para campos de país
+          if (selectedTable === 'pais' && (key === 'pais' || key === 'paisabrev')) {
+            console.log(`🔍 Pais field check: ${key} = "${value}" (length: ${value?.length || 0})`);
           }
           
           // Excluir statusid si es 1 (valor por defecto)
@@ -1295,6 +1342,39 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     
     return false;
   };
+
+  // Exponer funciones al componente padre
+  useImperativeHandle(ref, () => ({
+    hasUnsavedChanges,
+    handleTabChange
+  }), [hasUnsavedChanges, handleTabChange]);
+
+  // Efecto para interceptar cambios de pestaña y verificar cambios sin guardar
+  useEffect(() => {
+    // Solo ejecutar si el cambio viene del exterior (no de handleTabChange interno)
+    if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
+      console.log('🔄 External tab change detected:', { 
+        propActiveSubTab, 
+        currentActiveSubTab: activeSubTab,
+        selectedTable 
+      });
+      
+      // Verificar si hay cambios sin guardar
+      const hasChanges = hasUnsavedChanges();
+      console.log('🔄 hasUnsavedChanges result:', hasChanges);
+      
+      if (hasChanges) {
+        console.log('🔄 Showing lost data modal for external change');
+        setPendingTabChange(propActiveSubTab);
+        setShowLostDataModal(true);
+        return;
+      }
+      
+      // Si no hay cambios, proceder con el cambio
+      console.log('🔄 No changes, proceeding with external tab change');
+      setActiveSubTab(propActiveSubTab);
+    }
+  }, [propActiveSubTab, activeSubTab, selectedTable, hasUnsavedChanges]);
 
   // Función simple para manejar el cambio de tabla
   const handleTableChange = (newTable: string) => {
@@ -5533,6 +5613,31 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   // Funciones para manejar el modal de pérdida de datos
   const handleConfirmLostData = () => {
     if (pendingTabChange) {
+      // Limpiar todos los estados del formulario antes de cambiar de pestaña
+      setFormData({});
+      
+      // Limpiar estados específicos según la tabla
+      if (selectedTable === 'usuarioperfil') {
+        setMultipleUsuarioPerfiles([]);
+        setSelectedUsuarios([]);
+        setSelectedPerfiles([]);
+      } else if (selectedTable === 'metricasensor') {
+        setMultipleMetricas([]);
+        setSelectedNodos([]);
+        setSelectedEntidadMetrica('');
+        setSelectedMetricas([]);
+        setIsReplicateMode(false);
+      } else if (selectedTable === 'sensor') {
+        setMultipleSensors([]);
+        setSelectedNodo('');
+        setSelectedEntidad('');
+        setSelectedTipo('');
+        setSelectedSensorCount(0);
+      } else if (selectedTable === 'umbral') {
+        // Para umbral, solo limpiar formData es suficiente
+        // Los estados específicos se manejan en MassiveUmbralForm
+      }
+      
       executeTabChange(pendingTabChange as 'status' | 'insert' | 'update' | 'massive');
     }
     setShowLostDataModal(false);
@@ -6590,6 +6695,8 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       
     </div>
   );
-};
+});
+
+SystemParameters.displayName = 'SystemParameters';
 
 export default SystemParameters;
