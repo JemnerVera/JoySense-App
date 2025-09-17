@@ -4596,19 +4596,39 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           );
           
           if (umbralExistente) {
-            // Actualizar umbral existente
-            console.log(`🔄 Actualizando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid})`);
+            // Verificar si los valores críticos son diferentes a los existentes
+            // Solo se conservan si: minimo, maximo y criticidadid son idénticos
+            const valoresCriticosIdenticos = 
+              umbralExistente.minimo === dato.minimo &&
+              umbralExistente.maximo === dato.maximo &&
+              umbralExistente.criticidadid === dato.criticidadid;
             
-            await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
-              ubicacionid: dato.ubicacionid,
-              criticidadid: dato.criticidadid,
-              umbral: dato.umbral,
-              minimo: dato.minimo,
-              maximo: dato.maximo,
-              statusid: 1,
-              usermodifiedid: usuarioid,
-              datemodified: currentTimestamp
-            });
+            if (valoresCriticosIdenticos) {
+              // Mantener valores originales de la BD (minimo, maximo, criticidadid)
+              console.log(`✅ Manteniendo valores originales de BD: ${combinacion} (umbralid: ${umbralExistente.umbralid}) - Valores críticos idénticos`);
+              
+              // Solo actualizar el nombre (umbral) y asegurar que esté activo
+              await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+                umbral: dato.umbral, // Solo actualizar el nombre
+                statusid: 1,
+                usermodifiedid: usuarioid,
+                datemodified: currentTimestamp
+              });
+            } else {
+              // Actualizar umbral existente con todos los valores nuevos
+              console.log(`🔄 Actualizando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid}) - Valores críticos diferentes`);
+              
+              await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+                ubicacionid: dato.ubicacionid,
+                criticidadid: dato.criticidadid,
+                umbral: dato.umbral,
+                minimo: dato.minimo,
+                maximo: dato.maximo,
+                statusid: 1,
+                usermodifiedid: usuarioid,
+                datemodified: currentTimestamp
+              });
+            }
           } else {
             // Crear nuevo umbral
             console.log(`➕ Creando nuevo umbral: ${combinacion}`);
