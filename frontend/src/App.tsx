@@ -358,6 +358,88 @@ const AppContentInternal: React.FC = () => {
     setCurrentMultipleData(multipleData);
   };
 
+  // Función para verificar si hay cambios significativos en el formulario actual
+  const hasSignificantChanges = () => {
+    const currentTable = activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '';
+    
+    // Solo verificar cambios si estamos en parámetros
+    if (!currentTable || !activeTab.startsWith('parameters-')) {
+      return false;
+    }
+    
+    // Definir campos específicos para cada tabla que deben considerarse como "cambios"
+    const getSignificantFields = (table: string): string[] => {
+      switch (table) {
+        case 'pais':
+          return ['pais', 'paisabrev']; // Solo PAIS y ABREVIATURA
+        case 'empresa':
+          return ['empresa', 'empresaabrev'];
+        case 'fundo':
+          return ['fundo', 'fundoabrev'];
+        case 'ubicacion':
+          return ['ubicacion', 'ubicacionabrev'];
+        case 'localizacion':
+          return ['localizacion', 'localizacionabrev'];
+        case 'entidad':
+          return ['entidad', 'entidadabrev'];
+        case 'nodo':
+          return ['nodo', 'nodoabrev'];
+        case 'sensor':
+          return ['sensor', 'sensorabrev'];
+        case 'metrica':
+          return ['metrica', 'metricaabrev'];
+        case 'tipo':
+          return ['tipo', 'tipoabrev'];
+        case 'medicion':
+          return ['medicion', 'medicionabrev'];
+        case 'umbral':
+          return ['umbral', 'umbralabrev'];
+        case 'alerta':
+          return ['alerta', 'alertaabrev'];
+        case 'usuario':
+          return ['usuario', 'usuarioabrev'];
+        case 'medio':
+          return ['medio', 'medioabrev'];
+        case 'contacto':
+          return ['contacto', 'contactoabrev'];
+        case 'metricasensor':
+          return ['metricasensor', 'metricasensorabrev'];
+        case 'perfilumbral':
+          return ['perfilumbral', 'perfilumbralabrev'];
+        case 'auditlogumbral':
+          return ['auditlogumbral', 'auditlogumbralabrev'];
+        case 'criticidad':
+          return ['criticidad', 'criticidadabrev'];
+        case 'status':
+          return ['status', 'statusabrev'];
+        default:
+          return [];
+      }
+    };
+    
+    const significantFields = getSignificantFields(currentTable);
+    
+    // Verificar si hay cambios en los campos significativos
+    const hasFormDataChanges = significantFields.some(field => {
+      const value = currentFormData[field];
+      return value !== null && value !== undefined && value !== '';
+    });
+    
+    // Para formularios múltiples, verificar si hay datos
+    const hasMultipleDataChanges = currentMultipleData.length > 0;
+    
+    console.log('🔍 App: Parameter change detection:', {
+      currentTable,
+      significantFields,
+      currentFormData,
+      hasFormDataChanges,
+      hasMultipleDataChanges,
+      result: hasFormDataChanges || hasMultipleDataChanges
+    });
+    
+    return hasFormDataChanges || hasMultipleDataChanges;
+  };
+
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
     console.log('🔄 App: Tab change requested:', { from: activeTab, to: tab });
@@ -388,9 +470,46 @@ const AppContentInternal: React.FC = () => {
   };
 
   const handleTableSelect = (table: string) => {
+    console.log('🔄 App: Parameter change requested:', { from: selectedTable, to: table });
+    
+    // Solo verificar cambios si estamos en parámetros y hay datos específicos
+    const shouldCheckChanges = activeTab.startsWith('parameters-') && hasSignificantChanges();
+    
+    if (shouldCheckChanges) {
+      // Interceptar el cambio usando el nuevo sistema
+      const shouldBlock = interceptParameterChange(table, {
+        formData: getCurrentFormData(),
+        selectedTable: activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '',
+        activeSubTab: activeSubTab,
+        multipleData: getCurrentMultipleData(),
+        onConfirmAction: () => {
+          console.log('🔄 App: Confirming parameter change to:', table);
+          // Limpiar los datos del formulario antes de cambiar
+          setCurrentFormData({});
+          setCurrentMultipleData([]);
+          setClearFormData(true); // Activar limpieza en SystemParameters
+          setSelectedTable(table);
+          setActiveSubTab('status'); // Resetear a subpestaña por defecto
+          startTransition(() => {
+            setActiveTab(`parameters-${table}`);
+          });
+        },
+        onCancelAction: () => {
+          console.log('🔄 App: Parameter change cancelled, staying in:', selectedTable);
+          // No hacer nada, quedarse en el parámetro actual
+        }
+      });
+      
+      if (shouldBlock) {
+        console.log('🔄 App: Parameter change blocked, showing modal');
+        return;
+      }
+    }
+    
+    // Si no hay cambios sin guardar o no necesitamos verificar, proceder normalmente
+    console.log('🔄 App: No changes, proceeding with parameter change');
     setSelectedTable(table);
-    // Cambiar el activeTab para que incluya el prefijo parameters-
-    // Usar startTransition para evitar el error de Suspense
+    setActiveSubTab('status'); // Resetear a subpestaña por defecto
     startTransition(() => {
       setActiveTab(`parameters-${table}`);
     });
