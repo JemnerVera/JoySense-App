@@ -528,6 +528,13 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
     const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
     
+    console.log('🔍 renderLocalizacionFields - Primera fila:', {
+      paisField: paisField?.columnName,
+      empresaField: empresaField?.columnName,
+      fundoField: fundoField?.columnName,
+      visibleColumns: visibleColumns.map(c => c.columnName)
+    });
+    
     if (paisField || empresaField || fundoField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -586,12 +593,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderTipoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
-    
     // Primera fila: Entidad, Tipo, Status
     const entidadField = visibleColumns.find(c => c.columnName === 'entidadid');
     const tipoField = visibleColumns.find(c => c.columnName === 'tipo');
@@ -641,12 +642,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderNodoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
-    
     // Renderizar el resto de campos normalmente
     const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
     if (otherFields.length > 0) {
@@ -663,13 +658,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   // Función para renderizar campos de Sensor con layout específico
   const renderSensorFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    // Relación: sensor -> nodo -> localizacion -> ubicacion -> fundo -> empresa -> pais
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
     
     // Renderizar el resto de campos normalmente
     const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
@@ -688,13 +676,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderSensorMetricaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    // Relación: metricasensor -> nodo -> localizacion -> ubicacion -> fundo -> empresa -> pais
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
-    
     // Renderizar el resto de campos normalmente
     const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
     if (otherFields.length > 0) {
@@ -711,12 +692,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   // Función para renderizar campos de Metrica con layout específico
   const renderMetricaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
     
     // Renderizar el resto de campos normalmente
     const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
@@ -794,6 +769,13 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     const paisField = visibleColumns.find(c => c.columnName === 'paisid');
     const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
     const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
+    
+    console.log('🔍 renderLocalizacionFields - Primera fila:', {
+      paisField: paisField?.columnName,
+      empresaField: empresaField?.columnName,
+      fundoField: fundoField?.columnName,
+      visibleColumns: visibleColumns.map(c => c.columnName)
+    });
     
     if (paisField || empresaField || fundoField) {
       result.push(

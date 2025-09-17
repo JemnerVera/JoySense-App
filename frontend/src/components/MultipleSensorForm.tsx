@@ -147,9 +147,6 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Fila contextual con filtros globales */}
-      {renderContextualRow()}
-
       {/* Layout fijo: Siempre 2 columnas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Primera columna: Campos y botones */}

@@ -3653,6 +3653,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
   };
 
   const getVisibleColumns = (forTable: boolean = true) => {
+    console.log('🔍 getVisibleColumns Debug:', {
+      selectedTable,
+      forTable,
+      columnsLength: columns?.length,
+      allColumns: columns?.map(c => c.columnName)
+    });
+    
     // Para la tabla nodo, necesitamos incluir campos que están después de usercreatedid
     if (selectedTable === 'nodo') {
       const nodoColumns = columns.filter(col => {
@@ -3688,11 +3695,13 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'fundo') {
-        return ['empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        const isIncluded = ['paisid', 'empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        console.log('🔍 Fundo column check:', { columnName: col.columnName, isIncluded });
+        return isIncluded;
       }
       
       if (selectedTable === 'ubicacion') {
-        return ['fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'entidad') {
@@ -3708,7 +3717,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       }
       
       if (selectedTable === 'localizacion') {
-        return ['ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
       }
       
       if (selectedTable === 'sensor') {
@@ -6378,9 +6387,9 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                 </div>
                 <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
               </div>
-            </div>
-          </div>
-        )}
+                    </div>
+                        </div>
+                      )}
                   </div>
 
       {/* Modal de confirmación para cancelar */}

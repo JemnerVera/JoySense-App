@@ -277,9 +277,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Fila contextual con filtros globales */}
-      {renderContextualRow()}
-
       {/* Selección de Entidad y Nodos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
