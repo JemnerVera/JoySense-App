@@ -2193,9 +2193,28 @@ app.post('/api/sense/umbral', async (req, res) => {
     console.log('🔍 Backend: Insertando umbral...');
     console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
     
+    // Filtrar solo las columnas que existen en la tabla
+    const filteredData = {
+      ubicacionid: insertData.ubicacionid,
+      nodoid: insertData.nodoid,
+      tipoid: insertData.tipoid,
+      metricaid: insertData.metricaid,
+      criticidadid: insertData.criticidadid,
+      umbral: insertData.umbral,
+      minimo: insertData.minimo,
+      maximo: insertData.maximo,
+      statusid: insertData.statusid,
+      usercreatedid: insertData.usercreatedid,
+      usermodifiedid: insertData.usermodifiedid,
+      datecreated: insertData.datecreated,
+      datemodified: insertData.datemodified
+    };
+    
+    console.log('🔍 Backend: Datos filtrados:', JSON.stringify(filteredData, null, 2));
+    
     const { data, error } = await supabase
       .from('umbral')
-      .insert(insertData)
+      .insert(filteredData)
       .select();
     
     if (error) {

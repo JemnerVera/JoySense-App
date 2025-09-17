@@ -4532,7 +4532,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       // Verificar campos requeridos
       const camposRequeridos = ['ubicacionid', 'nodoid', 'tipoid', 'metricaid', 'criticidadid', 'umbral'];
       const registrosInvalidos = preparedData.filter(record => 
-        camposRequeridos.some(campo => !record[campo] || record[campo] === null || record[campo] === undefined)
+        camposRequeridos.some(campo => !(record as any)[campo] || (record as any)[campo] === null || (record as any)[campo] === undefined)
       );
       
       if (registrosInvalidos.length > 0) {
