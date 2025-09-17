@@ -6367,12 +6367,20 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                       </div>
           </>
         ) : (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <div className="mb-2 p-4 bg-red-600 rounded-lg">
-              <p className="text-white font-medium text-center">Selecciona un parámetro desde el menú lateral</p>
-                    </div>
-                        </div>
-                      )}
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <div className="flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
+                </div>
+                <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
+              </div>
+            </div>
+          </div>
+        )}
                   </div>
 
       {/* Modal de confirmación para cancelar */}
