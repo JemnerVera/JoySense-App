@@ -4,6 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { JoySenseService } from '../services/backend-api';
 import { TableInfo, ColumnInfo, Message } from '../types/systemParameters';
 import { STYLES_CONFIG } from '../config/styles';
+import { useDataLossProtection } from '../hooks/useDataLossProtection';
+import DataLossModal from './DataLossModal';
+import { useChangeInterceptor } from '../hooks/useChangeInterceptor';
+import ChangeConfirmationModal from './ChangeConfirmationModal';
 import MultipleSensorForm from './MultipleSensorForm';
 import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
@@ -402,6 +406,10 @@ interface SystemParametersProps {
   activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   activeTab?: string;
+  onParameterChangeWithConfirmation?: (newTable: string) => void;
+  onTabChangeWithConfirmation?: (newTab: string) => void;
+  onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
+  clearFormData?: boolean;
 }
 
 export interface SystemParametersRef {
@@ -414,12 +422,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   onTableSelect,
   activeSubTab: propActiveSubTab,
   onSubTabChange,
-  activeTab
+  activeTab,
+  onParameterChangeWithConfirmation,
+  onTabChangeWithConfirmation,
+  onFormDataChange,
+  clearFormData = false
 }, ref) => {
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>(propActiveSubTab || 'status');
+  
+  // Hook para protección de datos
+  const {
+    modalState,
+    checkSubTabChange,
+    checkParameterChange,
+    checkTabChange,
+    confirmAction,
+    cancelAction: cancelDataLossAction
+  } = useDataLossProtection();
+
+  // Hook para interceptación de cambios
+  const {
+    registerChangeDetector,
+    interceptSubTabChange,
+    interceptParameterChange,
+    interceptTabChange,
+    getPendingChangeInfo
+  } = useChangeInterceptor();
   
   
   // Sincronizar estado local con props
@@ -435,30 +466,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   }, [propActiveSubTab]);
   
-  // Función para manejar el cambio de pestaña y limpiar mensajes
-  const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
-    console.log('🔄 handleTabChange called:', { 
-      currentTab: activeSubTab, 
-      targetTab: tab, 
-      selectedTable 
-    });
-    
-    // Si hay cambios sin guardar, mostrar modal de confirmación
-    const hasChanges = hasUnsavedChanges();
-    console.log('🔄 hasUnsavedChanges result:', hasChanges);
-    
-    if (hasChanges) {
-      console.log('🔄 Showing lost data modal');
-      setPendingTabChange(tab);
-      setShowLostDataModal(true);
-      return;
-    }
-    
-    // Si no hay cambios sin guardar, proceder normalmente
-    console.log('🔄 No changes, proceeding with tab change');
-    executeTabChange(tab);
-  };
-
   // Función para ejecutar el cambio de pestaña
   const executeTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
     setActiveSubTab(tab);
@@ -510,6 +517,40 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   };
 
+  // Función para manejar el cambio de pestaña y limpiar mensajes
+  const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
+    console.log('🔄 handleTabChange called:', { 
+      currentTab: activeSubTab, 
+      targetTab: tab, 
+      selectedTable 
+    });
+    
+    // Interceptar el cambio usando el nuevo sistema
+    const shouldBlock = interceptSubTabChange(tab, {
+      formData,
+      selectedTable,
+      activeSubTab,
+      multipleData: getMultipleData(),
+      onConfirmAction: () => {
+        console.log('🔄 Confirming tab change to:', tab);
+        executeTabChange(tab);
+      },
+      onCancelAction: () => {
+        console.log('🔄 Tab change cancelled, staying in:', activeSubTab);
+        // No hacer nada, quedarse en la pestaña actual
+      }
+    });
+    
+    if (shouldBlock) {
+      console.log('🔄 Tab change blocked, showing modal');
+      return;
+    }
+    
+    // Si no hay cambios sin guardar, proceder normalmente
+    console.log('🔄 No changes, proceeding with tab change');
+    executeTabChange(tab);
+  };
+
   // Efecto para limpiar mensajes cuando cambia la pestaña desde el exterior
   useEffect(() => {
     // Limpiar mensajes cuando cambia activeSubTab desde el exterior
@@ -518,6 +559,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setCopyMessage(null);
     clearOnTabChange();
   }, [activeSubTab]);
+
 
   const [pendingTableChange, setPendingTableChange] = useState<string>('');
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -543,6 +585,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+
   const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
   const [copyMessage, setCopyMessage] = useState<Message | null>(null);
   const [tableConstraints, setTableConstraints] = useState<any>(null);
@@ -1378,6 +1421,42 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función simple para manejar el cambio de tabla
   const handleTableChange = (newTable: string) => {
+    console.log('🔄 Table change - newTable:', newTable);
+    console.log('🔄 Current formData:', formData);
+    console.log('🔄 Current selectedTable:', selectedTable);
+    console.log('🔄 Current activeSubTab:', activeSubTab);
+    console.log('🔄 Current multipleData:', getMultipleData());
+    
+    // Interceptar el cambio usando el nuevo sistema
+    const shouldBlock = interceptParameterChange(newTable, {
+      formData,
+      selectedTable,
+      activeSubTab,
+      multipleData: getMultipleData(),
+      onConfirmAction: () => {
+        console.log('🔄 Confirming parameter change to:', newTable);
+        executeTableChange(newTable);
+      },
+      onCancelAction: () => {
+        console.log('🔄 Parameter change cancelled, staying in:', selectedTable);
+        // No hacer nada, quedarse en el parámetro actual
+      }
+    });
+    
+    console.log('🔄 shouldBlock result:', shouldBlock);
+    
+    if (shouldBlock) {
+      console.log('🔄 Parameter change blocked, showing modal');
+      return;
+    }
+    
+    // Si no hay cambios, proceder normalmente
+    console.log('🔄 No changes, proceeding with parameter change');
+    executeTableChange(newTable);
+  };
+
+  // Función para ejecutar el cambio de tabla
+  const executeTableChange = (newTable: string) => {
     setSelectedTable(newTable);
     
     // Limpiar todos los inputs y estados de búsqueda
@@ -1494,6 +1573,28 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setActiveSubTab(propActiveSubTab);
     }
   }, [propActiveSubTab]);
+
+  // Efecto para limpiar datos cuando se confirma el cambio
+  useEffect(() => {
+    if (clearFormData) {
+      console.log('🧹 SystemParameters: Clearing form data due to confirmed change');
+      setFormData({});
+      setMultipleUsuarioPerfiles([]);
+      setSelectedUsuarios([]);
+      setSelectedPerfiles([]);
+      setMultipleMetricas([]);
+      setSelectedNodos([]);
+      // setSelectedEntidadMetrica('');
+      setSelectedMetricas([]);
+      setIsReplicateMode(false);
+      setMultipleSensors([]);
+      // setSelectedNodo('');
+      // setSelectedEntidad('');
+      // setSelectedTipo('');
+      setSelectedSensorCount(0);
+      // Limpiar otros estados específicos si es necesario
+    }
+  }, [clearFormData]);
 
   // Detectar cambios de pestaña y validar
   useEffect(() => {
@@ -4475,10 +4576,40 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
    const [selectedEntidadMetrica, setSelectedEntidadMetrica] = useState<string>('');
    const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
 
-   // Estados para creación múltiple de usuario perfil
-   const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
-   const [selectedUsuarios, setSelectedUsuarios] = useState<string[]>([]);
-   const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
+  // Estados para creación múltiple de usuario perfil
+  const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
+  const [selectedUsuarios, setSelectedUsuarios] = useState<string[]>([]);
+  const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
+
+  // Función para obtener datos múltiples según la tabla seleccionada
+  const getMultipleData = useCallback(() => {
+    switch (selectedTable) {
+      case 'usuarioperfil':
+        return multipleUsuarioPerfiles;
+      case 'metricasensor':
+        return multipleMetricas;
+      case 'sensor':
+        return multipleSensors;
+      case 'umbral':
+        return []; // Umbral no tiene datos múltiples en este contexto
+      default:
+        return [];
+    }
+  }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
+
+  // Efecto para notificar cambios en los datos del formulario al componente padre
+  useEffect(() => {
+    if (onFormDataChange) {
+      onFormDataChange(formData, getMultipleData());
+    }
+  }, [formData, getMultipleData, onFormDataChange]);
+
+  // Registrar la función de detección de cambios
+  useEffect(() => {
+    registerChangeDetector(() => {
+      return hasUnsavedChanges();
+    });
+  }, [registerChangeDetector]);
 
       // Estados para creación múltiple de localizaciones
    const [multipleLocalizaciones, setMultipleLocalizaciones] = useState<any[]>([]);
@@ -6664,14 +6795,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           </div>
         )}
 
-      {/* Modal de pérdida de datos */}
-      <LostDataModal
+      {/* Modal de pérdida de datos - Desactivado, usando el sistema de App.tsx */}
+      {/* <LostDataModal
         isOpen={showLostDataModal}
         onConfirm={handleConfirmLostData}
         onCancel={handleCancelLostData}
         currentTab={activeSubTab === 'insert' ? 'Crear' : activeSubTab === 'massive' ? 'Masivo' : activeSubTab === 'update' ? 'Actualizar' : 'Estado'}
         targetTab={pendingTabChange === 'insert' ? 'Crear' : pendingTabChange === 'massive' ? 'Masivo' : pendingTabChange === 'update' ? 'Actualizar' : 'Estado'}
-      />
+      /> */}
 
       {/* Modal de replicación */}
       {replicateOptions && (
@@ -6692,6 +6823,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           loading={loading}
         />
       )}
+      
+      {/* Modal de protección de datos */}
+      {modalState && (
+        <DataLossModal
+          isOpen={modalState.isOpen}
+          onConfirm={confirmAction}
+          onCancel={cancelDataLossAction}
+          currentContext={modalState.currentContext}
+          targetContext={modalState.targetContext}
+          contextType={modalState.contextType}
+        />
+      )}
+      
+      {/* Modal de confirmación de cambios */}
+      {(() => {
+        const changeInfo = getPendingChangeInfo();
+        if (!changeInfo) return null;
+        
+        return (
+          <ChangeConfirmationModal
+            isOpen={changeInfo.isOpen}
+            onConfirm={changeInfo.onConfirm}
+            onCancel={changeInfo.onCancel}
+            contextType={changeInfo.contextType}
+            currentContext={changeInfo.currentContext}
+            targetContext={changeInfo.targetContext}
+          />
+        );
+      })()}
       
     </div>
   );

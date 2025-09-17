@@ -11,6 +11,7 @@ import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
 import { SystemParametersLazy, ConfigurationLazy, UmbralesMainLazy, DashboardLazy } from './components/LazyComponents';
+import SystemParameters from './components/SystemParameters';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import MensajesDashboard from './components/Umbrales/MensajesDashboard';
@@ -22,6 +23,30 @@ import { STYLES_CONFIG } from './config/styles';
 import { UserHeader } from './components/UserHeader';
 import { UserControls } from './components/header/UserControls';
 import { useAppSidebar } from './hooks/useAppSidebar';
+import { useDataLossProtection } from './hooks/useDataLossProtection';
+import DataLossModal from './components/DataLossModal';
+import { useChangeInterceptor } from './hooks/useChangeInterceptor';
+import ChangeConfirmationModal from './components/ChangeConfirmationModal';
+
+// Wrapper para SystemParameters con Suspense
+const SystemParametersWithSuspense: React.FC<{
+  selectedTable: string;
+  onTableSelect: (table: string) => void;
+  activeSubTab: 'status' | 'insert' | 'update' | 'massive';
+  onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  activeTab: string;
+  onFormDataChange: (formData: Record<string, any>, multipleData: any[]) => void;
+  clearFormData?: boolean;
+}> = (props) => (
+  <Suspense fallback={
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span className="ml-2 text-gray-600">Cargando...</span>
+    </div>
+  }>
+    <SystemParameters {...props} />
+  </Suspense>
+);
 
 const AppContentInternal: React.FC = () => {
   const { user, loading } = useAuth();
@@ -34,6 +59,28 @@ const AppContentInternal: React.FC = () => {
   const [dashboardSelectedUbicacion, setDashboardSelectedUbicacion] = useState<any>(null);
   const [dashboardStartDate, setDashboardStartDate] = useState<string>('');
   const [dashboardEndDate, setDashboardEndDate] = useState<string>('');
+
+  // Estados para datos del formulario (para protección de datos)
+  const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
+  const [currentMultipleData, setCurrentMultipleData] = useState<any[]>([]);
+  const [clearFormData, setClearFormData] = useState<boolean>(false);
+
+  // Hook para protección de datos (debe estar antes de cualquier return condicional)
+  const {
+    modalState,
+    checkTabChange,
+    confirmAction,
+    cancelAction: cancelDataLossAction
+  } = useDataLossProtection();
+
+  // Hook para interceptación de cambios
+  const {
+    registerChangeDetector,
+    interceptSubTabChange,
+    interceptParameterChange,
+    interceptTabChange,
+    getPendingChangeInfo
+  } = useChangeInterceptor();
 
   // Handler para filtros del dashboard desde DashboardFilters
   const handleDashboardFiltersChange = (filters: {
@@ -186,6 +233,98 @@ const AppContentInternal: React.FC = () => {
     loadEntidades();
   }, []);
 
+  // Registrar la función de detección de cambios
+  useEffect(() => {
+    registerChangeDetector(() => {
+      // Función específica para detectar cambios según la tabla actual
+      const currentTable = activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '';
+      
+      // Solo verificar cambios si estamos en parámetros
+      if (!currentTable || !activeTab.startsWith('parameters-')) {
+        return false;
+      }
+      
+      // Definir campos específicos para cada tabla que deben considerarse como "cambios"
+      const getSignificantFields = (table: string): string[] => {
+        switch (table) {
+          case 'pais':
+            return ['pais', 'paisabrev']; // Solo PAIS y ABREVIATURA
+          case 'empresa':
+            return ['empresa', 'empresaabrev'];
+          case 'fundo':
+            return ['fundo', 'fundoabrev'];
+          case 'ubicacion':
+            return ['ubicacion', 'ubicacionabrev'];
+          case 'localizacion':
+            return ['localizacion', 'localizacionabrev'];
+          case 'entidad':
+            return ['entidad', 'entidadabrev'];
+          case 'nodo':
+            return ['nodo', 'nodoabrev'];
+          case 'sensor':
+            return ['sensor', 'sensorabrev'];
+          case 'metrica':
+            return ['metrica', 'metricaabrev'];
+          case 'tipo':
+            return ['tipo', 'tipoabrev'];
+          case 'medicion':
+            return ['medicion', 'medicionabrev'];
+          case 'umbral':
+            return ['umbral', 'umbralabrev'];
+          case 'alerta':
+            return ['alerta', 'alertaabrev'];
+          case 'usuario':
+            return ['usuario', 'usuarioabrev'];
+          case 'medio':
+            return ['medio', 'medioabrev'];
+          case 'contacto':
+            return ['contacto', 'contactoabrev'];
+          case 'metricasensor':
+            return ['metricasensor', 'metricasensorabrev'];
+          case 'perfilumbral':
+            return ['perfilumbral', 'perfilumbralabrev'];
+          case 'auditlogumbral':
+            return ['auditlogumbral', 'auditlogumbralabrev'];
+          case 'criticidad':
+            return ['criticidad', 'criticidadabrev'];
+          case 'status':
+            return ['status', 'statusabrev'];
+          default:
+            return [];
+        }
+      };
+      
+      const significantFields = getSignificantFields(currentTable);
+      
+      // Verificar si hay cambios en los campos significativos
+      const hasFormDataChanges = significantFields.some(field => {
+        const value = currentFormData[field];
+        return value !== null && value !== undefined && value !== '';
+      });
+      
+      // Para formularios múltiples, verificar si hay datos
+      const hasMultipleDataChanges = currentMultipleData.length > 0;
+      
+      console.log('🔍 App: Change detection:', {
+        currentTable,
+        significantFields,
+        currentFormData,
+        hasFormDataChanges,
+        hasMultipleDataChanges,
+        result: hasFormDataChanges || hasMultipleDataChanges
+      });
+      
+      return hasFormDataChanges || hasMultipleDataChanges;
+    });
+  }, [registerChangeDetector, currentFormData, currentMultipleData, activeTab]);
+
+  // Resetear el flag de limpieza después de usarlo
+  useEffect(() => {
+    if (clearFormData) {
+      setClearFormData(false);
+    }
+  }, [clearFormData]);
+
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {
     return (
@@ -203,8 +342,47 @@ const AppContentInternal: React.FC = () => {
     return <LoginForm />;
   }
 
+  // Función para obtener datos del formulario actual (si estamos en parámetros)
+  const getCurrentFormData = () => {
+    return currentFormData;
+  };
+
+  // Función para obtener datos múltiples actuales (si estamos en parámetros)
+  const getCurrentMultipleData = () => {
+    return currentMultipleData;
+  };
+
+  // Handler para recibir datos del formulario desde SystemParameters
+  const handleFormDataChange = (formData: Record<string, any>, multipleData: any[]) => {
+    setCurrentFormData(formData);
+    setCurrentMultipleData(multipleData);
+  };
+
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
+    console.log('🔄 App: Tab change requested:', { from: activeTab, to: tab });
+    
+    // Verificar si hay cambios sin guardar usando el hook
+    const shouldBlock = checkTabChange({
+      formData: getCurrentFormData(),
+      selectedTable: activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '',
+      activeSubTab: 'status', // App no maneja subpestañas directamente
+      multipleData: getCurrentMultipleData(),
+      onConfirmAction: () => {
+        console.log('🔄 App: Confirming tab change to:', tab);
+        setActiveTab(tab);
+        setShowWelcomeIntegrated(false);
+      },
+      onCancelAction: () => console.log('App: Tab change cancelled')
+    }, tab);
+    
+    if (shouldBlock) {
+      console.log('🔄 App: Tab change blocked, showing modal');
+      return;
+    }
+    
+    // Si no hay cambios sin guardar, proceder normalmente
+    console.log('🔄 App: No changes, proceeding with tab change');
     setActiveTab(tab);
     setShowWelcomeIntegrated(false);
   };
@@ -219,6 +397,40 @@ const AppContentInternal: React.FC = () => {
   };
 
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive') => {
+    console.log('🔄 App: SubTab change requested:', { from: activeSubTab, to: subTab });
+    
+    // Solo verificar cambios si estamos saliendo de 'insert' o 'massive'
+    const shouldCheckChanges = activeSubTab === 'insert' || activeSubTab === 'massive';
+    
+    if (shouldCheckChanges) {
+      // Interceptar el cambio usando el nuevo sistema
+      const shouldBlock = interceptSubTabChange(subTab, {
+        formData: getCurrentFormData(),
+        selectedTable: activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '',
+        activeSubTab: activeSubTab,
+        multipleData: getCurrentMultipleData(),
+        onConfirmAction: () => {
+          console.log('🔄 App: Confirming sub-tab change to:', subTab);
+          // Limpiar los datos del formulario antes de cambiar
+          setCurrentFormData({});
+          setCurrentMultipleData([]);
+          setClearFormData(true); // Activar limpieza en SystemParameters
+          setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
+        },
+        onCancelAction: () => {
+          console.log('🔄 App: Sub-tab change cancelled, staying in:', activeSubTab);
+          // No hacer nada, quedarse en la subpestaña actual
+        }
+      });
+      
+      if (shouldBlock) {
+        console.log('🔄 App: Sub-tab change blocked, showing modal');
+        return;
+      }
+    }
+    
+    // Si no hay cambios sin guardar o no necesitamos verificar, proceder normalmente
+    console.log('🔄 App: No changes, proceeding with sub-tab change');
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
   };
 
@@ -286,22 +498,26 @@ const AppContentInternal: React.FC = () => {
         case 'criticidad':
         case 'status':
           return (
-            <SystemParametersLazy 
+            <SystemParametersWithSuspense 
               selectedTable={parameterTab}
               onTableSelect={handleTableSelect}
               activeSubTab={activeSubTab}
               onSubTabChange={handleSubTabChange}
               activeTab={activeTab}
+              onFormDataChange={handleFormDataChange}
+              clearFormData={clearFormData}
             />
           );
         default:
           return (
-            <SystemParametersLazy 
+            <SystemParametersWithSuspense 
               selectedTable={parameterTab}
               onTableSelect={handleTableSelect}
               activeSubTab={activeSubTab}
               onSubTabChange={handleSubTabChange}
               activeTab={activeTab}
+              onFormDataChange={handleFormDataChange}
+              clearFormData={clearFormData}
             />
           );
       }
@@ -611,11 +827,71 @@ const AppContentInternal: React.FC = () => {
     return (
       <ReportesAlertasWrapper>
         {layoutContent}
+        {/* Modal de protección de datos */}
+        {modalState && (
+          <DataLossModal
+            isOpen={modalState.isOpen}
+            onConfirm={confirmAction}
+            onCancel={cancelDataLossAction}
+            currentContext={modalState.currentContext}
+            targetContext={modalState.targetContext}
+            contextType={modalState.contextType}
+          />
+        )}
+        
+        {/* Modal de confirmación de cambios */}
+        {(() => {
+          const changeInfo = getPendingChangeInfo();
+          if (!changeInfo) return null;
+          
+          return (
+            <ChangeConfirmationModal
+              isOpen={changeInfo.isOpen}
+              onConfirm={changeInfo.onConfirm}
+              onCancel={changeInfo.onCancel}
+              contextType={changeInfo.contextType}
+              currentContext={changeInfo.currentContext}
+              targetContext={changeInfo.targetContext}
+            />
+          );
+        })()}
       </ReportesAlertasWrapper>
     );
   }
 
-  return layoutContent;
+  return (
+    <>
+      {layoutContent}
+      {/* Modal de protección de datos */}
+      {modalState && (
+        <DataLossModal
+          isOpen={modalState.isOpen}
+          onConfirm={confirmAction}
+          onCancel={cancelDataLossAction}
+          currentContext={modalState.currentContext}
+          targetContext={modalState.targetContext}
+          contextType={modalState.contextType}
+        />
+      )}
+      
+      {/* Modal de confirmación de cambios */}
+      {(() => {
+        const changeInfo = getPendingChangeInfo();
+        if (!changeInfo) return null;
+        
+        return (
+          <ChangeConfirmationModal
+            isOpen={changeInfo.isOpen}
+            onConfirm={changeInfo.onConfirm}
+            onCancel={changeInfo.onCancel}
+            contextType={changeInfo.contextType}
+            currentContext={changeInfo.currentContext}
+            targetContext={changeInfo.targetContext}
+          />
+        );
+      })()}
+    </>
+  );
 };
 
 const AppContent: React.FC = () => {
