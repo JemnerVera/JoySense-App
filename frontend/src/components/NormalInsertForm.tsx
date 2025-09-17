@@ -173,6 +173,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderUmbralFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
+    }
+    
     // Primera fila: Ubicación, Nodo, Tipo
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
     const nodoField = visibleColumns.find(c => c.columnName === 'nodoid');
@@ -443,57 +449,20 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderFundoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Auto-seleccionar País y Empresa si solo hay una opción
-    const paisOptions = getUniqueOptionsForField('paisid');
-    const empresaOptions = getUniqueOptionsForField('empresaid');
-    
-    if (paisOptions.length === 1 && !formData.paisid) {
-      setFormData({ ...formData, paisid: paisOptions[0].value });
-    }
-    if (empresaOptions.length === 1 && !formData.empresaid) {
-      setFormData({ ...formData, empresaid: empresaOptions[0].value });
+    // Fila contextual: País, Empresa (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa']);
+    if (contextualRow) {
+      result.push(contextualRow);
     }
     
-    // Primera fila: País, Empresa
-    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
-    const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
-    
-    if (paisField || empresaField) {
-      result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {paisField && (paisOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                PAÍS
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {paisOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(paisField))}
-          {empresaField && (empresaOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                EMPRESA
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {empresaOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(empresaField))}
-          <div></div> {/* Espacio vacío */}
-        </div>
-      );
-    }
-    
-    // Segunda fila: Fundo, Abreviatura, Status
+    // Primera fila: Fundo, Abreviatura, Status
     const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'farmabrev');
+    const abreviaturaField = visibleColumns.find(c => c.columnName === 'fundoabrev');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
     if (fundoField || abreviaturaField || statusField) {
       result.push(
-        <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {fundoField && renderField(fundoField)}
           {abreviaturaField && renderField(abreviaturaField)}
           {statusField && renderField(statusField)}
@@ -508,77 +477,19 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderUbicacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Auto-seleccionar País, Empresa y Fundo si solo hay una opción
-    const paisOptions = getUniqueOptionsForField('paisid');
-    const empresaOptions = getUniqueOptionsForField('empresaid');
-    const fundoOptions = getUniqueOptionsForField('fundoid');
-    
-    if (paisOptions.length === 1 && !formData.paisid) {
-      setFormData({ ...formData, paisid: paisOptions[0].value });
-    }
-    if (empresaOptions.length === 1 && !formData.empresaid) {
-      setFormData({ ...formData, empresaid: empresaOptions[0].value });
-    }
-    if (fundoOptions.length === 1 && !formData.fundoid) {
-      setFormData({ ...formData, fundoid: fundoOptions[0].value });
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
     }
     
-    // Primera fila: País, Empresa, Fundo
-    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
-    const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
-    const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
-    
-    console.log('🔍 renderLocalizacionFields - Primera fila:', {
-      paisField: paisField?.columnName,
-      empresaField: empresaField?.columnName,
-      fundoField: fundoField?.columnName,
-      visibleColumns: visibleColumns.map(c => c.columnName)
-    });
-    
-    if (paisField || empresaField || fundoField) {
-      result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {paisField && (paisOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                PAÍS
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {paisOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(paisField))}
-          {empresaField && (empresaOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                EMPRESA
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {empresaOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(empresaField))}
-          {fundoField && (fundoOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                FUNDO
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {fundoOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(fundoField))}
-        </div>
-      );
-    }
-    
-    // Segunda fila: Ubicación, Status
+    // Primera fila: Ubicación, Status
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacion');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
     if (ubicacionField || statusField) {
       result.push(
-        <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {ubicacionField && renderField(ubicacionField)}
           <div></div> {/* Espacio vacío */}
           {statusField && renderField(statusField)}
@@ -742,76 +653,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderLocalizacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    console.log('🔍 renderLocalizacionFields Debug:', {
-      selectedTable,
-      paisSeleccionado,
-      empresaSeleccionada,
-      fundoSeleccionado,
-      visibleColumns: visibleColumns.map(c => c.columnName)
-    });
-    
-    // Auto-seleccionar País, Empresa y Fundo si solo hay una opción
-    const paisOptions = getUniqueOptionsForField('paisid');
-    const empresaOptions = getUniqueOptionsForField('empresaid');
-    const fundoOptions = getUniqueOptionsForField('fundoid');
-    
-    if (paisOptions.length === 1 && !formData.paisid) {
-      setFormData({ ...formData, paisid: paisOptions[0].value });
-    }
-    if (empresaOptions.length === 1 && !formData.empresaid) {
-      setFormData({ ...formData, empresaid: empresaOptions[0].value });
-    }
-    if (fundoOptions.length === 1 && !formData.fundoid) {
-      setFormData({ ...formData, fundoid: fundoOptions[0].value });
-    }
-    
-    // Primera fila: País, Empresa, Fundo
-    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
-    const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
-    const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
-    
-    console.log('🔍 renderLocalizacionFields - Primera fila:', {
-      paisField: paisField?.columnName,
-      empresaField: empresaField?.columnName,
-      fundoField: fundoField?.columnName,
-      visibleColumns: visibleColumns.map(c => c.columnName)
-    });
-    
-    if (paisField || empresaField || fundoField) {
-      result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {paisField && (paisOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                PAÍS
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {paisOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(paisField))}
-          {empresaField && (empresaOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                EMPRESA
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {empresaOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(empresaField))}
-          {fundoField && (fundoOptions.length === 1 ? (
-            <div>
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                FUNDO
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-                {fundoOptions[0].label}
-              </div>
-            </div>
-          ) : renderField(fundoField))}
-        </div>
-      );
+    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
+    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
+    if (contextualRow) {
+      result.push(contextualRow);
     }
     
     // Segunda fila: Entidad, Ubicación, Nodo

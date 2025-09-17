@@ -6,6 +6,12 @@ interface MassiveUmbralFormProps {
   onApply: (data: any[]) => void;
   onCancel: () => void;
   loading?: boolean;
+  paisSeleccionado?: string;
+  empresaSeleccionada?: string;
+  fundoSeleccionado?: string;
+  getPaisName?: (paisId: string) => string;
+  getEmpresaName?: (empresaId: string) => string;
+  getFundoName?: (fundoId: string) => string;
 }
 
 interface SelectedNode {
@@ -49,7 +55,13 @@ export function MassiveUmbralForm({
   getUniqueOptionsForField,
   onApply,
   onCancel,
-  loading = false
+  loading = false,
+  paisSeleccionado,
+  empresaSeleccionada,
+  fundoSeleccionado,
+  getPaisName,
+  getEmpresaName,
+  getFundoName
 }: MassiveUmbralFormProps) {
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
@@ -318,29 +330,136 @@ export function MassiveUmbralForm({
   const totalCombinations = selectedNodesCount * formData.selectedTipos.length * 
     formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
 
+  // Auto-seleccionar fundo si solo hay una opción
+  useEffect(() => {
+    if (fundosOptions.length === 1 && !formData.fundoid) {
+      setFormData(prev => ({
+        ...prev,
+        fundoid: fundosOptions[0].value ? parseInt(fundosOptions[0].value.toString()) : null,
+        entidadid: null,
+        selectedTipos: []
+      }));
+    }
+  }, [fundosOptions, formData.fundoid]);
+
+  // Función para renderizar fila contextual con filtros globales
+  const renderContextualRow = (fields: string[]) => {
+    const contextualFields = fields.map(field => {
+      if (field === 'pais' && paisSeleccionado && getPaisName) {
+        return (
+          <div key="pais-contextual">
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              PAÍS
+            </label>
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              {getPaisName(paisSeleccionado)}
+            </div>
+          </div>
+        );
+      } else if (field === 'empresa' && empresaSeleccionada && getEmpresaName) {
+        return (
+          <div key="empresa-contextual">
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              EMPRESA
+            </label>
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              {getEmpresaName(empresaSeleccionada)}
+            </div>
+          </div>
+        );
+      } else if (field === 'fundo') {
+        return (
+          <div key="fundo-contextual">
+            <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
+              FUNDO
+            </label>
+            {fundosOptions.length === 1 ? (
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+                {fundosOptions[0].label}
+              </div>
+            ) : (
+              <SelectWithPlaceholder
+                options={fundosOptions}
+                value={formData.fundoid}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    fundoid: value ? parseInt(value.toString()) : null,
+                    entidadid: null,
+                    selectedTipos: []
+                  }));
+                }}
+                placeholder="SELECCIONAR FUNDO"
+                disabled={loading}
+              />
+            )}
+          </div>
+        );
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (contextualFields.length === 0) return null;
+
+    // Separar campos en dos filas
+    const firstRowFields = contextualFields.filter(field => 
+      field && (field.key === 'pais-contextual' || field.key === 'empresa-contextual')
+    );
+    const secondRowFields = contextualFields.filter(field => 
+      field && field.key === 'fundo-contextual'
+    );
+
+    return (
+      <div className="space-y-6 mb-6">
+        {/* Primera fila: País y Empresa */}
+        {firstRowFields.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {firstRowFields}
+          </div>
+        )}
+        
+        {/* Segunda fila: Fundo */}
+        {secondRowFields.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {secondRowFields}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {/* Fila 1: Fundo y Entidad */}
+      {/* Fila 1: País y Empresa (contextual) */}
+      {renderContextualRow(['pais', 'empresa'])}
+
+      {/* Fila 2: Fundo y Entidad */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Fundo */}
         <div>
           <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
             FUNDO
           </label>
-          <SelectWithPlaceholder
-            options={fundosOptions}
-            value={formData.fundoid}
-            onChange={(value) => {
-              setFormData(prev => ({
-                ...prev,
-                fundoid: value ? parseInt(value.toString()) : null,
-                entidadid: null,
-                selectedTipos: []
-              }));
-            }}
-            placeholder="SELECCIONAR FUNDO"
-            disabled={loading}
-          />
+          {fundosOptions.length === 1 ? (
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              {fundosOptions[0].label}
+            </div>
+          ) : (
+            <SelectWithPlaceholder
+              options={fundosOptions}
+              value={formData.fundoid}
+              onChange={(value) => {
+                setFormData(prev => ({
+                  ...prev,
+                  fundoid: value ? parseInt(value.toString()) : null,
+                  entidadid: null,
+                  selectedTipos: []
+                }));
+              }}
+              placeholder="SELECCIONAR FUNDO"
+              disabled={loading}
+            />
+          )}
         </div>
 
         {/* Entidad */}
@@ -364,7 +483,7 @@ export function MassiveUmbralForm({
         </div>
       </div>
 
-      {/* Fila 2: Nodos y Tipos */}
+      {/* Fila 3: Nodos y Tipos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Nodos */}
         <div>

@@ -1415,6 +1415,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
       const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
       const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
+      
+      // Para fundo, extraer paisid de la relación con empresa
+      const processedFundos = fundos.map((fundo: any) => ({
+        ...fundo,
+        paisid: fundo.empresa?.paisid || null
+      }));
       const ubicaciones = Array.isArray(ubicacionesResponse) ? ubicacionesResponse : ((ubicacionesResponse as any)?.data || []);
       const localizaciones = Array.isArray(localizacionesResponse) ? localizacionesResponse : ((localizacionesResponse as any)?.data || []);
       const entidades = Array.isArray(entidadesResponse) ? entidadesResponse : ((entidadesResponse as any)?.data || []);
@@ -1431,7 +1437,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
        
        setPaisesData(paises);
        setEmpresasData(empresas);
-       setFundosData(fundos);
+       setFundosData(processedFundos);
        setUbicacionesData(ubicaciones);
        setLocalizacionesData(localizaciones);
        setEntidadesData(entidades);
@@ -2635,6 +2641,22 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     }
   };
 
+  // Funciones para obtener nombres de entidades
+  const getPaisName = (paisId: string) => {
+    const pais = paisesData?.find(p => p.paisid.toString() === paisId);
+    return pais ? pais.pais : `País ${paisId}`;
+  };
+
+  const getEmpresaName = (empresaId: string) => {
+    const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
+    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
+  };
+
+  const getFundoName = (fundoId: string) => {
+    const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
+    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
+  };
+
     const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string }) => {
     console.log('🔍 getUniqueOptionsForField Debug:', {
       columnName,
@@ -3660,6 +3682,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       allColumns: columns?.map(c => c.columnName)
     });
     
+    if (selectedTable === 'fundo') {
+      console.log('🔍 Fundo columns available:', columns?.map(col => col.columnName));
+      console.log('🔍 Fundo fundoabrev column:', columns?.find(col => col.columnName === 'fundoabrev'));
+    }
+    
     // Para la tabla nodo, necesitamos incluir campos que están después de usercreatedid
     if (selectedTable === 'nodo') {
       const nodoColumns = columns.filter(col => {
@@ -3872,6 +3899,11 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
     const auditColumns = injectedColumns.filter(col => ['usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
     const otherColumns = injectedColumns.filter(col => !['statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
     
+    if (selectedTable === 'fundo') {
+      console.log('🔍 Fundo otherColumns:', otherColumns.map(col => col.columnName));
+      console.log('🔍 Fundo fundoabrev in otherColumns:', otherColumns.find(col => col.columnName === 'fundoabrev'));
+    }
+    
     // Para las tablas, reordenar según los requerimientos específicos (tanto para Estado como para Actualizar)
     if (selectedTable === 'pais') {
       // Pais, Abreviatura
@@ -3883,10 +3915,10 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         reorderedColumns.push(...otherColumns.filter(col => ['empresa'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['empresabrev'].includes(col.columnName)));
       } else if (selectedTable === 'fundo') {
-        // Empresa, Fundo, Abreviatura (sin Pais)
+        // Empresa, Fundo, Abreviatura (sin País - solo referencial en formulario)
         reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
       } else if (selectedTable === 'ubicacion') {
         // Fundo, Ubicacion (sin Empresa y Pais)
         reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
@@ -3988,8 +4020,17 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         reorderedColumns.push(...otherColumns);
       }
     } else {
-        // Para otras tablas, mantener el orden original
-      reorderedColumns.push(...otherColumns);
+        // Para formularios de insertar (forTable = false), aplicar reordenamiento específico
+        if (selectedTable === 'fundo') {
+          // País, Empresa, Fundo, Abreviatura
+          reorderedColumns.push(...otherColumns.filter(col => ['paisid'].includes(col.columnName)));
+          reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
+          reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
+          reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
+        } else {
+          // Para otras tablas, mantener el orden original
+          reorderedColumns.push(...otherColumns);
+        }
     }
     
     // Agregar columnas de auditoría
@@ -4064,6 +4105,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
       'empresabrev': 'Abreviatura',
       'empresaabrev': 'Abreviatura',
       'farmabrev': 'Abreviatura',
+      'fundoabrev': 'Abreviatura',
       'ubicacionabrev': 'Abreviatura',
       'statusid': 'Status',
       'usercreatedid': 'Creado por',
@@ -6359,6 +6401,12 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
                         setShowCancelModal(true);
                       }}
                       loading={loading}
+                      paisSeleccionado={paisSeleccionado}
+                      empresaSeleccionada={empresaSeleccionada}
+                      fundoSeleccionado={fundoSeleccionado}
+                      getPaisName={getPaisName}
+                      getEmpresaName={getEmpresaName}
+                      getFundoName={getFundoName}
                     />
                   ) : (
                     <div className="text-center py-8">

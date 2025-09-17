@@ -21,7 +21,7 @@ interface NodeData {
     ubicacionabrev: string
     fundo: {
       fundo: string
-      farmabrev: string
+      fundoabrev: string
       empresa: {
         empresa: string
         empresabrev: string
