@@ -4591,7 +4591,37 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
         
         console.log(`✅ Combinaciones a activar para nodo ${nodoid}:`, Array.from(combinacionesAActivar));
         
-        // PRIMERO: Crear entradas en metricasensor si no existen
+        // PRIMERO: Crear entradas en sensor si no existen
+        console.log(`🔧 Creando entradas en sensor para nodo ${nodoid}...`);
+        const tiposUnicos = Array.from(new Set(datosDelNodo.map(dato => dato.tipoid)));
+        
+        for (const tipoid of tiposUnicos) {
+          // Verificar si ya existe en sensor
+          const sensorExistente = sensorsData?.find((s: any) => 
+            s.nodoid === nodoid && s.tipoid === tipoid
+          );
+          
+          if (!sensorExistente) {
+            console.log(`➕ Creando sensor: nodo ${nodoid}, tipo ${tipoid}`);
+            
+            const sensorData = {
+              nodoid: nodoid,
+              tipoid: tipoid,
+              statusid: 1,
+              usercreatedid: usuarioid,
+              usermodifiedid: usuarioid,
+              datecreated: currentTimestamp,
+              datemodified: currentTimestamp
+            };
+            
+            await JoySenseService.insertTableRow('sensor', sensorData);
+            console.log(`✅ Sensor creado: nodo ${nodoid}, tipo ${tipoid}`);
+          } else {
+            console.log(`✅ Sensor ya existe: nodo ${nodoid}, tipo ${tipoid}`);
+          }
+        }
+        
+        // SEGUNDO: Crear entradas en metricasensor si no existen
         console.log(`🔧 Creando entradas en metricasensor para nodo ${nodoid}...`);
         for (const dato of datosDelNodo) {
           const combinacion = `${dato.tipoid}-${dato.metricaid}`;
@@ -4622,7 +4652,7 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           }
         }
         
-        // SEGUNDO: Inactivar umbrales existentes que NO están en las combinaciones a activar
+        // TERCERO: Inactivar umbrales existentes que NO están en las combinaciones a activar
         for (const umbralExistente of umbralesExistentes) {
           const combinacion = `${umbralExistente.tipoid}-${umbralExistente.metricaid}`;
           
