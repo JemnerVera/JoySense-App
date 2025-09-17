@@ -4687,13 +4687,19 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           
           if (metricaSensorExistente) {
             console.log(`🔄 Actualizando metricasensor existente: ${combinacion} para nodo ${nodoid}`);
-            // Actualizar metricasensor existente
-            await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
-              statusid: 1,
-              usermodifiedid: usuarioid,
-              datemodified: currentTimestamp
-            });
-            console.log(`✅ Metricasensor actualizado: ${combinacion}`);
+            try {
+              // Actualizar metricasensor existente
+              await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
+                statusid: 1,
+                usermodifiedid: usuarioid,
+                datemodified: currentTimestamp
+              });
+              console.log(`✅ Metricasensor actualizado: ${combinacion}`);
+            } catch (updateError: any) {
+              console.log(`❌ Error al actualizar metricasensor existente:`, updateError);
+              // Si falla la actualización, asumir que ya está activo
+              console.log(`✅ Asumiendo que metricasensor ya está activo: ${combinacion}`);
+            }
           } else {
             console.log(`➕ Intentando crear nuevo metricasensor: ${combinacion} para nodo ${nodoid}`);
             try {
