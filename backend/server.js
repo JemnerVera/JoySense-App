@@ -2219,7 +2219,13 @@ app.post('/api/sense/umbral', async (req, res) => {
     
     if (error) {
       console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      return res.status(500).json({ 
+        error: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
     }
     
     console.log(`✅ Backend: Umbral insertado: ${data.length} registros`);
