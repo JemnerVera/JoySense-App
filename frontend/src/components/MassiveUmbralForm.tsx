@@ -26,7 +26,7 @@ interface MetricaData {
   metricaid: number;
   metrica: string;
   unidad: string;
-  disabled: boolean;
+  selected: boolean;
   expanded: boolean;
   umbralesPorTipo: {
     [tipoid: number]: {
@@ -111,7 +111,7 @@ export function MassiveUmbralForm({
         metricaid: parseInt(option.value.toString()),
         metrica: option.label,
         unidad: option.unidad || '',
-        disabled: false,
+        selected: false,
         expanded: false,
         umbralesPorTipo: {}
       }));
@@ -184,13 +184,13 @@ export function MassiveUmbralForm({
     }));
   };
 
-  // Manejar desactivación de métrica (tacho)
-  const handleMetricaDisable = (metricaid: number) => {
+  // Manejar selección de métrica (checkbox)
+  const handleMetricaSelect = (metricaid: number) => {
     setFormData(prev => ({
       ...prev,
       metricasData: prev.metricasData.map(metrica =>
         metrica.metricaid === metricaid
-          ? { ...metrica, disabled: !metrica.disabled }
+          ? { ...metrica, selected: !metrica.selected, expanded: false }
           : metrica
       )
     }));
@@ -226,7 +226,7 @@ export function MassiveUmbralForm({
     const hasNodes = getSelectedNodes().length > 0;
     const hasTipos = formData.selectedTipos.length > 0;
     const hasMetricas = formData.metricasData.some(metrica => {
-      if (metrica.disabled) return false;
+      if (!metrica.selected) return false;
       return Object.values(metrica.umbralesPorTipo).some(umbral => 
         umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
       );
@@ -252,8 +252,8 @@ export function MassiveUmbralForm({
       
       for (const tipo of formData.selectedTipos) {
         for (const metrica of formData.metricasData) {
-          // Solo procesar métricas no desactivadas
-          if (!metrica.disabled) {
+          // Solo procesar métricas seleccionadas
+          if (metrica.selected) {
             const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid];
             console.log('🔍 Verificando umbral para tipo:', { 
               metrica: metrica.metrica, 
@@ -316,7 +316,7 @@ export function MassiveUmbralForm({
 
   const selectedNodesCount = getSelectedNodes().length;
   const totalCombinations = selectedNodesCount * formData.selectedTipos.length * 
-    formData.metricasData.filter(m => !m.disabled && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
+    formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
 
   return (
     <div className="space-y-6">
@@ -481,52 +481,45 @@ export function MassiveUmbralForm({
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             <div className="space-y-2">
               {formData.metricasData.map((metrica, index) => (
-                <div key={metrica.metricaid} className={`rounded-lg transition-all duration-200 ${metrica.disabled ? 'bg-red-900 bg-opacity-30 border border-red-600' : 'bg-neutral-800 border border-neutral-600'}`}>
+                <div key={metrica.metricaid} className={`rounded-lg transition-all duration-200 ${metrica.selected ? 'bg-neutral-800 border border-neutral-600' : 'bg-neutral-900 border border-neutral-700'}`}>
                   {/* Header de la métrica */}
-                  <div 
-                    className={`flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-700 transition-colors ${metrica.disabled ? 'opacity-60' : ''}`}
-                    onClick={() => !metrica.disabled && handleMetricaToggle(metrica.metricaid)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {!metrica.disabled && (
-                        <div className="text-orange-500">
-                          {metrica.expanded ? (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          )}
-                        </div>
-                      )}
-                      <h5 className="text-orange-400 font-mono tracking-wider font-bold">
+                  <div className="flex items-center space-x-3 p-3">
+                    {/* Checkbox para seleccionar métrica */}
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={metrica.selected}
+                        onChange={() => handleMetricaSelect(metrica.metricaid)}
+                        disabled={loading}
+                        className="w-4 h-4 text-orange-500 bg-neutral-700 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                      />
+                      <h5 className={`font-mono tracking-wider font-bold transition-colors ${metrica.selected ? 'text-orange-400' : 'text-neutral-500'}`}>
                         {metrica.metrica.toUpperCase()}
                       </h5>
-                    </div>
+                    </label>
                     
-                    {/* Botón de tacho */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMetricaDisable(metrica.metricaid);
-                      }}
-                      className={`p-2 rounded transition-colors ${
-                        metrica.disabled 
-                          ? 'bg-red-600 hover:bg-red-500 text-white' 
-                          : 'bg-neutral-600 hover:bg-red-600 text-neutral-300 hover:text-white'
-                      }`}
-                      disabled={loading}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {/* Botón para expandir/contraer (solo si está seleccionada) */}
+                    {metrica.selected && (
+                      <button
+                        onClick={() => handleMetricaToggle(metrica.metricaid)}
+                        className="ml-auto p-2 rounded transition-colors bg-neutral-600 hover:bg-neutral-500 text-neutral-300 hover:text-white"
+                        disabled={loading}
+                      >
+                        {metrica.expanded ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                   </div>
                   
                   {/* Contenido expandible */}
-                  {metrica.expanded && !metrica.disabled && (
+                  {metrica.expanded && metrica.selected && (
                     <div className="px-3 pb-3 border-t border-neutral-600">
                       <div className="space-y-4 mt-3">
                         {formData.selectedTipos.map((tipo) => {
@@ -635,7 +628,7 @@ export function MassiveUmbralForm({
             </div>
             <div>
               <span className="text-orange-400">Métricas configuradas:</span>
-              <span className="text-white ml-2">{formData.metricasData.filter(m => !m.disabled && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length}</span>
+              <span className="text-white ml-2">{formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length}</span>
             </div>
             <div>
               <span className="text-orange-400">Total de umbrales a crear:</span>
