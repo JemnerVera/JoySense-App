@@ -2771,37 +2771,53 @@ const SystemParameters: React.FC<SystemParametersProps> = ({
           });
         } else if (filterParams?.fundoid) {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
-          // Relación: nodo -> ubicacion -> fundo
-          if (ubicacionesData && ubicacionesData.length > 0) {
+          // Relación: nodo -> localizacion -> ubicacion -> fundo
+          if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
             const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === filterParams.fundoid);
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
             
-            // Para simplificar, mostrar todos los nodos activos del fundo
-            // (asumiendo que todos los nodos pueden ser asignados a cualquier ubicación del fundo)
-            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+            // Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
+            const nodosConLocalizacion = localizacionesData.filter(loc => 
+              loc && loc.ubicacionid && ubicacionIds.includes(loc.ubicacionid)
+            );
+            const nodoIdsDelFundo = nodosConLocalizacion.map(loc => loc.nodoid);
             
-            console.log('🔗 Nodos filtrados por fundo (simplificado):', { 
+            filteredNodos = nodosData.filter(nodo => 
+              nodo && nodo.nodoid && nodo.statusid === 1 && nodoIdsDelFundo.includes(nodo.nodoid)
+            );
+            
+            console.log('🔗 Nodos filtrados por fundo:', { 
               fundoid: filterParams.fundoid, 
               ubicacionesDelFundo: ubicacionesDelFundo.length,
               ubicacionIds: ubicacionIds.length,
+              nodosConLocalizacion: nodosConLocalizacion.length,
+              nodoIdsDelFundo: nodoIdsDelFundo.length,
               filteredCount: filteredNodos.length 
             });
           }
         } else if (fundoSeleccionado) {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado (filtros globales)
-          // Relación: nodo -> ubicacion -> fundo
-          if (ubicacionesData && ubicacionesData.length > 0) {
+          // Relación: nodo -> localizacion -> ubicacion -> fundo
+          if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
             const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === fundoSeleccionado);
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
             
-            // Para simplificar, mostrar todos los nodos activos del fundo
-            // (asumiendo que todos los nodos pueden ser asignados a cualquier ubicación del fundo)
-            filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+            // Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
+            const nodosConLocalizacion = localizacionesData.filter(loc => 
+              loc && loc.ubicacionid && ubicacionIds.includes(loc.ubicacionid)
+            );
+            const nodoIdsDelFundo = nodosConLocalizacion.map(loc => loc.nodoid);
             
-            console.log('🔗 Filtros globales aplicados a nodos (simplificado):', { 
+            filteredNodos = nodosData.filter(nodo => 
+              nodo && nodo.nodoid && nodo.statusid === 1 && nodoIdsDelFundo.includes(nodo.nodoid)
+            );
+            
+            console.log('🔗 Filtros globales aplicados a nodos:', { 
               fundoSeleccionado, 
               ubicacionesDelFundo: ubicacionesDelFundo.length, 
               ubicacionIds: ubicacionIds.length,
+              nodosConLocalizacion: nodosConLocalizacion.length,
+              nodoIdsDelFundo: nodoIdsDelFundo.length,
               filteredCount: filteredNodos.length 
             });
           }
