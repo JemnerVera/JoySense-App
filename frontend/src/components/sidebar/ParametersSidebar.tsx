@@ -1,6 +1,7 @@
 import React from 'react';
-import TableSelector from '../TableSelector';
+import ProtectedTableSelector from '../ProtectedTableSelector';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
+import ProtectedSubTabButton from '../ProtectedSubTabButton';
 
 interface ParametersSidebarProps {
   selectedTable: string;
@@ -10,6 +11,8 @@ interface ParametersSidebarProps {
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  formData?: Record<string, any>;
+  multipleData?: any[];
 }
 
 const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
@@ -19,7 +22,9 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
   onSubTabChange,
   isExpanded,
   onMouseEnter,
-  onMouseLeave
+  onMouseLeave,
+  formData = {},
+  multipleData = []
 }) => {
   // Definir todas las subpestañas disponibles
   const allSubTabs: Array<{
@@ -114,9 +119,12 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
       {/* Selector de tabla */}
       {isExpanded && (
         <div className="p-4 border-b border-neutral-700">
-          <TableSelector
+          <ProtectedTableSelector
             selectedTable={selectedTable}
             onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
+            formData={formData}
+            multipleData={multipleData}
           />
         </div>
       )}
@@ -127,9 +135,14 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
           {subTabs.map((subTab) => {
             const isActive = activeSubTab === subTab.id;
             return (
-              <button
+              <ProtectedSubTabButton
                 key={subTab.id}
-                onClick={() => onSubTabChange(subTab.id)}
+                targetTab={subTab.id}
+                currentTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
+                selectedTable={selectedTable}
+                formData={formData}
+                multipleData={multipleData}
+                onTabChange={onSubTabChange}
                 className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
                   isActive
                     ? "bg-orange-500 text-white"
@@ -142,7 +155,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
                 {isExpanded && (
                   <span className="text-sm font-medium tracking-wider">{subTab.label.toUpperCase()}</span>
                 )}
-              </button>
+              </ProtectedSubTabButton>
             );
           })}
         </nav>

@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 import { JoySenseService } from '../services/backend-api';
 import { TableInfo, ColumnInfo, Message } from '../types/systemParameters';
 import { STYLES_CONFIG } from '../config/styles';
-import SimpleModal from './SimpleModal';
-import { useSimpleModal } from '../hooks/useSimpleModal';
-import { hasSignificantChanges } from '../utils/changeDetection';
+import { useDataLossProtection } from '../hooks/useDataLossProtection';
+import DataLossModal from './DataLossModal';
+import { useChangeInterceptor } from '../hooks/useChangeInterceptor';
+import ChangeConfirmationModal from './ChangeConfirmationModal';
 import MultipleSensorForm from './MultipleSensorForm';
 import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
@@ -425,21 +426,31 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   onParameterChangeWithConfirmation,
   onTabChangeWithConfirmation,
   onFormDataChange,
-  clearFormData = false,
+  clearFormData = false
 }, ref) => {
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>(propActiveSubTab || 'status');
   
-  // Hook simple para modales
+  // Hook para protección de datos
   const {
     modalState,
-    showModal: showSimpleModal,
-    hideModal,
+    checkSubTabChange,
+    checkParameterChange,
+    checkTabChange,
     confirmAction,
-    cancelAction: cancelSimpleAction
-  } = useSimpleModal();
+    cancelAction: cancelDataLossAction
+  } = useDataLossProtection();
+
+  // Hook para interceptación de cambios
+  const {
+    registerChangeDetector,
+    interceptSubTabChange,
+    interceptParameterChange,
+    interceptTabChange,
+    getPendingChangeInfo
+  } = useChangeInterceptor();
   
   
   // Sincronizar estado local con props
@@ -462,46 +473,46 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Función para ejecutar el cambio de pestaña
   const executeTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
     handleSubTabNavigation(tab);
-        
-        // Limpiar selecciones específicas según la pestaña
-        if (tab === 'update') {
-          setSelectedRowForUpdate(null);
-          setSelectedRowsForUpdate([]);
-          setUpdateFormData({});
-          setIndividualRowStatus({});
-          setSearchField('');
-          setSearchTerm('');
-        }
-        
-        // Limpiar formularios específicos según la tabla
-        if (selectedTable === 'usuarioperfil') {
-          if (tab === 'insert') {
-            setMultipleUsuarioPerfiles([]);
-            setSelectedUsuarios([]);
-            setSelectedPerfiles([]);
-          }
-        } else if (selectedTable === 'metricasensor') {
-          if (tab === 'insert') {
-            setMultipleMetricas([]);
-            setSelectedNodos([]);
-            setSelectedEntidadMetrica('');
-            setSelectedMetricas([]);
-            setIsReplicateMode(false);
-          }
-        } else if (selectedTable === 'sensor') {
-          if (tab === 'insert') {
-            setMultipleSensors([]);
-            setSelectedNodo('');
-            setSelectedEntidad('');
-            setSelectedTipo('');
-            setSelectedSensorCount(0);
-          }
-        }
-        
-        // Llamar a la función del padre si está disponible
-        if (onSubTabChange) {
-          onSubTabChange(tab);
-        }
+    
+    // Limpiar selecciones específicas según la pestaña
+    if (tab === 'update') {
+      setSelectedRowForUpdate(null);
+      setSelectedRowsForUpdate([]);
+      setUpdateFormData({});
+      setIndividualRowStatus({});
+      setSearchField('');
+      setSearchTerm('');
+    }
+    
+    // Limpiar formularios específicos según la tabla
+    if (selectedTable === 'usuarioperfil') {
+      if (tab === 'insert') {
+        setMultipleUsuarioPerfiles([]);
+        setSelectedUsuarios([]);
+        setSelectedPerfiles([]);
+      }
+    } else if (selectedTable === 'metricasensor') {
+      if (tab === 'insert') {
+        setMultipleMetricas([]);
+        setSelectedNodos([]);
+        setSelectedEntidadMetrica('');
+        setSelectedMetricas([]);
+        setIsReplicateMode(false);
+      }
+    } else if (selectedTable === 'sensor') {
+      if (tab === 'insert') {
+        setMultipleSensors([]);
+        setSelectedNodo('');
+        setSelectedEntidad('');
+        setSelectedTipo('');
+        setSelectedSensorCount(0);
+      }
+    }
+    
+    // Llamar a la función del padre si está disponible
+    if (onSubTabChange) {
+      onSubTabChange(tab);
+    }
   };
 
   // Función para manejar el cambio de pestaña y limpiar mensajes
@@ -509,50 +520,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     console.log('🔄 handleTabChange called:', { 
       currentTab: activeSubTab, 
       targetTab: tab, 
-      selectedTable,
-      formData,
-      multipleData: getMultipleData()
+      selectedTable 
     });
     
-    // Verificar si hay cambios sin guardar
-    const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
-    console.log('🔄 hasChanges result:', hasChanges);
+    // Interceptar el cambio usando el nuevo sistema
+    const shouldBlock = interceptSubTabChange(tab, {
+      formData,
+      selectedTable,
+      activeSubTab,
+      multipleData: getMultipleData(),
+      onConfirmAction: () => {
+        console.log('🔄 Confirming tab change to:', tab);
+        handleSubTabNavigation(tab);
+      },
+      onCancelAction: () => {
+        console.log('🔄 Tab change cancelled, staying in:', activeSubTab);
+        // No hacer nada, quedarse en la pestaña actual
+      }
+    });
     
-    if (hasChanges) {
-      console.log('🔄 Showing modal for tab change');
-      // Mostrar modal de confirmación
-      showSimpleModal(
-        'subtab',
-        activeSubTab,
-        tab,
-        () => {
-          console.log('🔄 Confirming tab change to:', tab);
-          // Limpiar datos del formulario antes de cambiar
-          setFormData({});
-          setMultipleUsuarioPerfiles([]);
-          setSelectedUsuarios([]);
-          setSelectedPerfiles([]);
-          setMultipleMetricas([]);
-          setSelectedNodos([]);
-          setSelectedMetricas([]);
-          setIsReplicateMode(false);
-          setMultipleSensors([]);
-          setSelectedSensorCount(0);
-          // Cambiar pestaña internamente y notificar a App.tsx
-          handleSubTabNavigation(tab);
-        },
-        () => {
-          console.log('🔄 Tab change cancelled, staying in:', activeSubTab);
-          // No hacer nada, quedarse en la pestaña actual
-        }
-      );
-    } else {
-      console.log('🔄 No changes, proceeding with tab change');
-      // No hay cambios, proceder normalmente
-      handleSubTabNavigation(tab);
+    if (shouldBlock) {
+      console.log('🔄 Tab change blocked, showing modal');
+      return;
     }
+    
+    // Si no hay cambios sin guardar, proceder normalmente
+    console.log('🔄 No changes, proceeding with tab change');
+    handleSubTabNavigation(tab);
   };
-
 
   // Efecto para limpiar mensajes cuando cambia la pestaña desde el exterior
   useEffect(() => {
@@ -1395,7 +1390,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     handleTabChange
   }), [hasUnsavedChanges, handleTabChange]);
 
-
   // Efecto para interceptar cambios de pestaña y verificar cambios sin guardar - DESACTIVADO
   // useEffect(() => {
   //   // Solo ejecutar si el cambio viene del exterior (no de handleTabChange interno)
@@ -1431,42 +1425,32 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     console.log('🔄 Current activeSubTab:', activeSubTab);
     console.log('🔄 Current multipleData:', getMultipleData());
     
-    // Verificar si hay cambios sin guardar
-    const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
-    console.log('🔄 hasChanges result for parameter change:', hasChanges);
+    // Interceptar el cambio usando el nuevo sistema
+    const shouldBlock = interceptParameterChange(newTable, {
+      formData,
+      selectedTable,
+      activeSubTab,
+      multipleData: getMultipleData(),
+      onConfirmAction: () => {
+        console.log('🔄 Confirming parameter change to:', newTable);
+        handleParameterNavigation(newTable);
+      },
+      onCancelAction: () => {
+        console.log('🔄 Parameter change cancelled, staying in:', selectedTable);
+        // No hacer nada, quedarse en el parámetro actual
+      }
+    });
     
-    if (hasChanges) {
-      console.log('🔄 Showing modal for parameter change');
-      // Mostrar modal de confirmación
-      showSimpleModal(
-        'parameter',
-        selectedTable,
-        newTable,
-        () => {
-          console.log('🔄 Confirming parameter change to:', newTable);
-          // Limpiar datos del formulario antes de cambiar
-          setFormData({});
-          setMultipleUsuarioPerfiles([]);
-          setSelectedUsuarios([]);
-          setSelectedPerfiles([]);
-          setMultipleMetricas([]);
-          setSelectedNodos([]);
-          setSelectedMetricas([]);
-          setIsReplicateMode(false);
-          setMultipleSensors([]);
-          setSelectedSensorCount(0);
-          handleParameterNavigation(newTable);
-        },
-        () => {
-          console.log('🔄 Parameter change cancelled, staying in:', selectedTable);
-          // No hacer nada, quedarse en el parámetro actual
-        }
-      );
-    } else {
-      console.log('🔄 No changes, proceeding with parameter change');
-      // No hay cambios, proceder normalmente
-      handleParameterNavigation(newTable);
+    console.log('🔄 shouldBlock result:', shouldBlock);
+    
+    if (shouldBlock) {
+      console.log('🔄 Parameter change blocked, showing modal');
+      return;
     }
+    
+    // Si no hay cambios, proceder normalmente
+    console.log('🔄 No changes, proceeding with parameter change');
+    handleParameterNavigation(newTable);
   };
 
   // Función executeTableChange eliminada - ahora usamos handleParameterNavigation
@@ -1538,11 +1522,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     clearCopySelectionOnTableChange();
     
     // Cargar datos de la nueva tabla
-      loadTableData();
-      loadTableInfo();
-      loadTableConstraints();
-      loadUpdateData();
-      loadCopyData();
+    loadTableData();
+    loadTableInfo();
+    loadTableConstraints();
+    loadUpdateData();
+    loadCopyData();
     
     // Notificar al componente padre
     if (onTableSelect) {
@@ -1556,22 +1540,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setMessage(null);
     setUpdateMessage(null);
     
-    // Limpiar datos del formulario cuando se cambia de pestaña
-    console.log('🔄 SystemParameters: Clearing form data for sub-tab change');
-    setFormData({});
-    setMultipleUsuarioPerfiles([]);
-    setSelectedUsuarios([]);
-    setSelectedPerfiles([]);
-    setMultipleMetricas([]);
-    setSelectedNodos([]);
-    setSelectedMetricas([]);
-    setIsReplicateMode(false);
-    setMultipleSensors([]);
-    setSelectedSensorCount(0);
-    
-    // Notificar al componente padre PRIMERO para sincronizar
+    // Notificar al componente padre
     if (onSubTabChange) {
-      console.log('🔄 SystemParameters: Notifying App.tsx of sub-tab change to:', newSubTab);
       onSubTabChange(newSubTab);
     }
   };
@@ -1595,19 +1565,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadUserData();
     loadRelatedTablesData();
   }, []);
-
-  // Cargar datos cuando se selecciona una tabla
-  useEffect(() => {
-    if (selectedTable) {
-      console.log('🔄 SystemParameters: Loading data for table:', selectedTable);
-      loadTableData();
-      loadTableInfo();
-      loadTableConstraints();
-      loadUpdateData();
-      loadCopyData();
-      setHasSearched(false);
-    }
-  }, [selectedTable]);
 
   // Sincronizar con propSelectedTable - REMOVIDO para evitar bucle infinito
   // El cambio de tabla se maneja directamente en App.tsx
@@ -4214,7 +4171,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Empresa, Fundo, Abreviatura (sin País - solo referencial en formulario)
         reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
         reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
-      reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
+        reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
       } else if (selectedTable === 'ubicacion') {
         // Fundo, Ubicacion (sin Empresa y Pais)
         reorderedColumns.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
@@ -4323,9 +4280,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           reorderedColumns.push(...otherColumns.filter(col => ['empresaid'].includes(col.columnName)));
           reorderedColumns.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
           reorderedColumns.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
-    } else {
-        // Para otras tablas, mantener el orden original
-      reorderedColumns.push(...otherColumns);
+        } else {
+          // Para otras tablas, mantener el orden original
+          reorderedColumns.push(...otherColumns);
         }
     }
     
@@ -4621,10 +4578,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
    const [selectedEntidadMetrica, setSelectedEntidadMetrica] = useState<string>('');
    const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
 
-   // Estados para creación múltiple de usuario perfil
-   const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
-   const [selectedUsuarios, setSelectedUsuarios] = useState<string[]>([]);
-   const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
+  // Estados para creación múltiple de usuario perfil
+  const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
+  const [selectedUsuarios, setSelectedUsuarios] = useState<string[]>([]);
+  const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
 
   // Función para obtener datos múltiples según la tabla seleccionada
   const getMultipleData = useCallback(() => {
@@ -4642,24 +4599,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
 
-  // Memoizar getMultipleData para evitar loops infinitos
-  const memoizedMultipleData = useMemo(() => {
-    return getMultipleData();
-  }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
-
   // Efecto para notificar cambios en los datos del formulario al componente padre
   useEffect(() => {
     if (onFormDataChange) {
-      onFormDataChange(formData, memoizedMultipleData);
+      onFormDataChange(formData, getMultipleData());
     }
-  }, [formData, memoizedMultipleData, onFormDataChange]);
+  }, [formData, getMultipleData, onFormDataChange]);
 
-  // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
-  // useEffect(() => {
-  //   registerChangeDetector(() => {
-  //     return hasUnsavedChanges();
-  //   });
-  // }, [registerChangeDetector]);
+  // Registrar la función de detección de cambios
+  useEffect(() => {
+    registerChangeDetector(() => {
+      return hasUnsavedChanges();
+    });
+  }, [registerChangeDetector]);
 
       // Estados para creación múltiple de localizaciones
    const [multipleLocalizaciones, setMultipleLocalizaciones] = useState<any[]>([]);
@@ -5856,26 +5808,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setIsMultipleSelectionMode(false);
   }, [selectedTable]);
 
-  // Efecto para interceptar cambios de parámetro desde el exterior - DESHABILITADO
-  // Los modales ahora se manejan en ProtectedTableSelector
-  useEffect(() => {
-    if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
-      console.log('🔄 External parameter change detected - proceeding directly');
-      // Cambiar parámetro directamente sin modal
-      handleParameterNavigation(propSelectedTable);
-    }
-  }, [propSelectedTable, selectedTable, handleParameterNavigation]);
-
-  // Efecto para interceptar cambios de pestaña desde el exterior - DESHABILITADO
-  // Los modales ahora se manejan en ProtectedSubTabButton
-  useEffect(() => {
-    if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
-      console.log('🔄 External sub-tab change detected - proceeding directly');
-      // Cambiar pestaña directamente sin modal
-      handleSubTabNavigation(propActiveSubTab);
-    }
-  }, [propActiveSubTab, activeSubTab, handleSubTabNavigation]);
-
   return (
     <div className="animate-fadeIn">
       {/* Modal de confirmación para cambio de tabla */}
@@ -6333,7 +6265,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                                  <div className="flex items-center space-x-3">
                                    <input
                                      type="checkbox"
-                                     id={'update-' + col.columnName}
+                                     id={`update-${col.columnName}`}
                                      checked={value === 1 || value === true}
                                      onChange={(e) => setUpdateFormData(prev => ({
                                        ...prev,
@@ -6341,7 +6273,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                                      }))}
                                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                                    />
-                                   <label htmlFor={'update-' + col.columnName} className="text-white text-lg font-medium font-mono tracking-wider">
+                                   <label htmlFor={`update-${col.columnName}`} className="text-white text-lg font-medium font-mono tracking-wider">
                                      ACTIVO
                                    </label>
                                  </div>
@@ -6894,17 +6826,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         />
       )}
       
-      {/* Modal simple para confirmación de cambios */}
+      {/* Modal de protección de datos */}
       {modalState && (
-        <SimpleModal
+        <DataLossModal
           isOpen={modalState.isOpen}
           onConfirm={confirmAction}
-          onCancel={cancelSimpleAction}
-          type={modalState.type}
+          onCancel={cancelDataLossAction}
           currentContext={modalState.currentContext}
           targetContext={modalState.targetContext}
+          contextType={modalState.contextType}
         />
       )}
+      
+      {/* Modal de confirmación de cambios */}
+      {(() => {
+        const changeInfo = getPendingChangeInfo();
+        if (!changeInfo) return null;
+        
+        return (
+          <ChangeConfirmationModal
+            isOpen={changeInfo.isOpen}
+            onConfirm={changeInfo.onConfirm}
+            onCancel={changeInfo.onCancel}
+            contextType={changeInfo.contextType}
+            currentContext={changeInfo.currentContext}
+            targetContext={changeInfo.targetContext}
+          />
+        );
+      })()}
       
     </div>
   );

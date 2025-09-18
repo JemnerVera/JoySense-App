@@ -13,6 +13,8 @@ interface AuxiliarySidebarProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  formData?: Record<string, any>;
+  multipleData?: any[];
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -24,7 +26,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   selectedTable,
   onTableSelect,
   activeSubTab,
-  onSubTabChange
+  onSubTabChange,
+  formData = {},
+  multipleData = []
 }) => {
   // Subpestañas para Reportes
   const reportesSubTabs = [
@@ -71,6 +75,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         isExpanded={isExpanded}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
       />
     );
   }

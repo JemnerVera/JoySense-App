@@ -12,6 +12,8 @@ interface SidebarContainerProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  formData?: Record<string, any>;
+  multipleData?: any[];
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({
@@ -22,7 +24,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   selectedTable,
   onTableSelect,
   activeSubTab,
-  onSubTabChange
+  onSubTabChange,
+  formData = {},
+  multipleData = []
 }) => {
   const {
     mainSidebarExpanded,
@@ -66,6 +70,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
           />
         </div>
       )}

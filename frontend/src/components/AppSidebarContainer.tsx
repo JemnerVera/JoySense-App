@@ -12,6 +12,8 @@ interface AppSidebarContainerProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  formData?: Record<string, any>;
+  multipleData?: any[];
 }
 
 const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
@@ -22,7 +24,9 @@ const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
   selectedTable,
   onTableSelect,
   activeSubTab,
-  onSubTabChange
+  onSubTabChange,
+  formData = {},
+  multipleData = []
 }) => {
   const {
     sidebarVisible,
@@ -65,6 +69,8 @@ const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
           onMainSidebarMouseLeave={handleMainSidebarMouseLeave}
           onAuxiliarySidebarMouseEnter={handleAuxiliarySidebarMouseEnter}
           onAuxiliarySidebarMouseLeave={handleAuxiliarySidebarMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
         />
       </div>
       

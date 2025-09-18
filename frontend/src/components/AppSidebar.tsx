@@ -19,6 +19,8 @@ interface AppSidebarProps {
   onMainSidebarMouseLeave: () => void;
   onAuxiliarySidebarMouseEnter: () => void;
   onAuxiliarySidebarMouseLeave: () => void;
+  formData?: Record<string, any>;
+  multipleData?: any[];
 }
 
 const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -34,7 +36,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   onMainSidebarMouseEnter,
   onMainSidebarMouseLeave,
   onAuxiliarySidebarMouseEnter,
-  onAuxiliarySidebarMouseLeave
+  onAuxiliarySidebarMouseLeave,
+  formData = {},
+  multipleData = []
 }) => {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
@@ -348,6 +352,8 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           isExpanded={auxiliarySidebarVisible}
           onMouseEnter={onAuxiliarySidebarMouseEnter}
           onMouseLeave={onAuxiliarySidebarMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
         />
       )}
     </div>
