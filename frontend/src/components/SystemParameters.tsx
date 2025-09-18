@@ -3163,9 +3163,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           }
         }
         
-        // Para sensor masivo, mostrar todos los nodos activos (sin filtros de fundo)
-        if (selectedTable === 'sensor') {
-          console.log('🔗 Saltando filtros de fundo para sensor masivo - mostrando todos los nodos activos');
+        // Para sensor y metricasensor masivo, mostrar todos los nodos activos (sin filtros de fundo)
+        if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
+          console.log(`🔗 Saltando filtros de fundo para ${selectedTable} masivo - mostrando todos los nodos activos`);
           filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
           console.log('🔗 Total de nodos activos disponibles:', filteredNodos.length);
           console.log('🔗 Primeros 10 nodos activos:', filteredNodos.slice(0, 10).map(n => ({ id: n.nodoid, nombre: n.nodo })));
@@ -3200,10 +3200,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           console.log('🔗 - rls 998877:', finalFilteredNodos.find(n => n.nodo === 'rls 998877'));
         }
         
-        // Si estamos en el contexto de metricasensor, mostrar TODOS los nodos (tanto los que tienen métricas sensor como los que no)
+        // Si estamos en el contexto de metricasensor, mostrar nodos que tienen sensores pero NO tienen métricas sensor
         if (selectedTable === 'metricasensor') {
           // Usar datos de sensores cargados específicamente para metricasensor
           const sensorData = sensorsData || [];
+          
+          // Obtener nodos que ya tienen métricas sensor asignadas
+          const nodosConMetricasSensor = new Set(tableData.map(ms => ms.nodoid));
           
           finalFilteredNodos = filteredNodos.filter(nodo => {
             // Verificar que el nodo esté activo
@@ -3214,6 +3217,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             // Verificar que el nodo tenga sensores (esté en tabla sensor)
             const tieneSensores = sensorData.some((sensor: any) => sensor.nodoid === nodo.nodoid);
             if (!tieneSensores) {
+              return false;
+            }
+            
+            // Verificar que el nodo NO tenga métricas sensor asignadas
+            const tieneMetricasSensor = nodosConMetricasSensor.has(nodo.nodoid);
+            if (tieneMetricasSensor) {
               return false;
             }
             
@@ -3240,7 +3249,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             return true;
           });
           
-          console.log('🔗 Nodos filtrados para metricasensor (todos los nodos con sensores):', finalFilteredNodos.length);
+          console.log('🔗 Nodos filtrados para metricasensor (con sensores pero sin métricas sensor):', finalFilteredNodos.length);
+          console.log('🔗 Nodos con métricas sensor:', Array.from(nodosConMetricasSensor));
+          console.log('🔗 Nodos disponibles para metricasensor:', finalFilteredNodos.map(n => n.nodo));
         }
         
         
@@ -3266,9 +3277,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           };
         });
         
-        // Para sensor masivo, incluir TODOS los nodos (con o sin localización)
+        // Para sensor y metricasensor masivo, incluir TODOS los nodos (con o sin localización)
         // Para otros contextos, solo incluir nodos con ubicacionid
-        if (selectedTable !== 'sensor') {
+        if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor') {
           nodoResult = nodoResult.filter(nodo => nodo.ubicacionid !== null);
         }
         console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);

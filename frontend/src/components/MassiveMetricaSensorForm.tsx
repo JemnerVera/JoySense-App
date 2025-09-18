@@ -29,9 +29,7 @@ interface MetricaData {
 }
 
 interface FormData {
-  fundoid: number | null;
   entidadid: number | null;
-  selectedTipos: SelectedTipo[];
   metricasData: MetricaData[];
 }
 
@@ -42,20 +40,15 @@ export function MassiveMetricaSensorForm({
   loading = false
 }: MassiveMetricaSensorFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    fundoid: null,
     entidadid: null,
-    selectedTipos: [],
     metricasData: []
   });
 
   const [selectedNodes, setSelectedNodes] = useState<SelectedNode[]>([]);
   const [allNodesSelected, setAllNodesSelected] = useState(false);
+  const [assignedSensorTypes, setAssignedSensorTypes] = useState<SelectedTipo[]>([]);
 
   // Obtener opciones para los dropdowns
-  const fundosOptions = useMemo(() => 
-    getUniqueOptionsForField('fundoid'), [getUniqueOptionsForField]
-  );
-
   const entidadesOptions = useMemo(() => 
     getUniqueOptionsForField('entidadid'), [getUniqueOptionsForField]
   );
@@ -71,10 +64,12 @@ export function MassiveMetricaSensorForm({
     getUniqueOptionsForField('metricaid'), [getUniqueOptionsForField]
   );
 
-  // Cargar nodos cuando se selecciona un fundo
+  // Cargar nodos cuando se selecciona una entidad
   useEffect(() => {
-    if (formData.fundoid) {
-      const nodosOptions = getUniqueOptionsForField('nodoid', { fundoid: formData.fundoid.toString() });
+    if (formData.entidadid) {
+      // Obtener nodos que SÍ tienen sensores asignados (para metricasensor)
+      // La función getUniqueOptionsForField ya filtra automáticamente nodos con sensores cuando selectedTable === 'metricasensor'
+      const nodosOptions = getUniqueOptionsForField('nodoid', { entidadid: formData.entidadid.toString() });
       const nodesData: SelectedNode[] = nodosOptions.map(option => ({
         nodoid: parseInt(option.value.toString()),
         nodo: option.label,
@@ -83,11 +78,13 @@ export function MassiveMetricaSensorForm({
       }));
       setSelectedNodes(nodesData);
       setAllNodesSelected(false);
+      setAssignedSensorTypes([]); // Limpiar tipos asignados
     } else {
       setSelectedNodes([]);
       setAllNodesSelected(false);
+      setAssignedSensorTypes([]);
     }
-  }, [formData.fundoid, getUniqueOptionsForField]);
+  }, [formData.entidadid, getUniqueOptionsForField]);
 
   // Inicializar métricas cuando se cargan las opciones
   useEffect(() => {
@@ -133,27 +130,25 @@ export function MassiveMetricaSensorForm({
     }
   }, [selectedNodes]);
 
-  // Manejar selección de tipos
-  const handleTipoSelection = (tipoid: number, selected: boolean) => {
-    if (selected) {
-      const tipo = tiposOptions.find(t => parseInt(t.value.toString()) === tipoid);
-      if (tipo) {
-        setFormData(prev => ({
-          ...prev,
-          selectedTipos: [...prev.selectedTipos, {
-            tipoid,
-            tipo: tipo.label,
-            selected: true
-          }]
-        }));
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        selectedTipos: prev.selectedTipos.filter(t => t.tipoid !== tipoid)
+  // Cargar tipos de sensores asignados cuando se seleccionan nodos
+  useEffect(() => {
+    const selectedNodesData = selectedNodes.filter(node => node.selected);
+    if (selectedNodesData.length > 0 && formData.entidadid) {
+      // Obtener tipos de sensores para los nodos seleccionados
+      const tiposOptions = getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid.toString() });
+      const assignedTypes: SelectedTipo[] = tiposOptions.map(option => ({
+        tipoid: parseInt(option.value.toString()),
+        tipo: option.label,
+        selected: true // Todos los tipos asignados están siempre seleccionados (solo lectura)
       }));
+      setAssignedSensorTypes(assignedTypes);
+    } else {
+      setAssignedSensorTypes([]);
     }
-  };
+  }, [selectedNodes, formData.entidadid, getUniqueOptionsForField]);
+
+  // Los tipos de sensores asignados son solo informativos (solo lectura)
+  // No se pueden editar ya que se asignan en sense.sensor, no en sense.metricasensor
 
   // Manejar selección de métrica
   const handleMetricaSelection = (metricaid: number, selected: boolean) => {
@@ -176,13 +171,12 @@ export function MassiveMetricaSensorForm({
   // Validar formulario
   const isFormValid = () => {
     const hasNodes = getSelectedNodes().length > 0;
-    const hasTipos = formData.selectedTipos.length > 0;
+    const hasAssignedTipos = assignedSensorTypes.length > 0;
     const hasMetricas = formData.metricasData.some(metrica => metrica.selected);
     
-    return formData.fundoid && 
-           formData.entidadid && 
+    return formData.entidadid && 
            hasNodes && 
-           hasTipos && 
+           hasAssignedTipos && 
            hasMetricas;
   };
 
@@ -194,8 +188,9 @@ export function MassiveMetricaSensorForm({
     const dataToApply = [];
 
     // Crear datos para cada combinación de nodo-tipo-métrica
+    // Todos los tipos asignados se procesan (son solo lectura)
     for (const node of selectedNodesData) {
-      for (const tipo of formData.selectedTipos) {
+      for (const tipo of assignedSensorTypes) {
         for (const metrica of formData.metricasData) {
           // Solo procesar métricas seleccionadas
           if (metrica.selected) {
@@ -216,45 +211,24 @@ export function MassiveMetricaSensorForm({
   // Limpiar formulario
   const handleCancel = () => {
     setFormData({
-      fundoid: null,
       entidadid: null,
-      selectedTipos: [],
       metricasData: []
     });
     setSelectedNodes([]);
     setAllNodesSelected(false);
+    setAssignedSensorTypes([]);
     onCancel();
   };
 
   const selectedNodesCount = getSelectedNodes().length;
-  const totalCombinations = selectedNodesCount * formData.selectedTipos.length * 
+  const assignedTiposCount = assignedSensorTypes.length; // Todos los tipos asignados se procesan
+  const totalCombinations = selectedNodesCount * assignedTiposCount * 
     formData.metricasData.filter(m => m.selected).length;
 
   return (
     <div className="space-y-6">
-      {/* Fila 1: Fundo y Entidad */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Fundo */}
-        <div>
-          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            FUNDO
-          </label>
-          <SelectWithPlaceholder
-            options={fundosOptions}
-            value={formData.fundoid}
-            onChange={(value) => {
-              setFormData(prev => ({
-                ...prev,
-                fundoid: value ? parseInt(value.toString()) : null,
-                entidadid: null,
-                selectedTipos: []
-              }));
-            }}
-            placeholder="SELECCIONAR FUNDO"
-            disabled={loading}
-          />
-        </div>
-
+      {/* Fila 1: Entidad */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Entidad */}
         <div>
           <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
@@ -271,7 +245,7 @@ export function MassiveMetricaSensorForm({
               }));
             }}
             placeholder="SELECCIONAR ENTIDAD"
-            disabled={loading || !formData.fundoid}
+            disabled={loading}
           />
         </div>
       </div>
@@ -342,52 +316,41 @@ export function MassiveMetricaSensorForm({
             ) : (
               <div className="text-center py-8">
                 <div className="text-neutral-400 text-sm font-mono tracking-wider">
-                  {formData.fundoid ? 'CARGANDO NODOS...' : 'SELECCIONA UN FUNDO PARA VER LOS NODOS'}
+                  {formData.entidadid ? 'CARGANDO NODOS...' : 'SELECCIONA UNA ENTIDAD PARA VER LOS NODOS CON SENSORES'}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Columna derecha: Sensor y Métricas */}
+        {/* Columna derecha: Tipos Asignados y Métricas */}
         <div className="space-y-6">
-          {/* Tipos de sensor */}
-          {formData.entidadid && (
+          {/* Tipos de sensores asignados */}
+          {assignedSensorTypes.length > 0 && (
             <div>
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-                SENSOR
+                TIPOS DE SENSORES ASIGNADOS
               </h4>
               
               <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
-                {formData.entidadid ? (
-                  <div className="space-y-2">
-                    {tiposOptions.map((option) => (
-                      <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedTipos.some(t => t.tipoid === parseInt(option.value.toString()))}
-                          onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
-                          className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                        />
-                        <span className="text-white text-sm font-mono tracking-wider">
-                          {option.label.toUpperCase()}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-neutral-400 text-sm font-mono tracking-wider">
-                      SELECCIONA UNA ENTIDAD PARA VER LOS TIPOS
+                <div className="space-y-2">
+                  {assignedSensorTypes.map((tipo) => (
+                    <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-neutral-800 rounded">
+                      <div className="w-4 h-4 bg-orange-500 rounded mr-3 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                      <span className="text-white text-sm font-mono tracking-wider">
+                        {tipo.tipo.toUpperCase()}
+                      </span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
           {/* Métricas */}
-          {formData.selectedTipos.length > 0 && (
+          {assignedSensorTypes.length > 0 && (
             <div>
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
                 MÉTRICAS
@@ -428,8 +391,8 @@ export function MassiveMetricaSensorForm({
               <span className="text-white ml-2">{selectedNodesCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Tipos seleccionados:</span>
-              <span className="text-white ml-2">{formData.selectedTipos.length}</span>
+              <span className="text-orange-400">Tipos asignados:</span>
+              <span className="text-white ml-2">{assignedTiposCount}</span>
             </div>
             <div>
               <span className="text-orange-400">Métricas configuradas:</span>
@@ -451,7 +414,7 @@ export function MassiveMetricaSensorForm({
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'APLICANDO...' : 'APLICAR'}</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         
         <button
