@@ -407,7 +407,7 @@ interface SystemParametersProps {
   activeTab?: string;
   onParameterChangeWithConfirmation?: (newTable: string) => void;
   onTabChangeWithConfirmation?: (newTab: string) => void;
-  onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
+  onFormDataChange?: (formData: Record<string, any>, multipleData: any[] | any) => void;
   clearFormData?: boolean;
 }
 
@@ -1568,6 +1568,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setIsReplicateMode(false);
     setMultipleSensors([]);
     setSelectedSensorCount(0);
+    
+    // Limpiar estados específicos de sensor
+    setSelectedNodo('');
+    setSelectedEntidad('');
+    setSelectedTipo('');
+    setSelectedStatus(true);
+    
+    // Limpiar estados específicos de metricasensor
+    setSelectedNodos([]);
+    setSelectedEntidadMetrica('');
+    setSelectedMetricas([]);
     
     // Notificar al componente padre PRIMERO para sincronizar
     if (onSubTabChange) {
@@ -4652,12 +4663,33 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     return getMultipleData();
   }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
 
+  // Memoizar el objeto extendido para evitar loops infinitos
+  const memoizedExtendedMultipleData = useMemo(() => {
+    return {
+      multipleData: memoizedMultipleData,
+      // Estados específicos para sensor y metricasensor
+      sensorStates: selectedTable === 'sensor' ? {
+        selectedNodo,
+        selectedEntidad,
+        selectedTipo,
+        selectedSensorCount,
+        multipleSensors
+      } : null,
+      metricasensorStates: selectedTable === 'metricasensor' ? {
+        selectedNodos,
+        selectedEntidadMetrica,
+        selectedMetricas,
+        multipleMetricas
+      } : null
+    };
+  }, [memoizedMultipleData, selectedTable, selectedNodo, selectedEntidad, selectedTipo, selectedSensorCount, multipleSensors, selectedNodos, selectedEntidadMetrica, selectedMetricas, multipleMetricas]);
+
   // Efecto para notificar cambios en los datos del formulario al componente padre
   useEffect(() => {
     if (onFormDataChange) {
-      onFormDataChange(formData, memoizedMultipleData);
+      onFormDataChange(formData, memoizedExtendedMultipleData);
     }
-  }, [formData, memoizedMultipleData, onFormDataChange]);
+  }, [formData, memoizedExtendedMultipleData, onFormDataChange]);
 
   // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
   // useEffect(() => {
