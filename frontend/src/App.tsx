@@ -444,26 +444,38 @@ const AppContentInternal: React.FC = () => {
   const handleTabChange = (tab: string) => {
     console.log('🔄 App: Tab change requested:', { from: activeTab, to: tab });
     
-    // Verificar si hay cambios sin guardar usando el hook
-    const shouldBlock = checkTabChange({
-      formData: getCurrentFormData(),
-      selectedTable: activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '',
-      activeSubTab: 'status', // App no maneja subpestañas directamente
-      multipleData: getCurrentMultipleData(),
-      onConfirmAction: () => {
-        console.log('🔄 App: Confirming tab change to:', tab);
-        setActiveTab(tab);
-        setShowWelcomeIntegrated(false);
-      },
-      onCancelAction: () => console.log('App: Tab change cancelled')
-    }, tab);
+    // Solo verificar cambios si estamos saliendo de parámetros y hay datos
+    const shouldCheckChanges = activeTab.startsWith('parameters-') && hasSignificantChanges();
     
-    if (shouldBlock) {
-      console.log('🔄 App: Tab change blocked, showing modal');
-      return;
+    if (shouldCheckChanges) {
+      // Interceptar el cambio usando el nuevo sistema
+      const shouldBlock = interceptTabChange(tab, {
+        formData: getCurrentFormData(),
+        selectedTable: activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '',
+        activeSubTab: activeSubTab,
+        multipleData: getCurrentMultipleData(),
+        onConfirmAction: () => {
+          console.log('🔄 App: Confirming tab change to:', tab);
+          // Limpiar los datos del formulario antes de cambiar
+          setCurrentFormData({});
+          setCurrentMultipleData([]);
+          setClearFormData(true); // Activar limpieza en SystemParameters
+          setActiveTab(tab);
+          setShowWelcomeIntegrated(false);
+        },
+        onCancelAction: () => {
+          console.log('🔄 App: Tab change cancelled, staying in:', activeTab);
+          // No hacer nada, quedarse en la pestaña actual
+        }
+      });
+      
+      if (shouldBlock) {
+        console.log('🔄 App: Tab change blocked, showing modal');
+        return;
+      }
     }
     
-    // Si no hay cambios sin guardar, proceder normalmente
+    // Si no hay cambios sin guardar o no necesitamos verificar, proceder normalmente
     console.log('🔄 App: No changes, proceeding with tab change');
     setActiveTab(tab);
     setShowWelcomeIntegrated(false);
