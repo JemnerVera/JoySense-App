@@ -1855,7 +1855,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         if (col.columnName === 'statusid') {
           initialFormData[col.columnName] = 1;
         } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
-          initialFormData[col.columnName] = col.defaultValue || '';
+          // Para campos de dropdown (ID), inicializar como null en lugar de string vacío
+          if (col.columnName.endsWith('id') && col.columnName !== 'statusid') {
+            initialFormData[col.columnName] = null;
+          } else {
+            initialFormData[col.columnName] = col.defaultValue || '';
+          }
         }
       });
       setFormData(initialFormData);

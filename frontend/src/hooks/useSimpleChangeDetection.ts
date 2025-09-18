@@ -24,21 +24,21 @@ export const useSimpleChangeDetection = () => {
         case 'ubicacion':
           return ['ubicacion', 'ubicacionabrev'];
         case 'localizacion':
-          return ['localizacion', 'localizacionabrev'];
+          return ['entidadid', 'ubicacionid', 'nodoid'];
         case 'entidad':
           return ['entidad', 'entidadabrev'];
         case 'nodo':
           return ['nodo', 'nodoabrev'];
         case 'sensor':
-          return ['sensor', 'sensorabrev'];
+          return ['nodoid', 'tipoid'];
         case 'metrica':
           return ['metrica', 'metricaabrev'];
         case 'tipo':
-          return ['tipo', 'tipoabrev'];
+          return ['entidadid', 'tipo'];
         case 'medicion':
           return ['medicion', 'medicionabrev'];
         case 'umbral':
-          return ['umbral', 'umbralabrev'];
+          return ['ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid'];
         case 'alerta':
           return ['alerta', 'alertaabrev'];
         case 'usuario':
@@ -48,9 +48,9 @@ export const useSimpleChangeDetection = () => {
         case 'contacto':
           return ['contacto', 'contactoabrev'];
         case 'metricasensor':
-          return ['metricasensor', 'metricasensorabrev'];
+          return ['nodoid', 'metricaid', 'tipoid'];
         case 'perfilumbral':
-          return ['perfilumbral', 'perfilumbralabrev'];
+          return ['perfilid', 'umbralid'];
         case 'auditlogumbral':
           return ['auditlogumbral', 'auditlogumbralabrev'];
         case 'criticidad':
@@ -63,11 +63,24 @@ export const useSimpleChangeDetection = () => {
     };
 
     const significantFields = getSignificantFields(selectedTable);
+    console.log(`🔍 Verificando campos significativos para ${selectedTable}:`, significantFields);
+    console.log(`🔍 formData recibido:`, formData);
 
     // Verificar si hay cambios en los campos significativos
     const hasFormDataChanges = significantFields.some(field => {
       const value = formData[field];
-      return value !== null && value !== undefined && value !== '';
+      const hasValue = (
+        (typeof value === 'string' && value.trim() !== '') ||
+        (typeof value === 'number') ||
+        (typeof value === 'boolean')
+      );
+      
+      // Log temporal para debuggear
+      if (hasValue) {
+        console.log(`🔍 Campo ${field} tiene valor:`, value);
+      }
+      
+      return hasValue;
     });
 
     // Para formularios múltiples, verificar si hay datos
