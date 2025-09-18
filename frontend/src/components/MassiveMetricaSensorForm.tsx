@@ -134,13 +134,28 @@ export function MassiveMetricaSensorForm({
   useEffect(() => {
     const selectedNodesData = selectedNodes.filter(node => node.selected);
     if (selectedNodesData.length > 0 && formData.entidadid) {
-      // Obtener tipos de sensores para los nodos seleccionados
-      const tiposOptions = getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid.toString() });
+      // Obtener tipos de sensores específicos para los nodos seleccionados
+      // Necesitamos obtener los tipos que están realmente asignados a estos nodos específicos
+      const nodoIds = selectedNodesData.map(node => node.nodoid);
+      
+      // Obtener tipos de sensores filtrados por los nodos seleccionados
+      const tiposOptions = getUniqueOptionsForField('tipoid', { 
+        entidadid: formData.entidadid.toString(),
+        nodoids: nodoIds // Filtrar por nodos específicos
+      });
+      
       const assignedTypes: SelectedTipo[] = tiposOptions.map(option => ({
         tipoid: parseInt(option.value.toString()),
         tipo: option.label,
         selected: true // Todos los tipos asignados están siempre seleccionados (solo lectura)
       }));
+      
+      console.log('🔗 Tipos de sensores asignados para nodos seleccionados:', {
+        nodos: selectedNodesData.map(n => n.nodo),
+        nodoIds,
+        tipos: assignedTypes.map(t => t.tipo)
+      });
+      
       setAssignedSensorTypes(assignedTypes);
     } else {
       setAssignedSensorTypes([]);
@@ -188,23 +203,34 @@ export function MassiveMetricaSensorForm({
     const dataToApply = [];
 
     // Crear datos para cada combinación de nodo-tipo-métrica
-    // Todos los tipos asignados se procesan (son solo lectura)
+    // Solo procesar tipos que están realmente asignados a cada nodo específico
     for (const node of selectedNodesData) {
-      for (const tipo of assignedSensorTypes) {
-        for (const metrica of formData.metricasData) {
-          // Solo procesar métricas seleccionadas
-          if (metrica.selected) {
-            dataToApply.push({
-              nodoid: node.nodoid,
-              tipoid: tipo.tipoid,
-              metricaid: metrica.metricaid,
-              statusid: 1 // Activo por defecto
-            });
+      // Obtener tipos específicos para este nodo
+      if (formData.entidadid) {
+        const tiposDelNodo = getUniqueOptionsForField('tipoid', { 
+          entidadid: formData.entidadid.toString(),
+          nodoids: [node.nodoid] // Solo este nodo específico
+        });
+        
+        console.log(`🔗 Tipos para nodo ${node.nodo}:`, tiposDelNodo.map(t => t.label));
+        
+        for (const tipoOption of tiposDelNodo) {
+          for (const metrica of formData.metricasData) {
+            // Solo procesar métricas seleccionadas
+            if (metrica.selected) {
+              dataToApply.push({
+                nodoid: node.nodoid,
+                tipoid: parseInt(tipoOption.value.toString()),
+                metricaid: metrica.metricaid,
+                statusid: 1 // Activo por defecto
+              });
+            }
           }
         }
       }
     }
 
+    console.log('🔗 Total de métricas sensor a crear:', dataToApply.length);
     onApply(dataToApply);
   };
 

@@ -2965,7 +2965,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     return fundo ? fundo.fundo : `Fundo ${fundoId}`;
   };
 
-    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string }) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: number[] }) => {
     console.log('🔍 getUniqueOptionsForField Debug:', {
       columnName,
       paisSeleccionado,
@@ -3320,12 +3320,37 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             tipo.entidadid && tipo.entidadid.toString() === filterParams.entidadid?.toString()
           );
           
-          console.log('🏷️ Tipos filtrados por entidad:', {
-            entidadid: filterParams.entidadid,
-            totalTipos: tiposData.length,
-            tiposFiltrados: filteredTipos.length,
-            tiposFiltradosData: filteredTipos
-          });
+          // Si también hay filtro por nodos específicos, filtrar por esos nodos
+          if (filterParams?.nodoids && Array.isArray(filterParams.nodoids)) {
+            const nodoIds = filterParams.nodoids.map((id: number) => id);
+            
+            // Obtener tipos que están asociados a estos nodos específicos a través de sensores
+            const sensoresDeNodos = sensorsData.filter(sensor => 
+              sensor.nodoid && nodoIds.includes(sensor.nodoid)
+            );
+            const tiposDeNodos = sensoresDeNodos.map(sensor => sensor.tipoid);
+            
+            filteredTipos = filteredTipos.filter(tipo => 
+              tipo.tipoid && tiposDeNodos.includes(tipo.tipoid)
+            );
+            
+            console.log('🏷️ Tipos filtrados por entidad y nodos específicos:', {
+              entidadid: filterParams.entidadid,
+              nodoIds,
+              sensoresDeNodos: sensoresDeNodos.length,
+              tiposDeNodos: tiposDeNodos.length,
+              totalTipos: tiposData.length,
+              tiposFiltrados: filteredTipos.length,
+              tiposFiltradosData: filteredTipos.slice(0, 3)
+            });
+          } else {
+            console.log('🏷️ Tipos filtrados por entidad:', {
+              entidadid: filterParams.entidadid,
+              totalTipos: tiposData.length,
+              tiposFiltrados: filteredTipos.length,
+              tiposFiltradosData: filteredTipos.slice(0, 3)
+            });
+          }
         }
         
         const tipoResult = filteredTipos.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
