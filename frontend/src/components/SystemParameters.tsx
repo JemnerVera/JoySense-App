@@ -1897,13 +1897,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
       setTableData(sortedData);
       
-      // Cargar datos de sensores si estamos en el contexto de metricasensor
-      if (selectedTable === 'metricasensor') {
+      // Cargar datos de sensores si estamos en el contexto de metricasensor o umbral
+      if (selectedTable === 'metricasensor' || selectedTable === 'umbral') {
         try {
           const sensorResponse = await JoySenseService.getTableData('sensor', 1000);
           const sensorData = Array.isArray(sensorResponse) ? sensorResponse : ((sensorResponse as any)?.data || []);
           setSensorsData(sensorData);
-          console.log(`✅ Datos de sensores cargados para metricasensor: ${sensorData.length} registros`);
+          console.log(`✅ Datos de sensores cargados para ${selectedTable}: ${sensorData.length} registros`);
         } catch (error) {
           console.error('Error cargando datos de sensores:', error);
           setSensorsData([]);
@@ -3091,21 +3091,94 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         }
         let filteredNodos = nodosData;
         
-        // Para umbral, filtrar nodos por ubicación seleccionada
-        if (selectedTable === 'umbral' && formData.ubicacionid) {
-          // Obtener nodos que tienen localizaciones en la ubicación seleccionada
-          const localizacionesData = tableData || [];
-          const nodosConLocalizacion = localizacionesData
-            .filter(loc => loc.ubicacionid && loc.ubicacionid.toString() === formData.ubicacionid.toString())
-            .map(loc => loc.nodoid);
+        // Para umbral masivo, filtrar nodos que tienen sensor pero NO tienen metricasensor (como metrica sensor)
+        if (selectedTable === 'umbral') {
+          console.log('🔍 Debug umbral masivo - Datos disponibles:', {
+            sensorsDataLength: sensorsData.length,
+            tiposDataLength: tiposData.length,
+            metricasensorDataLength: metricasensorData.length,
+            umbralesDataLength: umbralesData.length,
+            nodosDataLength: nodosData.length,
+            filterParams
+          });
           
-          filteredNodos = nodosData.filter(nodo => 
-            nodo && nodo.nodoid && nodosConLocalizacion.includes(nodo.nodoid)
+          // Obtener nodos que tienen sensor (desde la tabla sensor)
+          let nodosConSensor = sensorsData
+            .filter((s: any) => s.nodoid)
+            .map((s: any) => s.nodoid);
+          
+          console.log('🔍 Nodos con sensores (todos):', {
+            nodosConSensor: nodosConSensor.length,
+            primeros5: nodosConSensor.slice(0, 5),
+            todosLosNodosConSensor: nodosConSensor
+          });
+          
+          // Si se proporciona entidadid, filtrar por entidad
+          if (filterParams?.entidadid) {
+            // Filtrar sensor por entidad (a través de tipoid)
+            const tiposConEntidad = tiposData.filter((t: any) => 
+              t.entidadid && t.entidadid.toString() === filterParams.entidadid?.toString()
+            );
+            const tiposIds = tiposConEntidad.map((t: any) => t.tipoid);
+            
+            console.log('🔍 Tipos con entidad:', {
+              entidadid: filterParams.entidadid,
+              tiposConEntidad: tiposConEntidad.length,
+              tiposIds: tiposIds.slice(0, 5)
+            });
+            
+            const sensoresConEntidad = sensorsData.filter((s: any) => 
+              s.tipoid && tiposIds.includes(s.tipoid)
+            );
+            nodosConSensor = sensoresConEntidad
+              .filter((s: any) => s.nodoid)
+              .map((s: any) => s.nodoid);
+              
+            console.log('🔍 Sensores con entidad:', {
+              sensoresConEntidad: sensoresConEntidad.length,
+              nodosConSensor: nodosConSensor.length,
+              primeros5: nodosConSensor.slice(0, 5)
+            });
+          }
+          
+          // Obtener nodos que ya tienen metricasensor (desde la tabla metricasensor)
+          const nodosConMetricasensor = metricasensorData
+            .filter((ms: any) => ms.nodoid)
+            .map((ms: any) => ms.nodoid);
+          
+          console.log('🔍 Nodos con metricasensor:', {
+            nodosConMetricasensor: nodosConMetricasensor.length,
+            primeros5: nodosConMetricasensor.slice(0, 5),
+            todosLosNodosConMetricasensor: nodosConMetricasensor
+          });
+          
+          // Filtrar nodos que tienen sensor pero NO tienen metricasensor
+          let nodosFiltrados = nodosData.filter(nodo => 
+            nodo && nodo.nodoid && 
+            nodosConSensor.includes(nodo.nodoid) && 
+            !nodosConMetricasensor.includes(nodo.nodoid)
           );
           
-          console.log('🔗 Nodos filtrados por ubicación para umbral:', { 
-            ubicacionid: formData.ubicacionid, 
-            nodosConLocalizacion: nodosConLocalizacion.length,
+          console.log('🔍 Nodos filtrados (sensor sin metricasensor):', {
+            nodosFiltrados: nodosFiltrados.length,
+            primeros5: nodosFiltrados.slice(0, 5).map(n => ({ nodoid: n.nodoid, nodo: n.nodo })),
+            todosLosNodosFiltrados: nodosFiltrados.map(n => ({ nodoid: n.nodoid, nodo: n.nodo }))
+          });
+          
+          // Para umbral masivo, NO aplicar filtro de fundo porque los nodos pueden no tener localización
+          // pero sí tener sensores asignados
+          console.log('🔍 Umbral masivo - Sin filtro de fundo aplicado:', {
+            nodosFiltrados: nodosFiltrados.length,
+            primeros5: nodosFiltrados.slice(0, 5).map(n => ({ nodoid: n.nodoid, nodo: n.nodo }))
+          });
+          
+          filteredNodos = nodosFiltrados;
+          
+          console.log('🔗 Nodos para umbral masivo (con sensor, sin metricasensor):', { 
+            fundoid: filterParams?.fundoid,
+            entidadid: filterParams?.entidadid,
+            nodosConSensor: nodosConSensor.length,
+            nodosConMetricasensor: nodosConMetricasensor.length,
             filteredCount: filteredNodos.length 
           });
         } else if (filterParams?.fundoid && selectedTable !== 'sensor') {
@@ -3277,9 +3350,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           };
         });
         
-        // Para sensor y metricasensor masivo, incluir TODOS los nodos (con o sin localización)
+        // Para sensor, metricasensor y umbral masivo, incluir TODOS los nodos (con o sin localización)
         // Para otros contextos, solo incluir nodos con ubicacionid
-        if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor') {
+        if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor' && selectedTable !== 'umbral') {
           nodoResult = nodoResult.filter(nodo => nodo.ubicacionid !== null);
         }
         console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
@@ -3295,24 +3368,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Filtrar tipos por entidad si se proporciona
         let filteredTipos = tiposData;
         
-        // Para umbral, filtrar tipos por nodo seleccionado
-        if (selectedTable === 'umbral' && formData.nodoid) {
-          // Obtener tipos que están asociados al nodo seleccionado a través de sensores
-          const sensoresDelNodo = sensorsData.filter(sensor => 
-            sensor.nodoid && sensor.nodoid.toString() === formData.nodoid.toString()
+        // Para umbral masivo, filtrar tipos por nodos seleccionados
+        if (selectedTable === 'umbral' && filterParams?.nodoids && Array.isArray(filterParams.nodoids)) {
+          const nodoIds = filterParams.nodoids.map((id: number) => id);
+          const sensoresDeNodos = sensorsData.filter(sensor => 
+            sensor.nodoid && nodoIds.includes(sensor.nodoid)
           );
-          const tiposDelNodo = sensoresDelNodo.map(sensor => sensor.tipoid);
+          const tiposDeNodos = sensoresDeNodos.map(sensor => sensor.tipoid);
           
-          filteredTipos = tiposData.filter(tipo => 
-            tipo.tipoid && tiposDelNodo.includes(tipo.tipoid)
+          filteredTipos = filteredTipos.filter(tipo => 
+            tipo.tipoid && tiposDeNodos.includes(tipo.tipoid)
           );
           
-          console.log('🏷️ Tipos filtrados por nodo para umbral:', {
-            nodoid: formData.nodoid,
-            sensoresDelNodo: sensoresDelNodo.length,
-            tiposDelNodo: tiposDelNodo.length,
-            totalTipos: tiposData.length,
-            tiposFiltrados: filteredTipos.length
+          console.log('🏷️ Tipos filtrados por nodos para umbral masivo:', {
+            nodoIds,
+            sensoresDeNodos: sensoresDeNodos.length,
+            tiposDeNodos: tiposDeNodos.length,
+            filteredCount: filteredTipos.length
           });
         } else if (filterParams?.entidadid) {
           // Filtrar tipos por entidad usando la columna entidadid de la tabla tipo
