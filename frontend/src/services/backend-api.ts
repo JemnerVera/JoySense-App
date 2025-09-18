@@ -37,7 +37,27 @@ export const backendAPI = {
       body: JSON.stringify(data)
     });
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Intentar obtener el cuerpo de la respuesta del error
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // Si no se puede parsear como JSON, usar el texto de la respuesta
+        try {
+          const errorText = await response.text();
+          errorData = { error: errorText };
+        } catch (e2) {
+          errorData = { error: `HTTP error! status: ${response.status}` };
+        }
+      }
+      
+      // Crear un error estructurado que incluya la información del servidor
+      const error = new Error(`HTTP error! status: ${response.status}`) as any;
+      error.response = {
+        status: response.status,
+        data: errorData
+      };
+      throw error;
     }
     return response.json();
   },
@@ -56,7 +76,27 @@ export const backendAPI = {
       body: JSON.stringify(data)
     });
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Intentar obtener el cuerpo de la respuesta del error
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // Si no se puede parsear como JSON, usar el texto de la respuesta
+        try {
+          const errorText = await response.text();
+          errorData = { error: errorText };
+        } catch (e2) {
+          errorData = { error: `HTTP error! status: ${response.status}` };
+        }
+      }
+      
+      // Crear un error estructurado que incluya la información del servidor
+      const error = new Error(`HTTP error! status: ${response.status}`) as any;
+      error.response = {
+        status: response.status,
+        data: errorData
+      };
+      throw error;
     }
     return response.json();
   },

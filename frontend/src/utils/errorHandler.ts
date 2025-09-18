@@ -119,23 +119,22 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
   // Detectar errores 500 que podrían ser de clave única (fallback)
   if (error.response?.status === 500) {
     const errorText = error.response?.data?.error || error.message || '';
-    if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint')) {
+    console.log('🔍 Error 500 - Error text:', errorText);
+    console.log('🔍 Error 500 - Full response:', error.response);
+    
+    if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
+        errorText.includes('violates') || errorText.includes('already exists')) {
       return {
         type: 'warning',
         message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
       };
     }
-  }
-  
-  // Detectar errores 500 que podrían ser de clave única (fallback)
-  if (error.response?.status === 500) {
-    const errorText = error.response?.data?.error || error.message || '';
-    if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint')) {
-      return {
-        type: 'warning',
-        message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
-      };
-    }
+    
+    // Si es un error 500 genérico, mostrar un mensaje más específico
+    return {
+      type: 'warning',
+      message: `⚠️ Alerta: No se pudo guardar la información. Verifique que todos los campos estén completos y que no haya duplicados.`
+    };
   }
   
   // Manejar otros tipos de errores

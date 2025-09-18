@@ -26,6 +26,7 @@ import { useReplicate } from '../hooks/useReplicate';
 import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
 import { useFilters } from '../contexts/FilterContext';
 import LostDataModal from './LostDataModal';
+import { validateFormData, getValidationMessages } from '../utils/formValidation';
 
 // Hook personalizado para manejar selección múltiple basada en timestamp
 const useMultipleSelection = (selectedTable: string) => {
@@ -2080,19 +2081,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   };
 
   // Función para obtener el valor de visualización (nombres en lugar de IDs)
-  // Función para validar datos antes de insertar
+  // Función para validar datos antes de insertar usando el sistema de validación robusto
   const validateInsertData = (tableName: string, data: any): string | null => {
-    if (tableName === 'nodo') {
-      if (!data.nodo || data.nodo.trim() === '') return 'Falta ingresar NODO';
-      if (!data.deveui || data.deveui.trim() === '') return 'Falta ingresar DEVEUI';
-    } else if (tableName === 'sensor') {
-      if (!data.nodoid) return 'Debe seleccionar un nodo';
-      if (!data.tipoid) return 'Debe seleccionar un tipo';
-    } else if (tableName === 'metricasensor') {
-      if (!data.nodoid) return 'Debe seleccionar un nodo';
-      if (!data.metricaid) return 'Debe seleccionar una métrica';
-      if (!data.tipoid) return 'Debe seleccionar un tipo';
+    const validationResult = validateFormData(tableName, data);
+    
+    if (!validationResult.isValid) {
+      const messages = getValidationMessages(validationResult);
+      return messages.join('\n');
     }
+    
     return null;
   };
 
