@@ -16,8 +16,6 @@ interface SelectedNode {
 }
 
 interface FormData {
-  fundoid: number | null;
-  entidadid: number | null;
   selectedTipos: number[];
 }
 
@@ -28,8 +26,6 @@ export function MassiveSensorForm({
   loading = false
 }: MassiveSensorFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    fundoid: null,
-    entidadid: null,
     selectedTipos: []
   });
 
@@ -37,38 +33,26 @@ export function MassiveSensorForm({
   const [allNodesSelected, setAllNodesSelected] = useState(false);
 
   // Obtener opciones para los dropdowns
-  const fundosOptions = useMemo(() => 
-    getUniqueOptionsForField('fundoid'), [getUniqueOptionsForField]
+  const tiposOptions = useMemo(() => 
+    getUniqueOptionsForField('tipoid'), [getUniqueOptionsForField]
   );
 
-  const entidadesOptions = useMemo(() => 
-    getUniqueOptionsForField('entidadid'), [getUniqueOptionsForField]
-  );
-
-  const tiposOptions = useMemo(() => {
-    if (formData.entidadid) {
-      return getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid });
-    }
-    return [];
-  }, [getUniqueOptionsForField, formData.entidadid]);
-
-  // Cargar nodos cuando se selecciona un fundo
+  // Cargar nodos automáticamente (todos los nodos que NO tienen sensores asignados)
   useEffect(() => {
-    if (formData.fundoid) {
-      const nodosOptions = getUniqueOptionsForField('nodoid', { fundoid: formData.fundoid.toString() });
-      const nodesData: SelectedNode[] = nodosOptions.map(option => ({
-        nodoid: parseInt(option.value.toString()),
-        nodo: option.label,
-        selected: false,
-        datecreated: option.datecreated || undefined
-      }));
-      setSelectedNodes(nodesData);
-      setAllNodesSelected(false);
-    } else {
-      setSelectedNodes([]);
-      setAllNodesSelected(false);
-    }
-  }, [formData.fundoid, getUniqueOptionsForField]);
+    // Obtener nodos que NO tienen sensores asignados
+    // La función getUniqueOptionsForField ya filtra automáticamente nodos sin sensores cuando selectedTable === 'sensor'
+    const nodosOptions = getUniqueOptionsForField('nodoid');
+    
+    const nodesData: SelectedNode[] = nodosOptions.map(option => ({
+      nodoid: parseInt(option.value.toString()),
+      nodo: option.label,
+      selected: false,
+      datecreated: option.datecreated || undefined
+    }));
+    
+    setSelectedNodes(nodesData);
+    setAllNodesSelected(false);
+  }, [getUniqueOptionsForField]);
 
   // Manejar selección de nodos individuales
   const handleNodeSelection = (nodoid: number, selected: boolean) => {
@@ -120,9 +104,7 @@ export function MassiveSensorForm({
 
   // Validar formulario
   const isFormValid = () => {
-    return formData.fundoid && 
-           formData.entidadid && 
-           formData.selectedTipos.length > 0 && 
+    return formData.selectedTipos.length > 0 && 
            getSelectedNodes().length > 0;
   };
 
@@ -150,8 +132,6 @@ export function MassiveSensorForm({
   // Limpiar formulario
   const handleCancel = () => {
     setFormData({
-      fundoid: null,
-      entidadid: null,
       selectedTipos: []
     });
     setSelectedNodes([]);
@@ -164,52 +144,7 @@ export function MassiveSensorForm({
 
   return (
     <div className="space-y-6">
-
-      {/* Fila 1: Fundo y Entidad */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Fundo */}
-        <div>
-          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            FUNDO
-          </label>
-          <SelectWithPlaceholder
-            options={fundosOptions}
-            value={formData.fundoid}
-            onChange={(value) => {
-              setFormData(prev => ({
-                ...prev,
-                fundoid: value ? parseInt(value.toString()) : null,
-                entidadid: null,
-                selectedTipos: []
-              }));
-            }}
-            placeholder="SELECCIONAR FUNDO"
-            disabled={loading}
-          />
-        </div>
-
-        {/* Entidad */}
-        <div>
-          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            ENTIDAD
-          </label>
-          <SelectWithPlaceholder
-            options={entidadesOptions}
-            value={formData.entidadid}
-            onChange={(value) => {
-              setFormData(prev => ({
-                ...prev,
-                entidadid: value ? parseInt(value.toString()) : null,
-                selectedTipos: []
-              }));
-            }}
-            placeholder="SELECCIONAR ENTIDAD"
-            disabled={loading || !formData.fundoid}
-          />
-        </div>
-      </div>
-
-      {/* Fila 2: Nodos y Tipos */}
+      {/* Fila 1: Nodos y Tipos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Nodos */}
         <div>
@@ -275,7 +210,7 @@ export function MassiveSensorForm({
             ) : (
               <div className="text-center py-8">
                 <div className="text-neutral-400 text-sm font-mono tracking-wider">
-                  {formData.fundoid ? 'CARGANDO NODOS...' : 'SELECCIONA UN FUNDO PARA VER LOS NODOS'}
+                  CARGANDO NODOS DISPONIBLES...
                 </div>
               </div>
             )}
@@ -289,29 +224,21 @@ export function MassiveSensorForm({
           </h4>
           
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
-            {formData.entidadid ? (
-              <div className="space-y-2">
-                {tiposOptions.map((option) => (
-                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.selectedTipos.includes(parseInt(option.value.toString()))}
-                      onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                    />
-                    <span className="text-white text-sm font-mono tracking-wider">
-                      {option.label.toUpperCase()}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
-                  SELECCIONA UNA ENTIDAD PARA VER LOS TIPOS
-                </div>
-              </div>
-            )}
+            <div className="space-y-2">
+              {tiposOptions.map((option) => (
+                <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                  <input
+                    type="checkbox"
+                    checked={formData.selectedTipos.includes(parseInt(option.value.toString()))}
+                    onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
+                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                  />
+                  <span className="text-white text-sm font-mono tracking-wider">
+                    {option.label.toUpperCase()}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>

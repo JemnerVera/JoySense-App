@@ -3108,9 +3108,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             nodosConLocalizacion: nodosConLocalizacion.length,
             filteredCount: filteredNodos.length 
           });
-        } else if (filterParams?.fundoid) {
+        } else if (filterParams?.fundoid && selectedTable !== 'sensor') {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
           // Relación: nodo -> localizacion -> ubicacion -> fundo
+          // EXCEPTO para sensor masivo, donde queremos todos los nodos sin sensores
           if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
             const ubicacionesDelFundo = ubicacionesData.filter(u => u && u.fundoid && u.fundoid.toString() === filterParams.fundoid);
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
@@ -3134,7 +3135,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               filteredCount: filteredNodos.length 
             });
           }
-        } else if (fundoSeleccionado) {
+        } else if (fundoSeleccionado && selectedTable !== 'sensor') {
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado (filtros globales)
           // Relación: nodo -> localizacion -> ubicacion -> fundo
           if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
@@ -3161,11 +3162,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             });
           }
         }
+        
+        // Para sensor masivo, mostrar todos los nodos activos (sin filtros de fundo)
+        if (selectedTable === 'sensor') {
+          console.log('🔗 Saltando filtros de fundo para sensor masivo - mostrando todos los nodos activos');
+          filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+          console.log('🔗 Total de nodos activos disponibles:', filteredNodos.length);
+          console.log('🔗 Primeros 10 nodos activos:', filteredNodos.slice(0, 10).map(n => ({ id: n.nodoid, nombre: n.nodo })));
+          console.log('🔗 Últimos 10 nodos activos:', filteredNodos.slice(-10).map(n => ({ id: n.nodoid, nombre: n.nodo })));
+        }
+        
         // Filtrar nodos según el contexto
         let finalFilteredNodos = filteredNodos;
         
         // Si estamos en el contexto de sensor, filtrar nodos que estén en nodo pero no en sensor
         if (selectedTable === 'sensor') {
+          // Obtener todos los nodos que ya tienen sensores asignados
+          const nodosConSensores = new Set(tableData.map(sensor => sensor.nodoid));
+          
           finalFilteredNodos = filteredNodos.filter(nodo => {
             // Verificar que el nodo esté activo
             if (nodo.statusid !== 1) {
@@ -3173,11 +3187,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             }
             
             // Verificar que el nodo NO tenga sensores asignados (no esté en tabla sensor)
-            const tieneSensores = tableData.some(sensor => sensor.nodoid === nodo.nodoid);
+            const tieneSensores = nodosConSensores.has(nodo.nodoid);
             return !tieneSensores;
           });
           
           console.log('🔗 Nodos filtrados para sensor (sin sensores asignados):', finalFilteredNodos.length);
+          console.log('🔗 Nodos con sensores:', Array.from(nodosConSensores));
+          console.log('🔗 Nodos disponibles para sensor:', finalFilteredNodos.map(n => n.nodo));
+          console.log('🔗 Buscando nodos específicos:');
+          console.log('🔗 - rls 996655:', finalFilteredNodos.find(n => n.nodo === 'rls 996655'));
+          console.log('🔗 - rls 996677:', finalFilteredNodos.find(n => n.nodo === 'rls 996677'));
+          console.log('🔗 - rls 998877:', finalFilteredNodos.find(n => n.nodo === 'rls 998877'));
         }
         
         // Si estamos en el contexto de metricasensor, mostrar TODOS los nodos (tanto los que tienen métricas sensor como los que no)
@@ -3223,15 +3243,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           console.log('🔗 Nodos filtrados para metricasensor (todos los nodos con sensores):', finalFilteredNodos.length);
         }
         
-        // Si estamos en el contexto de sensor, mostrar TODOS los nodos activos (sin importar si ya tienen sensores)
-        if (selectedTable === 'sensor') {
-          finalFilteredNodos = filteredNodos.filter(nodo => {
-            // Solo verificar que el nodo esté activo
-            return nodo.statusid === 1;
-          });
-          
-          console.log('🔗 Nodos filtrados para sensor (todos los nodos activos):', finalFilteredNodos.length);
-        }
         
         // Ordenar nodos por fecha de modificación (más recientes primero)
         const sortedNodos = finalFilteredNodos.sort((a: any, b: any) => {
@@ -3243,7 +3254,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         console.log('🔍 localizacionesData disponible:', localizacionesData?.length || 0);
         console.log('🔍 Primeras 3 localizaciones:', localizacionesData?.slice(0, 3));
         
-        const nodoResult = sortedNodos.map(nodo => {
+        let nodoResult = sortedNodos.map(nodo => {
           // Buscar la localización del nodo para obtener ubicacionid
           const localizacion = localizacionesData?.find(loc => loc.nodoid === nodo.nodoid);
           console.log(`🔍 Nodo ${nodo.nodoid}: localizacion encontrada:`, localizacion);
@@ -3253,7 +3264,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             datecreated: nodo.datecreated,
             ubicacionid: localizacion?.ubicacionid || null
           };
-        }).filter(nodo => nodo.ubicacionid !== null); // Solo incluir nodos con ubicacionid
+        });
+        
+        // Para sensor masivo, incluir TODOS los nodos (con o sin localización)
+        // Para otros contextos, solo incluir nodos con ubicacionid
+        if (selectedTable !== 'sensor') {
+          nodoResult = nodoResult.filter(nodo => nodo.ubicacionid !== null);
+        }
         console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
         return nodoResult;
       case 'tipoid':
