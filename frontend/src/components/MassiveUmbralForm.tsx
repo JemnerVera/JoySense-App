@@ -222,36 +222,39 @@ export function MassiveUmbralForm({
       return {
         nodo: node.nodo,
         types: types.map(t => t.tipo).sort(),
-        count: types.length
+        count: types.length,
+        typesKey: types.map(t => t.tipo).sort().join('|') // Clave única para agrupar
       };
     });
 
-    // Verificar si todos tienen la misma cantidad de tipos
-    const counts = nodeTypes.map(nt => nt.count);
-    const allSameCount = counts.every(count => count === counts[0]);
+    // Agrupar nodos por cantidad y tipos de sensores
+    const groupedNodes: {[key: string]: {count: number, types: string[], nodos: string[]}} = {};
+    
+    nodeTypes.forEach(nt => {
+      const key = `${nt.count}-${nt.typesKey}`;
+      if (!groupedNodes[key]) {
+        groupedNodes[key] = {
+          count: nt.count,
+          types: nt.types,
+          nodos: []
+        };
+      }
+      groupedNodes[key].nodos.push(nt.nodo);
+    });
 
-    if (!allSameCount) {
-      const message = nodeTypes.map(nt => 
-        `Nodo ${nt.nodo} posee ${nt.count.toString().padStart(2, '0')} tipo${nt.count !== 1 ? 's' : ''} de sensor.`
-      ).join('\n');
-      return { isValid: false, message };
+    // Si solo hay un grupo, todos los nodos son consistentes
+    if (Object.keys(groupedNodes).length === 1) {
+      return { isValid: true, message: '' };
     }
 
-    // Verificar si todos tienen los mismos tipos
-    const firstTypes = nodeTypes[0].types;
-    const allSameTypes = nodeTypes.every(nt => 
-      nt.types.length === firstTypes.length && 
-      nt.types.every((type, index) => type === firstTypes[index])
-    );
+    // Crear mensaje agrupado
+    const message = Object.values(groupedNodes).map(group => {
+      const nodosStr = group.nodos.join(', ');
+      const tipoStr = group.count !== 1 ? 'tipos' : 'tipo';
+      return `Nodo${group.nodos.length > 1 ? 's' : ''} ${nodosStr} posee${group.nodos.length > 1 ? 'n' : ''} ${group.count.toString().padStart(2, '0')} ${tipoStr} de sensor.`;
+    }).join('\n');
 
-    if (!allSameTypes) {
-      const message = nodeTypes.map(nt => 
-        `Nodo ${nt.nodo} posee ${nt.count.toString().padStart(2, '0')} tipo${nt.count !== 1 ? 's' : ''} de sensor.`
-      ).join('\n');
-      return { isValid: false, message };
-    }
-
-    return { isValid: true, message: '' };
+    return { isValid: false, message };
   };
 
   const validationResult = validateNodeSensorTypes();
