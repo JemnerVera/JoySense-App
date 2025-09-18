@@ -529,7 +529,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         () => {
           console.log('🔄 Confirming tab change to:', tab);
           // Limpiar datos del formulario antes de cambiar
-          setFormData({});
+          setFormData(initializeFormData(columns));
           setMultipleUsuarioPerfiles([]);
           setSelectedUsuarios([]);
           setSelectedPerfiles([]);
@@ -589,6 +589,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+
+  // Función helper para inicializar formData con statusid por defecto
+  const initializeFormData = (cols?: any[]) => {
+    const initialFormData: Record<string, any> = {};
+    cols?.forEach(col => {
+      if (col.columnName === 'statusid') {
+        initialFormData[col.columnName] = 1;
+      } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
+        // Para campos de dropdown (ID), inicializar como null en lugar de string vacío
+        if (col.columnName.endsWith('id') && col.columnName !== 'statusid') {
+          initialFormData[col.columnName] = null;
+        } else {
+          initialFormData[col.columnName] = col.defaultValue || '';
+        }
+      }
+    });
+    return initialFormData;
+  };
 
   const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
   const [copyMessage, setCopyMessage] = useState<Message | null>(null);
@@ -973,7 +991,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleReplicateNodo = (nodo: any) => {
     // Llenar el formulario con los datos del nodo seleccionado
+    const initialData = initializeFormData(columns);
     setFormData({
+      ...initialData,
       nodo: nodo.nodo || '',
       deveui: nodo.deveui || '',
       appeui: nodo.appeui || '',
@@ -1446,7 +1466,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         () => {
           console.log('🔄 Confirming parameter change to:', newTable);
           // Limpiar datos del formulario antes de cambiar
-          setFormData({});
+          setFormData(initializeFormData(columns));
           setMultipleUsuarioPerfiles([]);
           setSelectedUsuarios([]);
           setSelectedPerfiles([]);
@@ -1528,7 +1548,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     console.log('🔄 SystemParameters: Parameter navigation to:', newTable);
     setSelectedTable(newTable);
     setActiveSubTab('status');
-    setFormData({});
+    setFormData(initializeFormData(columns));
     setMessage(null);
     setUpdateMessage(null);
     setHasSearched(false);
@@ -1559,7 +1579,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     // Limpiar datos del formulario cuando se cambia de pestaña
     console.log('🔄 SystemParameters: Clearing form data for sub-tab change');
-    setFormData({});
+    setFormData(initializeFormData(columns));
     setMultipleUsuarioPerfiles([]);
     setSelectedUsuarios([]);
     setSelectedPerfiles([]);
@@ -1591,7 +1611,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const handleMainTabNavigation = (newTab: string) => {
     console.log('🔄 SystemParameters: MainTab navigation to:', newTab);
     // Limpiar todos los estados
-    setFormData({});
+    setFormData(initializeFormData(columns));
     setMessage(null);
     setUpdateMessage(null);
     setHasSearched(false);
@@ -1635,7 +1655,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   useEffect(() => {
     if (clearFormData) {
       console.log('🧹 SystemParameters: Clearing form data due to confirmed change');
-      setFormData({});
+      setFormData(initializeFormData(columns));
       setMultipleUsuarioPerfiles([]);
       setSelectedUsuarios([]);
       setSelectedPerfiles([]);
@@ -1862,20 +1882,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
        }
       
       // Inicializar formData
-      const initialFormData: Record<string, any> = {};
-      cols?.forEach(col => {
-        if (col.columnName === 'statusid') {
-          initialFormData[col.columnName] = 1;
-        } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
-          // Para campos de dropdown (ID), inicializar como null en lugar de string vacío
-          if (col.columnName.endsWith('id') && col.columnName !== 'statusid') {
-            initialFormData[col.columnName] = null;
-          } else {
-            initialFormData[col.columnName] = col.defaultValue || '';
-          }
-        }
-      });
-      setFormData(initialFormData);
+      setFormData(initializeFormData(cols));
       
       // Cargar datos con paginación para tablas grandes
       const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
@@ -2344,15 +2351,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       loadRelatedTablesData();
       
       // Reinicializar formulario
-      const initialFormData: Record<string, any> = {};
-      columns.forEach(col => {
-        if (col.columnName === 'statusid') {
-          initialFormData[col.columnName] = 1;
-        } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
-          initialFormData[col.columnName] = col.defaultValue || '';
-        }
-      });
-      setFormData(initialFormData);
+      setFormData(initializeFormData(columns));
       
     } catch (error: any) {
       const errorResponse = handleInsertError(error);
@@ -5829,7 +5828,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const handleConfirmLostData = () => {
     if (pendingTabChange) {
       // Limpiar todos los estados del formulario antes de cambiar de pestaña
-      setFormData({});
+      setFormData(initializeFormData(columns));
       
       // Limpiar estados específicos según la tabla
       if (selectedTable === 'usuarioperfil') {
@@ -5868,15 +5867,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const handleCancelInsert = () => {
     setCancelAction(() => () => {
       // Reinicializar formulario
-      const initialFormData: Record<string, any> = {};
-      columns.forEach(col => {
-        if (col.columnName === 'statusid') {
-          initialFormData[col.columnName] = 1;
-        } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
-          initialFormData[col.columnName] = col.defaultValue || '';
-        }
-      });
-      setFormData(initialFormData);
+      setFormData(initializeFormData(columns));
       setShowCancelModal(false);
     });
     setShowCancelModal(true);

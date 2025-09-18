@@ -58,8 +58,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   nodo: [
     { field: 'nodo', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del nodo es obligatorio' },
-    { field: 'nodoabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' },
-    { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' }
+    { field: 'deveui', required: true, type: 'string', minLength: 1, customMessage: 'El campo DEVEUI es obligatorio' }
   ],
   
   sensor: [
@@ -140,6 +139,11 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
 
 // Función principal de validación
 export function validateFormData(tableName: string, formData: Record<string, any>): ValidationResult {
+  // Validación especial para nodo con habilitación progresiva
+  if (tableName === 'nodo') {
+    return validateNodoProgressive(formData);
+  }
+
   const schema = tableValidationSchemas[tableName];
   if (!schema) {
     return {
@@ -223,6 +227,29 @@ export function validateFormData(tableName: string, formData: Record<string, any
     errors,
     warnings
   };
+}
+
+// Función de validación progresiva para nodo
+function validateNodoProgressive(formData: Record<string, any>): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Siempre validar nodo (siempre habilitado)
+  const nodoValue = formData.nodo;
+  if (!nodoValue || (typeof nodoValue === 'string' && nodoValue.trim() === '')) {
+    errors.push('El nombre del nodo es obligatorio');
+    return { isValid: false, errors, warnings };
+  }
+
+  // Si nodo tiene valor, validar deveui (se habilita cuando nodo tiene valor)
+  const deveuiValue = formData.deveui;
+  if (!deveuiValue || (typeof deveuiValue === 'string' && deveuiValue.trim() === '')) {
+    errors.push('El campo DEVEUI es obligatorio');
+    return { isValid: false, errors, warnings };
+  }
+
+  // Los demás campos (appeui, appkey, atpin) son opcionales
+  return { isValid: true, errors, warnings };
 }
 
 // Función para obtener mensajes de validación formateados
