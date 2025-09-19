@@ -302,6 +302,8 @@ export const validateTableUpdate = async (
       return await validateEmpresaUpdate(formData, originalData, existingData || []);
     case 'fundo':
       return await validateFundoUpdate(formData, originalData, existingData || []);
+    case 'ubicacion':
+      return await validateUbicacionUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1642,6 +1644,91 @@ const checkFundoDependencies = async (fundoid: number): Promise<boolean> => {
     return ubicaciones.some(ubicacion => ubicacion.fundoid === fundoid);
   } catch (error) {
     console.error('Error checking fundo dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Ubicación
+const validateUbicacionUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateUbicacionUpdate - formData:', formData);
+  console.log('🔍 validateUbicacionUpdate - originalData:', originalData);
+  console.log('🔍 validateUbicacionUpdate - ubicacion value:', formData.ubicacion);
+  console.log('🔍 validateUbicacionUpdate - fundoid value:', formData.fundoid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.ubicacion || formData.ubicacion.trim() === '') {
+    console.log('🔍 validateUbicacionUpdate - ubicacion está vacío');
+    errors.push({
+      field: 'ubicacion',
+      message: 'La ubicación es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.fundoid || formData.fundoid === '') {
+    console.log('🔍 validateUbicacionUpdate - fundoid está vacío');
+    errors.push({
+      field: 'fundoid',
+      message: 'El fundo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.ubicacion && formData.ubicacion.trim() !== '') {
+    const ubicacionExists = existingData.some(item => 
+      item.ubicacionid !== originalData.ubicacionid && 
+      item.ubicacion && 
+      item.ubicacion.toLowerCase() === formData.ubicacion.toLowerCase()
+    );
+    
+    if (ubicacionExists) {
+      errors.push({
+        field: 'ubicacion',
+        message: 'La ubicación ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay localizaciones que referencian esta ubicación
+    const hasDependentRecords = await checkUbicacionDependencies(originalData.ubicacionid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar la ubicación porque tiene localizaciones asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Ubicación
+const checkUbicacionDependencies = async (ubicacionid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla localizacion
+    const localizaciones = await JoySenseService.getLocalizaciones();
+    return localizaciones.some(localizacion => localizacion.ubicacionid === ubicacionid);
+  } catch (error) {
+    console.error('Error checking ubicacion dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
