@@ -12728,7 +12728,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                     ) : (
 
-                      <div className={`space-y-6 ${
+                      <div className={`space-y-6 relative ${
 
                         selectedTable === 'sensor' || selectedTable === 'metricasensor' 
 

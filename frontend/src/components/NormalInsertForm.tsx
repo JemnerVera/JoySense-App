@@ -1,6 +1,7 @@
 import React from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import ReplicateButton from './ReplicateButton';
+import { tableValidationSchemas } from '../utils/formValidation';
 
 interface NormalInsertFormProps {
   visibleColumns: any[];
@@ -72,6 +73,15 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const getFundoName = (fundoId: string) => {
     const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
     return fundo ? fundo.fundo : `Fundo ${fundoId}`;
+  };
+
+  // Función para determinar si un campo es obligatorio
+  const isFieldRequired = (columnName: string): boolean => {
+    const schema = tableValidationSchemas[selectedTable];
+    if (!schema) return false;
+    
+    const rule = schema.find(rule => rule.field === columnName);
+    return rule ? rule.required : false;
   };
 
   // Función para renderizar fila contextual con filtros globales
@@ -937,6 +947,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para empresa
           if (col.columnName === 'paisid' && selectedTable === 'empresa') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -949,7 +960,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar país"
+                  placeholder={`Seleccionar país${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -958,6 +969,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para fundo
           if (col.columnName === 'empresaid' && selectedTable === 'fundo') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -970,7 +982,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar empresa"
+                  placeholder={`Seleccionar empresa${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -979,6 +991,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para ubicacion
           if (col.columnName === 'fundoid' && selectedTable === 'ubicacion') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -991,7 +1004,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar fundo"
+                  placeholder={`Seleccionar fundo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1000,6 +1013,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para localizacion
           if (col.columnName === 'ubicacionid' && selectedTable === 'localizacion') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1012,7 +1026,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar ubicación"
+                  placeholder={`Seleccionar ubicación${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1020,6 +1034,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'nodoid' && selectedTable === 'localizacion') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1032,7 +1047,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar nodo"
+                  placeholder={`Seleccionar nodo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1040,6 +1055,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'entidadid' && (selectedTable === 'localizacion' || selectedTable === 'tipo')) {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1052,7 +1068,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar entidad"
+                  placeholder={`Seleccionar entidad${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1061,6 +1077,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para sensor
           if (col.columnName === 'nodoid' && selectedTable === 'sensor') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1073,7 +1090,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar nodo"
+                  placeholder={`Seleccionar nodo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1081,6 +1098,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'tipoid' && selectedTable === 'sensor') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1093,7 +1111,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar tipo"
+                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1102,6 +1120,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Campos de relación para metricasensor
           if (col.columnName === 'nodoid' && selectedTable === 'metricasensor') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1114,7 +1133,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar nodo"
+                  placeholder={`Seleccionar nodo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1122,6 +1141,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'metricaid' && selectedTable === 'metricasensor') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1134,7 +1154,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar métrica"
+                  placeholder={`Seleccionar métrica${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1142,6 +1162,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'tipoid' && selectedTable === 'metricasensor') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1154,7 +1175,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar tipo"
+                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1163,6 +1184,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Combobox para umbral - ubicacionid, criticidadid, nodoid, metricaid, tipoid
           if (col.columnName === 'ubicacionid' && selectedTable === 'umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1175,7 +1197,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar ubicación"
+                  placeholder={`Seleccionar ubicación${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1183,6 +1205,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'criticidadid' && selectedTable === 'umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1195,7 +1218,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar criticidad"
+                  placeholder={`Seleccionar criticidad${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1203,6 +1226,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'nodoid' && selectedTable === 'umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1215,7 +1239,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar nodo"
+                  placeholder={`Seleccionar nodo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1223,6 +1247,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'metricaid' && selectedTable === 'umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1235,7 +1260,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar métrica"
+                  placeholder={`Seleccionar métrica${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1243,6 +1268,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'tipoid' && selectedTable === 'umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1255,7 +1281,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar tipo"
+                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1264,6 +1290,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Combobox para perfilumbral - perfilid, umbralid
           if (col.columnName === 'perfilid' && selectedTable === 'perfilumbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1276,7 +1303,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar perfil"
+                  placeholder={`Seleccionar perfil${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1284,6 +1311,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'umbralid' && selectedTable === 'perfilumbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1296,7 +1324,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar umbral"
+                  placeholder={`Seleccionar umbral${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1305,6 +1333,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Combobox para audit_log_umbral - umbralid, modified_by
           if (col.columnName === 'umbralid' && selectedTable === 'audit_log_umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1317,7 +1346,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar umbral"
+                  placeholder={`Seleccionar umbral${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1325,6 +1354,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'modified_by' && selectedTable === 'audit_log_umbral') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1337,7 +1367,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar usuario"
+                  placeholder={`Seleccionar usuario${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1346,6 +1376,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Combobox para usuarioperfil - usuarioid, perfilid
           if (col.columnName === 'usuarioid' && selectedTable === 'usuarioperfil') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1358,7 +1389,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar usuario"
+                  placeholder={`Seleccionar usuario${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1366,6 +1397,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'perfilid' && selectedTable === 'usuarioperfil') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1378,7 +1410,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar perfil"
+                  placeholder={`Seleccionar perfil${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1387,6 +1419,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           // Combobox para contacto - usuarioid, medioid
           if (col.columnName === 'usuarioid' && selectedTable === 'contacto') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1399,7 +1432,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar usuario"
+                  placeholder={`Seleccionar usuario${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1407,6 +1440,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           if (col.columnName === 'medioid' && selectedTable === 'contacto') {
             const options = getUniqueOptionsForField(col.columnName);
+            const isRequired = isFieldRequired(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1419,13 +1453,14 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder="Seleccionar medio"
+                  placeholder={`Seleccionar medio${isRequired ? '*' : ''}`}
                 />
               </div>
             );
           }
 
           // Campo de texto normal
+          const isRequired = isFieldRequired(col.columnName);
           return (
             <div key={col.columnName} className="mb-4">
               <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1439,7 +1474,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                   [col.columnName]: e.target.value
                 })}
                 className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
-                placeholder={`INGRESE ${displayName.toUpperCase()}`}
+                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
               />
             </div>
           );
@@ -1447,16 +1482,25 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
   return (
     <div>
-      {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral'].includes(selectedTable) ? (
-        <div>
-          {renderSpecialLayoutFields()}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {visibleColumns.map(col => renderField(col))}
+      {/* Contenido del formulario */}
+      <div>
+        {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral'].includes(selectedTable) ? (
+          <div>
+            {renderSpecialLayoutFields()}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {visibleColumns.map(col => renderField(col))}
+          </div>
+        )}
       </div>
-      )}
 
+      {/* Leyenda de campos obligatorios en esquina inferior izquierda */}
+      <div className="absolute bottom-0 left-0 text-sm text-neutral-400 font-mono">
+        (*) Campo obligatorio
+      </div>
+
+      {/* Botones de acción centrados */}
       <div className="flex justify-center items-center mt-8 space-x-4">
         <button
           onClick={onInsert}
@@ -1466,7 +1510,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           <span>➕</span>
           <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
-        
         
         <button
           onClick={onCancel}
@@ -1482,7 +1525,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider"
           >
             PEGAR DESDE PORTAPAPELES
-        </button>
+          </button>
         )}
       </div>
     </div>
