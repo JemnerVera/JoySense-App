@@ -316,6 +316,10 @@ export const validateTableUpdate = async (
                   return await validateMetricaUpdate(formData, originalData, existingData || []);
                 case 'umbral':
                   return await validateUmbralUpdate(formData, originalData, existingData || []);
+                case 'perfilumbral':
+                  return await validatePerfilUmbralUpdate(formData, originalData, existingData || []);
+                case 'criticidad':
+                  return await validateCriticidadUpdate(formData, originalData, existingData || []);
                 default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -2451,6 +2455,178 @@ const checkUmbralDependencies = async (umbralid: number): Promise<boolean> => {
     return hasAlertas;
   } catch (error) {
     console.error('Error checking umbral dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA PERFILUMBRAL =====
+const validatePerfilUmbralUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validatePerfilUmbralUpdate - formData:', formData);
+  console.log('🔍 validatePerfilUmbralUpdate - originalData:', originalData);
+  console.log('🔍 validatePerfilUmbralUpdate - perfilid value:', formData.perfilid);
+  console.log('🔍 validatePerfilUmbralUpdate - umbralid value:', formData.umbralid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.perfilid || formData.perfilid === '') {
+    console.log('🔍 validatePerfilUmbralUpdate - perfilid está vacío');
+    errors.push({
+      field: 'perfilid',
+      message: 'El perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.umbralid || formData.umbralid === '') {
+    console.log('🔍 validatePerfilUmbralUpdate - umbralid está vacío');
+    errors.push({
+      field: 'umbralid',
+      message: 'El umbral es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  // Para perfilumbral, la clave primaria es compuesta (perfilid, umbralid)
+  if (formData.perfilid && formData.umbralid) {
+    const perfilUmbralExists = existingData.some(item => 
+      (item.perfilid !== originalData.perfilid || item.umbralid !== originalData.umbralid) && 
+      item.perfilid === formData.perfilid && 
+      item.umbralid === formData.umbralid
+    );
+    
+    if (perfilUmbralExists) {
+      errors.push({
+        field: 'composite',
+        message: 'Ya existe una relación entre este perfil y umbral',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  // Según el schema, perfilumbral NO es referenciada por ninguna otra tabla
+  // Por lo tanto, no hay restricciones para inactivar
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA CRITICIDAD =====
+const validateCriticidadUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateCriticidadUpdate - formData:', formData);
+  console.log('🔍 validateCriticidadUpdate - originalData:', originalData);
+  console.log('🔍 validateCriticidadUpdate - criticidad value:', formData.criticidad);
+  console.log('🔍 validateCriticidadUpdate - criticidadbrev value:', formData.criticidadbrev);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.criticidad || formData.criticidad.trim() === '') {
+    console.log('🔍 validateCriticidadUpdate - criticidad está vacío');
+    errors.push({
+      field: 'criticidad',
+      message: 'El nombre de la criticidad es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.criticidadbrev || formData.criticidadbrev.trim() === '') {
+    console.log('🔍 validateCriticidadUpdate - criticidadbrev está vacío');
+    errors.push({
+      field: 'criticidadbrev',
+      message: 'La abreviatura de la criticidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.criticidad && formData.criticidad.trim() !== '') {
+    const criticidadExists = existingData.some(item => 
+      item.criticidadid !== originalData.criticidadid && 
+      item.criticidad && 
+      item.criticidad.toLowerCase() === formData.criticidad.toLowerCase()
+    );
+    
+    if (criticidadExists) {
+      errors.push({
+        field: 'criticidad',
+        message: 'El nombre de la criticidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  if (formData.criticidadbrev && formData.criticidadbrev.trim() !== '') {
+    const criticidadbrevExists = existingData.some(item => 
+      item.criticidadid !== originalData.criticidadid && 
+      item.criticidadbrev && 
+      item.criticidadbrev.toLowerCase() === formData.criticidadbrev.toLowerCase()
+    );
+    
+    if (criticidadbrevExists) {
+      errors.push({
+        field: 'criticidadbrev',
+        message: 'La abreviatura de la criticidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay umbrales o alertas que referencian esta criticidad
+    const hasDependentRecords = await checkCriticidadDependencies(originalData.criticidadid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar la criticidad porque tiene umbrales o alertas asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+const checkCriticidadDependencies = async (criticidadid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla umbral
+    const umbrales = await JoySenseService.getTableData('umbral');
+    const hasUmbrales = umbrales.some(umbral => umbral.criticidadid === criticidadid);
+    
+    if (hasUmbrales) return true;
+    
+    // Verificar en tabla alerta
+    const alertas = await JoySenseService.getTableData('alerta');
+    const hasAlertas = alertas.some(alerta => alerta.criticidadid === criticidadid);
+    
+    return hasAlertas;
+  } catch (error) {
+    console.error('Error checking criticidad dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
