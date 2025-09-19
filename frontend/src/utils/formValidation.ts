@@ -76,14 +76,14 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
     { field: 'deveui', required: true, type: 'string', minLength: 1, customMessage: 'El campo DEVEUI es obligatorio' }
   ],
   
+  metrica: [
+    { field: 'metrica', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la métrica es obligatorio' },
+    { field: 'unidad', required: true, type: 'string', minLength: 1, customMessage: 'La unidad es obligatoria' }
+  ],
+  
   sensor: [
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
-  ],
-  
-  metrica: [
-    { field: 'metrica', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la métrica es obligatorio' },
-    { field: 'metricaabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
   ],
   
   medicion: [
@@ -307,6 +307,8 @@ export const validateTableData = async (
       return await validateTipoData(formData, existingData);
     case 'nodo':
       return await validateNodoData(formData, existingData);
+    case 'metrica':
+      return await validateMetricaData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -850,6 +852,71 @@ const validateNodoData = async (
   };
 };
 
+// Validación específica para Métrica
+const validateMetricaData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.metrica || formData.metrica.trim() === '') {
+    errors.push({
+      field: 'metrica',
+      message: 'El nombre de la métrica es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.unidad || formData.unidad.trim() === '') {
+    errors.push({
+      field: 'unidad',
+      message: 'La unidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const metricaExists = existingData.some(item => 
+      item.metrica && item.metrica.toLowerCase() === formData.metrica?.toLowerCase()
+    );
+    
+    const unidadExists = existingData.some(item => 
+      item.unidad && item.unidad.toLowerCase() === formData.unidad?.toLowerCase()
+    );
+    
+    if (metricaExists && unidadExists) {
+      errors.push({
+        field: 'both',
+        message: 'La métrica y unidad ya existen',
+        type: 'duplicate'
+      });
+    } else if (metricaExists) {
+      errors.push({
+        field: 'metrica',
+        message: 'El nombre de la métrica ya existe',
+        type: 'duplicate'
+      });
+    } else if (unidadExists) {
+      errors.push({
+        field: 'unidad',
+        message: 'La unidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -906,6 +973,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'nodo') && 
                requiredErrors.some(e => e.field === 'deveui')) {
       messages.push('⚠️ El nodo y DevEUI es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'metrica') && 
+               requiredErrors.some(e => e.field === 'unidad')) {
+      messages.push('⚠️ La métrica y unidad es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
@@ -926,6 +997,8 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
         messages.push('⚠️ La empresa y abreviatura se repite');
       } else if (duplicateErrors.some(e => e.message.includes('fundo'))) {
         messages.push('⚠️ El fundo y abreviatura se repite');
+      } else if (duplicateErrors.some(e => e.message.includes('métrica'))) {
+        messages.push('⚠️ La métrica y unidad se repite');
       } else {
         messages.push(`⚠️ ${duplicateErrors[0].message}`);
       }

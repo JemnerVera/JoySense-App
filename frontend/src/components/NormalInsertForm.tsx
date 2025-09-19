@@ -140,6 +140,20 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }
   }
   
+  // Para Métrica: habilitación progresiva metrica -> unidad -> resto
+  if (selectedTable === 'metrica') {
+    if (columnName === 'metrica') {
+      return true; // Siempre habilitado
+    }
+    if (columnName === 'unidad') {
+      return !!(formData.metrica && formData.metrica.trim() !== '');
+    }
+    // Para el resto de campos (statusid)
+    if (['statusid'].includes(columnName)) {
+      return !!(formData.metrica && formData.metrica.trim() !== '' && formData.unidad && formData.unidad.trim() !== '');
+    }
+  }
+  
   // Para otros campos, usar lógica normal
   return true;
   };

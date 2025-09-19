@@ -4504,11 +4504,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         case 'nodo':
           existingData = nodosData || [];
           break;
-        case 'sensor':
-          existingData = sensorsData || [];
-          break;
         case 'metrica':
           existingData = metricasData || [];
+          break;
+        case 'sensor':
+          existingData = sensorsData || [];
           break;
         case 'metricasensor':
           existingData = metricasensorData || [];
