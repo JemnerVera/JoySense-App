@@ -9203,60 +9203,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Cache para columnas visibles - evita re-cálculos innecesarios
-  const columnsCache = useRef<{
-    status: ColumnInfo[];
-    update: ColumnInfo[];
-    searchable: ColumnInfo[];
-    lastSelectedTable: string;
-    lastColumnsLength: number;
-    lastTableColumnsLength: number;
-  }>({
-    status: [],
-    update: [],
-    searchable: [],
-    lastSelectedTable: '',
-    lastColumnsLength: 0,
-    lastTableColumnsLength: 0
-  });
-
-  // Columnas para la tabla de Estado (individuales) - Cacheadas para evitar re-renderizados infinitos
+  // Columnas para la tabla de Estado (individuales) - Memoizadas de forma simple
   const statusVisibleColumns = useMemo(() => {
     if (columns.length === 0) return [];
-    
-    // Verificar si necesitamos recalcular
-    const needsRecalc = 
-      columnsCache.current.lastSelectedTable !== selectedTable ||
-      columnsCache.current.lastColumnsLength !== columns.length;
-    
-    if (needsRecalc) {
-      console.log('🔄 Recalculando columnas de Estado');
-      columnsCache.current.status = getVisibleColumns(false);
-      columnsCache.current.lastSelectedTable = selectedTable;
-      columnsCache.current.lastColumnsLength = columns.length;
-    }
-    
-    return columnsCache.current.status;
-  }, [selectedTable, columns.length]);
+    return getVisibleColumns(false);
+  }, [selectedTable, columns]);
 
-  // Columnas para la tabla de Actualizar (agrupadas para metricasensor) - Cacheadas para evitar re-renderizados infinitos
+  // Columnas para la tabla de Actualizar (agrupadas para metricasensor) - Memoizadas de forma simple
   const updateVisibleColumns = useMemo(() => {
     if (tableColumns.length === 0) return [];
-    
-    // Verificar si necesitamos recalcular
-    const needsRecalc = 
-      columnsCache.current.lastSelectedTable !== selectedTable ||
-      columnsCache.current.lastTableColumnsLength !== tableColumns.length;
-    
-    if (needsRecalc) {
-      console.log('🔄 Recalculando columnas de Actualizar');
-      columnsCache.current.update = getVisibleColumns(true);
-      columnsCache.current.lastSelectedTable = selectedTable;
-      columnsCache.current.lastTableColumnsLength = tableColumns.length;
-    }
-    
-    return columnsCache.current.update;
-  }, [selectedTable, tableColumns.length]);
+    return getVisibleColumns(true);
+  }, [selectedTable, tableColumns]);
 
   // Debug: verificar columnas para usuarioperfil
 
@@ -9280,24 +9237,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
-  // Columnas buscables - Cacheadas para evitar re-renderizados infinitos
+  // Columnas buscables - Memoizadas de forma simple
   const searchableColumns = useMemo(() => {
     if (tableColumns.length === 0) return [];
-    
-    // Verificar si necesitamos recalcular
-    const needsRecalc = 
-      columnsCache.current.lastSelectedTable !== selectedTable ||
-      columnsCache.current.lastTableColumnsLength !== tableColumns.length;
-    
-    if (needsRecalc) {
-      console.log('🔄 Recalculando columnas buscables');
-      const allColumns = getVisibleColumns();
-      const excludedFields: string[] = [];
-      columnsCache.current.searchable = allColumns.filter(col => !excludedFields.includes(col.columnName));
-    }
-    
-    return columnsCache.current.searchable;
-  }, [selectedTable, tableColumns.length]);
+    const allColumns = getVisibleColumns();
+    const excludedFields: string[] = [];
+    return allColumns.filter(col => !excludedFields.includes(col.columnName));
+  }, [selectedTable, tableColumns]);
 
 
 
