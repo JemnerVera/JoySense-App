@@ -4467,9 +4467,33 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     if (typeof value === 'object') {
       console.warn('⚠️ getDisplayValue: objeto encontrado en', columnName, ':', value);
+      console.log('🔍 getDisplayValue Debug - Objeto keys:', Object.keys(value));
+      console.log('🔍 getDisplayValue Debug - Column name:', columnName);
       
       // Si es un objeto con propiedades conocidas, intentar extraer el valor correcto
       if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Buscar el campo que coincida con el nombre de la columna
+        const fieldName = columnName.toLowerCase();
+        if (value[fieldName]) {
+          return value[fieldName].toString();
+        }
+        
+        // Buscar variaciones comunes del nombre de campo
+        const variations = [
+          fieldName,
+          fieldName.replace('id', ''),
+          fieldName.replace('abrev', ''),
+          fieldName + 'id',
+          fieldName + 'abrev'
+        ];
+        
+        for (const variation of variations) {
+          if (value[variation]) {
+            return value[variation].toString();
+          }
+        }
+        
+        // Si es un objeto con propiedades conocidas específicas, intentar extraer el valor correcto
         // Para la columna 'empresa', buscar el campo 'empresa' dentro del objeto
         if (columnName === 'empresa' && value.empresa) {
           return value.empresa.toString();
@@ -4494,6 +4518,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         if (columnName === 'paisabrev' && value.paisabrev) {
           return value.paisabrev.toString();
         }
+        
+        // Si no se encuentra un campo específico, intentar usar el primer valor de texto disponible
+        const textFields = Object.keys(value).filter(key => 
+          typeof value[key] === 'string' && 
+          !key.includes('id') && 
+          !key.includes('date') && 
+          !key.includes('status')
+        );
+        
+        if (textFields.length > 0) {
+          return value[textFields[0]].toString();
+        }
+      }
+      
+      // Como último recurso, mostrar una representación más amigable del objeto
+      if (value && typeof value === 'object') {
+        const keys = Object.keys(value);
+        if (keys.length === 1) {
+          return value[keys[0]].toString();
+        }
+        return `[${keys.join(', ')}]`;
       }
       
       return JSON.stringify(value);
@@ -9203,17 +9248,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Columnas para la tabla de Estado (individuales) - Memoizadas de forma simple
+  // Columnas para la tabla de Estado (individuales) - Memoizadas con dependencias correctas
   const statusVisibleColumns = useMemo(() => {
     if (columns.length === 0) return [];
     return getVisibleColumns(false);
-  }, [selectedTable, columns]);
+  }, [getVisibleColumns, columns]);
 
-  // Columnas para la tabla de Actualizar (agrupadas para metricasensor) - Memoizadas de forma simple
+  // Columnas para la tabla de Actualizar (agrupadas para metricasensor) - Memoizadas con dependencias correctas
   const updateVisibleColumns = useMemo(() => {
     if (tableColumns.length === 0) return [];
     return getVisibleColumns(true);
-  }, [selectedTable, tableColumns]);
+  }, [getVisibleColumns, tableColumns]);
 
   // Debug: verificar columnas para usuarioperfil
 
@@ -9237,13 +9282,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
-  // Columnas buscables - Memoizadas de forma simple
+  // Columnas buscables - Memoizadas con dependencias correctas
   const searchableColumns = useMemo(() => {
     if (tableColumns.length === 0) return [];
     const allColumns = getVisibleColumns();
     const excludedFields: string[] = [];
     return allColumns.filter(col => !excludedFields.includes(col.columnName));
-  }, [selectedTable, tableColumns]);
+  }, [getVisibleColumns, tableColumns]);
 
 
 
