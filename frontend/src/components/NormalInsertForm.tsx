@@ -546,21 +546,30 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderUbicacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    // Auto-seleccionar Fundo si hay filtro global y no está seleccionado
+    if (fundoSeleccionado && !formData.fundoid) {
+      setFormData({ ...formData, fundoid: fundoSeleccionado });
+    }
+    
     // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
     if (contextualRow) {
       result.push(contextualRow);
     }
     
-    // Primera fila: Ubicación, Status
+    // Primera fila: Fundo (si NO hay filtro global), Ubicación, Status (máximo 3 campos)
+    const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacion');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    if (ubicacionField || statusField) {
+    // Solo mostrar campo Fundo si NO hay filtro global de fundo
+    const shouldShowFundoField = fundoField && !fundoSeleccionado;
+    
+    if (shouldShowFundoField || ubicacionField || statusField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {shouldShowFundoField && renderField(fundoField)}
           {ubicacionField && renderField(ubicacionField)}
-          <div></div> {/* Espacio vacío */}
           {statusField && renderField(statusField)}
         </div>
       );

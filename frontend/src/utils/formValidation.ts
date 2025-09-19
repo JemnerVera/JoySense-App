@@ -50,7 +50,6 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   ubicacion: [
     { field: 'ubicacion', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la ubicación es obligatorio' },
-    { field: 'ubicacionabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' },
     { field: 'fundoid', required: true, type: 'number', customMessage: 'Debe seleccionar un fundo' }
   ],
   
@@ -296,6 +295,8 @@ export const validateTableData = async (
       return await validateEmpresaData(formData, existingData);
     case 'fundo':
       return await validateFundoData(formData, existingData);
+    case 'ubicacion':
+      return await validateUbicacionData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -551,6 +552,56 @@ const validateFundoData = async (
   };
 };
 
+// Validación específica para Ubicación
+const validateUbicacionData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.ubicacion || formData.ubicacion.trim() === '') {
+    errors.push({
+      field: 'ubicacion',
+      message: 'El nombre de la ubicación es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.fundoid) {
+    errors.push({
+      field: 'fundoid',
+      message: 'Debe seleccionar un fundo',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const ubicacionExists = existingData.some(item => 
+      item.ubicacion && item.ubicacion.toLowerCase() === formData.ubicacion?.toLowerCase() &&
+      item.fundoid && item.fundoid.toString() === formData.fundoid?.toString()
+    );
+    
+    if (ubicacionExists) {
+      errors.push({
+        field: 'ubicacion',
+        message: 'La ubicación ya existe en este fundo',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -578,6 +629,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'fundo') && 
                requiredErrors.some(e => e.field === 'fundoabrev')) {
       messages.push('⚠️ El fundo y abreviatura es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'ubicacion') && 
+               requiredErrors.some(e => e.field === 'fundoid')) {
+      messages.push('⚠️ La ubicación y fundo es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
