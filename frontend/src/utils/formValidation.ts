@@ -116,7 +116,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   medio: [
-    { field: 'nombre', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del medio es obligatorio' }
+    { field: 'nombre', required: true, type: 'string', minLength: 1, maxLength: 50, customMessage: 'El nombre del medio es obligatorio' }
   ],
   
   contacto: [
@@ -128,7 +128,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   perfil: [
     { field: 'perfil', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del perfil es obligatorio' },
-    { field: 'perfilabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
+    { field: 'nivel', required: true, type: 'string', minLength: 1, customMessage: 'El nivel del perfil es obligatorio' }
   ],
   
   metricasensor: [
@@ -318,6 +318,10 @@ export const validateTableData = async (
       return await validateCriticidadData(formData, existingData);
     case 'medio':
       return await validateMedioData(formData, existingData);
+    case 'contacto':
+      return await validateContactoData(formData, existingData);
+    case 'perfil':
+      return await validatePerfilData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1127,6 +1131,12 @@ const validateMedioData = async (
       message: 'El nombre del medio es obligatorio',
       type: 'required'
     });
+  } else if (formData.nombre.length > 50) {
+    errors.push({
+      field: 'nombre',
+      message: 'El nombre del medio no puede exceder 50 caracteres',
+      type: 'format'
+    });
   }
   
   // 2. Validar duplicados si hay datos existentes
@@ -1139,6 +1149,130 @@ const validateMedioData = async (
       errors.push({
         field: 'nombre',
         message: 'El nombre del medio ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Validación específica para Contacto
+const validateContactoData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.usuarioid || formData.usuarioid === 0) {
+    errors.push({
+      field: 'usuarioid',
+      message: 'Debe seleccionar un usuario',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.medioid || formData.medioid === 0) {
+    errors.push({
+      field: 'medioid',
+      message: 'Debe seleccionar un medio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar constraint de negocio: al menos uno de celular o correo debe estar presente
+  if ((!formData.celular || formData.celular.trim() === '') && 
+      (!formData.correo || formData.correo.trim() === '')) {
+    errors.push({
+      field: 'contacto',
+      message: 'Debe proporcionar al menos un celular o correo',
+      type: 'required'
+    });
+  }
+  
+  // 3. Validar duplicados si hay datos existentes (constraint: usuarioid + medioid único)
+  if (existingData && existingData.length > 0) {
+    const contactoExists = existingData.some(item => 
+      item.usuarioid === formData.usuarioid && item.medioid === formData.medioid
+    );
+    
+    if (contactoExists) {
+      errors.push({
+        field: 'general',
+        message: 'Ya existe un contacto para este usuario y medio',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Validación específica para Perfil
+const validatePerfilData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.perfil || formData.perfil.trim() === '') {
+    errors.push({
+      field: 'perfil',
+      message: 'El nombre del perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nivel || formData.nivel.trim() === '') {
+    errors.push({
+      field: 'nivel',
+      message: 'El nivel del perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const perfilExists = existingData.some(item => 
+      item.perfil && item.perfil.toLowerCase() === formData.perfil?.toLowerCase()
+    );
+    
+    const nivelExists = existingData.some(item => 
+      item.nivel && item.nivel.toLowerCase() === formData.nivel?.toLowerCase()
+    );
+    
+    if (perfilExists && nivelExists) {
+      errors.push({
+        field: 'both',
+        message: 'El perfil y nivel ya existen',
+        type: 'duplicate'
+      });
+    } else if (perfilExists) {
+      errors.push({
+        field: 'perfil',
+        message: 'El nombre del perfil ya existe',
+        type: 'duplicate'
+      });
+    } else if (nivelExists) {
+      errors.push({
+        field: 'nivel',
+        message: 'El nivel del perfil ya existe',
         type: 'duplicate'
       });
     }
@@ -1222,6 +1356,14 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'criticidad') && 
                requiredErrors.some(e => e.field === 'criticidadbrev')) {
       messages.push('⚠️ La criticidad y abreviatura es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'usuarioid') && 
+               requiredErrors.some(e => e.field === 'medioid')) {
+      messages.push('⚠️ El usuario y medio es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'perfil') && 
+               requiredErrors.some(e => e.field === 'nivel')) {
+      messages.push('⚠️ El perfil y nivel es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
@@ -1246,6 +1388,8 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
         messages.push('⚠️ La métrica y unidad se repite');
       } else if (duplicateErrors.some(e => e.message.includes('criticidad'))) {
         messages.push('⚠️ La criticidad y abreviatura se repite');
+      } else if (duplicateErrors.some(e => e.message.includes('perfil'))) {
+        messages.push('⚠️ El perfil y nivel se repite');
       } else {
         messages.push(`⚠️ ${duplicateErrors[0].message}`);
       }

@@ -182,6 +182,31 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }
   }
   
+  // Para Contacto: habilitación progresiva usuarioid -> resto
+  if (selectedTable === 'contacto') {
+    if (columnName === 'usuarioid') {
+      return true; // Siempre habilitado
+    }
+    // Para el resto de campos (medioid, celular, correo, statusid)
+    if (['medioid', 'celular', 'correo', 'statusid'].includes(columnName)) {
+      return !!(formData.usuarioid && formData.usuarioid !== 0);
+    }
+  }
+  
+  // Para Perfil: habilitación progresiva perfil -> nivel -> resto
+  if (selectedTable === 'perfil') {
+    if (columnName === 'perfil') {
+      return true; // Siempre habilitado
+    }
+    if (columnName === 'nivel') {
+      return !!(formData.perfil && formData.perfil.trim() !== '');
+    }
+    // Para el resto de campos (statusid)
+    if (['statusid'].includes(columnName)) {
+      return !!(formData.perfil && formData.perfil.trim() !== '' && formData.nivel && formData.nivel.trim() !== '');
+    }
+  }
+  
   // Para otros campos, usar lógica normal
   return true;
   };

@@ -1258,6 +1258,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
   const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
+  const [contactosData, setContactosData] = useState<any[]>([]);
 
 
 
@@ -3445,7 +3446,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          metricasensorResponse,
 
-         perfilumbralResponse
+         perfilumbralResponse,
+
+         contactosResponse
 
        ] = await Promise.all([
 
@@ -3481,7 +3484,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          JoySenseService.getTableData('metricasensor', 500),
 
-         JoySenseService.getTableData('perfilumbral', 500)
+         JoySenseService.getTableData('perfilumbral', 500),
+
+         JoySenseService.getTableData('contacto', 500)
 
        ]);
 
@@ -3533,6 +3538,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
 
+       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
+
        
 
        setPaisesData(paises);
@@ -3568,6 +3575,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
        setMetricasensorData(metricasensor);
 
        setPerfilumbralData(perfilumbral);
+
+       setContactosData(contactos);
 
       
 
@@ -4527,6 +4536,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           break;
         case 'medio':
           existingData = mediosData || [];
+          break;
+        case 'contacto':
+          existingData = contactosData || [];
+          break;
+        case 'perfil':
+          existingData = perfilesData || [];
           break;
         case 'sensor':
           existingData = sensorsData || [];
