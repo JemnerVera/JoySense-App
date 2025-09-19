@@ -56,6 +56,16 @@ import LostDataModal from './LostDataModal';
 
 import { validateFormData, getValidationMessages, validateTableData, validateTableUpdate } from '../utils/formValidation';
 
+// Hooks personalizados para refactoring
+import { useFormValidation } from '../hooks/useFormValidation';
+import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
+import { useSystemParametersState } from '../hooks/useSystemParametersState';
+import { useTableData } from '../hooks/useTableData';
+import { useFormState } from '../hooks/useFormState';
+import { useInsertOperations } from '../hooks/useInsertOperations';
+import { useUpdateOperations } from '../hooks/useUpdateOperations';
+import { useSearchOperations } from '../hooks/useSearchOperations';
+
 
 
 // Hook personalizado para manejar selección múltiple basada en timestamp
@@ -864,9 +874,47 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
-  const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
-
-  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>(propActiveSubTab || 'status');
+  // Hook personalizado para estado principal
+  const {
+    selectedTable,
+    activeSubTab,
+    updateData,
+    updateFilteredData,
+    searchField,
+    searchTerm,
+    selectedRowForUpdate,
+    updateFormData,
+    updateLoading,
+    hasSearched,
+    statusCurrentPage,
+    statusTotalPages,
+    statusSearchTerm,
+    statusFilteredData,
+    statusLoading,
+    copyData,
+    selectedRowsForCopy,
+    setSelectedTable,
+    setActiveSubTab,
+    setUpdateData,
+    setUpdateFilteredData,
+    setSearchField,
+    setSearchTerm,
+    setSelectedRowForUpdate,
+    setUpdateFormData,
+    setUpdateLoading,
+    setHasSearched,
+    setStatusCurrentPage,
+    setStatusTotalPages,
+    setStatusSearchTerm,
+    setStatusFilteredData,
+    setStatusLoading,
+    setCopyData,
+    setSelectedRowsForCopy,
+    resetFormData,
+    resetUpdateForm,
+    resetSearch,
+    resetStatusSearch
+  } = useSystemParametersState(propSelectedTable, propActiveSubTab);
 
   
 
@@ -886,9 +934,63 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   } = useSimpleModal();
 
-  
+  // Hooks de operaciones de servicios
+  const {
+    isInserting,
+    insertError,
+    insertSuccess,
+    lastInsertedId,
+    insertSingle,
+    insertMultiple,
+    insertMassive,
+    clearInsertState,
+    setInserting,
+    setInsertError,
+    setInsertSuccess
+  } = useInsertOperations();
 
-  
+  const {
+    isUpdating,
+    updateError,
+    updateSuccess,
+    lastUpdatedId,
+    updateSingle,
+    updateMultiple,
+    clearUpdateState,
+    setUpdating,
+    setUpdateError,
+    setUpdateSuccess
+  } = useUpdateOperations();
+
+  const {
+    searchTerm: searchTermState,
+    searchField: searchFieldState,
+    filteredData: searchFilteredData,
+    hasSearched: searchHasSearched,
+    isSearching,
+    setSearchTerm: setSearchTermState,
+    setSearchField: setSearchFieldState,
+    performSearch,
+    clearSearch: clearSearchState,
+    setFilteredData: setSearchFilteredData,
+    setHasSearched: setSearchHasSearched,
+    setIsSearching
+  } = useSearchOperations();
+
+  // Hook de validación de formularios
+  const {
+    validateInsert,
+    validateUpdate,
+    checkDependencies,
+    validateMultipleInsert,
+    validateMassiveInsert
+  } = useFormValidation(selectedTable);
+
+  // Hook de habilitación progresiva
+  const {
+    getEnabledFields,
+    isFieldEnabled
+  } = useProgressiveEnablement(selectedTable, {});
 
   // Sincronizar estado local con props
 
@@ -1746,15 +1848,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Estados para actualización con paginación
-
-  const [updateData, setUpdateData] = useState<any[]>([]);
-
-  const [updateFilteredData, setUpdateFilteredData] = useState<any[]>([]);
-
-  const [searchField, setSearchField] = useState<string>('');
-
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  // Estados para actualización con paginación - Ahora manejados por useSystemParametersState
 
 
 
@@ -1786,27 +1880,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Los datos relacionados se cargan automáticamente cuando se necesita
 
-  const [selectedRowForUpdate, setSelectedRowForUpdate] = useState<any>(null);
-
-  const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
-
-  const [updateLoading, setUpdateLoading] = useState(false);
-
-  const [hasSearched, setHasSearched] = useState(false);
+  // Estados de actualización - Ahora manejados por useSystemParametersState
 
   
 
-  // Estados para paginación y búsqueda de la tabla de Estado
-
-  const [statusCurrentPage, setStatusCurrentPage] = useState(1);
-
-  const [statusTotalPages, setStatusTotalPages] = useState(1);
-
-  const [statusSearchTerm, setStatusSearchTerm] = useState<string>('');
-
-  const [statusFilteredData, setStatusFilteredData] = useState<any[]>([]);
-
-  const [statusLoading, setStatusLoading] = useState(false);
+  // Estados para paginación y búsqueda de la tabla de Estado - Ahora manejados por useSystemParametersState
 
   
 
@@ -1818,11 +1896,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   
 
-  // Estados para la funcionalidad de copiar
-
-  const [copyData, setCopyData] = useState<any[]>([]);
-
-  const [selectedRowsForCopy, setSelectedRowsForCopy] = useState<any[]>([]);
+  // Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
 
   const [copySearchTerm, setCopySearchTerm] = useState<string>('');
 
@@ -5638,77 +5712,76 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleSelectRowForCopy = (row: any) => {
 
-    setSelectedRowsForCopy(prev => {
+    const currentRows = selectedRowsForCopy;
+    const isSelected = currentRows.some((selectedRow: any) => {
 
-      const isSelected = prev.some(selectedRow => {
+      // Para sensor y metricasensor, comparar por la clave compuesta
 
-        // Para sensor y metricasensor, comparar por la clave compuesta
+      if (selectedTable === 'sensor') {
+
+        return selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid;
+
+      } else if (selectedTable === 'metricasensor') {
+
+        return selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid;
+
+      } else if (selectedTable === 'nodo') {
+
+        // Para nodo, usar nodoid
+
+        return selectedRow.nodoid === row.nodoid;
+
+      }
+
+      // Para otras tablas, usar el ID principal
+
+      const idField = getRowId(selectedRow, selectedTable);
+
+      const rowId = getRowId(row, selectedTable);
+
+      return idField === rowId;
+
+    });
+
+    
+
+    if (isSelected) {
+
+      // Deseleccionar
+
+      const newRows = currentRows.filter((selectedRow: any) => {
 
         if (selectedTable === 'sensor') {
 
-          return selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid;
+          return !(selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid);
 
         } else if (selectedTable === 'metricasensor') {
 
-          return selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid;
+          return !(selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid);
 
         } else if (selectedTable === 'nodo') {
 
-          // Para nodo, usar nodoid
-
-          return selectedRow.nodoid === row.nodoid;
+          return selectedRow.nodoid !== row.nodoid;
 
         }
-
-        // Para otras tablas, usar el ID principal
 
         const idField = getRowId(selectedRow, selectedTable);
 
         const rowId = getRowId(row, selectedTable);
 
-        return idField === rowId;
+        return idField !== rowId;
 
       });
 
-      
+      setSelectedRowsForCopy(newRows);
 
-      if (isSelected) {
+    } else {
 
-        // Deseleccionar
+      // Seleccionar
 
-        return prev.filter(selectedRow => {
+      setSelectedRowsForCopy([...currentRows, row]);
 
-          if (selectedTable === 'sensor') {
-
-            return !(selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid);
-
-          } else if (selectedTable === 'metricasensor') {
-
-            return !(selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid);
-
-          } else if (selectedTable === 'nodo') {
-
-            return selectedRow.nodoid !== row.nodoid;
-
-          }
-
-          const idField = getRowId(selectedRow, selectedTable);
-
-          const rowId = getRowId(row, selectedTable);
-
-          return idField !== rowId;
-
-        });
-
-      } else {
-
-        // Seleccionar
-
-        return [...prev, row];
-
-      }
-
-    });
+    }
 
   };
 
@@ -13183,7 +13256,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                      checked={value === 1 || value === true}
 
-                                     onChange={(e) => setUpdateFormData(prev => ({
+                                     onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
 
                                        ...prev,
 
@@ -13229,7 +13302,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                  value={value}
 
-                                 onChange={(e) => setUpdateFormData(prev => ({
+                                 onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
 
                                    ...prev,
 
