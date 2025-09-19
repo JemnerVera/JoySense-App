@@ -106,6 +106,16 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       }
     }
     
+    // Para Fundo: solo habilitar fundoabrev si fundo tiene valor
+    if (selectedTable === 'fundo') {
+      if (columnName === 'fundoabrev') {
+        return !!(formData.fundo && formData.fundo.trim() !== '');
+      }
+      if (columnName === 'fundo') {
+        return true; // Siempre habilitado
+      }
+    }
+    
     // Para otros campos, usar lógica normal
     return true;
   };
@@ -121,6 +131,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     });
     
     const contextualFields = fields.map(field => {
+      // Para País: mostrar solo si hay filtro global
       if (field === 'pais' && paisSeleccionado) {
         return (
           <div key="pais-contextual">
@@ -132,7 +143,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             </div>
           </div>
         );
-      } else if (field === 'empresa' && empresaSeleccionada) {
+      } 
+      // Para Empresa: mostrar solo si hay filtro global
+      else if (field === 'empresa' && empresaSeleccionada) {
         return (
           <div key="empresa-contextual">
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -143,7 +156,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             </div>
           </div>
         );
-      } else if (field === 'fundo' && fundoSeleccionado) {
+      } 
+      // Para Fundo: mostrar solo si hay filtro global
+      else if (field === 'fundo' && fundoSeleccionado) {
         return (
           <div key="fundo-contextual">
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -485,23 +500,41 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
   const renderFundoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
+    // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
+    if (empresaSeleccionada && !formData.empresaid) {
+      setFormData({ ...formData, empresaid: empresaSeleccionada });
+    }
+    
     // Fila contextual: País, Empresa (si hay filtros globales)
     const contextualRow = renderContextualRow(['pais', 'empresa']);
     if (contextualRow) {
       result.push(contextualRow);
     }
     
-    // Primera fila: Fundo, Abreviatura, Status
+    // Primera fila: Empresa (si NO hay filtro global), Fundo, Abreviatura (máximo 3 campos)
+    const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
     const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
     const abreviaturaField = visibleColumns.find(c => c.columnName === 'fundoabrev');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    if (fundoField || abreviaturaField || statusField) {
+    // Solo mostrar campo Empresa si NO hay filtro global de empresa
+    const shouldShowEmpresaField = empresaField && !empresaSeleccionada;
+    
+    if (shouldShowEmpresaField || fundoField || abreviaturaField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {shouldShowEmpresaField && renderField(empresaField)}
           {fundoField && renderField(fundoField)}
           {abreviaturaField && renderField(abreviaturaField)}
-          {statusField && renderField(statusField)}
+        </div>
+      );
+    }
+    
+    // Segunda fila: Status (si existe)
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    if (statusField) {
+      result.push(
+        <div key="status-row" className="grid grid-cols-1 gap-6 mb-6">
+          {renderField(statusField)}
         </div>
       );
     }
@@ -1512,7 +1545,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     ? 'bg-neutral-800 border-neutral-600' 
                     : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
                 }`}
-                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 3 caracteres)' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 3 caracteres)' : ''}${col.columnName === 'fundoabrev' ? ' (hasta 2 caracteres)' : ''}`}
               />
             </div>
           );

@@ -4426,6 +4426,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     if (typeof value === 'object') {
       console.warn('⚠️ getDisplayValue: objeto encontrado en', columnName, ':', value);
+      
+      // Si es un objeto con propiedades conocidas, intentar extraer el valor correcto
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Para la columna 'empresa', buscar el campo 'empresa' dentro del objeto
+        if (columnName === 'empresa' && value.empresa) {
+          return value.empresa.toString();
+        }
+        // Para la columna 'empresabrev', buscar el campo 'empresabrev' dentro del objeto
+        if (columnName === 'empresabrev' && value.empresabrev) {
+          return value.empresabrev.toString();
+        }
+        // Para la columna 'fundo', buscar el campo 'fundo' dentro del objeto
+        if (columnName === 'fundo' && value.fundo) {
+          return value.fundo.toString();
+        }
+        // Para la columna 'fundoabrev', buscar el campo 'fundoabrev' dentro del objeto
+        if (columnName === 'fundoabrev' && value.fundoabrev) {
+          return value.fundoabrev.toString();
+        }
+        // Para la columna 'pais', buscar el campo 'pais' dentro del objeto
+        if (columnName === 'pais' && value.pais) {
+          return value.pais.toString();
+        }
+        // Para la columna 'paisabrev', buscar el campo 'paisabrev' dentro del objeto
+        if (columnName === 'paisabrev' && value.paisabrev) {
+          return value.paisabrev.toString();
+        }
+      }
+      
       return JSON.stringify(value);
     }
     
