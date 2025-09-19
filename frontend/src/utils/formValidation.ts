@@ -56,12 +56,12 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   localizacion: [
-    { field: 'entidadid', required: true, type: 'number', customMessage: 'Debe seleccionar una entidad' },
+    { field: 'entidadid', required: false, type: 'number', customMessage: 'Debe seleccionar una entidad' },
     { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' },
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
-    { field: 'latitud', required: true, type: 'number', customMessage: 'La latitud es obligatoria' },
-    { field: 'longitud', required: true, type: 'number', customMessage: 'La longitud es obligatoria' },
-    { field: 'referencia', required: true, type: 'string', minLength: 1, customMessage: 'La referencia es obligatoria' }
+    { field: 'latitud', required: false, type: 'number', customMessage: 'La latitud es obligatoria' },
+    { field: 'longitud', required: false, type: 'number', customMessage: 'La longitud es obligatoria' },
+    { field: 'referencia', required: false, type: 'string', minLength: 1, customMessage: 'La referencia es obligatoria' }
   ],
   
   entidad: [
@@ -304,6 +304,8 @@ export const validateTableUpdate = async (
       return await validateFundoUpdate(formData, originalData, existingData || []);
     case 'ubicacion':
       return await validateUbicacionUpdate(formData, originalData, existingData || []);
+    case 'localizacion':
+      return await validateLocalizacionUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1731,6 +1733,73 @@ const checkUbicacionDependencies = async (ubicacionid: number): Promise<boolean>
     console.error('Error checking ubicacion dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
+};
+
+// Validación específica para actualización de Localización
+const validateLocalizacionUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateLocalizacionUpdate - formData:', formData);
+  console.log('🔍 validateLocalizacionUpdate - originalData:', originalData);
+  console.log('🔍 validateLocalizacionUpdate - ubicacionid value:', formData.ubicacionid);
+  console.log('🔍 validateLocalizacionUpdate - nodoid value:', formData.nodoid);
+  console.log('🔍 validateLocalizacionUpdate - latitud value:', formData.latitud);
+  console.log('🔍 validateLocalizacionUpdate - longitud value:', formData.longitud);
+  console.log('🔍 validateLocalizacionUpdate - referencia value:', formData.referencia);
+  
+  // 1. Validar campos obligatorios (solo ubicacionid y nodoid según el schema)
+  if (!formData.ubicacionid || formData.ubicacionid === '') {
+    console.log('🔍 validateLocalizacionUpdate - ubicacionid está vacío');
+    errors.push({
+      field: 'ubicacionid',
+      message: 'La ubicación es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nodoid || formData.nodoid === '') {
+    console.log('🔍 validateLocalizacionUpdate - nodoid está vacío');
+    errors.push({
+      field: 'nodoid',
+      message: 'El nodo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  // Para localizacion, la clave primaria es compuesta (ubicacionid, nodoid)
+  if (formData.ubicacionid && formData.nodoid) {
+    const localizacionExists = existingData.some(item => 
+      (item.ubicacionid !== originalData.ubicacionid || item.nodoid !== originalData.nodoid) && 
+      item.ubicacionid === formData.ubicacionid && 
+      item.nodoid === formData.nodoid
+    );
+    
+    if (localizacionExists) {
+      errors.push({
+        field: 'composite',
+        message: 'Ya existe una localización para esta ubicación y nodo',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  // Según el schema, localizacion NO es referenciada por ninguna otra tabla
+  // Por lo tanto, no hay restricciones para inactivar
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
 };
 
 // Función para generar mensajes amigables para actualización (mensajes individuales)
