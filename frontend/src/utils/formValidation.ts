@@ -310,6 +310,8 @@ export const validateTableUpdate = async (
       return await validateEntidadUpdate(formData, originalData, existingData || []);
     case 'tipo':
       return await validateTipoUpdate(formData, originalData, existingData || []);
+    case 'nodo':
+      return await validateNodoUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1984,6 +1986,113 @@ const checkTipoDependencies = async (tipoid: number): Promise<boolean> => {
     return hasUmbrales;
   } catch (error) {
     console.error('Error checking tipo dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Nodo
+const validateNodoUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateNodoUpdate - formData:', formData);
+  console.log('🔍 validateNodoUpdate - originalData:', originalData);
+  console.log('🔍 validateNodoUpdate - nodo value:', formData.nodo);
+  console.log('🔍 validateNodoUpdate - deveui value:', formData.deveui);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.nodo || formData.nodo.trim() === '') {
+    console.log('🔍 validateNodoUpdate - nodo está vacío');
+    errors.push({
+      field: 'nodo',
+      message: 'El nodo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.nodo && formData.nodo.trim() !== '') {
+    const nodoExists = existingData.some(item => 
+      item.nodoid !== originalData.nodoid && 
+      item.nodo && 
+      item.nodo.toLowerCase() === formData.nodo.toLowerCase()
+    );
+    
+    if (nodoExists) {
+      errors.push({
+        field: 'nodo',
+        message: 'El nodo ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar duplicados para deveui (si se proporciona)
+  if (formData.deveui && formData.deveui.trim() !== '') {
+    const deveuiExists = existingData.some(item => 
+      item.nodoid !== originalData.nodoid && 
+      item.deveui && 
+      item.deveui.toLowerCase() === formData.deveui.toLowerCase()
+    );
+    
+    if (deveuiExists) {
+      errors.push({
+        field: 'deveui',
+        message: 'El DevEUI ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay sensores, metricasensor o localizaciones que referencian este nodo
+    const hasDependentRecords = await checkNodoDependencies(originalData.nodoid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el nodo porque tiene sensores, métricas o localizaciones asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 5. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Nodo
+const checkNodoDependencies = async (nodoid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla sensor
+    const sensores = await JoySenseService.getTableData('sensor');
+    const hasSensores = sensores.some(sensor => sensor.nodoid === nodoid);
+    
+    if (hasSensores) return true;
+    
+    // Verificar en tabla metricasensor
+    const metricasensores = await JoySenseService.getTableData('metricasensor');
+    const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.nodoid === nodoid);
+    
+    if (hasMetricasensores) return true;
+    
+    // Verificar en tabla localizacion
+    const localizaciones = await JoySenseService.getLocalizaciones();
+    const hasLocalizaciones = localizaciones.some(localizacion => localizacion.nodoid === nodoid);
+    
+    return hasLocalizaciones;
+  } catch (error) {
+    console.error('Error checking nodo dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
