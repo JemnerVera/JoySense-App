@@ -312,9 +312,11 @@ export const validateTableUpdate = async (
       return await validateTipoUpdate(formData, originalData, existingData || []);
     case 'nodo':
       return await validateNodoUpdate(formData, originalData, existingData || []);
-    case 'metrica':
-      return await validateMetricaUpdate(formData, originalData, existingData || []);
-    default:
+                case 'metrica':
+                  return await validateMetricaUpdate(formData, originalData, existingData || []);
+                case 'umbral':
+                  return await validateUmbralUpdate(formData, originalData, existingData || []);
+                default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
       return {
@@ -2319,4 +2321,136 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   }
   
   return messages.join('\n');
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA UMBRAL =====
+const validateUmbralUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateUmbralUpdate - formData:', formData);
+  console.log('🔍 validateUmbralUpdate - originalData:', originalData);
+  console.log('🔍 validateUmbralUpdate - umbral value:', formData.umbral);
+  console.log('🔍 validateUmbralUpdate - ubicacionid value:', formData.ubicacionid);
+  console.log('🔍 validateUmbralUpdate - criticidadid value:', formData.criticidadid);
+  console.log('🔍 validateUmbralUpdate - nodoid value:', formData.nodoid);
+  console.log('🔍 validateUmbralUpdate - metricaid value:', formData.metricaid);
+  console.log('🔍 validateUmbralUpdate - tipoid value:', formData.tipoid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.umbral || formData.umbral.trim() === '') {
+    console.log('🔍 validateUmbralUpdate - umbral está vacío');
+    errors.push({
+      field: 'umbral',
+      message: 'El nombre del umbral es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.ubicacionid || formData.ubicacionid === '') {
+    console.log('🔍 validateUmbralUpdate - ubicacionid está vacío');
+    errors.push({
+      field: 'ubicacionid',
+      message: 'La ubicación es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.criticidadid || formData.criticidadid === '') {
+    console.log('🔍 validateUmbralUpdate - criticidadid está vacío');
+    errors.push({
+      field: 'criticidadid',
+      message: 'La criticidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nodoid || formData.nodoid === '') {
+    console.log('🔍 validateUmbralUpdate - nodoid está vacío');
+    errors.push({
+      field: 'nodoid',
+      message: 'El nodo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.metricaid || formData.metricaid === '') {
+    console.log('🔍 validateUmbralUpdate - metricaid está vacío');
+    errors.push({
+      field: 'metricaid',
+      message: 'La métrica es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.tipoid || formData.tipoid === '') {
+    console.log('🔍 validateUmbralUpdate - tipoid está vacío');
+    errors.push({
+      field: 'tipoid',
+      message: 'El tipo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.umbral && formData.umbral.trim() !== '') {
+    const umbralExists = existingData.some(item => 
+      item.umbralid !== originalData.umbralid && 
+      item.umbral && 
+      item.umbral.toLowerCase() === formData.umbral.toLowerCase()
+    );
+    
+    if (umbralExists) {
+      errors.push({
+        field: 'umbral',
+        message: 'El nombre del umbral ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay perfilumbrales o alertas que referencian este umbral
+    const hasDependentRecords = await checkUmbralDependencies(originalData.umbralid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el umbral porque tiene perfiles o alertas asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+const checkUmbralDependencies = async (umbralid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla perfilumbral
+    const perfilumbrales = await JoySenseService.getTableData('perfilumbral');
+    const hasPerfilumbrales = perfilumbrales.some(perfilumbral => perfilumbral.umbralid === umbralid);
+    
+    if (hasPerfilumbrales) return true;
+    
+    // Verificar en tabla alerta
+    const alertas = await JoySenseService.getTableData('alerta');
+    const hasAlertas = alertas.some(alerta => alerta.umbralid === umbralid);
+    
+    return hasAlertas;
+  } catch (error) {
+    console.error('Error checking umbral dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
 };
