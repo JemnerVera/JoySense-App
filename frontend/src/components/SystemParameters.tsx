@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 
 import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
 
@@ -1241,6 +1241,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
 
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
+  const [tableColumns, setTableColumns] = useState<ColumnInfo[]>([]);
 
   const [tableData, setTableData] = useState<any[]>([]);
 
@@ -3722,7 +3723,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const loadTableData = async () => {
+  const loadTableData = useCallback(async () => {
 
     if (!selectedTable) return;
 
@@ -3738,122 +3739,68 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-             // Primero cargar las columnas
+             // Cargar las columnas para la tabla actual
+      console.log(`🔄 Cargando columnas para la tabla: ${selectedTable}`);
+      const cols = await JoySenseService.getTableColumns(selectedTable);
 
-       const cols = await JoySenseService.getTableColumns(selectedTable);
+      // Establecer columnas base para formularios
+      setColumns(cols || []);
 
-       
+      // Agregar columnas virtuales para tablas agrupadas
+      if (selectedTable === 'sensor') {
+        // Agregar columna virtual 'tipos' para mostrar todos los tipos concatenados
+        const tiposColumn = {
+          columnName: 'tipos',
+          dataType: 'text',
+          isNullable: true,
+          defaultValue: null,
+          isIdentity: false,
+          isPrimaryKey: false
+        };
+        setTableColumns([...cols, tiposColumn]);
+      } else if (selectedTable === 'metricasensor') {
+        // Agregar columnas virtuales para metricasensor
+        const tiposColumn = {
+          columnName: 'tipos',
+          dataType: 'text',
+          isNullable: true,
+          defaultValue: null,
+          isIdentity: false,
+          isPrimaryKey: false
+        };
+        const metricasColumn = {
+          columnName: 'metricas',
+          dataType: 'text',
+          isNullable: true,
+          defaultValue: null,
+          isIdentity: false,
+          isPrimaryKey: false
+        };
+        setTableColumns([...cols, tiposColumn, metricasColumn]);
+      } else if (selectedTable === 'usuarioperfil') {
+        // Agregar columnas virtuales para usuarioperfil
+        const usuarioColumn = {
+          columnName: 'usuario',
+          dataType: 'text',
+          isNullable: true,
+          defaultValue: null,
+          isIdentity: false,
+          isPrimaryKey: false
+        };
+        const perfilesColumn = {
+          columnName: 'perfiles',
+          dataType: 'text',
+          isNullable: true,
+          defaultValue: null,
+          isIdentity: false,
+          isPrimaryKey: false
+        };
+        setTableColumns([...cols, usuarioColumn, perfilesColumn]);
+      } else {
+        setTableColumns(cols || []);
+      }
 
-       // Agregar columnas virtuales para tablas agrupadas
-
-       if (selectedTable === 'sensor') {
-
-         // Agregar columna virtual 'tipos' para mostrar todos los tipos concatenados
-
-         const tiposColumn = {
-
-           columnName: 'tipos',
-
-           dataType: 'text',
-
-           isNullable: true,
-
-           defaultValue: null,
-
-           isIdentity: false,
-
-           isPrimaryKey: false
-
-         };
-
-         setColumns([...cols, tiposColumn]);
-
-       } else if (selectedTable === 'metricasensor') {
-
-         // Agregar columnas virtuales para metricasensor
-
-         const tiposColumn = {
-
-           columnName: 'tipos',
-
-           dataType: 'text',
-
-           isNullable: true,
-
-           defaultValue: null,
-
-           isIdentity: false,
-
-           isPrimaryKey: false
-
-         };
-
-         const metricasColumn = {
-
-           columnName: 'metricas',
-
-           dataType: 'text',
-
-           isNullable: true,
-
-           defaultValue: null,
-
-           isIdentity: false,
-
-           isPrimaryKey: false
-
-         };
-
-         setColumns([...cols, tiposColumn, metricasColumn]);
-
-       } else if (selectedTable === 'usuarioperfil') {
-
-         // Agregar columnas virtuales para usuarioperfil
-
-         const usuarioColumn = {
-
-           columnName: 'usuario',
-
-           dataType: 'text',
-
-           isNullable: true,
-
-           defaultValue: null,
-
-           isIdentity: false,
-
-           isPrimaryKey: false
-
-         };
-
-         const perfilesColumn = {
-
-           columnName: 'perfiles',
-
-           dataType: 'text',
-
-           isNullable: true,
-
-           defaultValue: null,
-
-           isIdentity: false,
-
-           isPrimaryKey: false
-
-         };
-
-         setColumns([...cols, usuarioColumn, perfilesColumn]);
-
-       } else {
-
-       setColumns(cols || []);
-
-       }
-
-      
-
-      // Inicializar formData
-
+      // Inicializar formData con las columnas recién cargadas
       setFormData(initializeFormData(cols));
 
       
@@ -3880,7 +3827,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      setTableData(sortedData);
+      // Solo actualizar si los datos han cambiado realmente
+      setTableData(prevData => {
+        if (JSON.stringify(prevData) === JSON.stringify(sortedData)) {
+          return prevData;
+        }
+        return sortedData;
+      });
 
       
 
@@ -3942,7 +3895,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  };
+  }, [selectedTable]);
 
 
 
@@ -8498,27 +8451,29 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const getVisibleColumns = (forTable: boolean = true) => {
-
+  const getVisibleColumns = useCallback((forTable: boolean = true) => {
+    const sourceColumns = forTable ? tableColumns : columns;
+    
     console.log('🔍 getVisibleColumns Debug:', {
-
       selectedTable,
-
       forTable,
-
-      columnsLength: columns?.length,
-
-      allColumns: columns?.map(c => c.columnName)
-
+      columnsLength: sourceColumns?.length,
+      allColumns: sourceColumns?.map(c => c.columnName)
     });
+
+    // FIX: Validar que las columnas estén cargadas antes de continuar
+    if (!sourceColumns || sourceColumns.length === 0) {
+      console.warn('⚠️ getVisibleColumns: columnas no están cargadas aún, retornando array vacío');
+      return [];
+    }
 
     
 
     if (selectedTable === 'fundo') {
 
-      console.log('🔍 Fundo columns available:', columns?.map(col => col.columnName));
+      console.log('🔍 Fundo columns available:', sourceColumns?.map(col => col.columnName));
 
-      console.log('🔍 Fundo fundoabrev column:', columns?.find(col => col.columnName === 'fundoabrev'));
+      console.log('🔍 Fundo fundoabrev column:', sourceColumns?.find(col => col.columnName === 'fundoabrev'));
 
     }
 
@@ -8528,7 +8483,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (selectedTable === 'nodo') {
 
-      const nodoColumns = columns.filter(col => {
+      const nodoColumns = sourceColumns.filter(col => {
 
         return ['nodo', 'deveui', 'statusid', 'appeui', 'appkey', 'atpin', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
@@ -8574,7 +8529,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     // Para todas las demás tablas, incluir todos los campos de auditoría
 
-    let filteredColumns = columns.filter(col => {
+    let filteredColumns = sourceColumns.filter(col => {
 
       if (selectedTable === 'pais') {
 
@@ -9244,21 +9199,64 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return reorderedColumns;
 
-  };
+  }, [selectedTable, columns, tableColumns]);
 
 
 
-  // Columnas para la tabla de Estado (individuales)
+  // Cache para columnas visibles - evita re-cálculos innecesarios
+  const columnsCache = useRef<{
+    status: ColumnInfo[];
+    update: ColumnInfo[];
+    searchable: ColumnInfo[];
+    lastSelectedTable: string;
+    lastColumnsLength: number;
+    lastTableColumnsLength: number;
+  }>({
+    status: [],
+    update: [],
+    searchable: [],
+    lastSelectedTable: '',
+    lastColumnsLength: 0,
+    lastTableColumnsLength: 0
+  });
 
-  const statusVisibleColumns = getVisibleColumns(false);
+  // Columnas para la tabla de Estado (individuales) - Cacheadas para evitar re-renderizados infinitos
+  const statusVisibleColumns = useMemo(() => {
+    if (columns.length === 0) return [];
+    
+    // Verificar si necesitamos recalcular
+    const needsRecalc = 
+      columnsCache.current.lastSelectedTable !== selectedTable ||
+      columnsCache.current.lastColumnsLength !== columns.length;
+    
+    if (needsRecalc) {
+      console.log('🔄 Recalculando columnas de Estado');
+      columnsCache.current.status = getVisibleColumns(false);
+      columnsCache.current.lastSelectedTable = selectedTable;
+      columnsCache.current.lastColumnsLength = columns.length;
+    }
+    
+    return columnsCache.current.status;
+  }, [selectedTable, columns.length]);
 
-  
-
-  // Columnas para la tabla de Actualizar (agrupadas para metricasensor)
-
-  const updateVisibleColumns = getVisibleColumns(true);
-
-  
+  // Columnas para la tabla de Actualizar (agrupadas para metricasensor) - Cacheadas para evitar re-renderizados infinitos
+  const updateVisibleColumns = useMemo(() => {
+    if (tableColumns.length === 0) return [];
+    
+    // Verificar si necesitamos recalcular
+    const needsRecalc = 
+      columnsCache.current.lastSelectedTable !== selectedTable ||
+      columnsCache.current.lastTableColumnsLength !== tableColumns.length;
+    
+    if (needsRecalc) {
+      console.log('🔄 Recalculando columnas de Actualizar');
+      columnsCache.current.update = getVisibleColumns(true);
+      columnsCache.current.lastSelectedTable = selectedTable;
+      columnsCache.current.lastTableColumnsLength = tableColumns.length;
+    }
+    
+    return columnsCache.current.update;
+  }, [selectedTable, tableColumns.length]);
 
   // Debug: verificar columnas para usuarioperfil
 
@@ -9282,37 +9280,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
-   const getSearchableColumns = () => {
-
-     const allColumns = getVisibleColumns();
-
-     
-
-     // No excluir ningún campo de la búsqueda - todos deberían funcionar
-
-     const excludedFields: string[] = [];
-
-     
-
-     // Comentado temporalmente para probar si ya funciona la búsqueda de coordenadas
-
-     // if (selectedTable === 'localizacion') {
-
-     //   // Para localización, excluir latitud y longitud del selector de búsqueda
-
-     //   excludedFields.push('latitud', 'longitud');
-
-     // }
-
-     
-
-     return allColumns.filter(col => !excludedFields.includes(col.columnName));
-
-   };
-
-
-
-  const searchableColumns = getSearchableColumns();
+  // Columnas buscables - Cacheadas para evitar re-renderizados infinitos
+  const searchableColumns = useMemo(() => {
+    if (tableColumns.length === 0) return [];
+    
+    // Verificar si necesitamos recalcular
+    const needsRecalc = 
+      columnsCache.current.lastSelectedTable !== selectedTable ||
+      columnsCache.current.lastTableColumnsLength !== tableColumns.length;
+    
+    if (needsRecalc) {
+      console.log('🔄 Recalculando columnas buscables');
+      const allColumns = getVisibleColumns();
+      const excludedFields: string[] = [];
+      columnsCache.current.searchable = allColumns.filter(col => !excludedFields.includes(col.columnName));
+    }
+    
+    return columnsCache.current.searchable;
+  }, [selectedTable, tableColumns.length]);
 
 
 
@@ -12610,7 +12595,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                            <tbody>
 
-                             {getStatusPaginatedData().map((row, index) => (
+                             {statusVisibleColumns.length === 0 ? (
+                               <tr>
+                                 <td colSpan={10} className="px-6 py-8 text-center text-neutral-400">
+                                   Cargando columnas...
+                                 </td>
+                               </tr>
+                             ) : getStatusPaginatedData().map((row, index) => (
 
                                <tr key={index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800">
 
@@ -13750,7 +13741,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                                <tbody>
 
-                                 {(() => {
+                                 {updateVisibleColumns.length === 0 ? (
+                                   <tr>
+                                     <td colSpan={10} className="px-6 py-8 text-center text-neutral-400">
+                                       Cargando columnas...
+                                     </td>
+                                   </tr>
+                                 ) : (() => {
 
                                    const data = getUpdatePaginatedData();
 
