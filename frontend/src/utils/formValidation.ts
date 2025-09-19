@@ -144,7 +144,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   criticidad: [
     { field: 'criticidad', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la criticidad es obligatorio' },
-    { field: 'criticidadabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
+    { field: 'criticidadbrev', required: true, type: 'string', minLength: 1, maxLength: 10, customMessage: 'La abreviatura de la criticidad es obligatoria' }
   ],
   
   status: [
@@ -314,6 +314,8 @@ export const validateTableData = async (
       return await validateUmbralData(formData, existingData);
     case 'perfilumbral':
       return await validatePerfilUmbralData(formData, existingData);
+    case 'criticidad':
+      return await validateCriticidadData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1044,6 +1046,71 @@ const validatePerfilUmbralData = async (
   };
 };
 
+// Validación específica para Criticidad
+const validateCriticidadData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.criticidad || formData.criticidad.trim() === '') {
+    errors.push({
+      field: 'criticidad',
+      message: 'El nombre de la criticidad es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.criticidadbrev || formData.criticidadbrev.trim() === '') {
+    errors.push({
+      field: 'criticidadbrev',
+      message: 'La abreviatura de la criticidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const criticidadExists = existingData.some(item => 
+      item.criticidad && item.criticidad.toLowerCase() === formData.criticidad?.toLowerCase()
+    );
+    
+    const criticidadbrevExists = existingData.some(item => 
+      item.criticidadbrev && item.criticidadbrev.toLowerCase() === formData.criticidadbrev?.toLowerCase()
+    );
+    
+    if (criticidadExists && criticidadbrevExists) {
+      errors.push({
+        field: 'both',
+        message: 'La criticidad y abreviatura ya existen',
+        type: 'duplicate'
+      });
+    } else if (criticidadExists) {
+      errors.push({
+        field: 'criticidad',
+        message: 'El nombre de la criticidad ya existe',
+        type: 'duplicate'
+      });
+    } else if (criticidadbrevExists) {
+      errors.push({
+        field: 'criticidadbrev',
+        message: 'La abreviatura de la criticidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -1108,6 +1175,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'perfilid') && 
                requiredErrors.some(e => e.field === 'umbralid')) {
       messages.push('⚠️ El perfil y umbral es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'criticidad') && 
+               requiredErrors.some(e => e.field === 'criticidadbrev')) {
+      messages.push('⚠️ La criticidad y abreviatura es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
@@ -1130,6 +1201,8 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
         messages.push('⚠️ El fundo y abreviatura se repite');
       } else if (duplicateErrors.some(e => e.message.includes('métrica'))) {
         messages.push('⚠️ La métrica y unidad se repite');
+      } else if (duplicateErrors.some(e => e.message.includes('criticidad'))) {
+        messages.push('⚠️ La criticidad y abreviatura se repite');
       } else {
         messages.push(`⚠️ ${duplicateErrors[0].message}`);
       }

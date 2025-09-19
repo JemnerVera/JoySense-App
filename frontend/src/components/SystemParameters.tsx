@@ -4522,6 +4522,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         case 'perfilumbral':
           existingData = perfilumbralData || [];
           break;
+        case 'criticidad':
+          existingData = criticidadesData || [];
+          break;
         case 'sensor':
           existingData = sensorsData || [];
           break;

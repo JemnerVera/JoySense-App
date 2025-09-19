@@ -168,6 +168,20 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }
   }
   
+  // Para Criticidad: habilitación progresiva criticidad -> criticidadbrev -> resto
+  if (selectedTable === 'criticidad') {
+    if (columnName === 'criticidad') {
+      return true; // Siempre habilitado
+    }
+    if (columnName === 'criticidadbrev') {
+      return !!(formData.criticidad && formData.criticidad.trim() !== '');
+    }
+    // Para el resto de campos (statusid)
+    if (['statusid'].includes(columnName)) {
+      return !!(formData.criticidad && formData.criticidad.trim() !== '' && formData.criticidadbrev && formData.criticidadbrev.trim() !== '');
+    }
+  }
+  
   // Para otros campos, usar lógica normal
   return true;
   };
