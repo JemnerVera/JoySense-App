@@ -1257,6 +1257,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [sensorsData, setSensorsData] = useState<any[]>([]);
 
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
+  const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
 
 
 
@@ -3442,7 +3443,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          sensorsResponse,
 
-         metricasensorResponse
+         metricasensorResponse,
+
+         perfilumbralResponse
 
        ] = await Promise.all([
 
@@ -3476,7 +3479,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          JoySenseService.getTableData('sensor', 500),
 
-         JoySenseService.getTableData('metricasensor', 500)
+         JoySenseService.getTableData('metricasensor', 500),
+
+         JoySenseService.getTableData('perfilumbral', 500)
 
        ]);
 
@@ -3526,6 +3531,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
 
+       const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
+
        
 
        setPaisesData(paises);
@@ -3559,6 +3566,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
        setSensorsData(sensors);
 
        setMetricasensorData(metricasensor);
+
+       setPerfilumbralData(perfilumbral);
 
       
 
@@ -4509,6 +4518,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           break;
         case 'umbral':
           existingData = umbralesData || [];
+          break;
+        case 'perfilumbral':
+          existingData = perfilumbralData || [];
           break;
         case 'sensor':
           existingData = sensorsData || [];

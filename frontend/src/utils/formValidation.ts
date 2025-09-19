@@ -90,6 +90,11 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
   ],
   
+  perfilumbral: [
+    { field: 'perfilid', required: true, type: 'number', customMessage: 'Debe seleccionar un perfil' },
+    { field: 'umbralid', required: true, type: 'number', customMessage: 'Debe seleccionar un umbral' }
+  ],
+  
   sensor: [
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
@@ -130,11 +135,6 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
     { field: 'metricaid', required: true, type: 'number', customMessage: 'Debe seleccionar una métrica' },
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
-  ],
-  
-  perfilumbral: [
-    { field: 'perfilid', required: true, type: 'number', customMessage: 'Debe seleccionar un perfil' },
-    { field: 'umbralid', required: true, type: 'number', customMessage: 'Debe seleccionar un umbral' }
   ],
   
   auditlogumbral: [
@@ -312,6 +312,8 @@ export const validateTableData = async (
       return await validateMetricaData(formData, existingData);
     case 'umbral':
       return await validateUmbralData(formData, existingData);
+    case 'perfilumbral':
+      return await validatePerfilUmbralData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -993,6 +995,55 @@ const validateUmbralData = async (
   };
 };
 
+// Validación específica para Perfil Umbral
+const validatePerfilUmbralData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.perfilid || formData.perfilid === 0) {
+    errors.push({
+      field: 'perfilid',
+      message: 'Debe seleccionar un perfil',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.umbralid || formData.umbralid === 0) {
+    errors.push({
+      field: 'umbralid',
+      message: 'Debe seleccionar un umbral',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes (PRIMARY KEY compuesta)
+  if (existingData && existingData.length > 0) {
+    const perfilUmbralExists = existingData.some(item => 
+      item.perfilid === formData.perfilid && item.umbralid === formData.umbralid
+    );
+    
+    if (perfilUmbralExists) {
+      errors.push({
+        field: 'general',
+        message: 'Ya existe una relación entre este perfil y umbral',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -1053,6 +1104,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'metrica') && 
                requiredErrors.some(e => e.field === 'unidad')) {
       messages.push('⚠️ La métrica y unidad es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'perfilid') && 
+               requiredErrors.some(e => e.field === 'umbralid')) {
+      messages.push('⚠️ El perfil y umbral es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }

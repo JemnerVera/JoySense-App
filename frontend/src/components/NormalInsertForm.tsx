@@ -154,6 +154,20 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     }
   }
   
+  // Para Perfil Umbral: habilitación progresiva perfilid -> umbralid -> resto
+  if (selectedTable === 'perfilumbral') {
+    if (columnName === 'perfilid') {
+      return true; // Siempre habilitado
+    }
+    if (columnName === 'umbralid') {
+      return !!(formData.perfilid && formData.perfilid !== 0);
+    }
+    // Para el resto de campos (statusid)
+    if (['statusid'].includes(columnName)) {
+      return !!(formData.perfilid && formData.perfilid !== 0 && formData.umbralid && formData.umbralid !== 0);
+    }
+  }
+  
   // Para otros campos, usar lógica normal
   return true;
   };
