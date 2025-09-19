@@ -1,5 +1,6 @@
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
+import ProtectedParameterButton from '../ProtectedParameterButton';
 
 interface ParametersSidebarProps {
   selectedTable: string;
@@ -192,9 +193,15 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
                 {tables.map((table) => {
                   const isActive = selectedTable === table.id;
             return (
-                    <button
+                    <ProtectedParameterButton
                       key={table.id}
-                      onClick={() => onTableSelect(table.id)}
+                      targetTable={table.id}
+                      currentTable={selectedTable}
+                      activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
+                      formData={formData}
+                      multipleData={multipleData}
+                      massiveFormData={massiveFormData}
+                      onTableChange={onTableSelect}
                       className={`w-full flex items-center p-3 rounded transition-colors ${
                         isExpanded ? 'gap-3' : 'justify-center'
                       } ${
@@ -209,7 +216,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
                 {isExpanded && (
                         <span className="text-sm font-medium tracking-wider">{table.label.toUpperCase()}</span>
                 )}
-                    </button>
+                    </ProtectedParameterButton>
             );
           })}
               </div>

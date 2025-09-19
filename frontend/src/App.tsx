@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition, Suspense } from 'react';
+import React, { useState, useEffect, startTransition, Suspense, forwardRef, useRef } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -28,30 +28,36 @@ import { ModalProvider } from './contexts/ModalContext';
 import SimpleAlertModal from './components/SimpleAlertModal';
 
 // Wrapper para SystemParameters con Suspense
-const SystemParametersWithSuspense: React.FC<{
-  selectedTable: string;
-  onTableSelect: (table: string) => void;
-  activeSubTab: 'status' | 'insert' | 'update' | 'massive';
-  onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
-  activeTab: string;
-  onFormDataChange: (formData: Record<string, any>, multipleData: any[]) => void;
-  onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
-  clearFormData?: boolean;
-}> = (props) => (
+const SystemParametersWithSuspense = React.forwardRef<
+  { handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void },
+  {
+    selectedTable: string;
+    onTableSelect: (table: string) => void;
+    activeSubTab: 'status' | 'insert' | 'update' | 'massive';
+    onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+    activeTab: string;
+    onFormDataChange: (formData: Record<string, any>, multipleData: any[]) => void;
+    onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
+    clearFormData?: boolean;
+  }
+>((props, ref) => (
   <Suspense fallback={
     <div className="flex items-center justify-center p-8">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <span className="ml-2 text-gray-600">Cargando...</span>
     </div>
   }>
-    <SystemParameters {...props} />
+    <SystemParameters {...props} ref={ref} />
   </Suspense>
-);
+));
 
 const AppContentInternal: React.FC = () => {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const { } = useFilters();
+
+  // Ref para SystemParameters
+  const systemParametersRef = useRef<{ handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void }>(null);
 
   // Estados para el dashboard
   const [dashboardSelectedFundo, setDashboardSelectedFundo] = useState<any>(null);
@@ -384,9 +390,9 @@ const AppContentInternal: React.FC = () => {
   const handleTableSelect = (table: string) => {
     console.log('🔄 App: Parameter change requested:', { from: selectedTable, to: table });
     
-    // Navegación simple sin interceptores
+    // Cambio directo sin validación (la validación se hace en ProtectedParameterButton)
     setSelectedTable(table);
-    setActiveSubTab('status'); // Resetear a subpestaña por defecto
+    setActiveSubTab('status');
     startTransition(() => {
       setActiveTab(`parameters-${table}`);
     });
@@ -462,6 +468,7 @@ const AppContentInternal: React.FC = () => {
         case 'status':
           return (
             <SystemParametersWithSuspense 
+              ref={systemParametersRef}
               selectedTable={parameterTab}
               onTableSelect={handleTableSelect}
               activeSubTab={activeSubTab}
@@ -475,6 +482,7 @@ const AppContentInternal: React.FC = () => {
         default:
           return (
             <SystemParametersWithSuspense 
+              ref={systemParametersRef}
               selectedTable={parameterTab}
               onTableSelect={handleTableSelect}
               activeSubTab={activeSubTab}

@@ -832,6 +832,8 @@ export interface SystemParametersRef {
 
   handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
 
+  handleTableChange: (table: string) => void;
+
 }
 
 
@@ -2824,15 +2826,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Exponer funciones al componente padre
-
-  useImperativeHandle(ref, () => ({
-
-    hasUnsavedChanges,
-
-    handleTabChange
-
-  }), [hasUnsavedChanges, handleTabChange]);
 
 
 
@@ -2982,7 +2975,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
+  // Exponer funciones al componente padre
+  useImperativeHandle(ref, () => ({
+    hasUnsavedChanges,
+    handleTabChange,
+    handleTableChange
+  }), [hasUnsavedChanges, handleTabChange, handleTableChange]);
 
   // Función executeTableChange eliminada - ahora usamos handleParameterNavigation
 
@@ -3134,13 +3132,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     
 
-    // Notificar al componente padre
-
-    if (onTableSelect) {
-
-      onTableSelect(newTable);
-
-    }
+    // Notificar al componente padre solo si no viene de handleTableChange
+    // (para evitar loop infinito)
+    // if (onTableSelect) {
+    //   onTableSelect(newTable);
+    // }
 
   };
 
