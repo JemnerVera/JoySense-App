@@ -15,11 +15,25 @@ export interface ValidationResult {
   warnings: string[];
 }
 
+// Interfaz para errores de validación específicos
+export interface ValidationError {
+  field: string;
+  message: string;
+  type: 'required' | 'duplicate' | 'format' | 'length';
+}
+
+// Interfaz para resultado de validación mejorado
+export interface EnhancedValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+  userFriendlyMessage: string;
+}
+
 // Esquemas de validación para cada tabla
 export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   pais: [
     { field: 'pais', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del país es obligatorio' },
-    { field: 'paisabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
+    { field: 'paisabrev', required: true, type: 'string', minLength: 1, maxLength: 2, customMessage: 'La abreviatura es obligatoria' }
   ],
   
   empresa: [
@@ -266,3 +280,148 @@ export function getValidationMessages(validationResult: ValidationResult): strin
   
   return messages;
 }
+
+// Función para validación robusta específica por tabla
+export const validateTableData = async (
+  tableName: string, 
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  switch (tableName) {
+    case 'pais':
+      return await validatePaisData(formData, existingData);
+    default:
+      // Fallback a validación básica
+      const basicResult = validateFormData(tableName, formData);
+      return {
+        isValid: basicResult.isValid,
+        errors: basicResult.errors.map(error => ({
+          field: 'general',
+          message: error,
+          type: 'format'
+        })),
+        userFriendlyMessage: basicResult.errors.length > 0 
+          ? `⚠️ ${basicResult.errors.join(' ⚠️ ')}` 
+          : ''
+      };
+  }
+};
+
+// Validación específica para País
+const validatePaisData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.pais || formData.pais.trim() === '') {
+    errors.push({
+      field: 'pais',
+      message: 'El nombre del país es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.paisabrev || formData.paisabrev.trim() === '') {
+    errors.push({
+      field: 'paisabrev',
+      message: 'La abreviatura es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar longitud de abreviatura
+  if (formData.paisabrev && formData.paisabrev.length > 2) {
+    errors.push({
+      field: 'paisabrev',
+      message: 'La abreviatura no puede exceder 2 caracteres',
+      type: 'length'
+    });
+  }
+  
+  // 3. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const paisExists = existingData.some(item => 
+      item.pais && item.pais.toLowerCase().trim() === formData.pais?.toLowerCase().trim()
+    );
+    
+    const abrevExists = existingData.some(item => 
+      item.paisabrev && item.paisabrev.toLowerCase().trim() === formData.paisabrev?.toLowerCase().trim()
+    );
+    
+    if (paisExists && abrevExists) {
+      errors.push({
+        field: 'both',
+        message: 'El país y abreviatura se repite',
+        type: 'duplicate'
+      });
+    } else if (paisExists) {
+      errors.push({
+        field: 'pais',
+        message: 'El país se repite',
+        type: 'duplicate'
+      });
+    } else if (abrevExists) {
+      errors.push({
+        field: 'paisabrev',
+        message: 'La abreviatura se repite',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para generar mensajes amigables al usuario
+const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
+  if (errors.length === 0) return '';
+  
+  // Agrupar errores por tipo
+  const requiredErrors = errors.filter(e => e.type === 'required');
+  const duplicateErrors = errors.filter(e => e.type === 'duplicate');
+  const lengthErrors = errors.filter(e => e.type === 'length');
+  
+  const messages: string[] = [];
+  
+  // Manejar errores de campos obligatorios
+  if (requiredErrors.length > 0) {
+    if (requiredErrors.length === 1) {
+      messages.push(`⚠️ ${requiredErrors[0].message}`);
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'pais') && 
+               requiredErrors.some(e => e.field === 'paisabrev')) {
+      messages.push('⚠️ El país y abreviatura es obligatorio');
+    } else {
+      messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
+    }
+  }
+  
+  // Manejar errores de duplicados
+  if (duplicateErrors.length > 0) {
+    if (duplicateErrors.length === 1) {
+      messages.push(`⚠️ ${duplicateErrors[0].message}`);
+    } else if (duplicateErrors.some(e => e.field === 'both')) {
+      messages.push('⚠️ El país y abreviatura se repite');
+    } else {
+      messages.push(`⚠️ ${duplicateErrors.map(e => e.message).join(' ⚠️ ')}`);
+    }
+  }
+  
+  // Manejar errores de longitud
+  if (lengthErrors.length > 0) {
+    messages.push(`⚠️ ${lengthErrors[0].message}`);
+  }
+  
+  return messages.join('\n');
+};

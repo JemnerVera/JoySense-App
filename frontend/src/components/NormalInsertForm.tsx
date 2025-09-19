@@ -1,7 +1,7 @@
 import React from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import ReplicateButton from './ReplicateButton';
-import { tableValidationSchemas } from '../utils/formValidation';
+import { tableValidationSchemas, validateTableData } from '../utils/formValidation';
 
 interface NormalInsertFormProps {
   visibleColumns: any[];
@@ -82,6 +82,22 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     
     const rule = schema.find(rule => rule.field === columnName);
     return rule ? rule.required : false;
+  };
+
+  // Función para determinar si un campo debe estar habilitado (habilitación progresiva)
+  const isFieldEnabled = (columnName: string): boolean => {
+    // Para País: solo habilitar paisabrev si pais tiene valor
+    if (selectedTable === 'pais') {
+      if (columnName === 'paisabrev') {
+        return !!(formData.pais && formData.pais.trim() !== '');
+      }
+      if (columnName === 'pais') {
+        return true; // Siempre habilitado
+      }
+    }
+    
+    // Para otros campos, usar lógica normal
+    return true;
   };
 
   // Función para renderizar fila contextual con filtros globales
@@ -1461,20 +1477,32 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
           // Campo de texto normal
           const isRequired = isFieldRequired(col.columnName);
+          const isEnabled = isFieldEnabled(col.columnName);
           return (
             <div key={col.columnName} className="mb-4">
-              <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+                isEnabled ? 'text-orange-500' : 'text-gray-500'
+              }`}>
                 {displayName.toUpperCase()}
               </label>
               <input
                 type="text"
                 value={value}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  [col.columnName]: e.target.value
-                })}
-                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
-                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
+                onChange={(e) => {
+                  if (isEnabled) {
+                    setFormData({
+                      ...formData,
+                      [col.columnName]: e.target.value
+                    });
+                  }
+                }}
+                disabled={!isEnabled}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono ${
+                  isEnabled 
+                    ? 'bg-neutral-800 border-neutral-600' 
+                    : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
+                }`}
+                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}`}
               />
             </div>
           );

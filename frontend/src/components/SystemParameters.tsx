@@ -54,7 +54,7 @@ import { useFilters } from '../contexts/FilterContext';
 
 import LostDataModal from './LostDataModal';
 
-import { validateFormData, getValidationMessages } from '../utils/formValidation';
+import { validateFormData, getValidationMessages, validateTableData } from '../utils/formValidation';
 
 
 
@@ -4434,16 +4434,69 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     
 
-    // Validar datos antes de insertar
+    // Validar datos antes de insertar usando el sistema robusto
+    try {
+      // Obtener datos existentes para validación de duplicados
+      let existingData: any[] = [];
+      
+      switch (selectedTable) {
+        case 'pais':
+          existingData = paisesData || [];
+          break;
+        case 'empresa':
+          existingData = empresasData || [];
+          break;
+        case 'fundo':
+          existingData = fundosData || [];
+          break;
+        case 'ubicacion':
+          existingData = ubicacionesData || [];
+          break;
+        case 'localizacion':
+          existingData = localizacionesData || [];
+          break;
+        case 'entidad':
+          existingData = entidadesData || [];
+          break;
+        case 'tipo':
+          existingData = tiposData || [];
+          break;
+        case 'nodo':
+          existingData = nodosData || [];
+          break;
+        case 'sensor':
+          existingData = sensorsData || [];
+          break;
+        case 'metrica':
+          existingData = metricasData || [];
+          break;
+        case 'metricasensor':
+          existingData = metricasensorData || [];
+          break;
+        case 'umbral':
+          existingData = umbralesData || [];
+          break;
+        case 'usuario':
+          existingData = userData || [];
+          break;
+        case 'perfil':
+          existingData = perfilesData || [];
+          break;
+        default:
+          existingData = [];
+      }
 
-    const validationError = validateInsertData(selectedTable, formData);
-
-    if (validationError) {
-
-      setMessage({ type: 'warning', text: validationError });
-
+      // Usar el sistema de validación robusta
+      const validationResult = await validateTableData(selectedTable, formData, existingData);
+      
+      if (!validationResult.isValid) {
+        setMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
+        return;
+      }
+    } catch (error) {
+      console.error('Error en validación:', error);
+      setMessage({ type: 'error', text: 'Error en la validación de datos' });
       return;
-
     }
 
     
@@ -12156,7 +12209,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                } text-white font-mono tracking-wider`}>
 
-                 {message.text}
+                 {message.text.split('\n').map((line, index) => (
+                   <div key={index}>{line}</div>
+                 ))}
 
                </div>
 
