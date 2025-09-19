@@ -306,6 +306,8 @@ export const validateTableUpdate = async (
       return await validateUbicacionUpdate(formData, originalData, existingData || []);
     case 'localizacion':
       return await validateLocalizacionUpdate(formData, originalData, existingData || []);
+    case 'entidad':
+      return await validateEntidadUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1800,6 +1802,89 @@ const validateLocalizacionUpdate = async (
     errors,
     userFriendlyMessage
   };
+};
+
+// Validación específica para actualización de Entidad
+const validateEntidadUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateEntidadUpdate - formData:', formData);
+  console.log('🔍 validateEntidadUpdate - originalData:', originalData);
+  console.log('🔍 validateEntidadUpdate - entidad value:', formData.entidad);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.entidad || formData.entidad.trim() === '') {
+    console.log('🔍 validateEntidadUpdate - entidad está vacío');
+    errors.push({
+      field: 'entidad',
+      message: 'La entidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.entidad && formData.entidad.trim() !== '') {
+    const entidadExists = existingData.some(item => 
+      item.entidadid !== originalData.entidadid && 
+      item.entidad && 
+      item.entidad.toLowerCase() === formData.entidad.toLowerCase()
+    );
+    
+    if (entidadExists) {
+      errors.push({
+        field: 'entidad',
+        message: 'La entidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay tipos o localizaciones que referencian esta entidad
+    const hasDependentRecords = await checkEntidadDependencies(originalData.entidadid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar la entidad porque tiene tipos o localizaciones asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Entidad
+const checkEntidadDependencies = async (entidadid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla tipo
+    const tipos = await JoySenseService.getTipos();
+    const hasTipos = tipos.some(tipo => tipo.entidadid === entidadid);
+    
+    if (hasTipos) return true;
+    
+    // Verificar en tabla localizacion
+    const localizaciones = await JoySenseService.getLocalizaciones();
+    const hasLocalizaciones = localizaciones.some(localizacion => localizacion.entidadid === entidadid);
+    
+    return hasLocalizaciones;
+  } catch (error) {
+    console.error('Error checking entidad dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
 };
 
 // Función para generar mensajes amigables para actualización (mensajes individuales)
