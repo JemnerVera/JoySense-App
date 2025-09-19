@@ -61,7 +61,7 @@ const tableMetadata = {
     columns: [
       { column_name: 'fundoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.fundo_fundoid_seq\'::regclass)' },
       { column_name: 'fundo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'farmabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
+      { column_name: 'fundoabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
       { column_name: 'empresaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
       { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
       { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
@@ -480,7 +480,15 @@ app.get('/api/sense/fundo', async (req, res) => {
     console.log('🔍 Backend: Obteniendo fundo del schema sense...');
     const { data, error } = await supabase
       .from('fundo')
-      .select('*')
+      .select(`
+        *,
+        empresa:empresaid(
+          empresaid,
+          empresa,
+          empresabrev,
+          paisid
+        )
+      `)
       .order('fundoid')
       .limit(parseInt(limit));
     if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
@@ -1072,6 +1080,9 @@ app.put('/api/sense/metrica/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando metrica con ID ${id}...`);
+    console.log(`🔍 Backend: updateData recibido:`, updateData);
+    console.log(`🔍 Backend: unidad value:`, updateData.unidad);
+    console.log(`🔍 Backend: unidad type:`, typeof updateData.unidad);
     
     const { data, error } = await supabase
       .from('metrica')
@@ -1080,14 +1091,15 @@ app.put('/api/sense/metrica/:id', async (req, res) => {
       .select();
 
     if (error) {
-      console.error('❌ Error backend:', error);
+      console.error('❌ Error backend Supabase:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return res.status(500).json({ error: error.message });
     }
 
     console.log(`✅ Backend: Metrica actualizada: ${data.length} registros`);
     res.json(data);
   } catch (error) {
-    console.error('❌ Error backend:', error);
+    console.error('❌ Error backend catch:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1910,7 +1922,7 @@ app.get('/api/sense/nodos-con-localizacion', async (req, res) => {
           fundo: fundoid (
             fundoid,
             fundo,
-            farmabrev,
+            fundoabrev,
             empresaid,
             empresa: empresaid (
               empresaid,
