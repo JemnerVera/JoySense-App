@@ -300,6 +300,8 @@ export const validateTableUpdate = async (
       return await validatePaisUpdate(formData, originalData, existingData || []);
     case 'empresa':
       return await validateEmpresaUpdate(formData, originalData, existingData || []);
+    case 'fundo':
+      return await validateFundoUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1529,6 +1531,117 @@ const checkEmpresaDependencies = async (empresaid: number): Promise<boolean> => 
     return fundos.some(fundo => fundo.empresaid === empresaid);
   } catch (error) {
     console.error('Error checking empresa dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Fundo
+const validateFundoUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateFundoUpdate - formData:', formData);
+  console.log('🔍 validateFundoUpdate - originalData:', originalData);
+  console.log('🔍 validateFundoUpdate - fundo value:', formData.fundo);
+  console.log('🔍 validateFundoUpdate - fundoabrev value:', formData.fundoabrev);
+  console.log('🔍 validateFundoUpdate - empresaid value:', formData.empresaid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.fundo || formData.fundo.trim() === '') {
+    console.log('🔍 validateFundoUpdate - fundo está vacío');
+    errors.push({
+      field: 'fundo',
+      message: 'El fundo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.fundoabrev || formData.fundoabrev.trim() === '') {
+    console.log('🔍 validateFundoUpdate - fundoabrev está vacío');
+    errors.push({
+      field: 'fundoabrev',
+      message: 'La abreviatura es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.empresaid || formData.empresaid === '') {
+    console.log('🔍 validateFundoUpdate - empresaid está vacío');
+    errors.push({
+      field: 'empresaid',
+      message: 'La empresa es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.fundo && formData.fundo.trim() !== '') {
+    const fundoExists = existingData.some(item => 
+      item.fundoid !== originalData.fundoid && 
+      item.fundo && 
+      item.fundo.toLowerCase() === formData.fundo.toLowerCase()
+    );
+    
+    if (fundoExists) {
+      errors.push({
+        field: 'fundo',
+        message: 'El fundo ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  if (formData.fundoabrev && formData.fundoabrev.trim() !== '') {
+    const fundoabrevExists = existingData.some(item => 
+      item.fundoid !== originalData.fundoid && 
+      item.fundoabrev && 
+      item.fundoabrev.toLowerCase() === formData.fundoabrev.toLowerCase()
+    );
+    
+    if (fundoabrevExists) {
+      errors.push({
+        field: 'fundoabrev',
+        message: 'La abreviatura ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay ubicaciones que referencian este fundo
+    const hasDependentRecords = await checkFundoDependencies(originalData.fundoid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el fundo porque tiene ubicaciones asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Fundo
+const checkFundoDependencies = async (fundoid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla ubicacion
+    const ubicaciones = await JoySenseService.getUbicaciones();
+    return ubicaciones.some(ubicacion => ubicacion.fundoid === fundoid);
+  } catch (error) {
+    console.error('Error checking fundo dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
