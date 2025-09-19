@@ -63,8 +63,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   entidad: [
-    { field: 'entidad', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la entidad es obligatorio' },
-    { field: 'entidadabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
+    { field: 'entidad', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la entidad es obligatorio' }
   ],
   
   tipo: [
@@ -302,6 +301,8 @@ export const validateTableData = async (
       return await validateUbicacionData(formData, existingData);
     case 'localizacion':
       return await validateLocalizacionData(formData, existingData);
+    case 'entidad':
+      return await validateEntidadData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -674,6 +675,47 @@ const validateLocalizacionData = async (
       errors.push({
         field: 'ubicacionid',
         message: 'La ubicación y nodo ya están asociados',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Validación específica para Entidad
+const validateEntidadData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.entidad || formData.entidad.trim() === '') {
+    errors.push({
+      field: 'entidad',
+      message: 'El nombre de la entidad es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const entidadExists = existingData.some(item => 
+      item.entidad && item.entidad.toLowerCase() === formData.entidad?.toLowerCase()
+    );
+    
+    if (entidadExists) {
+      errors.push({
+        field: 'entidad',
+        message: 'La entidad ya existe',
         type: 'duplicate'
       });
     }
