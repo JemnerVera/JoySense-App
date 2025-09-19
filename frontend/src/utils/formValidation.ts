@@ -298,6 +298,8 @@ export const validateTableUpdate = async (
   switch (tableName) {
     case 'pais':
       return await validatePaisUpdate(formData, originalData, existingData || []);
+    case 'empresa':
+      return await validateEmpresaUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1416,6 +1418,117 @@ const checkPaisDependencies = async (paisid: number): Promise<boolean> => {
     return empresas.some(empresa => empresa.paisid === paisid);
   } catch (error) {
     console.error('Error checking pais dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Empresa
+const validateEmpresaUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateEmpresaUpdate - formData:', formData);
+  console.log('🔍 validateEmpresaUpdate - originalData:', originalData);
+  console.log('🔍 validateEmpresaUpdate - empresa value:', formData.empresa);
+  console.log('🔍 validateEmpresaUpdate - empresabrev value:', formData.empresabrev);
+  console.log('🔍 validateEmpresaUpdate - paisid value:', formData.paisid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.empresa || formData.empresa.trim() === '') {
+    console.log('🔍 validateEmpresaUpdate - empresa está vacío');
+    errors.push({
+      field: 'empresa',
+      message: 'La empresa es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.empresabrev || formData.empresabrev.trim() === '') {
+    console.log('🔍 validateEmpresaUpdate - empresabrev está vacío');
+    errors.push({
+      field: 'empresabrev',
+      message: 'La abreviatura es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.paisid || formData.paisid === '') {
+    console.log('🔍 validateEmpresaUpdate - paisid está vacío');
+    errors.push({
+      field: 'paisid',
+      message: 'El país es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.empresa && formData.empresa.trim() !== '') {
+    const empresaExists = existingData.some(item => 
+      item.empresaid !== originalData.empresaid && 
+      item.empresa && 
+      item.empresa.toLowerCase() === formData.empresa.toLowerCase()
+    );
+    
+    if (empresaExists) {
+      errors.push({
+        field: 'empresa',
+        message: 'La empresa ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  if (formData.empresabrev && formData.empresabrev.trim() !== '') {
+    const empresabrevExists = existingData.some(item => 
+      item.empresaid !== originalData.empresaid && 
+      item.empresabrev && 
+      item.empresabrev.toLowerCase() === formData.empresabrev.toLowerCase()
+    );
+    
+    if (empresabrevExists) {
+      errors.push({
+        field: 'empresabrev',
+        message: 'La abreviatura ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay fundos que referencian esta empresa
+    const hasDependentRecords = await checkEmpresaDependencies(originalData.empresaid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar la empresa porque tiene fundos asociados',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Empresa
+const checkEmpresaDependencies = async (empresaid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla fundo
+    const fundos = await JoySenseService.getFundos();
+    return fundos.some(fundo => fundo.empresaid === empresaid);
+  } catch (error) {
+    console.error('Error checking empresa dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
