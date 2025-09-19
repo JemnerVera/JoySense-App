@@ -308,6 +308,8 @@ export const validateTableUpdate = async (
       return await validateLocalizacionUpdate(formData, originalData, existingData || []);
     case 'entidad':
       return await validateEntidadUpdate(formData, originalData, existingData || []);
+    case 'tipo':
+      return await validateTipoUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1883,6 +1885,105 @@ const checkEntidadDependencies = async (entidadid: number): Promise<boolean> => 
     return hasLocalizaciones;
   } catch (error) {
     console.error('Error checking entidad dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Tipo
+const validateTipoUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateTipoUpdate - formData:', formData);
+  console.log('🔍 validateTipoUpdate - originalData:', originalData);
+  console.log('🔍 validateTipoUpdate - tipo value:', formData.tipo);
+  console.log('🔍 validateTipoUpdate - entidadid value:', formData.entidadid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.tipo || formData.tipo.trim() === '') {
+    console.log('🔍 validateTipoUpdate - tipo está vacío');
+    errors.push({
+      field: 'tipo',
+      message: 'El tipo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.entidadid || formData.entidadid === '') {
+    console.log('🔍 validateTipoUpdate - entidadid está vacío');
+    errors.push({
+      field: 'entidadid',
+      message: 'La entidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.tipo && formData.tipo.trim() !== '') {
+    const tipoExists = existingData.some(item => 
+      item.tipoid !== originalData.tipoid && 
+      item.tipo && 
+      item.tipo.toLowerCase() === formData.tipo.toLowerCase()
+    );
+    
+    if (tipoExists) {
+      errors.push({
+        field: 'tipo',
+        message: 'El tipo ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay sensores, metricasensor o umbrales que referencian este tipo
+    const hasDependentRecords = await checkTipoDependencies(originalData.tipoid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el tipo porque tiene sensores, métricas o umbrales asociados',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Tipo
+const checkTipoDependencies = async (tipoid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla sensor
+    const sensores = await JoySenseService.getTableData('sensor');
+    const hasSensores = sensores.some(sensor => sensor.tipoid === tipoid);
+    
+    if (hasSensores) return true;
+    
+    // Verificar en tabla metricasensor
+    const metricasensores = await JoySenseService.getTableData('metricasensor');
+    const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.tipoid === tipoid);
+    
+    if (hasMetricasensores) return true;
+    
+    // Verificar en tabla umbral
+    const umbrales = await JoySenseService.getTableData('umbral');
+    const hasUmbrales = umbrales.some(umbral => umbral.tipoid === tipoid);
+    
+    return hasUmbrales;
+  } catch (error) {
+    console.error('Error checking tipo dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };
