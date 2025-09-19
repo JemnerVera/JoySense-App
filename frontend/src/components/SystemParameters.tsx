@@ -4417,8 +4417,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
     // Si no es un campo de ID o no existe la relación, mostrar el valor original
-
-    return row[columnName];
+    const value = row[columnName];
+    
+    // Asegurar que siempre devolvamos un string
+    if (value === null || value === undefined) {
+      return '';
+    }
+    
+    if (typeof value === 'object') {
+      console.warn('⚠️ getDisplayValue: objeto encontrado en', columnName, ':', value);
+      return JSON.stringify(value);
+    }
+    
+    return value.toString();
 
   };
 
