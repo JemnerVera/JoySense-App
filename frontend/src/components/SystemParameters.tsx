@@ -4525,6 +4525,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         case 'criticidad':
           existingData = criticidadesData || [];
           break;
+        case 'medio':
+          existingData = mediosData || [];
+          break;
         case 'sensor':
           existingData = sensorsData || [];
           break;

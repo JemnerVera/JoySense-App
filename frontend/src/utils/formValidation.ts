@@ -316,6 +316,8 @@ export const validateTableData = async (
       return await validatePerfilUmbralData(formData, existingData);
     case 'criticidad':
       return await validateCriticidadData(formData, existingData);
+    case 'medio':
+      return await validateMedioData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -1096,6 +1098,47 @@ const validateCriticidadData = async (
       errors.push({
         field: 'criticidadbrev',
         message: 'La abreviatura de la criticidad ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Validación específica para Medio
+const validateMedioData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.nombre || formData.nombre.trim() === '') {
+    errors.push({
+      field: 'nombre',
+      message: 'El nombre del medio es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const medioExists = existingData.some(item => 
+      item.nombre && item.nombre.toLowerCase() === formData.nombre?.toLowerCase()
+    );
+    
+    if (medioExists) {
+      errors.push({
+        field: 'nombre',
+        message: 'El nombre del medio ya existe',
         type: 'duplicate'
       });
     }
