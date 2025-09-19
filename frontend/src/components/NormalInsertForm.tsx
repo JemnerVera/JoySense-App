@@ -828,6 +828,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     if (!displayName) return null;
     
     const value = formData[col.columnName] || '';
+    const isRequired = isFieldRequired(col.columnName);
     
     // Determinar si el campo debe estar deshabilitado
     const isDisabled = (() => {
@@ -871,7 +872,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
               setFormData(newFormData);
             }}
             options={options}
-            placeholder="Seleccionar entidad"
+            placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
             disabled={isDisabled}
           />
         </div>
@@ -903,7 +904,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
               setFormData(newFormData);
             }}
             options={options}
-            placeholder="Seleccionar ubicación"
+            placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
             disabled={isDisabled}
           />
         </div>
@@ -935,7 +936,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
               setFormData(newFormData);
             }}
             options={options}
-            placeholder="Seleccionar nodo"
+            placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
             disabled={isDisabled}
           />
         </div>
@@ -958,9 +959,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                 ? parseFloat(e.target.value) || 0 
                 : e.target.value
             })}
-            placeholder={col.columnName === 'latitud' ? 'Ingrese latitud' : 
-                       col.columnName === 'longitud' ? 'Ingrese longitud' : 
-                       'Ingrese referencia'}
+            placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
             disabled={isDisabled}
             className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
               isDisabled 

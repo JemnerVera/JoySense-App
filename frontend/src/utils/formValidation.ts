@@ -56,7 +56,10 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   localizacion: [
     { field: 'entidadid', required: true, type: 'number', customMessage: 'Debe seleccionar una entidad' },
     { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' },
-    { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' }
+    { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
+    { field: 'latitud', required: true, type: 'number', customMessage: 'La latitud es obligatoria' },
+    { field: 'longitud', required: true, type: 'number', customMessage: 'La longitud es obligatoria' },
+    { field: 'referencia', required: true, type: 'string', minLength: 1, customMessage: 'La referencia es obligatoria' }
   ],
   
   entidad: [
@@ -297,6 +300,8 @@ export const validateTableData = async (
       return await validateFundoData(formData, existingData);
     case 'ubicacion':
       return await validateUbicacionData(formData, existingData);
+    case 'localizacion':
+      return await validateLocalizacionData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -602,6 +607,88 @@ const validateUbicacionData = async (
   };
 };
 
+// Validación específica para Localización
+const validateLocalizacionData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.entidadid) {
+    errors.push({
+      field: 'entidadid',
+      message: 'Debe seleccionar una entidad',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.ubicacionid) {
+    errors.push({
+      field: 'ubicacionid',
+      message: 'Debe seleccionar una ubicación',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nodoid) {
+    errors.push({
+      field: 'nodoid',
+      message: 'Debe seleccionar un nodo',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.latitud || formData.latitud === '') {
+    errors.push({
+      field: 'latitud',
+      message: 'La latitud es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.longitud || formData.longitud === '') {
+    errors.push({
+      field: 'longitud',
+      message: 'La longitud es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.referencia || formData.referencia.trim() === '') {
+    errors.push({
+      field: 'referencia',
+      message: 'La referencia es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const localizacionExists = existingData.some(item => 
+      item.ubicacionid && item.ubicacionid.toString() === formData.ubicacionid?.toString() &&
+      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString()
+    );
+    
+    if (localizacionExists) {
+      errors.push({
+        field: 'ubicacionid',
+        message: 'La ubicación y nodo ya están asociados',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -633,6 +720,23 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'ubicacion') && 
                requiredErrors.some(e => e.field === 'fundoid')) {
       messages.push('⚠️ La ubicación y fundo es obligatorio');
+    } else if (requiredErrors.length === 3 && 
+               requiredErrors.some(e => e.field === 'latitud') && 
+               requiredErrors.some(e => e.field === 'longitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La latitud, longitud y referencia es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'latitud') && 
+               requiredErrors.some(e => e.field === 'longitud')) {
+      messages.push('⚠️ La latitud y longitud es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'latitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La latitud y referencia es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'longitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La longitud y referencia es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
