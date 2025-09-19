@@ -96,6 +96,16 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       }
     }
     
+    // Para Empresa: solo habilitar empresabrev si empresa tiene valor
+    if (selectedTable === 'empresa') {
+      if (columnName === 'empresabrev') {
+        return !!(formData.empresa && formData.empresa.trim() !== '');
+      }
+      if (columnName === 'empresa') {
+        return true; // Siempre habilitado
+      }
+    }
+    
     // Para otros campos, usar lógica normal
     return true;
   };
@@ -1502,7 +1512,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     ? 'bg-neutral-800 border-neutral-600' 
                     : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
                 }`}
-                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}`}
+                placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 3 caracteres)' : ''}`}
               />
             </div>
           );

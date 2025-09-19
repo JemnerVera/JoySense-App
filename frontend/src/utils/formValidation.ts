@@ -38,7 +38,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   empresa: [
     { field: 'empresa', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la empresa es obligatorio' },
-    { field: 'empresabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' },
+    { field: 'empresabrev', required: true, type: 'string', minLength: 1, maxLength: 3, customMessage: 'La abreviatura es obligatoria' },
     { field: 'paisid', required: true, type: 'number', customMessage: 'Debe seleccionar un país' }
   ],
   
@@ -292,6 +292,8 @@ export const validateTableData = async (
   switch (tableName) {
     case 'pais':
       return await validatePaisData(formData, existingData);
+    case 'empresa':
+      return await validateEmpresaData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -383,6 +385,88 @@ const validatePaisData = async (
   };
 };
 
+// Validación específica para Empresa
+const validateEmpresaData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.empresa || formData.empresa.trim() === '') {
+    errors.push({
+      field: 'empresa',
+      message: 'El nombre de la empresa es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.empresabrev || formData.empresabrev.trim() === '') {
+    errors.push({
+      field: 'empresabrev',
+      message: 'La abreviatura es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.paisid) {
+    errors.push({
+      field: 'paisid',
+      message: 'Debe seleccionar un país',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar longitud de abreviatura
+  if (formData.empresabrev && formData.empresabrev.length > 3) {
+    errors.push({
+      field: 'empresabrev',
+      message: 'La abreviatura no puede exceder 3 caracteres',
+      type: 'length'
+    });
+  }
+  
+  // 3. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const empresaExists = existingData.some(item => 
+      item.empresa && item.empresa.toLowerCase().trim() === formData.empresa?.toLowerCase().trim()
+    );
+    
+    const abrevExists = existingData.some(item => 
+      item.empresabrev && item.empresabrev.toLowerCase().trim() === formData.empresabrev?.toLowerCase().trim()
+    );
+    
+    if (empresaExists && abrevExists) {
+      errors.push({
+        field: 'both',
+        message: 'La empresa y abreviatura se repite',
+        type: 'duplicate'
+      });
+    } else if (empresaExists) {
+      errors.push({
+        field: 'empresa',
+        message: 'La empresa se repite',
+        type: 'duplicate'
+      });
+    } else if (abrevExists) {
+      errors.push({
+        field: 'empresabrev',
+        message: 'La abreviatura se repite',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -402,6 +486,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'pais') && 
                requiredErrors.some(e => e.field === 'paisabrev')) {
       messages.push('⚠️ El país y abreviatura es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'empresa') && 
+               requiredErrors.some(e => e.field === 'empresabrev')) {
+      messages.push('⚠️ La empresa y abreviatura es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
@@ -412,7 +500,17 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
     if (duplicateErrors.length === 1) {
       messages.push(`⚠️ ${duplicateErrors[0].message}`);
     } else if (duplicateErrors.some(e => e.field === 'both')) {
-      messages.push('⚠️ El país y abreviatura se repite');
+      // Determinar si es país o empresa basado en los errores
+      const isPais = duplicateErrors.some(e => e.message.includes('país'));
+      const isEmpresa = duplicateErrors.some(e => e.message.includes('empresa'));
+      
+      if (isPais) {
+        messages.push('⚠️ El país y abreviatura se repite');
+      } else if (isEmpresa) {
+        messages.push('⚠️ La empresa y abreviatura se repite');
+      } else {
+        messages.push(`⚠️ ${duplicateErrors[0].message}`);
+      }
     } else {
       messages.push(`⚠️ ${duplicateErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
