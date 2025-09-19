@@ -320,6 +320,16 @@ export const validateTableUpdate = async (
                   return await validatePerfilUmbralUpdate(formData, originalData, existingData || []);
                 case 'criticidad':
                   return await validateCriticidadUpdate(formData, originalData, existingData || []);
+                case 'medio':
+                  return await validateMedioUpdate(formData, originalData, existingData || []);
+                case 'contacto':
+                  return await validateContactoUpdate(formData, originalData, existingData || []);
+                case 'usuario':
+                  return await validateUsuarioUpdate(formData, originalData, existingData || []);
+                case 'perfil':
+                  return await validatePerfilUpdate(formData, originalData, existingData || []);
+                case 'usuarioperfil':
+                  return await validateUsuarioPerfilUpdate(formData, originalData, existingData || []);
                 default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -2629,4 +2639,453 @@ const checkCriticidadDependencies = async (criticidadid: number): Promise<boolea
     console.error('Error checking criticidad dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA MEDIO =====
+const validateMedioUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateMedioUpdate - formData:', formData);
+  console.log('🔍 validateMedioUpdate - originalData:', originalData);
+  console.log('🔍 validateMedioUpdate - nombre value:', formData.nombre);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.nombre || formData.nombre.trim() === '') {
+    console.log('🔍 validateMedioUpdate - nombre está vacío');
+    errors.push({
+      field: 'nombre',
+      message: 'El nombre del medio es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.nombre && formData.nombre.trim() !== '') {
+    const nombreExists = existingData.some(item => 
+      item.medioid !== originalData.medioid && 
+      item.nombre && 
+      item.nombre.toLowerCase() === formData.nombre.toLowerCase()
+    );
+    
+    if (nombreExists) {
+      errors.push({
+        field: 'nombre',
+        message: 'El nombre del medio ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay contactos que referencian este medio
+    const hasDependentRecords = await checkMedioDependencies(originalData.medioid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el medio porque tiene contactos asociados',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+const checkMedioDependencies = async (medioid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla contacto
+    const contactos = await JoySenseService.getTableData('contacto');
+    const hasContactos = contactos.some(contacto => contacto.medioid === medioid);
+    
+    return hasContactos;
+  } catch (error) {
+    console.error('Error checking medio dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA CONTACTO =====
+const validateContactoUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateContactoUpdate - formData:', formData);
+  console.log('🔍 validateContactoUpdate - originalData:', originalData);
+  console.log('🔍 validateContactoUpdate - usuarioid value:', formData.usuarioid);
+  console.log('🔍 validateContactoUpdate - medioid value:', formData.medioid);
+  console.log('🔍 validateContactoUpdate - celular value:', formData.celular);
+  console.log('🔍 validateContactoUpdate - correo value:', formData.correo);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.usuarioid || formData.usuarioid === '') {
+    console.log('🔍 validateContactoUpdate - usuarioid está vacío');
+    errors.push({
+      field: 'usuarioid',
+      message: 'El usuario es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.medioid || formData.medioid === '') {
+    console.log('🔍 validateContactoUpdate - medioid está vacío');
+    errors.push({
+      field: 'medioid',
+      message: 'El medio es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar que al menos uno de los campos de contacto esté presente
+  if ((!formData.celular || formData.celular.trim() === '') && 
+      (!formData.correo || formData.correo.trim() === '')) {
+    console.log('🔍 validateContactoUpdate - ni celular ni correo están presentes');
+    errors.push({
+      field: 'contacto',
+      message: 'Debe proporcionar al menos un celular o correo',
+      type: 'required'
+    });
+  }
+  
+  // 3. Validar duplicados (excluyendo el registro actual)
+  // Para contacto, la clave primaria es compuesta (usuarioid, medioid)
+  if (formData.usuarioid && formData.medioid) {
+    const contactoExists = existingData.some(item => 
+      (item.usuarioid !== originalData.usuarioid || item.medioid !== originalData.medioid) && 
+      item.usuarioid === formData.usuarioid && 
+      item.medioid === formData.medioid
+    );
+    
+    if (contactoExists) {
+      errors.push({
+        field: 'composite',
+        message: 'Ya existe un contacto para este usuario y medio',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Validar relaciones padre-hijo (solo si se está inactivando)
+  // Según el schema, contacto NO es referenciada por ninguna otra tabla
+  // Por lo tanto, no hay restricciones para inactivar
+  
+  // 5. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA USUARIO =====
+const validateUsuarioUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateUsuarioUpdate - formData:', formData);
+  console.log('🔍 validateUsuarioUpdate - originalData:', originalData);
+  console.log('🔍 validateUsuarioUpdate - login value:', formData.login);
+  console.log('🔍 validateUsuarioUpdate - nombre value:', formData.nombre);
+  console.log('🔍 validateUsuarioUpdate - apellido value:', formData.apellido);
+  console.log('🔍 validateUsuarioUpdate - rol value:', formData.rol);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.login || formData.login.trim() === '') {
+    console.log('🔍 validateUsuarioUpdate - login está vacío');
+    errors.push({
+      field: 'login',
+      message: 'El login es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nombre || formData.nombre.trim() === '') {
+    console.log('🔍 validateUsuarioUpdate - nombre está vacío');
+    errors.push({
+      field: 'nombre',
+      message: 'El nombre es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.apellido || formData.apellido.trim() === '') {
+    console.log('🔍 validateUsuarioUpdate - apellido está vacío');
+    errors.push({
+      field: 'apellido',
+      message: 'El apellido es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.rol || formData.rol.trim() === '') {
+    console.log('🔍 validateUsuarioUpdate - rol está vacío');
+    errors.push({
+      field: 'rol',
+      message: 'El rol es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.login && formData.login.trim() !== '') {
+    const loginExists = existingData.some(item => 
+      item.usuarioid !== originalData.usuarioid && 
+      item.login && 
+      item.login.toLowerCase() === formData.login.toLowerCase()
+    );
+    
+    if (loginExists) {
+      errors.push({
+        field: 'login',
+        message: 'El login ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay usuarioperfil, contactos, audit_log_umbral o alertas que referencian este usuario
+    const hasDependentRecords = await checkUsuarioDependencies(originalData.usuarioid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el usuario porque tiene perfiles, contactos, logs o alertas asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+const checkUsuarioDependencies = async (usuarioid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla usuarioperfil
+    const usuarioperfiles = await JoySenseService.getTableData('usuarioperfil');
+    const hasUsuarioperfiles = usuarioperfiles.some(usuarioperfil => usuarioperfil.usuarioid === usuarioid);
+    
+    if (hasUsuarioperfiles) return true;
+    
+    // Verificar en tabla contacto
+    const contactos = await JoySenseService.getTableData('contacto');
+    const hasContactos = contactos.some(contacto => contacto.usuarioid === usuarioid);
+    
+    if (hasContactos) return true;
+    
+    // Verificar en tabla audit_log_umbral
+    const auditLogs = await JoySenseService.getTableData('audit_log_umbral');
+    const hasAuditLogs = auditLogs.some(auditLog => auditLog.modified_by === usuarioid);
+    
+    if (hasAuditLogs) return true;
+    
+    // Verificar en tabla alerta
+    const alertas = await JoySenseService.getTableData('alerta');
+    const hasAlertas = alertas.some(alerta => alerta.usuarioid === usuarioid);
+    
+    return hasAlertas;
+  } catch (error) {
+    console.error('Error checking usuario dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA PERFIL =====
+const validatePerfilUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validatePerfilUpdate - formData:', formData);
+  console.log('🔍 validatePerfilUpdate - originalData:', originalData);
+  console.log('🔍 validatePerfilUpdate - perfil value:', formData.perfil);
+  console.log('🔍 validatePerfilUpdate - nivel value:', formData.nivel);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.perfil || formData.perfil.trim() === '') {
+    console.log('🔍 validatePerfilUpdate - perfil está vacío');
+    errors.push({
+      field: 'perfil',
+      message: 'El nombre del perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.nivel || formData.nivel.trim() === '') {
+    console.log('🔍 validatePerfilUpdate - nivel está vacío');
+    errors.push({
+      field: 'nivel',
+      message: 'El nivel del perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.perfil && formData.perfil.trim() !== '') {
+    const perfilExists = existingData.some(item => 
+      item.perfilid !== originalData.perfilid && 
+      item.perfil && 
+      item.perfil.toLowerCase() === formData.perfil.toLowerCase()
+    );
+    
+    if (perfilExists) {
+      errors.push({
+        field: 'perfil',
+        message: 'El nombre del perfil ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  if (formData.nivel && formData.nivel.trim() !== '') {
+    const nivelExists = existingData.some(item => 
+      item.perfilid !== originalData.perfilid && 
+      item.nivel && 
+      item.nivel.toLowerCase() === formData.nivel.toLowerCase()
+    );
+    
+    if (nivelExists) {
+      errors.push({
+        field: 'nivel',
+        message: 'El nivel del perfil ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay usuarioperfil o perfilumbral que referencian este perfil
+    const hasDependentRecords = await checkPerfilDependencies(originalData.perfilid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el perfil porque tiene usuarios o umbrales asociados',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+const checkPerfilDependencies = async (perfilid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla usuarioperfil
+    const usuarioperfiles = await JoySenseService.getTableData('usuarioperfil');
+    const hasUsuarioperfiles = usuarioperfiles.some(usuarioperfil => usuarioperfil.perfilid === perfilid);
+    
+    if (hasUsuarioperfiles) return true;
+    
+    // Verificar en tabla perfilumbral
+    const perfilumbrales = await JoySenseService.getTableData('perfilumbral');
+    const hasPerfilumbrales = perfilumbrales.some(perfilumbral => perfilumbral.perfilid === perfilid);
+    
+    return hasPerfilumbrales;
+  } catch (error) {
+    console.error('Error checking perfil dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA USUARIOPERFIL =====
+const validateUsuarioPerfilUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateUsuarioPerfilUpdate - formData:', formData);
+  console.log('🔍 validateUsuarioPerfilUpdate - originalData:', originalData);
+  console.log('🔍 validateUsuarioPerfilUpdate - usuarioid value:', formData.usuarioid);
+  console.log('🔍 validateUsuarioPerfilUpdate - perfilid value:', formData.perfilid);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.usuarioid || formData.usuarioid === '') {
+    console.log('🔍 validateUsuarioPerfilUpdate - usuarioid está vacío');
+    errors.push({
+      field: 'usuarioid',
+      message: 'El usuario es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.perfilid || formData.perfilid === '') {
+    console.log('🔍 validateUsuarioPerfilUpdate - perfilid está vacío');
+    errors.push({
+      field: 'perfilid',
+      message: 'El perfil es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  // Para usuarioperfil, la clave primaria es compuesta (usuarioid, perfilid)
+  if (formData.usuarioid && formData.perfilid) {
+    const usuarioPerfilExists = existingData.some(item => 
+      (item.usuarioid !== originalData.usuarioid || item.perfilid !== originalData.perfilid) && 
+      item.usuarioid === formData.usuarioid && 
+      item.perfilid === formData.perfilid
+    );
+    
+    if (usuarioPerfilExists) {
+      errors.push({
+        field: 'composite',
+        message: 'Ya existe una relación entre este usuario y perfil',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  // Según el schema, usuarioperfil NO es referenciada por ninguna otra tabla
+  // Por lo tanto, no hay restricciones para inactivar
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
 };

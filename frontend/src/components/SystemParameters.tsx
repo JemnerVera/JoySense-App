@@ -7843,10 +7843,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     'umbral': ['umbral', 'ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid', 'minimo', 'maximo', 'statusid'],
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
     'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
-      'perfil': ['perfil', 'nivel', 'statusid'],
-      'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
-      'contacto': ['usuarioid', 'medioid', 'celular', 'correo', 'statusid'],
-      'medio': ['nombre', 'statusid']
+    'medio': ['nombre', 'statusid'],
+    'perfil': ['perfil', 'nivel', 'statusid'],
+    'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
+    'contacto': ['usuarioid', 'medioid', 'celular', 'correo', 'statusid'],
+    'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };
     
     return fieldMappings[tableName] || ['statusid'];
@@ -7867,10 +7868,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       'umbral': ['minimo', 'maximo'],
       'perfilumbral': [],
       'criticidad': [],
+      'medio': [],
       'perfil': [],
       'usuario': [],
       'contacto': ['celular', 'correo'],
-      'medio': []
+      'usuarioperfil': []
     };
     
     return optionalFields[tableName]?.includes(fieldName) || false;
