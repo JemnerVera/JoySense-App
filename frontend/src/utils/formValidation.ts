@@ -312,6 +312,8 @@ export const validateTableUpdate = async (
       return await validateTipoUpdate(formData, originalData, existingData || []);
     case 'nodo':
       return await validateNodoUpdate(formData, originalData, existingData || []);
+    case 'metrica':
+      return await validateMetricaUpdate(formData, originalData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -2093,6 +2095,100 @@ const checkNodoDependencies = async (nodoid: number): Promise<boolean> => {
     return hasLocalizaciones;
   } catch (error) {
     console.error('Error checking nodo dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Validación específica para actualización de Metrica
+const validateMetricaUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validateMetricaUpdate - formData:', formData);
+  console.log('🔍 validateMetricaUpdate - originalData:', originalData);
+  console.log('🔍 validateMetricaUpdate - metrica value:', formData.metrica);
+  console.log('🔍 validateMetricaUpdate - unidad value:', formData.unidad);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.metrica || formData.metrica.trim() === '') {
+    console.log('🔍 validateMetricaUpdate - metrica está vacío');
+    errors.push({
+      field: 'metrica',
+      message: 'La métrica es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // unidad es obligatorio para metrica
+  if (!formData.unidad || formData.unidad.trim() === '') {
+    console.log('🔍 validateMetricaUpdate - unidad está vacío');
+    errors.push({
+      field: 'unidad',
+      message: 'La unidad es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.metrica && formData.metrica.trim() !== '') {
+    const metricaExists = existingData.some(item => 
+      item.metricaid !== originalData.metricaid && 
+      item.metrica && 
+      item.metrica.toLowerCase() === formData.metrica.toLowerCase()
+    );
+    
+    if (metricaExists) {
+      errors.push({
+        field: 'metrica',
+        message: 'La métrica ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay metricasensor o umbrales que referencian esta métrica
+    const hasDependentRecords = await checkMetricaDependencies(originalData.metricaid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar la métrica porque tiene sensores o umbrales asociados',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de Metrica
+const checkMetricaDependencies = async (metricaid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla metricasensor
+    const metricasensores = await JoySenseService.getTableData('metricasensor');
+    const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.metricaid === metricaid);
+    
+    if (hasMetricasensores) return true;
+    
+    // Verificar en tabla umbral
+    const umbrales = await JoySenseService.getTableData('umbral');
+    const hasUmbrales = umbrales.some(umbral => umbral.metricaid === metricaid);
+    
+    return hasUmbrales;
+  } catch (error) {
+    console.error('Error checking metrica dependencies:', error);
     return false; // En caso de error, permitir la operación
   }
 };

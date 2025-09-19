@@ -7828,6 +7828,54 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
+  // Función para obtener los campos que se pueden actualizar por tabla
+  const getFieldsToUpdate = (tableName: string): string[] => {
+    const fieldMappings: Record<string, string[]> = {
+      'pais': ['pais', 'paisabrev', 'statusid'],
+      'empresa': ['empresa', 'empresabrev', 'paisid', 'statusid'],
+      'fundo': ['fundo', 'fundoabrev', 'empresaid', 'statusid'],
+      'ubicacion': ['ubicacion', 'fundoid', 'statusid'],
+      'localizacion': ['ubicacionid', 'nodoid', 'entidadid', 'latitud', 'longitud', 'referencia', 'statusid'],
+      'entidad': ['entidad', 'statusid'],
+      'tipo': ['tipo', 'entidadid', 'statusid'],
+      'nodo': ['nodo', 'deveui', 'appeui', 'appkey', 'atpin', 'statusid'],
+      'metrica': ['metrica', 'unidad', 'statusid'],
+      'umbral': ['metricaid', 'tipoid', 'minimo', 'maximo', 'umbral', 'criticidadid', 'statusid'],
+      'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
+      'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
+      'perfil': ['perfil', 'nivel', 'statusid'],
+      'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
+      'contacto': ['usuarioid', 'medioid', 'celular', 'correo', 'statusid'],
+      'medio': ['nombre', 'statusid']
+    };
+    
+    return fieldMappings[tableName] || ['statusid'];
+  };
+
+  // Función para determinar si un campo es opcional
+  const isOptionalField = (tableName: string, fieldName: string): boolean => {
+    const optionalFields: Record<string, string[]> = {
+      'pais': [],
+      'empresa': [],
+      'fundo': [],
+      'ubicacion': [],
+      'localizacion': ['latitud', 'longitud', 'referencia', 'entidadid'],
+      'entidad': [],
+      'tipo': [],
+      'nodo': ['deveui', 'appeui', 'appkey', 'atpin'],
+      'metrica': [],
+      'umbral': ['umbral'],
+      'perfilumbral': [],
+      'criticidad': [],
+      'perfil': [],
+      'usuario': [],
+      'contacto': ['celular', 'correo'],
+      'medio': []
+    };
+    
+    return optionalFields[tableName]?.includes(fieldName) || false;
+  };
+
   const handleUpdate = async () => {
 
     if (!updateFormData || Object.keys(updateFormData).length === 0) {
@@ -8236,13 +8284,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           // Filtrar solo los campos que realmente necesitamos actualizar
 
-          const fieldsToUpdate = ['statusid']; // Solo actualizar statusid por ahora
+          const fieldsToUpdate = getFieldsToUpdate(selectedTable);
 
           const filteredUpdateData: Record<string, any> = {};
 
           fieldsToUpdate.forEach(field => {
 
             if (updateFormData[field] !== undefined) {
+
+              // Para campos opcionales vacíos, no incluir el campo en la actualización
+              if (typeof updateFormData[field] === 'string' && 
+                  updateFormData[field].trim() === '' && 
+                  isOptionalField(selectedTable, field)) {
+                // No incluir campos opcionales vacíos en la actualización
+                return;
+              }
 
               filteredUpdateData[field] = updateFormData[field];
 
@@ -8255,6 +8311,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           console.log(`📊 Datos a actualizar (original):`, updateFormData);
 
           console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
+          
+          // Debug específico para metrica
+          if (selectedTable === 'metrica') {
+            console.log('🔍 Debug Metrica - updateFormData:', updateFormData);
+            console.log('🔍 Debug Metrica - filteredUpdateData:', filteredUpdateData);
+            console.log('🔍 Debug Metrica - unidad value:', updateFormData.unidad);
+            console.log('🔍 Debug Metrica - unidad type:', typeof updateFormData.unidad);
+            console.log('🔍 Debug Metrica - unidad trimmed:', updateFormData.unidad?.trim());
+            console.log('🔍 Debug Metrica - isOptionalField result:', isOptionalField('metrica', 'unidad'));
+          }
 
           // Validar datos antes de actualizar
           try {
