@@ -106,18 +106,42 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       }
     }
     
-    // Para Fundo: solo habilitar fundoabrev si fundo tiene valor
-    if (selectedTable === 'fundo') {
-      if (columnName === 'fundoabrev') {
-        return !!(formData.fundo && formData.fundo.trim() !== '');
-      }
-      if (columnName === 'fundo') {
-        return true; // Siempre habilitado
-      }
+  // Para Fundo: solo habilitar fundoabrev si fundo tiene valor
+  if (selectedTable === 'fundo') {
+    if (columnName === 'fundoabrev') {
+      return !!(formData.fundo && formData.fundo.trim() !== '');
     }
-    
-    // Para otros campos, usar lógica normal
-    return true;
+    if (columnName === 'fundo') {
+      return true; // Siempre habilitado
+    }
+  }
+  
+  // Para Tipo: solo habilitar tipo si entidadid tiene valor
+  if (selectedTable === 'tipo') {
+    if (columnName === 'tipo') {
+      return !!(formData.entidadid);
+    }
+    if (columnName === 'entidadid') {
+      return true; // Siempre habilitado
+    }
+  }
+  
+  // Para Nodo: habilitación progresiva nodo -> deveui -> resto
+  if (selectedTable === 'nodo') {
+    if (columnName === 'nodo') {
+      return true; // Siempre habilitado
+    }
+    if (columnName === 'deveui') {
+      return !!(formData.nodo && formData.nodo.trim() !== '');
+    }
+    // Para el resto de campos (appeui, appkey, atpin, statusid)
+    if (['appeui', 'appkey', 'atpin', 'statusid'].includes(columnName)) {
+      return !!(formData.nodo && formData.nodo.trim() !== '' && formData.deveui && formData.deveui.trim() !== '');
+    }
+  }
+  
+  // Para otros campos, usar lógica normal
+  return true;
   };
 
   // Función para renderizar fila contextual con filtros globales
@@ -961,7 +985,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             })}
             placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
             disabled={isDisabled}
-            className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+            className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
               isDisabled 
                 ? 'border-neutral-600 bg-neutral-700 cursor-not-allowed opacity-75' 
                 : 'border-neutral-600'
@@ -1123,6 +1147,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
           if (col.columnName === 'entidadid' && (selectedTable === 'localizacion' || selectedTable === 'tipo')) {
             const options = getUniqueOptionsForField(col.columnName);
             const isRequired = isFieldRequired(col.columnName);
+            const displayName = getColumnDisplayName(col.columnName);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1135,7 +1160,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`Seleccionar entidad${isRequired ? '*' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1178,7 +1203,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1242,7 +1267,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1348,7 +1373,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`Seleccionar tipo${isRequired ? '*' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
                 />
               </div>
             );
@@ -1548,7 +1573,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                   }
                 }}
                 disabled={!isEnabled}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white text-base placeholder-neutral-400 font-mono ${
                   isEnabled 
                     ? 'bg-neutral-800 border-neutral-600' 
                     : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'

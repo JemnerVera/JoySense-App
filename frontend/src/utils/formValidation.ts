@@ -303,6 +303,10 @@ export const validateTableData = async (
       return await validateLocalizacionData(formData, existingData);
     case 'entidad':
       return await validateEntidadData(formData, existingData);
+    case 'tipo':
+      return await validateTipoData(formData, existingData);
+    case 'nodo':
+      return await validateNodoData(formData, existingData);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -731,6 +735,121 @@ const validateEntidadData = async (
   };
 };
 
+// Validación específica para Tipo
+const validateTipoData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.tipo || formData.tipo.trim() === '') {
+    errors.push({
+      field: 'tipo',
+      message: 'El nombre del tipo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.entidadid) {
+    errors.push({
+      field: 'entidadid',
+      message: 'Debe seleccionar una entidad',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const tipoExists = existingData.some(item => 
+      item.tipo && item.tipo.toLowerCase() === formData.tipo?.toLowerCase() &&
+      item.entidadid && item.entidadid.toString() === formData.entidadid?.toString()
+    );
+    
+    if (tipoExists) {
+      errors.push({
+        field: 'tipo',
+        message: 'El tipo ya existe en esta entidad',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Validación específica para Nodo
+const validateNodoData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.nodo || formData.nodo.trim() === '') {
+    errors.push({
+      field: 'nodo',
+      message: 'El nombre del nodo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.deveui || formData.deveui.trim() === '') {
+    errors.push({
+      field: 'deveui',
+      message: 'El DevEUI es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const nodoExists = existingData.some(item => 
+      item.nodo && item.nodo.toLowerCase() === formData.nodo?.toLowerCase()
+    );
+    
+    const deveuiExists = existingData.some(item => 
+      item.deveui && item.deveui.toLowerCase() === formData.deveui?.toLowerCase()
+    );
+    
+    if (nodoExists && deveuiExists) {
+      errors.push({
+        field: 'both',
+        message: 'El nodo y DevEUI ya existen',
+        type: 'duplicate'
+      });
+    } else if (nodoExists) {
+      errors.push({
+        field: 'nodo',
+        message: 'El nombre del nodo ya existe',
+        type: 'duplicate'
+      });
+    } else if (deveuiExists) {
+      errors.push({
+        field: 'deveui',
+        message: 'El DevEUI ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
@@ -779,6 +898,14 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
                requiredErrors.some(e => e.field === 'longitud') && 
                requiredErrors.some(e => e.field === 'referencia')) {
       messages.push('⚠️ La longitud y referencia es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'tipo') && 
+               requiredErrors.some(e => e.field === 'entidadid')) {
+      messages.push('⚠️ El tipo y entidad es obligatorio');
+    } else if (requiredErrors.length === 2 && 
+               requiredErrors.some(e => e.field === 'nodo') && 
+               requiredErrors.some(e => e.field === 'deveui')) {
+      messages.push('⚠️ El nodo y DevEUI es obligatorio');
     } else {
       messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
     }
