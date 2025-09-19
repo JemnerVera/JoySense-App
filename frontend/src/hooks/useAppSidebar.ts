@@ -116,7 +116,8 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
   // Función para obtener las clases del contenido principal
   const getMainContentClasses = useCallback((isVisible: boolean) => {
     // No usar márgenes fijos, el flexbox se encargará del layout
-    return '';
+    // El flexbox automáticamente ajustará el contenido cuando los sidebars cambien de tamaño
+    return 'flex-1 min-w-0';
   }, []);
 
   // Función para obtener las clases del indicador

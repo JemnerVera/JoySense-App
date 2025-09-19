@@ -1,5 +1,6 @@
 import React from 'react';
 import ParametersSidebar from './ParametersSidebar';
+import ParametersOperationsSidebar from './ParametersOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
 
@@ -16,6 +17,7 @@ interface AuxiliarySidebarProps {
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
+  showThirdLevel?: boolean;
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -30,7 +32,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   onSubTabChange,
   formData = {},
   multipleData = [],
-  massiveFormData = {}
+  massiveFormData = {},
+  showThirdLevel = false
 }) => {
   // Subpestañas para Reportes
   const reportesSubTabs = [
@@ -68,11 +71,29 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const isReportes = activeTab === 'reportes' || activeTab.startsWith('reportes-');
 
   if (isParameters) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <ParametersOperationsSidebar
+          selectedTable={selectedTable || ''}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
     return (
       <ParametersSidebar
         selectedTable={selectedTable || ''}
         onTableSelect={onTableSelect || (() => {})}
-        activeSubTab={activeSubTab || 'status'}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
         onSubTabChange={onSubTabChange || (() => {})}
         isExpanded={isExpanded}
         onMouseEnter={onMouseEnter}

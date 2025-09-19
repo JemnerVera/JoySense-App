@@ -79,6 +79,27 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
+      {/* Tercer sidebar para parámetros (solo cuando hay tabla seleccionada) */}
+      {hasAuxiliarySidebar && (activeTab === 'parameters' || activeTab.startsWith('parameters-')) && selectedTable && (
+        <div className="flex-shrink-0 z-30">
+          <AuxiliarySidebar
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showThirdLevel={true}
+          />
+        </div>
+      )}
+
       {/* Exportar funciones para el contenido principal */}
       <div style={{ display: 'none' }}>
         <div 

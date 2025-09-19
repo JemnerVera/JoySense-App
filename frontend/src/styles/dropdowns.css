@@ -25,6 +25,16 @@
   scrollbar-color: #f97316 #404040;
 }
 
+/* Ocultar scrollbar cuando está colapsado */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Estilos estandarizados para select elements */
 .standard-select {
   @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;

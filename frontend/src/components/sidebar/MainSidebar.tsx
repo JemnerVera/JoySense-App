@@ -109,7 +109,9 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                className={`w-full flex items-center p-3 rounded transition-colors ${
+                  isExpanded ? 'gap-3' : 'justify-center'
+                } ${
                   isActive
                     ? `${getActiveTabColor(tab.color)} text-white`
                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
