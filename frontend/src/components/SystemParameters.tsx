@@ -4507,14 +4507,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         case 'metrica':
           existingData = metricasData || [];
           break;
+        case 'umbral':
+          existingData = umbralesData || [];
+          break;
         case 'sensor':
           existingData = sensorsData || [];
           break;
         case 'metricasensor':
           existingData = metricasensorData || [];
-          break;
-        case 'umbral':
-          existingData = umbralesData || [];
           break;
         case 'usuario':
           existingData = userData || [];

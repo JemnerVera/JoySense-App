@@ -176,7 +176,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               PAÍS
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getPaisName(paisSeleccionado)}
             </div>
           </div>
@@ -189,7 +189,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               EMPRESA
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getEmpresaName(empresaSeleccionada)}
             </div>
           </div>
@@ -202,7 +202,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               FUNDO
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getFundoName(fundoSeleccionado)}
             </div>
           </div>
@@ -385,6 +385,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
     // Campos de texto (umbral, minimo, maximo)
     if (['umbral', 'minimo', 'maximo'].includes(col.columnName)) {
+      const isRequired = isFieldRequired(col.columnName);
       return (
         <div key={col.columnName} className="mb-4">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
@@ -404,9 +405,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                 });
               }
             }}
-            placeholder={col.columnName === 'umbral' ? 'Ingrese nombre umbral' : `Ingrese ${col.columnName}`}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-700 text-white ${
-              !isEnabled ? 'opacity-50 cursor-not-allowed border-gray-600' : 'border-gray-300'
+            placeholder={`${displayName.toUpperCase()}${isRequired ? '*' : ''}`}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white text-base placeholder-neutral-400 font-mono ${
+              isEnabled 
+                ? 'bg-neutral-800 border-neutral-600' 
+                : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
             }`}
           />
         </div>
@@ -415,7 +418,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
     // Campos de selección (ubicacionid, nodoid, tipoid, metricaid, criticidadid)
     const options = getUniqueOptionsForField(col.columnName);
-    const placeholder = `Seleccionar ${displayName.toLowerCase()}`;
+    const isRequired = isFieldRequired(col.columnName);
+    const placeholder = `${displayName.toUpperCase()}${isRequired ? '*' : ''}`;
     
     return (
       <div key={col.columnName} className="mb-4">
@@ -496,7 +500,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
               <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
                 PAÍS
               </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
               </div>
             </div>

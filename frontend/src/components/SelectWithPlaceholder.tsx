@@ -14,7 +14,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   onChange,
   options,
   placeholder,
-  className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono",
+  className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white text-base font-mono",
   disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
