@@ -6,6 +6,7 @@ interface MassiveMetricaSensorFormProps {
   onApply: (data: any[]) => void;
   onCancel: () => void;
   loading?: boolean;
+  onFormDataChange?: (formData: any) => void;
 }
 
 interface SelectedNode {
@@ -37,7 +38,8 @@ export function MassiveMetricaSensorForm({
   getUniqueOptionsForField,
   onApply,
   onCancel,
-  loading = false
+  loading = false,
+  onFormDataChange
 }: MassiveMetricaSensorFormProps) {
   const [formData, setFormData] = useState<FormData>({
     entidadid: null,
@@ -176,6 +178,22 @@ export function MassiveMetricaSensorForm({
       )
     }));
   };
+
+  // Reportar cambios al sistema de detección
+  useEffect(() => {
+    if (onFormDataChange) {
+      const massiveFormData = {
+        entidadid: formData.entidadid,
+        selectedMetricas: formData.metricasData.filter(m => m.selected),
+        selectedNodes: selectedNodes.filter(node => node.selected),
+        assignedSensorTypes: assignedSensorTypes,
+        hasData: formData.entidadid !== null || 
+                 formData.metricasData.some(m => m.selected) || 
+                 selectedNodes.some(node => node.selected)
+      };
+      onFormDataChange(massiveFormData);
+    }
+  }, [formData, selectedNodes, assignedSensorTypes, onFormDataChange]);
 
 
   // Obtener nodos seleccionados

@@ -8,6 +8,7 @@ interface ProtectedTableSelectorProps {
   activeSubTab: 'status' | 'insert' | 'update' | 'massive';
   formData: Record<string, any>;
   multipleData: any[];
+  massiveFormData?: Record<string, any>;
 }
 
 const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
@@ -15,7 +16,8 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
   onTableSelect,
   activeSubTab,
   formData,
-  multipleData
+  multipleData,
+  massiveFormData = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +81,7 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
     }
 
     // Verificar si hay cambios sin guardar
-    const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, multipleData);
+    const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, multipleData, massiveFormData);
     
     console.log('🔄 hasChanges result for parameter change:', hasChanges);
     

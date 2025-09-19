@@ -35,6 +35,7 @@ const SystemParametersWithSuspense: React.FC<{
   onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   activeTab: string;
   onFormDataChange: (formData: Record<string, any>, multipleData: any[]) => void;
+  onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
   clearFormData?: boolean;
 }> = (props) => (
   <Suspense fallback={
@@ -62,6 +63,7 @@ const AppContentInternal: React.FC = () => {
   // Estados para datos del formulario (para protección de datos)
   const [currentFormData, setCurrentFormData] = useState<Record<string, any>>({});
   const [currentMultipleData, setCurrentMultipleData] = useState<any[]>([]);
+  const [currentMassiveFormData, setCurrentMassiveFormData] = useState<Record<string, any>>({});
   const [clearFormData, setClearFormData] = useState<boolean>(false);
 
   // Hook para protección de datos (debe estar antes de cualquier return condicional)
@@ -363,6 +365,11 @@ const AppContentInternal: React.FC = () => {
     setCurrentMultipleData(multipleData);
   };
 
+  // Handler para recibir datos de formularios masivos desde SystemParameters
+  const handleMassiveFormDataChange = (massiveFormData: Record<string, any>) => {
+    setCurrentMassiveFormData(massiveFormData);
+  };
+
 
 
   // Handlers para cambios de pestaña
@@ -461,6 +468,7 @@ const AppContentInternal: React.FC = () => {
               onSubTabChange={handleSubTabChange}
               activeTab={activeTab}
               onFormDataChange={handleFormDataChange}
+              onMassiveFormDataChange={handleMassiveFormDataChange}
               clearFormData={clearFormData}
             />
           );
@@ -473,6 +481,7 @@ const AppContentInternal: React.FC = () => {
               onSubTabChange={handleSubTabChange}
               activeTab={activeTab}
               onFormDataChange={handleFormDataChange}
+              onMassiveFormDataChange={handleMassiveFormDataChange}
               clearFormData={clearFormData}
             />
           );
@@ -635,6 +644,7 @@ const AppContentInternal: React.FC = () => {
           onSubTabChange={handleSubTabChange}
           formData={currentFormData}
           multipleData={currentMultipleData}
+          massiveFormData={currentMassiveFormData}
         />
 
         {/* Área principal con header fijo y contenido scrolleable */}

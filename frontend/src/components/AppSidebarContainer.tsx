@@ -14,6 +14,7 @@ interface AppSidebarContainerProps {
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
+  massiveFormData?: Record<string, any>;
 }
 
 const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
@@ -26,7 +27,8 @@ const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
   activeSubTab,
   onSubTabChange,
   formData = {},
-  multipleData = []
+  multipleData = [],
+  massiveFormData = {}
 }) => {
   const {
     sidebarVisible,
@@ -71,6 +73,7 @@ const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
           onAuxiliarySidebarMouseLeave={handleAuxiliarySidebarMouseLeave}
           formData={formData}
           multipleData={multipleData}
+          massiveFormData={massiveFormData}
         />
       </div>
       

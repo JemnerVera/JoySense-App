@@ -5,7 +5,8 @@ export const useSimpleChangeDetection = () => {
     formData: Record<string, any>,
     selectedTable: string,
     activeSubTab: string,
-    multipleData: any[] = []
+    multipleData: any[] = [],
+    massiveFormData: Record<string, any> = {}
   ): boolean => {
     // Solo verificar cambios en pestañas de inserción o masivo
     if (activeSubTab !== 'insert' && activeSubTab !== 'massive') {
@@ -140,7 +141,21 @@ export const useSimpleChangeDetection = () => {
       return hasMultiple;
     })();
 
-    return hasFormDataChanges || hasMultipleDataChanges;
+    // Para formularios masivos, verificar si hay datos
+    let hasMassiveFormDataChanges = false;
+    if (activeSubTab === 'massive' && massiveFormData.hasData) {
+      hasMassiveFormDataChanges = true;
+      console.log('🔍 Massive form has data:', massiveFormData);
+    }
+
+    console.log('🔍 Change detection result:', {
+      hasFormDataChanges,
+      hasMultipleDataChanges,
+      hasMassiveFormDataChanges,
+      result: hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges
+    });
+
+    return hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges;
   }, []);
 
   return { hasSignificantChanges };

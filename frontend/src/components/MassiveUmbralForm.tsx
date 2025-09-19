@@ -12,6 +12,7 @@ interface MassiveUmbralFormProps {
   getPaisName?: (paisId: string) => string;
   getEmpresaName?: (empresaId: string) => string;
   getFundoName?: (fundoId: string) => string;
+  onFormDataChange?: (formData: any) => void;
 }
 
 interface SelectedNode {
@@ -60,7 +61,8 @@ export function MassiveUmbralForm({
   fundoSeleccionado,
   getPaisName,
   getEmpresaName,
-  getFundoName
+  getFundoName,
+  onFormDataChange
 }: MassiveUmbralFormProps) {
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
@@ -302,6 +304,29 @@ export function MassiveUmbralForm({
       })
     }));
   };
+
+  // Reportar cambios al sistema de detección
+  useEffect(() => {
+    if (onFormDataChange) {
+      const massiveFormData = {
+        fundoid: formData.fundoid,
+        entidadid: formData.entidadid,
+        selectedMetricas: formData.metricasData.filter(m => m.selected),
+        selectedNodes: selectedNodes.filter(node => node.selected),
+        assignedSensorTypes: assignedSensorTypes,
+        hasData: formData.fundoid !== null || 
+                 formData.entidadid !== null || 
+                 formData.metricasData.some(m => m.selected) || 
+                 selectedNodes.some(node => node.selected) ||
+                 formData.metricasData.some(m => 
+                   m.selected && Object.values(m.umbralesPorTipo).some(u => 
+                     u.minimo && u.maximo && u.criticidadid && u.umbral
+                   )
+                 )
+      };
+      onFormDataChange(massiveFormData);
+    }
+  }, [formData, selectedNodes, assignedSensorTypes, onFormDataChange]);
 
   // Obtener nodos seleccionados
   const getSelectedNodes = () => {

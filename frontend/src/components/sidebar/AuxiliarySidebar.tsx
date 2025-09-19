@@ -15,6 +15,7 @@ interface AuxiliarySidebarProps {
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
+  massiveFormData?: Record<string, any>;
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -28,7 +29,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   activeSubTab,
   onSubTabChange,
   formData = {},
-  multipleData = []
+  multipleData = [],
+  massiveFormData = {}
 }) => {
   // Subpestañas para Reportes
   const reportesSubTabs = [
@@ -77,6 +79,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         onMouseLeave={onMouseLeave}
         formData={formData}
         multipleData={multipleData}
+        massiveFormData={massiveFormData}
       />
     );
   }

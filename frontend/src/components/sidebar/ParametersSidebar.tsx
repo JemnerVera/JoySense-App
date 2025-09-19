@@ -13,6 +13,7 @@ interface ParametersSidebarProps {
   onMouseLeave: () => void;
   formData?: Record<string, any>;
   multipleData?: any[];
+  massiveFormData?: Record<string, any>;
 }
 
 const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
@@ -24,7 +25,8 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
   onMouseEnter,
   onMouseLeave,
   formData = {},
-  multipleData = []
+  multipleData = [],
+  massiveFormData = {}
 }) => {
   // Definir todas las subpestañas disponibles
   const allSubTabs: Array<{
@@ -125,6 +127,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
             activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
             formData={formData}
             multipleData={multipleData}
+            massiveFormData={massiveFormData}
           />
         </div>
       )}
@@ -142,6 +145,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
                 selectedTable={selectedTable}
                 formData={formData}
                 multipleData={multipleData}
+                massiveFormData={massiveFormData}
                 onTabChange={onSubTabChange}
                 className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
                   isActive

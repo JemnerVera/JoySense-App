@@ -9,6 +9,7 @@ interface ProtectedSubTabButtonProps {
   selectedTable: string;
   formData: Record<string, any>;
   multipleData: any[];
+  massiveFormData?: Record<string, any>;
   onTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   className?: string;
   onClick?: () => void;
@@ -21,6 +22,7 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
   selectedTable,
   formData,
   multipleData,
+  massiveFormData = {},
   onTabChange,
   className,
   onClick
@@ -48,7 +50,7 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     }
 
     // Verificar si hay cambios sin guardar
-    const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData);
+    const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData, massiveFormData);
     
     console.log('🔄 hasChanges result:', hasChanges);
     
