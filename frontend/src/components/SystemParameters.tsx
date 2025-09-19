@@ -54,7 +54,7 @@ import { useFilters } from '../contexts/FilterContext';
 
 import LostDataModal from './LostDataModal';
 
-import { validateFormData, getValidationMessages, validateTableData } from '../utils/formValidation';
+import { validateFormData, getValidationMessages, validateTableData, validateTableUpdate } from '../utils/formValidation';
 
 
 
@@ -8256,7 +8256,26 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
 
-          
+          // Validar datos antes de actualizar
+          try {
+            const validationResult = await validateTableUpdate(
+              selectedTable,
+              updateFormData, // Usar datos originales del formulario, no los filtrados
+              selectedRowForUpdate, // Datos originales de la BD
+              tableData // Datos existentes para validar duplicados
+            );
+            
+            if (!validationResult.isValid) {
+              setUpdateMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
+              setUpdateLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error('Error en validación de actualización:', error);
+            setUpdateMessage({ type: 'error', text: 'Error en la validación de datos' });
+            setUpdateLoading(false);
+            return;
+          }
 
           result = await JoySenseService.updateTableRow(
 

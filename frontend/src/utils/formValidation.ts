@@ -1,3 +1,5 @@
+import { JoySenseService } from '../services/backend-api';
+
 // Sistema de validación modular para formularios de parámetros
 export interface ValidationRule {
   field: string;
@@ -19,7 +21,7 @@ export interface ValidationResult {
 export interface ValidationError {
   field: string;
   message: string;
-  type: 'required' | 'duplicate' | 'format' | 'length';
+  type: 'required' | 'duplicate' | 'format' | 'length' | 'constraint';
 }
 
 // Interfaz para resultado de validación mejorado
@@ -284,6 +286,35 @@ export function getValidationMessages(validationResult: ValidationResult): strin
 }
 
 // Función para validación robusta específica por tabla
+// Función general para validación de actualización
+export const validateTableUpdate = async (
+  tableName: string,
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  switch (tableName) {
+    case 'pais':
+      return await validatePaisUpdate(formData, originalData, existingData || []);
+    default:
+      // Fallback a validación básica
+      const basicResult = validateFormData(tableName, formData);
+      return {
+        isValid: basicResult.isValid,
+        errors: basicResult.errors.map(error => ({
+          field: 'general',
+          message: error,
+          type: 'format'
+        })),
+        userFriendlyMessage: basicResult.errors.length > 0 
+          ? `⚠️ ${basicResult.errors.join('\n')}`
+          : ''
+      };
+  }
+};
+
 export const validateTableData = async (
   tableName: string, 
   formData: Record<string, any>, 
@@ -1286,6 +1317,117 @@ const validatePerfilData = async (
     errors,
     userFriendlyMessage
   };
+};
+
+// Validación específica para actualización de País
+const validatePaisUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  console.log('🔍 validatePaisUpdate - formData:', formData);
+  console.log('🔍 validatePaisUpdate - originalData:', originalData);
+  console.log('🔍 validatePaisUpdate - pais value:', formData.pais);
+  console.log('🔍 validatePaisUpdate - paisabrev value:', formData.paisabrev);
+  
+  // 1. Validar campos obligatorios
+  if (!formData.pais || formData.pais.trim() === '') {
+    console.log('🔍 validatePaisUpdate - pais está vacío');
+    errors.push({
+      field: 'pais',
+      message: 'El país es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.paisabrev || formData.paisabrev.trim() === '') {
+    console.log('🔍 validatePaisUpdate - paisabrev está vacío');
+    errors.push({
+      field: 'paisabrev',
+      message: 'La abreviatura es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar duplicados (excluyendo el registro actual)
+  if (formData.pais && formData.pais.trim() !== '') {
+    const paisExists = existingData.some(item => 
+      item.paisid !== originalData.paisid && 
+      item.pais && 
+      item.pais.toLowerCase() === formData.pais.toLowerCase()
+    );
+    
+    if (paisExists) {
+      errors.push({
+        field: 'pais',
+        message: 'El país ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  if (formData.paisabrev && formData.paisabrev.trim() !== '') {
+    const paisabrevExists = existingData.some(item => 
+      item.paisid !== originalData.paisid && 
+      item.paisabrev && 
+      item.paisabrev.toLowerCase() === formData.paisabrev.toLowerCase()
+    );
+    
+    if (paisabrevExists) {
+      errors.push({
+        field: 'paisabrev',
+        message: 'La abreviatura ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  if (formData.statusid === 0 && originalData.statusid !== 0) {
+    // Verificar si hay empresas que referencian este país
+    const hasDependentRecords = await checkPaisDependencies(originalData.paisid);
+    
+    if (hasDependentRecords) {
+      errors.push({
+        field: 'statusid',
+        message: 'No se puede inactivar el país porque tiene empresas asociadas',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// Función para verificar dependencias de País
+const checkPaisDependencies = async (paisid: number): Promise<boolean> => {
+  try {
+    // Verificar en tabla empresa
+    const empresas = await JoySenseService.getEmpresas();
+    return empresas.some(empresa => empresa.paisid === paisid);
+  } catch (error) {
+    console.error('Error checking pais dependencies:', error);
+    return false; // En caso de error, permitir la operación
+  }
+};
+
+// Función para generar mensajes amigables para actualización (mensajes individuales)
+const generateUpdateUserFriendlyMessage = (errors: ValidationError[]): string => {
+  if (errors.length === 0) return '';
+  
+  // Para actualización, mostrar mensajes individuales sin combinar
+  const messages = errors.map(error => `⚠️ ${error.message}`);
+  
+  return messages.join('\n');
 };
 
 // Función para generar mensajes amigables al usuario
