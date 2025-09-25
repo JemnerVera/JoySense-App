@@ -236,68 +236,19 @@ export function AdvancedMetricaSensorUpdateForm({
         </div>
       </div>
 
-      {/* Tipos */}
+      {/* Tipos - Solo lectura (no se puede cambiar el tipo) */}
       <div className="mb-4">
         <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-          TIPO
+          TIPO 🔒
         </label>
-        <div className="relative dropdown-container">
-          <div
-            onClick={() => setTiposDropdownOpen(!tiposDropdownOpen)}
-            className="w-full px-3 py-2 border rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono bg-neutral-800 border-neutral-600 hover:bg-neutral-700"
-          >
-            <span className={selectedTipos.length > 0 ? 'text-white' : 'text-neutral-400'}>
-              {selectedTipos.length > 0 
-                ? selectedTipos.map(id => {
-                    const tipo = tiposData.find(t => t.tipoid.toString() === id);
-                    return tipo ? tipo.tipo : id;
-                  }).join(', ')
-                : 'SELECCIONAR TIPOS'
-              }
-            </span>
-            <span className="text-neutral-400">▼</span>
-          </div>
-          
-          {tiposDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-              <div className="p-2 border-b border-neutral-700">
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar tipos..."
-                  value={tiposSearchTerm}
-                  onChange={(e) => setTiposSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {getUniqueOptionsForField('tipoid', { entidadid: entidadId })
-                  .filter(option => 
-                    option.label.toLowerCase().includes(tiposSearchTerm.toLowerCase())
-                  )
-                  .map(option => (
-                    <label
-                      key={option.value}
-                      className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedTipos.includes(option.value.toString())}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedTipos([...selectedTipos, option.value.toString()]);
-                          } else {
-                            setSelectedTipos(selectedTipos.filter(id => id !== option.value.toString()));
-                          }
-                        }}
-                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                      />
-                      <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
-                    </label>
-                  ))}
-              </div>
-            </div>
-          )}
+        <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+          {selectedTipos.length > 0 
+            ? selectedTipos.map(id => {
+                const tipo = tiposData.find(t => t.tipoid.toString() === id);
+                return tipo ? tipo.tipo : id;
+              }).join(', ')
+            : 'NO HAY TIPOS SELECCIONADOS'
+          }
         </div>
       </div>
 
@@ -322,12 +273,17 @@ export function AdvancedMetricaSensorUpdateForm({
                       if (e.target.checked) {
                         setSelectedNodos([...selectedNodos, nodoId]);
                       } else {
-                        setSelectedNodos(selectedNodos.filter(id => id !== nodoId));
+                        // No permitir desmarcar nodos ya seleccionados (no se puede cambiar el nodo)
+                        // Los nodos seleccionados permanecen marcados
                       }
                     }}
                     className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                   />
                   <span className="text-white text-sm font-mono tracking-wider">{nodo?.nodo?.toUpperCase() || nodoId}</span>
+                  {/* Icono de candado para nodos que no se pueden desmarcar */}
+                  {selectedNodos.includes(nodoId) && (
+                    <span className="ml-auto text-orange-500 text-sm">🔒</span>
+                  )}
                 </label>
               );
             })}

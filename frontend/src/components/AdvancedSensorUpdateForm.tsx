@@ -286,12 +286,17 @@ export function AdvancedSensorUpdateForm({
                     if (e.target.checked) {
                       setSelectedNodos([...selectedNodos, option.value.toString()]);
                     } else {
-                      setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
+                      // No permitir desmarcar nodos ya seleccionados (no se puede cambiar el nodo)
+                      // Los nodos seleccionados permanecen marcados
                     }
                   }}
                   className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                 />
                 <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                {/* Icono de candado para nodos que no se pueden desmarcar */}
+                {selectedNodos.includes(option.value.toString()) && (
+                  <span className="ml-auto text-orange-500 text-sm">🔒</span>
+                )}
               </label>
             ))}
             {filteredNodos.length === 0 && (
