@@ -16,6 +16,7 @@ interface MultipleMetricaSensorFormProps {
   entidadesData: any[];
   metricasData: any[];
   tiposData: any[];
+  sensorsData: any[];
   loading: boolean;
   onInitializeMetricas: (nodos: string[], metricas: string[]) => Promise<void>;
   onInsertMetricas: () => void;
@@ -50,6 +51,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   entidadesData,
   metricasData,
   tiposData,
+  sensorsData,
   loading,
   onInitializeMetricas,
   onInsertMetricas,
@@ -82,28 +84,39 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   const getTiposFromSelectedNodos = () => {
     if (selectedNodos.length === 0) return [];
     
+    console.log('🔍 getTiposFromSelectedNodos - Nodos seleccionados:', selectedNodos);
+    console.log('🔍 getTiposFromSelectedNodos - Entidad seleccionada:', selectedEntidad);
+    console.log('🔍 getTiposFromSelectedNodos - SensorsData disponible:', sensorsData.length);
+    
     const tiposUnicos = new Set<string>();
     
     selectedNodos.forEach(nodoId => {
-      // Buscar sensores que pertenecen a este nodo
-      const sensoresDelNodo = tiposData.filter(tipo => {
-        // Aquí necesitamos la lógica para relacionar nodo con tipo
-        // Por ahora, vamos a obtener todos los tipos de la entidad seleccionada
-        return tipo.entidadid?.toString() === selectedEntidad;
-      });
+      // Buscar sensores que pertenecen a este nodo específico
+      const sensoresDelNodo = sensorsData.filter(sensor => 
+        sensor.nodoid && sensor.nodoid.toString() === nodoId
+      );
       
+      console.log(`🔍 Nodo ${nodoId} tiene sensores:`, sensoresDelNodo);
+      
+      // Agregar los tipos únicos de este nodo
       sensoresDelNodo.forEach(sensor => {
-        tiposUnicos.add(sensor.tipoid.toString());
+        if (sensor.tipoid) {
+          tiposUnicos.add(sensor.tipoid.toString());
+        }
       });
     });
     
-    return Array.from(tiposUnicos).map(tipoId => {
+    const resultado = Array.from(tiposUnicos).map(tipoId => {
       const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
       return tipo ? { tipoid: tipo.tipoid, tipo: tipo.tipo } : null;
     }).filter(Boolean);
+    
+    console.log('🔍 Tipos únicos de nodos seleccionados:', resultado);
+    
+    return resultado;
   };
   
-  const tiposFromNodos = getTiposFromSelectedNodos();
+  const tiposFromNodos = React.useMemo(() => getTiposFromSelectedNodos(), [selectedNodos, selectedEntidad, sensorsData, tiposData]);
   
   // Función para analizar similitud de nodos (similar a MassiveUmbralForm)
   const analyzeNodoSimilarity = () => {

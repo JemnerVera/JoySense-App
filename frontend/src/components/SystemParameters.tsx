@@ -13186,6 +13186,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           tiposData={tiposData}
 
+                          sensorsData={sensorsData}
+
                           loading={loading}
 
                           onInitializeMetricas={initializeMultipleMetricas}
