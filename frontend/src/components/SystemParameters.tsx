@@ -18,6 +18,7 @@ import {
   type RelatedData 
 } from '../utils/systemParametersUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
+import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
 
 import SimpleModal from './SimpleModal';
 
@@ -83,53 +84,13 @@ const useMultipleSelection = (selectedTable: string) => {
 
   // Función para buscar entradas por diferentes criterios
 
-  const searchByCriteria = (criteria: string, filterFn: (dataRow: any) => boolean, data: any[]) => {
-
-    const results = data.filter(filterFn);
-
-    console.log(`🔍 ${criteria}:`, results.length);
-
-    if (results.length > 0) {
-
-      console.log(`📋 Detalles de ${criteria}:`, results.map(e => ({
-
-        nodoid: e.nodoid,
-
-        tipoid: e.tipoid,
-
-        datecreated: e.datecreated,
-
-        statusid: e.statusid
-
-      })));
-
-    }
-
-    return results;
-
-  };
+  // searchByCriteria ahora se importa desde useSearchAndFilter
 
 
 
   // Función para buscar entradas con timestamp exacto
 
-  const findExactTimestampMatches = (row: any, allData: any[]) => {
-
-    return searchByCriteria(
-
-      'Entradas con timestamp exacto',
-
-      (dataRow) => 
-
-        dataRow.nodoid === row.nodoid && 
-
-        dataRow.datecreated === row.datecreated,
-
-      allData
-
-    );
-
-  };
+  // findExactTimestampMatches ahora se importa desde useSearchAndFilter
 
 
 
@@ -933,6 +894,45 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setPerfilumbralData,
     setContactosData
   } = useTableDataManagement();
+
+  // Hook para búsquedas y filtros
+  const {
+    searchTerm,
+    searchField,
+    hasSearched,
+    searchFilteredData,
+    isSearching,
+    statusSearchTerm,
+    statusHasSearched,
+    statusFilteredData,
+    copySearchTerm,
+    copyFilteredData,
+    setSearchTerm,
+    setSearchField,
+    setHasSearched,
+    setSearchFilteredData,
+    setIsSearching,
+    setStatusSearchTerm,
+    setStatusHasSearched,
+    setStatusFilteredData,
+    setCopySearchTerm,
+    setCopyFilteredData,
+    searchByCriteria,
+    searchByExactTimestamp,
+    searchBySimilarTimestamp,
+    searchBySameNode,
+    searchBySameType,
+    searchByActiveStatus,
+    searchByInactiveStatus,
+    handleSearchTermChange,
+    handleSearchFieldChange,
+    handleStatusSearch,
+    handleCopySearch,
+    getSearchableColumns,
+    clearSearchState,
+    clearStatusSearchState,
+    clearCopySearchState
+  } = useSearchAndFilter();
 
   // Hook personalizado para estado principal
   const {
@@ -1925,9 +1925,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
 
-  const [copySearchTerm, setCopySearchTerm] = useState<string>('');
-
-  const [copyFilteredData, setCopyFilteredData] = useState<any[]>([]);
+  // Estados de copia ahora manejados por useSearchAndFilter
 
   const [copyCurrentPage, setCopyCurrentPage] = useState(1);
 
@@ -4444,86 +4442,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleSearchTermChange = (term: string) => {
-
-    setSearchTerm(term);
-
-    if (term.trim()) {
-
-      setHasSearched(true);
-
-      // Para "Actualizar", usar la misma lógica que "Estado" - filtrar statusFilteredData
-
-      const filtered = statusFilteredData.filter(row => {
-
-        return statusVisibleColumns.some(col => {
-
-          const value = row[col.columnName];
-
-          if (value === null || value === undefined) return false;
-
-          
-
-          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-
-            ? getUserName(value, userData)
-
-            : col.columnName === 'statusid'
-
-            ? (() => {
-                // Para filas agrupadas, verificar si al menos una fila original está activa
-                if (row.originalRows && row.originalRows.length > 0) {
-                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                  return hasActiveRow ? 'Activo' : 'Inactivo';
-                }
-                // Para filas normales, usar el statusid directamente
-                return (value === 1 ? 'Activo' : 'Inactivo');
-              })()
-
-            : getDisplayValueLocal(row, col.columnName);
-
-          
-
-          return displayValue.toString().toLowerCase().includes(term.toLowerCase());
-
-        });
-
-      });
-
-      
-
-      // Actualizar statusFilteredData para que la búsqueda funcione dinámicamente
-      setStatusFilteredData(filtered);
-
-    } else {
-
-      setHasSearched(false);
-
-      // Restaurar datos originales sin filtro
-      setStatusFilteredData(filteredTableData);
-
-    }
-
-  };
+  // handleSearchTermChange ahora se importa desde useSearchAndFilter
 
 
 
   // Función para manejar el cambio de campo de búsqueda
 
-  const handleSearchFieldChange = (field: string) => {
-
-    setSearchField(field);
-
-    // Limpiar término de búsqueda y resetear tabla cuando se cambia el campo
-
-    setSearchTerm('');
-
-    setHasSearched(false);
-
-    // Restaurar datos originales sin filtro
-    setStatusFilteredData(filteredTableData);
-
-  };
+  // handleSearchFieldChange ahora se importa desde useSearchAndFilter
 
 
 
@@ -4539,171 +4464,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para manejar la búsqueda en la tabla de Estado
 
-  const handleStatusSearch = (searchTerm: string) => {
-
-    setStatusSearchTerm(searchTerm);
-
-    setStatusCurrentPage(1); // Resetear a la primera página
-
-    
-
-    if (!searchTerm.trim()) {
-
-      setStatusFilteredData(filteredTableData);
-
-      setStatusTotalPages(Math.ceil(filteredTableData.length / itemsPerPage));
-
-      return;
-
-    }
-
-    
-
-    console.log('🔍 Búsqueda en Estado:', { searchTerm, totalRows: filteredTableData.length });
-
-    
-
-    const filtered = filteredTableData.filter(row => {
-
-      return statusVisibleColumns.some(col => {
-
-        const value = row[col.columnName];
-
-        if (value === null || value === undefined) return false;
-
-        
-
-        const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-
-          ? getUserName(value, userData)
-
-          : col.columnName === 'statusid'
-
-          ? (() => {
-              // Para filas agrupadas, verificar si al menos una fila original está activa
-              if (row.originalRows && row.originalRows.length > 0) {
-                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                return hasActiveRow ? 'Activo' : 'Inactivo';
-              }
-              // Para filas normales, usar el statusid directamente
-              return (value === 1 ? 'Activo' : 'Inactivo');
-            })()
-
-          : getDisplayValueLocal(row, col.columnName);
-
-        
-
-        const matches = displayValue.toString().toLowerCase().includes(searchTerm.toLowerCase());
-
-        
-
-        // Log para debugging del nodo
-
-        if (col.columnName === 'nodoid' && matches) {
-
-          console.log('🎯 Nodo encontrado:', { 
-
-            nodoid: value, 
-
-            displayValue, 
-
-            searchTerm, 
-
-            row: { nodoid: row.nodoid, metricaid: row.metricaid, tipoid: row.tipoid }
-
-          });
-
-        }
-
-        
-
-        return matches;
-
-      });
-
-    });
-
-    
-
-    console.log('📊 Resultado de búsqueda:', { searchTerm, found: filtered.length, total: filteredTableData.length });
-
-         setStatusFilteredData(filtered);
-
-    setStatusTotalPages(Math.ceil(filtered.length / itemsPerPage));
-
-  };
+  // handleStatusSearch ahora se importa desde useSearchAndFilter
 
 
 
   // Función para manejar la búsqueda en la tabla de Copiar
 
-  const handleCopySearch = (searchTerm: string) => {
-
-    setCopySearchTerm(searchTerm);
-
-    setCopyCurrentPage(1); // Resetear a la primera página
-
-    
-
-    if (!searchTerm.trim()) {
-
-      setCopyFilteredData(copyData);
-
-      const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
-
-      setCopyTotalPages(Math.ceil(copyData.length / copyItemsPerPage));
-
-      return;
-
-    }
-
-    
-
-    const filtered = copyData.filter(row => {
-
-      return statusVisibleColumns.some(col => {
-
-        const value = row[col.columnName];
-
-        if (value === null || value === undefined) return false;
-
-        
-
-        const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-
-          ? getUserName(value, userData)
-
-          : col.columnName === 'statusid'
-
-          ? (() => {
-              // Para filas agrupadas, verificar si al menos una fila original está activa
-              if (row.originalRows && row.originalRows.length > 0) {
-                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                return hasActiveRow ? 'Activo' : 'Inactivo';
-              }
-              // Para filas normales, usar el statusid directamente
-              return (value === 1 ? 'Activo' : 'Inactivo');
-            })()
-
-          : getDisplayValueLocal(row, col.columnName);
-
-        
-
-        return displayValue.toString().toLowerCase().includes(searchTerm.toLowerCase());
-
-      });
-
-    });
-
-    
-
-    setCopyFilteredData(filtered);
-
-    const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
-
-    setCopyTotalPages(Math.ceil(filtered.length / copyItemsPerPage));
-
-  };
+  // handleCopySearch ahora se importa desde useSearchAndFilter
 
 
 
