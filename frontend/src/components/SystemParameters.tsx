@@ -879,7 +879,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     statusSearchTerm,
     // Removed unused: statusHasSearched
     statusFilteredData,
-    copySearchTerm,
+    // Removed unused: copySearchTerm
     copyFilteredData,
     setSearchTerm,
     setSearchField,
@@ -4289,13 +4289,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handlePageChange = (page: number) => {
-
-    // Siempre usar paginación local del hook (ya que cargamos todos los datos)
-
-    goToPage(page);
-
-  };
+  // Removed unused function: handlePageChange
 
 
 
@@ -4323,11 +4317,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para cambiar página en la tabla de Copiar
 
-  const handleCopyPageChange = (page: number) => {
-
-    setCopyCurrentPage(page);
-
-  };
+  // Removed unused function: handleCopyPageChange
 
 
 
@@ -4399,17 +4389,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para obtener los datos paginados de la tabla de Copiar
 
-  const getCopyPaginatedData = () => {
-
-    const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
-
-    const startIndex = (copyCurrentPage - 1) * copyItemsPerPage;
-
-    const endIndex = startIndex + copyItemsPerPage;
-
-    return copyFilteredData.slice(startIndex, endIndex);
-
-  };
+  // Removed unused function: getCopyPaginatedData
 
 
 
@@ -4657,80 +4637,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleSelectRowForCopy = (row: any) => {
-
-    const currentRows = selectedRowsForCopy;
-    const isSelected = currentRows.some((selectedRow: any) => {
-
-      // Para sensor y metricasensor, comparar por la clave compuesta
-
-      if (selectedTable === 'sensor') {
-
-        return selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid;
-
-      } else if (selectedTable === 'metricasensor') {
-
-        return selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid;
-
-      } else if (selectedTable === 'nodo') {
-
-        // Para nodo, usar nodoid
-
-        return selectedRow.nodoid === row.nodoid;
-
-      }
-
-      // Para otras tablas, usar el ID principal
-
-      const idField = getRowId(selectedRow, selectedTable);
-
-      const rowId = getRowId(row, selectedTable);
-
-      return idField === rowId;
-
-    });
-
-    
-
-    if (isSelected) {
-
-      // Deseleccionar
-
-      const newRows = currentRows.filter((selectedRow: any) => {
-
-        if (selectedTable === 'sensor') {
-
-          return !(selectedRow.nodoid === row.nodoid && selectedRow.tipoid === row.tipoid);
-
-        } else if (selectedTable === 'metricasensor') {
-
-          return !(selectedRow.nodoid === row.nodoid && selectedRow.metricaid === row.metricaid && selectedRow.tipoid === row.tipoid);
-
-        } else if (selectedTable === 'nodo') {
-
-          return selectedRow.nodoid !== row.nodoid;
-
-        }
-
-        const idField = getRowId(selectedRow, selectedTable);
-
-        const rowId = getRowId(row, selectedTable);
-
-        return idField !== rowId;
-
-      });
-
-      setSelectedRowsForCopy(newRows);
-
-    } else {
-
-      // Seleccionar
-
-      setSelectedRowsForCopy([...currentRows, row]);
-
-    }
-
-  };
+  // Removed unused function: handleSelectRowForCopy
 
 
 
@@ -4782,101 +4689,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleCopyToClipboard = () => {
-
-    if (selectedRowsForCopy.length === 0) {
-
-      setCopyMessage({ type: 'warning', text: 'No hay filas seleccionadas para copiar' });
-
-      return;
-
-    }
+  // Removed unused function: handleCopyToClipboard
 
 
 
-    try {
-
-      // Preparar datos para copiar (excluir campos de auditoría)
-
-      const dataToCopy = selectedRowsForCopy.map(row => {
-
-        const cleanRow: any = {};
-
-        statusVisibleColumns.forEach(col => {
-
-          if (!['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at'].includes(col.columnName)) {
-
-            cleanRow[col.columnName] = row[col.columnName];
-
-          }
-
-        });
-
-        return cleanRow;
-
-      });
-
-
-
-      // Convertir a JSON y copiar al portapapeles
-
-      const jsonData = JSON.stringify(dataToCopy, null, 2);
-
-      navigator.clipboard.writeText(jsonData).then(() => {
-
-        setCopyMessage({ 
-
-          type: 'success', 
-
-          text: `${selectedRowsForCopy.length} fila(s) copiada(s) al portapapeles. Puedes pegarlas en "Crear" o "Actualizar".` 
-
-        });
-
-      }).catch(() => {
-
-        // Fallback para navegadores que no soportan clipboard API
-
-        const textArea = document.createElement('textarea');
-
-        textArea.value = jsonData;
-
-        document.body.appendChild(textArea);
-
-        textArea.select();
-
-        document.execCommand('copy');
-
-        document.body.removeChild(textArea);
-
-        setCopyMessage({ 
-
-          type: 'success', 
-
-          text: `${selectedRowsForCopy.length} fila(s) copiada(s) al portapapeles. Puedes pegarlas en "Crear" o "Actualizar".` 
-
-        });
-
-      });
-
-    } catch (error) {
-
-      console.error('Error copying data:', error);
-
-      setCopyMessage({ type: 'error', text: 'Error al copiar datos' });
-
-    }
-
-  };
-
-
-
-  const handleClearCopySelection = () => {
-
-    setSelectedRowsForCopy([]);
-
-    setCopyMessage({ type: 'success', text: 'Selección de copia limpiada' });
-
-  };
+  // Removed unused function: handleClearCopySelection
 
 
 
