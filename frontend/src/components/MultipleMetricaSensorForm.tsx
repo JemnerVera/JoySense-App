@@ -105,6 +105,78 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   
   const tiposFromNodos = getTiposFromSelectedNodos();
   
+  // Función para analizar similitud de nodos (similar a MassiveUmbralForm)
+  const analyzeNodoSimilarity = () => {
+    if (selectedNodos.length <= 1) return null;
+    
+    console.log('🔍 Analizando similitud de nodos:', selectedNodos);
+    console.log('🔍 Entidad seleccionada:', selectedEntidad);
+    
+    const nodoAnalysis = selectedNodos.map(nodoId => {
+      const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
+      
+      // Obtener tipos específicos para este nodo usando getUniqueOptionsForField
+      const tiposDelNodo = getUniqueOptionsForField('tipoid', { 
+        entidadid: selectedEntidad,
+        nodoid: nodoId
+      });
+      
+      console.log(`🔍 Nodo ${nodoId} (${nodo?.nodo}):`, tiposDelNodo);
+      
+      return {
+        nodoid: nodoId,
+        nodo: nodo?.nodo || nodoId,
+        tipos: tiposDelNodo.map(t => t.label),
+        tiposCount: tiposDelNodo.length,
+        tiposKey: tiposDelNodo.map(t => t.label).sort().join('|') // Clave única para agrupar
+      };
+    });
+    
+    console.log('🔍 Análisis de nodos:', nodoAnalysis);
+    
+    // Agrupar nodos por similitud de tipos (mismo patrón que MassiveUmbralForm)
+    const groupedNodes: {[key: string]: {count: number, types: string[], nodos: any[]}} = {};
+    
+    nodoAnalysis.forEach(nt => {
+      const key = `${nt.tiposCount}-${nt.tiposKey}`;
+      if (!groupedNodes[key]) {
+        groupedNodes[key] = {
+          count: nt.tiposCount,
+          types: nt.tipos,
+          nodos: []
+        };
+      }
+      groupedNodes[key].nodos.push(nt);
+    });
+    
+    // Si solo hay un grupo, todos los nodos son consistentes
+    const hasDifferences = Object.keys(groupedNodes).length > 1;
+    
+    console.log('🔍 Grupos de nodos:', groupedNodes);
+    console.log('🔍 Tiene diferencias:', hasDifferences);
+    
+    return {
+      nodoAnalysis,
+      similarityGroups: Object.values(groupedNodes).map(group => group.nodos),
+      hasDifferences,
+      groupedNodes
+    };
+  };
+  
+  const similarityAnalysis = React.useMemo(() => analyzeNodoSimilarity(), [selectedNodos, selectedEntidad, getUniqueOptionsForField]);
+  
+  // Función para validar si la selección de nodos es válida
+  const isValidNodoSelection = () => {
+    if (!similarityAnalysis?.hasDifferences) return true;
+    
+    // Verificar que todos los nodos seleccionados pertenecen al mismo grupo
+    const selectedNodoGroups = similarityAnalysis.similarityGroups.filter(group => 
+      group.some(nodo => selectedNodos.includes(nodo.nodoid))
+    );
+    
+    return selectedNodoGroups.length === 1;
+  };
+  
   // Función para manejar la inserción y limpiar métricas después
   const handleInsertMetricas = async () => {
     await onInsertMetricas();
@@ -406,6 +478,73 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
          </div>
        </div>
 
+      {/* Mensaje de validación de similitud de nodos (compacto e interactivo) */}
+      {similarityAnalysis?.hasDifferences && (
+        <div className="mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg">
+          <div className="flex items-start">
+            <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+              <span className="text-black text-xs font-bold">⚠</span>
+            </div>
+            <div className="flex-1">
+              <h5 className="text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
+                TIPOS DE SENSORES INCONSISTENTES
+              </h5>
+              <p className="text-yellow-300 text-xs font-mono mb-3">
+                Los nodos seleccionados tienen diferentes tipos de sensores. Haz clic en un grupo para seleccionar solo esos nodos.
+              </p>
+              
+              {/* Resumen compacto de grupos con selección interactiva */}
+              <div className="space-y-2">
+                {Object.values(similarityAnalysis.groupedNodes).map((group, groupIndex) => (
+                  <div 
+                    key={groupIndex} 
+                    className="bg-neutral-800 border border-neutral-600 rounded p-2 cursor-pointer hover:bg-neutral-700 transition-colors"
+                    onClick={() => {
+                      // Seleccionar solo los nodos de este grupo
+                      const nodosDelGrupo = group.nodos.map(nodo => nodo.nodoid);
+                      setSelectedNodos(nodosDelGrupo);
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-orange-500 font-mono text-xs font-bold">
+                        GRUPO {groupIndex + 1} - {group.count} TIPO(S)
+                      </span>
+                      <span className="text-green-400 font-mono text-xs">
+                        CLICK PARA SELECCIONAR
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {group.nodos.slice(0, 3).map(nodo => (
+                        <span key={nodo.nodoid} className="text-white font-mono text-xs bg-neutral-700 px-2 py-1 rounded">
+                          {nodo.nodo}
+                        </span>
+                      ))}
+                      {group.nodos.length > 3 && (
+                        <span className="text-neutral-400 font-mono text-xs px-2 py-1">
+                          +{group.nodos.length - 3} más
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {group.types.slice(0, 2).map((tipo, tipoIndex) => (
+                        <span key={tipoIndex} className="text-orange-300 font-mono text-xs bg-orange-900 bg-opacity-30 px-2 py-1 rounded">
+                          {tipo}
+                        </span>
+                      ))}
+                      {group.types.length > 2 && (
+                        <span className="text-orange-300 font-mono text-xs px-2 py-1">
+                          +{group.types.length - 2} más
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Nuevo diseño: 2 containers lado a lado */}
       {selectedEntidad && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -500,7 +639,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       <div className="flex justify-center gap-4 mt-8">
         <button
           onClick={handleInsertMetricas}
-          disabled={loading || multipleMetricas.length === 0 || selectedNodos.length === 0 || selectedMetricasCheckboxes.length === 0}
+          disabled={loading || multipleMetricas.length === 0 || selectedNodos.length === 0 || selectedMetricasCheckboxes.length === 0 || (similarityAnalysis?.hasDifferences && !isValidNodoSelection())}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>

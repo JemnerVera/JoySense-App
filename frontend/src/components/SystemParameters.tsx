@@ -7204,6 +7204,31 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
+          } else if (filterParams?.nodoid) {
+            // Filtrar tipos por nodo específico individual (para metrica sensor)
+            const nodoId = parseInt(filterParams.nodoid);
+            
+            // Obtener sensores que pertenecen a este nodo específico
+            const sensoresDelNodo = sensorsData.filter(sensor => 
+              sensor.nodoid && sensor.nodoid === nodoId
+            );
+            
+            const tiposDelNodo = sensoresDelNodo.map(sensor => sensor.tipoid);
+            
+            // Filtrar tipos que están asociados a este nodo específico
+            filteredTipos = filteredTipos.filter(tipo => 
+              tipo.tipoid && tiposDelNodo.includes(tipo.tipoid)
+            );
+            
+            console.log('🏷️ Tipos filtrados por entidad y nodo específico:', {
+              entidadid: filterParams.entidadid,
+              nodoid: filterParams.nodoid,
+              sensoresDelNodo: sensoresDelNodo.length,
+              tiposDelNodo: tiposDelNodo.length,
+              tiposFiltrados: filteredTipos.length,
+              tiposFiltradosData: filteredTipos.slice(0, 3)
+            });
+
           } else {
 
           console.log('🏷️ Tipos filtrados por entidad:', {
