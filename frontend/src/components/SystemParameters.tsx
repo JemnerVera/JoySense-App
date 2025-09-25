@@ -8,13 +8,11 @@ import { JoySenseService } from '../services/backend-api';
 
 import { TableInfo, Message } from '../types/systemParameters';
 
-// Removed unused import: STYLES_CONFIG
 import { 
   getColumnDisplayName, 
   getDisplayValue, 
   formatDate, 
   getUserName, 
-  // Removed unused import: validateInsertData
   type RelatedData 
 } from '../utils/systemParametersUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
@@ -42,7 +40,6 @@ import { MassiveMetricaSensorForm } from './MassiveMetricaSensorForm';
 
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 
-// Removed unused import: MultipleLocalizacionForm
 
 import NormalInsertForm from './NormalInsertForm';
 
@@ -56,7 +53,6 @@ import { useInsertionMessages } from '../hooks/useInsertionMessages';
 
 import ReplicateModal from './ReplicateModal';
 
-// Removed unused import: ReplicateButton
 
 import { useReplicate } from '../hooks/useReplicate';
 
@@ -64,724 +60,11 @@ import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
 
 import { useFilters } from '../contexts/FilterContext';
 
-// Removed unused import: LostDataModal
 
 import { validateTableData, validateTableUpdate } from '../utils/formValidation';
 
 // Hooks personalizados para refactoring
 import { useSystemParametersState } from '../hooks/useSystemParametersState';
-// Removed unused imports: useFormValidation, useProgressiveEnablement, useTableData, useFormState, useInsertOperations, useUpdateOperations, useSearchOperations
-
-
-
-// Hook personalizado para manejar selección múltiple basada en timestamp
-// MOVED TO: ../hooks/useMultipleSelection.ts
-
-/* const useMultipleSelection = (selectedTable: string, searchByCriteria: any) => {
-
-  // Función para buscar entradas por diferentes criterios
-
-
-
-  // Función para buscar entradas con timestamp exacto
-
-  // findExactTimestampMatches ahora se importa desde useSearchAndFilter
-
-
-
-  // Función para buscar entradas con timestamp por segundos (ignorando milisegundos)
-
-  const findTimestampBySecondsMatches = (row: any, allData: any[]) => {
-
-    const targetTime = new Date(row.datecreated);
-
-    const targetSeconds = new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate(), 
-
-                                 targetTime.getHours(), targetTime.getMinutes(), targetTime.getSeconds());
-
-    
-
-    console.log(`🎯 Timestamp objetivo (por segundos): ${targetSeconds.toISOString()}`);
-
-    
-
-    return searchByCriteria(
-
-      'Entradas con timestamp por segundos (ignorando milisegundos)',
-
-      (dataRow: any) => {
-
-        if (dataRow.nodoid !== row.nodoid) return false;
-
-        
-
-        const rowTime = new Date(dataRow.datecreated);
-
-        const rowSeconds = new Date(rowTime.getFullYear(), rowTime.getMonth(), rowTime.getDate(), 
-
-                                  rowTime.getHours(), rowTime.getMinutes(), rowTime.getSeconds());
-
-        
-
-        const isSameSecond = targetSeconds.getTime() === rowSeconds.getTime();
-
-        console.log(`📊 Comparando por segundos: ${rowSeconds.toISOString()} - Mismo segundo: ${isSameSecond}`);
-
-        
-
-        return isSameSecond;
-
-      },
-
-      allData
-
-    );
-
-  };
-
-
-
-  // Función para buscar entradas con timestamp cercano
-
-  const findNearTimestampMatches = (row: any, allData: any[], toleranceMs: number) => {
-
-    const targetTime = new Date(row.datecreated).getTime();
-
-    console.log(`🎯 Timestamp objetivo: ${new Date(targetTime).toISOString()}`);
-
-    
-
-    return searchByCriteria(
-
-      `Entradas con timestamp cercano (${toleranceMs}ms)`,
-
-      (dataRow: any) => {
-
-        if (dataRow.nodoid !== row.nodoid) return false;
-
-        
-
-        const rowTime = new Date(dataRow.datecreated).getTime();
-
-        const timeDiff = Math.abs(targetTime - rowTime);
-
-        
-
-        console.log(`📊 Comparando: ${new Date(rowTime).toISOString()} - Diferencia: ${timeDiff}ms`);
-
-        
-
-        return timeDiff <= toleranceMs;
-
-      },
-
-      allData
-
-    );
-
-  };
-
-
-
-  // Función para buscar entradas por lógica de negocio
-
-  const findBusinessLogicMatches = (row: any, allData: any[]) => {
-
-    if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor') {
-
-      return [];
-
-    }
-
-
-
-    console.log('🔍 Aplicando lógica de agrupación por negocio para:', selectedTable);
-
-    
-
-    // Buscar entradas del mismo nodo con status activo
-
-    const activeNodeEntries = searchByCriteria(
-
-      'Entradas del mismo nodo con status activo',
-
-      (dataRow: any) => 
-
-        dataRow.nodoid === row.nodoid && 
-
-        dataRow.statusid === 1,
-
-      allData
-
-    );
-
-    
-
-    if (activeNodeEntries.length <= 1) {
-
-      return [];
-
-    }
-
-
-
-    // Para sensor: agrupar por tipos de sensor comunes (1, 2, 3)
-
-    if (selectedTable === 'sensor') {
-
-      const commonTipos = [1, 2, 3];
-
-      const groupedEntries = searchByCriteria(
-
-        'Entradas agrupadas por tipos comunes (1,2,3)',
-
-        (entry: any) => commonTipos.includes(entry.tipoid),
-
-        activeNodeEntries
-
-      );
-
-      
-
-      if (groupedEntries.length > 1) {
-
-        console.log('✅ Usando entradas agrupadas por tipos comunes:', groupedEntries.length);
-
-        return groupedEntries;
-
-      }
-
-    }
-
-    
-
-    // Para metricasensor: agrupar por métricas comunes (1, 2, 3)
-
-    if (selectedTable === 'metricasensor') {
-
-      const commonMetricas = [1, 2, 3];
-
-      const groupedEntries = searchByCriteria(
-
-        'Entradas agrupadas por métricas comunes (1,2,3)',
-
-        (entry: any) => commonMetricas.includes(entry.metricaid),
-
-        activeNodeEntries
-
-      );
-
-      
-
-      if (groupedEntries.length > 1) {
-
-        console.log('✅ Usando entradas agrupadas por métricas comunes:', groupedEntries.length);
-
-        return groupedEntries;
-
-      }
-
-    }
-
-    
-
-    // Si no se pudieron agrupar por tipos/métricas específicos, usar todas las activas del nodo
-
-    console.log('⚠️ No se pudieron agrupar por tipos/métricas específicos, usando todas las entradas activas del nodo');
-
-    if (activeNodeEntries.length > 1) {
-
-      console.log('✅ Usando todas las entradas activas del nodo:', activeNodeEntries.length);
-
-      return activeNodeEntries;
-
-    }
-
-    
-
-    return [];
-
-  };
-
-
-
-  // Función para agrupar entradas por criterios de negocio específicos
-
-  const findBusinessCriteriaMatches = (row: any, allData: any[]) => {
-
-    if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor') {
-
-      return [];
-
-    }
-
-
-
-    console.log('🔍 Aplicando agrupación por criterios de negocio específicos para:', selectedTable);
-
-    
-
-    // Normalizar la fecha de modificación para comparar solo la fecha (sin tiempo)
-
-    const normalizeDate = (dateString: string) => {
-
-      const date = new Date(dateString);
-
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split('T')[0];
-
-    };
-
-    
-
-    const targetDateCreated = normalizeDate(row.datecreated);
-
-    const targetDateModified = normalizeDate(row.datemodified);
-
-    
-
-    console.log('🎯 Criterios de agrupación:');
-
-    console.log('  - nodoid:', row.nodoid);
-
-    console.log('  - datecreated (normalizado):', targetDateCreated);
-
-    console.log('  - datemodified (normalizado):', targetDateModified);
-
-    console.log('  - usercreatedid:', row.usercreatedid);
-
-    console.log('  - statusid:', row.statusid);
-
-    
-
-    // Buscar entradas que coincidan con todos los criterios de negocio
-
-    const businessMatches = searchByCriteria(
-
-      'Entradas agrupadas por criterios de negocio específicos',
-
-      (dataRow: any) => {
-
-        if (dataRow.nodoid !== row.nodoid) return false;
-
-        if (dataRow.usercreatedid !== row.usercreatedid) return false;
-
-        if (dataRow.statusid !== row.statusid) return false;
-
-        
-
-        const rowDateCreated = normalizeDate(dataRow.datecreated);
-
-        const rowDateModified = normalizeDate(dataRow.datemodified);
-
-        
-
-        if (rowDateCreated !== targetDateCreated) return false;
-
-        if (rowDateModified !== targetDateModified) return false;
-
-        
-
-        console.log(`📊 Coincidencia de criterios para idx ${dataRow.idx}:`, {
-
-          nodoid: dataRow.nodoid,
-
-          tipoid: dataRow.tipoid,
-
-          datecreated: rowDateCreated,
-
-          datemodified: rowDateModified,
-
-          usercreatedid: dataRow.usercreatedid,
-
-          statusid: dataRow.statusid
-
-        });
-
-        
-
-        return true;
-
-      },
-
-      allData
-
-    );
-
-    
-
-    if (businessMatches.length > 1) {
-
-      console.log('✅ Usando entradas agrupadas por criterios de negocio específicos:', businessMatches.length);
-
-      return businessMatches;
-
-    }
-
-    
-
-    return [];
-
-  };
-
-
-
-  const findEntriesByTimestamp = (row: any, tableData: any[], updateData: any[]) => {
-
-    if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor') {
-
-      return [row]; // Para otras tablas, solo la fila seleccionada
-
-    }
-
-
-
-    console.log('🔍 Buscando entradas múltiples para:', { 
-
-      nodoid: row.nodoid, 
-
-      datecreated: row.datecreated,
-
-      statusid: row.statusid,
-
-      table: selectedTable 
-
-    });
-
-
-
-    // Mostrar todos los datos disponibles para debugging
-
-    console.log('📊 Datos disponibles para búsqueda:');
-
-    console.log('  - tableData length:', tableData.length);
-
-    console.log('  - updateData length:', updateData.length);
-
-    
-
-    // Mostrar todas las entradas del mismo nodo para debugging
-
-    const allData = [...tableData, ...updateData];
-
-    const sameNodeEntries = allData.filter(dataRow => dataRow.nodoid === row.nodoid);
-
-    console.log('  - Entradas del mismo nodo:', sameNodeEntries.length);
-
-    if (sameNodeEntries.length > 0) {
-
-      console.log('📋 Todas las entradas del nodo:', sameNodeEntries.map(e => ({
-
-        nodoid: e.nodoid,
-
-        tipoid: e.tipoid,
-
-        datecreated: e.datecreated,
-
-        statusid: e.statusid
-
-      })));
-
-      
-
-      // Mostrar todos los timestamps únicos para debugging
-
-      const uniqueTimestamps = Array.from(new Set(sameNodeEntries.map(e => e.datecreated)));
-
-      console.log('🕐 Timestamps únicos disponibles:', uniqueTimestamps.map(ts => new Date(ts).toISOString()));
-
-      
-
-      // Mostrar todos los tipos de sensor disponibles para debugging
-
-      if (selectedTable === 'sensor') {
-
-        const uniqueTipos = Array.from(new Set(sameNodeEntries.map(e => e.tipoid)));
-
-        console.log('🏷️ Tipos de sensor disponibles para el nodo:', uniqueTipos.sort((a, b) => a - b));
-
-      }
-
-      
-
-      // Mostrar todas las métricas disponibles para debugging
-
-      if (selectedTable === 'metricasensor') {
-
-        const uniqueMetricas = Array.from(new Set(sameNodeEntries.map(e => e.metricaid)));
-
-        console.log('📊 Métricas disponibles para el nodo:', uniqueMetricas.sort((a, b) => a - b));
-
-      }
-
-    }
-
-
-
-    // Estrategia de búsqueda: buscar en múltiples niveles y elegir el mejor resultado
-
-    let bestMatches: any[] = [];
-
-    let bestMatchReason = '';
-
-
-
-    // Nivel 1: Timestamp exacto + mismo status
-
-    const exactStatusMatches = searchByCriteria(
-
-      'Encontradas en tableData con timestamp exacto Y mismo status',
-
-      (dataRow: any) => 
-
-        dataRow.nodoid === row.nodoid && 
-
-        dataRow.datecreated === row.datecreated &&
-
-        dataRow.statusid === row.statusid,
-
-      tableData
-
-    );
-
-    
-
-    if (exactStatusMatches.length > 1) {
-
-      bestMatches = exactStatusMatches;
-
-      bestMatchReason = `timestamp exacto + mismo status (${exactStatusMatches.length} entradas)`;
-
-    }
-
-
-
-    // Nivel 2: Timestamp exacto (sin importar status)
-
-    if (bestMatches.length <= 1) {
-
-      const exactTimestampMatches = searchByCriteria(
-        'Entradas con timestamp exacto',
-        (dataRow: any) => dataRow.datecreated === row.datecreated,
-        allData
-      );
-
-      if (exactTimestampMatches.length > bestMatches.length) {
-
-        bestMatches = exactTimestampMatches;
-
-        bestMatchReason = `timestamp exacto (${exactTimestampMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Nivel 3: Timestamp por segundos (ignorando milisegundos) ⭐ NUEVO
-
-    if (bestMatches.length <= 1) {
-
-      const secondsMatches = findTimestampBySecondsMatches(row, allData);
-
-      if (secondsMatches.length > bestMatches.length) {
-
-        bestMatches = secondsMatches;
-
-        bestMatchReason = `timestamp por segundos (${secondsMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Nivel 4: Criterios de negocio específicos ⭐ NUEVO Y CLAVE
-
-    if (bestMatches.length <= 1) {
-
-      const businessCriteriaMatches = findBusinessCriteriaMatches(row, allData);
-
-      if (businessCriteriaMatches.length > bestMatches.length) {
-
-        bestMatches = businessCriteriaMatches;
-
-        bestMatchReason = `criterios de negocio específicos (${businessCriteriaMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Nivel 5: Timestamp cercano (5 segundos)
-
-    if (bestMatches.length <= 1) {
-
-      const nearMatches = findNearTimestampMatches(row, allData, 5000);
-
-      if (nearMatches.length > bestMatches.length) {
-
-        bestMatches = nearMatches;
-
-        bestMatchReason = `timestamp cercano 5s (${nearMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Nivel 6: Misma sesión (1 minuto)
-
-    if (bestMatches.length <= 1) {
-
-      const sessionMatches = findNearTimestampMatches(row, allData, 60000);
-
-      if (sessionMatches.length > bestMatches.length) {
-
-        bestMatches = sessionMatches;
-
-        bestMatchReason = `misma sesión 1min (${sessionMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Nivel 7: Lógica de negocio
-
-    if (bestMatches.length <= 1) {
-
-      const businessMatches = findBusinessLogicMatches(row, allData);
-
-      if (businessMatches.length > bestMatches.length) {
-
-        bestMatches = businessMatches;
-
-        bestMatchReason = `lógica de negocio (${businessMatches.length} entradas)`;
-
-      }
-
-    }
-
-
-
-    // Retornar el mejor resultado encontrado
-
-    if (bestMatches.length > 1) {
-
-      console.log(`✅ Usando ${bestMatches.length} entradas encontradas por: ${bestMatchReason}`);
-
-      return bestMatches;
-
-    }
-
-
-
-    // Si no se encontraron múltiples, devolver solo la entrada original
-
-    console.log('⚠️ No se encontraron entradas múltiples, usando solo la seleccionada');
-
-    return [row];
-
-  };
-
-
-
-  return { findEntriesByTimestamp };
-
-}; */
-
-
-
-// Hook personalizado para manejar paginación
-// MOVED TO: ../hooks/usePagination.ts
-
-/* const usePagination = (data: any[], itemsPerPage: number = 10) => {
-
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-
-  
-
-  const getPaginatedData = () => {
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-
-    const endIndex = startIndex + itemsPerPage;
-
-    const paginatedData = data.slice(startIndex, endIndex);
-
-    
-
-    return paginatedData;
-
-  };
-
-  
-
-  const goToPage = (page: number) => {
-
-    if (page >= 1 && page <= totalPages) {
-
-      setCurrentPage(page);
-
-    }
-
-  };
-
-  
-
-  const nextPage = () => goToPage(currentPage + 1);
-
-  const prevPage = () => goToPage(currentPage - 1);
-
-  const firstPage = () => goToPage(1);
-
-  const lastPage = () => goToPage(totalPages);
-
-  
-
-  // Resetear a página 1 cuando cambian los datos
-
-  useEffect(() => {
-
-    setCurrentPage(1);
-
-  }, [data.length]);
-
-  
-
-  return {
-
-    currentPage,
-
-    totalPages,
-
-    getPaginatedData,
-
-    goToPage,
-
-    nextPage,
-
-    prevPage,
-
-    firstPage,
-
-    lastPage,
-
-    hasNextPage: currentPage < totalPages,
-
-    hasPrevPage: currentPage > 1
-
-  };
-
-}; */
-
-
-
 interface SystemParametersProps {
 
   selectedTable?: string;
@@ -872,36 +155,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadRelatedTablesData,
     loadTableData,
     setLoading
-    // Removed other unused setters to reduce warnings
   } = useTableDataManagement();
 
   // Hook para búsquedas y filtros
   const {
     searchTerm,
     searchField,
-    // Removed unused: hasSearched, searchFilteredData, isSearching
     statusSearchTerm,
-    // Removed unused: statusHasSearched
     statusFilteredData,
-    // Removed unused: copySearchTerm
-    // Removed unused: copyFilteredData
     setSearchTerm,
-    // Removed unused: setSearchField
     setHasSearched,
-    // Removed unused: setSearchFilteredData, setIsSearching
     setStatusSearchTerm,
-    // Removed unused: setStatusHasSearched
     setStatusFilteredData,
     setCopySearchTerm,
     setCopyFilteredData,
     searchByCriteria,
-    // Removed unused search functions: searchByExactTimestamp, searchBySimilarTimestamp, searchBySameNode, searchBySameType, searchByActiveStatus, searchByInactiveStatus
     handleSearchTermChange,
     handleStatusSearch,
-    // Removed unused: handleSearchFieldChange, handleUpdateSearch, handleCopySearch, getSearchableColumns, clearSearchState, clearStatusSearchState, clearCopySearchState
   } = useSearchAndFilter();
 
-  // Hook personalizado para estado principal
   const {
     selectedTable,
     activeSubTab,
@@ -912,9 +184,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     updateLoading,
     statusCurrentPage,
     statusTotalPages,
-    // Removed unused: statusLoading
-    // Removed unused: copyData
-    // Removed unused: selectedRowsForCopy
     setSelectedTable,
     setActiveSubTab,
     setUpdateData,
@@ -924,10 +193,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setUpdateLoading,
     setStatusCurrentPage,
     setStatusTotalPages,
-    // Removed unused: setStatusLoading
     setCopyData,
-    // Removed unused: setSelectedRowsForCopy
-    // Removed unused: resetFormData, resetUpdateForm, resetSearch, resetStatusSearch
   } = useSystemParametersState(propSelectedTable, propActiveSubTab);
 
   
@@ -940,7 +206,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     showModal: showSimpleModal,
 
-    // Removed unused: hideModal
 
     confirmAction,
 
@@ -948,11 +213,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   } = useSimpleModal();
 
-  // Removed unused hooks: useInsertOperations, useUpdateOperations
 
   // Hook de operaciones de búsqueda ahora manejado por useSearchAndFilter
 
-  // Removed unused hooks: useFormValidation, useProgressiveEnablement
 
   // Sincronizar estado local con props
 
@@ -990,7 +253,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para ejecutar el cambio de pestaña
 
-  // Removed unused function: executeTabChange
 
 
 
@@ -1741,7 +1003,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados de copia ahora manejados por useSearchAndFilter
 
-  // Removed unused: copyCurrentPage
 
   const [copyTotalPages, setCopyTotalPages] = useState(1);
 
@@ -1751,7 +1012,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [selectedRowsForUpdate, setSelectedRowsForUpdate] = useState<any[]>([]);
 
-  // Removed unused: bulkUpdateField, bulkUpdateValue
 
   const [individualRowStatus, setIndividualRowStatus] = useState<{[key: string]: boolean}>({});
 
@@ -1767,7 +1027,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados para modal de pérdida de datos
 
-  // Removed unused: showLostDataModal
 
   const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
@@ -1833,7 +1092,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handleReplicateMetricaSensor
 
 
 
@@ -2212,7 +1470,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable, searchByCriteria);
 
   const { getPaginatedData, goToPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
-  // Removed unused pagination: nextPage, prevPage, firstPage, lastPage
 
 
 
@@ -2262,7 +1519,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones de navegación personalizadas para metricasensor
 
-  // Removed unused function: handleMetricaSensorPageChange
 
 
 
@@ -2857,25 +2113,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función simple para manejar el cambio de tabla con confirmación
 
-  // Removed unused function: handleTableChangeWithConfirmation
 
 
 
   // Función para limpiar la selección de copiar
 
-  // Removed unused function: clearCopySelection
 
 
 
   // Función para limpiar la selección de copiar cuando se cambia de tabla
-
-  // Removed unused function: clearCopySelectionOnTableChange
-
-
+  const clearCopySelectionOnTableChange = () => {
+    setCopyMessage(null);
+    setCopyTotalPages(0);
+  };
 
   // Función para limpiar la selección de copiar cuando se cambia de pestaña
-
-  // Removed unused function: clearCopySelectionOnTabChange
+  const clearCopySelectionOnTabChange = () => {
+    setCopyMessage(null);
+    setCopyTotalPages(0);
+  };
 
 
 
@@ -2931,7 +2187,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setIndividualRowStatus({});
 
-    // Removed call to deleted function: clearCopySelectionOnTableChange
 
     
 
@@ -3041,7 +2296,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handleMainTabNavigation
 
 
 
@@ -3494,7 +2748,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
 
-      // Removed call to deleted variable: setCopyCurrentPage
 
       setCopySearchTerm('');
 
@@ -4127,7 +3380,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handlePageChange
 
 
 
@@ -4155,7 +3407,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para cambiar página en la tabla de Copiar
 
-  // Removed unused function: handleCopyPageChange
 
 
 
@@ -4227,7 +3478,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para obtener los datos paginados de la tabla de Copiar
 
-  // Removed unused function: getCopyPaginatedData
 
 
 
@@ -4475,7 +3725,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handleSelectRowForCopy
 
 
 
@@ -4527,11 +3776,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handleCopyToClipboard
 
 
 
-  // Removed unused function: handleClearCopySelection
 
 
 
@@ -6168,7 +5415,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Removed unused: isNewEntry, originalRow
         
         // Para metricasensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -6364,7 +5610,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Removed unused: isNewEntry
         
         // Para sensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -6557,7 +5802,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Removed unused: isNewEntry, originalRow
         
         // Para usuarioperfil, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -8127,7 +7371,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
-  // Removed unused: searchableColumns
 
 
 
@@ -8135,17 +7378,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: needsEquivalenceTable
 
 
 
      // Función para obtener las equivalencias de un campo
 
-   // Removed unused function: getFieldEquivalences
 
 
 
-   // Removed unused function: getAvailableOptionsForField
 
 
 
@@ -8361,23 +7601,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Estados para creación múltiple de localizaciones
 
-   // Removed unused: multipleLocalizaciones
 
-   // Removed unused: selectedUbicaciones
 
-   // Removed unused: selectedNodosLocalizacion
 
-   // Removed unused: selectedEntidades
 
    
 
    // Estados para campos adicionales de localización
 
-   // Removed unused: latitud, setLatitud
 
-   // Removed unused: longitud, setLongitud
 
-   // Removed unused: referencia, setReferencia
 
    
 
@@ -9864,13 +9097,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    // Función para actualizar el tipo de una métrica específica
 
-   // Removed unused function: updateMetricaTipo
 
 
 
        // Función para inicializar localizaciones múltiples
 
-    // Removed unused function: initializeMultipleLocalizaciones
 
 
 
@@ -10288,7 +9519,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para manejar inserción múltiple de localizaciones
 
-  // Removed unused function: handleMultipleLocalizacionInsert
 
 
 
@@ -10300,7 +9530,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones para selección manual múltiple
 
-  // Removed unused function: handleSelectAllFiltered
 
 
 
@@ -10424,7 +9653,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para calcular el número correcto de entradas para el botón de actualización
 
-  // Removed unused function: getUpdateButtonCount
 
 
 
@@ -10474,7 +9702,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Removed unused function: handleCancelManualUpdate
 
 
 
@@ -10508,11 +9735,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones para manejar el modal de pérdida de datos
 
-  // Removed unused function: handleConfirmLostData
 
 
 
-  // Removed unused function: handleCancelLostData
 
 
 
