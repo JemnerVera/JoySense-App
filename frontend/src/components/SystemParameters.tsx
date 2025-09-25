@@ -1044,6 +1044,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setUpdateFormData({});
 
+          // Limpiar mensajes de alerta al cambiar de pestaña
+          setUpdateMessage(null);
+
           setIndividualRowStatus({});
 
           setSearchField('');
@@ -5514,6 +5517,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleSelectRowForUpdate = (row: any) => {
 
+    // Limpiar mensajes de alerta al seleccionar nueva entrada
+    setUpdateMessage(null);
+
     // Usar el hook personalizado para encontrar entradas múltiples
 
     const selectedEntries = findEntriesByTimestamp(row, tableData, updateData);
@@ -5605,6 +5611,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setSelectedRowForUpdate(null);
 
       setUpdateFormData({});
+
+      // Limpiar mensajes de alerta al cancelar selección
+      setUpdateMessage(null);
 
       setMessage({ type: 'success', text: 'Selección cancelada' });
 
@@ -5826,6 +5835,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setSelectedRowsForUpdate([]);
 
       setSelectedRowsForManualUpdate([]);
+
+      // Limpiar mensajes de alerta al cancelar
+      setUpdateMessage(null);
 
     setUpdateFormData({});
 
@@ -13162,9 +13174,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                 <div className="space-y-6">
 
-                  {/* Mensajes específicos de actualización */}
+                  {/* Mensajes específicos de actualización - Movidos al formulario de actualización */}
 
-                  {updateMessage && (
+                  {/* {updateMessage && (
 
                     <div className={`p-4 rounded-lg mb-6 ${
 
@@ -13182,7 +13194,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                     </div>
 
-                  )}
+                  )} */}
 
 
 
@@ -13245,6 +13257,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                       {selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
 
                         <div>
+                          {/* Mensajes de validación para formulario de actualización - Arriba del formulario */}
+                          {updateMessage && (
+                            <div className={`p-4 rounded-lg mb-6 ${
+                              updateMessage.type === 'success' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' : 
+                              updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
+                              updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
+                              'bg-red-600 bg-opacity-20 border border-red-500'
+                            } text-white font-mono tracking-wider`}>
+                              {updateMessage.text}
+                            </div>
+                          )}
+                          
                           {/* Filtros globales para formularios de actualización */}
                           {renderGlobalFiltersForUpdate()}
                           
