@@ -19,6 +19,8 @@ import {
 } from '../utils/systemParametersUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
 import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
+import { useMultipleSelection } from '../hooks/useMultipleSelection';
+import { usePagination } from '../hooks/usePagination';
 
 import SimpleModal from './SimpleModal';
 
@@ -72,11 +74,14 @@ import { useSystemParametersState } from '../hooks/useSystemParametersState';
 
 
 
+// useMultipleSelection hook moved to ../hooks/useMultipleSelection.ts
+
 // Hook personalizado para manejar selección múltiple basada en timestamp
 
-const useMultipleSelection = (selectedTable: string, searchByCriteria: any) => {
+// const useMultipleSelection = (selectedTable: string, searchByCriteria: any) => {
 
   // Función para buscar entradas por diferentes criterios
+  /*
 
 
 
@@ -688,93 +693,14 @@ const useMultipleSelection = (selectedTable: string, searchByCriteria: any) => {
 
   return { findEntriesByTimestamp };
 
-};
+  */
+// };
+
+// useMultipleSelection hook moved to ../hooks/useMultipleSelection.ts
 
 
 
-// Hook personalizado para manejar paginación
-
-const usePagination = (data: any[], itemsPerPage: number = 10) => {
-
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-
-  
-
-  const getPaginatedData = () => {
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-
-    const endIndex = startIndex + itemsPerPage;
-
-    const paginatedData = data.slice(startIndex, endIndex);
-
-    
-
-    return paginatedData;
-
-  };
-
-  
-
-  const goToPage = (page: number) => {
-
-    if (page >= 1 && page <= totalPages) {
-
-      setCurrentPage(page);
-
-    }
-
-  };
-
-  
-
-  const nextPage = () => goToPage(currentPage + 1);
-
-  const prevPage = () => goToPage(currentPage - 1);
-
-  const firstPage = () => goToPage(1);
-
-  const lastPage = () => goToPage(totalPages);
-
-  
-
-  // Resetear a página 1 cuando cambian los datos
-
-  useEffect(() => {
-
-    setCurrentPage(1);
-
-  }, [data.length]);
-
-  
-
-  return {
-
-    currentPage,
-
-    totalPages,
-
-    getPaginatedData,
-
-    goToPage,
-
-    nextPage,
-
-    prevPage,
-
-    firstPage,
-
-    lastPage,
-
-    hasNextPage: currentPage < totalPages,
-
-    hasPrevPage: currentPage > 1
-
-  };
-
-};
+// usePagination hook moved to ../hooks/usePagination.ts
 
 
 
