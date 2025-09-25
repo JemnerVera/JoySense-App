@@ -12,6 +12,7 @@ interface MultipleUsuarioPerfilFormProps {
   setMultipleUsuarioPerfiles: (value: any[]) => void;
   usuariosData: any[];
   perfilesData: any[];
+  usuarioperfilData: any[]; // Datos existentes de usuarioperfil
   loading: boolean;
   onInitializeUsuarioPerfiles: (usuarios: string[], perfiles: string[]) => Promise<void>;
   onInsertUsuarioPerfiles: () => void;
@@ -42,6 +43,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
   setMultipleUsuarioPerfiles,
   usuariosData,
   perfilesData,
+  usuarioperfilData,
   loading,
   onInitializeUsuarioPerfiles,
   onInsertUsuarioPerfiles,
@@ -139,16 +141,42 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
   // Obtener usuarios que no tienen perfil asignado
   const getUsuariosSinPerfil = () => {
+    console.log('🔍 Debug - getUsuariosSinPerfil INPUT:', {
+      usuariosData: usuariosData,
+      usuarioperfilData: usuarioperfilData,
+      usuariosDataLength: usuariosData?.length,
+      usuarioperfilDataLength: usuarioperfilData?.length
+    });
+
+    // Usar los datos reales de usuarioperfil de la base de datos
     const usuariosConPerfil = new Set(
-      multipleUsuarioPerfiles
+      usuarioperfilData
         .filter(up => up.statusid === 1)
         .map(up => up.usuarioid)
     );
     
-    return usuariosData.filter(usuario => 
-      !usuariosConPerfil.has(usuario.usuarioid) && 
-      usuario.statusid === 1
+    console.log('🔍 Debug - getUsuariosSinPerfil PROCESSING:', {
+      totalUsuarios: usuariosData.length,
+      usuariosConPerfil: usuariosConPerfil.size,
+      usuarioperfilData: usuarioperfilData.length,
+      usuariosConPerfilIds: Array.from(usuariosConPerfil),
+      usuariosActivos: usuariosData.filter(u => u.statusid === 1).length,
+      usuariosInactivos: usuariosData.filter(u => u.statusid === 0).length
+    });
+
+    const usuariosSinPerfil = usuariosData.filter(usuario => 
+      !usuariosConPerfil.has(usuario.usuarioid)
+      // Removido: && usuario.statusid === 1
+      // Ahora incluye usuarios activos e inactivos
     );
+
+    console.log('🔍 Debug - getUsuariosSinPerfil RESULT:', {
+      usuariosSinPerfil: usuariosSinPerfil,
+      usuariosSinPerfilCount: usuariosSinPerfil.length,
+      usuariosSinPerfilIds: usuariosSinPerfil.map(u => u.usuarioid)
+    });
+    
+    return usuariosSinPerfil;
   };
 
   // Obtener perfiles disponibles
@@ -157,10 +185,30 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
   };
 
   // Filtrar usuarios por término de búsqueda
-  const filteredUsuarios = getUsuariosSinPerfil().filter(usuario =>
-    usuario.nombre?.toLowerCase().includes(usuariosSearchTerm.toLowerCase()) ||
-    usuario.email?.toLowerCase().includes(usuariosSearchTerm.toLowerCase())
-  );
+  const usuariosSinPerfil = getUsuariosSinPerfil();
+  console.log('🔍 Debug - usuariosSinPerfil para filtrado:', usuariosSinPerfil);
+  
+  const filteredUsuarios = usuariosSinPerfil.filter(usuario => {
+    const nombreMatch = usuario.nombre?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const emailMatch = usuario.email?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const loginMatch = usuario.login?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const firstnameMatch = usuario.firstname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const lastnameMatch = usuario.lastname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    
+    console.log('🔍 Debug - filtrado usuario:', {
+      usuario: usuario,
+      usuariosSearchTerm: usuariosSearchTerm,
+      nombreMatch: nombreMatch,
+      emailMatch: emailMatch,
+      loginMatch: loginMatch,
+      firstnameMatch: firstnameMatch,
+      lastnameMatch: lastnameMatch
+    });
+    
+    return nombreMatch || emailMatch || loginMatch || firstnameMatch || lastnameMatch;
+  });
+  
+  console.log('🔍 Debug - filteredUsuarios final:', filteredUsuarios);
 
   // Filtrar perfiles por término de búsqueda
   const filteredPerfiles = getPerfilesDisponibles().filter(perfil =>
@@ -230,7 +278,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
             />
             
-            <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded">
+            <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded custom-scrollbar">
               {filteredUsuarios.map((usuario) => (
                 <label
                   key={usuario.usuarioid}
@@ -243,8 +291,12 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
                     className="mr-3 text-orange-500 focus:ring-orange-500"
                   />
                   <div className="flex-1">
-                    <div className="text-white font-medium font-mono">{usuario.nombre}</div>
-                    <div className="text-neutral-400 text-sm font-mono">{usuario.email}</div>
+                    <div className="text-white font-medium font-mono">
+                      {usuario.nombre || usuario.firstname || usuario.login || `Usuario ${usuario.usuarioid}`}
+                    </div>
+                    <div className="text-neutral-400 text-sm font-mono">
+                      {usuario.email || usuario.login || 'Sin email'}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -274,7 +326,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
             />
             
-            <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded">
+            <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded custom-scrollbar">
               {filteredPerfiles.map((perfil) => (
                 <label
                   key={perfil.perfilid}
@@ -301,53 +353,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
           </div>
         </div>
 
-        {/* Contenedor 3: Combinaciones generadas */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-            COMBINACIONES GENERADAS
-          </h4>
-          
-          <div className="max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded">
-            {multipleUsuarioPerfiles.length > 0 ? (
-              multipleUsuarioPerfiles.map((combinacion, index) => {
-                const usuario = usuariosData.find(u => u.usuarioid === combinacion.usuarioid);
-                const perfil = perfilesData.find(p => p.perfilid === combinacion.perfilid);
-                const key = `${combinacion.usuarioid}-${combinacion.perfilid}`;
-                
-                return (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between p-3 border-b border-neutral-700 last:border-b-0"
-                  >
-                    <div className="flex-1">
-                      <div className="text-white font-medium">
-                        {usuario?.nombre || `Usuario ${combinacion.usuarioid}`}
-                      </div>
-                      <div className="text-neutral-400 text-sm">
-                        {perfil?.perfil || `Perfil ${combinacion.perfilid}`}
-                      </div>
-                    </div>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={combinacionesStatus[key] !== false}
-                        onChange={() => handleCombinacionStatusToggle(key)}
-                        className="mr-2 text-orange-500 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-neutral-400">
-                        {combinacionesStatus[key] !== false ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </label>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-3 text-neutral-400 text-center font-mono">
-                SELECCIONA USUARIOS Y PERFILES PARA GENERAR COMBINACIONES
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Botones de acción */}

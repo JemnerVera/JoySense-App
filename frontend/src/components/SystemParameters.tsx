@@ -13588,6 +13588,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           fundosData={fundosData}
 
+                          usuarioperfilData={updateData}
+
                         />
 
                     ) : (

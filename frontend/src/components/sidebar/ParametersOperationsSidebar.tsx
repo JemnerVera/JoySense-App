@@ -85,7 +85,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
     } else if (selectedTable === 'usuario') {
       // Solo Estado y Actualizar para USUARIO (sin Crear)
       return allOperations.filter(op => op.id !== 'insert' && op.id !== 'massive');
-    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil' || selectedTable === 'umbral') {
+    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'umbral') {
       // Para tablas de multiple insert: Estado, Crear, Actualizar y Masivo
       return allOperations;
     } else {
