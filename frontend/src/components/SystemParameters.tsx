@@ -3230,7 +3230,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setUpdateMessage(null);
 
+    // Limpiar search terms al cambiar de pestaña para mantener independencia
+    setStatusSearchTerm('');
+    setSearchTerm('');
+    setHasSearched(false);
     
+    // Restaurar datos originales al limpiar búsquedas
+    setStatusFilteredData(filteredTableData);
+    // Recargar datos de actualización originales
+    loadUpdateData();
 
     // Limpiar datos del formulario cuando se cambia de pestaña
 
@@ -12673,7 +12681,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        {/* Tabla con datos */}
 
-                       <div className="overflow-x-auto -mx-2 sm:mx-0">
+                       <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
                          <table className="w-full text-sm text-left text-neutral-300">
 
@@ -13603,7 +13611,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           </div>
 
-                          <div className="overflow-x-auto">
+                          <div className="overflow-x-auto custom-scrollbar">
 
                             <table className="w-full text-sm">
 
@@ -13849,7 +13857,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
 
-                         <div className="overflow-x-auto -mx-2 sm:mx-0">
+                         <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
                            {updateFilteredData.length > 0 ? (
 
