@@ -880,7 +880,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Removed unused: statusHasSearched
     statusFilteredData,
     // Removed unused: copySearchTerm
-    copyFilteredData,
+    // Removed unused: copyFilteredData
     setSearchTerm,
     setSearchField,
     setHasSearched,
@@ -910,7 +910,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     statusTotalPages,
     // Removed unused: statusLoading
     copyData,
-    selectedRowsForCopy,
+    // Removed unused: selectedRowsForCopy
     setSelectedTable,
     setActiveSubTab,
     setUpdateData,
@@ -1824,7 +1824,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados de copia ahora manejados por useSearchAndFilter
 
-  const [copyCurrentPage, setCopyCurrentPage] = useState(1);
+  // Removed unused: copyCurrentPage
 
   const [copyTotalPages, setCopyTotalPages] = useState(1);
 
@@ -2344,11 +2344,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones de navegación personalizadas para metricasensor
 
-  const handleMetricaSensorPageChange = (page: number) => {
-
-    goToPage(page);
-
-  };
+  // Removed unused function: handleMetricaSensorPageChange
 
 
 
@@ -2943,77 +2939,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función simple para manejar el cambio de tabla con confirmación
 
-  const handleTableChangeWithConfirmation = (newTable: string) => {
-
-    if (hasUnsavedChanges()) {
-
-      setPendingTableChange(newTable);
-
-    } else {
-
-      handleParameterNavigation(newTable);
-
-    }
-
-  };
+  // Removed unused function: handleTableChangeWithConfirmation
 
 
 
   // Función para limpiar la selección de copiar
 
-  const clearCopySelection = () => {
-
-    setSelectedRowsForCopy([]);
-
-    setCopySearchTerm('');
-
-    setCopyFilteredData(copyData);
-
-    setCopyCurrentPage(1);
-
-    const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
-
-    setCopyTotalPages(Math.ceil(copyData.length / copyItemsPerPage));
-
-  };
+  // Removed unused function: clearCopySelection
 
 
 
   // Función para limpiar la selección de copiar cuando se cambia de tabla
 
-  const clearCopySelectionOnTableChange = () => {
-
-    setSelectedRowsForCopy([]);
-
-    setCopySearchTerm('');
-
-    setCopyFilteredData([]);
-
-    setCopyCurrentPage(1);
-
-    setCopyTotalPages(1);
-
-  };
+  // Removed unused function: clearCopySelectionOnTableChange
 
 
 
   // Función para limpiar la selección de copiar cuando se cambia de pestaña
 
-  const clearCopySelectionOnTabChange = () => {
-
-    setSelectedRowsForCopy([]);
-
-    setCopySearchTerm('');
-
-    setCopyFilteredData(copyData);
-
-    setCopyCurrentPage(1);
-
-    const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
-
-    setCopyTotalPages(Math.ceil(copyData.length / copyItemsPerPage));
-
-  };
+  // Removed unused function: clearCopySelectionOnTabChange
 
 
 
@@ -3069,7 +3013,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setIndividualRowStatus({});
 
-    clearCopySelectionOnTableChange();
+    // Removed call to deleted function: clearCopySelectionOnTableChange
 
     
 
@@ -3179,31 +3123,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleMainTabNavigation = (newTab: string) => {
-
-    console.log('🔄 SystemParameters: MainTab navigation to:', newTab);
-
-    // Limpiar todos los estados
-
-    setFormData(initializeFormData(columns));
-
-    setMessage(null);
-
-    setUpdateMessage(null);
-
-    setHasSearched(false);
-
-    setSelectedRowForUpdate(null);
-
-    setSelectedRowsForUpdate([]);
-
-    setUpdateFormData({});
-
-    setIndividualRowStatus({});
-
-    clearCopySelectionOnTableChange();
-
-  };
+  // Removed unused function: handleMainTabNavigation
 
 
 
@@ -3656,7 +3576,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
 
-      setCopyCurrentPage(1);
+      // Removed call to deleted variable: setCopyCurrentPage
 
       setCopySearchTerm('');
 
@@ -6122,7 +6042,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         return medioResult;
 
       case 'usercreatedid':
-
       case 'usermodifiedid':
 
         if (!userData || userData.length === 0) {
@@ -8388,7 +8307,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
          ];
 
        case 'usercreatedid':
-
        case 'usermodifiedid':
 
          // Para campos de usuario, mostrar los usuarios disponibles
@@ -8486,35 +8404,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             return dateOptions;
 
        case 'paisid':
-
        case 'empresaid':
-
        case 'fundoid':
-
        case 'ubicacionid':
-
        case 'entidadid':
-
        case 'nodoid':
-
        case 'tipoid':
-
        case 'metricaid':
-
        case 'localizacionid':
-
        case 'sensorid':
-
        case 'umbralid':
-
        case 'perfilid':
-
        case 'criticidadid':
-
        case 'medioid':
-
        case 'contactoid':
-
        case 'usuarioid':
 
          // Para campos de ID, mostrar las opciones disponibles
