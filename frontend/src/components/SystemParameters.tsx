@@ -5221,7 +5221,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             : col.columnName === 'statusid'
 
-            ? (value === 1 ? 'Activo' : 'Inactivo')
+            ? (() => {
+                // Para filas agrupadas, verificar si al menos una fila original está activa
+                if (row.originalRows && row.originalRows.length > 0) {
+                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                  return hasActiveRow ? 'Activo' : 'Inactivo';
+                }
+                // Para filas normales, usar el statusid directamente
+                return (value === 1 ? 'Activo' : 'Inactivo');
+              })()
 
             : getDisplayValue(row, col.columnName);
 
@@ -5322,7 +5330,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           : col.columnName === 'statusid'
 
-          ? (value === 1 ? 'Activo' : 'Inactivo')
+          ? (() => {
+              // Para filas agrupadas, verificar si al menos una fila original está activa
+              if (row.originalRows && row.originalRows.length > 0) {
+                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                return hasActiveRow ? 'Activo' : 'Inactivo';
+              }
+              // Para filas normales, usar el statusid directamente
+              return (value === 1 ? 'Activo' : 'Inactivo');
+            })()
 
           : getDisplayValue(row, col.columnName);
 
@@ -5410,7 +5426,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           : col.columnName === 'statusid'
 
-          ? (value === 1 ? 'Activo' : 'Inactivo')
+          ? (() => {
+              // Para filas agrupadas, verificar si al menos una fila original está activa
+              if (row.originalRows && row.originalRows.length > 0) {
+                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                return hasActiveRow ? 'Activo' : 'Inactivo';
+              }
+              // Para filas normales, usar el statusid directamente
+              return (value === 1 ? 'Activo' : 'Inactivo');
+            })()
 
           : getDisplayValue(row, col.columnName);
 
@@ -7487,7 +7511,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
       let successCount = 0;
-
+      let actualChangesCount = 0;
       let errorCount = 0;
 
       
@@ -7522,6 +7546,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
+        // Determinar si es una nueva entrada o una actualización
+        const isNewEntry = !row.usercreatedid || !row.datecreated;
+        
+        // Obtener datos originales para comparar
+        const originalRow = selectedRowsForUpdate.find(orig => 
+          orig.nodoid === row.nodoid && orig.tipoid === row.tipoid && orig.metricaid === row.metricaid
+        ) || selectedRowsForManualUpdate.find(orig => 
+          orig.nodoid === row.nodoid && orig.tipoid === row.tipoid && orig.metricaid === row.metricaid
+        );
+        
+        // Para metricasensor, siempre contar como cambio si se está procesando
+        // La lógica de detección de cambios reales se maneja en el frontend
+        const hasActualChanges = true;
+        
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -7561,6 +7599,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           if (result && result.success) {
 
             successCount++;
+            
+            // Solo contar si realmente hubo cambios
+            if (hasActualChanges) {
+              actualChangesCount++;
+            }
 
             console.log(`✅ Actualización ${i + 1} exitosa`);
 
@@ -7590,7 +7633,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           type: 'success', 
 
-          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+          text: `✅ ${actualChangesCount} entradas actualizadas exitosamente` 
 
         });
 
@@ -7660,6 +7703,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleAdvancedSensorUpdate = async (updatedEntries: any[]) => {
 
+    console.log('🔍 Debug - handleAdvancedSensorUpdate llamado con:', updatedEntries.length, 'entradas');
+    console.log('🔍 Debug - Entradas recibidas:', updatedEntries);
+
     try {
 
       setUpdateLoading(true);
@@ -7671,7 +7717,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
       let successCount = 0;
-
+      let actualChangesCount = 0;
       let errorCount = 0;
 
       
@@ -7704,6 +7750,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
+        // Determinar si es una nueva entrada o una actualización
+        const isNewEntry = !row.usercreatedid || !row.datecreated;
+        
+        // Para sensor, siempre contar como cambio si se está procesando
+        // La lógica de detección de cambios reales se maneja en el frontend
+        const hasActualChanges = true;
+        
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -7743,6 +7796,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           if (result && result.success) {
 
             successCount++;
+            
+            // Solo contar si realmente hubo cambios
+            if (hasActualChanges) {
+              actualChangesCount++;
+            }
 
             console.log(`✅ Actualización ${i + 1} exitosa`);
 
@@ -7772,7 +7830,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           type: 'success', 
 
-          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+          text: `✅ ${actualChangesCount} entradas actualizadas exitosamente` 
 
         });
 
@@ -7853,7 +7911,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
       let successCount = 0;
-
+      let actualChangesCount = 0;
       let errorCount = 0;
 
       
@@ -7886,6 +7944,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
+        // Determinar si es una nueva entrada o una actualización
+        const isNewEntry = !row.usercreatedid || !row.datecreated;
+        
+        // Obtener datos originales para comparar
+        const originalRow = selectedRowsForUpdate.find(orig => 
+          orig.usuarioid === row.usuarioid && orig.perfilid === row.perfilid
+        ) || selectedRowsForManualUpdate.find(orig => 
+          orig.usuarioid === row.usuarioid && orig.perfilid === row.perfilid
+        );
+        
+        // Para usuarioperfil, siempre contar como cambio si se está procesando
+        // La lógica de detección de cambios reales se maneja en el frontend
+        const hasActualChanges = true;
+        
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -7959,6 +8031,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           if (result && result.success) {
 
             successCount++;
+            
+            // Solo contar si realmente hubo cambios
+            if (hasActualChanges) {
+              actualChangesCount++;
+            }
 
             console.log(`✅ Actualización ${i + 1} exitosa`);
 
@@ -7988,7 +8065,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           type: 'success', 
 
-          text: `✅ ${successCount} entradas actualizadas exitosamente` 
+          text: `✅ ${actualChangesCount} entradas actualizadas exitosamente` 
 
         });
 
@@ -8195,7 +8272,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Ejecutar actualizaciones de forma secuencial para evitar conflictos de concurrencia
 
         let successCount = 0;
-
+        let actualChangesCount = 0;
         let errorCount = 0;
 
         
@@ -8352,7 +8429,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             type: 'success', 
 
-            text: `✅ ${successCount} entradas actualizadas exitosamente` 
+            text: `✅ ${actualChangesCount} entradas actualizadas exitosamente` 
 
           });
 
@@ -12802,9 +12879,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                          ? (
 
-                                           <span className={row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                           <span className={(() => {
+                                             // Para filas agrupadas, verificar si al menos una fila original está activa
+                                             if (row.originalRows && row.originalRows.length > 0) {
+                                               const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                                               return hasActiveRow ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+                                             }
+                                             // Para filas normales, usar el statusid directamente
+                                             return (row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold');
+                                           })()}>
 
-                                             {row[col.columnName] === 1 ? 'Activo' : 'Inactivo'}
+                                             {(() => {
+                                               // Para filas agrupadas, verificar si al menos una fila original está activa
+                                               if (row.originalRows && row.originalRows.length > 0) {
+                                                 const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                                                 return hasActiveRow ? 'Activo' : 'Inactivo';
+                                               }
+                                               // Para filas normales, usar el statusid directamente
+                                               return (row[col.columnName] === 1 ? 'Activo' : 'Inactivo');
+                                             })()}
 
                                            </span>
 
@@ -13333,10 +13426,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                       {selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
 
                         <div>
-                          {/* Mensajes de validación para formulario de actualización - Arriba del formulario */}
-                          {updateMessage && (
+                          {/* Mensajes de validación para formulario de actualización - Solo mensajes de validación (amarillos) */}
+                          {updateMessage && updateMessage.type !== 'success' && (
                             <div className={`p-4 rounded-lg mb-6 ${
-                              updateMessage.type === 'success' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' : 
                               updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
                               updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
                               'bg-red-600 bg-opacity-20 border border-red-500'
@@ -13403,7 +13495,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                  : col.columnName === 'statusid'
 
-                                 ? (value === 1 ? 'Activo' : 'Inactivo')
+                                 ? (() => {
+              // Para filas agrupadas, verificar si al menos una fila original está activa
+              if (selectedRowForUpdate && selectedRowForUpdate.originalRows && selectedRowForUpdate.originalRows.length > 0) {
+                const hasActiveRow = selectedRowForUpdate.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                return hasActiveRow ? 'Activo' : 'Inactivo';
+              }
+              // Para filas normales, usar el statusid directamente
+              return (value === 1 ? 'Activo' : 'Inactivo');
+            })()
 
                                 : selectedRowForUpdate ? getDisplayValue(selectedRowForUpdate, col.columnName) : '';
 
@@ -13836,6 +13936,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                      <>
 
+                                              {/* Mensaje de éxito para actualizaciones - Arriba del searchbar */}
+                                              {updateMessage && updateMessage.type === 'success' && (
+                                                <div className={`p-4 rounded-lg mb-6 ${
+                                                  updateMessage.type === 'success' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' : 
+                                                  updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
+                                                  updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
+                                                  'bg-red-600 bg-opacity-20 border border-red-500'
+                                                } text-white font-mono tracking-wider`}>
+                                                  {updateMessage.text}
+                                                </div>
+                                              )}
+
                                               {/* Búsqueda simple - Igual que en "Estado" */}
 
                         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
@@ -14070,9 +14182,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                return (
 
-                                                 <span className={row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                                 <span className={(() => {
+                                             // Para filas agrupadas, verificar si al menos una fila original está activa
+                                             if (row.originalRows && row.originalRows.length > 0) {
+                                               const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                                               return hasActiveRow ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+                                             }
+                                             // Para filas normales, usar el statusid directamente
+                                             return (row[col.columnName] === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold');
+                                           })()}>
 
-                                                   {row[col.columnName] === 1 ? 'Activo' : 'Inactivo'}
+                                                   {(() => {
+                                               // Para filas agrupadas, verificar si al menos una fila original está activa
+                                               if (row.originalRows && row.originalRows.length > 0) {
+                                                 const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                                                 return hasActiveRow ? 'Activo' : 'Inactivo';
+                                               }
+                                               // Para filas normales, usar el statusid directamente
+                                               return (row[col.columnName] === 1 ? 'Activo' : 'Inactivo');
+                                             })()}
 
                                                  </span>
 
