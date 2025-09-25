@@ -12,12 +12,64 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return data;
 
+    // Lógica específica para cada tabla según los requerimientos:
+    // - País: Sin filtros (mostrar todos)
+    // - Empresa: Filtrar por País seleccionado
+    // - Fundo: Filtrar por Empresa seleccionada
+
+    // Para la tabla 'pais', siempre mostrar todos los registros sin filtros
+    if (tableName === 'pais') {
+      console.log('🌍 Tabla País: Mostrando todos los registros sin filtros');
+      return data;
+    }
+
+    // Para la tabla 'empresa', filtrar solo por país si está seleccionado
+    if (tableName === 'empresa') {
+      if (!paisSeleccionado) {
+        console.log('🏢 Tabla Empresa: Sin país seleccionado, mostrando todas las empresas');
+        return data;
+      }
+      
+      const filtered = data.filter(row => {
+        return row.paisid && row.paisid.toString() === paisSeleccionado;
+      });
+      
+      console.log('🏢 Tabla Empresa: Filtradas por país', {
+        paisSeleccionado,
+        totalEmpresas: data.length,
+        empresasFiltradas: filtered.length
+      });
+      
+      return filtered;
+    }
+
+    // Para la tabla 'fundo', filtrar solo por empresa si está seleccionada
+    if (tableName === 'fundo') {
+      if (!empresaSeleccionada) {
+        console.log('🏭 Tabla Fundo: Sin empresa seleccionada, mostrando todos los fundos');
+        return data;
+      }
+      
+      const filtered = data.filter(row => {
+        return row.empresaid && row.empresaid.toString() === empresaSeleccionada;
+      });
+      
+      console.log('🏭 Tabla Fundo: Filtrados por empresa', {
+        empresaSeleccionada,
+        totalFundos: data.length,
+        fundosFiltrados: filtered.length
+      });
+      
+      return filtered;
+    }
+
+    // Para otras tablas, aplicar la lógica original de filtros jerárquicos
     // Si no hay filtros activos, devolver todos los datos
     if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
       return data;
     }
 
-    console.log('🔍 Aplicando filtros globales:', {
+    console.log('🔍 Aplicando filtros globales para tabla:', {
       tableName,
       paisSeleccionado,
       empresaSeleccionada,
