@@ -86,9 +86,17 @@ export function MassiveUmbralForm({
     getUniqueOptionsForField('entidadid'), [getUniqueOptionsForField]
   );
 
-  const metricasOptions = useMemo(() => 
-    getUniqueOptionsForField('metricaid'), [getUniqueOptionsForField]
-  );
+  // Métricas filtradas por nodos seleccionados (solo las que existen en metricasensor)
+  const metricasOptions = useMemo(() => {
+    const selectedNodesFiltered = selectedNodes.filter((node: SelectedNode) => node.selected);
+    if (selectedNodesFiltered.length === 0) {
+      return [];
+    }
+    
+    // Obtener métricas que existen en metricasensor para los nodos seleccionados
+    const nodoids = selectedNodesFiltered.map((node: SelectedNode) => node.nodoid);
+    return getUniqueOptionsForField('metricaid', { nodoids: nodoids.join(',') });
+  }, [getUniqueOptionsForField, selectedNodes]);
 
   const criticidadesOptions = useMemo(() => 
     getUniqueOptionsForField('criticidadid'), [getUniqueOptionsForField]
@@ -120,18 +128,21 @@ export function MassiveUmbralForm({
     }
   }, [formData.fundoid, formData.entidadid, getUniqueOptionsForField]);
 
-  // Inicializar métricas cuando se cargan las opciones
+  // Inicializar métricas cuando se cargan las opciones o cambian los nodos seleccionados
   useEffect(() => {
-    if (metricasOptions.length > 0 && formData.metricasData.length === 0) {
+    if (metricasOptions.length > 0) {
       const initialMetricasData: MetricaData[] = metricasOptions.map(option => ({
         metricaid: parseInt(option.value.toString()),
         metrica: option.label,
         unidad: option.unidad || '',
-        selected: false,
+        selected: true, // ✅ Seleccionadas por defecto
         expanded: false,
         umbralesPorTipo: {}
       }));
       setFormData(prev => ({ ...prev, metricasData: initialMetricasData }));
+    } else {
+      // Si no hay métricas disponibles, limpiar las métricas
+      setFormData(prev => ({ ...prev, metricasData: [] }));
     }
   }, [metricasOptions]);
 
@@ -308,7 +319,7 @@ export function MassiveUmbralForm({
     }));
   };
 
-  // Reportar cambios al sistema de detección
+  // Reportar cambios al sistema de detección (solo cambios significativos)
   useEffect(() => {
     if (onFormDataChange) {
       const massiveFormData = {
@@ -329,7 +340,7 @@ export function MassiveUmbralForm({
       };
       onFormDataChange(massiveFormData);
     }
-  }, [formData, selectedNodes, assignedSensorTypes, onFormDataChange]);
+  }, [formData.fundoid, formData.entidadid, formData.metricasData.map(m => m.selected).join(','), selectedNodes.map(n => n.selected).join(','), assignedSensorTypes.length, onFormDataChange]);
 
   // Obtener nodos seleccionados
   const getSelectedNodes = () => {
@@ -387,6 +398,20 @@ export function MassiveUmbralForm({
           for (const metrica of formData.metricasData) {
             // Solo procesar métricas seleccionadas
             if (metrica.selected) {
+              // Verificar si esta combinación nodo-tipo-métrica existe en metricasensor
+              const existeEnMetricasensor = getUniqueOptionsForField('metricaid', { 
+                nodoids: [node.nodoid].join(',') 
+              }).some(m => m.value === metrica.metricaid);
+              
+              if (!existeEnMetricasensor) {
+                console.log('⚠️ Saltando métrica que no existe en metricasensor para este nodo:', {
+                  nodo: node.nodo,
+                  metrica: metrica.metrica,
+                  tipo: tipo.tipo
+                });
+                continue;
+              }
+              
               const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid];
               console.log('🔍 Verificando umbral para tipo:', { 
                 metrica: metrica.metrica, 
@@ -456,8 +481,16 @@ export function MassiveUmbralForm({
 
   const selectedNodesCount = getSelectedNodes().length;
   const assignedTiposCount = assignedSensorTypes.length; // Todos los tipos asignados se procesan
-  const totalCombinations = selectedNodesCount * assignedTiposCount * 
-    formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
+  const validMetricasCount = formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
+  const totalCombinations = selectedNodesCount * assignedTiposCount * validMetricasCount;
+
+  // Validación mejorada para mostrar qué falta
+  const validationErrors = [];
+  if (!formData.fundoid) validationErrors.push('Fundo');
+  if (!formData.entidadid) validationErrors.push('Entidad');
+  if (selectedNodesCount === 0) validationErrors.push('Nodos');
+  if (assignedTiposCount === 0) validationErrors.push('Tipos de sensores');
+  if (validMetricasCount === 0) validationErrors.push('Métricas con umbrales completos');
 
   // Auto-seleccionar fundo si solo hay una opción
   useEffect(() => {
@@ -615,9 +648,6 @@ export function MassiveUmbralForm({
                   <h5 className="text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
                     TIPOS DE SENSORES INCONSISTENTES
                   </h5>
-                  <p className="text-yellow-300 text-xs font-mono mb-3">
-                    Los nodos seleccionados tienen diferentes tipos de sensores. Haz clic en un grupo para seleccionar solo esos nodos.
-                  </p>
                   
                   {/* Resumen compacto de grupos con selección interactiva */}
                   <div className="space-y-2">
@@ -632,6 +662,33 @@ export function MassiveUmbralForm({
                             ...node,
                             selected: nodosDelGrupo.includes(node.nodoid)
                           })));
+                          
+                          // Configurar automáticamente todas las métricas disponibles para este grupo
+                          setTimeout(() => {
+                            // Obtener métricas que existen en metricasensor para los nodos del grupo
+                            const metricasDelGrupo = getUniqueOptionsForField('metricaid', { 
+                              nodoids: nodosDelGrupo.join(',') 
+                            });
+                            
+                            if (metricasDelGrupo.length > 0) {
+                              // Configurar métricas con valores por defecto
+                              const metricasConfiguradas = metricasDelGrupo.map(metrica => ({
+                                metricaid: parseInt(metrica.value.toString()),
+                                metrica: metrica.label,
+                                unidad: metrica.unidad || '',
+                                selected: true, // ✅ Seleccionar automáticamente
+                                expanded: false, // ✅ NO expandir (solo seleccionar)
+                                umbralesPorTipo: {}
+                              }));
+                              
+                              setFormData(prev => ({
+                                ...prev,
+                                metricasData: metricasConfiguradas
+                              }));
+                              
+                              console.log('🔧 Métricas configuradas automáticamente para el grupo:', metricasConfiguradas);
+                            }
+                          }, 100); // Pequeño delay para que se actualicen los nodos primero
                         }}
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -812,9 +869,9 @@ export function MassiveUmbralForm({
                                   <input
                                     type="number"
                                     step="0.01"
-                                    value={umbralTipo.minimo}
+                                    value={umbralTipo.minimo || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'minimo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
+                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                   />
                                 </div>
@@ -826,9 +883,9 @@ export function MassiveUmbralForm({
                                   <input
                                     type="number"
                                     step="0.01"
-                                    value={umbralTipo.maximo}
+                                    value={umbralTipo.maximo || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'maximo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
+                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="100.00"
                                   />
                                 </div>
@@ -839,7 +896,7 @@ export function MassiveUmbralForm({
                                   </label>
                                   <SelectWithPlaceholder
                                     options={criticidadesOptions}
-                                    value={umbralTipo.criticidadid}
+                                    value={umbralTipo.criticidadid || null}
                                     onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'criticidadid', value ? value.toString() : '')}
                                     placeholder="SELECCIONAR"
                                     disabled={loading}
@@ -852,7 +909,7 @@ export function MassiveUmbralForm({
                                   </label>
                                   <input
                                     type="text"
-                                    value={umbralTipo.umbral}
+                                    value={umbralTipo.umbral || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'umbral', e.target.value)}
                                     className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
                                     placeholder="Nombre del umbral"
@@ -872,6 +929,7 @@ export function MassiveUmbralForm({
         </div>
       )}
 
+
       {/* Resumen de selección */}
       {selectedNodesCount > 0 && (
         <div className="bg-neutral-800 rounded-lg p-4">
@@ -889,7 +947,7 @@ export function MassiveUmbralForm({
             </div>
             <div>
               <span className="text-orange-400">Métricas configuradas:</span>
-              <span className="text-white ml-2">{formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length}</span>
+              <span className="text-white ml-2">{validMetricasCount}</span>
             </div>
           </div>
           <div className="mt-3 text-orange-300 font-mono text-sm">
@@ -902,15 +960,21 @@ export function MassiveUmbralForm({
       <div className="flex justify-end space-x-4">
         <button
           onClick={handleApply}
-          disabled={!isFormValid() || loading}
+          disabled={!isFormValid() || loading || validationErrors.length > 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
-          title={!validationResult.isValid ? 'Selecciona nodos con los mismos tipos de sensores' : ''}
+          title={
+            loading ? 'Guardando umbrales...' :
+            !validationResult.isValid ? 'Selecciona nodos con los mismos tipos de sensores' :
+            validationErrors.length > 0 ? `Faltan: ${validationErrors.join(', ')}` :
+            `Crear ${totalCombinations} umbrales`
+          }
         >
           <span>➕</span>
           <span>
             {loading ? 'GUARDANDO...' : 
              !validationResult.isValid ? 'TIPOS INCONSISTENTES' : 
-             'GUARDAR'}
+             validationErrors.length > 0 ? 'FALTAN DATOS' :
+             `GUARDAR (${totalCombinations})`}
           </span>
         </button>
         

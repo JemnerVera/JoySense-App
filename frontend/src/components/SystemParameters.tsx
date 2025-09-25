@@ -6304,7 +6304,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     return null;
   };
 
-    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: number[] }) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: string }) => {
 
     console.log('🔍 getUniqueOptionsForField Debug:', {
 
@@ -7324,7 +7324,37 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        const metricaResult = metricasData.map(metrica => ({ value: metrica.metricaid, label: metrica.metrica }));
+        // Si se especifican nodoids, filtrar métricas que existen en metricasensor para esos nodos
+        if (filterParams?.nodoids) {
+          const nodoidsString = filterParams.nodoids;
+          const nodoids = nodoidsString.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+          console.log('📈 Filtrando métricas por nodos:', nodoids);
+          
+          // Obtener métricas que existen en metricasensor para los nodos especificados
+          const metricasEnMetricasensor = metricasensorData?.filter(ms => 
+            ms && ms.metricaid && nodoids.includes(ms.nodoid)
+          ) || [];
+          
+          const metricaIdsUnicos = Array.from(new Set(metricasEnMetricasensor.map(ms => ms.metricaid)));
+          console.log('📈 Métricas encontradas en metricasensor:', metricaIdsUnicos);
+          
+          const metricaResult = metricasData
+            .filter(metrica => metricaIdsUnicos.includes(metrica.metricaid))
+            .map(metrica => ({ 
+              value: metrica.metricaid, 
+              label: metrica.metrica,
+              unidad: metrica.unidad 
+            }));
+
+          console.log('📈 Opciones de métricas filtradas devueltas:', metricaResult);
+          return metricaResult;
+        }
+
+        const metricaResult = metricasData.map(metrica => ({ 
+          value: metrica.metricaid, 
+          label: metrica.metrica,
+          unidad: metrica.unidad 
+        }));
 
         console.log('📈 Opciones de métricas devueltas:', metricaResult);
 
@@ -9620,7 +9650,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const columnMappings: Record<string, string> = {
 
-      'paisid': 'Pais',
+      'paisid': 'País',
 
       'empresaid': 'Empresa',
 
@@ -9680,7 +9710,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Campos específicos de cada tabla
 
-      'pais': 'Pais',
+      'pais': 'País',
 
       'empresa': 'Empresa',
 
@@ -10708,8 +10738,141 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Función para manejar la creación masiva de umbrales
+  // Función para manejar la creación masiva de umbrales (SOLO INSERTAR UMBRALES)
 
+  const handleMassiveUmbralCreationSimple = async (dataToApply: any[]) => {
+
+    if (!selectedTable || !user || selectedTable !== 'umbral') return;
+
+    
+
+    try {
+
+      setLoading(true);
+
+      
+
+      const usuarioid = getCurrentUserId();
+
+      const currentTimestamp = new Date().toISOString();
+
+      
+
+      // Preparar datos con campos de auditoría
+
+      const preparedData = dataToApply.map(item => ({
+
+        ...item,
+
+        usercreatedid: usuarioid,
+
+        usermodifiedid: usuarioid,
+
+        datecreated: currentTimestamp,
+
+        datemodified: currentTimestamp
+
+      }));
+
+      
+
+      console.log('🔍 Frontend: Datos para creación masiva de umbrales:', JSON.stringify(preparedData, null, 2));
+
+      console.log('🔍 Frontend: Total de umbrales a crear:', preparedData.length);
+
+      
+
+      // Crear umbrales para cada combinación de nodo + tipo + métrica
+      console.log(`🔧 Creando umbrales masivos...`);
+      
+      for (const umbralData of preparedData) {
+        console.log(`➕ Creando umbral: nodo ${umbralData.nodoid}, tipo ${umbralData.tipoid}, métrica ${umbralData.metricaid}`);
+        
+        try {
+          // Crear nuevo umbral
+          await JoySenseService.insertTableRow('umbral', umbralData);
+          console.log(`✅ Umbral creado exitosamente`);
+        } catch (error: any) {
+          console.log(`❌ Error al crear umbral:`, error);
+          // Si falla por duplicado, intentar actualizar
+          if (error.message?.includes('duplicate key') || 
+              error.message?.includes('already exists') ||
+              error.response?.status === 500) {
+            console.log(`🔄 Intentando actualizar umbral existente...`);
+            try {
+              // Buscar umbral existente
+              const umbralExistente = umbralesData?.find(umbral => 
+                umbral.nodoid === umbralData.nodoid && 
+                umbral.tipoid === umbralData.tipoid && 
+                umbral.metricaid === umbralData.metricaid
+              );
+              
+              if (umbralExistente) {
+                await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+                  umbral: umbralData.umbral,
+                  minimo: umbralData.minimo,
+                  maximo: umbralData.maximo,
+                  criticidadid: umbralData.criticidadid,
+                  usermodifiedid: umbralData.usermodifiedid,
+                  datemodified: umbralData.datemodified
+                });
+                console.log(`✅ Umbral actualizado exitosamente`);
+              } else {
+                console.log(`❌ No se encontró umbral existente para actualizar`);
+              }
+            } catch (updateError: any) {
+              console.log(`❌ Error al actualizar umbral:`, updateError);
+            }
+          }
+        }
+      }
+
+      
+
+      // Recargar datos
+
+      loadTableData();
+
+      loadTableInfo();
+
+      loadUpdateData();
+
+      loadCopyData();
+
+      loadRelatedTablesData();
+
+      
+
+      setMessage({ 
+
+        type: 'success', 
+
+        text: `Se procesaron ${preparedData.length} umbrales exitosamente` 
+
+      });
+
+      
+
+    } catch (error: any) {
+
+      console.error('Error en creación masiva de umbrales:', error);
+
+      const errorResponse = handleMultipleInsertError(error, 'umbrales');
+
+      setMessage({ type: errorResponse.type, text: errorResponse.message });
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
+
+  // Función para manejar la creación masiva de umbrales (LEGACY - COMPLEJA) - COMENTADA
+  /*
   const handleMassiveUmbralCreation = async (dataToApply: any[]) => {
 
     if (!selectedTable || !user || selectedTable !== 'umbral') return;
@@ -10814,11 +10977,50 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      // Obtener nodos únicos de los datos a aplicar
-
-      const nodosUnicos = Array.from(new Set(preparedData.map(item => item.nodoid)));
-
-      console.log('🔍 Nodos únicos a procesar:', nodosUnicos);
+      // Crear umbrales para cada combinación de nodo + tipo + métrica
+      console.log(`🔧 Creando umbrales masivos...`);
+      
+      for (const umbralData of preparedData) {
+        console.log(`➕ Creando umbral: nodo ${umbralData.nodoid}, tipo ${umbralData.tipoid}, métrica ${umbralData.metricaid}`);
+        
+        try {
+          // Crear nuevo umbral
+          await JoySenseService.insertTableRow('umbral', umbralData);
+          console.log(`✅ Umbral creado exitosamente`);
+        } catch (error: any) {
+          console.log(`❌ Error al crear umbral:`, error);
+          // Si falla por duplicado, intentar actualizar
+          if (error.message?.includes('duplicate key') || 
+              error.message?.includes('already exists') ||
+              error.response?.status === 500) {
+            console.log(`🔄 Intentando actualizar umbral existente...`);
+            try {
+              // Buscar umbral existente
+              const umbralExistente = umbralesData?.find(umbral => 
+                umbral.nodoid === umbralData.nodoid && 
+                umbral.tipoid === umbralData.tipoid && 
+                umbral.metricaid === umbralData.metricaid
+              );
+              
+              if (umbralExistente) {
+                await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+                  umbral: umbralData.umbral,
+                  minimo: umbralData.minimo,
+                  maximo: umbralData.maximo,
+                  criticidadid: umbralData.criticidadid,
+                  usermodifiedid: umbralData.usermodifiedid,
+                  datemodified: umbralData.datemodified
+                });
+                console.log(`✅ Umbral actualizado exitosamente`);
+              } else {
+                console.log(`❌ No se encontró umbral existente para actualizar`);
+              }
+            } catch (updateError: any) {
+              console.log(`❌ Error al actualizar umbral:`, updateError);
+            }
+          }
+        }
+      }
 
       
 
@@ -11056,9 +11258,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             try {
 
-              // Actualizar metricasensor existente
+              // Actualizar metricasensor existente usando endpoint con clave compuesta
 
-              await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
+              await JoySenseService.updateTableRowByCompositeKey('metricasensor', { 
+                nodoid, 
+                tipoid: dato.tipoid, 
+                metricaid: dato.metricaid 
+              }, {
 
                 statusid: 1,
 
@@ -11086,7 +11292,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             try {
 
-              // Intentar crear nuevo metricasensor
+              // Crear nuevo metricasensor
 
               await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
 
@@ -11331,6 +11537,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
 
   };
+  */
 
 
 
@@ -13129,6 +13336,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       tiposData={tiposData}
 
+                      ubicacionesData={ubicacionesData}
+
+                      entidadesData={entidadesData}
+
+                      paisesData={paisesData}
+
+                      empresasData={empresasData}
+
+                      fundosData={fundosData}
+
+                      metricasData={metricasData}
+
+                      criticidadesData={criticidadesData}
+
+                      perfilesData={perfilesData}
+
+                      usuariosData={usuariosData}
+
                     />
 
                                          {selectedTable === 'sensor' ? (
@@ -14576,7 +14801,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       getUniqueOptionsForField={getUniqueOptionsForField}
 
-                      onApply={handleMassiveUmbralCreation}
+                      onApply={handleMassiveUmbralCreationSimple}
 
                       onCancel={() => {
 

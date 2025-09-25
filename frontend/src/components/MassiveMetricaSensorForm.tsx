@@ -386,6 +386,7 @@ export function MassiveMetricaSensorForm({
                       <span className="text-white text-sm font-mono tracking-wider">
                         {tipo.tipo.toUpperCase()}
                       </span>
+                      <span className="ml-auto text-orange-400 text-sm">🔒</span>
                     </div>
                   ))}
                 </div>

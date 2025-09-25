@@ -11,6 +11,15 @@ interface InsertionMessageProps {
   onClear: () => void;
   nodosData?: any[];
   tiposData?: any[];
+  ubicacionesData?: any[];
+  entidadesData?: any[];
+  paisesData?: any[];
+  empresasData?: any[];
+  fundosData?: any[];
+  metricasData?: any[];
+  criticidadesData?: any[];
+  perfilesData?: any[];
+  usuariosData?: any[];
 }
 
 const InsertionMessage: React.FC<InsertionMessageProps> = ({
@@ -18,7 +27,16 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
   tableName,
   onClear,
   nodosData = [],
-  tiposData = []
+  tiposData = [],
+  ubicacionesData = [],
+  entidadesData = [],
+  paisesData = [],
+  empresasData = [],
+  fundosData = [],
+  metricasData = [],
+  criticidadesData = [],
+  perfilesData = [],
+  usuariosData = []
 }) => {
   if (insertedRecords.length === 0) return null;
 
@@ -136,6 +154,56 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       return tipo ? tipo.tipo : value.toString();
     }
     
+    if (fieldKey === 'ubicacionid' && ubicacionesData.length > 0) {
+      const ubicacion = ubicacionesData.find(u => u.ubicacionid === value);
+      return ubicacion ? ubicacion.ubicacion : value.toString();
+    }
+    
+    if (fieldKey === 'entidadid' && entidadesData.length > 0) {
+      const entidad = entidadesData.find(e => e.entidadid === value);
+      return entidad ? entidad.entidad : value.toString();
+    }
+    
+    if (fieldKey === 'paisid' && paisesData.length > 0) {
+      const pais = paisesData.find(p => p.paisid === value);
+      return pais ? pais.pais : value.toString();
+    }
+    
+    if (fieldKey === 'empresaid' && empresasData.length > 0) {
+      const empresa = empresasData.find(e => e.empresaid === value);
+      return empresa ? empresa.empresa : value.toString();
+    }
+    
+    if (fieldKey === 'fundoid' && fundosData.length > 0) {
+      const fundo = fundosData.find(f => f.fundoid === value);
+      return fundo ? fundo.fundo : value.toString();
+    }
+    
+    if (fieldKey === 'metricaid' && metricasData.length > 0) {
+      const metrica = metricasData.find(m => m.metricaid === value);
+      return metrica ? metrica.metrica : value.toString();
+    }
+    
+    if (fieldKey === 'criticidadid' && criticidadesData.length > 0) {
+      const criticidad = criticidadesData.find(c => c.criticidadid === value);
+      return criticidad ? criticidad.criticidad : value.toString();
+    }
+    
+    if (fieldKey === 'perfilid' && perfilesData.length > 0) {
+      const perfil = perfilesData.find(p => p.perfilid === value);
+      return perfil ? perfil.perfil : value.toString();
+    }
+    
+    if (fieldKey === 'usuarioid' && usuariosData.length > 0) {
+      const usuario = usuariosData.find(u => u.usuarioid === value);
+      return usuario ? `${usuario.firstname} ${usuario.lastname}` : value.toString();
+    }
+    
+    // Manejar statusid
+    if (fieldKey === 'statusid') {
+      return value === 1 ? 'Activo' : 'Inactivo';
+    }
+    
     if (typeof value === 'number') {
       return value.toString();
     }
@@ -190,7 +258,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
             </tr>
           </thead>
           <tbody>
-            {insertedRecords.slice(0, 3).map((record, index) => (
+            {insertedRecords.slice(-3).map((record, index) => (
               <tr key={record.id} className="border-b border-blue-600 border-opacity-30 last:border-b-0">
                 {fieldKeys.map(fieldKey => (
                   <td key={fieldKey} className="py-2 px-3 text-blue-200 text-opacity-70">

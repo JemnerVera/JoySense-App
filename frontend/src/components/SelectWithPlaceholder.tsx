@@ -42,7 +42,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   };
 
   const selectedOption = options.find(option => 
-    (value && value !== 0) && (
+    (value !== null && value !== undefined && value !== 0) && (
       option.value === value || 
       option.value === value?.toString() || 
       option.value?.toString() === value?.toString()

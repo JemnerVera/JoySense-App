@@ -502,9 +502,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
               <h5 className="text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
                 TIPOS DE SENSORES INCONSISTENTES
               </h5>
-              <p className="text-yellow-300 text-xs font-mono mb-3">
-                Los nodos seleccionados tienen diferentes tipos de sensores. Haz clic en un grupo para seleccionar solo esos nodos.
-              </p>
               
               {/* Resumen compacto de grupos con selección interactiva */}
               <div className="space-y-2">
@@ -600,7 +597,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
                 MÉTRICA
               </h4>
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className="flex items-center space-x-3 cursor-pointer bg-orange-900/20 border border-orange-500/30 rounded-lg px-3 py-2 hover:bg-orange-900/30 transition-colors">
                 <input
                   type="checkbox"
                   checked={selectedMetricasCheckboxes.length === getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length && getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length > 0}
@@ -614,9 +611,12 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                       setSelectedMetricasCheckboxes([]);
                     }
                   }}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                  className="w-5 h-5 text-orange-500 bg-neutral-800 border-orange-500 rounded focus:ring-orange-500 focus:ring-2"
                 />
-                <span className="text-white text-sm font-mono tracking-wider">TODAS</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-orange-400 text-lg">📋</span>
+                  <span className="text-orange-400 font-bold text-sm font-mono tracking-wider">TODAS</span>
+                </div>
               </label>
             </div>
             <div className="max-h-60 overflow-y-auto space-y-2">

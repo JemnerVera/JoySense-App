@@ -25,7 +25,7 @@ describe('ParameterForm', () => {
   it('debe renderizar el formulario correctamente', () => {
     render(<ParameterForm {...mockProps} />);
     
-    expect(screen.getByText('PAIS')).toBeInTheDocument();
+    expect(screen.getByText('PAÍS')).toBeInTheDocument();
     expect(screen.getByText('PAISABREV')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /crear/i })).toBeInTheDocument();
   });
