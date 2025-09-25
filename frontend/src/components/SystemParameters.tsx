@@ -909,7 +909,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     statusCurrentPage,
     statusTotalPages,
     // Removed unused: statusLoading
-    copyData,
+    // Removed unused: copyData
     // Removed unused: selectedRowsForCopy
     setSelectedTable,
     setActiveSubTab,
@@ -1850,7 +1850,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados para modal de pérdida de datos
 
-  const [showLostDataModal, setShowLostDataModal] = useState(false);
+  // Removed unused: showLostDataModal
 
   const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
@@ -2294,7 +2294,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable, searchByCriteria);
 
-  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+  const { getPaginatedData, goToPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+  // Removed unused pagination: nextPage, prevPage, firstPage, lastPage
 
 
 
@@ -10717,139 +10718,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para manejar inserción múltiple de localizaciones
 
-  const handleMultipleLocalizacionInsert = async () => {
-
-    if (!selectedTable || !user || multipleLocalizaciones.length === 0) return;
-
-    
-
-    try {
-
-      setLoading(true);
-
-      const usuarioid = getCurrentUserId();
-
-      
-
-      // Preparar datos para cada localización (limpiar campos que no están en la tabla)
-
-      const localizacionesToInsert = multipleLocalizaciones.map(localizacion => {
-
-        const { localizacionIndex, label, ...cleanLocalizacion } = localizacion; // Remover campos que no están en la tabla
-
-        return {
-
-          ...cleanLocalizacion,
-
-          usercreatedid: usuarioid,
-
-          usermodifiedid: usuarioid,
-
-          datecreated: new Date().toISOString(),
-
-          datemodified: new Date().toISOString()
-
-        };
-
-      });
-
-
-
-      // Insertar localizaciones simultáneamente (ahora que los datos están limpios)
-
-      console.log(`🔄 Insertando ${localizacionesToInsert.length} localizaciones simultáneamente...`);
-
-      const insertPromises = localizacionesToInsert.map((localizacion, index) => 
-
-        JoySenseService.insertTableRow(selectedTable, localizacion)
-
-          .then(result => {
-
-            console.log(`✅ Localización ${index + 1} insertada exitosamente:`, localizacion);
-
-            return result;
-
-          })
-
-          .catch(error => {
-
-            console.error(`❌ Error insertando localización ${index + 1}:`, localizacion, error);
-
-            throw error;
-
-          })
-
-      );
-
-      
-
-      const results = await Promise.all(insertPromises);
-
-      
-
-      // Agregar cada localización insertada al sistema de mensajes
-
-      localizacionesToInsert.forEach(localizacion => {
-
-        addInsertedRecord(localizacion);
-
-      });
-
-      
-
-      // Limpiar mensajes de alerta después de inserción exitosa
-
-      setMessage(null);
-
-      
-
-      // Limpiar formulario
-
-      setMultipleLocalizaciones([]);
-
-      setSelectedUbicaciones([]);
-
-      setSelectedNodosLocalizacion([]);
-
-      setSelectedEntidades([]);
-
-      setLatitud('');
-
-      setLongitud('');
-
-      setReferencia('');
-
-      
-
-      // Recargar datos
-
-      loadTableDataWrapper();
-
-      loadTableInfo();
-
-      loadUpdateData();
-
-      loadCopyData();
-
-      // Recargar datos relacionados para que aparezcan en comboboxes
-
-      loadRelatedTablesData();
-
-      
-
-    } catch (error: any) {
-
-      const errorResponse = handleMultipleInsertError(error, 'localizaciones');
-
-      setMessage({ type: errorResponse.type, text: errorResponse.message });
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
+  // Removed unused function: handleMultipleLocalizacionInsert
 
 
 
@@ -10861,21 +10730,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones para selección manual múltiple
 
-  const handleSelectAllFiltered = () => {
-
-    // Solo seleccionar las filas que no están ya seleccionadas
-
-    const newSelections = updateData.filter(row => 
-
-      !selectedRowsForManualUpdate.some(selected => getRowIdForSelection(selected) === getRowIdForSelection(row))
-
-    );
-
-    
-
-    setSelectedRowsForManualUpdate(prev => [...prev, ...newSelections]);
-
-  };
+  // Removed unused function: handleSelectAllFiltered
 
 
 
@@ -10999,39 +10854,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para calcular el número correcto de entradas para el botón de actualización
 
-  const getUpdateButtonCount = () => {
-
-    if (selectedTable === 'usuarioperfil') {
-
-      // Para usuarioperfil, contar las filas activas dentro de las filas agrupadas
-
-      return selectedRowsForManualUpdate.reduce((total, row) => {
-
-        if (row.originalRows && row.originalRows.length > 0) {
-
-          // Contar solo las filas activas (statusid === 1)
-
-          return total + row.originalRows.filter((originalRow: any) => originalRow.statusid === 1).length;
-
-        } else {
-
-          // Si no es una fila agrupada, contar 1 si está activa
-
-          return total + (row.statusid === 1 ? 1 : 0);
-
-        }
-
-      }, 0);
-
-    } else {
-
-      // Para otras tablas, usar el conteo normal
-
-      return selectedRowsForManualUpdate.length;
-
-    }
-
-  };
+  // Removed unused function: getUpdateButtonCount
 
 
 
@@ -11081,38 +10904,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleCancelManualUpdate = () => {
-
-    // Verificar si realmente hay cambios sin guardar
-    const hasChanges = hasUnsavedChanges();
-    
-    console.log('🔍 handleCancelManualUpdate - hasChanges:', hasChanges);
-    
-    if (hasChanges) {
-      // Solo mostrar modal si hay cambios reales
-    setCancelAction(() => () => {
-
-    setIsMultipleSelectionMode(false);
-
-    setSelectedRowsForManualUpdate([]);
-
-    setUpdateFormData({});
-
-      setShowCancelModal(false);
-
-    });
-
-    setShowCancelModal(true);
-    } else {
-      // Si no hay cambios, cancelar directamente sin modal
-      console.log('🔍 No changes detected, canceling manual update directly');
-      
-      setIsMultipleSelectionMode(false);
-      setSelectedRowsForManualUpdate([]);
-      setUpdateFormData({});
-    }
-
-  };
+  // Removed unused function: handleCancelManualUpdate
 
 
 
@@ -11146,79 +10938,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Funciones para manejar el modal de pérdida de datos
 
-  const handleConfirmLostData = () => {
-
-    if (pendingTabChange) {
-
-      // Limpiar todos los estados del formulario antes de cambiar de pestaña
-
-      setFormData(initializeFormData(columns));
-
-      
-
-      // Limpiar estados específicos según la tabla
-
-      if (selectedTable === 'usuarioperfil') {
-
-        setMultipleUsuarioPerfiles([]);
-
-        setSelectedUsuarios([]);
-
-        setSelectedPerfiles([]);
-
-      } else if (selectedTable === 'metricasensor') {
-
-        setMultipleMetricas([]);
-
-        setSelectedNodos([]);
-
-        setSelectedEntidadMetrica('');
-
-        setSelectedMetricas([]);
-
-        setIsReplicateMode(false);
-
-      } else if (selectedTable === 'sensor') {
-
-        setMultipleSensors([]);
-
-        setSelectedNodo('');
-
-        setSelectedEntidad('');
-
-        setSelectedTipo('');
-
-        setSelectedSensorCount(0);
-
-      } else if (selectedTable === 'umbral') {
-
-        // Para umbral, solo limpiar formData es suficiente
-
-        // Los estados específicos se manejan en MassiveUmbralForm
-
-      }
-
-      
-
-      executeTabChange(pendingTabChange as 'status' | 'insert' | 'update' | 'massive');
-
-    }
-
-    setShowLostDataModal(false);
-
-    setPendingTabChange(null);
-
-  };
+  // Removed unused function: handleConfirmLostData
 
 
 
-  const handleCancelLostData = () => {
-
-    setShowLostDataModal(false);
-
-    setPendingTabChange(null);
-
-  };
+  // Removed unused function: handleCancelLostData
 
 
 
