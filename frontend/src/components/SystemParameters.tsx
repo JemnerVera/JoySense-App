@@ -882,7 +882,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Removed unused: copySearchTerm
     // Removed unused: copyFilteredData
     setSearchTerm,
-    setSearchField,
+    // Removed unused: setSearchField
     setHasSearched,
     // Removed unused: setSearchFilteredData, setIsSearching
     setStatusSearchTerm,
@@ -6164,15 +6164,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Determinar si es una nueva entrada o una actualización
-        const isNewEntry = !row.usercreatedid || !row.datecreated;
-        
-        // Obtener datos originales para comparar
-        const originalRow = selectedRowsForUpdate.find(orig => 
-          orig.nodoid === row.nodoid && orig.tipoid === row.tipoid && orig.metricaid === row.metricaid
-        ) || selectedRowsForManualUpdate.find(orig => 
-          orig.nodoid === row.nodoid && orig.tipoid === row.tipoid && orig.metricaid === row.metricaid
-        );
+        // Removed unused: isNewEntry, originalRow
         
         // Para metricasensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -6368,8 +6360,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Determinar si es una nueva entrada o una actualización
-        const isNewEntry = !row.usercreatedid || !row.datecreated;
+        // Removed unused: isNewEntry
         
         // Para sensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -6562,15 +6553,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        // Determinar si es una nueva entrada o una actualización
-        const isNewEntry = !row.usercreatedid || !row.datecreated;
-        
-        // Obtener datos originales para comparar
-        const originalRow = selectedRowsForUpdate.find(orig => 
-          orig.usuarioid === row.usuarioid && orig.perfilid === row.perfilid
-        ) || selectedRowsForManualUpdate.find(orig => 
-          orig.usuarioid === row.usuarioid && orig.perfilid === row.perfilid
-        );
+        // Removed unused: isNewEntry, originalRow
         
         // Para usuarioperfil, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
@@ -8140,13 +8123,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
-  // Columnas buscables - Memoizadas con dependencias correctas
-  const searchableColumns = useMemo(() => {
-    if (tableColumns.length === 0) return [];
-    const allColumns = getVisibleColumns();
-    const excludedFields: string[] = [];
-    return allColumns.filter(col => !excludedFields.includes(col.columnName));
-  }, [getVisibleColumns, tableColumns]);
+  // Removed unused: searchableColumns
 
 
 
@@ -8154,53 +8131,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Función para determinar si un campo necesita tabla de equivalencias
-
-  const needsEquivalenceTable = (fieldName: string): boolean => {
-
-    // Campos que siempre necesitan equivalencias
-
-    const fieldsWithEquivalences = ['statusid'];
-
-    
-
-    // Campos de auditoría que SÍ necesitan equivalencias (dropdowns)
-
-    const auditFieldsWithEquivalences = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
-
-    
-
-    // Campos de ID que necesitan equivalencias basados en el schema
-
-    const idFieldsWithEquivalences = [
-
-      'paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 
-
-      'nodoid', 'tipoid', 'metricaid', 'localizacionid', 'sensorid',
-
-      // NUEVOS CAMPOS DE ID
-
-      'umbralid', 'criticidadid', 'perfilid', 'usuarioid', 'medioid',
-
-      'contactoid', 'alertaid'
-
-    ];
-
-    
-
-    // Si es un campo de auditoría, necesita equivalencias (dropdowns)
-
-    if (auditFieldsWithEquivalences.includes(fieldName)) {
-
-      return true;
-
-    }
-
-    
-
-    return fieldsWithEquivalences.includes(fieldName) || idFieldsWithEquivalences.includes(fieldName);
-
-  };
+  // Removed unused function: needsEquivalenceTable
 
 
 
@@ -8360,23 +8291,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-     // Función para obtener solo las opciones disponibles en la tabla actual
-
-   const getAvailableOptionsForField = (fieldName: string): Array<{label: string, value: string}> => {
-
-     // Obtener todas las opciones posibles
-
-     const allOptions = getFieldEquivalences(fieldName);
-
-     
-
-     // Para TODOS los campos con dropdown, siempre mostrar todas las opciones disponibles
-
-     // Esto incluye: fechas, usuarios, y todos los campos de ID
-
-     return allOptions;
-
-   };
+   // Removed unused function: getAvailableOptionsForField
 
 
 
@@ -9014,7 +8929,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        
 
-       const results = await Promise.all(insertPromises);
+       await Promise.all(insertPromises);
 
       
 
@@ -10237,7 +10152,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        
 
-       const results = await Promise.all(insertPromises);
+       await Promise.all(insertPromises);
 
       
 
@@ -10455,7 +10370,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      const results = await Promise.all(insertPromises);
+      await Promise.all(insertPromises);
 
      
 
