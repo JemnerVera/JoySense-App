@@ -5176,11 +5176,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setHasSearched(true);
 
-      // Para "Actualizar", usar búsqueda simple como en "Estado"
+      // Para "Actualizar", usar la misma lógica que "Estado" - filtrar statusFilteredData
 
-      // Filtrar los datos localmente en lugar de hacer llamadas al backend
-
-      const filtered = updateFilteredData.filter(row => {
+      const filtered = statusFilteredData.filter(row => {
 
         return statusVisibleColumns.some(col => {
 
@@ -5210,17 +5208,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-             setUpdateData(filtered);
-
-       // Las variables de paginación se manejan en el hook usePagination
+      // Actualizar statusFilteredData para que la búsqueda funcione dinámicamente
+      setStatusFilteredData(filtered);
 
     } else {
 
       setHasSearched(false);
 
-      // Cargar datos originales sin filtro
-
-      loadUpdateData();
+      // Restaurar datos originales sin filtro
+      setStatusFilteredData(filteredTableData);
 
     }
 
@@ -5240,11 +5236,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setHasSearched(false);
 
-    // setFilteredEquivalences([]); // Limpiar filtro de equivalencias
-
-    // setEquivalenceViewMode('table'); // Resetear modo de vista
-
-    loadUpdateData();
+    // Restaurar datos originales sin filtro
+    setStatusFilteredData(filteredTableData);
 
   };
 
