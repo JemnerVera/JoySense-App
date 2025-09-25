@@ -19,7 +19,7 @@ import {
 // import { replicateSensor, replicateNodo, replicateNodoForMetricaSensor } from '../utils/replicationUtils';
 // import { getTotalPagesForGroupedTable, goToNextPage, goToPrevPage, goToFirstPage, goToLastPage } from '../utils/paginationUtils';
 // import { initializeFormData } from '../utils/formInitializationUtils';
-import { clearCopySelectionOnTableChange, clearCopySelectionOnTabChange } from '../utils/copySelectionUtils';
+// import { clearCopySelectionOnTableChange, clearCopySelectionOnTabChange } from '../utils/copySelectionUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
 import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
 import { useMultipleSelection } from '../hooks/useMultipleSelection';
@@ -466,9 +466,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
   const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
-
   const [copyMessage, setCopyMessage] = useState<Message | null>(null);
   const [tableConstraints, setTableConstraints] = useState<any>(null);
+  const [copyTotalPages, setCopyTotalPages] = useState<number>(0);
+
 
   // Estados de datos relacionados ahora manejados por useTableDataManagement
 
@@ -1009,7 +1010,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Estados de copia ahora manejados por useSearchAndFilter
 
 
-  const [copyTotalPages, setCopyTotalPages] = useState(1);
 
   
 
@@ -1033,7 +1033,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Estados para modal de pérdida de datos
 
 
-  const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
   
 
@@ -2126,15 +2125,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Función para limpiar la selección de copiar cuando se cambia de tabla
-  const handleClearCopySelectionOnTableChange = () => {
-    clearCopySelectionOnTableChange(setCopyMessage, setCopyTotalPages);
-  };
-
-  // Función para limpiar la selección de copiar cuando se cambia de pestaña
-  const handleClearCopySelectionOnTabChange = () => {
-    clearCopySelectionOnTabChange(setCopyMessage, setCopyTotalPages);
-  };
 
 
 
@@ -2517,7 +2507,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     try {
 
-      const [tableDataResponse, tableInfo] = await Promise.all([
+      const [, tableInfo] = await Promise.all([
 
         JoySenseService.getTableData(selectedTable, 1),
 
@@ -2525,9 +2515,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       ]);
 
+      // Actualizar el estado con la información de la tabla
+      setTableInfo(tableInfo);
       
 
-      const tableData = Array.isArray(tableDataResponse) ? tableDataResponse : ((tableDataResponse as any)?.data || []);
+      // tableData extraído pero no usado localmente - se usa el del hook useTableDataManagement
 
       
 
@@ -2888,9 +2880,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           break;
         case 'usuario':
           existingData = userData || [];
-          break;
-        case 'perfil':
-          existingData = perfilesData || [];
           break;
         default:
           existingData = [];
@@ -7446,7 +7435,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
            auditFields.includes(columnName) ||
 
-           columnName.endsWith('id') && !['statusid'].includes(columnName);
+           (columnName.endsWith('id') && !['statusid'].includes(columnName));
 
   };
 
