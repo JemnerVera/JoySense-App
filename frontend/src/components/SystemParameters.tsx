@@ -67,13 +67,8 @@ import { useFilters } from '../contexts/FilterContext';
 import { validateTableData, validateTableUpdate } from '../utils/formValidation';
 
 // Hooks personalizados para refactoring
-import { useFormValidation } from '../hooks/useFormValidation';
-import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
 import { useSystemParametersState } from '../hooks/useSystemParametersState';
-// Removed unused imports: useTableData, useFormState
-import { useInsertOperations } from '../hooks/useInsertOperations';
-import { useUpdateOperations } from '../hooks/useUpdateOperations';
-// Removed unused import: useSearchOperations
+// Removed unused imports: useFormValidation, useProgressiveEnablement, useTableData, useFormState, useInsertOperations, useUpdateOperations, useSearchOperations
 
 
 
@@ -889,10 +884,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setSearchTerm,
     setSearchField,
     setHasSearched,
-    setSearchFilteredData,
-    setIsSearching,
+    // Removed unused: setSearchFilteredData, setIsSearching
     setStatusSearchTerm,
-    setStatusHasSearched,
+    // Removed unused: setStatusHasSearched
     setStatusFilteredData,
     setCopySearchTerm,
     setCopyFilteredData,
@@ -950,26 +944,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   } = useSimpleModal();
 
-  // Hooks de operaciones de servicios
-  const {
-    // Removed unused insert operations: isInserting, insertError, insertSuccess, lastInsertedId, insertSingle, insertMultiple, insertMassive, clearInsertState, setInserting, setInsertError, setInsertSuccess
-  } = useInsertOperations();
-
-  const {
-    // Removed unused update operations: isUpdating, updateError, updateSuccess, lastUpdatedId, updateSingle, updateMultiple, clearUpdateState, setUpdating, setUpdateError, setUpdateSuccess
-  } = useUpdateOperations();
+  // Removed unused hooks: useInsertOperations, useUpdateOperations
 
   // Hook de operaciones de búsqueda ahora manejado por useSearchAndFilter
 
-  // Hook de validación de formularios
-  const {
-    // Removed unused validation functions: validateInsert, validateUpdate, checkDependencies, validateMultipleInsert, validateMassiveInsert
-  } = useFormValidation(selectedTable);
-
-  // Hook de habilitación progresiva
-  const {
-    // Removed unused: getEnabledFields, isFieldEnabled
-  } = useProgressiveEnablement(selectedTable, {});
+  // Removed unused hooks: useFormValidation, useProgressiveEnablement
 
   // Sincronizar estado local con props
 
@@ -1305,7 +1284,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
 
   const [copyMessage, setCopyMessage] = useState<Message | null>(null);
-
   const [tableConstraints, setTableConstraints] = useState<any>(null);
 
   // Estados de datos relacionados ahora manejados por useTableDataManagement
@@ -1856,9 +1834,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [selectedRowsForUpdate, setSelectedRowsForUpdate] = useState<any[]>([]);
 
-  const [bulkUpdateField, setBulkUpdateField] = useState<string>('');
-
-  const [bulkUpdateValue, setBulkUpdateValue] = useState<any>('');
+  // Removed unused: bulkUpdateField, bulkUpdateValue
 
   const [individualRowStatus, setIndividualRowStatus] = useState<{[key: string]: boolean}>({});
 
@@ -1940,65 +1916,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const handleReplicateMetricaSensor = (nodo: any) => {
-
-    // Activar modo replicación
-
-    setIsReplicateMode(true);
-
-    
-
-    // Obtener todas las métricas sensor del nodo fuente seleccionado
-
-    const metricasDelNodo = tableData.filter(ms => ms.nodoid === nodo.nodoid);
-
-    
-
-    if (metricasDelNodo.length > 0) {
-
-      // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
-
-      // Solo extraer las métricas únicas de las métricas sensor del nodo fuente
-
-      const metricasUnicas = Array.from(new Set(metricasDelNodo.map(ms => ms.metricaid)));
-
-      
-
-      // Seleccionar automáticamente las métricas encontradas
-
-      setSelectedMetricas(metricasUnicas.map(id => id.toString()));
-
-      
-
-      // Inicializar métricas con las métricas del nodo fuente, pero para el nodo destino actual
-
-      if (selectedNodos.length > 0) {
-
-        initializeMultipleMetricas(selectedNodos, metricasUnicas.map(id => id.toString()));
-
-      }
-
-      
-
-      // Mostrar mensaje de confirmación
-
-      setMessage({ 
-
-        type: 'success', 
-
-        text: `Se han seleccionado automáticamente ${metricasUnicas.length} métricas del nodo fuente para replicar.` 
-
-      });
-
-    } else {
-
-      // Si no hay métricas sensor en el nodo fuente, mostrar mensaje
-
-      setMessage({ type: 'warning', text: 'El nodo seleccionado no tiene métricas sensor para replicar.' });
-
-    }
-
-  };
+  // Removed unused function: handleReplicateMetricaSensor
 
 
 
