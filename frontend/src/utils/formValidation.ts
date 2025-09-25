@@ -1317,7 +1317,7 @@ const validatePerfilData = async (
     );
     
     const nivelExists = existingData.some(item => 
-      item.nivel && item.nivel.toLowerCase() === formData.nivel?.toLowerCase()
+      item.nivel && item.nivel.toString().toLowerCase() === formData.nivel?.toLowerCase()
     );
     
     if (perfilExists && nivelExists) {
@@ -2971,7 +2971,7 @@ const validatePerfilUpdate = async (
     const nivelExists = existingData.some(item => 
       item.perfilid !== originalData.perfilid && 
       item.nivel && 
-      item.nivel.toLowerCase() === formData.nivel.toLowerCase()
+      item.nivel.toString().toLowerCase() === formData.nivel.toLowerCase()
     );
     
     if (nivelExists) {
