@@ -20,7 +20,7 @@ import { useTableRendering } from '../hooks/useTableRendering';
 import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
 
 // Componentes reutilizables
-import { ParameterForm, ParameterTable, MassiveOperations, NotificationSystem, useNotifications } from './SystemParameters/';
+// import { ParameterForm, ParameterTable, MassiveOperations, NotificationSystem, useNotifications } from './SystemParameters/';
 
 // Componentes existentes que se mantienen
 import SimpleModal from './SimpleModal';
@@ -309,42 +309,28 @@ export const SystemParametersRefactored = forwardRef<SystemParametersRefactoredR
     const renderForm = () => {
       if (activeSubTab === 'insert') {
         return (
-          <ParameterForm
-            selectedTable={selectedTable}
-            formData={formData}
-            onFormDataChange={setFormData}
-            onSuccess={(message: string) => showSuccess('Éxito', message)}
-            onError={(error: string) => showError('Error', error)}
-            existingData={getCurrentTableData()}
-          />
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Formulario de Inserción</h3>
+            <p className="text-gray-600">Componente ParameterForm en desarrollo...</p>
+          </div>
         );
       }
 
       if (activeSubTab === 'update' && selectedRowForUpdate) {
         return (
-          <ParameterForm
-            selectedTable={selectedTable}
-            formData={updateFormData}
-            onFormDataChange={setUpdateFormData}
-            onSuccess={(message: string) => showSuccess('Éxito', message)}
-            onError={(error: string) => showError('Error', error)}
-            existingData={getCurrentTableData()}
-            isUpdate={true}
-            originalData={selectedRowForUpdate}
-          />
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Formulario de Actualización</h3>
+            <p className="text-gray-600">Componente ParameterForm en desarrollo...</p>
+          </div>
         );
       }
 
       if (activeSubTab === 'massive') {
         return (
-          <MassiveOperations
-            selectedTable={selectedTable}
-            onSuccess={(message: string) => showSuccess('Éxito', message)}
-            onError={(error: string) => showError('Error', error)}
-            onClose={() => setActiveSubTab('insert')}
-            operationType="insert"
-            existingData={getCurrentTableData()}
-          />
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Operaciones Masivas</h3>
+            <p className="text-gray-600">Componente MassiveOperations en desarrollo...</p>
+          </div>
         );
       }
 
@@ -355,16 +341,10 @@ export const SystemParametersRefactored = forwardRef<SystemParametersRefactoredR
     const renderTable = () => {
       if (activeSubTab === 'status') {
         return (
-          <ParameterTable
-            data={getCurrentTableData()}
-            columns={getCurrentTableColumns()}
-            onRowSelect={handleRowSelect}
-            onRowEdit={handleRowSelect}
-            onRowDelete={(row: any) => handleDeleteData(row.id)}
-            searchable={true}
-            paginated={true}
-            itemsPerPage={10}
-          />
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Tabla de Estado</h3>
+            <p className="text-gray-600">Componente ParameterTable en desarrollo...</p>
+          </div>
         );
       }
 
@@ -458,11 +438,9 @@ export const SystemParametersRefactored = forwardRef<SystemParametersRefactoredR
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         {/* Sistema de notificaciones */}
-        <NotificationSystem
-          notifications={notifications}
-          onRemoveNotification={removeNotification}
-          onClearAll={clearAllNotifications}
-        />
+        <div className="mb-4">
+          <p className="text-gray-600">Sistema de notificaciones en desarrollo...</p>
+        </div>
 
         {/* Selector de tabla */}
         {renderTableSelector()}
