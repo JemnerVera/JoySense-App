@@ -9,6 +9,14 @@ import { JoySenseService } from '../services/backend-api';
 import { TableInfo, ColumnInfo, Message } from '../types/systemParameters';
 
 import { STYLES_CONFIG } from '../config/styles';
+import { 
+  getColumnDisplayName, 
+  getDisplayValue, 
+  formatDate, 
+  getUserName, 
+  validateInsertData,
+  type RelatedData 
+} from '../utils/systemParametersUtils';
 
 import SimpleModal from './SimpleModal';
 
@@ -4248,51 +4256,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const getUserName = (userId: number) => {
-
-    const user = userData.find(u => u.usuarioid === userId);
-
-    if (user) {
-
-      return `${user.firstname} ${user.lastname}`;
-
-    }
-
-    return `Usuario ${userId}`;
-
-  };
+  // getUserName ahora se importa desde systemParametersUtils
 
 
 
-  const formatDate = (dateString: string) => {
-
-    if (!dateString) return '';
-
-    try {
-
-      const date = new Date(dateString);
-
-      return date.toLocaleDateString('es-ES', {
-
-        year: 'numeric',
-
-        month: '2-digit',
-
-        day: '2-digit',
-
-        hour: '2-digit',
-
-        minute: '2-digit'
-
-      });
-
-    } catch (error) {
-
-      return dateString;
-
-    }
-
-  };
+  // formatDate ahora se importa desde systemParametersUtils
 
 
 
@@ -4312,330 +4280,30 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para validar datos antes de insertar usando el sistema de validación robusto
 
-  const validateInsertData = (tableName: string, data: any): string | null => {
-
-    const validationResult = validateFormData(tableName, data);
-
-    
-
-    if (!validationResult.isValid) {
-
-      const messages = getValidationMessages(validationResult);
-
-      return messages.join('\n');
-
-    }
-
-    
-
-    return null;
-
-  };
+  // validateInsertData ahora se importa desde systemParametersUtils
 
 
 
-  const getDisplayValue = (row: any, columnName: string) => {
-
-    // Validar que row no sea null o undefined
-
-    if (!row) {
-
-      console.warn('⚠️ getDisplayValue: row is null or undefined');
-
-      return 'N/A';
-
-    }
-
-
-
-    // Mapeo de campos de ID a sus tablas relacionadas y campos de nombre
-
-    const idToNameMapping: Record<string, { table: string; nameField: string }> = {
-
-      'paisid': { table: 'pais', nameField: 'pais' },
-
-      'empresaid': { table: 'empresa', nameField: 'empresa' },
-
-      'fundoid': { table: 'fundo', nameField: 'fundo' },
-
-      'ubicacionid': { table: 'ubicacion', nameField: 'ubicacion' },
-
-      'entidadid': { table: 'entidad', nameField: 'entidad' },
-
-      'nodoid': { table: 'nodo', nameField: 'nodo' },
-
-      'tipoid': { table: 'tipo', nameField: 'tipo' },
-
-      'metricaid': { table: 'metrica', nameField: 'metrica' },
-
-      'localizacionid': { table: 'localizacion', nameField: 'localizacionid' },
-
-      'criticidadid': { table: 'criticidad', nameField: 'criticidad' },
-
-      'perfilid': { table: 'perfil', nameField: 'perfil' },
-
-      'umbralid': { table: 'umbral', nameField: 'umbral' },
-
-      'usuarioid': { table: 'usuario', nameField: 'login' },
-
-      'medioid': { table: 'medio', nameField: 'nombre' },
-
-      'old_criticidadid': { table: 'criticidad', nameField: 'criticidad' },
-
-      'new_criticidadid': { table: 'criticidad', nameField: 'criticidad' }
-
+  const getDisplayValueLocal = (row: any, columnName: string) => {
+    // Usar la función importada con los datos relacionados
+    const relatedData: RelatedData = {
+      paisesData,
+      empresasData,
+      fundosData,
+      ubicacionesData,
+      entidadesData,
+      nodosData,
+      tiposData,
+      metricasData,
+      localizacionesData,
+      criticidadesData,
+      perfilesData,
+      umbralesData,
+      usuariosData: userData,
+      mediosData
     };
-
-
-
-    // Si es un campo de ID, buscar el nombre en los datos de las tablas relacionadas
-
-    if (idToNameMapping[columnName]) {
-
-      const mapping = idToNameMapping[columnName];
-
-      const idValue = row[columnName];
-
-      
-
-      if (idValue) {
-
-        // Buscar en los datos de la tabla relacionada
-
-        let relatedData: any[] = [];
-
-        switch (mapping.table) {
-
-          case 'pais':
-
-            relatedData = paisesData || [];
-
-            break;
-
-          case 'empresa':
-
-            relatedData = empresasData || [];
-
-            break;
-
-          case 'fundo':
-
-            relatedData = fundosData || [];
-
-            break;
-
-          case 'ubicacion':
-
-            relatedData = ubicacionesData || [];
-
-            break;
-
-          case 'entidad':
-
-            relatedData = entidadesData || [];
-
-            break;
-
-          case 'nodo':
-
-            relatedData = nodosData || [];
-
-            break;
-
-          case 'tipo':
-
-            relatedData = tiposData || [];
-
-            break;
-
-                     case 'metrica':
-
-            relatedData = metricasData || [];
-
-             break;
-
-           case 'localizacion':
-
-             relatedData = []; // Por ahora vacío
-
-             break;
-
-           case 'criticidad':
-
-             relatedData = criticidadesData || [];
-
-             console.log('🔍 getDisplayValue - criticidad:', { idValue, criticidadesData: criticidadesData?.length, relatedData: relatedData?.length });
-
-             break;
-
-           case 'perfil':
-
-             relatedData = perfilesData || [];
-
-             console.log('🔍 getDisplayValue - perfil:', { idValue, perfilesData: perfilesData?.length, relatedData: relatedData?.length });
-
-             break;
-
-           case 'umbral':
-
-             relatedData = umbralesData || [];
-
-             console.log('🔍 getDisplayValue - umbral:', { idValue, umbralesData: umbralesData?.length, relatedData: relatedData?.length });
-
-             break;
-
-           case 'usuario':
-
-             relatedData = userData || [];
-
-             console.log('🔍 getDisplayValue - usuario:', { idValue, userData: userData?.length, relatedData: relatedData?.length });
-
-             break;
-
-           case 'medio':
-
-             relatedData = mediosData || [];
-
-             console.log('🔍 getDisplayValue - medio:', { idValue, mediosData: mediosData?.length, relatedData: relatedData?.length, selectedTable });
-
-             break;
-
-           case 'old_criticidadid':
-
-           case 'new_criticidadid':
-
-             relatedData = criticidadesData || [];
-
-             console.log('🔍 getDisplayValue - criticidad (old/new):', { idValue, criticidadesData: criticidadesData?.length, relatedData: relatedData?.length });
-
-             break;
-
-        }
-
-        
-
-        // Buscar el registro que coincida con el ID
-
-        const relatedRecord = relatedData.find(item => {
-
-          const idField = `${mapping.table}id`;
-
-          return item && item[idField] === idValue;
-
-        });
-
-        
-
-        if (relatedRecord && relatedRecord[mapping.nameField]) {
-
-          return relatedRecord[mapping.nameField];
-
-        }
-
-      }
-
-    }
-
-
-
-    // Manejar columnas virtuales para metricasensor agrupado
-
-    if (columnName === 'tipos' || columnName === 'metricas') {
-
-      return row[columnName] || '';
-
-    }
-
-
-
-    // Si no es un campo de ID o no existe la relación, mostrar el valor original
-    const value = row[columnName];
     
-    // Asegurar que siempre devolvamos un string
-    if (value === null || value === undefined) {
-      return '';
-    }
-    
-    if (typeof value === 'object') {
-      console.warn('⚠️ getDisplayValue: objeto encontrado en', columnName, ':', value);
-      console.log('🔍 getDisplayValue Debug - Objeto keys:', Object.keys(value));
-      console.log('🔍 getDisplayValue Debug - Column name:', columnName);
-      
-      // Si es un objeto con propiedades conocidas, intentar extraer el valor correcto
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        // Buscar el campo que coincida con el nombre de la columna
-        const fieldName = columnName.toLowerCase();
-        if (value[fieldName]) {
-          return value[fieldName].toString();
-        }
-        
-        // Buscar variaciones comunes del nombre de campo
-        const variations = [
-          fieldName,
-          fieldName.replace('id', ''),
-          fieldName.replace('abrev', ''),
-          fieldName + 'id',
-          fieldName + 'abrev'
-        ];
-        
-        for (const variation of variations) {
-          if (value[variation]) {
-            return value[variation].toString();
-          }
-        }
-        
-        // Si es un objeto con propiedades conocidas específicas, intentar extraer el valor correcto
-        // Para la columna 'empresa', buscar el campo 'empresa' dentro del objeto
-        if (columnName === 'empresa' && value.empresa) {
-          return value.empresa.toString();
-        }
-        // Para la columna 'empresabrev', buscar el campo 'empresabrev' dentro del objeto
-        if (columnName === 'empresabrev' && value.empresabrev) {
-          return value.empresabrev.toString();
-        }
-        // Para la columna 'fundo', buscar el campo 'fundo' dentro del objeto
-        if (columnName === 'fundo' && value.fundo) {
-          return value.fundo.toString();
-        }
-        // Para la columna 'fundoabrev', buscar el campo 'fundoabrev' dentro del objeto
-        if (columnName === 'fundoabrev' && value.fundoabrev) {
-          return value.fundoabrev.toString();
-        }
-        // Para la columna 'pais', buscar el campo 'pais' dentro del objeto
-        if (columnName === 'pais' && value.pais) {
-          return value.pais.toString();
-        }
-        // Para la columna 'paisabrev', buscar el campo 'paisabrev' dentro del objeto
-        if (columnName === 'paisabrev' && value.paisabrev) {
-          return value.paisabrev.toString();
-        }
-        
-        // Si no se encuentra un campo específico, intentar usar el primer valor de texto disponible
-        const textFields = Object.keys(value).filter(key => 
-          typeof value[key] === 'string' && 
-          !key.includes('id') && 
-          !key.includes('date') && 
-          !key.includes('status')
-        );
-        
-        if (textFields.length > 0) {
-          return value[textFields[0]].toString();
-        }
-      }
-      
-      // Como último recurso, mostrar una representación más amigable del objeto
-      if (value && typeof value === 'object') {
-        const keys = Object.keys(value);
-        if (keys.length === 1) {
-          return value[keys[0]].toString();
-        }
-        return `[${keys.join(', ')}]`;
-      }
-      
-      return JSON.stringify(value);
-    }
-    
-    return value.toString();
+    return getDisplayValue(row, columnName, relatedData);
 
   };
 
@@ -5217,7 +4885,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
 
-            ? getUserName(value)
+            ? getUserName(value, userData)
 
             : col.columnName === 'statusid'
 
@@ -5231,7 +4899,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 return (value === 1 ? 'Activo' : 'Inactivo');
               })()
 
-            : getDisplayValue(row, col.columnName);
+            : getDisplayValueLocal(row, col.columnName);
 
           
 
@@ -5326,7 +4994,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
 
-          ? getUserName(value)
+          ? getUserName(value, userData)
 
           : col.columnName === 'statusid'
 
@@ -5340,7 +5008,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               return (value === 1 ? 'Activo' : 'Inactivo');
             })()
 
-          : getDisplayValue(row, col.columnName);
+          : getDisplayValueLocal(row, col.columnName);
 
         
 
@@ -5422,7 +5090,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
 
-          ? getUserName(value)
+          ? getUserName(value, userData)
 
           : col.columnName === 'statusid'
 
@@ -5436,7 +5104,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               return (value === 1 ? 'Activo' : 'Inactivo');
             })()
 
-          : getDisplayValue(row, col.columnName);
+          : getDisplayValueLocal(row, col.columnName);
 
         
 
@@ -9646,157 +9314,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const getColumnDisplayName = (columnName: string) => {
-
-    const columnMappings: Record<string, string> = {
-
-      'paisid': 'País',
-
-      'empresaid': 'Empresa',
-
-      'fundoid': 'Fundo',
-
-      'ubicacionid': 'Ubicación',
-
-      'entidadid': 'Entidad',
-
-      'nodoid': 'Nodo',
-
-      'tipoid': 'Tipo',
-
-      'metricaid': 'Métrica',
-
-      'tipos': 'Tipo',
-
-      'metricas': 'Métrica',
-
-      'localizacionid': 'Localización',
-
-      'criticidadid': 'Criticidad',
-
-      'perfilid': 'Perfil',
-
-      'umbralid': 'Umbral',
-
-      'usuarioid': 'Usuario',
-
-      'medioid': 'Medio',
-
-      'paisabrev': 'Abreviatura',
-
-      'empresabrev': 'Abreviatura',
-
-      'empresaabrev': 'Abreviatura',
-
-      'farmabrev': 'Abreviatura',
-
-      'fundoabrev': 'Abreviatura',
-
-      'ubicacionabrev': 'Abreviatura',
-
-      'statusid': 'Status',
-
-      'usercreatedid': 'Creado por',
-
-      'usermodifiedid': 'Modificado por',
-
-      'datecreated': 'Fecha Creación',
-
-      'datemodified': 'Fecha Modificación',
-
-      'modified_by': 'Modificado por',
-
-      'modified_at': 'Fecha Modificación',
-
-      // Campos específicos de cada tabla
-
-      'pais': 'País',
-
-      'empresa': 'Empresa',
-
-      'fundo': 'Fundo',
-
-      'ubicacion': 'Ubicación',
-
-      'entidad': 'Entidad',
-
-      'nodo': 'Nodo',
-
-      'tipo': 'Tipo',
-
-      'metrica': 'Métrica',
-
-      'unidad': 'Unidad',
-
-      'deveui': 'DevEUI',
-
-      'appeui': 'AppEUI',
-
-      'appkey': 'AppKey',
-
-      'atpin': 'AT PIN',
-
-      'latitud': 'Latitud',
-
-      'longitud': 'Longitud',
-
-      'referencia': 'Referencia',
-
-      // NUEVAS TABLAS DE UMBRAL
-
-      'umbral': 'Nombre Umbral',
-
-      'maximo': 'Valor Máximo',
-
-      'minimo': 'Valor Mínimo',
-
-      'old_minimo': 'Valor Mínimo Anterior',
-
-      'new_minimo': 'Valor Mínimo Nuevo',
-
-      'old_maximo': 'Valor Máximo Anterior',
-
-      'new_maximo': 'Valor Máximo Nuevo',
-
-      'old_criticidadid': 'Criticidad Anterior',
-
-      'new_criticidadid': 'Criticidad Nueva',
-
-      'accion': 'Acción',
-
-      'criticidad': 'Criticidad',
-
-      'criticidadbrev': 'Abreviatura',
-
-      // NUEVAS TABLAS DE USUARIO
-
-      'login': 'Usuario',
-
-      'firstname': 'Nombre',
-
-      'lastname': 'Apellido',
-
-      'perfil': 'Perfil',
-
-      'nivel': 'Nivel',
-
-      'celular': 'Celular',
-
-      'contactoid': 'Contacto',
-
-      'alertaid': 'Alerta',
-
-      'mensaje': 'Mensaje',
-
-      'auditid': 'Audit ID'
-
-    };
-
-    
-
-    return columnMappings[columnName] || columnName;
-
-  };
+  // getColumnDisplayName ahora se importa desde systemParametersUtils
 
 
 
@@ -13048,7 +12566,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                const userId = lastModified.usermodifiedid || lastModified.usercreatedid;
 
-                               return getUserName(userId) || 'Usuario';
+                               return getUserName(userId, userData) || 'Usuario';
 
                              }
 
@@ -13168,7 +12686,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                        {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
 
-                                         ? getUserName(row[col.columnName])
+                                         ? getUserName(row[col.columnName], userData)
 
                                          : col.columnName === 'statusid'
 
@@ -13202,7 +12720,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                          ? formatDate(row[col.columnName])
 
-                                         : getDisplayValue(row, col.columnName)}
+                                         : getDisplayValueLocal(row, col.columnName)}
 
                                      </td>
 
@@ -13808,7 +13326,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                               const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
 
-                                 ? getUserName(value)
+                                 ? getUserName(value, userData)
 
                                  : col.columnName === 'statusid'
 
@@ -13822,7 +13340,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               return (value === 1 ? 'Activo' : 'Inactivo');
             })()
 
-                                : selectedRowForUpdate ? getDisplayValue(selectedRowForUpdate, col.columnName) : '';
+                                : selectedRowForUpdate ? getDisplayValueLocal(selectedRowForUpdate, col.columnName) : '';
 
                              
 
@@ -14135,7 +13653,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                         <td key={col.columnName} className="py-2 px-2 text-white font-mono">
 
-                                          {getDisplayValue(row, col.columnName)}
+                                          {getDisplayValueLocal(row, col.columnName)}
 
                                         </td>
 
@@ -14489,7 +14007,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              if (col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid') {
 
-                                               return getUserName(row[col.columnName]);
+                                               return getUserName(row[col.columnName], userData);
 
                                              }
 
@@ -14541,7 +14059,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                  <div className="whitespace-normal break-words">
 
-                                                   {row.tipos || getDisplayValue(row, col.columnName)}
+                                                   {row.tipos || getDisplayValueLocal(row, col.columnName)}
 
                                                  </div>
 
@@ -14557,7 +14075,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                  <div className="whitespace-normal break-words">
 
-                                                   {row.tipos || getDisplayValue(row, col.columnName)}
+                                                   {row.tipos || getDisplayValueLocal(row, col.columnName)}
 
                                                  </div>
 
@@ -14575,7 +14093,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                  <div className="whitespace-normal break-words">
 
-                                                   {row.perfiles || getDisplayValue(row, col.columnName)}
+                                                   {row.perfiles || getDisplayValueLocal(row, col.columnName)}
 
                                                  </div>
 
@@ -14593,7 +14111,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                                  <div className="whitespace-normal break-words">
 
-                                                   {row.usuario || getDisplayValue(row, col.columnName)}
+                                                   {row.usuario || getDisplayValueLocal(row, col.columnName)}
 
                                                  </div>
 
@@ -14603,7 +14121,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              
 
-                                             return getDisplayValue(row, col.columnName);
+                                             return getDisplayValueLocal(row, col.columnName);
 
                                            })()}
 
