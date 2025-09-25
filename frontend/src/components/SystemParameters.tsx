@@ -10405,6 +10405,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (!selectedTable || !user || multipleSensors.length === 0) return;
 
+    // Verificar que hay al menos un sensor sin toDelete para insertar
+    const sensorsToInsertCount = multipleSensors.filter(sensor => !sensor.toDelete).length;
+    if (sensorsToInsertCount === 0) {
+      console.log('⚠️ No hay sensores válidos para insertar (todos están marcados para eliminar)');
+      return;
+    }
+
     
 
     try {
@@ -10415,11 +10422,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-             // Preparar datos para cada sensor (limpiar campos que no están en la tabla)
+             // Filtrar sensores que NO tienen toDelete: true y preparar datos para inserción
 
-       const sensorsToInsert = multipleSensors.map(sensor => {
+       const sensorsToInsert = multipleSensors
+         .filter(sensor => !sensor.toDelete) // Solo sensores que NO están marcados para eliminar
+         .map(sensor => {
 
-         const { sensorIndex, label, ...cleanSensor } = sensor; // Remover campos que no están en la tabla
+         const { sensorIndex, label, toDelete, ...cleanSensor } = sensor; // Remover campos que no están en la tabla
 
          return {
 
@@ -10441,6 +10450,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Logging para debugging
 
+      console.log('🔍 Frontend: Total sensores en multipleSensors:', multipleSensors.length);
+      console.log('🔍 Frontend: Sensores con toDelete:', multipleSensors.filter(s => s.toDelete).length);
+      console.log('🔍 Frontend: Sensores a insertar (sin toDelete):', sensorsToInsert.length);
       console.log('🔍 Frontend: Datos a enviar para inserción de sensores:', JSON.stringify(sensorsToInsert, null, 2));
 
 
