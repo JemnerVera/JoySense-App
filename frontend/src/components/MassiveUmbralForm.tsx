@@ -259,7 +259,7 @@ export function MassiveUmbralForm({
     return { isValid: false, message };
   };
 
-  const validationResult = validateNodeSensorTypes();
+  const validationResult = useMemo(() => validateNodeSensorTypes(), [selectedNodes, nodeSensorTypes]);
 
   // Manejar toggle de métrica (expandir/contraer)
   const handleMetricaToggle = (metricaid: number) => {
