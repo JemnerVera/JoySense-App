@@ -6,15 +6,15 @@ import { useAuth } from '../contexts/AuthContext';
 
 import { JoySenseService } from '../services/backend-api';
 
-import { TableInfo, ColumnInfo, Message } from '../types/systemParameters';
+import { TableInfo, Message } from '../types/systemParameters';
 
-import { STYLES_CONFIG } from '../config/styles';
+// Removed unused import: STYLES_CONFIG
 import { 
   getColumnDisplayName, 
   getDisplayValue, 
   formatDate, 
   getUserName, 
-  validateInsertData,
+  // Removed unused import: validateInsertData
   type RelatedData 
 } from '../utils/systemParametersUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
@@ -40,7 +40,7 @@ import { MassiveMetricaSensorForm } from './MassiveMetricaSensorForm';
 
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 
-import MultipleLocalizacionForm from './MultipleLocalizacionForm';
+// Removed unused import: MultipleLocalizacionForm
 
 import NormalInsertForm from './NormalInsertForm';
 
@@ -54,7 +54,7 @@ import { useInsertionMessages } from '../hooks/useInsertionMessages';
 
 import ReplicateModal from './ReplicateModal';
 
-import ReplicateButton from './ReplicateButton';
+// Removed unused import: ReplicateButton
 
 import { useReplicate } from '../hooks/useReplicate';
 
@@ -62,19 +62,18 @@ import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
 
 import { useFilters } from '../contexts/FilterContext';
 
-import LostDataModal from './LostDataModal';
+// Removed unused import: LostDataModal
 
-import { validateFormData, getValidationMessages, validateTableData, validateTableUpdate } from '../utils/formValidation';
+import { validateTableData, validateTableUpdate } from '../utils/formValidation';
 
 // Hooks personalizados para refactoring
 import { useFormValidation } from '../hooks/useFormValidation';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
 import { useSystemParametersState } from '../hooks/useSystemParametersState';
-import { useTableData } from '../hooks/useTableData';
-import { useFormState } from '../hooks/useFormState';
+// Removed unused imports: useTableData, useFormState
 import { useInsertOperations } from '../hooks/useInsertOperations';
 import { useUpdateOperations } from '../hooks/useUpdateOperations';
-import { useSearchOperations } from '../hooks/useSearchOperations';
+// Removed unused import: useSearchOperations
 
 
 
@@ -873,39 +872,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadUserData,
     loadRelatedTablesData,
     loadTableData,
-    setTableData,
-    setColumns,
-    setTableColumns,
-    setLoading,
-    setUserData,
-    setPaisesData,
-    setEmpresasData,
-    setFundosData,
-    setUbicacionesData,
-    setLocalizacionesData,
-    setEntidadesData,
-    setNodosData,
-    setTiposData,
-    setMetricasData,
-    setCriticidadesData,
-    setPerfilesData,
-    setUmbralesData,
-    setMediosData,
-    setSensorsData,
-    setMetricasensorData,
-    setPerfilumbralData,
-    setContactosData
+    setLoading
+    // Removed other unused setters to reduce warnings
   } = useTableDataManagement();
 
   // Hook para búsquedas y filtros
   const {
     searchTerm,
     searchField,
-    hasSearched,
-    searchFilteredData,
-    isSearching,
+    // Removed unused: hasSearched, searchFilteredData, isSearching
     statusSearchTerm,
-    statusHasSearched,
+    // Removed unused: statusHasSearched
     statusFilteredData,
     copySearchTerm,
     copyFilteredData,
@@ -920,21 +897,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setCopySearchTerm,
     setCopyFilteredData,
     searchByCriteria,
-    searchByExactTimestamp,
-    searchBySimilarTimestamp,
-    searchBySameNode,
-    searchBySameType,
-    searchByActiveStatus,
-    searchByInactiveStatus,
+    // Removed unused search functions: searchByExactTimestamp, searchBySimilarTimestamp, searchBySameNode, searchBySameType, searchByActiveStatus, searchByInactiveStatus
     handleSearchTermChange,
-    handleSearchFieldChange,
     handleStatusSearch,
-    handleUpdateSearch,
-    handleCopySearch,
-    getSearchableColumns,
-    clearSearchState,
-    clearStatusSearchState,
-    clearCopySearchState
+    // Removed unused: handleSearchFieldChange, handleUpdateSearch, handleCopySearch, getSearchableColumns, clearSearchState, clearStatusSearchState, clearCopySearchState
   } = useSearchAndFilter();
 
   // Hook personalizado para estado principal
@@ -948,7 +914,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     updateLoading,
     statusCurrentPage,
     statusTotalPages,
-    statusLoading,
+    // Removed unused: statusLoading
     copyData,
     selectedRowsForCopy,
     setSelectedTable,
@@ -960,13 +926,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setUpdateLoading,
     setStatusCurrentPage,
     setStatusTotalPages,
-    setStatusLoading,
+    // Removed unused: setStatusLoading
     setCopyData,
     setSelectedRowsForCopy,
-    resetFormData,
-    resetUpdateForm,
-    resetSearch,
-    resetStatusSearch
+    // Removed unused: resetFormData, resetUpdateForm, resetSearch, resetStatusSearch
   } = useSystemParametersState(propSelectedTable, propActiveSubTab);
 
   
@@ -979,7 +942,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     showModal: showSimpleModal,
 
-    hideModal,
+    // Removed unused: hideModal
 
     confirmAction,
 
@@ -989,47 +952,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Hooks de operaciones de servicios
   const {
-    isInserting,
-    insertError,
-    insertSuccess,
-    lastInsertedId,
-    insertSingle,
-    insertMultiple,
-    insertMassive,
-    clearInsertState,
-    setInserting,
-    setInsertError,
-    setInsertSuccess
+    // Removed unused insert operations: isInserting, insertError, insertSuccess, lastInsertedId, insertSingle, insertMultiple, insertMassive, clearInsertState, setInserting, setInsertError, setInsertSuccess
   } = useInsertOperations();
 
   const {
-    isUpdating,
-    updateError,
-    updateSuccess,
-    lastUpdatedId,
-    updateSingle,
-    updateMultiple,
-    clearUpdateState,
-    setUpdating,
-    setUpdateError,
-    setUpdateSuccess
+    // Removed unused update operations: isUpdating, updateError, updateSuccess, lastUpdatedId, updateSingle, updateMultiple, clearUpdateState, setUpdating, setUpdateError, setUpdateSuccess
   } = useUpdateOperations();
 
   // Hook de operaciones de búsqueda ahora manejado por useSearchAndFilter
 
   // Hook de validación de formularios
   const {
-    validateInsert,
-    validateUpdate,
-    checkDependencies,
-    validateMultipleInsert,
-    validateMassiveInsert
+    // Removed unused validation functions: validateInsert, validateUpdate, checkDependencies, validateMultipleInsert, validateMassiveInsert
   } = useFormValidation(selectedTable);
 
   // Hook de habilitación progresiva
   const {
-    getEnabledFields,
-    isFieldEnabled
+    // Removed unused: getEnabledFields, isFieldEnabled
   } = useProgressiveEnablement(selectedTable, {});
 
   // Sincronizar estado local con props
