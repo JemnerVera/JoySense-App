@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { getUserName } from '../utils/systemParametersUtils';
+import { getUserName, getDisplayValue } from '../utils/systemParametersUtils';
 
 /**
  * Hook para manejar búsquedas y filtros
@@ -111,19 +111,23 @@ export const useSearchAndFilter = () => {
   /**
    * Manejar cambio de término de búsqueda
    */
-  const handleSearchTermChange = useCallback((term: string, statusFilteredData: any[], statusVisibleColumns: any[], userData: any[]) => {
+  const handleSearchTermChange = useCallback((term: string, dataToFilter: any[], visibleColumns: any[], userData: any[], originalData: any[], setFilteredData?: (data: any[]) => void, relatedData?: any) => {
+    console.log('🔍 handleSearchTermChange called:', { term, dataToFilterLength: dataToFilter.length, visibleColumnsLength: visibleColumns.length, hasRelatedData: !!relatedData });
     setSearchTerm(term);
 
     if (term.trim()) {
       setHasSearched(true);
 
       // Filtrar datos basado en el término de búsqueda
-      const filtered = statusFilteredData.filter(row => {
-        return statusVisibleColumns.some(col => {
+      const filtered = dataToFilter.filter(row => {
+        return visibleColumns.some(col => {
           const value = row[col.columnName];
           if (value === null || value === undefined) return false;
 
-          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
+          // Usar getDisplayValue si tenemos relatedData, sino usar lógica simple
+          const displayValue = relatedData 
+            ? getDisplayValue(row, col.columnName, relatedData)
+            : col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
             ? getUserName(value, userData)
             : col.columnName === 'statusid'
             ? (() => {
@@ -136,14 +140,27 @@ export const useSearchAndFilter = () => {
               })()
             : value.toString();
 
-          return displayValue.toLowerCase().includes(term.toLowerCase());
+          const matches = displayValue.toLowerCase().includes(term.toLowerCase());
+          if (matches) {
+            console.log('🔍 Match found:', { column: col.columnName, value, displayValue, term });
+          }
+          return matches;
         });
       });
 
-      setSearchFilteredData(filtered);
+      if (setFilteredData) {
+        setFilteredData(filtered);
+      } else {
+        setSearchFilteredData(filtered);
+      }
     } else {
       setHasSearched(false);
-      setSearchFilteredData([]);
+      // Restaurar datos originales sin filtro
+      if (setFilteredData) {
+        setFilteredData(originalData);
+      } else {
+        setSearchFilteredData(originalData);
+      }
     }
   }, []);
 
@@ -193,7 +210,53 @@ export const useSearchAndFilter = () => {
       setStatusFilteredData(filtered);
     } else {
       setStatusHasSearched(false);
-      setStatusFilteredData([]);
+      // Restaurar datos originales sin filtro
+      setStatusFilteredData(filteredTableData);
+    }
+  }, []);
+
+  /**
+   * Manejar búsqueda de actualización
+   */
+  const handleUpdateSearch = useCallback((searchTerm: string, updateData: any[], updateVisibleColumns: any[], userData: any[], originalData: any[], setUpdateFilteredData: (data: any[]) => void) => {
+    console.log('🔍 handleUpdateSearch called with:', { searchTerm, updateDataLength: updateData.length, updateVisibleColumnsLength: updateVisibleColumns.length });
+    
+    setSearchTerm(searchTerm);
+
+    if (searchTerm.trim()) {
+      setHasSearched(true);
+
+      // Filtrar datos basado en el término de búsqueda
+      const filtered = updateData.filter(row => {
+        return updateVisibleColumns.some(col => {
+          const value = row[col.columnName];
+          if (value === null || value === undefined) return false;
+
+          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
+            ? getUserName(value, userData)
+            : col.columnName === 'statusid'
+            ? (() => {
+                // Para filas agrupadas, verificar si al menos una fila original está activa
+                if (row.originalRows && row.originalRows.length > 0) {
+                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                  return hasActiveRow ? 'Activo' : 'Inactivo';
+                }
+                return value === 1 ? 'Activo' : 'Inactivo';
+              })()
+            : value.toString();
+
+          return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+      });
+
+      console.log('🔍 Update search filtered results:', { originalCount: updateData.length, filteredCount: filtered.length });
+      console.log('🔍 Setting updateFilteredData with:', filtered);
+      setUpdateFilteredData(filtered);
+    } else {
+      setHasSearched(false);
+      // Restaurar datos originales sin filtro
+      console.log('🔍 Update search cleared, restoring original data:', { originalDataLength: originalData.length });
+      setUpdateFilteredData(originalData);
     }
   }, []);
 
@@ -236,7 +299,7 @@ export const useSearchAndFilter = () => {
   /**
    * Obtener columnas buscables
    */
-  const getSearchableColumns = useCallback((tableColumns: any[], getVisibleColumns: () => any[]) => {
+  const getSearchableColumns = useCallback((tableColumns: any[], getVisibleColumns: () => any[], selectedTable: string) => {
     if (tableColumns.length === 0) return [];
     const allColumns = getVisibleColumns();
     const excludedFields: string[] = [];
@@ -256,21 +319,21 @@ export const useSearchAndFilter = () => {
   /**
    * Limpiar estado de búsqueda
    */
-  const clearSearchState = useCallback(() => {
+  const clearSearchState = useCallback((filteredTableData?: any[]) => {
     setSearchTerm('');
     setSearchField('');
     setHasSearched(false);
-    setSearchFilteredData([]);
+    setSearchFilteredData(filteredTableData || []);
     setIsSearching(false);
   }, []);
 
   /**
    * Limpiar estado de búsqueda de estado
    */
-  const clearStatusSearchState = useCallback(() => {
+  const clearStatusSearchState = useCallback((filteredTableData?: any[]) => {
     setStatusSearchTerm('');
     setStatusHasSearched(false);
-    setStatusFilteredData([]);
+    setStatusFilteredData(filteredTableData || []);
   }, []);
 
   /**
@@ -319,6 +382,7 @@ export const useSearchAndFilter = () => {
     handleSearchTermChange,
     handleSearchFieldChange,
     handleStatusSearch,
+    handleUpdateSearch,
     handleCopySearch,
 
     // Utilidades

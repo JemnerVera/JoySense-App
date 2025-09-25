@@ -80,11 +80,9 @@ import { useSearchOperations } from '../hooks/useSearchOperations';
 
 // Hook personalizado para manejar selección múltiple basada en timestamp
 
-const useMultipleSelection = (selectedTable: string) => {
+const useMultipleSelection = (selectedTable: string, searchByCriteria: any) => {
 
   // Función para buscar entradas por diferentes criterios
-
-  // searchByCriteria ahora se importa desde useSearchAndFilter
 
 
 
@@ -114,7 +112,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
       'Entradas con timestamp por segundos (ignorando milisegundos)',
 
-      (dataRow) => {
+      (dataRow: any) => {
 
         if (dataRow.nodoid !== row.nodoid) return false;
 
@@ -160,7 +158,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
       `Entradas con timestamp cercano (${toleranceMs}ms)`,
 
-      (dataRow) => {
+      (dataRow: any) => {
 
         if (dataRow.nodoid !== row.nodoid) return false;
 
@@ -210,7 +208,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
       'Entradas del mismo nodo con status activo',
 
-      (dataRow) => 
+      (dataRow: any) => 
 
         dataRow.nodoid === row.nodoid && 
 
@@ -240,7 +238,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
         'Entradas agrupadas por tipos comunes (1,2,3)',
 
-        (entry) => commonTipos.includes(entry.tipoid),
+        (entry: any) => commonTipos.includes(entry.tipoid),
 
         activeNodeEntries
 
@@ -270,7 +268,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
         'Entradas agrupadas por métricas comunes (1,2,3)',
 
-        (entry) => commonMetricas.includes(entry.metricaid),
+        (entry: any) => commonMetricas.includes(entry.metricaid),
 
         activeNodeEntries
 
@@ -364,7 +362,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
       'Entradas agrupadas por criterios de negocio específicos',
 
-      (dataRow) => {
+      (dataRow: any) => {
 
         if (dataRow.nodoid !== row.nodoid) return false;
 
@@ -536,7 +534,7 @@ const useMultipleSelection = (selectedTable: string) => {
 
       'Encontradas en tableData con timestamp exacto Y mismo status',
 
-      (dataRow) => 
+      (dataRow: any) => 
 
         dataRow.nodoid === row.nodoid && 
 
@@ -564,7 +562,11 @@ const useMultipleSelection = (selectedTable: string) => {
 
     if (bestMatches.length <= 1) {
 
-      const exactTimestampMatches = findExactTimestampMatches(row, allData);
+      const exactTimestampMatches = searchByCriteria(
+        'Entradas con timestamp exacto',
+        (dataRow: any) => dataRow.datecreated === row.datecreated,
+        allData
+      );
 
       if (exactTimestampMatches.length > bestMatches.length) {
 
@@ -927,6 +929,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     handleSearchTermChange,
     handleSearchFieldChange,
     handleStatusSearch,
+    handleUpdateSearch,
     handleCopySearch,
     getSearchableColumns,
     clearSearchState,
@@ -940,16 +943,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     activeSubTab,
     updateData,
     updateFilteredData,
-    searchField,
-    searchTerm,
     selectedRowForUpdate,
     updateFormData,
     updateLoading,
-    hasSearched,
     statusCurrentPage,
     statusTotalPages,
-    statusSearchTerm,
-    statusFilteredData,
     statusLoading,
     copyData,
     selectedRowsForCopy,
@@ -957,16 +955,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setActiveSubTab,
     setUpdateData,
     setUpdateFilteredData,
-    setSearchField,
-    setSearchTerm,
     setSelectedRowForUpdate,
     setUpdateFormData,
     setUpdateLoading,
-    setHasSearched,
     setStatusCurrentPage,
     setStatusTotalPages,
-    setStatusSearchTerm,
-    setStatusFilteredData,
     setStatusLoading,
     setCopyData,
     setSelectedRowsForCopy,
@@ -1022,20 +1015,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setUpdateSuccess
   } = useUpdateOperations();
 
-  const {
-    searchTerm: searchTermState,
-    searchField: searchFieldState,
-    filteredData: searchFilteredData,
-    hasSearched: searchHasSearched,
-    isSearching,
-    setSearchTerm: setSearchTermState,
-    setSearchField: setSearchFieldState,
-    performSearch,
-    clearSearch: clearSearchState,
-    setFilteredData: setSearchFilteredData,
-    setHasSearched: setSearchHasSearched,
-    setIsSearching
-  } = useSearchOperations();
+  // Hook de operaciones de búsqueda ahora manejado por useSearchAndFilter
 
   // Hook de validación de formularios
   const {
@@ -2455,9 +2435,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
+  const { findEntriesByTimestamp } = useMultipleSelection(selectedTable, searchByCriteria);
 
-  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(statusFilteredData, itemsPerPage);
+  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
 
 
@@ -2824,7 +2804,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           // Comparar valores, manejando diferentes tipos de datos
           if (originalValue !== currentValue) {
             console.log(`🔍 ✅ Change detected in field: ${key}`);
-            return true;
+        return true;
           } else {
             console.log(`🔍 ❌ No change in field: ${key}`);
             return false;
@@ -4519,8 +4499,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Función para obtener los datos paginados de la tabla de Actualizar
 
   const getUpdatePaginatedData = () => {
-    // Usar la misma fuente de datos que la tabla de Estado para mantener sincronización
-    const sourceData = statusFilteredData;
+    // Usar updateFilteredData para la tabla de Actualizar
+    const sourceData = updateFilteredData;
+    console.log('🔍 getUpdatePaginatedData called:', { sourceDataLength: sourceData.length, updateFilteredDataLength: updateFilteredData.length });
 
     // Para metricasensor, sensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
     if (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') {
@@ -4644,7 +4625,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           if (col.columnName === 'statusid') {
             newFormData[col.columnName] = firstRow[col.columnName] !== undefined ? firstRow[col.columnName] : '';
           } else {
-            newFormData[col.columnName] = firstRow[col.columnName] || '';
+          newFormData[col.columnName] = firstRow[col.columnName] || '';
           }
 
         }
@@ -4702,7 +4683,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         if (col.columnName === 'statusid') {
           newFormData[col.columnName] = row[col.columnName] !== undefined ? row[col.columnName] : '';
         } else {
-          newFormData[col.columnName] = row[col.columnName] || '';
+        newFormData[col.columnName] = row[col.columnName] || '';
         }
 
       }
@@ -4905,28 +4886,28 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     if (hasChanges) {
       // Solo mostrar modal si hay cambios reales
-      setCancelAction(() => () => {
+    setCancelAction(() => () => {
 
-        setSelectedRowForUpdate(null);
+    setSelectedRowForUpdate(null);
 
-        setSelectedRowsForUpdate([]);
+    setSelectedRowsForUpdate([]);
 
-        setSelectedRowsForManualUpdate([]);
+      setSelectedRowsForManualUpdate([]);
 
         // Limpiar mensajes de alerta al cancelar
         setUpdateMessage(null);
 
-        setUpdateFormData({});
+    setUpdateFormData({});
 
-        setIndividualRowStatus({});
+    setIndividualRowStatus({});
 
-        setIsMultipleSelectionMode(false);
+      setIsMultipleSelectionMode(false);
 
-        setShowCancelModal(false);
+      setShowCancelModal(false);
 
-      });
+    });
 
-      setShowCancelModal(true);
+    setShowCancelModal(true);
     } else {
       // Si no hay cambios, cancelar directamente sin modal
       console.log('🔍 No changes detected, canceling directly');
@@ -6689,7 +6670,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Para metricasensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
-        
+
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -6886,7 +6867,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Para sensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
-        
+
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -7087,7 +7068,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         // Para usuarioperfil, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
-        
+
         // Si es una nueva entrada, incluir datos de creación
 
         if (row.usercreatedid && row.datecreated) {
@@ -11532,19 +11513,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     if (hasChanges) {
       // Solo mostrar modal si hay cambios reales
-      setCancelAction(() => () => {
+    setCancelAction(() => () => {
 
-        setIsMultipleSelectionMode(false);
+    setIsMultipleSelectionMode(false);
 
-        setSelectedRowsForManualUpdate([]);
+    setSelectedRowsForManualUpdate([]);
 
-        setUpdateFormData({});
+    setUpdateFormData({});
 
-        setShowCancelModal(false);
+      setShowCancelModal(false);
 
-      });
+    });
 
-      setShowCancelModal(true);
+    setShowCancelModal(true);
     } else {
       // Si no hay cambios, cancelar directamente sin modal
       console.log('🔍 No changes detected, canceling manual update directly');
@@ -11958,7 +11939,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                              value={statusSearchTerm}
 
-                             onChange={(e) => handleStatusSearch(e.target.value)}
+                             onChange={(e) => handleStatusSearch(e.target.value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage)}
 
                              placeholder="🔍 Buscar en todos los campos..."
 
@@ -12622,8 +12603,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                           
                           {/* Filtros globales para formularios de actualización */}
                           {renderGlobalFiltersForUpdate()}
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {updateVisibleColumns.map(col => {
 
@@ -12813,7 +12794,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                         })}
 
                           </div>
-                        </div>
+                      </div>
 
                       )}
 
@@ -13147,7 +13128,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                 value={searchTerm}
 
-                                onChange={(e) => handleSearchTermChange(e.target.value)}
+                                onChange={(e) => {
+                                  const relatedData = {
+                                    paisesData,
+                                    empresasData,
+                                    fundosData,
+                                    ubicacionesData,
+                                    entidadesData,
+                                    nodosData,
+                                    tiposData,
+                                    metricasData,
+                                    localizacionesData,
+                                    criticidadesData,
+                                    perfilesData,
+                                    umbralesData,
+                                    userData,
+                                    mediosData
+                                  };
+                                  handleSearchTermChange(e.target.value, updateData, updateVisibleColumns, userData, updateData, setUpdateFilteredData, relatedData);
+                                }}
 
                                 placeholder="🔍 Buscar en todos los campos..."
 
@@ -13219,7 +13218,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                          <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
-                           {updateFilteredData.length > 0 ? (
+                           {(() => {
+                             console.log('🔍 Rendering update table with updateFilteredData:', { length: updateFilteredData.length, data: updateFilteredData });
+                             return updateFilteredData.length > 0;
+                           })() ? (
 
                              <table className="w-full text-sm text-left text-neutral-300">
 

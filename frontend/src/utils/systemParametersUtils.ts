@@ -210,6 +210,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
           break;
         case 'empresa':
           relatedDataArray = relatedData.empresasData || [];
+          console.log('🔍 getDisplayValue for empresa:', { idValue, relatedDataArray: relatedDataArray.length, empresasData: relatedData.empresasData?.length });
           break;
         case 'fundo':
           relatedDataArray = relatedData.fundosData || [];
