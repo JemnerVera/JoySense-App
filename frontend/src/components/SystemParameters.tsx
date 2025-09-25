@@ -17,6 +17,7 @@ import {
   validateInsertData,
   type RelatedData 
 } from '../utils/systemParametersUtils';
+import { useTableDataManagement } from '../hooks/useTableDataManagement';
 
 import SimpleModal from './SimpleModal';
 
@@ -882,6 +883,57 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
+  // Hook para manejo de datos de tabla
+  const {
+    tableData,
+    columns,
+    tableColumns,
+    loading,
+    userData,
+    paisesData,
+    empresasData,
+    fundosData,
+    ubicacionesData,
+    localizacionesData,
+    entidadesData,
+    nodosData,
+    tiposData,
+    metricasData,
+    criticidadesData,
+    perfilesData,
+    umbralesData,
+    mediosData,
+    sensorsData,
+    metricasensorData,
+    perfilumbralData,
+    contactosData,
+    loadUserData,
+    loadRelatedTablesData,
+    loadTableData,
+    setTableData,
+    setColumns,
+    setTableColumns,
+    setLoading,
+    setUserData,
+    setPaisesData,
+    setEmpresasData,
+    setFundosData,
+    setUbicacionesData,
+    setLocalizacionesData,
+    setEntidadesData,
+    setNodosData,
+    setTiposData,
+    setMetricasData,
+    setCriticidadesData,
+    setPerfilesData,
+    setUmbralesData,
+    setMediosData,
+    setSensorsData,
+    setMetricasensorData,
+    setPerfilumbralData,
+    setContactosData
+  } = useTableDataManagement();
+
   // Hook personalizado para estado principal
   const {
     selectedTable,
@@ -1251,10 +1303,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
 
-  const [columns, setColumns] = useState<ColumnInfo[]>([]);
-  const [tableColumns, setTableColumns] = useState<ColumnInfo[]>([]);
-
-  const [tableData, setTableData] = useState<any[]>([]);
+  // Estados de datos de tabla ahora manejados por useTableDataManagement
 
   
 
@@ -1292,7 +1341,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [formData, setFormData] = useState<Record<string, any>>({});
 
-  const [loading, setLoading] = useState(false);
+  // loading y setLoading ahora se importan desde useTableDataManagement
 
   const [message, setMessage] = useState<Message | null>(null);
 
@@ -1340,41 +1389,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const [tableConstraints, setTableConstraints] = useState<any>(null);
 
-  const [userData, setUserData] = useState<any[]>([]);
-
-  const [paisesData, setPaisesData] = useState<any[]>([]);
-
-  const [empresasData, setEmpresasData] = useState<any[]>([]);
-
-  const [fundosData, setFundosData] = useState<any[]>([]);
-
-  const [ubicacionesData, setUbicacionesData] = useState<any[]>([]);
-
-  const [localizacionesData, setLocalizacionesData] = useState<any[]>([]);
-
-  const [entidadesData, setEntidadesData] = useState<any[]>([]);
-
-  const [nodosData, setNodosData] = useState<any[]>([]);
-
-  const [usuariosData, setUsuariosData] = useState<any[]>([]);
-
-  const [perfilesData, setPerfilesData] = useState<any[]>([]);
-
-  const [tiposData, setTiposData] = useState<any[]>([]);
-
-  const [metricasData, setMetricasData] = useState<any[]>([]);
-
-  const [criticidadesData, setCriticidadesData] = useState<any[]>([]);
-
-  const [umbralesData, setUmbralesData] = useState<any[]>([]);
-
-  const [mediosData, setMediosData] = useState<any[]>([]);
-
-  const [sensorsData, setSensorsData] = useState<any[]>([]);
-
-  const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
-  const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
-  const [contactosData, setContactosData] = useState<any[]>([]);
+  // Estados de datos relacionados ahora manejados por useTableDataManagement
 
 
 
@@ -1702,13 +1717,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     console.log('🔍 Debug - groupUsuarioPerfilData sample:', data[0]);
 
-    console.log('🔍 Debug - usuariosData:', usuariosData?.length);
+    console.log('🔍 Debug - userData:', userData?.length);
 
     console.log('🔍 Debug - perfilesData:', perfilesData?.length);
 
     console.log('🔍 Debug - All input data:', data);
 
-    console.log('🔍 Debug - All usuariosData:', usuariosData);
+    console.log('🔍 Debug - All userData:', userData);
 
     console.log('🔍 Debug - All perfilesData:', perfilesData);
 
@@ -1724,7 +1739,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         // Buscar el nombre del usuario
 
-        const usuario = usuariosData?.find(u => u.usuarioid === usuarioid);
+        const usuario = userData?.find(u => u.usuarioid === usuarioid);
 
         
 
@@ -3225,7 +3240,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     // Cargar datos de la nueva tabla
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -3377,7 +3392,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       console.log('🔄 SystemParameters: Loading data for table:', selectedTable);
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -3489,217 +3504,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const loadUserData = async () => {
+  // loadUserData ahora se importa desde useTableDataManagement
 
-    try {
 
-      const response = await JoySenseService.getTableData('usuario', 1000);
 
-      const data = Array.isArray(response) ? response : ((response as any)?.data || []);
-
-      setUserData(data);
-
-    } catch (error) {
-
-      console.error('Error loading user data:', error);
-
-      setUserData([]);
-
-    }
-
-  };
-
-
-
-  const loadRelatedTablesData = async () => {
-
-    try {
-
-      console.log('🔄 Cargando datos de tablas relacionadas...');
-
-      const startTime = performance.now();
-
-      
-
-             const [
-
-         paisesResponse, 
-
-         empresasResponse, 
-
-         fundosResponse,
-
-         ubicacionesResponse,
-
-        localizacionesResponse,
-
-         entidadesResponse,
-
-         nodosResponse,
-
-         tiposResponse,
-
-         metricasResponse,
-
-         criticidadesResponse,
-
-         perfilesResponse,
-
-         umbralesResponse,
-
-         mediosResponse,
-
-         usuariosResponse,
-
-         sensorsResponse,
-
-         metricasensorResponse,
-
-         perfilumbralResponse,
-
-         contactosResponse
-
-       ] = await Promise.all([
-
-         JoySenseService.getTableData('pais', 500),
-
-         JoySenseService.getTableData('empresa', 500),
-
-         JoySenseService.getTableData('fundo', 500),
-
-         JoySenseService.getTableData('ubicacion', 500),
-
-        JoySenseService.getTableData('localizacion', 500),
-
-         JoySenseService.getTableData('entidad', 500),
-
-         JoySenseService.getTableData('nodo', 500),
-
-         JoySenseService.getTableData('tipo', 500),
-
-         JoySenseService.getTableData('metrica', 500),
-
-         JoySenseService.getTableData('criticidad', 500),
-
-         JoySenseService.getTableData('perfil', 500),
-
-         JoySenseService.getTableData('umbral', 500),
-
-         JoySenseService.getTableData('medio', 500),
-
-         JoySenseService.getTableData('usuario', 500),
-
-         JoySenseService.getTableData('sensor', 500),
-
-         JoySenseService.getTableData('metricasensor', 500),
-
-         JoySenseService.getTableData('perfilumbral', 500),
-
-         JoySenseService.getTableData('contacto', 500)
-
-       ]);
-
-      
-
-      const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
-
-      const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
-
-      const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
-
-      
-
-      // Para fundo, extraer paisid de la relación con empresa
-
-      const processedFundos = fundos.map((fundo: any) => ({
-
-        ...fundo,
-
-        paisid: fundo.empresa?.paisid || null
-
-      }));
-
-      const ubicaciones = Array.isArray(ubicacionesResponse) ? ubicacionesResponse : ((ubicacionesResponse as any)?.data || []);
-
-      const localizaciones = Array.isArray(localizacionesResponse) ? localizacionesResponse : ((localizacionesResponse as any)?.data || []);
-
-      const entidades = Array.isArray(entidadesResponse) ? entidadesResponse : ((entidadesResponse as any)?.data || []);
-
-      const nodos = Array.isArray(nodosResponse) ? nodosResponse : ((nodosResponse as any)?.data || []);
-
-             const tipos = Array.isArray(tiposResponse) ? tiposResponse : ((tiposResponse as any)?.data || []);
-
-       const metricas = Array.isArray(metricasResponse) ? metricasResponse : ((metricasResponse as any)?.data || []);
-
-       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
-
-       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
-
-       const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
-
-       const medios = Array.isArray(mediosResponse) ? mediosResponse : ((mediosResponse as any)?.data || []);
-
-       const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
-
-       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
-
-       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
-
-       const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
-
-       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
-
-       
-
-       setPaisesData(paises);
-
-       setEmpresasData(empresas);
-
-       setFundosData(processedFundos);
-
-       setUbicacionesData(ubicaciones);
-
-       setLocalizacionesData(localizaciones);
-
-       setEntidadesData(entidades);
-
-       setNodosData(nodos);
-
-       setTiposData(tipos);
-
-       setMetricasData(metricas);
-
-       setCriticidadesData(criticidades);
-
-       setPerfilesData(perfiles);
-
-       setUmbralesData(umbrales);
-
-       setMediosData(medios);
-
-       setUsuariosData(usuarios);
-
-       setSensorsData(sensors);
-
-       setMetricasensorData(metricasensor);
-
-       setPerfilumbralData(perfilumbral);
-
-       setContactosData(contactos);
-
-      
-
-      const endTime = performance.now();
-
-      console.log(`✅ Datos de tablas relacionadas cargados en ${(endTime - startTime).toFixed(2)}ms`);
-
-    } catch (error) {
-
-      console.error('Error loading related tables data:', error);
-
-    }
-
-  };
+  // loadRelatedTablesData ahora se importa desde useTableDataManagement
 
 
 
@@ -3713,7 +3522,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       filterParams,
 
-      usuariosDataLength: usuariosData.length,
+      userDataLength: userData.length,
 
       perfilesDataLength: perfilesData.length
 
@@ -3725,7 +3534,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       case 'usuarioid':
 
-        return usuariosData
+        return userData
 
           .filter(usuario => usuario.statusid === 1)
 
@@ -3761,240 +3570,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  // Ref para prevenir múltiples llamadas simultáneas y controlar abort
-  const loadingTableRef = useRef<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const loadTableData = useCallback(async () => {
+  // loadTableData ahora se importa desde useTableDataManagement
+  // Wrapper para mantener compatibilidad con las llamadas existentes
+  const loadTableDataWrapper = useCallback(async () => {
     if (!selectedTable) return;
-    
-    // Solo cancelar llamada anterior si es para una tabla diferente
-    if (abortControllerRef.current && loadingTableRef.current !== selectedTable) {
-      console.log('🛑 loadTableData: Cancelando llamada anterior para tabla diferente:', loadingTableRef.current, '->', selectedTable);
-      abortControllerRef.current.abort();
-    }
-    
-    // Prevenir múltiples llamadas simultáneas para la misma tabla
-    if (loadingTableRef.current === selectedTable) {
-      console.log('⚠️ loadTableData: Ya se está cargando la tabla', selectedTable);
-      return;
-    }
-    
-    // Crear nuevo AbortController para esta llamada
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-    loadingTableRef.current = selectedTable;
-
-    
-
-    try {
-      // Verificar si la llamada fue cancelada antes de continuar
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de cargar datos');
-        return;
-      }
-
-      setLoading(true);
-
-      console.log(`🔄 Cargando datos de la tabla: ${selectedTable}`);
-      console.log('🔍 loadTableData Debug - selectedTable:', selectedTable, 'loadingTableRef.current:', loadingTableRef.current);
-
-      const startTime = performance.now();
-
-      // Cargar las columnas para la tabla actual
-      console.log(`🔄 Cargando columnas para la tabla: ${selectedTable}`);
-      console.log('🔍 loadTableData Debug - About to call getTableColumns with:', selectedTable);
-      
-      // Verificar si la llamada fue cancelada antes de hacer la llamada
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de getTableColumns');
-        return;
-      }
-      
-      const cols = await JoySenseService.getTableColumns(selectedTable);
-      console.log('🔍 loadTableData Debug - Columns received:', cols?.map(c => c.columnName));
-      
-      // Verificar si la llamada fue cancelada después de recibir las columnas
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada después de getTableColumns');
-        return;
-      }
-
-      // Establecer columnas base para formularios
-      setColumns(cols || []);
-
-      // Agregar columnas virtuales para tablas agrupadas
-      if (selectedTable === 'sensor') {
-        // Agregar columna virtual 'tipos' para mostrar todos los tipos concatenados
-        const tiposColumn = {
-          columnName: 'tipos',
-          dataType: 'text',
-          isNullable: true,
-          defaultValue: null,
-          isIdentity: false,
-          isPrimaryKey: false
-        };
-        setTableColumns([...cols, tiposColumn]);
-      } else if (selectedTable === 'metricasensor') {
-        // Agregar columnas virtuales para metricasensor
-        const tiposColumn = {
-          columnName: 'tipos',
-          dataType: 'text',
-          isNullable: true,
-          defaultValue: null,
-          isIdentity: false,
-          isPrimaryKey: false
-        };
-        const metricasColumn = {
-          columnName: 'metricas',
-          dataType: 'text',
-          isNullable: true,
-          defaultValue: null,
-          isIdentity: false,
-          isPrimaryKey: false
-        };
-        setTableColumns([...cols, tiposColumn, metricasColumn]);
-      } else if (selectedTable === 'usuarioperfil') {
-        // Agregar columnas virtuales para usuarioperfil
-        const usuarioColumn = {
-          columnName: 'usuario',
-          dataType: 'text',
-          isNullable: true,
-          defaultValue: null,
-          isIdentity: false,
-          isPrimaryKey: false
-        };
-        const perfilesColumn = {
-          columnName: 'perfiles',
-          dataType: 'text',
-          isNullable: true,
-          defaultValue: null,
-          isIdentity: false,
-          isPrimaryKey: false
-        };
-        setTableColumns([...cols, usuarioColumn, perfilesColumn]);
-      } else {
-        setTableColumns(cols || []);
-      }
-
-      // Inicializar formData con las columnas recién cargadas
-      setFormData(initializeFormData(cols));
-
-      
-
-      // Cargar datos con paginación para tablas grandes
-      console.log('🔍 loadTableData Debug - About to call getTableData with:', selectedTable);
-      
-      // Verificar si la llamada fue cancelada antes de cargar datos
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de getTableData');
-        return;
-      }
-      
-      const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
-      console.log('🔍 loadTableData Debug - Data received for', selectedTable, ':', dataResponse?.length || 'no data');
-      
-      // Verificar si la llamada fue cancelada después de recibir los datos
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada después de getTableData');
-        return;
-      }
-
-      const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
-
-      
-
-      // Ordenar por fecha de modificación (más recientes primero)
-
-      const sortedData = data.sort((a: any, b: any) => {
-
-        const dateA = new Date(a.datemodified || a.datecreated || 0);
-
-        const dateB = new Date(b.datemodified || b.datecreated || 0);
-
-        return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
-
-      });
-
-      
-
-      // Verificar si la llamada fue cancelada antes de actualizar el estado
-      if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de actualizar estado');
-        return;
-      }
-
-      // Solo actualizar si los datos han cambiado realmente
-      setTableData(prevData => {
-        if (JSON.stringify(prevData) === JSON.stringify(sortedData)) {
-          return prevData;
-        }
-        return sortedData;
-      });
-
-      
-
-      // Cargar datos de sensores si estamos en el contexto de metricasensor o umbral
-
-      if (selectedTable === 'metricasensor' || selectedTable === 'umbral') {
-
-        try {
-
-          const sensorResponse = await JoySenseService.getTableData('sensor', 1000);
-
-          const sensorData = Array.isArray(sensorResponse) ? sensorResponse : ((sensorResponse as any)?.data || []);
-
-          setSensorsData(sensorData);
-
-          console.log(`✅ Datos de sensores cargados para ${selectedTable}: ${sensorData.length} registros`);
-
-        } catch (error) {
-
-          console.error('Error cargando datos de sensores:', error);
-
-          setSensorsData([]);
-
-        }
-
-      } else {
-
-        setSensorsData([]);
-
-      }
-
-      
-
-             // Los datos filtrados se aplicarán automáticamente por el hook useGlobalFilterEffect
-
-       // Inicializar paginación para la tabla de Estado
-
-       setStatusCurrentPage(1);
-
-       setStatusSearchTerm('');
-
-      
-
-      const endTime = performance.now();
-
-      console.log(`✅ Datos de ${selectedTable} cargados en ${(endTime - startTime).toFixed(2)}ms (${data.length} registros)`);
-
-      
-
-    } catch (error) {
-      // Solo mostrar error si no fue cancelado
-      if (!abortController.signal.aborted) {
-        console.error('Error loading table data:', error);
-        setMessage({ type: 'error', text: 'Error cargando datos de la tabla' });
-      } else {
-        console.log('🛑 loadTableData: Llamada cancelada, no mostrar error');
-      }
-    } finally {
-      setLoading(false);
-      loadingTableRef.current = null; // Reset loading ref
-      abortControllerRef.current = null; // Reset abort controller
-    }
-
-  }, [selectedTable]);
+    await loadTableData(selectedTable, initializeFormData);
+  }, [selectedTable, loadTableData, initializeFormData]);
 
 
 
@@ -4299,7 +3880,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       criticidadesData,
       perfilesData,
       umbralesData,
-      usuariosData: userData,
+      userData: userData,
       mediosData
     };
     
@@ -4641,7 +4222,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -4823,7 +4404,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -7425,7 +7006,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         await loadUpdateData();
 
-        await loadTableData();
+        await loadTableDataWrapper();
 
         
 
@@ -7622,7 +7203,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         await loadUpdateData();
 
-        await loadTableData();
+        await loadTableDataWrapper();
 
         
 
@@ -7857,7 +7438,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         await loadUpdateData();
 
-        await loadTableData();
+        await loadTableDataWrapper();
 
         
 
@@ -8482,7 +8063,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      await loadTableData();
+      await loadTableDataWrapper();
 
       await loadCopyData();
 
@@ -10226,7 +9807,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -10349,7 +9930,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -11018,7 +10599,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -11163,7 +10744,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -11561,7 +11142,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -11609,7 +11190,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         for (const perfilid of perfiles) {
 
-          const usuarioInfo = usuariosData.find(u => u.usuarioid.toString() === usuarioid);
+          const usuarioInfo = userData.find(u => u.usuarioid.toString() === usuarioid);
 
           const perfilInfo = perfilesData.find(p => p.perfilid.toString() === perfilid);
 
@@ -11675,7 +11256,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [selectedStatus, usuariosData, perfilesData, setMultipleUsuarioPerfiles, setMessage]);
+  }, [selectedStatus, userData, perfilesData, setMultipleUsuarioPerfiles, setMessage]);
 
 
 
@@ -11779,7 +11360,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      // Recargar datos
 
-     loadTableData();
+     loadTableDataWrapper();
 
      loadTableInfo();
 
@@ -11917,7 +11498,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Recargar datos
 
-      loadTableData();
+      loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -12151,7 +11732,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     
 
-    if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData || !usuariosData || !perfilesData)) {
+    if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData || !userData || !perfilesData)) {
 
       setMessage({ type: 'warning', text: 'Cargando datos relacionados... Por favor espera un momento.' });
 
@@ -12870,7 +12451,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       perfilesData={perfilesData}
 
-                      usuariosData={usuariosData}
+                      userData={userData}
 
                     />
 
@@ -13062,7 +12643,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           setMultipleUsuarioPerfiles={setMultipleUsuarioPerfiles}
 
-                          usuariosData={usuariosData}
+                          userData={userData}
 
                           perfilesData={perfilesData}
 
@@ -13539,7 +13120,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           getUniqueOptionsForField={getUniqueOptionsForUsuarioPerfilField}
 
-                          usuariosData={usuariosData}
+                          userData={userData}
 
                           perfilesData={perfilesData}
 

@@ -19,7 +19,7 @@ interface InsertionMessageProps {
   metricasData?: any[];
   criticidadesData?: any[];
   perfilesData?: any[];
-  usuariosData?: any[];
+  userData?: any[];
 }
 
 const InsertionMessage: React.FC<InsertionMessageProps> = ({
@@ -36,7 +36,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
   metricasData = [],
   criticidadesData = [],
   perfilesData = [],
-  usuariosData = []
+  userData = []
 }) => {
   if (insertedRecords.length === 0) return null;
 
@@ -194,8 +194,8 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       return perfil ? perfil.perfil : value.toString();
     }
     
-    if (fieldKey === 'usuarioid' && usuariosData.length > 0) {
-      const usuario = usuariosData.find(u => u.usuarioid === value);
+    if (fieldKey === 'usuarioid' && userData.length > 0) {
+      const usuario = userData.find(u => u.usuarioid === value);
       return usuario ? `${usuario.firstname} ${usuario.lastname}` : value.toString();
     }
     

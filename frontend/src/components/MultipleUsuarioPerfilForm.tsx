@@ -10,7 +10,7 @@ interface MultipleUsuarioPerfilFormProps {
   setSelectedStatus: (value: boolean) => void;
   multipleUsuarioPerfiles: any[];
   setMultipleUsuarioPerfiles: (value: any[]) => void;
-  usuariosData: any[];
+  userData: any[];
   perfilesData: any[];
   usuarioperfilData: any[]; // Datos existentes de usuarioperfil
   loading: boolean;
@@ -41,7 +41,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
   setSelectedStatus,
   multipleUsuarioPerfiles,
   setMultipleUsuarioPerfiles,
-  usuariosData,
+  userData,
   perfilesData,
   usuarioperfilData,
   loading,
@@ -142,9 +142,9 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
   // Obtener usuarios que no tienen perfil asignado
   const getUsuariosSinPerfil = () => {
     console.log('🔍 Debug - getUsuariosSinPerfil INPUT:', {
-      usuariosData: usuariosData,
+      userData: userData,
       usuarioperfilData: usuarioperfilData,
-      usuariosDataLength: usuariosData?.length,
+      userDataLength: userData?.length,
       usuarioperfilDataLength: usuarioperfilData?.length
     });
 
@@ -156,15 +156,15 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
     );
     
     console.log('🔍 Debug - getUsuariosSinPerfil PROCESSING:', {
-      totalUsuarios: usuariosData.length,
+      totalUsuarios: userData.length,
       usuariosConPerfil: usuariosConPerfil.size,
       usuarioperfilData: usuarioperfilData.length,
       usuariosConPerfilIds: Array.from(usuariosConPerfil),
-      usuariosActivos: usuariosData.filter(u => u.statusid === 1).length,
-      usuariosInactivos: usuariosData.filter(u => u.statusid === 0).length
+      usuariosActivos: userData.filter(u => u.statusid === 1).length,
+      usuariosInactivos: userData.filter(u => u.statusid === 0).length
     });
 
-    const usuariosSinPerfil = usuariosData.filter(usuario => 
+    const usuariosSinPerfil = userData.filter(usuario => 
       !usuariosConPerfil.has(usuario.usuarioid)
       // Removido: && usuario.statusid === 1
       // Ahora incluye usuarios activos e inactivos

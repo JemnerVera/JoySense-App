@@ -5,7 +5,7 @@ interface AdvancedUsuarioPerfilUpdateFormProps {
   onUpdate: (updatedEntries: any[]) => Promise<void>;
   onCancel: () => void;
   getUniqueOptionsForField: (columnName: string, filterParams?: { usuarioid?: string; perfilid?: string }) => Array<{value: any, label: string}>;
-  usuariosData: any[];
+  userData: any[];
   perfilesData: any[];
 }
 
@@ -14,7 +14,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
   onUpdate,
   onCancel,
   getUniqueOptionsForField,
-  usuariosData,
+  userData,
   perfilesData
 }: AdvancedUsuarioPerfilUpdateFormProps) {
   
@@ -22,7 +22,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
     if (selectedRows.length === 0) return null;
     
     console.log('🔍 Debug - selectedRows:', selectedRows);
-    console.log('🔍 Debug - usuariosData:', usuariosData);
+    console.log('🔍 Debug - userData:', userData);
     
     // Obtener el primer usuarioid de las filas seleccionadas
     const firstUsuarioid = selectedRows[0]?.usuarioid;
@@ -31,7 +31,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
     if (!firstUsuarioid) return null;
     
     // Buscar el usuario
-    const usuario = usuariosData.find(u => u.usuarioid === firstUsuarioid);
+    const usuario = userData.find(u => u.usuarioid === firstUsuarioid);
     console.log('🔍 Debug - usuario encontrado:', usuario);
     return usuario;
   };

@@ -17,7 +17,7 @@ export interface RelatedData {
   criticidadesData?: any[];
   perfilesData?: any[];
   umbralesData?: any[];
-  usuariosData?: any[];
+  userData?: any[];
   mediosData?: any[];
 }
 
@@ -242,7 +242,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
           relatedDataArray = relatedData.umbralesData || [];
           break;
         case 'usuario':
-          relatedDataArray = relatedData.usuariosData || [];
+          relatedDataArray = relatedData.userData || [];
           break;
         case 'medio':
           relatedDataArray = relatedData.mediosData || [];
@@ -265,8 +265,8 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
   // Para campos de usuario (usercreatedid, usermodifiedid, modified_by)
   if (columnName === 'usercreatedid' || columnName === 'usermodifiedid' || columnName === 'modified_by') {
     const userId = row[columnName];
-    if (userId && relatedData.usuariosData) {
-      const user = relatedData.usuariosData.find(u => u.usuarioid === userId);
+    if (userId && relatedData.userData) {
+      const user = relatedData.userData.find((u: any) => u.usuarioid === userId);
       if (user) {
         return `${user.firstname || ''} ${user.lastname || ''}`.trim() || user.login || `Usuario ${userId}`;
       }
