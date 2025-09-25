@@ -6656,13 +6656,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-        } else if (filterParams?.fundoid && selectedTable !== 'sensor') {
+        } else if (filterParams?.fundoid && selectedTable !== 'sensor' && selectedTable !== 'localizacion') {
 
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado
 
           // Relación: nodo -> localizacion -> ubicacion -> fundo
 
-          // EXCEPTO para sensor masivo, donde queremos todos los nodos sin sensores
+          // EXCEPTO para sensor masivo y localizacion, donde queremos todos los nodos sin sensores/localización
 
           if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
 
@@ -6710,11 +6710,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           }
 
-        } else if (fundoSeleccionado && selectedTable !== 'sensor') {
+        } else if (fundoSeleccionado && selectedTable !== 'sensor' && selectedTable !== 'localizacion') {
 
           // Filtrar nodos que pertenecen a ubicaciones del fundo seleccionado (filtros globales)
 
           // Relación: nodo -> localizacion -> ubicacion -> fundo
+
+          // EXCEPTO para localizacion, donde queremos nodos sin localización activa
 
           if (ubicacionesData && localizacionesData && localizacionesData.length > 0) {
 
@@ -6972,7 +6974,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         let nodoResult = sortedNodos.map(nodo => {
 
-          // Buscar la localización del nodo para obtener ubicacionid
+          // Buscar la localización del nodo para verificar si tiene localización activa
 
           const localizacion = localizacionesData?.find(loc => loc.nodoid === nodo.nodoid);
 
@@ -6986,7 +6988,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             datecreated: nodo.datecreated,
 
-            ubicacionid: localizacion?.ubicacionid || null
+            hasActiveLocalization: !!localizacion // true si tiene localización activa
 
           };
 
@@ -6996,11 +6998,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         // Para sensor, metricasensor y umbral masivo, incluir TODOS los nodos (con o sin localización)
 
-        // Para otros contextos, solo incluir nodos con ubicacionid
+        // Para localizacion, solo incluir nodos SIN localización activa (disponibles para asignar)
 
-        if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor' && selectedTable !== 'umbral') {
+        // Para otros contextos, solo incluir nodos con localización activa
 
-          nodoResult = nodoResult.filter(nodo => nodo.ubicacionid !== null);
+        if (selectedTable === 'localizacion') {
+
+          // Para localización: mostrar solo nodos que NO tienen localización activa
+          nodoResult = nodoResult.filter(nodo => !nodo.hasActiveLocalization);
+
+        } else if (selectedTable !== 'sensor' && selectedTable !== 'metricasensor' && selectedTable !== 'umbral') {
+
+          // Para otros contextos: solo nodos con localización activa
+          nodoResult = nodoResult.filter(nodo => nodo.hasActiveLocalization);
 
         }
 
