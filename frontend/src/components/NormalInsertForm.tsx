@@ -1624,7 +1624,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
                     ? 'bg-neutral-800 border-neutral-600' 
                     : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
                 }`}
-                  placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 3 caracteres)' : ''}${col.columnName === 'fundoabrev' ? ' (hasta 2 caracteres)' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 10 caracteres)' : ''}${col.columnName === 'fundoabrev' ? ' (hasta 10 caracteres)' : ''}`}
               />
             </div>
           );

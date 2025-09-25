@@ -40,13 +40,13 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   empresa: [
     { field: 'empresa', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la empresa es obligatorio' },
-    { field: 'empresabrev', required: true, type: 'string', minLength: 1, maxLength: 3, customMessage: 'La abreviatura es obligatoria' },
+    { field: 'empresabrev', required: true, type: 'string', minLength: 1, maxLength: 10, customMessage: 'La abreviatura es obligatoria' },
     { field: 'paisid', required: true, type: 'number', customMessage: 'Debe seleccionar un país' }
   ],
   
   fundo: [
     { field: 'fundo', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del fundo es obligatorio' },
-    { field: 'fundoabrev', required: true, type: 'string', minLength: 1, maxLength: 2, customMessage: 'La abreviatura es obligatoria' },
+    { field: 'fundoabrev', required: true, type: 'string', minLength: 1, maxLength: 10, customMessage: 'La abreviatura es obligatoria' },
     { field: 'empresaid', required: true, type: 'number', customMessage: 'Debe seleccionar una empresa' }
   ],
   
@@ -509,10 +509,10 @@ const validateEmpresaData = async (
   }
   
   // 2. Validar longitud de abreviatura
-  if (formData.empresabrev && formData.empresabrev.length > 3) {
+  if (formData.empresabrev && formData.empresabrev.length > 10) {
     errors.push({
       field: 'empresabrev',
-      message: 'La abreviatura no puede exceder 3 caracteres',
+      message: 'La abreviatura no puede exceder 10 caracteres',
       type: 'length'
     });
   }
@@ -591,10 +591,10 @@ const validateFundoData = async (
   }
   
   // 2. Validar longitud de abreviatura
-  if (formData.fundoabrev && formData.fundoabrev.length > 2) {
+  if (formData.fundoabrev && formData.fundoabrev.length > 10) {
     errors.push({
       field: 'fundoabrev',
-      message: 'La abreviatura no puede exceder 2 caracteres',
+      message: 'La abreviatura no puede exceder 10 caracteres',
       type: 'length'
     });
   }
