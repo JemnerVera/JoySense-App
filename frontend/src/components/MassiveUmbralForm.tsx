@@ -217,11 +217,12 @@ export function MassiveUmbralForm({
   // Función para verificar si todos los nodos seleccionados tienen los mismos tipos de sensores
   const validateNodeSensorTypes = () => {
     const selectedNodesData = selectedNodes.filter(node => node.selected);
-    if (selectedNodesData.length <= 1) return { isValid: true, message: '' };
+    if (selectedNodesData.length <= 1) return { isValid: true, message: '', groupedNodes: {}, nodoAnalysis: [] };
 
     const nodeTypes = selectedNodesData.map(node => {
       const types = nodeSensorTypes[node.nodoid] || [];
       return {
+        nodoid: node.nodoid,
         nodo: node.nodo,
         types: types.map(t => t.tipo).sort(),
         count: types.length,
@@ -230,7 +231,7 @@ export function MassiveUmbralForm({
     });
 
     // Agrupar nodos por cantidad y tipos de sensores
-    const groupedNodes: {[key: string]: {count: number, types: string[], nodos: string[]}} = {};
+    const groupedNodes: {[key: string]: {count: number, types: string[], nodos: any[]}} = {};
     
     nodeTypes.forEach(nt => {
       const key = `${nt.count}-${nt.typesKey}`;
@@ -241,22 +242,22 @@ export function MassiveUmbralForm({
           nodos: []
         };
       }
-      groupedNodes[key].nodos.push(nt.nodo);
+      groupedNodes[key].nodos.push(nt);
     });
 
     // Si solo hay un grupo, todos los nodos son consistentes
     if (Object.keys(groupedNodes).length === 1) {
-      return { isValid: true, message: '' };
+      return { isValid: true, message: '', groupedNodes: {}, nodoAnalysis: [] };
     }
 
-    // Crear mensaje agrupado
+    // Crear mensaje agrupado (mantener para compatibilidad)
     const message = Object.values(groupedNodes).map(group => {
-      const nodosStr = group.nodos.join(', ');
+      const nodosStr = group.nodos.map(n => n.nodo).join(', ');
       const tipoStr = group.count !== 1 ? 'tipos' : 'tipo';
       return `Nodo${group.nodos.length > 1 ? 's' : ''} ${nodosStr} posee${group.nodos.length > 1 ? 'n' : ''} ${group.count.toString().padStart(2, '0')} ${tipoStr} de sensor.`;
     }).join('\n');
 
-    return { isValid: false, message };
+    return { isValid: false, message, groupedNodes, nodoAnalysis: nodeTypes };
   };
 
   const validationResult = useMemo(() => validateNodeSensorTypes(), [selectedNodes, nodeSensorTypes]);
@@ -595,22 +596,70 @@ export function MassiveUmbralForm({
             NODO
           </h4>
           
-          {/* Mensaje de alerta para tipos de sensores inconsistentes */}
-          {!validationResult.isValid && validationResult.message && (
-            <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/50 rounded-lg">
+          {/* Mensaje de validación de similitud de nodos (compacto e interactivo) */}
+          {!validationResult.isValid && validationResult.groupedNodes && Object.keys(validationResult.groupedNodes).length > 0 && (
+            <div className="mb-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg">
               <div className="flex items-start">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                  <span className="text-black text-sm font-bold">⚠</span>
+                <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                  <span className="text-black text-xs font-bold">⚠</span>
                 </div>
-                <div>
+                <div className="flex-1">
                   <h5 className="text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
                     TIPOS DE SENSORES INCONSISTENTES
                   </h5>
-                  <div className="text-yellow-300 text-sm font-mono whitespace-pre-line">
-                    {validationResult.message}
-                  </div>
-                  <div className="text-yellow-400 text-xs font-mono mt-2">
-                    Selecciona solo nodos que tengan la misma cantidad y tipos de sensores.
+                  <p className="text-yellow-300 text-xs font-mono mb-3">
+                    Los nodos seleccionados tienen diferentes tipos de sensores. Haz clic en un grupo para seleccionar solo esos nodos.
+                  </p>
+                  
+                  {/* Resumen compacto de grupos con selección interactiva */}
+                  <div className="space-y-2">
+                    {Object.values(validationResult.groupedNodes).map((group, groupIndex) => (
+                      <div 
+                        key={groupIndex} 
+                        className="bg-neutral-800 border border-neutral-600 rounded p-2 cursor-pointer hover:bg-neutral-700 transition-colors"
+                        onClick={() => {
+                          // Seleccionar solo los nodos de este grupo
+                          const nodosDelGrupo = group.nodos.map(nodo => nodo.nodoid);
+                          setSelectedNodes(prev => prev.map(node => ({
+                            ...node,
+                            selected: nodosDelGrupo.includes(node.nodoid)
+                          })));
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-orange-500 font-mono text-xs font-bold">
+                            GRUPO {groupIndex + 1} - {group.count} TIPO(S)
+                          </span>
+                          <span className="text-green-400 font-mono text-xs">
+                            CLICK PARA SELECCIONAR
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {group.nodos.slice(0, 3).map(nodo => (
+                            <span key={nodo.nodoid} className="text-white font-mono text-xs bg-neutral-700 px-2 py-1 rounded">
+                              {nodo.nodo}
+                            </span>
+                          ))}
+                          {group.nodos.length > 3 && (
+                            <span className="text-neutral-400 font-mono text-xs px-2 py-1">
+                              +{group.nodos.length - 3} más
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {group.types.slice(0, 2).map((tipo, tipoIndex) => (
+                            <span key={tipoIndex} className="text-orange-300 font-mono text-xs bg-orange-900 bg-opacity-30 px-2 py-1 rounded">
+                              {tipo}
+                            </span>
+                          ))}
+                          {group.types.length > 2 && (
+                            <span className="text-orange-300 font-mono text-xs px-2 py-1">
+                              +{group.types.length - 2} más
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
