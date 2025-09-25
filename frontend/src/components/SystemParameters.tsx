@@ -2782,12 +2782,41 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      // Verificar si hay una fila seleccionada para actualizar
+      // Verificar si hay cambios reales en el formulario de actualización
+      // Solo mostrar modal si se han modificado los datos originales
 
-      if (selectedRowForUpdate) {
+      if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
 
-        return true;
+        console.log('🔍 Checking update form changes...');
+        console.log('🔍 selectedRowForUpdate:', selectedRowForUpdate);
+        console.log('🔍 updateFormData:', updateFormData);
 
+        // Comparar datos originales con datos modificados
+        const hasRealChanges = Object.keys(updateFormData).some(key => {
+          const originalValue = selectedRowForUpdate[key];
+          const currentValue = updateFormData[key];
+          
+          console.log(`🔍 Comparing field ${key}:`);
+          console.log(`  - Original: ${originalValue} (type: ${typeof originalValue})`);
+          console.log(`  - Current: ${currentValue} (type: ${typeof currentValue})`);
+          
+          // Comparar valores, manejando diferentes tipos de datos
+          if (originalValue !== currentValue) {
+            console.log(`🔍 ✅ Change detected in field: ${key}`);
+            return true;
+          } else {
+            console.log(`🔍 ❌ No change in field: ${key}`);
+            return false;
+          }
+        });
+
+        console.log(`🔍 Update form has real changes: ${hasRealChanges}`);
+        return hasRealChanges;
+
+      } else {
+        console.log('🔍 No update form data to check:');
+        console.log(`  - selectedRowForUpdate: ${!!selectedRowForUpdate}`);
+        console.log(`  - updateFormData keys: ${Object.keys(updateFormData).length}`);
       }
 
       
@@ -2805,16 +2834,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       // Verificar si hay filas seleccionadas para actualización manual
 
       if (selectedRowsForManualUpdate.length > 0) {
-
-        return true;
-
-      }
-
-      
-
-      // Verificar si hay cambios en el formulario de actualización
-
-      if (Object.keys(updateFormData).length > 0) {
 
         return true;
 
@@ -5829,28 +5848,47 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleCancelUpdate = () => {
 
-    setCancelAction(() => () => {
+    // Verificar si realmente hay cambios sin guardar
+    const hasChanges = hasUnsavedChanges();
+    
+    console.log('🔍 handleCancelUpdate - hasChanges:', hasChanges);
+    
+    if (hasChanges) {
+      // Solo mostrar modal si hay cambios reales
+      setCancelAction(() => () => {
 
-    setSelectedRowForUpdate(null);
+        setSelectedRowForUpdate(null);
 
-    setSelectedRowsForUpdate([]);
+        setSelectedRowsForUpdate([]);
 
+        setSelectedRowsForManualUpdate([]);
+
+        // Limpiar mensajes de alerta al cancelar
+        setUpdateMessage(null);
+
+        setUpdateFormData({});
+
+        setIndividualRowStatus({});
+
+        setIsMultipleSelectionMode(false);
+
+        setShowCancelModal(false);
+
+      });
+
+      setShowCancelModal(true);
+    } else {
+      // Si no hay cambios, cancelar directamente sin modal
+      console.log('🔍 No changes detected, canceling directly');
+      
+      setSelectedRowForUpdate(null);
+      setSelectedRowsForUpdate([]);
       setSelectedRowsForManualUpdate([]);
-
-      // Limpiar mensajes de alerta al cancelar
       setUpdateMessage(null);
-
-    setUpdateFormData({});
-
-    setIndividualRowStatus({});
-
+      setUpdateFormData({});
+      setIndividualRowStatus({});
       setIsMultipleSelectionMode(false);
-
-      setShowCancelModal(false);
-
-    });
-
-    setShowCancelModal(true);
+    }
 
   };
 
@@ -12237,19 +12275,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleCancelManualUpdate = () => {
 
-    setCancelAction(() => () => {
+    // Verificar si realmente hay cambios sin guardar
+    const hasChanges = hasUnsavedChanges();
+    
+    console.log('🔍 handleCancelManualUpdate - hasChanges:', hasChanges);
+    
+    if (hasChanges) {
+      // Solo mostrar modal si hay cambios reales
+      setCancelAction(() => () => {
 
-    setIsMultipleSelectionMode(false);
+        setIsMultipleSelectionMode(false);
 
-    setSelectedRowsForManualUpdate([]);
+        setSelectedRowsForManualUpdate([]);
 
-    setUpdateFormData({});
+        setUpdateFormData({});
 
-      setShowCancelModal(false);
+        setShowCancelModal(false);
 
-    });
+      });
 
-    setShowCancelModal(true);
+      setShowCancelModal(true);
+    } else {
+      // Si no hay cambios, cancelar directamente sin modal
+      console.log('🔍 No changes detected, canceling manual update directly');
+      
+      setIsMultipleSelectionMode(false);
+      setSelectedRowsForManualUpdate([]);
+      setUpdateFormData({});
+    }
 
   };
 
