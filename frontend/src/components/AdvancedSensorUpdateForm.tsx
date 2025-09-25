@@ -263,6 +263,16 @@ export function AdvancedSensorUpdateForm({
         <h3 className="text-xl font-bold text-orange-500 mb-2 font-mono tracking-wider">
           ACTUALIZAR SENSORES
         </h3>
+        {/* Información de entidad como referencia */}
+        {entidad && (
+          <div className="mt-3 p-3 bg-neutral-700 border border-neutral-600 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <span className="text-orange-500 font-mono tracking-wider text-sm">ENTIDAD:</span>
+              <span className="text-white font-mono text-sm">{entidad.entidad}</span>
+              <span className="text-orange-500 text-sm">🔒</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Nuevo diseño: 2 containers lado a lado */}
