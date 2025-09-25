@@ -6736,6 +6736,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             }))
           });
 
+          // Verificar TODOS los nodos RLS para encontrar los que creaste
+          const todosLosNodosRLS = nodosData.filter(n => n.nodo && n.nodo.toLowerCase().includes('rls'));
+          console.log('🔍 TODOS los nodos RLS encontrados:', {
+            totalNodosRLS: todosLosNodosRLS.length,
+            nodosRLS: todosLosNodosRLS.map(n => ({
+              nodoid: n.nodoid,
+              nodo: n.nodo,
+              tieneSensor: nodosConSensor.includes(n.nodoid),
+              tieneUmbral: nodosConUmbral.includes(n.nodoid),
+              tieneLocalizacion: nodosConLocalizacion.includes(n.nodoid)
+            }))
+          });
+
           
 
           // Para umbral masivo, NO aplicar filtro de fundo porque los nodos pueden no tener localización
@@ -10901,13 +10914,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             console.log(`🔄 Actualizando sensor existente: nodo ${nodoid}, tipo ${tipoid}`);
 
-            // Actualizar sensor existente
+            // Actualizar sensor existente usando endpoint con clave compuesta
 
-            await JoySenseService.updateTableRow('sensor', `${nodoid}-${tipoid}`, {
+            await JoySenseService.updateTableRowByCompositeKey('sensor', { nodoid, tipoid }, {
 
               statusid: 1,
 
+              usercreatedid: usuarioid,
+
               usermodifiedid: usuarioid,
+
+              datecreated: currentTimestamp,
 
               datemodified: currentTimestamp
 
@@ -14586,6 +14603,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                       getEmpresaName={getEmpresaName}
 
                       getFundoName={getFundoName}
+
+                      localizacionesData={localizacionesData}
 
                     />
 

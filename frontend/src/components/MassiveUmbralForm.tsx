@@ -13,6 +13,7 @@ interface MassiveUmbralFormProps {
   getEmpresaName?: (empresaId: string) => string;
   getFundoName?: (fundoId: string) => string;
   onFormDataChange?: (formData: any) => void;
+  localizacionesData?: any[];
 }
 
 interface SelectedNode {
@@ -62,7 +63,8 @@ export function MassiveUmbralForm({
   getPaisName,
   getEmpresaName,
   getFundoName,
-  onFormDataChange
+  onFormDataChange,
+  localizacionesData
 }: MassiveUmbralFormProps) {
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
@@ -394,13 +396,19 @@ export function MassiveUmbralForm({
               
               // Solo incluir si el umbral para este tipo tiene todos los campos requeridos
               if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
-                if (!node.ubicacionid) {
-                  console.error('❌ Nodo sin ubicacionid:', node);
-                  continue; // Saltar este nodo si no tiene ubicacionid
+                // Obtener ubicacionid desde la tabla localizacion
+                const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
+                if (!localizacion || !localizacion.ubicacionid) {
+                  console.error('❌ Nodo sin localización o ubicacionid:', { 
+                    nodo: node.nodo, 
+                    nodoid: node.nodoid, 
+                    localizacion: localizacion 
+                  });
+                  continue; // Saltar este nodo si no tiene localización
                 }
                 
                 const umbralData = {
-                  ubicacionid: node.ubicacionid,
+                  ubicacionid: localizacion.ubicacionid,
                   nodoid: node.nodoid,
                   tipoid: tipo.tipoid,
                   metricaid: metrica.metricaid,
