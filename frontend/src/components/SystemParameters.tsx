@@ -6171,7 +6171,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       contextualFields.push(
         <div key="pais-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            PAÍS
+            PAÍS 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getPaisName(paisSeleccionado)}
@@ -6185,7 +6185,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       contextualFields.push(
         <div key="empresa-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            EMPRESA
+            EMPRESA 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getEmpresaName(empresaSeleccionada)}
@@ -6199,7 +6199,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       contextualFields.push(
         <div key="fundo-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            FUNDO
+            FUNDO 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getFundoName(fundoSeleccionado)}
@@ -13270,6 +13270,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                            }
 
+                           // Ocultar campos que ya se muestran como filtros globales contextuales
+                           if (selectedTable === 'empresa' && col.columnName === 'paisid') {
+                             return null;
+                           }
+                           
+                           if (selectedTable === 'fundo' && (col.columnName === 'paisid' || col.columnName === 'empresaid')) {
+                             return null;
+                           }
+                           
+                           if (selectedTable === 'ubicacion' && (col.columnName === 'paisid' || col.columnName === 'empresaid' || col.columnName === 'fundoid')) {
+                             return null;
+                           }
+                           
+                           if (selectedTable === 'localizacion' && (col.columnName === 'paisid' || col.columnName === 'empresaid' || col.columnName === 'fundoid')) {
+                             return null;
+                           }
+                           
+                           if (selectedTable === 'entidad' && (col.columnName === 'paisid' || col.columnName === 'empresaid' || col.columnName === 'fundoid')) {
+                             return null;
+                           }
+
 
 
                            // Campos clave - mostrar como solo lectura
@@ -13306,7 +13327,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                    readOnly
 
-                                    className="w-full px-3 py-2 border rounded-lg text-neutral-300 cursor-not-allowed bg-neutral-800 border-neutral-600 font-mono"
+                                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75"
 
                                     title="Campo clave - No editable"
 
