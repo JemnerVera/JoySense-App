@@ -105,6 +105,13 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   
   const tiposFromNodos = getTiposFromSelectedNodos();
   
+  // Función para manejar la inserción y limpiar métricas después
+  const handleInsertMetricas = async () => {
+    await onInsertMetricas();
+    // Limpiar métricas seleccionadas después de guardar
+    setSelectedMetricasCheckboxes([]);
+  };
+  
   // Actualizar tipos seleccionados cuando cambien los nodos
   React.useEffect(() => {
     if (selectedNodos.length > 0) {
@@ -437,9 +444,29 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
 
           {/* Container 2: Métricas disponibles con checkboxes */}
           <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
-            <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              MÉTRICA
-            </h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
+                MÉTRICA
+              </h4>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedMetricasCheckboxes.length === getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length && getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      // Seleccionar todas las métricas
+                      const allMetricas = getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).map(option => option.value.toString());
+                      setSelectedMetricasCheckboxes(allMetricas);
+                    } else {
+                      // Deseleccionar todas las métricas
+                      setSelectedMetricasCheckboxes([]);
+                    }
+                  }}
+                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                />
+                <span className="text-white text-sm font-mono tracking-wider">TODAS</span>
+              </label>
+            </div>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad })
                 .map((option) => (
@@ -472,7 +499,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Botones de acción */}
       <div className="flex justify-center gap-4 mt-8">
         <button
-          onClick={onInsertMetricas}
+          onClick={handleInsertMetricas}
           disabled={loading || multipleMetricas.length === 0 || selectedNodos.length === 0 || selectedMetricasCheckboxes.length === 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
