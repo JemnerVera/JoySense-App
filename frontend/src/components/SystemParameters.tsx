@@ -6679,6 +6679,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           
 
           // Filtrar nodos que tienen sensor pero NO tienen metricasensor
+          // Y que tienen ubicación asignada (requerido para umbrales)
+
+          // Obtener nodos que tienen localización
+          const nodosConLocalizacion = localizacionesData
+            .filter(loc => loc && loc.nodoid)
+            .map(loc => loc.nodoid);
 
           let nodosFiltrados = nodosData.filter(nodo => 
 
@@ -6686,7 +6692,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             nodosConSensor.includes(nodo.nodoid) && 
 
-            !nodosConMetricasensor.includes(nodo.nodoid)
+            !nodosConMetricasensor.includes(nodo.nodoid) &&
+
+            nodosConLocalizacion.includes(nodo.nodoid) // Asegurar que el nodo tenga ubicación
 
           );
 
@@ -6706,7 +6714,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           // Para umbral masivo, NO aplicar filtro de fundo porque los nodos pueden no tener localización
 
-          // pero sí tener sensores asignados
+          // pero sí tener sensores asignados. Sin embargo, filtramos nodos sin ubicación
+
+          // ya que es requerido para crear umbrales (necesitan ubicacionid)
 
           console.log('🔍 Umbral masivo - Sin filtro de fundo aplicado:', {
 
