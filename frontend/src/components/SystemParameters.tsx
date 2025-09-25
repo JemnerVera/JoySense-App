@@ -922,7 +922,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setStatusTotalPages,
     // Removed unused: setStatusLoading
     setCopyData,
-    setSelectedRowsForCopy,
+    // Removed unused: setSelectedRowsForCopy
     // Removed unused: resetFormData, resetUpdateForm, resetSearch, resetStatusSearch
   } = useSystemParametersState(propSelectedTable, propActiveSubTab);
 
@@ -986,94 +986,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para ejecutar el cambio de pestaña
 
-  const executeTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
-
-    handleSubTabNavigation(tab);
-
-        
-
-        // Limpiar selecciones específicas según la pestaña
-
-        if (tab === 'update') {
-
-          setSelectedRowForUpdate(null);
-
-          setSelectedRowsForUpdate([]);
-
-          setUpdateFormData({});
-
-          // Limpiar mensajes de alerta al cambiar de pestaña
-          setUpdateMessage(null);
-
-          setIndividualRowStatus({});
-
-          setSearchField('');
-
-          setSearchTerm('');
-
-        }
-
-        
-
-        // Limpiar formularios específicos según la tabla
-
-        if (selectedTable === 'usuarioperfil') {
-
-          if (tab === 'insert') {
-
-            setMultipleUsuarioPerfiles([]);
-
-            setSelectedUsuarios([]);
-
-            setSelectedPerfiles([]);
-
-          }
-
-        } else if (selectedTable === 'metricasensor') {
-
-          if (tab === 'insert') {
-
-            setMultipleMetricas([]);
-
-            setSelectedNodos([]);
-
-            setSelectedEntidadMetrica('');
-
-            setSelectedMetricas([]);
-
-            setIsReplicateMode(false);
-
-          }
-
-        } else if (selectedTable === 'sensor') {
-
-          if (tab === 'insert') {
-
-            setMultipleSensors([]);
-
-            setSelectedNodo('');
-
-            setSelectedEntidad('');
-
-            setSelectedTipo('');
-
-            setSelectedSensorCount(0);
-
-          }
-
-        }
-
-        
-
-        // Llamar a la función del padre si está disponible
-
-        if (onSubTabChange) {
-
-          onSubTabChange(tab);
-
-        }
-
-  };
+  // Removed unused function: executeTabChange
 
 
 
@@ -8679,23 +8592,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Estados para creación múltiple de localizaciones
 
-   const [multipleLocalizaciones, setMultipleLocalizaciones] = useState<any[]>([]);
+   // Removed unused: multipleLocalizaciones
 
-   const [selectedUbicaciones, setSelectedUbicaciones] = useState<string[]>([]);
+   // Removed unused: selectedUbicaciones
 
-   const [selectedNodosLocalizacion, setSelectedNodosLocalizacion] = useState<string[]>([]);
+   // Removed unused: selectedNodosLocalizacion
 
-   const [selectedEntidades, setSelectedEntidades] = useState<string[]>([]);
+   // Removed unused: selectedEntidades
 
    
 
    // Estados para campos adicionales de localización
 
-   const [latitud, setLatitud] = useState<string>('');
+   // Removed unused: latitud, setLatitud
 
-   const [longitud, setLongitud] = useState<string>('');
+   // Removed unused: longitud, setLongitud
 
-   const [referencia, setReferencia] = useState<string>('');
+   // Removed unused: referencia, setReferencia
 
    
 
@@ -10182,125 +10095,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    // Función para actualizar el tipo de una métrica específica
 
-   const updateMetricaTipo = (metricaIndex: number, tipoid: number) => {
-
-     setMultipleMetricas(prev => prev.map(metrica => 
-
-       metrica.metricaIndex === metricaIndex 
-
-         ? { ...metrica, tipoid: tipoid }
-
-         : metrica
-
-     ));
-
-   };
+   // Removed unused function: updateMetricaTipo
 
 
 
        // Función para inicializar localizaciones múltiples
 
-    const initializeMultipleLocalizaciones = useCallback(async (ubicaciones: string[], nodos: string[], entidades: string[]) => {
-
-      try {
-
-        // Crear todas las combinaciones válidas (ubicacionid, nodoid, entidadid)
-
-        const localizacionesToCreate = [];
-
-        let index = 1;
-
-        
-
-        for (const ubicacionid of ubicaciones) {
-
-          for (const nodoid of nodos) {
-
-            for (const entidadid of entidades) {
-
-              console.log(`🔍 Creando combinación (${ubicacionid}, ${nodoid}, ${entidadid})`);
-
-              
-
-              const ubicacionInfo = ubicacionesData.find(u => u.ubicacionid.toString() === ubicacionid);
-
-              const nodoInfo = nodosData.find(n => n.nodoid.toString() === nodoid);
-
-              const entidadInfo = entidadesData.find(e => e.entidadid.toString() === entidadid);
-
-              
-
-              console.log(`✅ Creando nueva localización: ${ubicacionInfo?.ubicacion || ubicacionid} - ${nodoInfo?.nodo || nodoid} - ${entidadInfo?.entidad || entidadid}`);
-
-              
-
-              localizacionesToCreate.push({
-
-                localizacionIndex: index++,
-
-                label: `Localización ${ubicacionInfo?.ubicacion || ubicacionid} - ${nodoInfo?.nodo || nodoid} - ${entidadInfo?.entidad || entidadid}`,
-
-                ubicacionid: parseInt(ubicacionid),
-
-                nodoid: parseInt(nodoid),
-
-                entidadid: parseInt(entidadid),
-
-                latitud: latitud ? parseFloat(latitud) : 0,
-
-                longitud: longitud ? parseFloat(longitud) : 0,
-
-                referencia: referencia || '',
-
-                statusid: selectedStatus ? 1 : 0
-
-              });
-
-            }
-
-          }
-
-        }
-
-        
-
-        setMultipleLocalizaciones(localizacionesToCreate);
-
-        
-
-        if (localizacionesToCreate.length > 0) {
-
-          // Mensaje eliminado - no es necesario
-
-        } else {
-
-          setMessage({ 
-
-            type: 'warning', 
-
-            text: 'No hay combinaciones únicas disponibles para crear nuevas localizaciones' 
-
-          });
-
-        }
-
-        
-
-      } catch (error) {
-
-        console.error('Error inicializando localizaciones múltiples:', error);
-
-        setMessage({ 
-
-          type: 'error', 
-
-          text: 'Error al verificar localizaciones existentes' 
-
-        });
-
-      }
-
-    }, [ubicacionesData, nodosData, entidadesData, selectedStatus, setMultipleLocalizaciones, setMessage]);
+    // Removed unused function: initializeMultipleLocalizaciones
 
 
 
