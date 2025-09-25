@@ -6658,27 +6658,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           // Obtener nodos que ya tienen metricasensor (desde la tabla metricasensor)
 
-          const nodosConMetricasensor = metricasensorData
+          // Obtener nodos que ya tienen umbrales asignados (no metricasensor)
+          const nodosConUmbral = umbralesData
+            .filter((umbral: any) => umbral && umbral.nodoid)
+            .map((umbral: any) => umbral.nodoid);
 
-            .filter((ms: any) => ms.nodoid)
-
-            .map((ms: any) => ms.nodoid);
-
-          
-
-          console.log('🔍 Nodos con metricasensor:', {
-
-            nodosConMetricasensor: nodosConMetricasensor.length,
-
-            primeros5: nodosConMetricasensor.slice(0, 5),
-
-            todosLosNodosConMetricasensor: nodosConMetricasensor
-
+          console.log('🔍 Nodos con umbrales:', {
+            nodosConUmbral: nodosConUmbral.length,
+            primeros5: nodosConUmbral.slice(0, 5),
+            todosLosNodosConUmbral: nodosConUmbral
           });
 
           
 
-          // Filtrar nodos que tienen sensor pero NO tienen metricasensor
+          // Filtrar nodos que tienen sensor pero NO tienen umbrales asignados
           // Y que tienen ubicación asignada (requerido para umbrales)
 
           // Obtener nodos que tienen localización
@@ -6686,13 +6679,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             .filter(loc => loc && loc.nodoid)
             .map(loc => loc.nodoid);
 
+          console.log('🔍 Debug localizaciones para umbral masivo:', {
+            localizacionesDataLength: localizacionesData?.length || 0,
+            nodosConLocalizacionLength: nodosConLocalizacion.length,
+            primeros5NodosConLocalizacion: nodosConLocalizacion.slice(0, 5),
+            todosLosNodosConLocalizacion: nodosConLocalizacion
+          });
+
           let nodosFiltrados = nodosData.filter(nodo => 
 
             nodo && nodo.nodoid && 
 
             nodosConSensor.includes(nodo.nodoid) && 
 
-            !nodosConMetricasensor.includes(nodo.nodoid) &&
+            !nodosConUmbral.includes(nodo.nodoid) && // Excluir solo nodos que ya tienen umbrales
 
             nodosConLocalizacion.includes(nodo.nodoid) // Asegurar que el nodo tenga ubicación
 
@@ -6700,7 +6700,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log('🔍 Nodos filtrados (sensor sin metricasensor):', {
+          console.log('🔍 Nodos filtrados (sensor sin umbral):', {
 
             nodosFiltrados: nodosFiltrados.length,
 
@@ -6708,6 +6708,32 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             todosLosNodosFiltrados: nodosFiltrados.map(n => ({ nodoid: n.nodoid, nodo: n.nodo }))
 
+          });
+
+          // Debug detallado del filtrado
+          console.log('🔍 Debug detallado del filtrado:', {
+            totalNodos: nodosData.length,
+            nodosConSensor: nodosConSensor.length,
+            nodosConUmbral: nodosConUmbral.length,
+            nodosConLocalizacion: nodosConLocalizacion.length,
+            nodosFiltrados: nodosFiltrados.length,
+            criterios: {
+              tieneSensor: nodosData.filter(n => nodosConSensor.includes(n.nodoid)).length,
+              noTieneUmbral: nodosData.filter(n => !nodosConUmbral.includes(n.nodoid)).length,
+              tieneLocalizacion: nodosData.filter(n => nodosConLocalizacion.includes(n.nodoid)).length
+            }
+          });
+
+          // Verificar específicamente los nodos RLS que acabas de crear
+          const nodosRLS = nodosData.filter(n => n.nodo && n.nodo.includes('RLS 333'));
+          console.log('🔍 Verificación nodos RLS 333x:', {
+            nodosRLS: nodosRLS.map(n => ({
+              nodoid: n.nodoid,
+              nodo: n.nodo,
+              tieneSensor: nodosConSensor.includes(n.nodoid),
+              tieneUmbral: nodosConUmbral.includes(n.nodoid),
+              tieneLocalizacion: nodosConLocalizacion.includes(n.nodoid)
+            }))
           });
 
           
@@ -6732,7 +6758,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log('🔗 Nodos para umbral masivo (con sensor, sin metricasensor):', { 
+          console.log('🔗 Nodos para umbral masivo (con sensor, sin umbral):', { 
 
             fundoid: filterParams?.fundoid,
 
@@ -6740,7 +6766,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             nodosConSensor: nodosConSensor.length,
 
-            nodosConMetricasensor: nodosConMetricasensor.length,
+            nodosConUmbral: nodosConUmbral.length,
 
             filteredCount: filteredNodos.length 
 
