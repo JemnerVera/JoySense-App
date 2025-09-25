@@ -2433,7 +2433,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const { findEntriesByTimestamp } = useMultipleSelection(selectedTable);
 
-  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
+  const { getPaginatedData, goToPage, nextPage, prevPage, firstPage, lastPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(statusFilteredData, itemsPerPage);
 
 
 
@@ -3723,25 +3723,64 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const loadTableData = useCallback(async () => {
+  // Ref para prevenir múltiples llamadas simultáneas y controlar abort
+  const loadingTableRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  const loadTableData = useCallback(async () => {
     if (!selectedTable) return;
+    
+    // Solo cancelar llamada anterior si es para una tabla diferente
+    if (abortControllerRef.current && loadingTableRef.current !== selectedTable) {
+      console.log('🛑 loadTableData: Cancelando llamada anterior para tabla diferente:', loadingTableRef.current, '->', selectedTable);
+      abortControllerRef.current.abort();
+    }
+    
+    // Prevenir múltiples llamadas simultáneas para la misma tabla
+    if (loadingTableRef.current === selectedTable) {
+      console.log('⚠️ loadTableData: Ya se está cargando la tabla', selectedTable);
+      return;
+    }
+    
+    // Crear nuevo AbortController para esta llamada
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    loadingTableRef.current = selectedTable;
 
     
 
     try {
+      // Verificar si la llamada fue cancelada antes de continuar
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada antes de cargar datos');
+        return;
+      }
 
       setLoading(true);
 
       console.log(`🔄 Cargando datos de la tabla: ${selectedTable}`);
+      console.log('🔍 loadTableData Debug - selectedTable:', selectedTable, 'loadingTableRef.current:', loadingTableRef.current);
 
       const startTime = performance.now();
 
-      
-
-             // Cargar las columnas para la tabla actual
+      // Cargar las columnas para la tabla actual
       console.log(`🔄 Cargando columnas para la tabla: ${selectedTable}`);
+      console.log('🔍 loadTableData Debug - About to call getTableColumns with:', selectedTable);
+      
+      // Verificar si la llamada fue cancelada antes de hacer la llamada
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada antes de getTableColumns');
+        return;
+      }
+      
       const cols = await JoySenseService.getTableColumns(selectedTable);
+      console.log('🔍 loadTableData Debug - Columns received:', cols?.map(c => c.columnName));
+      
+      // Verificar si la llamada fue cancelada después de recibir las columnas
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada después de getTableColumns');
+        return;
+      }
 
       // Establecer columnas base para formularios
       setColumns(cols || []);
@@ -3806,8 +3845,22 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
       // Cargar datos con paginación para tablas grandes
-
+      console.log('🔍 loadTableData Debug - About to call getTableData with:', selectedTable);
+      
+      // Verificar si la llamada fue cancelada antes de cargar datos
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada antes de getTableData');
+        return;
+      }
+      
       const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
+      console.log('🔍 loadTableData Debug - Data received for', selectedTable, ':', dataResponse?.length || 'no data');
+      
+      // Verificar si la llamada fue cancelada después de recibir los datos
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada después de getTableData');
+        return;
+      }
 
       const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
 
@@ -3826,6 +3879,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       });
 
       
+
+      // Verificar si la llamada fue cancelada antes de actualizar el estado
+      if (abortController.signal.aborted) {
+        console.log('🛑 loadTableData: Llamada cancelada antes de actualizar estado');
+        return;
+      }
 
       // Solo actualizar si los datos han cambiado realmente
       setTableData(prevData => {
@@ -3884,15 +3943,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
     } catch (error) {
-
-      console.error('Error loading table data:', error);
-
-      setMessage({ type: 'error', text: 'Error cargando datos de la tabla' });
-
+      // Solo mostrar error si no fue cancelado
+      if (!abortController.signal.aborted) {
+        console.error('Error loading table data:', error);
+        setMessage({ type: 'error', text: 'Error cargando datos de la tabla' });
+      } else {
+        console.log('🛑 loadTableData: Llamada cancelada, no mostrar error');
+      }
     } finally {
-
       setLoading(false);
-
+      loadingTableRef.current = null; // Reset loading ref
+      abortControllerRef.current = null; // Reset abort controller
     }
 
   }, [selectedTable]);
@@ -5395,53 +5456,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Función para obtener los datos paginados de la tabla de Actualizar
 
   const getUpdatePaginatedData = () => {
+    // Usar la misma fuente de datos que la tabla de Estado para mantener sincronización
+    const sourceData = statusFilteredData;
 
     // Para metricasensor, sensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
-
     if (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') {
-
       const groupedData = selectedTable === 'metricasensor' 
-
-        ? groupMetricaSensorData(updateData)
-
+        ? groupMetricaSensorData(sourceData)
         : selectedTable === 'sensor'
-
-        ? groupSensorData(updateData)
-
-        : groupUsuarioPerfilData(updateData);
-
+        ? groupSensorData(sourceData)
+        : groupUsuarioPerfilData(sourceData);
       
-
-      console.log('🔍 Debug - updateData original:', updateData.length);
-
-      console.log('🔍 Debug - groupedData:', groupedData.length);
-
-      console.log('🔍 Debug - groupedData sample:', groupedData[0]);
-
-      
-
       // Aplicar paginación a los datos agrupados
-
       const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
-
       const endIndex = startIndex + itemsPerPage;
-
-      const paginatedGroupedData = groupedData.slice(startIndex, endIndex);
-
-      
-
-      console.log('🔍 Debug - paginatedGroupedData:', paginatedGroupedData.length);
-
-      console.log('🔍 Debug - paginatedGroupedData sample:', paginatedGroupedData[0]);
-
-      
-
-      return paginatedGroupedData;
-
+      return groupedData.slice(startIndex, endIndex);
     }
 
     // Para otras tablas, usar la paginación normal
-
     return getPaginatedData();
 
   };
@@ -8496,15 +8528,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
+  // Ref para evitar logs repetitivos en getVisibleColumns
+  const lastLogKeyRef = useRef<string | null>(null);
+
   const getVisibleColumns = useCallback((forTable: boolean = true) => {
     const sourceColumns = forTable ? tableColumns : columns;
     
-    console.log('🔍 getVisibleColumns Debug:', {
-      selectedTable,
-      forTable,
-      columnsLength: sourceColumns?.length,
-      allColumns: sourceColumns?.map(c => c.columnName)
-    });
+    // Solo hacer log si hay cambios significativos para evitar spam
+    const logKey = `${selectedTable}-${forTable}-${sourceColumns?.length}`;
+    if (!lastLogKeyRef.current || lastLogKeyRef.current !== logKey) {
+      console.log('🔍 getVisibleColumns Debug:', {
+        selectedTable,
+        forTable,
+        columnsLength: sourceColumns?.length,
+        allColumns: sourceColumns?.map(c => c.columnName)
+      });
+      lastLogKeyRef.current = logKey;
+    }
 
     // FIX: Validar que las columnas estén cargadas antes de continuar
     if (!sourceColumns || sourceColumns.length === 0) {
@@ -9412,7 +9452,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       'criticidad': 'Criticidad',
 
-      'criticidadbrev': 'Abreviatura Criticidad',
+      'criticidadbrev': 'Abreviatura',
 
       // NUEVAS TABLAS DE USUARIO
 
@@ -13742,10 +13782,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                    const data = getUpdatePaginatedData();
 
-                                   console.log('🔍 Debug - getUpdatePaginatedData result:', data.length);
-
-                                   console.log('🔍 Debug - getUpdatePaginatedData sample:', data[0]);
-
                                    return data;
 
                                  })().map((row, index) => {
@@ -13833,12 +13869,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                                          <td key={col.columnName} className={`px-6 py-4 text-xs font-mono ${col.columnName === 'tipos' || col.columnName === 'perfiles' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
 
                                            {(() => {
-
-                                             // Log para debuggear qué columna se está procesando
-
-                                             console.log('🔍 Debug - Processing column:', { columnName: col.columnName, selectedTable, rowUsuarioid: row.usuarioid });
-
-                                             
 
                                              if (col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid') {
 

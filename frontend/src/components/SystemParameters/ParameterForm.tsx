@@ -105,7 +105,7 @@ export function ParameterForm({
               fieldProps.disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
             } ${fieldProps.error ? 'border-red-500' : 'border-gray-300'}`}
           >
-            <option value="">Seleccionar...</option>
+            <option value="">{fieldName.toUpperCase()}{fieldProps.required ? '*' : ''}</option>
             {options?.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -164,6 +164,39 @@ export function ParameterForm({
           {renderField('empresaid', 'select', [
             { value: 1, label: 'Empresa 1' },
             { value: 2, label: 'Empresa 2' }
+          ])}
+        </>
+      )}
+      
+      {selectedTable === 'perfilumbral' && (
+        <>
+          {renderField('perfilid', 'select', [
+            { value: 1, label: 'Perfil 1' },
+            { value: 2, label: 'Perfil 2' }
+          ])}
+          {renderField('umbralid', 'select', [
+            { value: 1, label: 'Umbral 1' },
+            { value: 2, label: 'Umbral 2' }
+          ])}
+        </>
+      )}
+      
+      {selectedTable === 'criticidad' && (
+        <>
+          {renderField('criticidad', 'text')}
+          {renderField('criticidadbrev', 'text')}
+        </>
+      )}
+      
+      {selectedTable === 'contacto' && (
+        <>
+          {renderField('usuarioid', 'select', [
+            { value: 1, label: 'Usuario 1' },
+            { value: 2, label: 'Usuario 2' }
+          ])}
+          {renderField('medioid', 'select', [
+            { value: 1, label: 'Medio 1' },
+            { value: 2, label: 'Medio 2' }
           ])}
         </>
       )}

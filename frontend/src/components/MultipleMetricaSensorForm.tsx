@@ -280,7 +280,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       {/* Selección de Entidad y Nodos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD*</label>
          <div className="relative dropdown-container">
              <div
                onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
@@ -289,7 +289,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                <span className={selectedEntidad ? 'text-white' : 'text-neutral-400'}>
                  {selectedEntidad 
                    ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
-                   : 'SELECCIONAR ENTIDAD'
+                   : 'ENTIDAD'
                  }
                </span>
                <span className="text-neutral-400">▼</span>
@@ -342,7 +342,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">TIPO</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">TIPO*</label>
          <div className="relative dropdown-container">
            <div
              onClick={() => selectedEntidad && setNodosDropdownOpen(!nodosDropdownOpen)}
@@ -358,7 +358,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
                      const tipo = tiposData.find(t => t.tipoid.toString() === id);
                      return tipo ? tipo.tipo : id;
                    }).join(', ')
-                 : selectedEntidad ? 'SELECCIONAR TIPO' : 'SELECCIONAR ENTIDAD PRIMERO'
+                 : selectedEntidad ? 'TIPO' : 'SELECCIONAR ENTIDAD PRIMERO'
                }
              </span>
              <span className="text-neutral-400">▼</span>

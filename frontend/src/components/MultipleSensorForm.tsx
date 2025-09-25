@@ -154,7 +154,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
           {/* Fila 2: Nodo */}
           <div>
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              NODO
+              NODO*
             </label>
             <SelectWithPlaceholder
               value={selectedNodo}
@@ -164,14 +164,14 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                 setSelectedEntidad('');
               }}
               options={getUniqueOptionsForField('nodoid')}
-              placeholder="Seleccionar nodo"
+              placeholder="NODO"
             />
           </div>
 
           {/* Fila 3: Entidad */}
           <div>
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              ENTIDAD
+              ENTIDAD*
             </label>
             <SelectWithPlaceholder
               value={selectedEntidad}
@@ -188,7 +188,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                 }
               }}
               options={getUniqueOptionsForField('entidadid')}
-              placeholder="Seleccionar entidad"
+              placeholder="ENTIDAD"
               disabled={!selectedNodo}
             />
           </div>

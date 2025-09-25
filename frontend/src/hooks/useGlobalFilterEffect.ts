@@ -84,12 +84,15 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
     });
   }, [data, paisSeleccionado, empresaSeleccionada, fundoSeleccionado, tableName]);
 
-  console.log('📊 Resultado del filtrado global:', {
-    tableName,
-    originalCount: data.length,
-    filteredCount: filteredData.length,
-    hasFilters: !!(paisSeleccionado || empresaSeleccionada || fundoSeleccionado)
-  });
+  // Solo hacer log si hay cambios significativos
+  if (filteredData.length !== data.length) {
+    console.log('📊 Resultado del filtrado global:', {
+      tableName,
+      originalCount: data.length,
+      filteredCount: filteredData.length,
+      hasFilters: !!(paisSeleccionado || empresaSeleccionada || fundoSeleccionado)
+    });
+  }
 
   return filteredData;
 };

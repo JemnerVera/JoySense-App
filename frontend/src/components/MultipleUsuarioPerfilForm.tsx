@@ -219,29 +219,15 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
               USUARIOS SIN PERFIL
             </h4>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSelectAllUsuarios}
-                className="px-2 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
-              >
-                Todos
-              </button>
-              <button
-                onClick={handleClearAllUsuarios}
-                className="px-2 py-1 text-xs bg-neutral-600 text-white rounded hover:bg-neutral-700 transition-colors"
-              >
-                Limpiar
-              </button>
-            </div>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="Buscar usuarios..."
+              placeholder="BUSCAR USUARIOS..."
               value={usuariosSearchTerm}
               onChange={(e) => setUsuariosSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
             />
             
             <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded">
@@ -257,14 +243,14 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
                     className="mr-3 text-orange-500 focus:ring-orange-500"
                   />
                   <div className="flex-1">
-                    <div className="text-white font-medium">{usuario.nombre}</div>
-                    <div className="text-neutral-400 text-sm">{usuario.email}</div>
+                    <div className="text-white font-medium font-mono">{usuario.nombre}</div>
+                    <div className="text-neutral-400 text-sm font-mono">{usuario.email}</div>
                   </div>
                 </label>
               ))}
               {filteredUsuarios.length === 0 && (
-                <div className="p-3 text-neutral-400 text-center">
-                  {usuariosSearchTerm ? 'No se encontraron usuarios' : 'No hay usuarios sin perfil'}
+                <div className="p-3 text-neutral-400 text-center font-mono">
+                  {usuariosSearchTerm ? 'NO SE ENCONTRARON USUARIOS' : 'NO HAY USUARIOS SIN PERFIL'}
                 </div>
               )}
             </div>
@@ -277,29 +263,15 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
               PERFILES DISPONIBLES
             </h4>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSelectAllPerfiles}
-                className="px-2 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
-              >
-                Todos
-              </button>
-              <button
-                onClick={handleClearAllPerfiles}
-                className="px-2 py-1 text-xs bg-neutral-600 text-white rounded hover:bg-neutral-700 transition-colors"
-              >
-                Limpiar
-              </button>
-            </div>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="Buscar perfiles..."
+              placeholder="BUSCAR PERFILES..."
               value={perfilesSearchTerm}
               onChange={(e) => setPerfilesSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
             />
             
             <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded">
@@ -315,14 +287,14 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
                     className="mr-3 text-orange-500 focus:ring-orange-500"
                   />
                   <div className="flex-1">
-                    <div className="text-white font-medium">{perfil.perfil}</div>
-                    <div className="text-neutral-400 text-sm">{perfil.descripcion}</div>
+                    <div className="text-white font-medium font-mono">{perfil.perfil}</div>
+                    <div className="text-neutral-400 text-sm font-mono">{perfil.descripcion}</div>
                   </div>
                 </label>
               ))}
               {filteredPerfiles.length === 0 && (
-                <div className="p-3 text-neutral-400 text-center">
-                  {perfilesSearchTerm ? 'No se encontraron perfiles' : 'No hay perfiles disponibles'}
+                <div className="p-3 text-neutral-400 text-center font-mono">
+                  {perfilesSearchTerm ? 'NO SE ENCONTRARON PERFILES' : 'NO HAY PERFILES DISPONIBLES'}
                 </div>
               )}
             </div>
@@ -370,8 +342,8 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
                 );
               })
             ) : (
-              <div className="p-3 text-neutral-400 text-center">
-                Selecciona usuarios y perfiles para generar combinaciones
+              <div className="p-3 text-neutral-400 text-center font-mono">
+                SELECCIONA USUARIOS Y PERFILES PARA GENERAR COMBINACIONES
               </div>
             )}
           </div>
