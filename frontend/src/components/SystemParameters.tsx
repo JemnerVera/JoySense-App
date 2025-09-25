@@ -15,6 +15,11 @@ import {
   getUserName, 
   type RelatedData 
 } from '../utils/systemParametersUtils';
+// import { groupMetricaSensorData, groupSensorData, groupUsuarioPerfilData } from '../utils/dataGroupingUtils';
+// import { replicateSensor, replicateNodo, replicateNodoForMetricaSensor } from '../utils/replicationUtils';
+// import { getTotalPagesForGroupedTable, goToNextPage, goToPrevPage, goToFirstPage, goToLastPage } from '../utils/paginationUtils';
+// import { initializeFormData } from '../utils/formInitializationUtils';
+import { clearCopySelectionOnTableChange, clearCopySelectionOnTabChange } from '../utils/copySelectionUtils';
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
 import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
 import { useMultipleSelection } from '../hooks/useMultipleSelection';
@@ -2122,15 +2127,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
   // Función para limpiar la selección de copiar cuando se cambia de tabla
-  const clearCopySelectionOnTableChange = () => {
-    setCopyMessage(null);
-    setCopyTotalPages(0);
+  const handleClearCopySelectionOnTableChange = () => {
+    clearCopySelectionOnTableChange(setCopyMessage, setCopyTotalPages);
   };
 
   // Función para limpiar la selección de copiar cuando se cambia de pestaña
-  const clearCopySelectionOnTabChange = () => {
-    setCopyMessage(null);
-    setCopyTotalPages(0);
+  const handleClearCopySelectionOnTabChange = () => {
+    clearCopySelectionOnTabChange(setCopyMessage, setCopyTotalPages);
   };
 
 
