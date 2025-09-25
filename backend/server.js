@@ -1215,6 +1215,7 @@ app.put('/api/sense/umbral/:id', async (req, res) => {
     
     console.log(`🔍 Backend: Actualizando umbral con ID ${id}...`);
     console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Tipos de datos:`, Object.keys(updateData).map(key => `${key}: ${typeof updateData[key]}`));
     
     const { data, error } = await supabase
       .from('umbral')

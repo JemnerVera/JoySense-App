@@ -5624,7 +5624,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName)) {
 
-          newFormData[col.columnName] = firstRow[col.columnName] || '';
+          // Para statusid, preservar el valor 0 (inactivo) en lugar de convertirlo a cadena vacía
+          if (col.columnName === 'statusid') {
+            newFormData[col.columnName] = firstRow[col.columnName] !== undefined ? firstRow[col.columnName] : '';
+          } else {
+            newFormData[col.columnName] = firstRow[col.columnName] || '';
+          }
 
         }
 
@@ -5677,7 +5682,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName)) {
 
-        newFormData[col.columnName] = row[col.columnName] || '';
+        // Para statusid, preservar el valor 0 (inactivo) en lugar de convertirlo a cadena vacía
+        if (col.columnName === 'statusid') {
+          newFormData[col.columnName] = row[col.columnName] !== undefined ? row[col.columnName] : '';
+        } else {
+          newFormData[col.columnName] = row[col.columnName] || '';
+        }
 
       }
 

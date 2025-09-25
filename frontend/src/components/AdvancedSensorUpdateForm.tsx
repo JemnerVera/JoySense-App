@@ -202,7 +202,9 @@ export function AdvancedSensorUpdateForm({
       console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
       console.log('🔍 Debug - Detalles:', updatedEntries);
       
+      console.log('🔍 Debug - Llamando a onUpdate...');
       await onUpdate(updatedEntries);
+      console.log('🔍 Debug - onUpdate completado');
     } catch (error) {
       console.error('Error actualizando sensores:', error);
     } finally {
