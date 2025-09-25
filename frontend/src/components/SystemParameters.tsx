@@ -874,86 +874,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
-  // Funciones helper para obtener nombres de filtros globales
-  const getPaisName = (paisId: string) => {
-    const pais = paisesData?.find(p => p.paisid.toString() === paisId);
-    return pais ? pais.pais : `País ${paisId}`;
-  };
-
-  const getEmpresaName = (empresaId: string) => {
-    const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
-    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
-  };
-
-  const getFundoName = (fundoId: string) => {
-    const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
-    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
-  };
-
-  // Función para renderizar filtros globales en formularios de actualización
-  const renderGlobalFiltersForUpdate = () => {
-    // Solo mostrar filtros globales para tablas que tienen referencias jerárquicas
-    const tablesWithGlobalFilters = ['empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad'];
-    
-    if (!tablesWithGlobalFilters.includes(selectedTable)) {
-      return null;
-    }
-
-    const contextualFields = [];
-    
-    // Mostrar País si está seleccionado y la tabla lo requiere
-    if (paisSeleccionado && (selectedTable === 'empresa' || selectedTable === 'fundo' || selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
-      contextualFields.push(
-        <div key="pais-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            PAÍS
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-            {getPaisName(paisSeleccionado)}
-          </div>
-        </div>
-      );
-    }
-    
-    // Mostrar Empresa si está seleccionada y la tabla lo requiere
-    if (empresaSeleccionada && (selectedTable === 'fundo' || selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
-      contextualFields.push(
-        <div key="empresa-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            EMPRESA
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-            {getEmpresaName(empresaSeleccionada)}
-          </div>
-        </div>
-      );
-    }
-    
-    // Mostrar Fundo si está seleccionado y la tabla lo requiere
-    if (fundoSeleccionado && (selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
-      contextualFields.push(
-        <div key="fundo-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            FUNDO
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-            {getFundoName(fundoSeleccionado)}
-          </div>
-        </div>
-      );
-    }
-
-    if (contextualFields.length > 0) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {contextualFields}
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
   // Hook personalizado para estado principal
   const {
     selectedTable,
@@ -6235,7 +6155,69 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+  // Función para renderizar filtros globales en formularios de actualización
+  const renderGlobalFiltersForUpdate = () => {
+    // Solo mostrar filtros globales para tablas que tienen referencias jerárquicas
+    const tablesWithGlobalFilters = ['empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad'];
+    
+    if (!tablesWithGlobalFilters.includes(selectedTable)) {
+      return null;
+    }
 
+    const contextualFields = [];
+    
+    // Mostrar País si está seleccionado y la tabla lo requiere
+    if (paisSeleccionado && (selectedTable === 'empresa' || selectedTable === 'fundo' || selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
+      contextualFields.push(
+        <div key="pais-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            PAÍS
+          </label>
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+            {getPaisName(paisSeleccionado)}
+          </div>
+        </div>
+      );
+    }
+    
+    // Mostrar Empresa si está seleccionada y la tabla lo requiere
+    if (empresaSeleccionada && (selectedTable === 'fundo' || selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
+      contextualFields.push(
+        <div key="empresa-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            EMPRESA
+          </label>
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+            {getEmpresaName(empresaSeleccionada)}
+          </div>
+        </div>
+      );
+    }
+    
+    // Mostrar Fundo si está seleccionado y la tabla lo requiere
+    if (fundoSeleccionado && (selectedTable === 'ubicacion' || selectedTable === 'localizacion' || selectedTable === 'entidad')) {
+      contextualFields.push(
+        <div key="fundo-contextual">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            FUNDO
+          </label>
+          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+            {getFundoName(fundoSeleccionado)}
+          </div>
+        </div>
+      );
+    }
+
+    if (contextualFields.length > 0) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {contextualFields}
+        </div>
+      );
+    }
+    
+    return null;
+  };
 
     const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: number[] }) => {
 
