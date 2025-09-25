@@ -78,6 +78,43 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   // Estado para tipos seleccionados
   const [selectedTiposCheckboxes, setSelectedTiposCheckboxes] = React.useState<string[]>([]);
   
+  // Función para obtener tipos basándose en los nodos seleccionados
+  const getTiposFromSelectedNodos = () => {
+    if (selectedNodos.length === 0) return [];
+    
+    const tiposUnicos = new Set<string>();
+    
+    selectedNodos.forEach(nodoId => {
+      // Buscar sensores que pertenecen a este nodo
+      const sensoresDelNodo = tiposData.filter(tipo => {
+        // Aquí necesitamos la lógica para relacionar nodo con tipo
+        // Por ahora, vamos a obtener todos los tipos de la entidad seleccionada
+        return tipo.entidadid?.toString() === selectedEntidad;
+      });
+      
+      sensoresDelNodo.forEach(sensor => {
+        tiposUnicos.add(sensor.tipoid.toString());
+      });
+    });
+    
+    return Array.from(tiposUnicos).map(tipoId => {
+      const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
+      return tipo ? { tipoid: tipo.tipoid, tipo: tipo.tipo } : null;
+    }).filter(Boolean);
+  };
+  
+  const tiposFromNodos = getTiposFromSelectedNodos();
+  
+  // Actualizar tipos seleccionados cuando cambien los nodos
+  React.useEffect(() => {
+    if (selectedNodos.length > 0) {
+      const tiposIds = tiposFromNodos.filter(t => t !== null).map(t => t!.tipoid.toString());
+      setSelectedTiposCheckboxes(tiposIds);
+    } else {
+      setSelectedTiposCheckboxes([]);
+    }
+  }, [selectedNodos, selectedEntidad]);
+  
   // Estado para métricas seleccionadas con checkboxes
   const [selectedMetricasCheckboxes, setSelectedMetricasCheckboxes] = React.useState<string[]>([]);
   const [combinacionesStatus, setCombinacionesStatus] = React.useState<{[key: string]: boolean}>({});
@@ -342,82 +379,25 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
        </div>
 
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">TIPO*</label>
-         <div className="relative dropdown-container">
-           <div
-             onClick={() => selectedEntidad && setNodosDropdownOpen(!nodosDropdownOpen)}
-             className={`w-full px-3 py-2 border rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono ${
-               selectedEntidad 
-                 ? 'bg-neutral-800 border-neutral-600' 
-                 : 'bg-neutral-700 border-neutral-700 cursor-not-allowed opacity-50'
-             }`}
-           >
-             <span className={selectedTiposCheckboxes.length > 0 ? 'text-white' : 'text-neutral-400'}>
-               {selectedTiposCheckboxes.length > 0 
-                 ? selectedTiposCheckboxes.map(id => {
-                     const tipo = tiposData.find(t => t.tipoid.toString() === id);
-                     return tipo ? tipo.tipo : id;
-                   }).join(', ')
-                 : selectedEntidad ? 'TIPO' : 'SELECCIONAR ENTIDAD PRIMERO'
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+             TIPO 🔒
+           </label>
+           <div className={`w-full px-3 py-2 border rounded-lg text-white font-mono ${
+             selectedNodos.length > 0 
+               ? 'bg-neutral-700 border-neutral-600' 
+               : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
+           }`}>
+             <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
+               {selectedNodos.length > 0 
+                 ? tiposFromNodos.length > 0
+                   ? tiposFromNodos.filter(t => t !== null).map(t => t!.tipo).join(', ')
+                   : 'NO HAY TIPOS DISPONIBLES PARA LOS NODOS SELECCIONADOS'
+                 : 'SELECCIONAR NODOS PRIMERO'
                }
              </span>
-             <span className="text-neutral-400">▼</span>
            </div>
-           
-          {nodosDropdownOpen && selectedEntidad && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-              <div className="p-2 border-b border-neutral-700">
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar tipos..."
-                  value={nodosSearchTerm}
-                  onChange={(e) => setNodosSearchTerm(e.target.value)}
-                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
-                  .filter(option => 
-                    option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
-                  )
-                  .map(option => (
-                   <label
-                     key={option.value}
-                     className="flex items-center px-3 py-2 hover:bg-neutral-800 cursor-pointer transition-colors"
-                   >
-                     <input
-                       type="checkbox"
-                       checked={selectedTiposCheckboxes.includes(option.value.toString())}
-                       onChange={(e) => {
-                         if (e.target.checked) {
-                           setSelectedTiposCheckboxes([...selectedTiposCheckboxes, option.value.toString()]);
-                         } else {
-                           setSelectedTiposCheckboxes(selectedTiposCheckboxes.filter(id => id !== option.value.toString()));
-                         }
-                       }}
-                       className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                     />
-                     <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
-                   </label>
-                 ))}
-                 {getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })
-                   .filter(option => 
-                     option.label.toLowerCase().includes(nodosSearchTerm.toLowerCase())
-                   ).length === 0 && (
-                   <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
-                     NO HAY TIPOS DISPONIBLES PARA ESTA ENTIDAD
-                   </div>
-                 )}
-              </div>
-            </div>
-          )}
          </div>
        </div>
-       </div>
-
-
-
 
       {/* Nuevo diseño: 2 containers lado a lado */}
       {selectedEntidad && (
@@ -428,7 +408,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
               NODO
             </h4>
-            <div className="max-h-60 overflow-y-auto space-y-2">
+            <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
               {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
                 .map((option) => (
                   <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
@@ -493,7 +473,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       <div className="flex justify-center gap-4 mt-8">
         <button
           onClick={onInsertMetricas}
-          disabled={loading || multipleMetricas.length === 0 || selectedTiposCheckboxes.length === 0 || selectedMetricasCheckboxes.length === 0}
+          disabled={loading || multipleMetricas.length === 0 || selectedNodos.length === 0 || selectedMetricasCheckboxes.length === 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
