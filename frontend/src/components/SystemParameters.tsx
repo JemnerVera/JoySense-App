@@ -6258,7 +6258,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               if (updateFormData[field] !== undefined) {
 
-                filteredUpdateData[field] = updateFormData[field];
+                // Convertir strings vacíos a null para campos numéricos
+                if ((field === 'latitud' || field === 'longitud') && updateFormData[field] === '') {
+                  filteredUpdateData[field] = null;
+                } else {
+                  filteredUpdateData[field] = updateFormData[field];
+                }
 
               }
 
