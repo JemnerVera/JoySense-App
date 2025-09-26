@@ -6226,6 +6226,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
+        // Validar datos antes de procesar
+        try {
+          const validationResult = await validateTableUpdate(
+            selectedTable,
+            updateFormData, // Usar datos originales del formulario
+            selectedRowForUpdate, // Datos originales de la BD
+            tableData // Datos existentes para validar duplicados
+          );
+          
+          if (!validationResult.isValid) {
+            setUpdateMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
+            setUpdateLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error en validación de actualización:', error);
+          setUpdateMessage({ type: 'error', text: 'Error en la validación de datos' });
+          setUpdateLoading(false);
+          return;
+        }
+
         let result;
 
         if (selectedTable === 'localizacion' || selectedTable === 'perfilumbral' || selectedTable === 'usuarioperfil') {
@@ -6258,12 +6279,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               if (updateFormData[field] !== undefined) {
 
-                // Convertir strings vacíos a null para campos numéricos
-                if ((field === 'latitud' || field === 'longitud') && updateFormData[field] === '') {
-                  filteredUpdateData[field] = null;
-                } else {
-                  filteredUpdateData[field] = updateFormData[field];
-                }
+                filteredUpdateData[field] = updateFormData[field];
 
               }
 
@@ -6379,26 +6395,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           if (selectedTable === 'metrica') {
           }
 
-          // Validar datos antes de actualizar
-          try {
-            const validationResult = await validateTableUpdate(
-              selectedTable,
-              updateFormData, // Usar datos originales del formulario, no los filtrados
-              selectedRowForUpdate, // Datos originales de la BD
-              tableData // Datos existentes para validar duplicados
-            );
-            
-            if (!validationResult.isValid) {
-              setUpdateMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
-              setUpdateLoading(false);
-              return;
-            }
-          } catch (error) {
-            console.error('Error en validación de actualización:', error);
-            setUpdateMessage({ type: 'error', text: 'Error en la validación de datos' });
-            setUpdateLoading(false);
-            return;
-          }
+          // Validación ya se ejecutó arriba
 
           result = await JoySenseService.updateTableRow(
 
