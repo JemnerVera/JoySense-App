@@ -1560,27 +1560,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   useEffect(() => {
 
-    console.log('🔍 Resetear página por cambio de tabla:', selectedTable);
-
     goToPage(1);
 
   }, [selectedTable]); // Removido goToPage de las dependencias
-
-  // Debug: Monitorear cambios en updateFilteredData
-
-  useEffect(() => {
-
-    console.log('🔍 updateFilteredData cambió:', {
-
-      length: updateFilteredData.length,
-
-      currentPage: paginationCurrentPage,
-
-      totalPages: totalPages
-
-    });
-
-  }, [updateFilteredData.length, paginationCurrentPage, totalPages]);
 
 
 
