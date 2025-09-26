@@ -34,7 +34,7 @@ import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 // import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
-// import { StatusTabContent } from './SystemParameters/StatusTabContent'; // No usado
+import { StatusTabContent } from './SystemParameters/StatusTabContent';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
 // import { TableInfoDisplay } from './SystemParameters/TableInfoDisplay';
@@ -2315,7 +2315,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     loadRelatedTablesData();
 
-  }, [loadRelatedTablesData, loadUserData]);
+  }, []);
 
 
 
@@ -2405,7 +2405,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [clearFormData, columns, initializeFormData]);
+  }, [clearFormData]);
 
 
 
@@ -7532,7 +7532,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return getMultipleData();
 
-  }, [getMultipleData]);
+  }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
 
 
 
