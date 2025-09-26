@@ -255,7 +255,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [propSelectedTable]);
+  }, [propSelectedTable, selectedTable, setSelectedTable]);
 
   
 
@@ -267,7 +267,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [propActiveSubTab]);
+  }, [propActiveSubTab, activeSubTab, setActiveSubTab]);
 
   
 
@@ -432,7 +432,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setStatusCurrentPage(1);
 
-  }, [filteredTableData, itemsPerPage]);
+  }, [filteredTableData, itemsPerPage, setStatusCurrentPage, setStatusFilteredData, setStatusTotalPages]);
 
 
 
@@ -994,7 +994,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setUpdateFilteredData(filteredUpdateData);
 
-  }, [filteredUpdateData]);
+  }, [filteredUpdateData, setUpdateFilteredData]);
 
 
 
@@ -1593,7 +1593,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     goToPage(1);
 
-  }, [selectedTable]);
+  }, [selectedTable, goToPage]);
 
 
 
