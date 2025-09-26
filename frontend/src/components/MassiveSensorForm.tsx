@@ -32,9 +32,30 @@ export function MassiveSensorForm({
   const [allNodesSelected, setAllNodesSelected] = useState(false);
 
   // Obtener opciones para los dropdowns
-  const tiposOptions = useMemo(() => 
+  const allTiposOptions = useMemo(() => 
     getUniqueOptionsForField('tipoid'), [getUniqueOptionsForField]
   );
+
+  // Obtener la entidad del primer tipo seleccionado para determinar qué opciones están disponibles
+  const entidadDelPrimerTipo = useMemo(() => {
+    if (formData.selectedTipos.length === 0) {
+      return null; // No hay restricciones
+    }
+
+    const firstSelectedTipo = allTiposOptions.find(tipo => 
+      parseInt(tipo.value.toString()) === formData.selectedTipos[0]
+    );
+
+    return firstSelectedTipo ? firstSelectedTipo.entidadid : null;
+  }, [allTiposOptions, formData.selectedTipos]);
+
+  // Función para determinar si un tipo está disponible para selección
+  const isTipoAvailable = (tipo: any) => {
+    if (!entidadDelPrimerTipo) {
+      return true; // Sin restricciones
+    }
+    return tipo.entidadid === entidadDelPrimerTipo;
+  };
 
   // Cargar nodos automáticamente (todos los nodos que NO tienen sensores asignados)
   useEffect(() => {
@@ -84,6 +105,12 @@ export function MassiveSensorForm({
   // Manejar selección de tipos
   const handleTipoSelection = (tipoid: number, selected: boolean) => {
     if (selected) {
+      // Verificar que el tipo está disponible para selección
+      const tipo = allTiposOptions.find(t => parseInt(t.value.toString()) === tipoid);
+      if (!tipo || !isTipoAvailable(tipo)) {
+        return; // No permitir selección si no está disponible
+      }
+
       setFormData(prev => ({
         ...prev,
         selectedTipos: [...prev.selectedTipos, tipoid]
@@ -221,23 +248,53 @@ export function MassiveSensorForm({
           <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
             SENSOR
           </h4>
+          {formData.selectedTipos.length > 0 && (
+            <div className="mb-3 p-2 bg-blue-900 bg-opacity-30 border border-blue-600 rounded text-xs font-mono text-blue-300">
+              💡 Solo puedes seleccionar tipos de la misma entidad. Las opciones no disponibles aparecen atenuadas. Deselecciona todos para habilitar todas las opciones.
+            </div>
+          )}
           
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
-            <div className="space-y-2">
-              {tiposOptions.map((option) => (
-                <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.selectedTipos.includes(parseInt(option.value.toString()))}
-                    onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
-                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
-                  />
-                  <span className="text-white text-sm font-mono tracking-wider">
-                    {option.label.toUpperCase()}
-                  </span>
-                </label>
-              ))}
-            </div>
+            {allTiposOptions.length > 0 ? (
+              <div className="space-y-2">
+                {allTiposOptions.map((option) => {
+                  const isAvailable = isTipoAvailable(option);
+                  const isSelected = formData.selectedTipos.includes(parseInt(option.value.toString()));
+                  
+                  return (
+                    <label 
+                      key={option.value} 
+                      className={`flex items-center px-3 py-2 transition-colors rounded ${
+                        isAvailable 
+                          ? 'hover:bg-neutral-700 cursor-pointer' 
+                          : 'opacity-40 cursor-not-allowed'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
+                        disabled={!isAvailable}
+                        className={`w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3 ${
+                          !isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      />
+                      <span className={`text-sm font-mono tracking-wider ${
+                        isAvailable ? 'text-white' : 'text-neutral-500'
+                      }`}>
+                        {option.label.toUpperCase()}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                  CARGANDO TIPOS DE SENSORES...
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

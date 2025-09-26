@@ -5025,7 +5025,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        const tipoResult = filteredTipos.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
+        const tipoResult = filteredTipos.map(tipo => ({ 
+          value: tipo.tipoid, 
+          label: tipo.tipo,
+          entidadid: tipo.entidadid 
+        }));
 
 
         return tipoResult;
