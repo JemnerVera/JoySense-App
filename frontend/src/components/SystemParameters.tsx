@@ -6252,7 +6252,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             // Filtrar solo campos válidos para localizacion
 
-            const fieldsToUpdate = ['statusid'];
+            const fieldsToUpdate = ['statusid', 'latitud', 'longitud', 'referencia'];
 
             fieldsToUpdate.forEach(field => {
 
