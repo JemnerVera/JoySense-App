@@ -28,6 +28,8 @@ import { TableChangeConfirmationModal } from './SystemParameters/TableChangeConf
 import { TableStatsDisplay } from './SystemParameters/TableStatsDisplay';
 import { PaginationControls } from './SystemParameters/PaginationControls';
 import { ActionButtons } from './SystemParameters/ActionButtons';
+import { MultipleSelectionButtons } from './SystemParameters/MultipleSelectionButtons';
+// import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
 // import { MessageDisplay } from './SystemParameters/MessageDisplay';
@@ -11050,41 +11052,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                         {/* Botones de selección múltiple para sensor y metricasensor - Solo mostrar cuando hay selecciones */}
 
-                        {(selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') && selectedRowsForManualUpdate.length > 0 && (
-
-                          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4">
-
-                            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
-
-                              <button
-
-                                onClick={handleGoToManualUpdateForm}
-
-                                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
-
-                              >
-
-                                🔧 Actualizar
-
-                              </button>
-
-                              <button
-
-                                onClick={handleDeselectAll}
-
-                                className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-mono tracking-wider"
-
-                              >
-
-                                🗑️ Limpiar Selección
-
-                              </button>
-
-                            </div>
-
-                          </div>
-
-                        )}
+                        <MultipleSelectionButtons
+                          selectedTable={selectedTable}
+                          selectedRowsForManualUpdate={selectedRowsForManualUpdate}
+                          onGoToManualUpdateForm={handleGoToManualUpdateForm}
+                          onDeselectAll={handleDeselectAll}
+                        />
 
 
 
