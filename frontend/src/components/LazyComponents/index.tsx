@@ -36,6 +36,31 @@ const DashboardLazy = lazy(() =>
   }))
 );
 
+// Lazy load heavy components
+const NormalInsertFormLazy = lazy(() => 
+  import('../NormalInsertForm').then(module => ({
+    default: module.default
+  }))
+);
+
+const MassiveUmbralFormLazy = lazy(() => 
+  import('../MassiveUmbralForm').then(module => ({
+    default: module.MassiveUmbralForm
+  }))
+);
+
+const MultipleMetricaSensorFormLazy = lazy(() => 
+  import('../MultipleMetricaSensorForm').then(module => ({
+    default: module.default
+  }))
+);
+
+const DashboardHierarchyLazy = lazy(() => 
+  import('../DashboardHierarchy').then(module => ({
+    default: module.default
+  }))
+);
+
 // Placeholder components for missing modules
 const ReportsLazy = lazy(() => 
   Promise.resolve({
@@ -220,12 +245,49 @@ export const HelpLazyWithBoundary: React.FC = () => (
   </LazyComponentErrorBoundary>
 );
 
+// Enhanced lazy components with error boundaries for heavy components
+export const NormalInsertFormLazyWithBoundary: React.FC<any> = (props) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <NormalInsertFormLazy {...props} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const MassiveUmbralFormLazyWithBoundary: React.FC<any> = (props) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <MassiveUmbralFormLazy {...props} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const MultipleMetricaSensorFormLazyWithBoundary: React.FC<any> = (props) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <MultipleMetricaSensorFormLazy {...props} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const DashboardHierarchyLazyWithBoundary: React.FC<any> = (props) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <DashboardHierarchyLazy {...props} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
 // Export the original lazy components for direct use
 export {
   SystemParametersLazy,
   ConfigurationLazy,
   UmbralesMainLazy,
   DashboardLazy,
+  NormalInsertFormLazy,
+  MassiveUmbralFormLazy,
+  MultipleMetricaSensorFormLazy,
+  DashboardHierarchyLazy,
   ReportsLazy,
   SettingsLazy,
   UsersLazy,

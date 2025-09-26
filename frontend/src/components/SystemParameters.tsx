@@ -41,20 +41,20 @@ import { hasSignificantChanges } from '../utils/changeDetection';
 
 import MultipleSensorForm from './MultipleSensorForm';
 
-import MultipleMetricaSensorForm from './MultipleMetricaSensorForm';
+import { MultipleMetricaSensorFormLazyWithBoundary } from './LazyComponents';
 
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
 
 import { MassiveSensorForm } from './MassiveSensorForm';
 
-import { MassiveUmbralForm } from './MassiveUmbralForm';
+import { MassiveUmbralFormLazyWithBoundary } from './LazyComponents';
 
 import { MassiveMetricaSensorForm } from './MassiveMetricaSensorForm';
 
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
 
 
-import NormalInsertForm from './NormalInsertForm';
+import { NormalInsertFormLazyWithBoundary } from './LazyComponents';
 
 import InsertionMessage from './InsertionMessage';
 
@@ -9864,7 +9864,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                           ) : selectedTable === 'metricasensor' ? (
 
-                                                                         <MultipleMetricaSensorForm
+                                                                         <MultipleMetricaSensorFormLazyWithBoundary
 
                           selectedNodos={selectedNodos}
 
@@ -10026,7 +10026,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                         
 
-                      <NormalInsertForm
+                      <NormalInsertFormLazyWithBoundary
 
                         visibleColumns={getVisibleColumns(false)}
 
@@ -11175,7 +11175,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   ) : selectedTable === 'umbral' ? (
 
-                    <MassiveUmbralForm
+                    <MassiveUmbralFormLazyWithBoundary
 
                       getUniqueOptionsForField={getUniqueOptionsForField}
 

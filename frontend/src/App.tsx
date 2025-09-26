@@ -10,7 +10,7 @@ import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
 import { DashboardLazy } from './components/LazyComponents';
-import SystemParameters from './components/SystemParameters';
+import { SystemParametersLazyWithBoundary } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import { JoySenseService } from './services/backend-api';
@@ -23,7 +23,7 @@ import { useDataLossProtection } from './hooks/useDataLossProtection';
 import { ModalProvider } from './contexts/ModalContext';
 import SimpleAlertModal from './components/SimpleAlertModal';
 
-// Wrapper para SystemParameters con Suspense
+// Wrapper para SystemParameters con lazy loading
 const SystemParametersWithSuspense = React.forwardRef<
   { handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void },
   {
@@ -37,14 +37,7 @@ const SystemParametersWithSuspense = React.forwardRef<
     clearFormData?: boolean;
   }
 >((props, ref) => (
-  <Suspense fallback={
-    <div className="flex items-center justify-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <span className="ml-2 text-gray-600">Cargando...</span>
-    </div>
-  }>
-    <SystemParameters {...props} ref={ref} />
-  </Suspense>
+  <SystemParametersLazyWithBoundary {...props} ref={ref} />
 ));
 
 const AppContentInternal: React.FC = () => {
