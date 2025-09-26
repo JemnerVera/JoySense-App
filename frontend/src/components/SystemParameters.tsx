@@ -35,7 +35,6 @@ import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 // import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
 import { StatusTabContent } from './SystemParameters/StatusTabContent';
-import { StatusTabJSX } from './SystemParameters/StatusTabJSX';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
 // import { TableInfoDisplay } from './SystemParameters/TableInfoDisplay';
@@ -9863,29 +9862,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                              {/* Estado de la tabla */}
 
                {activeSubTab === 'status' && (
-                 <StatusTabJSX
-                   tableInfo={tableInfo}
-                   tableData={tableData}
-                   userData={userData}
-                   loading={loading}
-                   statusCurrentPage={statusCurrentPage}
-                   statusTotalPages={statusTotalPages}
-                   statusFilteredData={statusFilteredData}
-                   filteredTableData={filteredTableData}
-                   statusVisibleColumns={statusVisibleColumns}
-                   statusSearchTerm={statusSearchTerm}
-                   handleStatusSearch={handleStatusSearch}
-                   handleStatusPageChange={handleStatusPageChange}
-                   getStatusPaginatedData={getStatusPaginatedData}
-                   getColumnDisplayName={getColumnDisplayName}
-                   getUserName={getUserName}
-                   formatDate={formatDate}
-                   getDisplayValue={getDisplayValue}
-                 />
-               )}
-
-               {/* COMENTADO: Sección original de Status Tab - A ELIMINAR DESPUÉS DE VERIFICAR */}
-               {false && activeSubTab === 'status' && (
 
                  <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
 
