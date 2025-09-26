@@ -1,7 +1,5 @@
 import React from 'react';
 import { Pais, Empresa } from '../types';
-import { DashboardControls, UserControls } from './header';
-import { DashboardControlsAdvanced } from './header/DashboardControlsAdvanced';
 import { DashboardFilters } from './header/DashboardFilters';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFilters } from '../contexts/FilterContext';

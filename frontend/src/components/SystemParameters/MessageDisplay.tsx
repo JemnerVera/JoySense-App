@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface Message {
   type: 'success' | 'warning' | 'error' | 'info';

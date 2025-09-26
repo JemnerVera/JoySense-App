@@ -1,7 +1,6 @@
 import React from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
-import ReplicateButton from './ReplicateButton';
-import { tableValidationSchemas, validateTableData } from '../utils/formValidation';
+import { tableValidationSchemas } from '../utils/formValidation';
 
 interface NormalInsertFormProps {
   visibleColumns: any[];

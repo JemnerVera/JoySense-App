@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
 import SeparateCharts from './SeparateCharts';
-import AdminPanel from './AdminPanel';
 import { useAuth } from '../contexts/AuthContext';
 
 // Funciones helper para obtener nombres y unidades de métricas

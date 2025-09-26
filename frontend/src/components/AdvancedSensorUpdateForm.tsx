@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import SelectWithPlaceholder from './SelectWithPlaceholder';
 
 interface AdvancedSensorUpdateFormProps {
   selectedRows: any[];

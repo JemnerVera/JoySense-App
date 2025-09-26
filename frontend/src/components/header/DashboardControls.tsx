@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import OverlayDropdown from '../PushDropdown';
 
 interface DashboardControlsProps {
   paises: any[];

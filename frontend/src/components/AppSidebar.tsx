@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useFilters } from '../contexts/FilterContext';
 import { useFilterData } from '../hooks/useFilterData';
 import { useCascadingFilters } from '../hooks/useCascadingFilters';
 import CollapsibleGlobalFilters from './CollapsibleGlobalFilters';

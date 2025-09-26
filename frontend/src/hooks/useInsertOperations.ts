@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { JoySenseService } from '../services/backend-api';
 import { backendAPI } from '../services/backend-api';
 import { useAuth } from '../contexts/AuthContext';
 import { validateTableData } from '../utils/formValidation';

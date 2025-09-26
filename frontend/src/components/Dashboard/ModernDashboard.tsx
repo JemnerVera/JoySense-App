@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
-import SeparateCharts from "./SeparateCharts"
 import { NodeSelector } from "./NodeSelector"
 
 interface ModernDashboardProps {

@@ -1,4 +1,3 @@
-import React from 'react';
 import UmbralesMain from '../components/Umbrales/UmbralesMain';
 
 // Configuración de rutas para el sistema de umbrales

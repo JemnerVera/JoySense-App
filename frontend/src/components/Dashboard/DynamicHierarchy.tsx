@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../services/backend-api';
-import SeparateCharts from './SeparateCharts';
 import { ModernDashboard } from './ModernDashboard';
 
 interface DynamicHierarchyProps {
