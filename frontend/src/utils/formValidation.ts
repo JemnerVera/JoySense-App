@@ -293,12 +293,6 @@ export const validateTableUpdate = async (
   originalData: Record<string, any>,
   existingData?: any[]
 ): Promise<EnhancedValidationResult> => {
-  console.log('🔍 validateTableUpdate called:', {
-    tableName,
-    formData: { ...formData },
-    originalData: { ...originalData },
-    existingDataLength: existingData?.length || 0
-  });
   
   const errors: ValidationError[] = [];
   
@@ -1562,11 +1556,6 @@ const validateFundoUpdate = async (
   originalData: Record<string, any>,
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
-  console.log('🔍 validateFundoUpdate called:', {
-    formData: { ...formData },
-    originalData: { ...originalData },
-    existingDataLength: existingData.length
-  });
   
   const errors: ValidationError[] = [];
   
@@ -1631,37 +1620,21 @@ const validateFundoUpdate = async (
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
-    console.log('🔍 Validating fundo inactivation for fundoid:', originalData.fundoid);
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
-    
     // Verificar si hay ubicaciones que referencian este fundo
     const hasDependentRecords = await checkFundoDependencies(originalData.fundoid);
-    console.log('🔍 hasDependentRecords result:', hasDependentRecords);
     
     if (hasDependentRecords) {
-      console.log('🔍 Adding constraint error for fundo dependencies');
       errors.push({
         field: 'statusid',
         message: 'No se puede inactivar el fundo porque tiene ubicaciones asociadas',
         type: 'constraint'
       });
-    } else {
-      console.log('🔍 No dependencies found, allowing inactivation');
     }
-  } else {
-    console.log('🔍 Not validating fundo inactivation - statusid conditions not met');
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
   }
   
   // 4. Generar mensaje amigable para actualización (mensajes individuales)
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
   
-  console.log('🔍 validateFundoUpdate final result:', {
-    isValid: errors.length === 0,
-    errorsCount: errors.length,
-    errors: errors.map(e => ({ field: e.field, message: e.message, type: e.type })),
-    userFriendlyMessage
-  });
   
   return {
     isValid: errors.length === 0,
@@ -1825,11 +1798,6 @@ const validateEntidadUpdate = async (
   originalData: Record<string, any>,
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
-  console.log('🔍 validateEntidadUpdate called:', {
-    formData: { ...formData },
-    originalData: { ...originalData },
-    existingDataLength: existingData.length
-  });
   
   const errors: ValidationError[] = [];
   
@@ -1862,26 +1830,16 @@ const validateEntidadUpdate = async (
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
-    console.log('🔍 Validating entidad inactivation for entidadid:', originalData.entidadid);
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
-    
     // Verificar si hay tipos o localizaciones que referencian esta entidad
     const hasDependentRecords = await checkEntidadDependencies(originalData.entidadid);
-    console.log('🔍 hasDependentRecords result:', hasDependentRecords);
     
     if (hasDependentRecords) {
-      console.log('🔍 Adding constraint error for entidad dependencies');
       errors.push({
         field: 'statusid',
         message: 'No se puede inactivar la entidad porque tiene tipos o localizaciones asociadas',
         type: 'constraint'
       });
-    } else {
-      console.log('🔍 No dependencies found, allowing inactivation');
     }
-  } else {
-    console.log('🔍 Not validating entidad inactivation - statusid conditions not met');
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
   }
   
   // 4. Generar mensaje amigable para actualización (mensajes individuales)
@@ -2061,26 +2019,16 @@ const validateNodoUpdate = async (
   
   // 4. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
-    console.log('🔍 Validating nodo inactivation for nodoid:', originalData.nodoid);
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
-    
     // Verificar si hay sensores, metricasensor o localizaciones que referencian este nodo
     const hasDependentRecords = await checkNodoDependencies(originalData.nodoid);
-    console.log('🔍 hasDependentRecords result:', hasDependentRecords);
     
     if (hasDependentRecords) {
-      console.log('🔍 Adding constraint error for nodo dependencies');
       errors.push({
         field: 'statusid',
         message: 'No se puede inactivar el nodo porque tiene sensores, métricas o localizaciones asociadas',
         type: 'constraint'
       });
-    } else {
-      console.log('🔍 No dependencies found, allowing inactivation');
     }
-  } else {
-    console.log('🔍 Not validating inactivation - statusid conditions not met');
-    console.log('🔍 formData.statusid:', formData.statusid, 'originalData.statusid:', originalData.statusid);
   }
   
   // 5. Generar mensaje amigable para actualización (mensajes individuales)
@@ -2096,40 +2044,25 @@ const validateNodoUpdate = async (
 // Función para verificar dependencias de Nodo
 const checkNodoDependencies = async (nodoid: number): Promise<boolean> => {
   try {
-    console.log('🔍 checkNodoDependencies called for nodoid:', nodoid);
-    
     // Verificar en tabla sensor
     const sensores = await JoySenseService.getTableData('sensor');
-    console.log('🔍 Sensores data:', sensores.length, 'records');
     const hasSensores = sensores.some(sensor => sensor.nodoid === nodoid);
-    console.log('🔍 Has sensores for nodoid', nodoid, ':', hasSensores);
     
-    if (hasSensores) {
-      console.log('🔍 Found sensores dependencies, returning true');
-      return true;
-    }
+    if (hasSensores) return true;
     
     // Verificar en tabla metricasensor
     const metricasensores = await JoySenseService.getTableData('metricasensor');
-    console.log('🔍 Metricasensores data:', metricasensores.length, 'records');
     const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.nodoid === nodoid);
-    console.log('🔍 Has metricasensores for nodoid', nodoid, ':', hasMetricasensores);
     
-    if (hasMetricasensores) {
-      console.log('🔍 Found metricasensores dependencies, returning true');
-      return true;
-    }
+    if (hasMetricasensores) return true;
     
     // Verificar en tabla localizacion
     const localizaciones = await JoySenseService.getLocalizaciones();
-    console.log('🔍 Localizaciones data:', localizaciones.length, 'records');
     const hasLocalizaciones = localizaciones.some(localizacion => localizacion.nodoid === nodoid);
-    console.log('🔍 Has localizaciones for nodoid', nodoid, ':', hasLocalizaciones);
     
-    console.log('🔍 Final result for nodoid', nodoid, ':', hasLocalizaciones);
     return hasLocalizaciones;
   } catch (error) {
-    console.error('❌ Error checking nodo dependencies:', error);
+    console.error('Error checking nodo dependencies:', error);
     return true; // En caso de error, bloquear la operación por seguridad
   }
 };
@@ -2224,29 +2157,15 @@ const checkMetricaDependencies = async (metricaid: number): Promise<boolean> => 
 
 // Función para generar mensajes amigables para actualización (con combinación inteligente)
 const generateUpdateUserFriendlyMessage = (errors: ValidationError[]): string => {
-  console.log('🔍 generateUpdateUserFriendlyMessage called with errors:', errors.length);
-  
-  if (errors.length === 0) {
-    console.log('🔍 No errors, returning empty string');
-    return '';
-  }
+  if (errors.length === 0) return '';
   
   // Usar la misma lógica de combinación que el formulario de Crear
-  const result = generateUserFriendlyMessage(errors);
-  console.log('🔍 generateUpdateUserFriendlyMessage result:', result);
-  
-  return result;
+  return generateUserFriendlyMessage(errors);
 };
 
 // Función para generar mensajes amigables al usuario
 const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
-  console.log('🔍 generateUserFriendlyMessage called with errors:', errors.length);
-  console.log('🔍 errors details:', errors.map(e => ({ field: e.field, message: e.message, type: e.type })));
-  
-  if (errors.length === 0) {
-    console.log('🔍 No errors, returning empty string');
-    return '';
-  }
+  if (errors.length === 0) return '';
   
   // Agrupar errores por tipo
   const requiredErrors = errors.filter(e => e.type === 'required');
@@ -2262,21 +2181,21 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
     
     // Combinar campos relacionados
     if (requiredErrors.some(e => e.field === 'pais') && 
-        requiredErrors.some(e => e.field === 'paisabrev')) {
+               requiredErrors.some(e => e.field === 'paisabrev')) {
       messages.push('⚠️ El país y abreviatura es obligatorio');
       processedFields.add('pais');
       processedFields.add('paisabrev');
     }
     
     if (requiredErrors.some(e => e.field === 'empresa') && 
-        requiredErrors.some(e => e.field === 'empresabrev')) {
+               requiredErrors.some(e => e.field === 'empresabrev')) {
       messages.push('⚠️ La empresa y abreviatura es obligatorio');
       processedFields.add('empresa');
       processedFields.add('empresabrev');
     }
     
     if (requiredErrors.some(e => e.field === 'fundo') && 
-        requiredErrors.some(e => e.field === 'fundoabrev')) {
+               requiredErrors.some(e => e.field === 'fundoabrev')) {
       messages.push('⚠️ El fundo y abreviatura es obligatorio');
       processedFields.add('fundo');
       processedFields.add('fundoabrev');
@@ -2357,8 +2276,8 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
     
     // Ubicación: latitud + longitud + referencia
     if (requiredErrors.some(e => e.field === 'latitud') && 
-        requiredErrors.some(e => e.field === 'longitud') && 
-        requiredErrors.some(e => e.field === 'referencia')) {
+               requiredErrors.some(e => e.field === 'longitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
       messages.push('⚠️ La latitud, longitud y referencia es obligatorio');
       processedFields.add('latitud');
       processedFields.add('longitud');
@@ -2432,14 +2351,7 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
     });
   }
   
-  const result = messages.join('\n');
-  console.log('🔍 generateUserFriendlyMessage final result:', {
-    messagesCount: messages.length,
-    messages: messages,
-    result: result
-  });
-  
-  return result;
+  return messages.join('\n');
 };
 
 // ===== VALIDACIÓN DE ACTUALIZACIÓN PARA UMBRAL =====
