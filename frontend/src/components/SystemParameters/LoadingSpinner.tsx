@@ -4,13 +4,11 @@ interface LoadingSpinnerProps {
   message?: string;
 }
 
-export function LoadingSpinner({ message = "Cargando..." }: LoadingSpinnerProps) {
+export function LoadingSpinner({ message = "Cargando datos..." }: LoadingSpinnerProps) {
   return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-400">{message}</p>
-      </div>
+    <div className="text-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+      <p className="text-gray-400 mt-2">{message}</p>
     </div>
   );
 }

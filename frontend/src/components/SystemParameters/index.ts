@@ -8,3 +8,5 @@ export { ActionButtons } from './ActionButtons';
 export { UpdateMessageDisplay } from './UpdateMessageDisplay';
 export { SearchBar } from './SearchBar';
 export { MultipleSelectionButtons } from './MultipleSelectionButtons';
+export { CancelConfirmationModal } from './CancelConfirmationModal';
+export { SearchBarWithCounter } from './SearchBarWithCounter';

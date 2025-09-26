@@ -29,6 +29,9 @@ import { TableStatsDisplay } from './SystemParameters/TableStatsDisplay';
 import { PaginationControls } from './SystemParameters/PaginationControls';
 import { ActionButtons } from './SystemParameters/ActionButtons';
 import { MultipleSelectionButtons } from './SystemParameters/MultipleSelectionButtons';
+// import { CancelConfirmationModal } from './SystemParameters/CancelConfirmationModal';
+import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
+import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 // import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
@@ -9893,13 +9896,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                      {loading ? (
 
-                     <div className="text-center py-8">
-
-                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-
-                       <p className="text-gray-400 mt-2">Cargando datos...</p>
-
-                     </div>
+                     <LoadingSpinner message="Cargando datos..." />
 
                    ) : (
 
@@ -9907,37 +9904,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        {/* Barra de búsqueda - Tactical Style */}
 
-                       <div className="mb-6">
-
-                         <div className="relative">
-
-                           <input
-
-                             type="text"
-
-                             value={statusSearchTerm}
-
-                             onChange={(e) => handleStatusSearch(e.target.value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage)}
-
-                             placeholder="🔍 Buscar en todos los campos..."
-
-                             className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
-
-                           />
-
-                         </div>
-
-                         {statusSearchTerm && (
-
-                           <div className="mt-2 text-sm text-neutral-400 font-mono">
-
-                             Mostrando {statusFilteredData.length} de {filteredTableData.length} registros
-
-                           </div>
-
-                         )}
-
-                       </div>
+                       <SearchBarWithCounter
+                         searchTerm={statusSearchTerm}
+                         onSearchChange={(value) => handleStatusSearch(value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage)}
+                         filteredCount={statusFilteredData.length}
+                         totalCount={filteredTableData.length}
+                       />
 
 
 
