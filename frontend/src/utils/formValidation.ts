@@ -2182,16 +2182,93 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
       messages.push('⚠️ El país y abreviatura es obligatorio');
       processedFields.add('pais');
       processedFields.add('paisabrev');
-    } else if (requiredErrors.some(e => e.field === 'empresa') && 
-               requiredErrors.some(e => e.field === 'empresabrev')) {
+    }
+    
+    if (requiredErrors.some(e => e.field === 'empresa') && 
+        requiredErrors.some(e => e.field === 'empresabrev')) {
       messages.push('⚠️ La empresa y abreviatura es obligatorio');
       processedFields.add('empresa');
       processedFields.add('empresabrev');
-    } else if (requiredErrors.some(e => e.field === 'fundo') && 
-               requiredErrors.some(e => e.field === 'fundoabrev')) {
+    }
+    
+    if (requiredErrors.some(e => e.field === 'fundo') && 
+        requiredErrors.some(e => e.field === 'fundoabrev')) {
       messages.push('⚠️ El fundo y abreviatura es obligatorio');
       processedFields.add('fundo');
       processedFields.add('fundoabrev');
+    }
+    
+    // Nodo: nombre + DevEUI
+    if (requiredErrors.some(e => e.field === 'nodo') && 
+        requiredErrors.some(e => e.field === 'deveui')) {
+      messages.push('⚠️ El nombre del nodo y DevEUI es obligatorio');
+      processedFields.add('nodo');
+      processedFields.add('deveui');
+    }
+    
+    // Métrica: nombre + unidad
+    if (requiredErrors.some(e => e.field === 'metrica') && 
+        requiredErrors.some(e => e.field === 'unidad')) {
+      messages.push('⚠️ El nombre de la métrica y unidad es obligatorio');
+      processedFields.add('metrica');
+      processedFields.add('unidad');
+    }
+    
+    // Perfil umbral: perfil + umbral
+    if (requiredErrors.some(e => e.field === 'perfilid') && 
+        requiredErrors.some(e => e.field === 'umbralid')) {
+      messages.push('⚠️ Debe seleccionar un perfil y umbral');
+      processedFields.add('perfilid');
+      processedFields.add('umbralid');
+    }
+    
+    // Criticidad: nombre + abreviatura
+    if (requiredErrors.some(e => e.field === 'criticidad') && 
+        requiredErrors.some(e => e.field === 'criticidadbrev')) {
+      messages.push('⚠️ El nombre de la criticidad y abreviatura es obligatorio');
+      processedFields.add('criticidad');
+      processedFields.add('criticidadbrev');
+    }
+    
+    // Contacto: usuario + medio
+    if (requiredErrors.some(e => e.field === 'usuarioid') && 
+        requiredErrors.some(e => e.field === 'medioid')) {
+      messages.push('⚠️ Debe seleccionar un usuario y medio');
+      processedFields.add('usuarioid');
+      processedFields.add('medioid');
+    }
+    
+    // Perfil: nombre + nivel
+    if (requiredErrors.some(e => e.field === 'perfil') && 
+        requiredErrors.some(e => e.field === 'nivel')) {
+      messages.push('⚠️ El nombre del perfil y nivel es obligatorio');
+      processedFields.add('perfil');
+      processedFields.add('nivel');
+    }
+    
+    // Ubicación: latitud + longitud + referencia
+    if (requiredErrors.some(e => e.field === 'latitud') && 
+        requiredErrors.some(e => e.field === 'longitud') && 
+        requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La latitud, longitud y referencia es obligatorio');
+      processedFields.add('latitud');
+      processedFields.add('longitud');
+      processedFields.add('referencia');
+    } else if (requiredErrors.some(e => e.field === 'latitud') && 
+               requiredErrors.some(e => e.field === 'longitud')) {
+      messages.push('⚠️ La latitud y longitud es obligatorio');
+      processedFields.add('latitud');
+      processedFields.add('longitud');
+    } else if (requiredErrors.some(e => e.field === 'latitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La latitud y referencia es obligatorio');
+      processedFields.add('latitud');
+      processedFields.add('referencia');
+    } else if (requiredErrors.some(e => e.field === 'longitud') && 
+               requiredErrors.some(e => e.field === 'referencia')) {
+      messages.push('⚠️ La longitud y referencia es obligatorio');
+      processedFields.add('longitud');
+      processedFields.add('referencia');
     }
     
     // Agregar errores restantes que no fueron procesados
