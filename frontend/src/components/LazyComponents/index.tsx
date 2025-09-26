@@ -1,4 +1,5 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { preloadService } from '../../services/preloadService';
 
 // Loading component for Suspense fallback
 const LoadingSpinner: React.FC = () => (
@@ -8,11 +9,12 @@ const LoadingSpinner: React.FC = () => (
   </div>
 );
 
-// Lazy load SystemParameters component
+// Lazy load SystemParameters component con preload
 const SystemParametersLazy = lazy(() => 
-  import('../SystemParameters').then(module => ({
-    default: module.default
-  }))
+  import('../SystemParameters').then(module => {
+    console.log('📦 SystemParameters cargado dinámicamente');
+    return { default: module.default };
+  })
 );
 
 // Lazy load Configuration component (placeholder)
@@ -29,36 +31,41 @@ const UmbralesMainLazy = lazy(() =>
   }))
 );
 
-// Lazy load Dashboard component
+// Lazy load Dashboard component con preload
 const DashboardLazy = lazy(() => 
-  import('../Dashboard/DashboardMain').then(module => ({
-    default: module.default
-  }))
+  import('../Dashboard/DashboardMain').then(module => {
+    console.log('📦 Dashboard cargado dinámicamente');
+    return { default: module.default };
+  })
 );
 
-// Lazy load heavy components
+// Lazy load heavy components con preload
 const NormalInsertFormLazy = lazy(() => 
-  import('../NormalInsertForm').then(module => ({
-    default: module.default
-  }))
+  import('../NormalInsertForm').then(module => {
+    console.log('📦 NormalInsertForm cargado dinámicamente');
+    return { default: module.default };
+  })
 );
 
 const MassiveUmbralFormLazy = lazy(() => 
-  import('../MassiveUmbralForm').then(module => ({
-    default: module.MassiveUmbralForm
-  }))
+  import('../MassiveUmbralForm').then(module => {
+    console.log('📦 MassiveUmbralForm cargado dinámicamente');
+    return { default: module.MassiveUmbralForm };
+  })
 );
 
 const MultipleMetricaSensorFormLazy = lazy(() => 
-  import('../MultipleMetricaSensorForm').then(module => ({
-    default: module.default
-  }))
+  import('../MultipleMetricaSensorForm').then(module => {
+    console.log('📦 MultipleMetricaSensorForm cargado dinámicamente');
+    return { default: module.default };
+  })
 );
 
 const DashboardHierarchyLazy = lazy(() => 
-  import('../DashboardHierarchy').then(module => ({
-    default: module.default
-  }))
+  import('../DashboardHierarchy').then(module => {
+    console.log('📦 DashboardHierarchy cargado dinámicamente');
+    return { default: module.default };
+  })
 );
 
 // Placeholder components for missing modules
@@ -350,4 +357,30 @@ export const useLazyComponent = (importFunction: () => Promise<any>) => {
     error,
     loadComponent
   };
+};
+
+// Hook para preload automático de componentes críticos
+export const usePreloadCriticalComponents = () => {
+  useEffect(() => {
+    // Preload componentes críticos después de que la app esté lista
+    const timer = setTimeout(() => {
+      preloadService.preloadCriticalComponents();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+};
+
+// Hook para preload en hover
+export const useHoverPreload = (componentName: string) => {
+  const ref = React.useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      const cleanup = preloadService.setupHoverPreload(ref.current, componentName);
+      return cleanup;
+    }
+  }, [componentName]);
+
+  return ref;
 };

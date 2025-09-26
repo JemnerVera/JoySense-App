@@ -9,8 +9,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy } from './components/LazyComponents';
-import { SystemParametersLazyWithBoundary } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import { JoySenseService } from './services/backend-api';
@@ -44,6 +43,9 @@ const AppContentInternal: React.FC = () => {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const { } = useFilters();
+
+  // Preload componentes críticos
+  usePreloadCriticalComponents();
 
   // Ref para SystemParameters
   const systemParametersRef = useRef<{ handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void }>(null);
