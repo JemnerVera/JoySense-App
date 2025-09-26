@@ -1569,11 +1569,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Función simple para verificar si hay cambios sin guardar
 
   const hasUnsavedChanges = useCallback((): boolean => {
+    // Debug temporal
+    console.log('🔍 hasUnsavedChanges called:', {
+      activeSubTab,
+      selectedTable
+    });
 
-
-
-
-
+    
     
 
     // Verificar pestaña "Crear"
@@ -1771,40 +1773,66 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Verificar pestaña "Actualizar"
 
     if (activeSubTab === 'update') {
+      console.log('🔍 hasUnsavedChanges - Entrando en sección UPDATE');
 
       // Verificar si hay búsqueda activa
-
       if (searchField || searchTerm) {
-
+        console.log('🔍 hasUnsavedChanges - Hay búsqueda activa, retornando true');
         return true;
-
       }
 
-      
+      // Debug de la condición principal
+      console.log('🔍 hasUnsavedChanges - Verificando condición principal:', {
+        hasSelectedRowForUpdate: !!selectedRowForUpdate,
+        updateFormDataKeysLength: Object.keys(updateFormData).length,
+        updateFormDataKeys: Object.keys(updateFormData)
+      });
 
       // Verificar si hay cambios reales en el formulario de actualización
       // Solo mostrar modal si se han modificado los datos originales
-
       if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
-
-
+        console.log('🔍 hasUnsavedChanges - Entrando en comparación de valores');
+        // Debug temporal
+        console.log('🔍 hasUnsavedChanges - Update tab Debug:', {
+          selectedRowForUpdate,
+          updateFormData,
+          updateFormDataKeys: Object.keys(updateFormData)
+        });
+        
         // Comparar datos originales con datos modificados
         const hasRealChanges = Object.keys(updateFormData).some(key => {
           const originalValue = selectedRowForUpdate[key];
           const currentValue = updateFormData[key];
           
+          // Debug para cada campo
+          console.log(`🔍 Campo ${key}:`, {
+            originalValue,
+            currentValue,
+            areEqual: originalValue === currentValue
+          });
           
           // Comparar valores, manejando diferentes tipos de datos
-          if (originalValue !== currentValue) {
-        return true;
-          } else {
-            return false;
-          }
+          // Considerar null, undefined y string vacío como equivalentes
+          const normalizeValue = (val: any) => {
+            if (val === null || val === undefined || val === '') return null;
+            return val;
+          };
+          
+          const normalizedOriginal = normalizeValue(originalValue);
+          const normalizedCurrent = normalizeValue(currentValue);
+          
+          const isDifferent = normalizedOriginal !== normalizedCurrent;
+          console.log(`🔍 Campo ${key} normalizado:`, {
+            normalizedOriginal,
+            normalizedCurrent,
+            isDifferent
+          });
+          
+          return isDifferent;
         });
 
+        console.log('🔍 hasRealChanges result:', hasRealChanges);
         return hasRealChanges;
-
-      } else {
       }
 
       
@@ -2048,7 +2076,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [formData, selectedTable, activeSubTab]);
+  }, [formData, selectedTable, activeSubTab, selectedRowForUpdate, updateFormData, selectedRowsForUpdate, selectedRowsForManualUpdate, searchField, searchTerm]);
 
   // Exponer funciones al componente padre
   useImperativeHandle(ref, () => ({
@@ -3654,38 +3682,89 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
   const handleCancelUpdate = () => {
+    // Debug temporal
+    console.log('🔍 handleCancelUpdate Debug:', {
+      selectedRowForUpdate: !!selectedRowForUpdate,
+      updateFormDataKeys: Object.keys(updateFormData),
+      updateFormData: updateFormData,
+      selectedRowsForUpdateLength: selectedRowsForUpdate.length,
+      selectedRowsForManualUpdateLength: selectedRowsForManualUpdate.length,
+      searchField,
+      searchTerm
+    });
 
-    // Verificar si realmente hay cambios sin guardar
-    const hasChanges = hasUnsavedChanges();
+    // Verificar cambios directamente aquí, sin usar hasUnsavedChanges
+    let hasChanges = false;
     
+    // Verificar si hay búsqueda activa
+    if (searchField || searchTerm) {
+      hasChanges = true;
+      console.log('🔍 Hay búsqueda activa');
+    }
+    
+    // Verificar si hay múltiples filas seleccionadas
+    if (selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) {
+      hasChanges = true;
+      console.log('🔍 Hay filas seleccionadas para actualización múltiple');
+    }
+    
+    // Verificar si hay cambios reales en el formulario de actualización
+    if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
+      console.log('🔍 Verificando cambios en formulario de actualización');
+      
+      const hasRealChanges = Object.keys(updateFormData).some(key => {
+        const originalValue = selectedRowForUpdate[key];
+        const currentValue = updateFormData[key];
+        
+        // Comparar valores, manejando diferentes tipos de datos
+        const normalizeValue = (val: any) => {
+          if (val === null || val === undefined || val === '') return null;
+          return val;
+        };
+        
+        const normalizedOriginal = normalizeValue(originalValue);
+        const normalizedCurrent = normalizeValue(currentValue);
+        
+        const isDifferent = normalizedOriginal !== normalizedCurrent;
+        
+        if (isDifferent) {
+          console.log(`🔍 Campo ${key} ha cambiado:`, {
+            original: originalValue,
+            current: currentValue,
+            normalizedOriginal,
+            normalizedCurrent
+          });
+        }
+        
+        return isDifferent;
+      });
+      
+      if (hasRealChanges) {
+        hasChanges = true;
+        console.log('🔍 Hay cambios reales en el formulario');
+      }
+    }
+    
+    console.log('🔍 hasChanges result:', hasChanges);
     
     if (hasChanges) {
       // Solo mostrar modal si hay cambios reales
-    setCancelAction(() => () => {
-
-    setSelectedRowForUpdate(null);
-
-    setSelectedRowsForUpdate([]);
-
-      setSelectedRowsForManualUpdate([]);
-
+      console.log('🔍 Mostrando modal de cancelación');
+      setCancelAction(() => () => {
+        setSelectedRowForUpdate(null);
+        setSelectedRowsForUpdate([]);
+        setSelectedRowsForManualUpdate([]);
         // Limpiar mensajes de alerta al cancelar
         setUpdateMessage(null);
-
-    setUpdateFormData({});
-
-    setIndividualRowStatus({});
-
-      setIsMultipleSelectionMode(false);
-
-      setShowCancelModal(false);
-
-    });
-
-    setShowCancelModal(true);
+        setUpdateFormData({});
+        setIndividualRowStatus({});
+        setIsMultipleSelectionMode(false);
+        setShowCancelModal(false);
+      });
+      setShowCancelModal(true);
     } else {
       // Si no hay cambios, cancelar directamente sin modal
-      
+      console.log('🔍 No hay cambios, cancelando directamente');
       setSelectedRowForUpdate(null);
       setSelectedRowsForUpdate([]);
       setSelectedRowsForManualUpdate([]);
@@ -3694,7 +3773,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setIndividualRowStatus({});
       setIsMultipleSelectionMode(false);
     }
-
   };
 
 
