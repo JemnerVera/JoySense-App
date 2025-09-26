@@ -32,7 +32,7 @@ import { MultipleSelectionButtons } from './SystemParameters/MultipleSelectionBu
 // import { CancelConfirmationModal } from './SystemParameters/CancelConfirmationModal';
 import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
-import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
+// import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
 // import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
@@ -278,7 +278,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función para manejar el cambio de pestaña y limpiar mensajes
 
-  const handleTabChange = (tab: 'status' | 'insert' | 'update' | 'massive') => {
+  const handleTabChange = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
 
     console.log('🔄 handleTabChange called:', { 
 
@@ -370,7 +370,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  };
+  }, [activeSubTab, selectedTable]);
 
 
 
@@ -386,7 +386,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setUpdateMessage(null);
 
-    setCopyMessage(null);
+    // setCopyMessage(null);
 
     clearOnTabChange();
 
@@ -446,7 +446,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función helper para inicializar formData con statusid por defecto
 
-  const initializeFormData = (cols?: any[]) => {
+  const initializeFormData = useCallback((cols?: any[]) => {
 
     const initialFormData: Record<string, any> = {};
 
@@ -476,14 +476,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return initialFormData;
 
-  };
+  }, []);
 
 
 
   const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
-  const [copyMessage, setCopyMessage] = useState<Message | null>(null);
-  const [tableConstraints, setTableConstraints] = useState<any>(null);
-  const [copyTotalPages, setCopyTotalPages] = useState<number>(0);
+  // const [copyMessage, setCopyMessage] = useState<Message | null>(null);
+  // const [tableConstraints, setTableConstraints] = useState<any>(null);
+  // const [copyTotalPages, setCopyTotalPages] = useState<number>(0);
 
 
   // Estados de datos relacionados ahora manejados por useTableDataManagement
@@ -1599,7 +1599,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función simple para verificar si hay cambios sin guardar
 
-  const hasUnsavedChanges = (): boolean => {
+  const hasUnsavedChanges = useCallback((): boolean => {
 
     console.log('🔍 hasUnsavedChanges - activeSubTab:', activeSubTab, 'selectedTable:', selectedTable);
 
@@ -1966,7 +1966,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return false;
 
-  };
+  }, [activeSubTab, selectedTable]);
 
 
 
@@ -2680,7 +2680,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const constraints = await JoySenseService.getTableConstraints(selectedTable);
 
-      setTableConstraints(constraints);
+      // setTableConstraints(constraints);
 
     } catch (error) {
 
@@ -2756,7 +2756,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
 
-      setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
+      // setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
 
 
       setCopySearchTerm('');
