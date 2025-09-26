@@ -1740,10 +1740,11 @@ const validateLocalizacionUpdate = async (
   originalData: Record<string, any>,
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
+  
   const errors: ValidationError[] = [];
   
   
-  // 1. Validar campos obligatorios (solo ubicacionid y nodoid según el schema)
+  // 1. Validar campos obligatorios
   if (!formData.ubicacionid || formData.ubicacionid === '') {
     errors.push({
       field: 'ubicacionid',
@@ -1756,6 +1757,30 @@ const validateLocalizacionUpdate = async (
     errors.push({
       field: 'nodoid',
       message: 'El nodo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.latitud || formData.latitud === '') {
+    errors.push({
+      field: 'latitud',
+      message: 'La latitud es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.longitud || formData.longitud === '') {
+    errors.push({
+      field: 'longitud',
+      message: 'La longitud es obligatoria',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.referencia || formData.referencia.trim() === '') {
+    errors.push({
+      field: 'referencia',
+      message: 'La referencia es obligatoria',
       type: 'required'
     });
   }
@@ -1784,6 +1809,7 @@ const validateLocalizacionUpdate = async (
   
   // 4. Generar mensaje amigable para actualización (mensajes individuales)
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
   
   return {
     isValid: errors.length === 0,
