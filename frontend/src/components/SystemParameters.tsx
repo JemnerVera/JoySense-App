@@ -34,7 +34,7 @@ import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 // import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
-import { StatusTabContent } from './SystemParameters/StatusTabContent';
+// import { StatusTabContent } from './SystemParameters/StatusTabContent'; // No usado
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
 // import { TableInfoDisplay } from './SystemParameters/TableInfoDisplay';
@@ -370,6 +370,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubTab, selectedTable]);
 
 
@@ -390,6 +391,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     clearOnTabChange();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubTab]);
 
 
@@ -1966,6 +1968,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return false;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubTab, selectedTable]);
 
 
@@ -2117,6 +2120,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, selectedTable, activeSubTab]);
 
   // Exponer funciones al componente padre
@@ -2218,6 +2222,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     //   onTableSelect(newTable);
     // }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setSelectedTable, setActiveSubTab]);
 
 
@@ -2300,6 +2305,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveSubTab, onSubTabChange]);
 
 
@@ -2315,7 +2321,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     loadRelatedTablesData();
 
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadRelatedTablesData, loadUserData]);
 
 
 
@@ -2341,6 +2348,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTable]);
 
 
@@ -2405,7 +2413,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  }, [clearFormData]);
+  }, [clearFormData, columns, initializeFormData]);
 
 
 
@@ -7532,7 +7540,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return getMultipleData();
 
-  }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
+  }, [getMultipleData]);
 
 
 
