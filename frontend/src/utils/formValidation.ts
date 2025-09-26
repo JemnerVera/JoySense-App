@@ -2151,14 +2151,12 @@ const checkMetricaDependencies = async (metricaid: number): Promise<boolean> => 
   }
 };
 
-// Función para generar mensajes amigables para actualización (mensajes individuales)
+// Función para generar mensajes amigables para actualización (con combinación inteligente)
 const generateUpdateUserFriendlyMessage = (errors: ValidationError[]): string => {
   if (errors.length === 0) return '';
   
-  // Para actualización, mostrar mensajes individuales sin combinar
-  const messages = errors.map(error => `⚠️ ${error.message}`);
-  
-  return messages.join('\n');
+  // Usar la misma lógica de combinación que el formulario de Crear
+  return generateUserFriendlyMessage(errors);
 };
 
 // Función para generar mensajes amigables al usuario
