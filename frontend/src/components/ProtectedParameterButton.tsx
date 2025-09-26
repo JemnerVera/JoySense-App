@@ -36,11 +36,9 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('🔄 ProtectedParameterButton clicked - PREVENTING default behavior');
 
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
-      console.log('🔄 Modal already open, ignoring click');
       return;
     }
 
@@ -52,10 +50,8 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, currentTable, activeSubTab, multipleData, massiveFormData);
     
-    console.log('🔄 hasChanges result for parameter change:', hasChanges);
     
     if (hasChanges) {
-      console.log('🔄 Showing modal for parameter change - PREVENTING parameter change');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar el parámetro
       showModal(
@@ -63,19 +59,16 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
         currentTable,
         targetTable,
         () => {
-          console.log('🔄 Confirming parameter change to:', targetTable);
           setIsModalOpen(false);
           // Solo cambiar el parámetro DESPUÉS de confirmar
           onTableChange(targetTable);
         },
         () => {
-          console.log('🔄 Parameter change cancelled, staying in:', currentTable);
           setIsModalOpen(false);
           // No hacer nada, quedarse en el parámetro actual
         }
       );
     } else {
-      console.log('🔄 No changes, proceeding with parameter change');
       // No hay cambios, proceder normalmente
       onTableChange(targetTable);
     }

@@ -66,11 +66,9 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
 
   // Función para manejar la selección de tabla
   const handleTableSelect = (tableValue: string) => {
-    console.log('🔄 ProtectedTableSelector clicked - PREVENTING default behavior');
     
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
-      console.log('🔄 Modal already open, ignoring click');
       return;
     }
     
@@ -83,10 +81,8 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, multipleData, massiveFormData);
     
-    console.log('🔄 hasChanges result for parameter change:', hasChanges);
     
     if (hasChanges) {
-      console.log('🔄 Showing modal for parameter change - PREVENTING parameter change');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar el parámetro
       showModal(
@@ -94,21 +90,18 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
         selectedTable,
         tableValue,
         () => {
-          console.log('🔄 Confirming parameter change to:', tableValue);
           setIsModalOpen(false);
           // Solo cambiar el parámetro DESPUÉS de confirmar
           onTableSelect(tableValue);
           setIsOpen(false);
         },
         () => {
-          console.log('🔄 Parameter change cancelled, staying in:', selectedTable);
           setIsModalOpen(false);
           // No hacer nada, quedarse en el parámetro actual
           setIsOpen(false);
         }
       );
     } else {
-      console.log('🔄 No changes, proceeding with parameter change');
       // No hay cambios, proceder normalmente
       onTableSelect(tableValue);
       setIsOpen(false);

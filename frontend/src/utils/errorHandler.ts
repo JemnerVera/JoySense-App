@@ -32,9 +32,6 @@ export const extractDuplicateKeyInfo = (error: BackendError): { fieldName: strin
   const errorText = error.response?.data?.error || '';
   const constraintName = errorText.match(/constraint "([^"]+)"/)?.[1] || '';
   
-  console.log('🔍 Debug - Constraint name:', constraintName);
-  console.log('🔍 Debug - Details:', details);
-  console.log('🔍 Debug - Error text:', errorText);
   
   // Determinar qué campo está causando el conflicto
   let fieldName = 'campo';
@@ -87,8 +84,6 @@ export const extractDuplicateKeyInfo = (error: BackendError): { fieldName: strin
     fieldName = fieldNameMapping[fieldName];
   }
   
-  console.log('🔍 Debug - Field name:', fieldName);
-  console.log('🔍 Debug - Conflicting value:', conflictingValue);
   
   return { fieldName, conflictingValue };
 };
@@ -119,8 +114,6 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
   // Detectar errores 500 que podrían ser de clave única (fallback)
   if (error.response?.status === 500) {
     const errorText = error.response?.data?.error || error.message || '';
-    console.log('🔍 Error 500 - Error text:', errorText);
-    console.log('🔍 Error 500 - Full response:', error.response);
     
     if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
         errorText.includes('violates') || errorText.includes('already exists')) {

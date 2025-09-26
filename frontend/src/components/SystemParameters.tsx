@@ -293,13 +293,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
 
-    console.log('🔄 hasChanges result:', hasChanges);
 
     
 
     if (hasChanges) {
 
-      console.log('🔄 Showing modal for tab change');
 
       // Mostrar modal de confirmación
 
@@ -313,7 +311,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-          console.log('🔄 Confirming tab change to:', tab);
 
           // Limpiar datos del formulario antes de cambiar
 
@@ -345,7 +342,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-          console.log('🔄 Tab change cancelled, staying in:', activeSubTab);
 
           // No hacer nada, quedarse en la pestaña actual
 
@@ -355,7 +351,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     } else {
 
-      console.log('🔄 No changes, proceeding with tab change');
 
       // No hay cambios, proceder normalmente
 
@@ -803,19 +798,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-    console.log('🔍 Debug - groupUsuarioPerfilData input:', data.length);
 
-    console.log('🔍 Debug - groupUsuarioPerfilData sample:', data[0]);
 
-    console.log('🔍 Debug - userData:', userData?.length);
 
-    console.log('🔍 Debug - perfilesData:', perfilesData?.length);
 
-    console.log('🔍 Debug - All input data:', data);
 
-    console.log('🔍 Debug - All userData:', userData);
 
-    console.log('🔍 Debug - All perfilesData:', perfilesData);
 
 
 
@@ -871,7 +859,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Solo agregar perfiles si están activos (statusid: 1)
 
-      console.log(`🔍 Debug - Processing row: usuarioid=${row.usuarioid}, perfilid=${row.perfilid}, statusid=${row.statusid}, perfil=${perfil?.perfil}`);
 
       if (row.statusid === 1) {
 
@@ -879,13 +866,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           acc[usuarioid].perfiles.add(perfil.perfil);
 
-          console.log(`🔍 Debug - Added active profile: ${perfil.perfil} for user ${usuarioid}`);
 
         }
 
       } else {
 
-        console.log(`🔍 Debug - Skipping inactive profile: ${perfil?.perfil} (statusid=${row.statusid}) for user ${usuarioid}`);
 
       }
 
@@ -943,9 +928,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-    console.log('🔍 Debug - groupUsuarioPerfilData result:', result.length);
 
-    console.log('🔍 Debug - groupUsuarioPerfilData result sample:', result[0]);
 
 
 
@@ -1223,11 +1206,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     
 
-    console.log('🔍 openReplicateModalForTable - selectedTable:', selectedTable);
 
-    console.log('🔍 openReplicateModalForTable - tableData:', tableData);
 
-    console.log('🔍 openReplicateModalForTable - nodosData:', nodosData);
 
     
 
@@ -1245,7 +1225,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log('🔍 nodos cargados desde API:', nodos);
 
         
 
@@ -1265,7 +1244,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log('🔍 nodosConSensores:', nodosConSensores);
 
         
 
@@ -1287,9 +1265,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log('🔍 modalData final:', modalData);
 
-        console.log('🔍 modalVisibleColumns final:', modalVisibleColumns);
 
       } catch (error) {
 
@@ -1594,13 +1570,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const hasUnsavedChanges = useCallback((): boolean => {
 
-    console.log('🔍 hasUnsavedChanges - activeSubTab:', activeSubTab, 'selectedTable:', selectedTable);
 
-    console.log('🔍 formData:', formData);
 
-    console.log('🔍 formData keys:', Object.keys(formData));
 
-    console.log('🔍 formData values:', Object.values(formData));
 
     
 
@@ -1626,7 +1598,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           referentialFields = ['paisid', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
 
-          console.log('🔍 Pais table - referentialFields:', referentialFields);
 
         } else if (selectedTable === 'fundo') {
 
@@ -1668,7 +1639,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔍 Checking field: ${key} = ${value} (type: ${typeof value})`);
 
           
 
@@ -1676,7 +1646,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (referentialFields.includes(key)) {
 
-            console.log(`🔍 Excluding referential field: ${key}`);
 
             return false;
 
@@ -1688,7 +1657,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (selectedTable === 'pais' && (key === 'pais' || key === 'paisabrev')) {
 
-            console.log(`🔍 Pais field check: ${key} = "${value}" (length: ${value?.length || 0})`);
 
           }
 
@@ -1700,7 +1668,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const hasStatusChange = value !== 1;
 
-            console.log(`🔍 Status field: ${key} = ${value}, hasChange: ${hasStatusChange}`);
 
             return hasStatusChange;
 
@@ -1712,7 +1679,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (typeof value === 'string' && value.trim() !== '') {
 
-            console.log(`🔍 String field with data: ${key} = "${value}"`);
 
             return true;
 
@@ -1720,7 +1686,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (typeof value === 'number' && value !== null && value !== undefined) {
 
-            console.log(`🔍 Number field with data: ${key} = ${value}`);
 
             return true;
 
@@ -1728,7 +1693,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (Array.isArray(value) && value.length > 0) {
 
-            console.log(`🔍 Array field with data: ${key} = [${value.length} items]`);
 
             return true;
 
@@ -1744,7 +1708,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
-            console.log(`🔍 Object field: ${key}, hasData: ${hasObjectData}`);
 
             return hasObjectData;
 
@@ -1752,7 +1715,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (typeof value === 'boolean' && value === true) {
 
-            console.log(`🔍 Boolean field true: ${key} = ${value}`);
 
             return true;
 
@@ -1760,7 +1722,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔍 No significant data in field: ${key}`);
 
           return false;
 
@@ -1768,7 +1729,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔍 Form has changes: ${hasChanges}`);
 
         return hasChanges;
 
@@ -1827,36 +1787,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
 
-        console.log('🔍 Checking update form changes...');
-        console.log('🔍 selectedRowForUpdate:', selectedRowForUpdate);
-        console.log('🔍 updateFormData:', updateFormData);
 
         // Comparar datos originales con datos modificados
         const hasRealChanges = Object.keys(updateFormData).some(key => {
           const originalValue = selectedRowForUpdate[key];
           const currentValue = updateFormData[key];
           
-          console.log(`🔍 Comparing field ${key}:`);
-          console.log(`  - Original: ${originalValue} (type: ${typeof originalValue})`);
-          console.log(`  - Current: ${currentValue} (type: ${typeof currentValue})`);
           
           // Comparar valores, manejando diferentes tipos de datos
           if (originalValue !== currentValue) {
-            console.log(`🔍 ✅ Change detected in field: ${key}`);
         return true;
           } else {
-            console.log(`🔍 ❌ No change in field: ${key}`);
             return false;
           }
         });
 
-        console.log(`🔍 Update form has real changes: ${hasRealChanges}`);
         return hasRealChanges;
 
       } else {
-        console.log('🔍 No update form data to check:');
-        console.log(`  - selectedRowForUpdate: ${!!selectedRowForUpdate}`);
-        console.log(`  - updateFormData keys: ${Object.keys(updateFormData).length}`);
       }
 
       
@@ -2026,15 +1974,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleTableChange = useCallback((newTable: string) => {
 
-    console.log('🔄 Table change - newTable:', newTable);
 
-    console.log('🔄 Current formData:', formData);
 
-    console.log('🔄 Current selectedTable:', selectedTable);
 
-    console.log('🔄 Current activeSubTab:', activeSubTab);
 
-    console.log('🔄 Current multipleData:', getMultipleData());
 
     
 
@@ -2042,13 +1985,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
 
-    console.log('🔄 hasChanges result for parameter change:', hasChanges);
 
     
 
     if (hasChanges) {
 
-      console.log('🔄 Showing modal for parameter change');
 
       // Mostrar modal de confirmación
 
@@ -2062,7 +2003,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-          console.log('🔄 Confirming parameter change to:', newTable);
 
           // Limpiar datos del formulario antes de cambiar
 
@@ -2092,7 +2032,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-          console.log('🔄 Parameter change cancelled, staying in:', selectedTable);
 
           // No hacer nada, quedarse en el parámetro actual
 
@@ -2102,7 +2041,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     } else {
 
-      console.log('🔄 No changes, proceeding with parameter change');
 
       // No hay cambios, proceder normalmente
 
@@ -2166,7 +2104,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleParameterNavigation = useCallback((newTable: string) => {
 
-    console.log('🔄 SystemParameters: Parameter navigation to:', newTable);
 
     setSelectedTable(newTable);
 
@@ -2217,7 +2154,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleSubTabNavigation = useCallback((newSubTab: 'status' | 'insert' | 'update' | 'massive') => {
 
-    console.log('🔄 SystemParameters: SubTab navigation to:', newSubTab);
 
     setActiveSubTab(newSubTab);
 
@@ -2237,7 +2173,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     // Limpiar datos del formulario cuando se cambia de pestaña
 
-    console.log('🔄 SystemParameters: Clearing form data for sub-tab change');
 
     setFormData(initializeFormData(columns));
 
@@ -2287,7 +2222,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (onSubTabChange) {
 
-      console.log('🔄 SystemParameters: Notifying App.tsx of sub-tab change to:', newSubTab);
 
       onSubTabChange(newSubTab);
 
@@ -2318,7 +2252,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (selectedTable) {
 
-      console.log('🔄 SystemParameters: Loading data for table:', selectedTable);
 
       loadTableDataWrapper();
 
@@ -2364,7 +2297,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (clearFormData) {
 
-      console.log('🧹 SystemParameters: Clearing form data due to confirmed change');
 
       setFormData(initializeFormData(columns));
 
@@ -3124,11 +3056,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Logging específico para debugging
 
-      console.log('🔍 Frontend: Datos a enviar para inserción:', JSON.stringify(filteredData, null, 2));
 
-      console.log('🔍 Frontend: Tabla destino:', selectedTable);
 
-      console.log('🔍 Frontend: Usuario ID:', usuarioid);
 
 
 
@@ -3222,9 +3151,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-      console.log('🔍 Frontend: Datos para creación masiva de sensores:', JSON.stringify(preparedData, null, 2));
 
-      console.log('🔍 Frontend: Total de sensores a crear:', preparedData.length);
 
       
 
@@ -3262,7 +3189,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         );
 
-        console.log('🔍 Frontend: Datos únicos después de eliminar duplicados:', uniqueData.length);
 
         preparedData.length = 0;
 
@@ -3437,7 +3363,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const getUpdatePaginatedData = () => {
     // Usar updateFilteredData para la tabla de Actualizar
     const sourceData = updateFilteredData;
-    console.log('🔍 getUpdatePaginatedData called:', { sourceDataLength: sourceData.length, updateFilteredDataLength: updateFilteredData.length });
 
     // Para metricasensor, sensor y usuarioperfil, agrupar TODOS los datos primero, luego paginar
     if (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') {
@@ -3733,7 +3658,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Verificar si realmente hay cambios sin guardar
     const hasChanges = hasUnsavedChanges();
     
-    console.log('🔍 handleCancelUpdate - hasChanges:', hasChanges);
     
     if (hasChanges) {
       // Solo mostrar modal si hay cambios reales
@@ -3761,7 +3685,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setShowCancelModal(true);
     } else {
       // Si no hay cambios, cancelar directamente sin modal
-      console.log('🔍 No changes detected, canceling directly');
       
       setSelectedRowForUpdate(null);
       setSelectedRowsForUpdate([]);
@@ -3790,13 +3713,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const text = await navigator.clipboard.readText();
 
-      console.log('📋 Datos del portapapeles para inserción:', text);
 
       
 
       const pastedData = JSON.parse(text);
 
-      console.log('📋 Datos parseados para inserción:', pastedData);
 
       
 
@@ -4092,7 +4013,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!paisesData || paisesData.length === 0) {
 
-          console.log('🌍 No hay datos de países disponibles');
 
           return [];
 
@@ -4102,11 +4022,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const filteredPaises = paisesData.filter(pais => pais && pais.paisid && pais.paisid.toString() === paisSeleccionado);
 
-          console.log('🌍 Filtros globales aplicados a países:', { paisSeleccionado, filteredCount: filteredPaises.length });
 
           const paisResult = filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
 
-          console.log('🌍 Opciones de países devueltas:', paisResult);
 
           return paisResult;
 
@@ -4114,7 +4032,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const paisResultAll = paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
 
-        console.log('🌍 Opciones de países (sin filtro):', paisResultAll);
 
         return paisResultAll;
 
@@ -4124,7 +4041,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!empresasData || empresasData.length === 0) {
 
-          console.log('🏢 No hay datos de empresas disponibles');
 
           return [];
 
@@ -4138,7 +4054,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredEmpresas = empresasData.filter(empresa => empresa && empresa.empresaid && empresa.empresaid.toString() === empresaSeleccionada);
 
-          console.log('🏢 Filtros globales aplicados a empresas (empresa específica):', { empresaSeleccionada, filteredCount: filteredEmpresas.length });
 
         } else if (paisSeleccionado) {
 
@@ -4146,13 +4061,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredEmpresas = empresasData.filter(empresa => empresa && empresa.paisid && empresa.paisid.toString() === paisSeleccionado);
 
-          console.log('🏢 Filtros globales aplicados a empresas (por país):', { paisSeleccionado, filteredCount: filteredEmpresas.length });
 
         }
 
         const empresaResult = filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
 
-        console.log('🏢 Opciones de empresas devueltas:', empresaResult);
 
         return empresaResult;
 
@@ -4162,7 +4075,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!fundosData || fundosData.length === 0) {
 
-          console.log('🏭 No hay datos de fundos disponibles');
 
           return [];
 
@@ -4176,7 +4088,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredFundos = fundosData.filter(fundo => fundo && fundo.fundoid && fundo.fundoid.toString() === fundoSeleccionado);
 
-          console.log('🏭 Filtros globales aplicados a fundos (fundo específico):', { fundoSeleccionado, filteredCount: filteredFundos.length });
 
         } else if (empresaSeleccionada) {
 
@@ -4184,13 +4095,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredFundos = fundosData.filter(fundo => fundo && fundo.empresaid && fundo.empresaid.toString() === empresaSeleccionada);
 
-          console.log('🏭 Filtros globales aplicados a fundos (por empresa):', { empresaSeleccionada, filteredCount: filteredFundos.length });
 
         }
 
         const fundoResult = filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
 
-        console.log('🏭 Opciones de fundos devueltas:', fundoResult);
 
         return fundoResult;
 
@@ -4200,7 +4109,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!ubicacionesData || ubicacionesData.length === 0) {
 
-          console.log('📍 No hay datos de ubicaciones disponibles');
 
           return [];
 
@@ -4212,13 +4120,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredUbicaciones = ubicacionesData.filter(ubicacion => ubicacion && ubicacion.fundoid && ubicacion.fundoid.toString() === fundoSeleccionado);
 
-          console.log('📍 Filtros globales aplicados a ubicaciones:', { fundoSeleccionado, filteredCount: filteredUbicaciones.length });
 
         }
 
         const ubicacionResult = filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
 
-        console.log('📍 Opciones de ubicaciones devueltas:', ubicacionResult);
 
         return ubicacionResult;
 
@@ -4230,7 +4136,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!entidadesData || entidadesData.length === 0) {
 
-          console.log('🏛️ No hay datos de entidades disponibles');
 
           return [];
 
@@ -4280,7 +4185,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const entidadResult = entidadesFiltradas.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
 
-          console.log('🏛️ Opciones de entidades filtradas por nodo:', { nodoId, entidadesFiltradas: entidadResult.length, entidadResult });
 
           return entidadResult;
 
@@ -4292,7 +4196,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const entidadResult = entidadesData.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
 
-        console.log('🏛️ Opciones de entidades devueltas (sin filtro):', entidadResult);
 
         return entidadResult;
 
@@ -4302,7 +4205,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!nodosData || nodosData.length === 0) {
 
-          console.log('🔗 No hay datos de nodos disponibles');
 
           return [];
 
@@ -4657,15 +4559,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
 
-          console.log(`🔗 Saltando filtros de fundo para ${selectedTable} masivo - mostrando todos los nodos activos`);
 
           filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
 
-          console.log('🔗 Total de nodos activos disponibles:', filteredNodos.length);
 
-          console.log('🔗 Primeros 10 nodos activos:', filteredNodos.slice(0, 10).map(n => ({ id: n.nodoid, nombre: n.nodo })));
 
-          console.log('🔗 Últimos 10 nodos activos:', filteredNodos.slice(-10).map(n => ({ id: n.nodoid, nombre: n.nodo })));
 
         }
 
@@ -4709,19 +4607,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log('🔗 Nodos filtrados para sensor (sin sensores asignados):', finalFilteredNodos.length);
 
-          console.log('🔗 Nodos con sensores:', Array.from(nodosConSensores));
 
-          console.log('🔗 Nodos disponibles para sensor:', finalFilteredNodos.map(n => n.nodo));
 
-          console.log('🔗 Buscando nodos específicos:');
 
-          console.log('🔗 - rls 996655:', finalFilteredNodos.find(n => n.nodo === 'rls 996655'));
 
-          console.log('🔗 - rls 996677:', finalFilteredNodos.find(n => n.nodo === 'rls 996677'));
 
-          console.log('🔗 - rls 998877:', finalFilteredNodos.find(n => n.nodo === 'rls 998877'));
 
         }
 
@@ -4825,11 +4716,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log('🔗 Nodos filtrados para metricasensor (con sensores pero sin métricas sensor):', finalFilteredNodos.length);
 
-          console.log('🔗 Nodos con métricas sensor:', Array.from(nodosConMetricasSensor));
 
-          console.log('🔗 Nodos disponibles para metricasensor:', finalFilteredNodos.map(n => n.nodo));
 
         }
 
@@ -4851,9 +4739,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log('🔍 localizacionesData disponible:', localizacionesData?.length || 0);
 
-        console.log('🔍 Primeras 3 localizaciones:', localizacionesData?.slice(0, 3));
 
         
 
@@ -4863,7 +4749,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const localizacion = localizacionesData?.find(loc => loc.nodoid === nodo.nodoid);
 
-          console.log(`🔍 Nodo ${nodo.nodoid}: localizacion encontrada:`, localizacion);
 
           return { 
 
@@ -4899,7 +4784,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        console.log('🔗 Opciones de nodos devueltas (ordenadas por fecha):', nodoResult);
 
         return nodoResult;
 
@@ -4907,7 +4791,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!tiposData || tiposData.length === 0) {
 
-          console.log('🏷️ No hay datos de tipos disponibles');
 
           return [];
 
@@ -5066,7 +4949,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const tipoResult = filteredTipos.map(tipo => ({ value: tipo.tipoid, label: tipo.tipo }));
 
-        console.log('🏷️ Opciones de tipos devueltas:', tipoResult);
 
         return tipoResult;
 
@@ -5074,7 +4956,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!metricasData || metricasData.length === 0) {
 
-          console.log('📈 No hay datos de métricas disponibles');
 
           return [];
 
@@ -5084,7 +4965,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         if (filterParams?.nodoids) {
           const nodoidsString = filterParams.nodoids;
           const nodoids = nodoidsString.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-          console.log('📈 Filtrando métricas por nodos:', nodoids);
           
           // Obtener métricas que existen en metricasensor para los nodos especificados
           const metricasEnMetricasensor = metricasensorData?.filter(ms => 
@@ -5092,7 +4972,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           ) || [];
           
           const metricaIdsUnicos = Array.from(new Set(metricasEnMetricasensor.map(ms => ms.metricaid)));
-          console.log('📈 Métricas encontradas en metricasensor:', metricaIdsUnicos);
           
           const metricaResult = metricasData
             .filter(metrica => metricaIdsUnicos.includes(metrica.metricaid))
@@ -5102,7 +4981,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               unidad: metrica.unidad 
             }));
 
-          console.log('📈 Opciones de métricas filtradas devueltas:', metricaResult);
           return metricaResult;
         }
 
@@ -5112,7 +4990,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           unidad: metrica.unidad 
         }));
 
-        console.log('📈 Opciones de métricas devueltas:', metricaResult);
 
         return metricaResult;
 
@@ -5124,7 +5001,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!criticidadesData || criticidadesData.length === 0) {
 
-          console.log('🚨 No hay datos de criticidades disponibles');
 
           return [];
 
@@ -5132,7 +5008,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const criticidadResult = criticidadesData.map(criticidad => ({ value: criticidad.criticidadid, label: criticidad.criticidad }));
 
-        console.log('🚨 Opciones de criticidades devueltas:', criticidadResult);
 
         return criticidadResult;
 
@@ -5140,7 +5015,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!perfilesData || perfilesData.length === 0) {
 
-          console.log('👥 No hay datos de perfiles disponibles');
 
           return [];
 
@@ -5148,7 +5022,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const perfilResult = perfilesData.map(perfil => ({ value: perfil.perfilid, label: perfil.perfil }));
 
-        console.log('👥 Opciones de perfiles devueltas:', perfilResult);
 
         return perfilResult;
 
@@ -5156,7 +5029,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!umbralesData || umbralesData.length === 0) {
 
-          console.log('⚠️ No hay datos de umbrales disponibles');
 
           return [];
 
@@ -5164,7 +5036,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const umbralResult = umbralesData.map(umbral => ({ value: umbral.umbralid, label: umbral.umbral }));
 
-        console.log('⚠️ Opciones de umbrales devueltas:', umbralResult);
 
         return umbralResult;
 
@@ -5172,7 +5043,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!userData || userData.length === 0) {
 
-          console.log('👤 No hay datos de usuarios disponibles');
 
           return [];
 
@@ -5186,7 +5056,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }));
 
-        console.log('👤 Opciones de usuarios devueltas:', usuarioResult);
 
         return usuarioResult;
 
@@ -5194,7 +5063,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!mediosData || mediosData.length === 0) {
 
-          console.log('📧 No hay datos de medios disponibles');
 
           return [];
 
@@ -5202,7 +5070,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const medioResult = mediosData.map(medio => ({ value: medio.medioid, label: medio.nombre }));
 
-        console.log('📧 Opciones de medios devueltas:', medioResult);
 
         return medioResult;
 
@@ -5211,7 +5078,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!userData || userData.length === 0) {
 
-          console.log('✍️ No hay datos de usuarios disponibles');
 
           return [];
 
@@ -5225,7 +5091,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }));
 
-        console.log('✍️ Opciones de "modificado por" devueltas:', modifiedByResult);
 
         return modifiedByResult;
 
@@ -5375,7 +5240,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔧 Actualizando entradas del formulario avanzado:', updatedEntries.length);
 
       
 
@@ -5432,9 +5296,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔄 Actualizando metricasensor ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
 
-        console.log(`📊 Datos a actualizar:`, updateData);
 
         
 
@@ -5452,7 +5314,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
 
           
 
@@ -5465,7 +5326,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-            console.log(`✅ Actualización ${i + 1} exitosa`);
 
           } else {
 
@@ -5563,8 +5423,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   const handleAdvancedSensorUpdate = async (updatedEntries: any[]) => {
 
-    console.log('🔍 Debug - handleAdvancedSensorUpdate llamado con:', updatedEntries.length, 'entradas');
-    console.log('🔍 Debug - Entradas recibidas:', updatedEntries);
 
     try {
 
@@ -5572,7 +5430,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔧 Actualizando entradas del formulario avanzado de sensor:', updatedEntries.length);
 
       
 
@@ -5627,9 +5484,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔄 Actualizando sensor ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
 
-        console.log(`📊 Datos a actualizar:`, updateData);
 
         
 
@@ -5647,7 +5502,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
 
           
 
@@ -5660,7 +5514,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-            console.log(`✅ Actualización ${i + 1} exitosa`);
 
           } else {
 
@@ -5764,7 +5617,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔧 Actualizando entradas del formulario avanzado usuarioperfil:', updatedEntries.length);
 
       
 
@@ -5819,9 +5671,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔄 Actualizando usuarioperfil ${i + 1}/${updatedEntries.length} con clave:`, compositeKey);
 
-        console.log(`📊 Datos a actualizar:`, updateData);
 
         
 
@@ -5835,7 +5685,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (!row.usercreatedid) {
 
-            console.log(`🔄 Insertando nueva entrada usuarioperfil ${i + 1}/${updatedEntries.length}`);
 
             result = await JoySenseService.insertTableRow(selectedTable, {
 
@@ -5873,7 +5722,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔍 Resultado de actualización ${i + 1}:`, result);
 
           
 
@@ -5886,7 +5734,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-            console.log(`✅ Actualización ${i + 1} exitosa`);
 
           } else {
 
@@ -6068,7 +5915,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          console.log('🔧 Actualizando entradas agrupadas de metricasensor:', rowsToUpdate.length);
 
         } else if (selectedTable === 'usuarioperfil') {
 
@@ -6080,13 +5926,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          console.log('🔧 Actualizando entradas agrupadas de usuarioperfil:', rowsToUpdate.length);
 
         } else {
 
           rowsToUpdate = selectedRowsForManualUpdate;
 
-          console.log('🔧 Actualizando entradas seleccionadas manualmente:', rowsToUpdate.length);
 
         }
 
@@ -6096,7 +5940,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         rowsToUpdate = selectedRowsForUpdate;
 
-        console.log('🔧 Actualizando entradas seleccionadas automáticamente:', rowsToUpdate.length);
 
       } else {
 
@@ -6104,13 +5947,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         rowsToUpdate = [updateFormData];
 
-        console.log('🔧 Actualizando entrada individual');
 
       }
 
 
 
-      console.log('📊 Total de entradas a actualizar:', rowsToUpdate.length);
 
 
 
@@ -6170,15 +6011,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`🔄 Actualizando ${selectedTable} ${i + 1}/${rowsToUpdate.length} con clave:`, compositeKey);
 
-          console.log(`📊 Datos a actualizar (original):`, updateFormData);
 
-          console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
 
-          console.log(`📊 Fila original:`, row);
 
-          console.log(`🔍 Verificando clave compuesta - nodoid: ${row.nodoid}, tipoid: ${row.tipoid}`);
 
           
 
@@ -6194,7 +6030,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             );
 
-            console.log(`✅ Actualización ${i + 1}/${rowsToUpdate.length} completada:`, result);
 
             successCount++;
 
@@ -6238,9 +6073,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`📊 Resumen: ${successCount} exitosas, ${errorCount} fallidas`);
 
-        console.log('✅ Todas las actualizaciones procesadas');
 
         
 
@@ -6298,11 +6131,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const rowId = getRowId(updateFormData, selectedTable);
 
-        console.log('🔍 Debug - updateFormData:', updateFormData);
 
-        console.log('🔍 Debug - selectedTable:', selectedTable);
 
-        console.log('🔍 Debug - rowId calculado:', rowId);
 
         
 
@@ -6416,9 +6246,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-          console.log(`📊 Datos a actualizar (original):`, updateFormData);
 
-          console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
 
           
 
@@ -6462,18 +6290,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`📊 Datos a actualizar (original):`, updateFormData);
 
-          console.log(`📊 Datos filtrados para envío:`, filteredUpdateData);
           
           // Debug específico para metrica
           if (selectedTable === 'metrica') {
-            console.log('🔍 Debug Metrica - updateFormData:', updateFormData);
-            console.log('🔍 Debug Metrica - filteredUpdateData:', filteredUpdateData);
-            console.log('🔍 Debug Metrica - unidad value:', updateFormData.unidad);
-            console.log('🔍 Debug Metrica - unidad type:', typeof updateFormData.unidad);
-            console.log('🔍 Debug Metrica - unidad trimmed:', updateFormData.unidad?.trim());
-            console.log('🔍 Debug Metrica - isOptionalField result:', isOptionalField('metrica', 'unidad'));
           }
 
           // Validar datos antes de actualizar
@@ -6509,7 +6329,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        console.log('✅ Actualización individual completada:', result);
 
         
 
@@ -6605,9 +6424,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (selectedTable === 'fundo') {
 
-      console.log('🔍 Fundo columns available:', sourceColumns?.map(col => col.columnName));
 
-      console.log('🔍 Fundo fundoabrev column:', sourceColumns?.find(col => col.columnName === 'fundoabrev'));
 
     }
 
@@ -6685,7 +6502,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const isIncluded = ['paisid', 'empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
-        console.log('🔍 Fundo column check:', { columnName: col.columnName, isIncluded });
 
         return isIncluded;
 
@@ -7039,9 +6855,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (selectedTable === 'fundo') {
 
-      console.log('🔍 Fundo otherColumns:', otherColumns.map(col => col.columnName));
 
-      console.log('🔍 Fundo fundoabrev in otherColumns:', otherColumns.find(col => col.columnName === 'fundoabrev'));
 
     }
 
@@ -7325,7 +7139,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (selectedTable === 'usuarioperfil') {
 
-      console.log('🔍 Debug - getVisibleColumns result for usuarioperfil:', reorderedColumns.map(col => col.columnName));
 
     }
 
@@ -7353,7 +7166,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   if (selectedTable === 'usuarioperfil') {
 
-    console.log('🔍 Debug - updateVisibleColumns for usuarioperfil:', updateVisibleColumns.map(col => col.columnName));
 
   }
 
@@ -7634,9 +7446,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log(`🔍 Sensores existentes para nodo ${nodoid}:`, existingSensors);
 
-      console.log(`🔍 Tipos ya utilizados:`, existingTipos);
 
       
 
@@ -7646,7 +7456,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       if (specificTipos && specificTipos.length > 0) {
 
-        console.log(`🔍 Usando tipos específicos copiados como predeterminados:`, specificTipos);
 
         
 
@@ -7660,7 +7469,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (copiedTipos.length !== specificTipos.length) {
 
-          console.log(`⚠️ Algunos tipos copiados no están disponibles. Usando tipos disponibles para el nuevo nodo.`);
 
           
 
@@ -7700,7 +7508,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔍 Tipos disponibles para nuevo sensor:`, availableTipos);
 
         
 
@@ -7728,7 +7535,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`🔍 Tipos seleccionados para crear:`, selectedTipos.map(t => ({ tipoid: t.tipoid, tipo: t.tipo })));
 
         
 
@@ -7812,9 +7618,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          
 
-         console.log(`🔍 Respuesta de tabla sensor:`, sensorTableDataResponse);
 
-         console.log(`🔍 Datos procesados de tabla sensor:`, sensorTableData);
 
          
 
@@ -7824,15 +7628,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          
 
-         console.log(`🔍 Sensores existentes para nodo ${nodoid}:`, existingSensorsForNode);
 
-         console.log(`🔍 Tipos disponibles para métricas en nodo ${nodoid}:`, availableTiposForNode);
 
          
 
          if (availableTiposForNode.length === 0) {
 
-           console.log(`⚠️ No hay sensores para el nodo ${nodoid}`);
 
            continue;
 
@@ -7844,13 +7645,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          for (const metricaid of metricas) {
 
-           console.log(`🔍 Procesando métrica ${metricaid} para nodo ${nodoid}`);
 
            
 
            for (const tipoid of availableTiposForNode) {
 
-             console.log(`🔍 Creando combinación (${nodoid}, ${metricaid}, ${tipoid})`);
 
              
 
@@ -7862,7 +7661,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
              
 
-             console.log(`✅ Creando nueva métrica sensor: ${metricaInfo?.metrica || metricaid} para ${nodoInfo?.nodo || nodoid} (${tipoInfo?.tipo || tipoid})`);
 
              
 
@@ -7939,7 +7737,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Verificar que hay al menos un sensor sin toDelete para insertar
     const sensorsToInsertCount = multipleSensors.filter(sensor => !sensor.toDelete).length;
     if (sensorsToInsertCount === 0) {
-      console.log('⚠️ No hay sensores válidos para insertar (todos están marcados para eliminar)');
       return;
     }
 
@@ -7981,16 +7778,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Logging para debugging
 
-      console.log('🔍 Frontend: Total sensores en multipleSensors:', multipleSensors.length);
-      console.log('🔍 Frontend: Sensores con toDelete:', multipleSensors.filter(s => s.toDelete).length);
-      console.log('🔍 Frontend: Sensores a insertar (sin toDelete):', sensorsToInsert.length);
-      console.log('🔍 Frontend: Datos a enviar para inserción de sensores:', JSON.stringify(sensorsToInsert, null, 2));
 
 
 
              // Insertar sensores simultáneamente (ahora que los datos están limpios)
 
-       console.log(`🔄 Insertando ${sensorsToInsert.length} sensores simultáneamente...`);
 
        const insertPromises = sensorsToInsert.map((sensor, index) => 
 
@@ -7998,7 +7790,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
            .then(result => {
 
-             console.log(`✅ Sensor ${index + 1} insertado exitosamente:`, sensor);
 
              return result;
 
@@ -8116,29 +7907,22 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔍 Frontend: Datos para creación masiva de umbrales:', JSON.stringify(preparedData, null, 2));
 
-      console.log('🔍 Frontend: Total de umbrales a crear:', preparedData.length);
 
       
 
       // Crear umbrales para cada combinación de nodo + tipo + métrica
-      console.log(`🔧 Creando umbrales masivos...`);
       
       for (const umbralData of preparedData) {
-        console.log(`➕ Creando umbral: nodo ${umbralData.nodoid}, tipo ${umbralData.tipoid}, métrica ${umbralData.metricaid}`);
         
         try {
           // Crear nuevo umbral
           await JoySenseService.insertTableRow('umbral', umbralData);
-          console.log(`✅ Umbral creado exitosamente`);
         } catch (error: any) {
-          console.log(`❌ Error al crear umbral:`, error);
           // Si falla por duplicado, intentar actualizar
           if (error.message?.includes('duplicate key') || 
               error.message?.includes('already exists') ||
               error.response?.status === 500) {
-            console.log(`🔄 Intentando actualizar umbral existente...`);
             try {
               // Buscar umbral existente
               const umbralExistente = umbralesData?.find(umbral => 
@@ -8156,12 +7940,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   usermodifiedid: umbralData.usermodifiedid,
                   datemodified: umbralData.datemodified
                 });
-                console.log(`✅ Umbral actualizado exitosamente`);
               } else {
-                console.log(`❌ No se encontró umbral existente para actualizar`);
               }
             } catch (updateError: any) {
-              console.log(`❌ Error al actualizar umbral:`, updateError);
             }
           }
         }
@@ -8249,9 +8030,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔍 Frontend: Datos para creación masiva de umbrales:', JSON.stringify(preparedData, null, 2));
 
-      console.log('🔍 Frontend: Total de umbrales a crear:', preparedData.length);
 
       
 
@@ -8318,22 +8097,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       
 
       // Crear umbrales para cada combinación de nodo + tipo + métrica
-      console.log(`🔧 Creando umbrales masivos...`);
       
       for (const umbralData of preparedData) {
-        console.log(`➕ Creando umbral: nodo ${umbralData.nodoid}, tipo ${umbralData.tipoid}, métrica ${umbralData.metricaid}`);
         
         try {
           // Crear nuevo umbral
           await JoySenseService.insertTableRow('umbral', umbralData);
-          console.log(`✅ Umbral creado exitosamente`);
         } catch (error: any) {
-          console.log(`❌ Error al crear umbral:`, error);
           // Si falla por duplicado, intentar actualizar
           if (error.message?.includes('duplicate key') || 
               error.message?.includes('already exists') ||
               error.response?.status === 500) {
-            console.log(`🔄 Intentando actualizar umbral existente...`);
             try {
               // Buscar umbral existente
               const umbralExistente = umbralesData?.find(umbral => 
@@ -8351,12 +8125,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   usermodifiedid: umbralData.usermodifiedid,
                   datemodified: umbralData.datemodified
                 });
-                console.log(`✅ Umbral actualizado exitosamente`);
               } else {
-                console.log(`❌ No se encontró umbral existente para actualizar`);
               }
             } catch (updateError: any) {
-              console.log(`❌ Error al actualizar umbral:`, updateError);
             }
           }
         }
@@ -8368,7 +8139,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       for (const nodoid of nodosUnicos) {
 
-        console.log(`🔄 Procesando nodo ${nodoid}...`);
 
         
 
@@ -8382,7 +8152,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`📋 Umbrales existentes para nodo ${nodoid}:`, umbralesExistentes.length);
 
         
 
@@ -8390,7 +8159,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const datosDelNodo = preparedData.filter(item => item.nodoid === nodoid);
 
-        console.log(`📝 Datos a aplicar para nodo ${nodoid}:`, datosDelNodo.length);
 
         
 
@@ -8404,15 +8172,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         
 
-        console.log(`✅ Combinaciones a activar para nodo ${nodoid}:`, Array.from(combinacionesAActivar));
 
         
 
         // PRIMERO: Crear/actualizar entradas en sensor usando UPSERT
 
-        console.log(`🔧 Creando/actualizando entradas en sensor para nodo ${nodoid}...`);
 
-        console.log(`🔍 sensorsData disponible:`, sensorsData?.length || 0, 'registros');
 
         const tiposUnicos = Array.from(new Set(datosDelNodo.map(dato => dato.tipoid)));
 
@@ -8428,7 +8193,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          console.log(`🔍 Buscando sensor: nodo ${nodoid}, tipo ${tipoid}, encontrado:`, !!sensorExistente);
 
           
 
@@ -8454,7 +8218,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (sensorExistente) {
 
-            console.log(`🔄 Actualizando sensor existente: nodo ${nodoid}, tipo ${tipoid}`);
 
             // Actualizar sensor existente usando endpoint con clave compuesta
 
@@ -8472,11 +8235,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
-            console.log(`✅ Sensor actualizado: nodo ${nodoid}, tipo ${tipoid}`);
 
           } else {
 
-            console.log(`➕ Intentando crear nuevo sensor: nodo ${nodoid}, tipo ${tipoid}`);
 
             try {
 
@@ -8484,15 +8245,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               await JoySenseService.insertTableRow('sensor', sensorData);
 
-              console.log(`✅ Sensor creado: nodo ${nodoid}, tipo ${tipoid}`);
 
             } catch (error: any) {
 
-              console.log(`❌ Error al crear sensor:`, error);
 
-              console.log(`❌ Error message:`, error.message);
 
-              console.log(`❌ Error response:`, error.response);
 
               
 
@@ -8510,7 +8267,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
 
-                console.log(`🔄 Sensor ya existe o error 500, intentando actualizar: nodo ${nodoid}, tipo ${tipoid}`);
 
                 try {
 
@@ -8524,15 +8280,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   });
 
-                  console.log(`✅ Sensor actualizado: nodo ${nodoid}, tipo ${tipoid}`);
 
                 } catch (updateError: any) {
 
-                  console.log(`❌ Error al actualizar sensor:`, updateError);
 
                   // Si también falla la actualización, asumir que el sensor ya existe y está activo
 
-                  console.log(`✅ Asumiendo que sensor ya existe y está activo: nodo ${nodoid}, tipo ${tipoid}`);
 
                 }
 
@@ -8552,7 +8305,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         // SEGUNDO: Crear/actualizar entradas en metricasensor usando UPSERT
 
-        console.log(`🔧 Creando/actualizando entradas en metricasensor para nodo ${nodoid}...`);
 
         for (const dato of datosDelNodo) {
 
@@ -8594,7 +8346,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (metricaSensorExistente) {
 
-            console.log(`🔄 Actualizando metricasensor existente: ${combinacion} para nodo ${nodoid}`);
 
             try {
 
@@ -8614,21 +8365,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               });
 
-              console.log(`✅ Metricasensor actualizado: ${combinacion}`);
 
             } catch (updateError: any) {
 
-              console.log(`❌ Error al actualizar metricasensor existente:`, updateError);
 
               // Si falla la actualización, asumir que ya está activo
 
-              console.log(`✅ Asumiendo que metricasensor ya está activo: ${combinacion}`);
 
             }
 
           } else {
 
-            console.log(`➕ Intentando crear nuevo metricasensor: ${combinacion} para nodo ${nodoid}`);
 
             try {
 
@@ -8636,15 +8383,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
 
-              console.log(`✅ Metricasensor creado: ${combinacion}`);
 
             } catch (error: any) {
 
-              console.log(`❌ Error al crear metricasensor:`, error);
 
-              console.log(`❌ Error message:`, error.message);
 
-              console.log(`❌ Error response:`, error.response);
 
               
 
@@ -8662,7 +8405,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
 
-                console.log(`🔄 Metricasensor ya existe o error 500, intentando actualizar: ${combinacion} para nodo ${nodoid}`);
 
                 try {
 
@@ -8676,15 +8418,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   });
 
-                  console.log(`✅ Metricasensor actualizado: ${combinacion}`);
 
                 } catch (updateError: any) {
 
-                  console.log(`❌ Error al actualizar metricasensor:`, updateError);
 
                   // Si también falla la actualización, asumir que el metricasensor ya existe y está activo
 
-                  console.log(`✅ Asumiendo que metricasensor ya existe y está activo: ${combinacion}`);
 
                 }
 
@@ -8712,7 +8451,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (!combinacionesAActivar.has(combinacion)) {
 
-            console.log(`❌ Inactivando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid})`);
 
             
 
@@ -8772,7 +8510,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               // Mantener valores originales de la BD (minimo, maximo, criticidadid)
 
-              console.log(`✅ Manteniendo valores originales de BD: ${combinacion} (umbralid: ${umbralExistente.umbralid}) - Valores críticos idénticos`);
 
               
 
@@ -8794,7 +8531,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               // Actualizar umbral existente con todos los valores nuevos
 
-              console.log(`🔄 Actualizando umbral existente: ${combinacion} (umbralid: ${umbralExistente.umbralid}) - Valores críticos diferentes`);
 
               
 
@@ -8824,7 +8560,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             // Crear nuevo umbral
 
-            console.log(`➕ Creando nuevo umbral: ${combinacion}`);
 
             
 
@@ -8919,9 +8654,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       
 
-      console.log('🔍 Frontend: Datos para crear métricas sensor:', JSON.stringify(preparedData, null, 2));
 
-      console.log('🔍 Frontend: Total de entradas a crear:', preparedData.length);
 
       
 
@@ -8963,7 +8696,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         );
 
-        console.log('🔍 Frontend: Datos únicos después de eliminar duplicados:', uniqueData.length);
 
         preparedData.length = 0;
 
@@ -9211,7 +8943,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
              // Insertar métricas simultáneamente (ahora que los datos están limpios)
 
-       console.log(`🔄 Insertando ${metricasToInsert.length} métricas simultáneamente...`);
 
        const insertPromises = metricasToInsert.map((metrica, index) => 
 
@@ -9219,7 +8950,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
            .then(result => {
 
-             console.log(`✅ Métrica ${index + 1} insertada exitosamente:`, metrica);
 
              return result;
 
@@ -9323,7 +9053,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           
 
-          console.log(`✅ Creando nueva combinación usuario perfil: ${usuarioInfo?.nombre || usuarioid} - ${perfilInfo?.perfil || perfilid}`);
 
           
 
@@ -9429,7 +9158,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Insertar usuario perfiles simultáneamente (ahora que los datos están limpios)
 
-      console.log(`🔄 Insertando ${usuarioPerfilesToInsert.length} usuario perfiles simultáneamente...`);
 
       const insertPromises = usuarioPerfilesToInsert.map((usuarioPerfil, index) => 
 
@@ -9437,7 +9165,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           .then(result => {
 
-            console.log(`✅ Usuario perfil ${index + 1} insertado exitosamente:`, usuarioPerfil);
 
             return result;
 
@@ -9563,7 +9290,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         // Limpiar selección anterior y seleccionar solo esta fila
 
-        console.log('🔄 Selección única: limpiando selección anterior y seleccionando nueva fila');
 
         
 
@@ -9573,7 +9299,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate([...row.originalRows]);
 
-          console.log('✅ Agregando todas las filas originales de metricasensor a la selección');
 
       } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
 
@@ -9581,7 +9306,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate([row]);
 
-          console.log('✅ Fila agrupada de usuarioperfil agregada a la selección');
 
         } else if (selectedTable === 'sensor' && row.originalRows && row.originalRows.length > 0) {
 
@@ -9589,7 +9313,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate([row]);
 
-          console.log('✅ Fila agrupada de sensor agregada a la selección');
 
         } else {
 
@@ -9597,7 +9320,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate([row]);
 
-          console.log('✅ Fila agregada a la selección');
 
         }
 
@@ -9607,7 +9329,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         setSelectedRowsForManualUpdate([]);
 
-        console.log('❌ Selección limpiada');
 
       }
 
@@ -9621,11 +9342,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate(prev => [...prev, row]);
 
-          console.log('✅ Fila agregada a la selección múltiple');
 
         } else {
 
-          console.log('⚠️ Fila ya estaba seleccionada');
 
       }
 
@@ -9633,7 +9352,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
 
-        console.log('❌ Fila removida de la selección múltiple');
 
       }
 
@@ -9785,7 +9503,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
 
-      console.log('🔄 External parameter change detected - proceeding directly');
 
       // Cambiar parámetro directamente sin modal
 
@@ -9805,7 +9522,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
 
-      console.log('🔄 External sub-tab change detected - proceeding directly');
 
       // Cambiar pestaña directamente sin modal
 
@@ -11014,7 +10730,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                          <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
                            {(() => {
-                             console.log('🔍 Rendering update table with updateFilteredData:', { length: updateFilteredData.length, data: updateFilteredData });
                              return updateFilteredData.length > 0;
                            })() ? (
 
@@ -11232,7 +10947,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              if (col.columnName === 'perfiles' && selectedTable === 'usuarioperfil') {
 
-                                               console.log('🔍 Debug - Rendering perfiles for row:', { usuarioid: row.usuarioid, perfiles: row.perfiles, columnName: col.columnName });
 
                                                return (
 
@@ -11250,7 +10964,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              if (col.columnName === 'usuario' && selectedTable === 'usuarioperfil') {
 
-                                               console.log('🔍 Debug - Rendering usuario for row:', { usuarioid: row.usuarioid, usuario: row.usuario, columnName: col.columnName });
 
                                                return (
 

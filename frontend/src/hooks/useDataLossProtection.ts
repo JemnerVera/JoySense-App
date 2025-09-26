@@ -60,8 +60,6 @@ export const useDataLossProtection = () => {
   ): boolean => {
     const { formData, selectedTable, activeSubTab, multipleData, onConfirmAction, onCancelAction } = config;
     
-    console.log('🔍 checkParameterChange - config:', { formData, selectedTable, activeSubTab, multipleData });
-    console.log('🔍 checkParameterChange - targetParameter:', targetParameter);
     
     const hasChanges = hasUnsavedChanges({
       formData,
@@ -70,7 +68,6 @@ export const useDataLossProtection = () => {
       multipleData
     });
 
-    console.log('🔍 checkParameterChange - hasChanges:', hasChanges);
 
     if (hasChanges) {
       const getParameterName = (param: string) => {

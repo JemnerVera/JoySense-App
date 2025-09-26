@@ -22,7 +22,6 @@ export const useFilterData = (authToken: string): FilterData => {
         setLoading(true);
         setError(null);
         
-        console.log('🔄 Cargando datos de filtros...');
         
         // Cargar datos en paralelo para mejor rendimiento
         // Usar los métodos específicos que ya existen en el backend

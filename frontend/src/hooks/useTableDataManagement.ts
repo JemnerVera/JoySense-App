@@ -56,7 +56,6 @@ export const useTableDataManagement = () => {
    */
   const loadRelatedTablesData = useCallback(async () => {
     try {
-      console.log('🔄 Cargando datos de tablas relacionadas...');
       const startTime = performance.now();
 
       const [
@@ -146,7 +145,6 @@ export const useTableDataManagement = () => {
       setContactosData(contactos);
 
       const endTime = performance.now();
-      console.log(`✅ Datos de tablas relacionadas cargados en ${(endTime - startTime).toFixed(2)}ms`);
     } catch (error) {
       console.error('Error loading related tables data:', error);
     }
@@ -160,13 +158,11 @@ export const useTableDataManagement = () => {
     
     // Solo cancelar llamada anterior si es para una tabla diferente
     if (abortControllerRef.current && loadingTableRef.current !== selectedTable) {
-      console.log('🛑 loadTableData: Cancelando llamada anterior para tabla diferente:', loadingTableRef.current, '->', selectedTable);
       abortControllerRef.current.abort();
     }
     
     // Prevenir múltiples llamadas simultáneas para la misma tabla
     if (loadingTableRef.current === selectedTable) {
-      console.log('⚠️ loadTableData: Ya se está cargando la tabla', selectedTable);
       return;
     }
     
@@ -178,33 +174,25 @@ export const useTableDataManagement = () => {
     try {
       // Verificar si la llamada fue cancelada antes de continuar
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de cargar datos');
         return;
       }
 
       setLoading(true);
 
-      console.log(`🔄 Cargando datos de la tabla: ${selectedTable}`);
-      console.log('🔍 loadTableData Debug - selectedTable:', selectedTable, 'loadingTableRef.current:', loadingTableRef.current);
 
       const startTime = performance.now();
 
       // Cargar las columnas para la tabla actual
-      console.log(`🔄 Cargando columnas para la tabla: ${selectedTable}`);
-      console.log('🔍 loadTableData Debug - About to call getTableColumns with:', selectedTable);
       
       // Verificar si la llamada fue cancelada antes de hacer la llamada
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de getTableColumns');
         return;
       }
       
       const cols = await JoySenseService.getTableColumns(selectedTable);
-      console.log('🔍 loadTableData Debug - Columns received:', cols?.map(c => c.columnName));
       
       // Verificar si la llamada fue cancelada después de recibir las columnas
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada después de getTableColumns');
         return;
       }
 
@@ -269,20 +257,16 @@ export const useTableDataManagement = () => {
       const formData = initializeFormData ? initializeFormData(cols) : {};
 
       // Cargar datos con paginación para tablas grandes
-      console.log('🔍 loadTableData Debug - About to call getTableData with:', selectedTable);
       
       // Verificar si la llamada fue cancelada antes de cargar datos
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de getTableData');
         return;
       }
       
       const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
-      console.log('🔍 loadTableData Debug - Data received for', selectedTable, ':', dataResponse?.length || 'no data');
       
       // Verificar si la llamada fue cancelada después de recibir los datos
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada después de getTableData');
         return;
       }
 
@@ -297,7 +281,6 @@ export const useTableDataManagement = () => {
 
       // Verificar si la llamada fue cancelada antes de actualizar el estado
       if (abortController.signal.aborted) {
-        console.log('🛑 loadTableData: Llamada cancelada antes de actualizar estado');
         return;
       }
 
@@ -315,7 +298,6 @@ export const useTableDataManagement = () => {
           const sensorResponse = await JoySenseService.getTableData('sensor', 1000);
           const sensorData = Array.isArray(sensorResponse) ? sensorResponse : ((sensorResponse as any)?.data || []);
           setSensorsData(sensorData);
-          console.log(`✅ Datos de sensores cargados para ${selectedTable}: ${sensorData.length} registros`);
         } catch (error) {
           console.error('Error cargando datos de sensores:', error);
           setSensorsData([]);
@@ -325,7 +307,6 @@ export const useTableDataManagement = () => {
       }
 
       const endTime = performance.now();
-      console.log(`✅ Datos de ${selectedTable} cargados en ${(endTime - startTime).toFixed(2)}ms (${data.length} registros)`);
 
       return { formData, sortedData };
 
@@ -335,7 +316,6 @@ export const useTableDataManagement = () => {
         console.error('Error loading table data:', error);
         throw error;
       } else {
-        console.log('🛑 loadTableData: Llamada cancelada, no mostrar error');
       }
     } finally {
       setLoading(false);

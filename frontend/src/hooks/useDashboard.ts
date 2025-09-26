@@ -67,7 +67,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 useDashboard: Cargando datos con filtros:', filters);
       
       const data: DashboardData = await DashboardService.getDashboardData(filters);
       
@@ -92,7 +91,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
         setSelectedTipos(data.tipos.map(t => t.tipoid));
       }
       
-      console.log('✅ useDashboard: Datos cargados exitosamente');
       
     } catch (err) {
       console.error('❌ useDashboard: Error cargando datos:', err);
@@ -116,7 +114,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
   const getFilteredMediciones = useCallback(() => {
     // Ahora siempre habrá nodos seleccionados por defecto, pero verificamos por seguridad
     if (selectedNodos.length === 0) {
-      console.log('🔍 useDashboard: No hay nodos seleccionados, no mostrando mediciones');
       return [];
     }
     
@@ -127,9 +124,7 @@ export function useDashboard(initialFilters: DashboardFilters) {
       tipoIds: selectedTipos.length > 0 ? selectedTipos : undefined
     };
     
-    console.log('🔍 useDashboard: Aplicando filtros:', filters);
     const filtered = DashboardService.filterMediciones(mediciones, filters);
-    console.log('🔍 useDashboard: Mediciones filtradas:', filtered.length);
     
     return filtered;
   }, [mediciones, baseFilters, selectedMetrica, selectedNodos, selectedTipos]);

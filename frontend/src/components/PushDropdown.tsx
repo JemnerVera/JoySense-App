@@ -25,15 +25,12 @@ const OverlayDropdown: React.FC<OverlayDropdownProps> = ({
   buttonClassName = "w-full px-4 py-2 min-w-[120px] max-w-[200px] bg-gradient-to-r from-green-800 to-green-900 hover:from-green-900 hover:to-green-950 text-white rounded-lg font-medium text-sm flex items-center justify-between header-button depth-effect dashboard-filter transition-all duration-300 transform hover:scale-105",
   dropdownClassName = "w-full mt-2 rounded-lg dropdown-menu glass-effect max-h-64 overflow-y-auto"
 }) => {
-  console.log(`🚀 OverlayDropdown ${title} - Componente renderizado`);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log cuando el dropdown se abre/cierra
   useEffect(() => {
-    console.log(`OverlayDropdown ${title}: isOpen = ${isOpen}`);
     if (isOpen) {
-      console.log(`OverlayDropdown ${title}: Overlay should be visible`);
     }
   }, [isOpen, title]);
 

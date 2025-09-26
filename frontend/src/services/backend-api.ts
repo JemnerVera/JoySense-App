@@ -130,13 +130,11 @@ export class JoySenseService {
   static async detectSchema(): Promise<string> {
     // Retornar schema en caché si ya fue detectado
     if (schemaCache) {
-      console.log('📋 Using cached schema:', schemaCache);
       return schemaCache;
     }
 
     // Si ya hay una detección en progreso, esperar a que termine
     if (schemaDetectionPromise) {
-      console.log('📋 Schema detection already in progress, waiting...');
       return schemaDetectionPromise;
     }
 
@@ -153,23 +151,17 @@ export class JoySenseService {
 
   private static async performSchemaDetection(): Promise<string> {
     try {
-      console.log('🔍 Detectando schema disponible...');
-      console.log('🌐 Usando Backend API:', BACKEND_URL);
       
       // Probar schema sense via Backend API
-      console.log('📋 Probando schema "sense" via Backend API...');
       const senseResult = await backendAPI.get('/sense/detect');
 
-      console.log('Schema sense test (Backend):', senseResult);
 
       if (senseResult.available) {
-        console.log('✅ Schema "sense" detected and available via Backend API');
         currentSchema = 'sense';
         schemaCache = 'sense';
         return 'sense';
       }
 
-      console.log('❌ Schema "sense" no disponible');
       console.error('Sense error:', senseResult.error);
       
       currentSchema = 'public';
@@ -191,25 +183,19 @@ export class JoySenseService {
   // Autenticación básica con sense.usuario
   static async authenticateUser(email: string, password: string): Promise<{ user: any | null; error: string | null }> {
     try {
-      console.log('🔐 Authenticating user with sense.usuario:', email);
       
       // Buscar usuario en sense.usuario
       const users = await this.getTableData('usuario');
-      console.log('📋 Available users:', users);
       
       const user = users.find((u: any) => u.email === email);
       
       if (!user) {
-        console.log('❌ User not found in sense.usuario');
         return { user: null, error: 'Usuario no encontrado' };
       }
 
-      console.log('✅ User found:', user);
       
       // Por el momento, aceptar cualquier contraseña
-      console.log('🔓 Accepting any password for development');
       
-      console.log('✅ User authenticated successfully');
       return { 
         user: {
           id: user.usuarioid || user.id,
@@ -581,30 +567,23 @@ export class JoySenseService {
   // Listar todos los schemas disponibles
   static async listSchemas(): Promise<string[]> {
     try {
-      console.log('🔍 Iniciando detección de schemas...');
-      console.log('🌐 Usando Backend API:', BACKEND_URL);
       
       const availableSchemas: string[] = [];
       
       // Probar schema sense via Backend API
       try {
-        console.log('📋 Probando schema "sense"...');
         const senseResult = await backendAPI.get('/sense/detect');
         
         if (senseResult.available) {
-          console.log('✅ Schema "sense" disponible');
           availableSchemas.push('sense');
         } else {
-          console.log('❌ Schema "sense" no disponible');
         }
       } catch (error) {
-        console.log('❌ Error probando schema "sense":', error);
       }
       
       // Siempre incluir public como fallback
       availableSchemas.push('public');
       
-      console.log('📋 Schemas disponibles:', availableSchemas);
       return availableSchemas;
     } catch (error) {
       console.error('❌ Error listando schemas:', error);
@@ -615,7 +594,6 @@ export class JoySenseService {
   // Listar tablas disponibles en un schema
   static async listTables(schema: string): Promise<string[]> {
     try {
-      console.log(`🔍 Listando tablas en schema "${schema}"...`);
       
       if (schema === 'public') {
         return ['sensor_value', 'fundo', 'device', 'tipo_sensor', 'unidad'];
@@ -738,7 +716,6 @@ export class JoySenseService {
     try {
       // Siempre detectar el schema primero
       const detectedSchema = await this.detectSchema();
-      console.log(`📊 Obteniendo información de tablas para schema: ${detectedSchema}`);
       
       if (detectedSchema === 'sense') {
         // Obtener datos básicos para contar

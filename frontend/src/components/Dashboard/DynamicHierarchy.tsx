@@ -89,7 +89,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
           endDate
         });
 
-        console.log('🔍 DynamicHierarchy: Mediciones obtenidas:', Array.isArray(data) ? data.length : 0);
         setMediciones(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('❌ Error cargando mediciones:', err);

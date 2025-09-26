@@ -106,7 +106,6 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       return (
         <DashboardFilters
           onFiltersChange={(filters) => {
-            console.log('🔍 Dashboard filters changed:', filters);
             if (onDashboardFiltersChange) {
               onDashboardFiltersChange(filters);
             }
@@ -121,7 +120,6 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       return (
         <DashboardFilters
           onFiltersChange={(filters) => {
-            console.log('🔍 Reportes Dashboard filters changed:', filters);
             if (onDashboardFiltersChange) {
               onDashboardFiltersChange(filters);
             }

@@ -42,7 +42,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
     tableName: string, 
     formData: Record<string, any>
   ): Promise<{ success: boolean; id?: number; error?: string }> => {
-    console.log(`🔍 useInsertOperations.insertSingle - ${tableName}:`, formData);
     
     setIsInserting(true);
     setInsertErrorState(null);
@@ -68,7 +67,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
       // Realizar inserción
       const response = await backendAPI.post(`/${tableName}`, dataToInsert);
       
-      console.log(`✅ useInsertOperations.insertSingle - ${tableName} inserted:`, response);
       
       setInsertSuccessState(true);
       setLastInsertedId(response.id || response[`${tableName}id`] || null);
@@ -94,7 +92,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
     tableName: string, 
     multipleData: any[]
   ): Promise<{ success: boolean; insertedCount?: number; errors?: string[] }> => {
-    console.log(`🔍 useInsertOperations.insertMultiple - ${tableName}:`, multipleData.length, 'records');
     
     setIsInserting(true);
     setInsertErrorState(null);
@@ -171,7 +168,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
     tableName: string, 
     massiveData: any[]
   ): Promise<{ success: boolean; insertedCount?: number; error?: string }> => {
-    console.log(`🔍 useInsertOperations.insertMassive - ${tableName}:`, massiveData.length, 'records');
     
     setIsInserting(true);
     setInsertErrorState(null);
@@ -188,7 +184,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
       // Realizar inserción masiva
       const response = await backendAPI.post(`/${tableName}/massive`, dataToInsert);
       
-      console.log(`✅ useInsertOperations.insertMassive - ${tableName} inserted:`, response.insertedCount, 'records');
       
       setInsertSuccessState(true);
       setLastInsertedId(response.lastInsertedId || null);
@@ -214,7 +209,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
    * Limpiar estado de inserción
    */
   const clearInsertState = useCallback(() => {
-    console.log('🧹 useInsertOperations.clearInsertState');
     setInsertErrorState(null);
     setInsertSuccessState(false);
     setLastInsertedId(null);
@@ -224,7 +218,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
    * Establecer estado de inserción
    */
   const setInserting = useCallback((inserting: boolean) => {
-    console.log('⏳ useInsertOperations.setInserting:', inserting);
     setIsInserting(inserting);
   }, []);
 
@@ -232,7 +225,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
    * Establecer error de inserción
    */
   const setInsertError = useCallback((error: string | null) => {
-    console.log('❌ useInsertOperations.setInsertError:', error);
     setInsertErrorState(error);
   }, []);
 
@@ -240,7 +232,6 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
    * Establecer éxito de inserción
    */
   const setInsertSuccess = useCallback((success: boolean) => {
-    console.log('✅ useInsertOperations.setInsertSuccess:', success);
     setInsertSuccessState(success);
   }, []);
 

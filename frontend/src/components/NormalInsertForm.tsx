@@ -58,7 +58,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
-    console.log('🔍 getPaisName Debug:', { paisId, paisesData: paisesData?.length });
     const pais = paisesData?.find(p => p.paisid.toString() === paisId);
     return pais ? pais.pais : `País ${paisId}`;
   };
@@ -290,7 +289,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
     } else if (selectedTable === 'ubicacion') {
       return renderUbicacionFields();
     } else if (selectedTable === 'localizacion') {
-      console.log('🔍 Llamando renderLocalizacionFields');
       return renderLocalizacionFields();
     } else if (selectedTable === 'entidad') {
       return renderEntidadFields();

@@ -38,7 +38,6 @@ export const useSystemParametersCRUD = (): SystemParametersCRUDState & SystemPar
     formData: Record<string, any>,
     existingData: any[]
   ): Promise<{ success: boolean; message?: string; error?: string }> => {
-    console.log(`🔍 useSystemParametersCRUD.handleInsert - ${selectedTable}:`, formData);
 
     if (!selectedTable || !user) {
       return { success: false, error: 'Tabla no seleccionada o usuario no autenticado' };
@@ -88,7 +87,6 @@ export const useSystemParametersCRUD = (): SystemParametersCRUDState & SystemPar
     originalData: Record<string, any>,
     existingData: any[]
   ): Promise<{ success: boolean; message?: string; error?: string }> => {
-    console.log(`🔍 useSystemParametersCRUD.handleUpdate - ${selectedTable}:`, formData);
 
     if (!selectedTable || !user) {
       return { success: false, error: 'Tabla no seleccionada o usuario no autenticado' };
@@ -136,7 +134,6 @@ export const useSystemParametersCRUD = (): SystemParametersCRUDState & SystemPar
     selectedTable: string,
     recordId: number
   ): Promise<{ success: boolean; message?: string; error?: string }> => {
-    console.log(`🔍 useSystemParametersCRUD.handleDelete - ${selectedTable}:`, recordId);
 
     if (!selectedTable || !user || !recordId) {
       return { success: false, error: 'Datos insuficientes para eliminar' };
@@ -146,7 +143,6 @@ export const useSystemParametersCRUD = (): SystemParametersCRUDState & SystemPar
       // Realizar eliminación usando el servicio
       // Nota: JoySenseService.deleteRecord no existe, se debe implementar
       // Por ahora retornamos éxito simulado
-      console.log(`🗑️ Eliminando ${selectedTable} con ID: ${recordId}`);
       
       return { 
         success: true, 
@@ -166,7 +162,6 @@ export const useSystemParametersCRUD = (): SystemParametersCRUDState & SystemPar
    * Limpiar estado de operaciones
    */
   const clearOperationState = useCallback(() => {
-    console.log('🧹 useSystemParametersCRUD.clearOperationState');
     // Los hooks individuales manejan su propio estado
   }, []);
 

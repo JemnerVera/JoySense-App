@@ -19,14 +19,12 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
 
     // Para la tabla 'pais', siempre mostrar todos los registros sin filtros
     if (tableName === 'pais') {
-      console.log('🌍 Tabla País: Mostrando todos los registros sin filtros');
       return data;
     }
 
     // Para la tabla 'empresa', filtrar solo por país si está seleccionado
     if (tableName === 'empresa') {
       if (!paisSeleccionado) {
-        console.log('🏢 Tabla Empresa: Sin país seleccionado, mostrando todas las empresas');
         return data;
       }
       
@@ -46,7 +44,6 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
     // Para la tabla 'fundo', filtrar solo por empresa si está seleccionada
     if (tableName === 'fundo') {
       if (!empresaSeleccionada) {
-        console.log('🏭 Tabla Fundo: Sin empresa seleccionada, mostrando todos los fundos');
         return data;
       }
       

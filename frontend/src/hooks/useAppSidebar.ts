@@ -30,10 +30,8 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
   // Efecto para expandir el sidebar auxiliar cuando hay una pestaña activa
   useEffect(() => {
     if (activeTab && hasAuxiliarySidebar(activeTab)) {
-      console.log('🔍 useAppSidebar - Expandir sidebar auxiliar:', { activeTab, hasAuxiliary: hasAuxiliarySidebar(activeTab) });
       setAuxiliarySidebarVisible(true);
     } else if (!activeTab) {
-      console.log('🔍 useAppSidebar - Colapsar sidebar auxiliar:', { activeTab, hasAuxiliary: hasAuxiliarySidebar(activeTab) });
       setAuxiliarySidebarVisible(false);
     }
     // NO forzar colapso si hay pestaña activa - dejar que el hover lo maneje

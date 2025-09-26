@@ -41,7 +41,6 @@ export const useSearchOperations = (
     searchTerm: string, 
     searchField: string
   ): any[] => {
-    console.log(`🔍 useSearchOperations.performSearch - term: "${searchTerm}", field: "${searchField}"`);
     
     if (!searchTerm.trim()) {
       return data;
@@ -77,7 +76,6 @@ export const useSearchOperations = (
    * Establecer término de búsqueda
    */
   const setSearchTerm = useCallback((term: string) => {
-    console.log('🔍 useSearchOperations.setSearchTerm:', term);
     setSearchTermState(term);
   }, []);
 
@@ -85,7 +83,6 @@ export const useSearchOperations = (
    * Establecer campo de búsqueda
    */
   const setSearchField = useCallback((field: string) => {
-    console.log('🔍 useSearchOperations.setSearchField:', field);
     setSearchFieldState(field);
   }, []);
 
@@ -93,7 +90,6 @@ export const useSearchOperations = (
    * Limpiar búsqueda
    */
   const clearSearch = useCallback(() => {
-    console.log('🧹 useSearchOperations.clearSearch');
     setSearchTermState('');
     setSearchFieldState('');
     setFilteredDataState([]);
@@ -104,7 +100,6 @@ export const useSearchOperations = (
    * Establecer datos filtrados
    */
   const setFilteredData = useCallback((data: any[]) => {
-    console.log('🔍 useSearchOperations.setFilteredData:', data.length, 'records');
     setFilteredDataState(data);
   }, []);
 
@@ -112,7 +107,6 @@ export const useSearchOperations = (
    * Establecer si se ha buscado
    */
   const setHasSearched = useCallback((searched: boolean) => {
-    console.log('🔍 useSearchOperations.setHasSearched:', searched);
     setHasSearchedState(searched);
   }, []);
 
@@ -120,7 +114,6 @@ export const useSearchOperations = (
    * Establecer estado de búsqueda
    */
   const setIsSearching = useCallback((searching: boolean) => {
-    console.log('⏳ useSearchOperations.setIsSearching:', searching);
     setIsSearchingState(searching);
   }, []);
 

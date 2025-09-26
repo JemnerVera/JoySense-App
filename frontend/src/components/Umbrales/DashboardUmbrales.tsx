@@ -50,7 +50,6 @@ const DashboardUmbrales: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Cargando dashboard con datos reales de alertas...');
 
       // Cargar datos reales de alertas y tablas relacionadas
       const [
@@ -148,7 +147,6 @@ const DashboardUmbrales: React.FC = () => {
             };
 
             datosReales.push(datosHistoricos);
-            console.log(`✅ Sensor procesado para dashboard: ${datosHistoricos.nodo_nombre} - ${datosHistoricos.metrica_nombre} - ${datosHistoricos.datos.length} alertas`);
 
           } catch (error) {
             console.error(`❌ Error procesando sensor ${sensorKey} para dashboard:`, error);
@@ -171,7 +169,6 @@ const DashboardUmbrales: React.FC = () => {
         }
       }
 
-      console.log(`📋 Dashboard procesado: ${datosReales.length} sensores con alertas, ${resumenReal.length} criticidades`);
       setDatosHistoricos(datosReales);
       setResumenAlertas(resumenReal);
 

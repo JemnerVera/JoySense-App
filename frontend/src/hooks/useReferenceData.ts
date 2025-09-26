@@ -75,7 +75,6 @@ export const useReferenceData = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Cargando datos de referencia...');
       
       // Cargar todas las tablas de referencia en paralelo
       const [

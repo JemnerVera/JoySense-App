@@ -27,7 +27,6 @@ export const useSearchAndFilter = () => {
    */
   const searchByCriteria = useCallback((criteria: string, filterFn: (dataRow: any) => boolean, data: any[]) => {
     const results = data.filter(filterFn);
-    console.log(`🔍 ${criteria}:`, results.length);
 
     if (results.length > 0) {
       console.log(`📋 Detalles de ${criteria}:`, results.map(e => ({
@@ -112,7 +111,6 @@ export const useSearchAndFilter = () => {
    * Manejar cambio de término de búsqueda
    */
   const handleSearchTermChange = useCallback((term: string, dataToFilter: any[], visibleColumns: any[], userData: any[], originalData: any[], setFilteredData?: (data: any[]) => void, relatedData?: any) => {
-    console.log('🔍 handleSearchTermChange called:', { term, dataToFilterLength: dataToFilter.length, visibleColumnsLength: visibleColumns.length, hasRelatedData: !!relatedData });
     setSearchTerm(term);
 
     if (term.trim()) {
@@ -142,7 +140,6 @@ export const useSearchAndFilter = () => {
 
           const matches = displayValue.toLowerCase().includes(term.toLowerCase());
           if (matches) {
-            console.log('🔍 Match found:', { column: col.columnName, value, displayValue, term });
           }
           return matches;
         });
@@ -219,7 +216,6 @@ export const useSearchAndFilter = () => {
    * Manejar búsqueda de actualización
    */
   const handleUpdateSearch = useCallback((searchTerm: string, updateData: any[], updateVisibleColumns: any[], userData: any[], originalData: any[], setUpdateFilteredData: (data: any[]) => void) => {
-    console.log('🔍 handleUpdateSearch called with:', { searchTerm, updateDataLength: updateData.length, updateVisibleColumnsLength: updateVisibleColumns.length });
     
     setSearchTerm(searchTerm);
 
@@ -249,13 +245,10 @@ export const useSearchAndFilter = () => {
         });
       });
 
-      console.log('🔍 Update search filtered results:', { originalCount: updateData.length, filteredCount: filtered.length });
-      console.log('🔍 Setting updateFilteredData with:', filtered);
       setUpdateFilteredData(filtered);
     } else {
       setHasSearched(false);
       // Restaurar datos originales sin filtro
-      console.log('🔍 Update search cleared, restoring original data:', { originalDataLength: originalData.length });
       setUpdateFilteredData(originalData);
     }
   }, []);

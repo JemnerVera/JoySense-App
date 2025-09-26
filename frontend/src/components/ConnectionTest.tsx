@@ -15,7 +15,6 @@ const ConnectionTest: React.FC = () => {
     setError(null);
     
     try {
-      console.log('🔍 Iniciando diagnóstico completo...');
       
       // 1. Listar schemas disponibles (solo sense)
       const schemas = ['sense'];
@@ -35,7 +34,6 @@ const ConnectionTest: React.FC = () => {
         // 4. Obtener información de tablas
         const info = await JoySenseService.getTableInfo();
         setTableInfo(info);
-        console.log('📊 Información de tablas:', info);
       }
       
     } catch (err) {

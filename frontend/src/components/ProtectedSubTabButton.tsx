@@ -36,11 +36,9 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('🔄 ProtectedSubTabButton clicked - PREVENTING default behavior');
 
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
-      console.log('🔄 Modal already open, ignoring click');
       return;
     }
 
@@ -52,10 +50,8 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData, massiveFormData);
     
-    console.log('🔄 hasChanges result:', hasChanges);
     
     if (hasChanges) {
-      console.log('🔄 Showing modal for sub-tab change - PREVENTING tab change');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar la pestaña
       showModal(
@@ -63,19 +59,16 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
         currentTab,
         targetTab,
         () => {
-          console.log('🔄 Confirming sub-tab change to:', targetTab);
           setIsModalOpen(false);
           // Solo cambiar la pestaña DESPUÉS de confirmar
           onTabChange(targetTab);
         },
         () => {
-          console.log('🔄 Sub-tab change cancelled, staying in:', currentTab);
           setIsModalOpen(false);
           // No hacer nada, quedarse en la pestaña actual
         }
       );
     } else {
-      console.log('🔄 No changes, proceeding with sub-tab change');
       // No hay cambios, proceder normalmente
       onTabChange(targetTab);
     }

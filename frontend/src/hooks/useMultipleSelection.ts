@@ -146,28 +146,24 @@ export const useMultipleSelection = (selectedTable: string, searchByCriteria: an
     // 1. Buscar por timestamp exacto (mismo segundo)
     const exactMatches = findTimestampBySecondsMatches(row, allData);
     if (exactMatches.length > 0) {
-      console.log('✅ Found exact timestamp matches:', exactMatches.length);
       return exactMatches;
     }
 
     // 2. Buscar por timestamp cercano (dentro de 5 segundos)
     const nearMatches = findNearTimestampMatches(row, allData, 5000);
     if (nearMatches.length > 0) {
-      console.log('✅ Found near timestamp matches:', nearMatches.length);
       return nearMatches;
     }
 
     // 3. Buscar por lógica de negocio
     const businessMatches = findBusinessLogicMatches(row, allData);
     if (businessMatches.length > 0) {
-      console.log('✅ Found business logic matches:', businessMatches.length);
       return businessMatches;
     }
 
     // 4. Buscar por criterios de negocio
     const criteriaMatches = findBusinessCriteriaMatches(row, allData);
     if (criteriaMatches.length > 0) {
-      console.log('✅ Found business criteria matches:', criteriaMatches.length);
       return criteriaMatches;
     }
 
@@ -178,12 +174,10 @@ export const useMultipleSelection = (selectedTable: string, searchByCriteria: an
       });
       
       if (searchMatches.length > 0) {
-        console.log('✅ Found search criteria matches:', searchMatches.length);
         return searchMatches;
       }
     }
 
-    console.log('❌ No matches found, returning original row');
     return [row];
   };
 

@@ -30,10 +30,8 @@ export const useChangeInterceptor = () => {
     targetSubTab: string,
     config: ChangeInterceptorConfig
   ): boolean => {
-    console.log('🛡️ Intercepting sub-tab change to:', targetSubTab);
     
     const hasChanges = hasUnsavedChangesRef.current();
-    console.log('🛡️ Has unsaved changes:', hasChanges);
     
     if (hasChanges) {
       setPendingChange({
@@ -55,10 +53,8 @@ export const useChangeInterceptor = () => {
     targetParameter: string,
     config: ChangeInterceptorConfig
   ): boolean => {
-    console.log('🛡️ Intercepting parameter change to:', targetParameter);
     
     const hasChanges = hasUnsavedChangesRef.current();
-    console.log('🛡️ Has unsaved changes:', hasChanges);
     
     if (hasChanges) {
       setPendingChange({
@@ -80,10 +76,8 @@ export const useChangeInterceptor = () => {
     targetTab: string,
     config: ChangeInterceptorConfig
   ): boolean => {
-    console.log('🛡️ Intercepting tab change to:', targetTab);
     
     const hasChanges = hasUnsavedChangesRef.current();
-    console.log('🛡️ Has unsaved changes:', hasChanges);
     
     if (hasChanges) {
       setPendingChange({
@@ -103,7 +97,6 @@ export const useChangeInterceptor = () => {
   // Función para confirmar el cambio pendiente
   const confirmChange = useCallback(() => {
     if (pendingChange) {
-      console.log('🛡️ Confirming change:', pendingChange);
       pendingChange.config.onConfirmAction();
       setPendingChange(null);
       setIsModalOpen(false);
@@ -113,7 +106,6 @@ export const useChangeInterceptor = () => {
   // Función para cancelar el cambio pendiente
   const cancelChange = useCallback(() => {
     if (pendingChange) {
-      console.log('🛡️ Cancelling change:', pendingChange);
       pendingChange.config.onCancelAction();
       setPendingChange(null);
       setIsModalOpen(false);

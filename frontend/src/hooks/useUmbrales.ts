@@ -42,9 +42,7 @@ export const useUmbrales = () => {
       setError(null);
       setMessage(null);
       
-      console.log('🔍 Debug - Iniciando carga de umbrales...');
       const response = await JoySenseService.getTableData('umbral');
-      console.log('🔍 Debug - Respuesta de getTableData:', response);
       
       // Extraer el array de datos de la respuesta
       let data: Umbral[] = [];
@@ -63,12 +61,9 @@ export const useUmbrales = () => {
         }
       }
       
-      console.log('🔍 Debug - Datos extraídos:', data);
-      console.log('🔍 Debug - Cantidad de umbrales:', data.length);
       
       setUmbrales(data);
       setMessage(`Se cargaron ${data.length} umbrales`);
-      console.log('✅ Debug - Umbrales cargados correctamente:', data.length);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);

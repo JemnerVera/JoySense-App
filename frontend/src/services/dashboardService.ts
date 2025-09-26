@@ -47,11 +47,9 @@ export class DashboardService {
     
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      console.log(`🔍 DashboardService: Usando cache para ${key}`);
       return cached.data;
     }
 
-    console.log(`🔍 DashboardService: Obteniendo datos frescos para ${key}`);
     const data = await fetchFunction();
     this.cache.set(key, { data, timestamp: Date.now() });
     return data;
@@ -71,7 +69,6 @@ export class DashboardService {
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
-      console.log('🔍 DashboardService: Obteniendo mediciones con filtros:', params);
       const mediciones = await JoySenseService.getMediciones(params);
       
       if (!Array.isArray(mediciones)) {
@@ -79,7 +76,6 @@ export class DashboardService {
         return [];
       }
 
-      console.log(`✅ DashboardService: ${mediciones.length} mediciones obtenidas`);
       return mediciones;
     });
   }
@@ -87,13 +83,11 @@ export class DashboardService {
   // Obtener métricas disponibles basándose en mediciones reales
   static async getMetricasDisponibles(mediciones: any[]): Promise<any[]> {
     if (mediciones.length === 0) {
-      console.log('🔍 DashboardService: No hay mediciones, obteniendo todas las métricas');
       return await JoySenseService.getMetricas();
     }
 
     // Extraer métricas únicas de las mediciones
     const metricaIds = Array.from(new Set(mediciones.map(m => m.metricaid)));
-    console.log('🔍 DashboardService: Métricas encontradas en mediciones:', metricaIds);
 
     // Obtener todas las métricas y filtrar
     const todasMetricas = await JoySenseService.getMetricas();
@@ -101,7 +95,6 @@ export class DashboardService {
       metricaIds.includes(metrica.metricaid)
     );
 
-    console.log('🔍 DashboardService: Métricas disponibles:', metricasDisponibles.map(m => m.metrica));
     
     // Verificar métricas que no están en las mediciones
     const metricasNoDisponibles = todasMetricas.filter(metrica => 
@@ -119,13 +112,11 @@ export class DashboardService {
   // Obtener nodos disponibles basándose en mediciones reales
   static async getNodosDisponibles(mediciones: any[], ubicacionId?: number): Promise<any[]> {
     if (mediciones.length === 0) {
-      console.log('🔍 DashboardService: No hay mediciones, no hay nodos disponibles');
       return [];
     }
 
     // Extraer nodos únicos de las mediciones
     const nodoIds = Array.from(new Set(mediciones.map(m => m.nodoid)));
-    console.log('🔍 DashboardService: Nodos encontrados en mediciones:', nodoIds);
 
     // Crear objetos de nodos con información básica
     const nodosDisponibles = nodoIds.map(nodoid => ({
@@ -136,20 +127,17 @@ export class DashboardService {
       entidad: 'Arándano' // Esto debería venir de la relación con entidad
     }));
 
-    console.log('🔍 DashboardService: Nodos disponibles:', nodosDisponibles);
     return nodosDisponibles;
   }
 
   // Obtener tipos disponibles basándose en mediciones reales
   static async getTiposDisponibles(mediciones: any[]): Promise<any[]> {
     if (mediciones.length === 0) {
-      console.log('🔍 DashboardService: No hay mediciones, obteniendo todos los tipos');
       return await JoySenseService.getTipos();
     }
 
     // Extraer tipos únicos de las mediciones
     const tipoIds = Array.from(new Set(mediciones.map(m => m.tipoid)));
-    console.log('🔍 DashboardService: Tipos encontrados en mediciones:', tipoIds);
 
     // Obtener todos los tipos y filtrar
     const todosTipos = await JoySenseService.getTipos();
@@ -157,7 +145,6 @@ export class DashboardService {
       tipoIds.includes(tipo.tipoid)
     );
 
-    console.log('🔍 DashboardService: Tipos disponibles:', tiposDisponibles.map(t => t.tipo));
     return tiposDisponibles;
   }
 
@@ -168,19 +155,16 @@ export class DashboardService {
     // Filtrar por métrica
     if (filters.metricaId) {
       filtered = filtered.filter(m => m.metricaid === filters.metricaId);
-      console.log(`🔍 DashboardService: Filtrado por métrica ${filters.metricaId}: ${filtered.length} mediciones`);
     }
 
     // Filtrar por nodos
     if (filters.nodoIds && filters.nodoIds.length > 0) {
       filtered = filtered.filter(m => filters.nodoIds!.includes(m.nodoid));
-      console.log(`🔍 DashboardService: Filtrado por nodos ${filters.nodoIds}: ${filtered.length} mediciones`);
     }
 
     // Filtrar por tipos
     if (filters.tipoIds && filters.tipoIds.length > 0) {
       filtered = filtered.filter(m => filters.tipoIds!.includes(m.tipoid));
-      console.log(`🔍 DashboardService: Filtrado por tipos ${filters.tipoIds}: ${filtered.length} mediciones`);
     }
 
     return filtered;
@@ -188,7 +172,6 @@ export class DashboardService {
 
   // Obtener datos completos del dashboard
   static async getDashboardData(filters: DashboardFilters): Promise<DashboardData> {
-    console.log('🔍 DashboardService: Obteniendo datos completos del dashboard');
     
     // Obtener mediciones base
     const mediciones = await this.getMediciones(filters);
@@ -213,7 +196,6 @@ export class DashboardService {
   // Limpiar cache
   static clearCache() {
     this.cache.clear();
-    console.log('🔍 DashboardService: Cache limpiado');
   }
 
   // Obtener estadísticas de datos

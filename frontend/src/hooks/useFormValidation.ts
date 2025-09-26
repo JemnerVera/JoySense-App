@@ -20,13 +20,10 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
    * Valida datos de inserción para la tabla seleccionada
    */
   const validateInsert = useCallback(async (formData: Record<string, any>): Promise<EnhancedValidationResult> => {
-    console.log('🔍 useFormValidation.validateInsert - selectedTable:', selectedTable);
-    console.log('🔍 useFormValidation.validateInsert - formData:', formData);
     
     try {
       const result = await validateTableData(selectedTable, formData);
       
-      console.log('🔍 useFormValidation.validateInsert - result:', result);
       
       return result;
     } catch (error) {
@@ -51,9 +48,6 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
     formData: Record<string, any>, 
     originalData: Record<string, any>
   ): Promise<EnhancedValidationResult> => {
-    console.log('🔍 useFormValidation.validateUpdate - selectedTable:', selectedTable);
-    console.log('🔍 useFormValidation.validateUpdate - formData:', formData);
-    console.log('🔍 useFormValidation.validateUpdate - originalData:', originalData);
     
     try {
       // Obtener datos existentes para validación de duplicados
@@ -61,7 +55,6 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       const result = await validateTableUpdate(selectedTable, formData, originalData, existingData);
       
-      console.log('🔍 useFormValidation.validateUpdate - result:', result);
       
       return result;
     } catch (error) {
@@ -82,8 +75,6 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
    * Verifica si un registro tiene dependencias antes de inactivar
    */
   const checkDependencies = useCallback(async (recordId: number): Promise<boolean> => {
-    console.log('🔍 useFormValidation.checkDependencies - selectedTable:', selectedTable);
-    console.log('🔍 useFormValidation.checkDependencies - recordId:', recordId);
     
     try {
       // Función auxiliar para verificar dependencias por tabla
@@ -165,7 +156,6 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       const hasDependencies = await checkTableDependencies(selectedTable, recordId);
       
-      console.log('🔍 useFormValidation.checkDependencies - hasDependencies:', hasDependencies);
       
       return hasDependencies;
     } catch (error) {
@@ -178,20 +168,15 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
    * Valida datos de inserción múltiple
    */
   const validateMultipleInsert = useCallback(async (multipleData: any[]): Promise<EnhancedValidationResult[]> => {
-    console.log('🔍 useFormValidation.validateMultipleInsert - selectedTable:', selectedTable);
-    console.log('🔍 useFormValidation.validateMultipleInsert - multipleData length:', multipleData.length);
     
     try {
       const results = await Promise.all(
         multipleData.map(async (data, index) => {
-          console.log(`🔍 useFormValidation.validateMultipleInsert - validating item ${index}:`, data);
           const result = await validateTableData(selectedTable, data);
-          console.log(`🔍 useFormValidation.validateMultipleInsert - result for item ${index}:`, result);
           return result;
         })
       );
       
-      console.log('🔍 useFormValidation.validateMultipleInsert - all results:', results);
       
       return results;
     } catch (error) {
@@ -212,14 +197,11 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
    * Valida datos de inserción masiva
    */
   const validateMassiveInsert = useCallback(async (massiveFormData: Record<string, any>): Promise<EnhancedValidationResult> => {
-    console.log('🔍 useFormValidation.validateMassiveInsert - selectedTable:', selectedTable);
-    console.log('🔍 useFormValidation.validateMassiveInsert - massiveFormData:', massiveFormData);
     
     try {
       // Para inserción masiva, validamos los datos base
       const result = await validateTableData(selectedTable, massiveFormData);
       
-      console.log('🔍 useFormValidation.validateMassiveInsert - result:', result);
       
       return result;
     } catch (error) {

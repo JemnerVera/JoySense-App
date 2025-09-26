@@ -13,7 +13,6 @@ export const authService = {
   // Iniciar sesión usando el backend (modo desarrollo)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      console.log('🔐 Intentando autenticar usuario via backend (modo desarrollo):', email);
       
       // Usar el backend para autenticación
       const backendUrl = (window as any).process?.env?.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
@@ -35,10 +34,8 @@ export const authService = {
         };
       }
 
-      console.log('✅ Usuario autenticado via backend:', email);
       // Guardar el email en localStorage para uso global
       localStorage.setItem('userEmail', email);
-      console.log('🔍 Debug - Email guardado en localStorage:', localStorage.getItem('userEmail'));
       return { 
         user: result.user, 
         error: null 

@@ -57,10 +57,8 @@ const useSensorData = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Cargando datos del sistema...');
 
       // Cargar todos los datos necesarios en paralelo
-      console.log('📡 Iniciando carga de datos en paralelo...');
       const [
         metricasensores,
         umbrales,
@@ -73,39 +71,30 @@ const useSensorData = () => {
         criticidades
       ] = await Promise.all([
         JoySenseService.getTableData('metricasensor', 1000).then(data => {
-          console.log('✅ Metricasensor cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('umbral', 1000).then(data => {
-          console.log('✅ Umbral cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('alerta', 1000).then(data => {
-          console.log('✅ Alerta cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('medicion', 1000).then(data => {
-          console.log('✅ Medicion cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('nodo', 1000).then(data => {
-          console.log('✅ Nodo cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('metrica', 1000).then(data => {
-          console.log('✅ Metrica cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('tipo', 1000).then(data => {
-          console.log('✅ Tipo cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('ubicacion', 1000).then(data => {
-          console.log('✅ Ubicacion cargado:', data?.length || 0, 'registros');
           return data;
         }),
         JoySenseService.getTableData('criticidad', 1000).then(data => {
-          console.log('✅ Criticidad cargado:', data?.length || 0, 'registros');
           return data;
         })
       ]);
@@ -122,7 +111,6 @@ const useSensorData = () => {
         criticidades: Array.isArray(criticidades) ? criticidades : []
       });
 
-      console.log('✅ Datos cargados exitosamente');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
@@ -149,7 +137,6 @@ const processSensorStates = (
 ): EstadoPorCriticidad => {
   const estadosPorCriticidad: EstadoPorCriticidad = {};
 
-  console.log('🔄 Procesando estados de sensores...');
   console.log('📊 Datos recibidos:', {
     alertas: alertas.length,
     umbrales: umbrales.length,
@@ -164,7 +151,6 @@ const processSensorStates = (
 
   // Procesar desde alertas existentes
   if (alertas.length > 0) {
-    console.log(`🚨 Procesando ${alertas.length} alertas existentes...`);
     console.log('📋 Alertas encontradas:', alertas.map(a => ({
       alertaid: a.alertaid,
       umbralid: a.umbralid,
@@ -177,7 +163,6 @@ const processSensorStates = (
         // Buscar el umbral de esta alerta
         const umbral = umbrales.find(u => u.umbralid === alerta.umbralid);
         if (!umbral) {
-          console.log(`⚠️ No se encontró umbral para alerta ${alerta.alertaid}`);
           continue;
         }
 
@@ -189,7 +174,6 @@ const processSensorStates = (
         );
         
         if (!metricasensor) {
-          console.log(`⚠️ No se encontró metricasensor para alerta ${alerta.alertaid}`);
           continue;
         }
 
@@ -243,7 +227,6 @@ const processSensorStates = (
         estadosPorCriticidad[criticidadNombre].total++;
         estadosPorCriticidad[criticidadNombre].alertas++;
 
-        console.log(`✅ Sensor procesado: Nodo ${sensorEstado.nodoid}, ${sensorEstado.metrica}, Valor: ${sensorEstado.valor_actual}, Estado: ${sensorEstado.estado}`);
 
       } catch (error) {
         console.error(`❌ Error procesando alerta ${alerta.alertaid}:`, error);
@@ -254,7 +237,6 @@ const processSensorStates = (
   // Procesar sensores sin alertas (estado normal) - SOLO si no hay alertas
   // En "Registro de Alertas" solo queremos mostrar sensores con alertas activas
   if (alertas.length === 0) {
-    console.log('📊 No hay alertas activas, procesando sensores normales...');
     
     for (const metricasensor of metricasensores) {
       try {
@@ -338,7 +320,6 @@ const processSensorStates = (
   }
   } // Cerrar el if (alertas.length === 0)
 
-  console.log('✅ Estados procesados:', estadosPorCriticidad);
   return estadosPorCriticidad;
 };
 
@@ -399,7 +380,6 @@ const EstadoActualSensores: React.FC<EstadoActualSensoresProps> = ({
     });
 
     if (data.metricasensores.length > 0) {
-      console.log('📊 Procesando estados de sensores...');
       const estados = processSensorStates(
         data.alertas,
         data.umbrales,
@@ -411,10 +391,8 @@ const EstadoActualSensores: React.FC<EstadoActualSensoresProps> = ({
         data.ubicaciones,
         data.criticidades
       );
-      console.log('✅ Estados procesados:', estados);
       setEstadosSensores(estados);
     } else {
-      console.log('⚠️ No hay metricasensores para procesar');
     }
   }, [data]);
 

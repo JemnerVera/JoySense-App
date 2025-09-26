@@ -83,11 +83,6 @@ export function AdvancedSensorUpdateForm({
       const initialTipos = getTiposFromSelectedRows();
       const initialNodos = getNodosFromSelectedRows();
       
-      console.log('🔍 Inicializando AdvancedSensorUpdateForm:');
-      console.log('  - selectedRows:', selectedRows);
-      console.log('  - allOriginalRows:', selectedRows.flatMap(row => row.originalRows || [row]));
-      console.log('  - Tipos iniciales:', initialTipos);
-      console.log('  - Nodos iniciales:', initialNodos);
       
       setSelectedTipos(initialTipos);
       setSelectedNodos(initialNodos);
@@ -147,7 +142,6 @@ export function AdvancedSensorUpdateForm({
         throw new Error('No hay datos para actualizar');
       }
 
-      console.log('🔍 Debug - Filas originales:', allOriginalRows);
       
       // Para cada combinación de nodo-tipo seleccionada
       selectedNodos.forEach(nodoId => {
@@ -199,12 +193,8 @@ export function AdvancedSensorUpdateForm({
         }
       });
       
-      console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
-      console.log('🔍 Debug - Detalles:', updatedEntries);
       
-      console.log('🔍 Debug - Llamando a onUpdate...');
       await onUpdate(updatedEntries);
-      console.log('🔍 Debug - onUpdate completado');
     } catch (error) {
       console.error('Error actualizando sensores:', error);
     } finally {

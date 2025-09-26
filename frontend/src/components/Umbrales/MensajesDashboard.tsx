@@ -80,7 +80,6 @@ const MensajesDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Cargando mensajes reales del sistema...');
 
       // Cargar datos reales de mensajes y tablas relacionadas
       const [
@@ -142,7 +141,6 @@ const MensajesDashboard: React.FC = () => {
             };
 
             mensajesReales.push(mensajeProcesado);
-            console.log(`✅ Mensaje procesado: ${medio?.nombre || 'N/A'} - ${usuario?.login || 'N/A'} - ${criticidad?.criticidad || 'N/A'}`);
 
           } catch (error) {
             console.error(`❌ Error procesando mensaje ${mensaje.alertaid}:`, error);
@@ -150,7 +148,6 @@ const MensajesDashboard: React.FC = () => {
         }
       }
 
-      console.log(`📋 Total mensajes procesados: ${mensajesReales.length}`);
       setMensajes(mensajesReales);
       calcularEstadisticas(mensajesReales);
 
@@ -196,7 +193,6 @@ const MensajesDashboard: React.FC = () => {
           ? { ...m, statusid: 1 } 
           : m
       ));
-      console.log(`Mensaje ${alertaid} marcado como enviado`);
     } catch (error) {
       console.error('Error marcando mensaje:', error);
     }

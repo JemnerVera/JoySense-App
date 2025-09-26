@@ -97,7 +97,6 @@ const AppContentInternal: React.FC = () => {
     startDate: string;
     endDate: string;
   }) => {
-    console.log('🔍 App: Dashboard filters changed:', filters);
     
     // Encontrar la entidad y ubicación por ID
     const entidad = entidades.find(e => e.entidadid === filters.entidadId);
@@ -380,7 +379,6 @@ const AppContentInternal: React.FC = () => {
 
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
-    console.log('🔄 App: Tab change requested:', { from: activeTab, to: tab });
     
     // Navegación simple sin interceptores
     setActiveTab(tab);
@@ -388,7 +386,6 @@ const AppContentInternal: React.FC = () => {
   };
 
   const handleTableSelect = (table: string) => {
-    console.log('🔄 App: Parameter change requested:', { from: selectedTable, to: table });
     
     // Cambio directo sin validación (la validación se hace en ProtectedParameterButton)
     setSelectedTable(table);
@@ -399,7 +396,6 @@ const AppContentInternal: React.FC = () => {
   };
 
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive') => {
-    console.log('🔄 App: SubTab change requested:', { from: activeSubTab, to: subTab });
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
   };
 

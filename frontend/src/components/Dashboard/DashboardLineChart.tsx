@@ -42,10 +42,8 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
 
   // Cargar datos de mediciones
   const loadMeasurementData = async () => {
-    console.log('🔍 loadMeasurementData llamado con:', { entidadId, ubicacionId, startDate, endDate });
     
     if (!entidadId || !ubicacionId || !startDate || !endDate) {
-      console.log('❌ Faltan parámetros, limpiando datos');
       setMeasurementData([]);
       return;
     }
@@ -53,10 +51,8 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 Cargando mediciones para:', { entidadId, ubicacionId, startDate, endDate });
 
       // Obtener datos reales de mediciones del backend
-      console.log('🔍 Llamando a getMediciones con:', { entidadId, ubicacionId, startDate, endDate });
       const medicionesResponse = await JoySenseService.getMediciones({
         entidadId,
         ubicacionId,
@@ -64,22 +60,17 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
         endDate
       });
 
-      console.log('📊 Respuesta de getMediciones:', medicionesResponse);
 
       // Verificar si es un array o un objeto con count
       const medicionesData = Array.isArray(medicionesResponse) ? medicionesResponse : [];
-      console.log('📊 Mediciones obtenidas:', medicionesData.length);
       
       if (medicionesData.length > 0) {
-        console.log('📊 Primera medición:', medicionesData[0]);
       }
 
       // Obtener métricas y nodos para procesar los datos
       const metricasData = await JoySenseService.getTableData('metricasensor');
       const nodosData = await JoySenseService.getTableData('nodo');
 
-      console.log('📈 Métricas obtenidas:', metricasData.length);
-      console.log('📍 Nodos obtenidos:', nodosData.length);
 
       // Guardar métricas y nodos en el estado
       setMetricas(metricasData);
@@ -123,7 +114,6 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
         new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
       );
 
-      console.log('✅ Datos procesados:', processedData.length, 'días');
       setMeasurementData(processedData);
 
       // Inicializar selecciones por defecto

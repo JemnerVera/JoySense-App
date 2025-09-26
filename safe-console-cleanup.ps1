@@ -23,7 +23,7 @@ foreach ($file in $files) {
     # Contar console.log antes de eliminar
     $beforeCount = ([regex]::Matches($content, 'console\.log')).Count
     
-    # SOLO eliminar console.log completos y bien formateados
+    # Eliminar console.log completos (con indentación)
     # Patrón seguro: console.log(...); en líneas separadas
     $content = $content -replace '^\s*console\.log\([^)]*\);\s*$', ''
     
@@ -31,6 +31,13 @@ foreach ($file in $files) {
     $content = $content -replace '^\s*console\.log\([^)]*Debug[^)]*\);\s*$', ''
     $content = $content -replace '^\s*console\.log\([^)]*debug[^)]*\);\s*$', ''
     $content = $content -replace '^\s*console\.log\([^)]*DEBUG[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*llamado[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*Cargando[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*Llamando[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*Respuesta[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*obtenidas[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*obtenidos[^)]*\);\s*$', ''
+    $content = $content -replace '^\s*console\.log\([^)]*procesados[^)]*\);\s*$', ''
     
     # Eliminar líneas vacías múltiples (más de 2 seguidas)
     $content = $content -replace '(\r?\n\s*){3,}', "`r`n`r`n"

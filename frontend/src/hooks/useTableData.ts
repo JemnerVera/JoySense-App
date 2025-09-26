@@ -52,7 +52,6 @@ export const useTableData = (
   const fetchData = useCallback(async () => {
     if (!tableName || !enabled) return;
 
-    console.log(`🔍 useTableData.fetchData - tableName: ${tableName}`);
     
     setLoading(true);
     setError(null);
@@ -95,7 +94,6 @@ export const useTableData = (
           break;
       }
 
-      console.log(`✅ useTableData.fetchData - ${tableName} data loaded:`, tableData.length, 'records');
       
       setData(tableData);
       setLastFetchTime(Date.now());
@@ -112,7 +110,6 @@ export const useTableData = (
    * Refrescar datos (forzar recarga)
    */
   const refreshData = useCallback(async () => {
-    console.log(`🔄 useTableData.refreshData - ${tableName}`);
     await fetchData();
   }, [fetchData]);
 
@@ -120,7 +117,6 @@ export const useTableData = (
    * Establecer datos manualmente
    */
   const setDataManually = useCallback((newData: any[]) => {
-    console.log(`📝 useTableData.setData - ${tableName}:`, newData.length, 'records');
     setData(newData);
     setLastFetchTime(Date.now());
   }, [tableName]);
@@ -129,7 +125,6 @@ export const useTableData = (
    * Establecer datos filtrados manualmente
    */
   const setFilteredDataManually = useCallback((newFilteredData: any[]) => {
-    console.log(`🔍 useTableData.setFilteredData - ${tableName}:`, newFilteredData.length, 'records');
     setFilteredData(newFilteredData);
   }, [tableName]);
 
@@ -137,7 +132,6 @@ export const useTableData = (
    * Establecer estado de carga
    */
   const setLoadingState = useCallback((loadingState: boolean) => {
-    console.log(`⏳ useTableData.setLoading - ${tableName}:`, loadingState);
     setLoading(loadingState);
   }, [tableName]);
 
@@ -145,7 +139,6 @@ export const useTableData = (
    * Establecer error
    */
   const setErrorState = useCallback((errorState: string | null) => {
-    console.log(`❌ useTableData.setError - ${tableName}:`, errorState);
     setError(errorState);
   }, [tableName]);
 
@@ -153,7 +146,6 @@ export const useTableData = (
    * Limpiar error
    */
   const clearError = useCallback(() => {
-    console.log(`🧹 useTableData.clearError - ${tableName}`);
     setError(null);
   }, [tableName]);
 

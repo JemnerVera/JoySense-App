@@ -377,7 +377,6 @@ export function MassiveUmbralForm({
     // Crear datos para cada combinación de nodo-tipo-métrica
     // Solo procesar tipos que están realmente asignados a cada nodo específico
     for (const node of selectedNodesData) {
-      console.log('🔍 Nodo seleccionado:', { nodoid: node.nodoid, ubicacionid: node.ubicacionid });
       
       // Obtener tipos específicos para este nodo
       if (formData.entidadid) {
@@ -386,7 +385,6 @@ export function MassiveUmbralForm({
           nodoids: [node.nodoid] // Solo este nodo específico
         });
         
-        console.log(`🔗 Tipos para nodo ${node.nodo} (umbral):`, tiposDelNodo.map(t => t.label));
         
         for (const tipoOption of tiposDelNodo) {
           const tipo = {
@@ -444,7 +442,6 @@ export function MassiveUmbralForm({
                   statusid: 1 // Activo por defecto
                 };
                 
-                console.log('✅ Agregando umbral:', umbralData);
                 dataToApply.push(umbralData);
               } else {
                 console.log('❌ Umbral incompleto para tipo:', { 
@@ -686,7 +683,6 @@ export function MassiveUmbralForm({
                                 metricasData: metricasConfiguradas
                               }));
                               
-                              console.log('🔧 Métricas configuradas automáticamente para el grupo:', metricasConfiguradas);
                             }
                           }, 100); // Pequeño delay para que se actualicen los nodos primero
                         }}

@@ -1359,14 +1359,9 @@ const validatePaisUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validatePaisUpdate - formData:', formData);
-  console.log('🔍 validatePaisUpdate - originalData:', originalData);
-  console.log('🔍 validatePaisUpdate - pais value:', formData.pais);
-  console.log('🔍 validatePaisUpdate - paisabrev value:', formData.paisabrev);
   
   // 1. Validar campos obligatorios
   if (!formData.pais || formData.pais.trim() === '') {
-    console.log('🔍 validatePaisUpdate - pais está vacío');
     errors.push({
       field: 'pais',
       message: 'El país es obligatorio',
@@ -1375,7 +1370,6 @@ const validatePaisUpdate = async (
   }
   
   if (!formData.paisabrev || formData.paisabrev.trim() === '') {
-    console.log('🔍 validatePaisUpdate - paisabrev está vacío');
     errors.push({
       field: 'paisabrev',
       message: 'La abreviatura es obligatoria',
@@ -1460,15 +1454,9 @@ const validateEmpresaUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateEmpresaUpdate - formData:', formData);
-  console.log('🔍 validateEmpresaUpdate - originalData:', originalData);
-  console.log('🔍 validateEmpresaUpdate - empresa value:', formData.empresa);
-  console.log('🔍 validateEmpresaUpdate - empresabrev value:', formData.empresabrev);
-  console.log('🔍 validateEmpresaUpdate - paisid value:', formData.paisid);
   
   // 1. Validar campos obligatorios
   if (!formData.empresa || formData.empresa.trim() === '') {
-    console.log('🔍 validateEmpresaUpdate - empresa está vacío');
     errors.push({
       field: 'empresa',
       message: 'La empresa es obligatoria',
@@ -1477,7 +1465,6 @@ const validateEmpresaUpdate = async (
   }
   
   if (!formData.empresabrev || formData.empresabrev.trim() === '') {
-    console.log('🔍 validateEmpresaUpdate - empresabrev está vacío');
     errors.push({
       field: 'empresabrev',
       message: 'La abreviatura es obligatoria',
@@ -1486,7 +1473,6 @@ const validateEmpresaUpdate = async (
   }
   
   if (!formData.paisid || formData.paisid === '') {
-    console.log('🔍 validateEmpresaUpdate - paisid está vacío');
     errors.push({
       field: 'paisid',
       message: 'El país es obligatorio',
@@ -1571,15 +1557,9 @@ const validateFundoUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateFundoUpdate - formData:', formData);
-  console.log('🔍 validateFundoUpdate - originalData:', originalData);
-  console.log('🔍 validateFundoUpdate - fundo value:', formData.fundo);
-  console.log('🔍 validateFundoUpdate - fundoabrev value:', formData.fundoabrev);
-  console.log('🔍 validateFundoUpdate - empresaid value:', formData.empresaid);
   
   // 1. Validar campos obligatorios
   if (!formData.fundo || formData.fundo.trim() === '') {
-    console.log('🔍 validateFundoUpdate - fundo está vacío');
     errors.push({
       field: 'fundo',
       message: 'El fundo es obligatorio',
@@ -1588,7 +1568,6 @@ const validateFundoUpdate = async (
   }
   
   if (!formData.fundoabrev || formData.fundoabrev.trim() === '') {
-    console.log('🔍 validateFundoUpdate - fundoabrev está vacío');
     errors.push({
       field: 'fundoabrev',
       message: 'La abreviatura es obligatoria',
@@ -1597,7 +1576,6 @@ const validateFundoUpdate = async (
   }
   
   if (!formData.empresaid || formData.empresaid === '') {
-    console.log('🔍 validateFundoUpdate - empresaid está vacío');
     errors.push({
       field: 'empresaid',
       message: 'La empresa es obligatoria',
@@ -1682,14 +1660,9 @@ const validateUbicacionUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateUbicacionUpdate - formData:', formData);
-  console.log('🔍 validateUbicacionUpdate - originalData:', originalData);
-  console.log('🔍 validateUbicacionUpdate - ubicacion value:', formData.ubicacion);
-  console.log('🔍 validateUbicacionUpdate - fundoid value:', formData.fundoid);
   
   // 1. Validar campos obligatorios
   if (!formData.ubicacion || formData.ubicacion.trim() === '') {
-    console.log('🔍 validateUbicacionUpdate - ubicacion está vacío');
     errors.push({
       field: 'ubicacion',
       message: 'La ubicación es obligatoria',
@@ -1698,7 +1671,6 @@ const validateUbicacionUpdate = async (
   }
   
   if (!formData.fundoid || formData.fundoid === '') {
-    console.log('🔍 validateUbicacionUpdate - fundoid está vacío');
     errors.push({
       field: 'fundoid',
       message: 'El fundo es obligatorio',
@@ -1767,17 +1739,9 @@ const validateLocalizacionUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateLocalizacionUpdate - formData:', formData);
-  console.log('🔍 validateLocalizacionUpdate - originalData:', originalData);
-  console.log('🔍 validateLocalizacionUpdate - ubicacionid value:', formData.ubicacionid);
-  console.log('🔍 validateLocalizacionUpdate - nodoid value:', formData.nodoid);
-  console.log('🔍 validateLocalizacionUpdate - latitud value:', formData.latitud);
-  console.log('🔍 validateLocalizacionUpdate - longitud value:', formData.longitud);
-  console.log('🔍 validateLocalizacionUpdate - referencia value:', formData.referencia);
   
   // 1. Validar campos obligatorios (solo ubicacionid y nodoid según el schema)
   if (!formData.ubicacionid || formData.ubicacionid === '') {
-    console.log('🔍 validateLocalizacionUpdate - ubicacionid está vacío');
     errors.push({
       field: 'ubicacionid',
       message: 'La ubicación es obligatoria',
@@ -1786,7 +1750,6 @@ const validateLocalizacionUpdate = async (
   }
   
   if (!formData.nodoid || formData.nodoid === '') {
-    console.log('🔍 validateLocalizacionUpdate - nodoid está vacío');
     errors.push({
       field: 'nodoid',
       message: 'El nodo es obligatorio',
@@ -1834,13 +1797,9 @@ const validateEntidadUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateEntidadUpdate - formData:', formData);
-  console.log('🔍 validateEntidadUpdate - originalData:', originalData);
-  console.log('🔍 validateEntidadUpdate - entidad value:', formData.entidad);
   
   // 1. Validar campos obligatorios
   if (!formData.entidad || formData.entidad.trim() === '') {
-    console.log('🔍 validateEntidadUpdate - entidad está vacío');
     errors.push({
       field: 'entidad',
       message: 'La entidad es obligatoria',
@@ -1917,14 +1876,9 @@ const validateTipoUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateTipoUpdate - formData:', formData);
-  console.log('🔍 validateTipoUpdate - originalData:', originalData);
-  console.log('🔍 validateTipoUpdate - tipo value:', formData.tipo);
-  console.log('🔍 validateTipoUpdate - entidadid value:', formData.entidadid);
   
   // 1. Validar campos obligatorios
   if (!formData.tipo || formData.tipo.trim() === '') {
-    console.log('🔍 validateTipoUpdate - tipo está vacío');
     errors.push({
       field: 'tipo',
       message: 'El tipo es obligatorio',
@@ -1933,7 +1887,6 @@ const validateTipoUpdate = async (
   }
   
   if (!formData.entidadid || formData.entidadid === '') {
-    console.log('🔍 validateTipoUpdate - entidadid está vacío');
     errors.push({
       field: 'entidadid',
       message: 'La entidad es obligatoria',
@@ -2016,14 +1969,9 @@ const validateNodoUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateNodoUpdate - formData:', formData);
-  console.log('🔍 validateNodoUpdate - originalData:', originalData);
-  console.log('🔍 validateNodoUpdate - nodo value:', formData.nodo);
-  console.log('🔍 validateNodoUpdate - deveui value:', formData.deveui);
   
   // 1. Validar campos obligatorios
   if (!formData.nodo || formData.nodo.trim() === '') {
-    console.log('🔍 validateNodoUpdate - nodo está vacío');
     errors.push({
       field: 'nodo',
       message: 'El nodo es obligatorio',
@@ -2123,14 +2071,9 @@ const validateMetricaUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateMetricaUpdate - formData:', formData);
-  console.log('🔍 validateMetricaUpdate - originalData:', originalData);
-  console.log('🔍 validateMetricaUpdate - metrica value:', formData.metrica);
-  console.log('🔍 validateMetricaUpdate - unidad value:', formData.unidad);
   
   // 1. Validar campos obligatorios
   if (!formData.metrica || formData.metrica.trim() === '') {
-    console.log('🔍 validateMetricaUpdate - metrica está vacío');
     errors.push({
       field: 'metrica',
       message: 'La métrica es obligatoria',
@@ -2140,7 +2083,6 @@ const validateMetricaUpdate = async (
   
   // unidad es obligatorio para metrica
   if (!formData.unidad || formData.unidad.trim() === '') {
-    console.log('🔍 validateMetricaUpdate - unidad está vacío');
     errors.push({
       field: 'unidad',
       message: 'La unidad es obligatoria',
@@ -2345,18 +2287,9 @@ const validateUmbralUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateUmbralUpdate - formData:', formData);
-  console.log('🔍 validateUmbralUpdate - originalData:', originalData);
-  console.log('🔍 validateUmbralUpdate - umbral value:', formData.umbral);
-  console.log('🔍 validateUmbralUpdate - ubicacionid value:', formData.ubicacionid);
-  console.log('🔍 validateUmbralUpdate - criticidadid value:', formData.criticidadid);
-  console.log('🔍 validateUmbralUpdate - nodoid value:', formData.nodoid);
-  console.log('🔍 validateUmbralUpdate - metricaid value:', formData.metricaid);
-  console.log('🔍 validateUmbralUpdate - tipoid value:', formData.tipoid);
   
   // 1. Validar campos obligatorios
   if (!formData.umbral || formData.umbral.trim() === '') {
-    console.log('🔍 validateUmbralUpdate - umbral está vacío');
     errors.push({
       field: 'umbral',
       message: 'El nombre del umbral es obligatorio',
@@ -2365,7 +2298,6 @@ const validateUmbralUpdate = async (
   }
   
   if (!formData.ubicacionid || formData.ubicacionid === '') {
-    console.log('🔍 validateUmbralUpdate - ubicacionid está vacío');
     errors.push({
       field: 'ubicacionid',
       message: 'La ubicación es obligatoria',
@@ -2374,7 +2306,6 @@ const validateUmbralUpdate = async (
   }
   
   if (!formData.criticidadid || formData.criticidadid === '') {
-    console.log('🔍 validateUmbralUpdate - criticidadid está vacío');
     errors.push({
       field: 'criticidadid',
       message: 'La criticidad es obligatoria',
@@ -2383,7 +2314,6 @@ const validateUmbralUpdate = async (
   }
   
   if (!formData.nodoid || formData.nodoid === '') {
-    console.log('🔍 validateUmbralUpdate - nodoid está vacío');
     errors.push({
       field: 'nodoid',
       message: 'El nodo es obligatorio',
@@ -2392,7 +2322,6 @@ const validateUmbralUpdate = async (
   }
   
   if (!formData.metricaid || formData.metricaid === '') {
-    console.log('🔍 validateUmbralUpdate - metricaid está vacío');
     errors.push({
       field: 'metricaid',
       message: 'La métrica es obligatoria',
@@ -2401,7 +2330,6 @@ const validateUmbralUpdate = async (
   }
   
   if (!formData.tipoid || formData.tipoid === '') {
-    console.log('🔍 validateUmbralUpdate - tipoid está vacío');
     errors.push({
       field: 'tipoid',
       message: 'El tipo es obligatorio',
@@ -2477,14 +2405,9 @@ const validatePerfilUmbralUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validatePerfilUmbralUpdate - formData:', formData);
-  console.log('🔍 validatePerfilUmbralUpdate - originalData:', originalData);
-  console.log('🔍 validatePerfilUmbralUpdate - perfilid value:', formData.perfilid);
-  console.log('🔍 validatePerfilUmbralUpdate - umbralid value:', formData.umbralid);
   
   // 1. Validar campos obligatorios
   if (!formData.perfilid || formData.perfilid === '') {
-    console.log('🔍 validatePerfilUmbralUpdate - perfilid está vacío');
     errors.push({
       field: 'perfilid',
       message: 'El perfil es obligatorio',
@@ -2493,7 +2416,6 @@ const validatePerfilUmbralUpdate = async (
   }
   
   if (!formData.umbralid || formData.umbralid === '') {
-    console.log('🔍 validatePerfilUmbralUpdate - umbralid está vacío');
     errors.push({
       field: 'umbralid',
       message: 'El umbral es obligatorio',
@@ -2541,14 +2463,9 @@ const validateCriticidadUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateCriticidadUpdate - formData:', formData);
-  console.log('🔍 validateCriticidadUpdate - originalData:', originalData);
-  console.log('🔍 validateCriticidadUpdate - criticidad value:', formData.criticidad);
-  console.log('🔍 validateCriticidadUpdate - criticidadbrev value:', formData.criticidadbrev);
   
   // 1. Validar campos obligatorios
   if (!formData.criticidad || formData.criticidad.trim() === '') {
-    console.log('🔍 validateCriticidadUpdate - criticidad está vacío');
     errors.push({
       field: 'criticidad',
       message: 'El nombre de la criticidad es obligatorio',
@@ -2557,7 +2474,6 @@ const validateCriticidadUpdate = async (
   }
   
   if (!formData.criticidadbrev || formData.criticidadbrev.trim() === '') {
-    console.log('🔍 validateCriticidadUpdate - criticidadbrev está vacío');
     errors.push({
       field: 'criticidadbrev',
       message: 'La abreviatura de la criticidad es obligatoria',
@@ -2649,13 +2565,9 @@ const validateMedioUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateMedioUpdate - formData:', formData);
-  console.log('🔍 validateMedioUpdate - originalData:', originalData);
-  console.log('🔍 validateMedioUpdate - nombre value:', formData.nombre);
   
   // 1. Validar campos obligatorios
   if (!formData.nombre || formData.nombre.trim() === '') {
-    console.log('🔍 validateMedioUpdate - nombre está vacío');
     errors.push({
       field: 'nombre',
       message: 'El nombre del medio es obligatorio',
@@ -2725,16 +2637,9 @@ const validateContactoUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateContactoUpdate - formData:', formData);
-  console.log('🔍 validateContactoUpdate - originalData:', originalData);
-  console.log('🔍 validateContactoUpdate - usuarioid value:', formData.usuarioid);
-  console.log('🔍 validateContactoUpdate - medioid value:', formData.medioid);
-  console.log('🔍 validateContactoUpdate - celular value:', formData.celular);
-  console.log('🔍 validateContactoUpdate - correo value:', formData.correo);
   
   // 1. Validar campos obligatorios
   if (!formData.usuarioid || formData.usuarioid === '') {
-    console.log('🔍 validateContactoUpdate - usuarioid está vacío');
     errors.push({
       field: 'usuarioid',
       message: 'El usuario es obligatorio',
@@ -2743,7 +2648,6 @@ const validateContactoUpdate = async (
   }
   
   if (!formData.medioid || formData.medioid === '') {
-    console.log('🔍 validateContactoUpdate - medioid está vacío');
     errors.push({
       field: 'medioid',
       message: 'El medio es obligatorio',
@@ -2754,7 +2658,6 @@ const validateContactoUpdate = async (
   // 2. Validar que al menos uno de los campos de contacto esté presente
   if ((!formData.celular || formData.celular.trim() === '') && 
       (!formData.correo || formData.correo.trim() === '')) {
-    console.log('🔍 validateContactoUpdate - ni celular ni correo están presentes');
     errors.push({
       field: 'contacto',
       message: 'Debe proporcionar al menos un celular o correo',
@@ -2802,16 +2705,9 @@ const validateUsuarioUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateUsuarioUpdate - formData:', formData);
-  console.log('🔍 validateUsuarioUpdate - originalData:', originalData);
-  console.log('🔍 validateUsuarioUpdate - login value:', formData.login);
-  console.log('🔍 validateUsuarioUpdate - nombre value:', formData.nombre);
-  console.log('🔍 validateUsuarioUpdate - apellido value:', formData.apellido);
-  console.log('🔍 validateUsuarioUpdate - rol value:', formData.rol);
   
   // 1. Validar campos obligatorios
   if (!formData.login || formData.login.trim() === '') {
-    console.log('🔍 validateUsuarioUpdate - login está vacío');
     errors.push({
       field: 'login',
       message: 'El login es obligatorio',
@@ -2820,7 +2716,6 @@ const validateUsuarioUpdate = async (
   }
   
   if (!formData.nombre || formData.nombre.trim() === '') {
-    console.log('🔍 validateUsuarioUpdate - nombre está vacío');
     errors.push({
       field: 'nombre',
       message: 'El nombre es obligatorio',
@@ -2829,7 +2724,6 @@ const validateUsuarioUpdate = async (
   }
   
   if (!formData.apellido || formData.apellido.trim() === '') {
-    console.log('🔍 validateUsuarioUpdate - apellido está vacío');
     errors.push({
       field: 'apellido',
       message: 'El apellido es obligatorio',
@@ -2838,7 +2732,6 @@ const validateUsuarioUpdate = async (
   }
   
   if (!formData.rol || formData.rol.trim() === '') {
-    console.log('🔍 validateUsuarioUpdate - rol está vacío');
     errors.push({
       field: 'rol',
       message: 'El rol es obligatorio',
@@ -2926,14 +2819,9 @@ const validatePerfilUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validatePerfilUpdate - formData:', formData);
-  console.log('🔍 validatePerfilUpdate - originalData:', originalData);
-  console.log('🔍 validatePerfilUpdate - perfil value:', formData.perfil);
-  console.log('🔍 validatePerfilUpdate - nivel value:', formData.nivel);
   
   // 1. Validar campos obligatorios
   if (!formData.perfil || formData.perfil.trim() === '') {
-    console.log('🔍 validatePerfilUpdate - perfil está vacío');
     errors.push({
       field: 'perfil',
       message: 'El nombre del perfil es obligatorio',
@@ -2942,7 +2830,6 @@ const validatePerfilUpdate = async (
   }
   
   if (!formData.nivel || formData.nivel.trim() === '') {
-    console.log('🔍 validatePerfilUpdate - nivel está vacío');
     errors.push({
       field: 'nivel',
       message: 'El nivel del perfil es obligatorio',
@@ -3034,14 +2921,9 @@ const validateUsuarioPerfilUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  console.log('🔍 validateUsuarioPerfilUpdate - formData:', formData);
-  console.log('🔍 validateUsuarioPerfilUpdate - originalData:', originalData);
-  console.log('🔍 validateUsuarioPerfilUpdate - usuarioid value:', formData.usuarioid);
-  console.log('🔍 validateUsuarioPerfilUpdate - perfilid value:', formData.perfilid);
   
   // 1. Validar campos obligatorios
   if (!formData.usuarioid || formData.usuarioid === '') {
-    console.log('🔍 validateUsuarioPerfilUpdate - usuarioid está vacío');
     errors.push({
       field: 'usuarioid',
       message: 'El usuario es obligatorio',
@@ -3050,7 +2932,6 @@ const validateUsuarioPerfilUpdate = async (
   }
   
   if (!formData.perfilid || formData.perfilid === '') {
-    console.log('🔍 validateUsuarioPerfilUpdate - perfilid está vacío');
     errors.push({
       field: 'perfilid',
       message: 'El perfil es obligatorio',

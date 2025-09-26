@@ -94,22 +94,18 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
       try {
         setLoadingEntidades(true);
-        console.log('🔍 Cargando entidades para fundo:', fundoSeleccionado);
         
         // Obtener todas las entidades
         const entidadesData = await JoySenseService.getTableData('entidad');
-        console.log('📋 Entidades obtenidas:', entidadesData.length);
         
         // Obtener ubicaciones del fundo seleccionado
         const ubicacionesData = await JoySenseService.getTableData('ubicacion');
         const ubicacionesDelFundo = ubicacionesData.filter((ubicacion: any) => 
           ubicacion.fundoid === parseInt(fundoSeleccionado)
         );
-        console.log('📍 Ubicaciones del fundo:', ubicacionesDelFundo.length);
         
         // Obtener localizaciones para encontrar entidades relacionadas
         const localizacionesData = await JoySenseService.getTableData('localizacion');
-        console.log('🗺️ Localizaciones obtenidas:', localizacionesData.length);
         
         // Encontrar entidades que tienen ubicaciones en este fundo
         const entidadIds = new Set();
@@ -122,14 +118,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           });
         });
         
-        console.log('🏢 IDs de entidades encontradas:', Array.from(entidadIds));
         
         // Filtrar entidades
         const entidadesFiltradas = entidadesData.filter((entidad: any) => 
           entidadIds.has(entidad.entidadid)
         );
         
-        console.log('✅ Entidades filtradas:', entidadesFiltradas.length);
         setEntidades(entidadesFiltradas);
       } catch (error) {
         console.error('❌ Error cargando entidades:', error);
@@ -152,35 +146,29 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
       try {
         setLoadingUbicaciones(true);
-        console.log('🔍 Cargando ubicaciones para fundo:', fundoSeleccionado, 'y entidad:', selectedEntidad?.entidadid);
         
         const ubicacionesData = await JoySenseService.getTableData('ubicacion');
-        console.log('📍 Ubicaciones obtenidas:', ubicacionesData.length);
         
         // Filtrar ubicaciones del fundo seleccionado
         let ubicacionesFiltradas = ubicacionesData.filter((ubicacion: any) => 
           ubicacion.fundoid === parseInt(fundoSeleccionado)
         );
-        console.log('📍 Ubicaciones del fundo:', ubicacionesFiltradas.length);
         
         // Si hay una entidad seleccionada, filtrar también por entidad
         if (selectedEntidad) {
           const localizacionesData = await JoySenseService.getTableData('localizacion');
-          console.log('🗺️ Localizaciones obtenidas:', localizacionesData.length);
           
           // Obtener ubicaciones que están relacionadas con la entidad seleccionada
           const ubicacionIds = localizacionesData
             .filter((loc: any) => loc.entidadid === selectedEntidad.entidadid)
             .map((loc: any) => loc.ubicacionid);
           
-          console.log('📍 IDs de ubicaciones de la entidad:', ubicacionIds);
           
           // Filtrar ubicaciones que están en el fundo Y en la entidad
           ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) => 
             ubicacionIds.includes(ubicacion.ubicacionid)
           );
           
-          console.log('✅ Ubicaciones filtradas por entidad:', ubicacionesFiltradas.length);
         }
         
         setUbicaciones(ubicacionesFiltradas);

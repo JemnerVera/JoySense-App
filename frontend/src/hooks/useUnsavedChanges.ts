@@ -11,11 +11,6 @@ export const useUnsavedChanges = () => {
   const hasUnsavedChanges = useCallback((config: UnsavedChangesConfig): boolean => {
     const { formData, selectedTable, activeSubTab, multipleData = [] } = config;
     
-    console.log('🔍 hasUnsavedChanges - activeSubTab:', activeSubTab, 'selectedTable:', selectedTable);
-    console.log('🔍 formData:', formData);
-    console.log('🔍 formData keys:', Object.keys(formData));
-    console.log('🔍 formData values:', Object.values(formData));
-    console.log('🔍 multipleData:', multipleData);
     
     // Verificar pestaña "Crear"
     if (activeSubTab === 'insert') {
@@ -28,7 +23,6 @@ export const useUnsavedChanges = () => {
         if (selectedTable === 'pais') {
           // Para pais: pais y paisabrev son campos de entrada
           referentialFields = ['paisid', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
-          console.log('🔍 Pais table - referentialFields:', referentialFields);
         } else if (selectedTable === 'fundo') {
           // Para fundo: fundo y fundoabrev son campos de entrada
           referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'entidadid', 'entidad'];
@@ -49,37 +43,30 @@ export const useUnsavedChanges = () => {
         const hasChanges = Object.keys(formData).some(key => {
           const value = formData[key];
           
-          console.log(`🔍 Checking field: ${key} = ${value} (type: ${typeof value})`);
           
           // Excluir campos referenciales
           if (referentialFields.includes(key)) {
-            console.log(`🔍 Excluding referential field: ${key}`);
             return false;
           }
           
           // Log específico para campos de país
           if (selectedTable === 'pais' && (key === 'pais' || key === 'paisabrev')) {
-            console.log(`🔍 Pais field check: ${key} = "${value}" (length: ${value?.length || 0})`);
           }
           
           // Excluir statusid si es 1 (valor por defecto)
           if (key === 'statusid') {
             const hasStatusChange = value !== 1;
-            console.log(`🔍 Status field: ${key} = ${value}, hasChange: ${hasStatusChange}`);
             return hasStatusChange;
           }
           
           // Verificar si hay datos significativos
           if (typeof value === 'string' && value.trim() !== '') {
-            console.log(`🔍 String field with data: ${key} = "${value}"`);
             return true;
           }
           if (typeof value === 'number' && value !== null && value !== undefined) {
-            console.log(`🔍 Number field with data: ${key} = ${value}`);
             return true;
           }
           if (Array.isArray(value) && value.length > 0) {
-            console.log(`🔍 Array field with data: ${key} = [${value.length} items]`);
             return true;
           }
           if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -87,19 +74,15 @@ export const useUnsavedChanges = () => {
               const objValue = value[objKey];
               return objValue !== null && objValue !== undefined && objValue !== '';
             });
-            console.log(`🔍 Object field: ${key}, hasData: ${hasObjectData}`);
             return hasObjectData;
           }
           if (typeof value === 'boolean' && value === true) {
-            console.log(`🔍 Boolean field true: ${key} = ${value}`);
             return true;
           }
           
-          console.log(`🔍 No significant data in field: ${key}`);
           return false;
         });
         
-        console.log(`🔍 Form has changes: ${hasChanges}`);
         return hasChanges;
       }
       

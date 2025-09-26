@@ -21,18 +21,14 @@ export function AdvancedUsuarioPerfilUpdateForm({
   const getUsuarioFromSelectedRows = () => {
     if (selectedRows.length === 0) return null;
     
-    console.log('🔍 Debug - selectedRows:', selectedRows);
-    console.log('🔍 Debug - userData:', userData);
     
     // Obtener el primer usuarioid de las filas seleccionadas
     const firstUsuarioid = selectedRows[0]?.usuarioid;
-    console.log('🔍 Debug - firstUsuarioid:', firstUsuarioid);
     
     if (!firstUsuarioid) return null;
     
     // Buscar el usuario
     const usuario = userData.find(u => u.usuarioid === firstUsuarioid);
-    console.log('🔍 Debug - usuario encontrado:', usuario);
     return usuario;
   };
   
@@ -108,7 +104,6 @@ export function AdvancedUsuarioPerfilUpdateForm({
         row.originalRows && row.originalRows.length > 0 ? row.originalRows : [row]
       );
       
-      console.log('🔍 Debug - allOriginalRows:', allOriginalRows);
       
       // 1. Actualizar perfiles existentes
       allOriginalRows.forEach(originalRow => {
@@ -142,7 +137,6 @@ export function AdvancedUsuarioPerfilUpdateForm({
         });
       });
       
-      console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
       console.log('🔍 Debug - Entradas a enviar:', updatedEntries.map(entry => ({
         usuarioid: entry.usuarioid,
         perfilid: entry.perfilid,

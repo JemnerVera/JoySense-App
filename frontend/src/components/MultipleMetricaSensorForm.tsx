@@ -84,9 +84,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   const getTiposFromSelectedNodos = () => {
     if (selectedNodos.length === 0) return [];
     
-    console.log('🔍 getTiposFromSelectedNodos - Nodos seleccionados:', selectedNodos);
-    console.log('🔍 getTiposFromSelectedNodos - Entidad seleccionada:', selectedEntidad);
-    console.log('🔍 getTiposFromSelectedNodos - SensorsData disponible:', sensorsData.length);
     
     const tiposUnicos = new Set<string>();
     
@@ -96,7 +93,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         sensor.nodoid && sensor.nodoid.toString() === nodoId
       );
       
-      console.log(`🔍 Nodo ${nodoId} tiene sensores:`, sensoresDelNodo);
       
       // Agregar los tipos únicos de este nodo
       sensoresDelNodo.forEach(sensor => {
@@ -111,7 +107,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       return tipo ? { tipoid: tipo.tipoid, tipo: tipo.tipo } : null;
     }).filter(Boolean);
     
-    console.log('🔍 Tipos únicos de nodos seleccionados:', resultado);
     
     return resultado;
   };
@@ -122,8 +117,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
   const analyzeNodoSimilarity = () => {
     if (selectedNodos.length <= 1) return null;
     
-    console.log('🔍 Analizando similitud de nodos:', selectedNodos);
-    console.log('🔍 Entidad seleccionada:', selectedEntidad);
     
     const nodoAnalysis = selectedNodos.map(nodoId => {
       const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
@@ -134,7 +127,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
         nodoid: nodoId
       });
       
-      console.log(`🔍 Nodo ${nodoId} (${nodo?.nodo}):`, tiposDelNodo);
       
       return {
         nodoid: nodoId,
@@ -145,7 +137,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       };
     });
     
-    console.log('🔍 Análisis de nodos:', nodoAnalysis);
     
     // Agrupar nodos por similitud de tipos (mismo patrón que MassiveUmbralForm)
     const groupedNodes: {[key: string]: {count: number, types: string[], nodos: any[]}} = {};
@@ -165,8 +156,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
     // Si solo hay un grupo, todos los nodos son consistentes
     const hasDifferences = Object.keys(groupedNodes).length > 1;
     
-    console.log('🔍 Grupos de nodos:', groupedNodes);
-    console.log('🔍 Tiene diferencias:', hasDifferences);
     
     return {
       nodoAnalysis,

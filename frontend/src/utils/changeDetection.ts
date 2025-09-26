@@ -16,7 +16,6 @@ export const hasSignificantChanges = (
 
   // Solo verificar cambios en pestañas de inserción o masivo
   if (activeSubTab !== 'insert' && activeSubTab !== 'massive') {
-    console.log('🔍 No changes detected - not in insert or massive tab');
     return false;
   }
 
@@ -85,7 +84,6 @@ export const hasSignificantChanges = (
   let hasMassiveFormDataChanges = false;
   if (activeSubTab === 'massive' && massiveFormData.hasData) {
     hasMassiveFormDataChanges = true;
-    console.log('🔍 Massive form has data:', massiveFormData);
   }
 
   console.log('🔍 Change detection result:', {

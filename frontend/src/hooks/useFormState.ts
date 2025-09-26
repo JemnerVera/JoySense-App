@@ -48,7 +48,6 @@ export const useFormState = (
    * Establecer datos del formulario
    */
   const setFormData = useCallback((data: Record<string, any>) => {
-    console.log('📝 useFormState.setFormData:', data);
     setFormDataState(data);
     
     // Verificar si hay cambios comparando con datos originales
@@ -62,7 +61,6 @@ export const useFormState = (
    * Actualizar un campo específico del formulario
    */
   const updateFormData = useCallback((field: string, value: any) => {
-    console.log(`📝 useFormState.updateFormData - ${field}:`, value);
     
     setFormDataState(prev => {
       const newData = { ...prev, [field]: value };
@@ -81,7 +79,6 @@ export const useFormState = (
    * Establecer datos originales (para comparación de cambios)
    */
   const setOriginalData = useCallback((data: Record<string, any> | null) => {
-    console.log('📋 useFormState.setOriginalData:', data);
     setOriginalDataState(data);
     
     // Si se establecen datos originales, verificar cambios
@@ -95,7 +92,6 @@ export const useFormState = (
    * Establecer si hay cambios
    */
   const setHasChanges = useCallback((hasChangesNow: boolean) => {
-    console.log('🔄 useFormState.setHasChanges:', hasChangesNow);
     setHasChangesState(hasChangesNow);
   }, []);
 
@@ -103,7 +99,6 @@ export const useFormState = (
    * Establecer si el formulario es válido
    */
   const setIsValid = useCallback((isValidNow: boolean) => {
-    console.log('✅ useFormState.setIsValid:', isValidNow);
     setIsValidState(isValidNow);
   }, []);
 
@@ -111,7 +106,6 @@ export const useFormState = (
    * Establecer errores
    */
   const setErrors = useCallback((errorsNow: string[]) => {
-    console.log('❌ useFormState.setErrors:', errorsNow);
     setErrorsState(errorsNow);
   }, []);
 
@@ -119,7 +113,6 @@ export const useFormState = (
    * Establecer advertencias
    */
   const setWarnings = useCallback((warningsNow: string[]) => {
-    console.log('⚠️ useFormState.setWarnings:', warningsNow);
     setWarningsState(warningsNow);
   }, []);
 
@@ -127,7 +120,6 @@ export const useFormState = (
    * Establecer estado de envío
    */
   const setIsSubmitting = useCallback((isSubmittingNow: boolean) => {
-    console.log('📤 useFormState.setIsSubmitting:', isSubmittingNow);
     setIsSubmittingState(isSubmittingNow);
   }, []);
 
@@ -135,7 +127,6 @@ export const useFormState = (
    * Establecer timestamp de último guardado
    */
   const setLastSaved = useCallback((timestamp: number | null) => {
-    console.log('💾 useFormState.setLastSaved:', timestamp);
     setLastSavedState(timestamp);
   }, []);
 
@@ -143,7 +134,6 @@ export const useFormState = (
    * Resetear formulario a estado inicial
    */
   const resetForm = useCallback(() => {
-    console.log('🔄 useFormState.resetForm');
     setFormDataState(initialData);
     setOriginalDataState(null);
     setHasChangesState(false);
@@ -158,7 +148,6 @@ export const useFormState = (
    * Resetear a datos originales
    */
   const resetToOriginal = useCallback(() => {
-    console.log('↩️ useFormState.resetToOriginal');
     if (originalData) {
       setFormDataState(originalData);
       setHasChangesState(false);
@@ -169,7 +158,6 @@ export const useFormState = (
    * Limpiar validación
    */
   const clearValidation = useCallback(() => {
-    console.log('🧹 useFormState.clearValidation');
     setIsValidState(true);
     setErrorsState([]);
     setWarningsState([]);
@@ -179,7 +167,6 @@ export const useFormState = (
    * Marcar como guardado
    */
   const markAsSaved = useCallback(() => {
-    console.log('✅ useFormState.markAsSaved');
     setLastSavedState(Date.now());
     setHasChangesState(false);
     setOriginalDataState({ ...formData });

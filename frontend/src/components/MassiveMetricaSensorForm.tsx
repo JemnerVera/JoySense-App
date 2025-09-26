@@ -230,7 +230,6 @@ export function MassiveMetricaSensorForm({
           nodoids: [node.nodoid] // Solo este nodo específico
         });
         
-        console.log(`🔗 Tipos para nodo ${node.nodo}:`, tiposDelNodo.map(t => t.label));
         
         for (const tipoOption of tiposDelNodo) {
           for (const metrica of formData.metricasData) {
@@ -248,7 +247,6 @@ export function MassiveMetricaSensorForm({
       }
     }
 
-    console.log('🔗 Total de métricas sensor a crear:', dataToApply.length);
     onApply(dataToApply);
   };
 

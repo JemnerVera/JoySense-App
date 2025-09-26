@@ -54,7 +54,6 @@ const AlertasDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Cargando alertas reales del sistema...');
 
       // Cargar datos reales de alertas y tablas relacionadas
       const [
@@ -129,7 +128,6 @@ const AlertasDashboard: React.FC = () => {
             };
 
             alertasReales.push(alertaProcesada);
-            console.log(`✅ Alerta procesada: ${alertaProcesada.metrica_nombre} - Nodo ${alertaProcesada.nodo_id} - Valor: ${alertaProcesada.valor_actual}`);
 
           } catch (error) {
             console.error(`❌ Error procesando alerta ${alerta.alertaid}:`, error);
@@ -137,7 +135,6 @@ const AlertasDashboard: React.FC = () => {
         }
       }
 
-      console.log(`📋 Total alertas procesadas: ${alertasReales.length}`);
       setAlertas(alertasReales);
       calcularEstadisticas(alertasReales);
 
@@ -177,7 +174,6 @@ const AlertasDashboard: React.FC = () => {
     try {
       // Por ahora solo actualizar el estado local
       setAlertas(prev => prev.filter(a => a.alertaid !== alertaid));
-      console.log(`Alerta ${alertaid} resuelta`);
     } catch (error) {
       console.error('Error resolviendo alerta:', error);
     }

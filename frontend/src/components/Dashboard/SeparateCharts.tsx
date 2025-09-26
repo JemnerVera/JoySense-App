@@ -161,7 +161,6 @@ const SeparateCharts: React.FC<SeparateChartsProps> = React.memo(({
     if (!metricaAUsar && mediciones.length > 0) {
       const metricasDisponibles = Array.from(new Set(mediciones.map(m => m.metricaid)));
       metricaAUsar = metricasDisponibles[0];
-      console.log('🔧 SeparateCharts: Usando primera métrica disponible:', metricaAUsar);
     }
 
     // Filtrar mediciones por métrica seleccionada

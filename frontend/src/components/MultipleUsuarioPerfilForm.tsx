@@ -186,7 +186,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
   // Filtrar usuarios por término de búsqueda
   const usuariosSinPerfil = getUsuariosSinPerfil();
-  console.log('🔍 Debug - usuariosSinPerfil para filtrado:', usuariosSinPerfil);
   
   const filteredUsuarios = usuariosSinPerfil.filter(usuario => {
     const nombreMatch = usuario.nombre?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
@@ -208,7 +207,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
     return nombreMatch || emailMatch || loginMatch || firstnameMatch || lastnameMatch;
   });
   
-  console.log('🔍 Debug - filteredUsuarios final:', filteredUsuarios);
 
   // Filtrar perfiles por término de búsqueda
   const filteredPerfiles = getPerfilesDisponibles().filter(perfil =>

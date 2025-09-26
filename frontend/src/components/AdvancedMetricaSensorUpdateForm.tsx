@@ -146,7 +146,6 @@ export function AdvancedMetricaSensorUpdateForm({
       }))
     });
     
-    console.log('🔍 Debug - Filas originales:', allOriginalRows);
     
     // Para cada combinación de nodo-tipo-métrica seleccionada
     selectedNodos.forEach(nodoId => {
@@ -203,7 +202,6 @@ export function AdvancedMetricaSensorUpdateForm({
       }
     });
     
-    console.log('🔍 Debug - Entradas actualizadas:', updatedEntries.length);
       console.log('🔍 Debug - Entradas a enviar:', updatedEntries.map(entry => ({
         nodoid: entry.nodoid,
         tipoid: entry.tipoid,

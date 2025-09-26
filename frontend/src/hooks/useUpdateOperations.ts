@@ -41,7 +41,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
     formData: Record<string, any>,
     originalData: Record<string, any>
   ): Promise<{ success: boolean; id?: number; error?: string }> => {
-    console.log(`🔍 useUpdateOperations.updateSingle - ${tableName}:`, formData);
     
     setIsUpdating(true);
     setUpdateErrorState(null);
@@ -79,7 +78,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
       // Realizar actualización
       const response = await backendAPI.put(`/${tableName}/${recordId}`, dataToUpdate);
       
-      console.log(`✅ useUpdateOperations.updateSingle - ${tableName} updated:`, response);
       
       setUpdateSuccessState(true);
       setLastUpdatedId(recordId);
@@ -115,7 +113,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
     tableName: string, 
     updates: Array<{ id: number; data: Record<string, any> }>
   ): Promise<{ success: boolean; updatedCount?: number; errors?: string[] }> => {
-    console.log(`🔍 useUpdateOperations.updateMultiple - ${tableName}:`, updates.length, 'records');
     
     setIsUpdating(true);
     setUpdateErrorState(null);
@@ -218,7 +215,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
    * Limpiar estado de actualización
    */
   const clearUpdateState = useCallback(() => {
-    console.log('🧹 useUpdateOperations.clearUpdateState');
     setUpdateErrorState(null);
     setUpdateSuccessState(false);
     setLastUpdatedId(null);
@@ -228,7 +224,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
    * Establecer estado de actualización
    */
   const setUpdating = useCallback((updating: boolean) => {
-    console.log('⏳ useUpdateOperations.setUpdating:', updating);
     setIsUpdating(updating);
   }, []);
 
@@ -236,7 +231,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
    * Establecer error de actualización
    */
   const setUpdateError = useCallback((error: string | null) => {
-    console.log('❌ useUpdateOperations.setUpdateError:', error);
     setUpdateErrorState(error);
   }, []);
 
@@ -244,7 +238,6 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
    * Establecer éxito de actualización
    */
   const setUpdateSuccess = useCallback((success: boolean) => {
-    console.log('✅ useUpdateOperations.setUpdateSuccess:', success);
     setUpdateSuccessState(success);
   }, []);
 
