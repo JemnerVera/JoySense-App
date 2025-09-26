@@ -2875,6 +2875,23 @@ const validateUsuarioUpdate = async (
     }
   }
   
+  // Validar email único (si existe el campo)
+  if (formData.email && formData.email.trim() !== '') {
+    const emailExists = existingData.some(item => 
+      item.usuarioid !== originalData.usuarioid && 
+      item.email && 
+      item.email.toLowerCase() === formData.email.toLowerCase()
+    );
+    
+    if (emailExists) {
+      errors.push({
+        field: 'email',
+        message: 'El email ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
     // Verificar si hay usuarioperfil, contactos, audit_log_umbral o alertas que referencian este usuario
