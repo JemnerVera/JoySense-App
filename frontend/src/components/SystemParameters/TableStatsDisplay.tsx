@@ -15,11 +15,20 @@ export function TableStatsDisplay({ tableData, userData }: TableStatsDisplayProp
     })?.[0];
 
   const getLastUser = () => {
-    if (!lastModified || !userData) return 'N/A';
+    if (!lastModified || !userData) {
+      return 'N/A';
+    }
     
     const userId = lastModified.usermodifiedid || lastModified.usercreatedid;
-    const user = userData.find((u: any) => u.id === userId);
-    return user ? `${user.firstname} ${user.lastname}`.trim() || user.login : 'N/A';
+    // Buscar por usuarioid (campo correcto en la BD) o por id (fallback)
+    const user = userData.find((u: any) => u.usuarioid === userId || u.id === userId);
+    
+    if (user) {
+      return `${user.firstname} ${user.lastname}`.trim() || user.login || `Usuario ${userId}`;
+    } else {
+      // Si no se encuentra el usuario, mostrar el ID como fallback
+      return `Usuario ${userId}`;
+    }
   };
 
   return (

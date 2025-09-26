@@ -44,6 +44,8 @@ export const useTableDataManagement = () => {
     try {
       const response = await JoySenseService.getTableData('usuario', 1000);
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
+      
+      
       setUserData(data);
     } catch (error) {
       console.error('Error loading user data:', error);
