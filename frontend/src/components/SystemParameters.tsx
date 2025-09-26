@@ -9462,19 +9462,33 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Función para manejar cancelación del formulario de inserción
 
   const handleCancelInsert = () => {
-
-    setCancelAction(() => () => {
-
-      // Reinicializar formulario
-
-      setFormData(initializeFormData(columns));
-
-      setShowCancelModal(false);
-
+    // Obtener los valores iniciales del formulario
+    const initialFormData = initializeFormData(columns);
+    
+    // Verificar si hay cambios comparando con los valores iniciales
+    const hasChanges = Object.keys(formData).some(key => {
+      const currentValue = formData[key];
+      const initialValue = initialFormData[key];
+      
+      // Comparar valores, considerando null, undefined y string vacío como equivalentes
+      if (currentValue === null || currentValue === undefined || currentValue === '') {
+        return initialValue !== null && initialValue !== undefined && initialValue !== '';
+      }
+      
+      return currentValue !== initialValue;
     });
-
-    setShowCancelModal(true);
-
+    
+    if (hasChanges) {
+      setCancelAction(() => () => {
+        // Reinicializar formulario
+        setFormData(initializeFormData(columns));
+        setShowCancelModal(false);
+      });
+      setShowCancelModal(true);
+    } else {
+      // Si no hay cambios, cancelar directamente sin modal
+      setFormData(initializeFormData(columns));
+    }
   };
 
 
@@ -11295,7 +11309,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             {/* Mensaje centrado */}
             <div className="mb-6 text-center">
               <p className="text-white font-mono text-sm leading-relaxed">
-                Si cambias de pestaña, se perderá toda la información ingresada.
+                Se perderá toda la información ingresada en el formulario.
               </p>
             </div>
 
