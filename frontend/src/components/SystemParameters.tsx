@@ -2031,7 +2031,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función simple para manejar el cambio de tabla
 
-  const handleTableChange = (newTable: string) => {
+  const handleTableChange = useCallback((newTable: string) => {
 
     console.log('🔄 Table change - newTable:', newTable);
 
@@ -2117,7 +2117,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  };
+  }, [formData, selectedTable, activeSubTab]);
 
   // Exponer funciones al componente padre
   useImperativeHandle(ref, () => ({
@@ -2171,7 +2171,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // SISTEMA ROBUSTO DE NAVEGACIÓN - 3 FUNCIONES ESPECÍFICAS
 
-  const handleParameterNavigation = (newTable: string) => {
+  const handleParameterNavigation = useCallback((newTable: string) => {
 
     console.log('🔄 SystemParameters: Parameter navigation to:', newTable);
 
@@ -2218,11 +2218,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     //   onTableSelect(newTable);
     // }
 
-  };
+  }, [setSelectedTable, setActiveSubTab]);
 
 
 
-  const handleSubTabNavigation = (newSubTab: 'status' | 'insert' | 'update' | 'massive') => {
+  const handleSubTabNavigation = useCallback((newSubTab: 'status' | 'insert' | 'update' | 'massive') => {
 
     console.log('🔄 SystemParameters: SubTab navigation to:', newSubTab);
 
@@ -2300,7 +2300,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-  };
+  }, [setActiveSubTab, onSubTabChange]);
 
 
 
@@ -2678,7 +2678,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     try {
 
-      const constraints = await JoySenseService.getTableConstraints(selectedTable);
+      // const constraints = await JoySenseService.getTableConstraints(selectedTable);
 
       // setTableConstraints(constraints);
 
@@ -2754,7 +2754,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setCopyFilteredData(data);
 
-      const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
+      // const copyItemsPerPage = (selectedTable === 'sensor' || selectedTable === 'metricasensor') ? 10 : 5;
 
       // setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
 
@@ -9098,7 +9098,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     })));
 
-   };
+  };
 
 
 
