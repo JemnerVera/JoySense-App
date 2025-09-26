@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UsePaginationProps {
   data: any[];
@@ -16,16 +16,16 @@ export const usePagination = (data: any[], itemsPerPage: number = 10) => {
     return paginatedData;
   };
 
-  const goToPage = (page: number) => {
+  const goToPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
-  };
+  }, [totalPages]);
 
-  const nextPage = () => goToPage(currentPage + 1);
-  const prevPage = () => goToPage(currentPage - 1);
-  const firstPage = () => goToPage(1);
-  const lastPage = () => goToPage(totalPages);
+  const nextPage = useCallback(() => goToPage(currentPage + 1), [goToPage, currentPage]);
+  const prevPage = useCallback(() => goToPage(currentPage - 1), [goToPage, currentPage]);
+  const firstPage = useCallback(() => goToPage(1), [goToPage]);
+  const lastPage = useCallback(() => goToPage(totalPages), [goToPage, totalPages]);
 
   // Resetear a página 1 cuando cambian los datos
   useEffect(() => {
