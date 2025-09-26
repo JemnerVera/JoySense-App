@@ -211,13 +211,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Función para renderizar fila contextual con filtros globales
   const renderContextualRow = (fields: string[]) => {
-    console.log('🔍 renderContextualRow Debug:', {
-      selectedTable,
-      fields,
-      paisSeleccionado,
-      empresaSeleccionada,
-      fundoSeleccionado
-    });
     
     const contextualFields = fields.map(field => {
       // Para País: mostrar solo si hay filtro global
@@ -274,10 +267,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Función para renderizar campos con layout específico
   const renderSpecialLayoutFields = (): React.ReactNode[] => {
-    console.log('🔍 renderSpecialLayoutFields Debug:', {
-      selectedTable,
-      visibleColumnsLength: visibleColumns?.length
-    });
     
     if (selectedTable === 'umbral') {
       return renderUmbralFields();
@@ -912,13 +901,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       return true;
     });
 
-    console.log('🔍 getFilteredNodoOptions Debug:', {
-      entidadid: formData.entidadid,
-      ubicacionid: formData.ubicacionid,
-      totalNodos: allNodos.length,
-      filteredNodos: filteredNodos.length,
-      localizacionesCount: localizacionesData.length
-    });
 
     return filteredNodos;
   };
