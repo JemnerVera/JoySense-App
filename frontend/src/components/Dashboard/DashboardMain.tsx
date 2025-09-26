@@ -1,5 +1,5 @@
 import React from 'react';
-import DynamicHierarchy from './DynamicHierarchy';
+import DynamicHierarchy from './ParametersHierarchy';
 
 interface DashboardMainProps {
   selectedPais?: any;
