@@ -32,6 +32,7 @@ import { MultipleSelectionButtons } from './SystemParameters/MultipleSelectionBu
 // import { CancelConfirmationModal } from './SystemParameters/CancelConfirmationModal';
 import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
+import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
 // import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';

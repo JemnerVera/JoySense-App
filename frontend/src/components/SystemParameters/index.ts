@@ -10,3 +10,4 @@ export { SearchBar } from './SearchBar';
 export { MultipleSelectionButtons } from './MultipleSelectionButtons';
 export { CancelConfirmationModal } from './CancelConfirmationModal';
 export { SearchBarWithCounter } from './SearchBarWithCounter';
+export { ComplexSearchBar } from './ComplexSearchBar';
