@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
 
@@ -528,15 +528,21 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     );
   };
 
+  // Memoizar opciones de país para evitar re-renders
+  const paisOptions = useMemo(() => {
+    return getUniqueOptionsForField('paisid');
+  }, [getUniqueOptionsForField]);
+
+  // Auto-seleccionar País si solo hay una opción
+  useEffect(() => {
+    if (paisOptions.length === 1 && !formData.paisid) {
+      setFormData((prev: any) => ({ ...prev, paisid: paisOptions[0].value }));
+    }
+  }, [paisOptions, formData.paisid, setFormData]);
+
   // Función para renderizar campos de Empresa con layout específico
   const renderEmpresaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
-    // Auto-seleccionar País si solo hay una opción
-    const paisOptions = getUniqueOptionsForField('paisid');
-    if (paisOptions.length === 1 && !formData.paisid) {
-      setFormData({ ...formData, paisid: paisOptions[0].value });
-    }
     
     // Primera fila: País (si hay múltiples opciones, mostrar dropdown; si solo una, mostrar como texto)
     const paisField = visibleColumns.find(c => c.columnName === 'paisid');
@@ -587,14 +593,23 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     return result;
   };
 
+  // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
+  useEffect(() => {
+    if (empresaSeleccionada && !formData.empresaid) {
+      setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+    }
+  }, [empresaSeleccionada, formData.empresaid, setFormData]);
+
+  // Auto-seleccionar Fundo si hay filtro global y no está seleccionado
+  useEffect(() => {
+    if (fundoSeleccionado && !formData.fundoid) {
+      setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+    }
+  }, [fundoSeleccionado, formData.fundoid, setFormData]);
+
   // Función para renderizar campos de Fundo con layout específico
   const renderFundoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
-    // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
-    if (empresaSeleccionada && !formData.empresaid) {
-      setFormData({ ...formData, empresaid: empresaSeleccionada });
-    }
     
     // Fila contextual: País, Empresa (si hay filtros globales)
     const contextualRow = renderContextualRow(['pais', 'empresa']);
@@ -636,11 +651,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // Función para renderizar campos de Ubicación con layout específico
   const renderUbicacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
-    // Auto-seleccionar Fundo si hay filtro global y no está seleccionado
-    if (fundoSeleccionado && !formData.fundoid) {
-      setFormData({ ...formData, fundoid: fundoSeleccionado });
-    }
     
     // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);

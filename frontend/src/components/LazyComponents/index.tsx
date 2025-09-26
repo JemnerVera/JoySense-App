@@ -172,13 +172,13 @@ class LazyComponentErrorBoundary extends React.Component<
 }
 
 // Enhanced lazy components with error boundaries
-export const SystemParametersLazyWithBoundary: React.FC<any> = (props) => (
+export const SystemParametersLazyWithBoundary = React.forwardRef<any, any>((props, ref) => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
-      <SystemParametersLazy {...props} />
+      <SystemParametersLazy {...props} ref={ref} />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
-);
+));
 
 export const ConfigurationLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>
