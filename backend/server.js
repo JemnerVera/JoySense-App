@@ -1362,6 +1362,7 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
       .update(updateData)
       .eq('ubicacionid', ubicacionid)
       .eq('nodoid', nodoid)
+      .eq('entidadid', entidadid)
       .select();
     
     if (error) {
