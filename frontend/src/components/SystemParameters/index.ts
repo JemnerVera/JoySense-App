@@ -1,15 +1,8 @@
 export { TableChangeConfirmationModal } from './TableChangeConfirmationModal';
 export { MessageDisplay } from './MessageDisplay';
-export { TableInfoDisplay } from './TableInfoDisplay';
 export { LoadingSpinner } from './LoadingSpinner';
 export { TableStatsDisplay } from './TableStatsDisplay';
 export { PaginationControls } from './PaginationControls';
 export { ActionButtons } from './ActionButtons';
-export { UpdateMessageDisplay } from './UpdateMessageDisplay';
-export { SearchBar } from './SearchBar';
 export { MultipleSelectionButtons } from './MultipleSelectionButtons';
-export { CancelConfirmationModal } from './CancelConfirmationModal';
 export { SearchBarWithCounter } from './SearchBarWithCounter';
-export { ComplexSearchBar } from './ComplexSearchBar';
-export { StatusTabContent } from './StatusTabContent';
-export { StatusTabJSX } from './StatusTabJSX';
