@@ -1803,7 +1803,25 @@ const validateLocalizacionUpdate = async (
     }
   }
   
-  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  // 3. Validar restricción "unico_nodo_activo" (solo si se está activando)
+  if (formData.statusid === 1 && originalData.statusid !== 1) {
+    // Se está activando una localización, verificar que no haya otra activa para el mismo nodo
+    const nodoActivoExists = existingData.some(item => 
+      item.nodoid === formData.nodoid && 
+      item.statusid === 1 &&
+      (item.ubicacionid !== originalData.ubicacionid || item.nodoid !== originalData.nodoid)
+    );
+    
+    if (nodoActivoExists) {
+      errors.push({
+        field: 'statusid',
+        message: 'Ya existe una localización activa para este nodo. Un nodo solo puede tener una localización activa a la vez.',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Validar relaciones padre-hijo (solo si se está inactivando)
   // Según el schema, localizacion NO es referenciada por ninguna otra tabla
   // Por lo tanto, no hay restricciones para inactivar
   
