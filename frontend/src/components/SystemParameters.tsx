@@ -9694,7 +9694,24 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        <SearchBarWithCounter
                          searchTerm={statusSearchTerm}
-                         onSearchChange={(value) => handleStatusSearch(value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage)}
+                         onSearchChange={(value) => {
+                           const relatedData = {
+                             paisesData,
+                             empresasData,
+                             fundosData,
+                             ubicacionesData,
+                             entidadesData,
+                             nodosData,
+                             tiposData,
+                             metricasData,
+                             criticidadesData,
+                             perfilesData,
+                             umbralesData,
+                             userData,
+                             mediosData
+                           };
+                           handleStatusSearch(value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage, relatedData);
+                         }}
                          filteredCount={statusFilteredData.length}
                          totalCount={filteredTableData.length}
                        />

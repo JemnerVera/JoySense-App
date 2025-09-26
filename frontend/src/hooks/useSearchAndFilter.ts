@@ -175,7 +175,7 @@ export const useSearchAndFilter = () => {
   /**
    * Manejar búsqueda de estado
    */
-  const handleStatusSearch = useCallback((searchTerm: string, filteredTableData: any[], statusVisibleColumns: any[], userData: any[], setStatusCurrentPage: (page: number) => void) => {
+  const handleStatusSearch = useCallback((searchTerm: string, filteredTableData: any[], statusVisibleColumns: any[], userData: any[], setStatusCurrentPage: (page: number) => void, relatedData?: any) => {
     setStatusSearchTerm(searchTerm);
     setStatusCurrentPage(1); // Resetear a la primera página
 
@@ -187,7 +187,10 @@ export const useSearchAndFilter = () => {
           const value = row[col.columnName];
           if (value === null || value === undefined) return false;
 
-          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
+          // Usar getDisplayValue si tenemos relatedData, sino usar lógica simple
+          const displayValue = relatedData 
+            ? getDisplayValue(row, col.columnName, relatedData)
+            : col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
             ? getUserName(value, userData)
             : col.columnName === 'statusid'
             ? (() => {

@@ -1356,6 +1356,7 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
     
     console.log(`🔍 Backend: Actualizando localizacion con query params - ubicacionid: ${ubicacionid}, nodoid: ${nodoid}, entidadid: ${entidadid}...`);
     console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Tipos de datos - ubicacionid: ${typeof ubicacionid}, nodoid: ${typeof nodoid}, entidadid: ${typeof entidadid}`);
     
     const { data, error } = await supabase
         .from('localizacion')
@@ -1366,11 +1367,13 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
       .select();
     
     if (error) {
-      console.error('❌ Error backend:', error);
+      console.error('❌ Error backend en localizacion:', error);
+      console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
       return res.status(500).json({ error: error.message });
     }
     
     console.log(`✅ Backend: Localizacion actualizada: ${data.length} registros`);
+    console.log(`✅ Backend: Datos actualizados:`, JSON.stringify(data, null, 2));
     res.json(data);
   } catch (error) {
     console.error('❌ Error backend:', error);
