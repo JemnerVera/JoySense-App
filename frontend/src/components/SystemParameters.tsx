@@ -33,10 +33,10 @@ import { MultipleSelectionButtons } from './SystemParameters/MultipleSelectionBu
 import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 // import { ComplexSearchBar } from './SystemParameters/ComplexSearchBar';
-// import { MessageDisplay } from './SystemParameters/MessageDisplay';
+import { MessageDisplay } from './SystemParameters/MessageDisplay';
+import { StatusTabContent } from './SystemParameters/StatusTabContent';
 // import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
 // import { SearchBar } from './SystemParameters/SearchBar';
-// import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { TableInfoDisplay } from './SystemParameters/TableInfoDisplay';
 // import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 
@@ -9851,27 +9851,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             {/* Mensajes */}
 
-                         {message && (
-
-               <div className={`p-4 rounded-lg mb-6 ${
-
-                 message.type === 'success' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' : 
-
-                 message.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
-
-                 message.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
-
-                 'bg-red-600 bg-opacity-20 border border-red-500'
-
-               } text-white font-mono tracking-wider`}>
-
-                 {message.text.split('\n').map((line, index) => (
-                   <div key={index}>{line}</div>
-                 ))}
-
-               </div>
-
-             )}
+            <MessageDisplay message={message} />
 
 
 

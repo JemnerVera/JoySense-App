@@ -1,5 +1,9 @@
 import React from 'react';
-import { Message } from '../../types/systemParameters';
+
+interface Message {
+  type: 'success' | 'warning' | 'error' | 'info';
+  text: string;
+}
 
 interface MessageDisplayProps {
   message: Message | null;
