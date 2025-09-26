@@ -341,7 +341,7 @@ export const validateTableUpdate = async (
           type: 'format'
         })),
         userFriendlyMessage: basicResult.errors.length > 0 
-          ? `⚠️ ${basicResult.errors.join('\n')}`
+          ? basicResult.errors.map(error => `⚠️ ${error}`).join('\n')
           : ''
       };
   }
@@ -396,7 +396,7 @@ export const validateTableData = async (
           type: 'format'
         })),
         userFriendlyMessage: basicResult.errors.length > 0 
-          ? `⚠️ ${basicResult.errors.join(' ⚠️ ')}` 
+          ? basicResult.errors.map(error => `⚠️ ${error}`).join('\n')
           : ''
       };
   }
@@ -2174,72 +2174,32 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
   
   // Manejar errores de campos obligatorios
   if (requiredErrors.length > 0) {
-    if (requiredErrors.length === 1) {
-      messages.push(`⚠️ ${requiredErrors[0].message}`);
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'pais') && 
-               requiredErrors.some(e => e.field === 'paisabrev')) {
+    const processedFields = new Set<string>();
+    
+    // Combinar campos relacionados
+    if (requiredErrors.some(e => e.field === 'pais') && 
+        requiredErrors.some(e => e.field === 'paisabrev')) {
       messages.push('⚠️ El país y abreviatura es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'empresa') && 
+      processedFields.add('pais');
+      processedFields.add('paisabrev');
+    } else if (requiredErrors.some(e => e.field === 'empresa') && 
                requiredErrors.some(e => e.field === 'empresabrev')) {
       messages.push('⚠️ La empresa y abreviatura es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'fundo') && 
+      processedFields.add('empresa');
+      processedFields.add('empresabrev');
+    } else if (requiredErrors.some(e => e.field === 'fundo') && 
                requiredErrors.some(e => e.field === 'fundoabrev')) {
       messages.push('⚠️ El fundo y abreviatura es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'ubicacion') && 
-               requiredErrors.some(e => e.field === 'fundoid')) {
-      messages.push('⚠️ La ubicación y fundo es obligatorio');
-    } else if (requiredErrors.length === 3 && 
-               requiredErrors.some(e => e.field === 'latitud') && 
-               requiredErrors.some(e => e.field === 'longitud') && 
-               requiredErrors.some(e => e.field === 'referencia')) {
-      messages.push('⚠️ La latitud, longitud y referencia es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'latitud') && 
-               requiredErrors.some(e => e.field === 'longitud')) {
-      messages.push('⚠️ La latitud y longitud es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'latitud') && 
-               requiredErrors.some(e => e.field === 'referencia')) {
-      messages.push('⚠️ La latitud y referencia es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'longitud') && 
-               requiredErrors.some(e => e.field === 'referencia')) {
-      messages.push('⚠️ La longitud y referencia es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'tipo') && 
-               requiredErrors.some(e => e.field === 'entidadid')) {
-      messages.push('⚠️ El tipo y entidad es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'nodo') && 
-               requiredErrors.some(e => e.field === 'deveui')) {
-      messages.push('⚠️ El nodo y DevEUI es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'metrica') && 
-               requiredErrors.some(e => e.field === 'unidad')) {
-      messages.push('⚠️ La métrica y unidad es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'perfilid') && 
-               requiredErrors.some(e => e.field === 'umbralid')) {
-      messages.push('⚠️ El perfil y umbral es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'criticidad') && 
-               requiredErrors.some(e => e.field === 'criticidadbrev')) {
-      messages.push('⚠️ La criticidad y abreviatura es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'usuarioid') && 
-               requiredErrors.some(e => e.field === 'medioid')) {
-      messages.push('⚠️ El usuario y medio es obligatorio');
-    } else if (requiredErrors.length === 2 && 
-               requiredErrors.some(e => e.field === 'perfil') && 
-               requiredErrors.some(e => e.field === 'nivel')) {
-      messages.push('⚠️ El perfil y nivel es obligatorio');
-    } else {
-      messages.push(`⚠️ ${requiredErrors.map(e => e.message).join(' ⚠️ ')}`);
+      processedFields.add('fundo');
+      processedFields.add('fundoabrev');
     }
+    
+    // Agregar errores restantes que no fueron procesados
+    requiredErrors.forEach(error => {
+      if (!processedFields.has(error.field)) {
+        messages.push(`⚠️ ${error.message}`);
+      }
+    });
   }
   
   // Manejar errores de duplicados
@@ -2267,7 +2227,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
         messages.push(`⚠️ ${duplicateErrors[0].message}`);
       }
     } else {
-      messages.push(`⚠️ ${duplicateErrors.map(e => e.message).join(' ⚠️ ')}`);
+      // Agregar cada error de duplicado como un mensaje separado
+      duplicateErrors.forEach(error => {
+        messages.push(`⚠️ ${error.message}`);
+      });
     }
   }
   
