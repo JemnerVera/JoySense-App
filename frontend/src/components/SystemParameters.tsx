@@ -5946,7 +5946,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       'perfilumbral': [],
       'criticidad': [],
       'medio': [],
-      'perfil': [],
+      'perfil': ['nivel'],
       'usuario': [],
       'contacto': ['celular', 'correo'],
       'usuarioperfil': []

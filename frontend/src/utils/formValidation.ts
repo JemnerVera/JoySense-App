@@ -130,7 +130,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   perfil: [
     { field: 'perfil', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del perfil es obligatorio' },
-    { field: 'nivel', required: true, type: 'string', minLength: 1, customMessage: 'El nivel del perfil es obligatorio' }
+    { field: 'nivel', required: false, type: 'string', customMessage: 'El nivel del perfil es obligatorio' }
   ],
   
   metricasensor: [
@@ -1297,13 +1297,7 @@ const validatePerfilData = async (
     });
   }
   
-  if (!formData.nivel || formData.nivel.trim() === '') {
-    errors.push({
-      field: 'nivel',
-      message: 'El nivel del perfil es obligatorio',
-      type: 'required'
-    });
-  }
+  // Nivel es opcional según el schema de la BD
   
   // 2. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
@@ -2273,12 +2267,10 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
       processedFields.add('medioid');
     }
     
-    // Perfil: nombre + nivel
-    if (requiredErrors.some(e => e.field === 'perfil') && 
-        requiredErrors.some(e => e.field === 'nivel')) {
-      messages.push('⚠️ El nombre del perfil y nivel es obligatorio');
+    // Perfil: solo nombre (nivel es opcional)
+    if (requiredErrors.some(e => e.field === 'perfil')) {
+      messages.push('⚠️ El nombre del perfil es obligatorio');
       processedFields.add('perfil');
-      processedFields.add('nivel');
     }
     
     // Umbral: todos los campos de selección
@@ -2953,13 +2945,7 @@ const validatePerfilUpdate = async (
     });
   }
   
-  if (!formData.nivel || formData.nivel.trim() === '') {
-    errors.push({
-      field: 'nivel',
-      message: 'El nivel del perfil es obligatorio',
-      type: 'required'
-    });
-  }
+  // Nivel es opcional según el schema de la BD
   
   // 2. Validar duplicados (excluyendo el registro actual)
   if (formData.perfil && formData.perfil.trim() !== '') {
