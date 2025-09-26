@@ -5,6 +5,7 @@ interface MassiveSensorFormProps {
   onApply: (data: any[]) => void;
   onCancel: () => void;
   loading?: boolean;
+  entidadesData?: any[];
 }
 
 interface SelectedNode {
@@ -22,7 +23,8 @@ export function MassiveSensorForm({
   getUniqueOptionsForField,
   onApply,
   onCancel,
-  loading = false
+  loading = false,
+  entidadesData = []
 }: MassiveSensorFormProps) {
   const [formData, setFormData] = useState<FormData>({
     selectedTipos: []
@@ -56,6 +58,14 @@ export function MassiveSensorForm({
     }
     return tipo.entidadid === entidadDelPrimerTipo;
   };
+
+  // Obtener el nombre de la entidad seleccionada
+  const entidadSeleccionada = useMemo(() => {
+    if (!entidadDelPrimerTipo || !entidadesData.length) {
+      return null;
+    }
+    return entidadesData.find(entidad => entidad.entidadid === entidadDelPrimerTipo);
+  }, [entidadDelPrimerTipo, entidadesData]);
 
   // Cargar nodos automáticamente (todos los nodos que NO tienen sensores asignados)
   useEffect(() => {
@@ -245,14 +255,19 @@ export function MassiveSensorForm({
 
         {/* Tipos */}
         <div>
-          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-            SENSOR
-          </h4>
-          {formData.selectedTipos.length > 0 && (
-            <div className="mb-3 p-2 bg-blue-900 bg-opacity-30 border border-blue-600 rounded text-xs font-mono text-blue-300">
-              💡 Solo puedes seleccionar tipos de la misma entidad. Las opciones no disponibles aparecen atenuadas. Deselecciona todos para habilitar todas las opciones.
-            </div>
-          )}
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
+              SENSOR
+            </h4>
+            {entidadSeleccionada && (
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-900 bg-opacity-30 border border-green-600 rounded-full">
+                <span className="text-green-400 text-xs font-mono">🏷️</span>
+                <span className="text-green-300 text-xs font-mono tracking-wider">
+                  {entidadSeleccionada.entidad.toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
           
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             {allTiposOptions.length > 0 ? (

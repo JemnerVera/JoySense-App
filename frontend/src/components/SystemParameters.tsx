@@ -11227,6 +11227,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       loading={loading}
 
+                      entidadesData={entidadesData}
+
                     />
 
                   ) : selectedTable === 'metricasensor' ? (
