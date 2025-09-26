@@ -2246,6 +2246,31 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
       processedFields.add('nivel');
     }
     
+    // Umbral: todos los campos de selección
+    const umbralSelectionFields = ['ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid'];
+    const umbralSelectionErrors = requiredErrors.filter(e => umbralSelectionFields.includes(e.field));
+    
+    if (umbralSelectionErrors.length > 0) {
+      const fieldNames = {
+        'ubicacionid': 'ubicación',
+        'criticidadid': 'criticidad', 
+        'nodoid': 'nodo',
+        'metricaid': 'métrica',
+        'tipoid': 'tipo'
+      };
+      
+      const missingFields = umbralSelectionErrors
+        .map(e => fieldNames[e.field as keyof typeof fieldNames])
+        .join(', ');
+      
+      messages.push(`⚠️ Debe seleccionar ${missingFields}`);
+      
+      // Marcar todos los campos de selección como procesados
+      umbralSelectionErrors.forEach(error => {
+        processedFields.add(error.field);
+      });
+    }
+    
     // Ubicación: latitud + longitud + referencia
     if (requiredErrors.some(e => e.field === 'latitud') && 
         requiredErrors.some(e => e.field === 'longitud') && 
