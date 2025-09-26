@@ -2,3 +2,8 @@ export { TableChangeConfirmationModal } from './TableChangeConfirmationModal';
 export { MessageDisplay } from './MessageDisplay';
 export { TableInfoDisplay } from './TableInfoDisplay';
 export { LoadingSpinner } from './LoadingSpinner';
+export { TableStatsDisplay } from './TableStatsDisplay';
+export { PaginationControls } from './PaginationControls';
+export { ActionButtons } from './ActionButtons';
+export { UpdateMessageDisplay } from './UpdateMessageDisplay';
+export { SearchBar } from './SearchBar';

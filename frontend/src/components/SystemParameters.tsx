@@ -25,6 +25,11 @@ import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
 import { useMultipleSelection } from '../hooks/useMultipleSelection';
 import { usePagination } from '../hooks/usePagination';
 import { TableChangeConfirmationModal } from './SystemParameters/TableChangeConfirmationModal';
+import { TableStatsDisplay } from './SystemParameters/TableStatsDisplay';
+import { PaginationControls } from './SystemParameters/PaginationControls';
+import { ActionButtons } from './SystemParameters/ActionButtons';
+// import { UpdateMessageDisplay } from './SystemParameters/UpdateMessageDisplay';
+// import { SearchBar } from './SystemParameters/SearchBar';
 // import { MessageDisplay } from './SystemParameters/MessageDisplay';
 // import { TableInfoDisplay } from './SystemParameters/TableInfoDisplay';
 // import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
@@ -9878,67 +9883,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                    {tableInfo && (
 
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-
-                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">REGISTROS</div>
-
-                          <div className="text-2xl font-bold text-orange-500 font-mono">{tableData.length}</div>
-
-                       </div>
-
-                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMA ACTUALIZACIÓN</div>
-
-                         <div className="text-2xl font-bold text-orange-500 font-mono">{new Date().toLocaleDateString('es-ES')}</div>
-
-                       </div>
-
-                       <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 text-center">
-
-                         <div className="text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMO USUARIO</div>
-
-                         <div className="text-2xl font-bold text-orange-500 font-mono">
-
-                           {(() => {
-
-                             // Buscar el último registro modificado
-
-                             const lastModified = tableData
-
-                               ?.filter((row: any) => row.usermodifiedid || row.usercreatedid)
-
-                               ?.sort((a: any, b: any) => {
-
-                                 const dateA = new Date(a.datemodified || a.datecreated || 0);
-
-                                 const dateB = new Date(b.datemodified || b.datecreated || 0);
-
-                                 return dateB.getTime() - dateA.getTime();
-
-                               })?.[0];
-
-                             
-
-                             if (lastModified) {
-
-                               const userId = lastModified.usermodifiedid || lastModified.usercreatedid;
-
-                               return getUserName(userId, userData) || 'Usuario';
-
-                             }
-
-                             return 'N/A';
-
-                           })()}
-
-                         </div>
-
-                       </div>
-
-                     </div>
+                     <TableStatsDisplay tableData={tableData} userData={userData} />
 
                    )}
 
@@ -10102,79 +10047,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        {/* Paginación */}
 
-                       {statusTotalPages > 1 && (
-
-                         <div className="flex justify-center gap-2 mt-6">
-
-                           <button
-
-                             onClick={() => handleStatusPageChange(1)}
-
-                             disabled={statusCurrentPage <= 1}
-
-                             className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
-
-                             title="Primera página"
-
-                           >
-
-                             ⏮️
-
-                           </button>
-
-                           <button
-
-                             onClick={() => handleStatusPageChange(statusCurrentPage - 1)}
-
-                             disabled={statusCurrentPage <= 1}
-
-                             className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
-
-                           >
-
-                             ← ANTERIOR
-
-                           </button>
-
-                           <span className="text-white flex items-center px-3 font-mono tracking-wider">
-
-                             PÁGINA {statusCurrentPage} DE {statusTotalPages}
-
-                           </span>
-
-                           <button
-
-                             onClick={() => handleStatusPageChange(statusCurrentPage + 1)}
-
-                             disabled={statusCurrentPage >= statusTotalPages}
-
-                             className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
-
-                           >
-
-                             SIGUIENTE →
-
-                           </button>
-
-                           <button
-
-                             onClick={() => handleStatusPageChange(statusTotalPages)}
-
-                             disabled={statusCurrentPage >= statusTotalPages}
-
-                             className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
-
-                             title="Última página"
-
-                           >
-
-                             ⏭️
-
-                           </button>
-
-                         </div>
-
-                       )}
+                       <PaginationControls
+                         currentPage={statusCurrentPage}
+                         totalPages={statusTotalPages}
+                         onPageChange={handleStatusPageChange}
+                         showPagination={statusTotalPages > 1}
+                       />
 
                      </>
 
@@ -11077,45 +10955,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-                      {/* Botones de acción - Solo para tablas que no sean metricasensor, sensor o usuarioperfil */}
-
-                      {selectedTable !== 'metricasensor' && selectedTable !== 'sensor' && selectedTable !== 'usuarioperfil' && (
-
-                        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center">
-
-                          <button
-
-                            onClick={handleUpdate}
-
-                            disabled={updateLoading}
-
-                            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
-
-                          >
-
-                            <span>➕</span>
-
-                            <span>{updateLoading ? 'GUARDANDO...' : 'GUARDAR'}</span>
-
-                          </button>
-
-                          <button
-
-                            onClick={handleCancelUpdate}
-
-                            className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
-
-                          >
-
-                            <span>❌</span>
-
-                            <span>CANCELAR</span>
-
-                          </button>
-
-                        </div>
-
-                      )}
+                      <ActionButtons
+                        selectedTable={selectedTable}
+                        updateLoading={updateLoading}
+                        onUpdate={handleUpdate}
+                        onCancelUpdate={handleCancelUpdate}
+                      />
 
                       </div>
 
