@@ -1034,12 +1034,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             {displayName.toUpperCase()}{isRequired ? '*' : ''}
           </label>
           <input
-            type={col.columnName === 'latitud' || col.columnName === 'longitud' ? 'number' : 'text'}
+            type="text"
             value={value}
             onChange={(e) => setFormData({
               ...formData,
               [col.columnName]: col.columnName === 'latitud' || col.columnName === 'longitud' 
-                ? parseFloat(e.target.value) || 0 
+                ? parseFloat(e.target.value) || '' 
                 : e.target.value
             })}
             placeholder={`${displayName.toUpperCase()}`}

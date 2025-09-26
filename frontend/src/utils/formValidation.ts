@@ -61,7 +61,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
     { field: 'latitud', required: false, type: 'number', customMessage: 'La latitud es obligatoria' },
     { field: 'longitud', required: false, type: 'number', customMessage: 'La longitud es obligatoria' },
-    { field: 'referencia', required: false, type: 'string', minLength: 1, customMessage: 'La referencia es obligatoria' }
+    { field: 'referencia', required: false, type: 'string', customMessage: 'La referencia es obligatoria' }
   ],
   
   entidad: [
@@ -739,13 +739,7 @@ const validateLocalizacionData = async (
     });
   }
   
-  if (!formData.referencia || formData.referencia.trim() === '') {
-    errors.push({
-      field: 'referencia',
-      message: 'La referencia es obligatoria',
-      type: 'required'
-    });
-  }
+  // Referencia es opcional según el schema de la BD
   
   // 2. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
@@ -1777,13 +1771,7 @@ const validateLocalizacionUpdate = async (
     });
   }
   
-  if (!formData.referencia || formData.referencia.trim() === '') {
-    errors.push({
-      field: 'referencia',
-      message: 'La referencia es obligatoria',
-      type: 'required'
-    });
-  }
+  // Referencia es opcional según el schema de la BD
   
   // 2. Validar duplicados (excluyendo el registro actual)
   // Para localizacion, la clave primaria es compuesta (ubicacionid, nodoid)
