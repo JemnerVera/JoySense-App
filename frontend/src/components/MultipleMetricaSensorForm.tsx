@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import ReplicateButton from './ReplicateButton';
 
 interface MultipleMetricaSensorFormProps {
@@ -36,7 +36,7 @@ interface MultipleMetricaSensorFormProps {
   fundosData?: any[];
 }
 
-const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
+const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo(({
   selectedNodos,
   setSelectedNodos,
   selectedEntidad,
@@ -664,7 +664,9 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = ({
       </div>
     </div>
   );
-};
+});
+
+MultipleMetricaSensorForm.displayName = 'MultipleMetricaSensorForm';
 
 export default MultipleMetricaSensorForm;
 

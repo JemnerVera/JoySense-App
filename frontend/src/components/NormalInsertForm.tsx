@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
 
@@ -24,7 +24,7 @@ interface NormalInsertFormProps {
   fundosData?: any[];
 }
 
-const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
+const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   visibleColumns,
   formData,
   setFormData,
@@ -1677,6 +1677,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = ({
       </div>
     </div>
   );
-};
+});
+
+NormalInsertForm.displayName = 'NormalInsertForm';
 
 export default NormalInsertForm;

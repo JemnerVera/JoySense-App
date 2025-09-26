@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
 import SeparateCharts from './DashboardCharts';
@@ -94,7 +94,7 @@ const DynamicStats: React.FC<{ mediciones: any[]; metricas: any[]; nodos: any[];
 
 interface DynamicHierarchyProps {}
 
-const DynamicHierarchy: React.FC<DynamicHierarchyProps> = () => {
+const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
   const [paises, setPaises] = useState<Pais[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [fundos, setFundos] = useState<Fundo[]>([]);
@@ -826,6 +826,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = () => {
       {renderStep()}
     </div>
   );
-};
+});
+
+DynamicHierarchy.displayName = 'DynamicHierarchy';
 
 export default DynamicHierarchy;

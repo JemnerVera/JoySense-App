@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 
 interface MassiveUmbralFormProps {
@@ -52,7 +52,7 @@ interface FormData {
   metricasData: MetricaData[];
 }
 
-export function MassiveUmbralForm({
+export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   getUniqueOptionsForField,
   onApply,
   onCancel,
@@ -985,4 +985,4 @@ export function MassiveUmbralForm({
       </div>
     </div>
   );
-}
+});
