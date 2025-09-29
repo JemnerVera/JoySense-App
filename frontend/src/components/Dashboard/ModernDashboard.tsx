@@ -72,11 +72,6 @@ const baseMetrics: MetricConfig[] = [
 ]
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
-  // Debug: Verificar que los callbacks estén llegando
-  console.log('🔍 ModernDashboard: Callbacks recibidos:', {
-    onEntidadChange: !!onEntidadChange,
-    onUbicacionChange: !!onUbicacionChange
-  })
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +89,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar datos de mediciones
   useEffect(() => {
-    console.log('🔍 ModernDashboard: useEffect triggered - filters:', filters, 'selectedNode:', selectedNode)
     loadMediciones()
   }, [filters, selectedNode])
 
@@ -107,21 +101,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [])
 
   const loadMediciones = async () => {
-    console.log('🔍 ModernDashboard: loadMediciones called with filters:', filters, 'selectedNode:', selectedNode)
-    
     if (!filters.entidadId || !filters.ubicacionId) {
-      console.log('🔍 ModernDashboard: Faltan filtros - entidadId:', filters.entidadId, 'ubicacionId:', filters.ubicacionId)
       setMediciones([])
       return
     }
-
-    console.log('🔍 ModernDashboard: Cargando mediciones con filtros:', filters)
     setLoading(true)
     setError(null)
 
     try {
       // Obtener todas las mediciones sin filtro de tiempo
-      console.log('🔍 ModernDashboard: Obteniendo todas las mediciones...')
       const allData = await JoySenseService.getMediciones({
         entidadId: filters.entidadId,
         ubicacionId: filters.ubicacionId,
@@ -130,16 +118,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar que allData sea un array
       if (!Array.isArray(allData)) {
-        console.log('🔍 ModernDashboard: Datos no son un array, estableciendo array vacío')
         setMediciones([])
         setLoading(false)
         return
       }
 
-      console.log('🔍 ModernDashboard: Todas las mediciones obtenidas:', allData.length)
-
       if (allData.length === 0) {
-        console.log('🔍 ModernDashboard: No hay mediciones disponibles')
         setMediciones([])
         setLoading(false)
         return
@@ -148,14 +132,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Filtrar por nodo seleccionado si existe
       let filteredData = allData
       if (selectedNode) {
-        console.log('🔍 ModernDashboard: Filtrando por nodo seleccionado:', selectedNode.nodoid)
         filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
-        console.log('🔍 ModernDashboard: Mediciones filtradas por nodo:', filteredData.length)
       }
 
       // Mostrar métricas disponibles en los datos filtrados
       const metricasPresentes = Array.from(new Set(filteredData.map(m => m.metricaid))).sort()
-      console.log('🔍 ModernDashboard: Metricas presentes en datos filtrados:', metricasPresentes)
       
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       setMediciones(filteredData)
@@ -209,7 +190,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Procesar datos para gráficos - específico por métrica
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
     if (!mediciones.length) {
-      console.log('🔍 ModernDashboard: No hay mediciones para procesar')
       return []
     }
 
@@ -218,11 +198,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
     
     if (!metricMediciones.length) {
-      console.log(`🔍 ModernDashboard: No hay mediciones para ${dataKey}`)
       return []
     }
-
-    console.log(`🔍 ModernDashboard: Procesando ${metricMediciones.length} mediciones para ${dataKey}`)
 
     // Ordenar por fecha
     const sortedMediciones = metricMediciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
@@ -235,24 +212,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(detailedEndDate)
       endDate.setHours(23, 59, 59, 999) // Incluir todo el día final
       
-      console.log(`🔍 ModernDashboard: ${dataKey} - Rango personalizado: ${startDate.toISOString()} a ${endDate.toISOString()}`)
       
       filteredMediciones = sortedMediciones.filter(m => {
         const medicionDate = new Date(m.fecha)
         return medicionDate >= startDate && medicionDate <= endDate
       })
       
-      console.log(`🔍 ModernDashboard: ${dataKey} - Datos en rango personalizado: ${filteredMediciones.length}`)
     } else {
       // Usar lógica de 3 horas (comportamiento por defecto)
       const latestDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
       const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
       
-      console.log(`🔍 ModernDashboard: ${dataKey} - Fecha más reciente: ${latestDate.toISOString()}`)
-      console.log(`🔍 ModernDashboard: ${dataKey} - Rango de 3 horas: ${threeHoursAgo.toISOString()} a ${latestDate.toISOString()}`)
 
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
-      console.log(`🔍 ModernDashboard: ${dataKey} - Datos en rango de 3 horas: ${filteredMediciones.length}`)
     }
     
     // Agrupar por hora
@@ -274,7 +246,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     })
 
     const result = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp)
-    console.log(`🔍 ModernDashboard: Datos procesados para ${dataKey}:`, result.length, 'puntos')
     return result
   }
 
@@ -295,14 +266,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
     
     if (!metricMediciones.length) {
-      console.log(`🔍 ModernDashboard: No hay mediciones para ${dataKey} (metricaid: ${metricId})`)
       return 0
     }
     
     // Obtener la medición más reciente
     const latest = metricMediciones.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
     const value = latest ? latest.medicion || 0 : 0
-    console.log(`🔍 ModernDashboard: ${dataKey} - Valor más reciente: ${value} (fecha: ${latest.fecha})`)
     return value
   }
 
@@ -371,14 +340,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Verificar si una métrica tiene datos
   const hasMetricData = (dataKey: string) => {
     if (!mediciones.length) {
-      console.log(`🔍 ModernDashboard: hasMetricData(${dataKey}) - No hay mediciones`)
       return false
     }
     
     const metricId = getMetricIdFromDataKey(dataKey)
     const hasData = mediciones.some(m => m.metricaid === metricId)
-    console.log(`🔍 ModernDashboard: hasMetricData(${dataKey}) - metricaid: ${metricId}, hasData: ${hasData}`)
-    console.log(`🔍 ModernDashboard: hasMetricData(${dataKey}) - metricas disponibles:`, Array.from(new Set(mediciones.map(m => m.metricaid))))
     return hasData
   }
 
@@ -392,7 +358,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }
 
   const availableMetrics = getAvailableMetrics()
-  console.log('🔍 ModernDashboard: Métricas disponibles para mostrar:', availableMetrics.map(m => m.title))
 
   return (
     <div className="min-h-screen bg-neutral-900 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
@@ -421,11 +386,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           selectedEntidadId={filters.entidadId}
           selectedUbicacionId={filters.ubicacionId}
           onNodeSelect={(nodeData) => {
-            console.log('🔍 ModernDashboard: Nodo seleccionado:', nodeData)
             setSelectedNode(nodeData)
           }}
           onFiltersUpdate={(newFilters) => {
-            console.log('🔍 ModernDashboard: Actualizando filtros desde nodo:', newFilters)
             onFiltersChange({
               entidadId: newFilters.entidadId,
               ubicacionId: newFilters.ubicacionId,

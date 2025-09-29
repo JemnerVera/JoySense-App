@@ -22,9 +22,13 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     paisSeleccionado, 
     empresaSeleccionada, 
     fundoSeleccionado,
+    entidadSeleccionada,
+    ubicacionSeleccionada,
     setPaisSeleccionado,
     setEmpresaSeleccionada,
-    setFundoSeleccionado
+    setFundoSeleccionado,
+    setEntidadSeleccionada,
+    setUbicacionSeleccionada
   } = useFilters();
 
   const { paises, empresas, fundos } = useCompleteFilterData('');
@@ -35,9 +39,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const [loadingEntidades, setLoadingEntidades] = useState(false);
   const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
 
-  // Estados locales para filtros del dashboard
-  const [selectedEntidad, setSelectedEntidad] = useState<any>(null);
-  const [selectedUbicacion, setSelectedUbicacion] = useState<any>(null);
+  // Usar directamente el contexto global como fuente de verdad (eliminar estados locales)
+  const selectedEntidad = entidadSeleccionada;
+  const selectedUbicacion = ubicacionSeleccionada;
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
@@ -49,6 +53,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const entidadDropdownRef = useRef<HTMLDivElement>(null);
   const ubicacionDropdownRef = useRef<HTMLDivElement>(null);
   const fechasDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Forzar re-render cuando cambien los valores del contexto global
+  useEffect(() => {
+    // Este useEffect se ejecuta cuando cambian los valores del contexto
+    // y fuerza el re-render del componente
+  }, [entidadSeleccionada, ubicacionSeleccionada, entidades.length, ubicaciones.length]);
 
   // Cerrar dropdowns cuando se hace click fuera
   useEffect(() => {
@@ -190,28 +200,29 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const filteredUbicaciones = ubicaciones;
 
   // Limpiar selecciones cuando cambian los filtros padre
+  // PERO solo si las listas ya están cargadas (no vacías)
   useEffect(() => {
-    if (selectedEntidad && !filteredEntidades.find((e: any) => e.entidadid === selectedEntidad.entidadid)) {
-      setSelectedEntidad(null);
+    if (selectedEntidad && filteredEntidades.length > 0 && !filteredEntidades.find((e: any) => e.entidadid === selectedEntidad.entidadid)) {
+      setEntidadSeleccionada(null);
     }
-  }, [filteredEntidades, selectedEntidad]);
+  }, [filteredEntidades, selectedEntidad, setEntidadSeleccionada]);
 
   useEffect(() => {
-    if (selectedUbicacion && !filteredUbicaciones.find((u: any) => u.ubicacionid === selectedUbicacion.ubicacionid)) {
-      setSelectedUbicacion(null);
+    if (selectedUbicacion && filteredUbicaciones.length > 0 && !filteredUbicaciones.find((u: any) => u.ubicacionid === selectedUbicacion.ubicacionid)) {
+      setUbicacionSeleccionada(null);
     }
-  }, [filteredUbicaciones, selectedUbicacion]);
+  }, [filteredUbicaciones, selectedUbicacion, setUbicacionSeleccionada]);
 
 
   const handleEntidadSelect = (entidad: any) => {
-    setSelectedEntidad(entidad);
+    setEntidadSeleccionada(entidad); // Solo actualizar contexto global
     setIsEntidadDropdownOpen(false);
     // Limpiar ubicación
-    setSelectedUbicacion(null);
+    setUbicacionSeleccionada(null); // Limpiar contexto global
   };
 
   const handleUbicacionSelect = (ubicacion: any) => {
-    setSelectedUbicacion(ubicacion);
+    setUbicacionSeleccionada(ubicacion); // Solo actualizar contexto global
     setIsUbicacionDropdownOpen(false);
   };
 

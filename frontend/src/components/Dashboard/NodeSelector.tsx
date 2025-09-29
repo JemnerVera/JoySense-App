@@ -38,8 +38,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [nodeMediciones, setNodeMediciones] = useState<{ [nodeId: number]: number }>({})
   const searchDropdownRef = useRef<HTMLDivElement>(null)
 
-  // Hook para acceder a los filtros globales del sidebar
-  const { setPaisSeleccionado, setEmpresaSeleccionada, setFundoSeleccionado } = useFilters()
+  // Hook para acceder a los filtros globales del sidebar y header
+  const { 
+    setPaisSeleccionado, 
+    setEmpresaSeleccionada, 
+    setFundoSeleccionado,
+    setEntidadSeleccionada,
+    setUbicacionSeleccionada
+  } = useFilters()
 
   // Cargar nodos con localizaciones
   useEffect(() => {
@@ -65,53 +71,35 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
-    console.log('🔄 NodeSelector: Sincronizando filtros globales para nodo:', node.nodo)
-    console.log('🔍 NodeSelector: Callbacks disponibles:', {
-      onEntidadChange: !!onEntidadChange,
-      onUbicacionChange: !!onUbicacionChange
-    })
     
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
     if (node.ubicacion.fundo.empresa.pais.paisid) {
       setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
-      console.log('🌍 Filtro país actualizado:', node.ubicacion.fundo.empresa.pais.pais)
     }
-    
+
     if (node.ubicacion.fundo.empresa.empresaid) {
       setEmpresaSeleccionada(node.ubicacion.fundo.empresa.empresaid.toString())
-      console.log('🏢 Filtro empresa actualizado:', node.ubicacion.fundo.empresa.empresa)
     }
-    
+
     if (node.ubicacion.fundoid) {
       setFundoSeleccionado(node.ubicacion.fundoid.toString())
-      console.log('🏭 Filtro fundo actualizado:', node.ubicacion.fundo.fundo)
     }
     
-    // 2. Actualizar filtros del header (entidad, ubicación)
-    if (onEntidadChange && node.entidad) {
-      console.log('🏛️ Llamando onEntidadChange con:', node.entidad)
-      onEntidadChange(node.entidad)
-      console.log('🏛️ Filtro entidad actualizado:', node.entidad.entidad)
-    } else {
-      console.log('⚠️ onEntidadChange no disponible o node.entidad faltante:', {
-        onEntidadChange: !!onEntidadChange,
-        nodeEntidad: !!node.entidad
-      })
-    }
-    
-    if (onUbicacionChange) {
+    // 2. Actualizar filtros del header (entidad, ubicación) usando contexto global
+    // Usar setTimeout para asegurar que el contexto se actualice en el siguiente tick
+    setTimeout(() => {
+      if (node.entidad) {
+        setEntidadSeleccionada(node.entidad)
+      }
+      
       const ubicacion = {
         ubicacionid: node.ubicacionid,
         ubicacion: node.ubicacion.ubicacion,
         ubicacionabrev: node.ubicacion.ubicacionabrev,
         fundoid: node.ubicacion.fundoid
       }
-      console.log('📍 Llamando onUbicacionChange con:', ubicacion)
-      onUbicacionChange(ubicacion)
-      console.log('📍 Filtro ubicación actualizado:', node.ubicacion.ubicacion)
-    } else {
-      console.log('⚠️ onUbicacionChange no disponible')
-    }
+      setUbicacionSeleccionada(ubicacion)
+    }, 0)
   }
 
   // Filtrar nodos para el searchbar

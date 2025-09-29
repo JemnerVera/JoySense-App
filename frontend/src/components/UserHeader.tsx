@@ -69,7 +69,13 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   const { theme } = useTheme();
   
   // Usar filtros globales del contexto
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { 
+    paisSeleccionado, 
+    empresaSeleccionada, 
+    fundoSeleccionado,
+    entidadSeleccionada,
+    ubicacionSeleccionada
+  } = useFilters();
   
   // Cargar datos de filtros desde el contexto (mismo sistema que SidebarFilters)
   const { paises: contextPaises, empresas: contextEmpresas, fundos: contextFundos } = useFilterData(authToken);
@@ -84,19 +90,10 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   const globalSelectedEmpresa = empresaSeleccionada ? empresasToUse.find(e => e.empresaid === parseInt(empresaSeleccionada)) : null;
   const globalSelectedFundo = fundoSeleccionado ? fundosToUse.find(f => f.fundoid === parseInt(fundoSeleccionado)) : null;
   
-  // Debug: verificar si empresas está vacío
-  if (empresasToUse.length === 0 && empresaSeleccionada) {
-    console.warn('⚠️ UserHeader - empresas está vacío pero empresaSeleccionada existe:', empresaSeleccionada);
-  }
+  // Usar valores del contexto global para entidad y ubicación
+  const globalSelectedEntidad = entidadSeleccionada || selectedEntidad;
+  const globalSelectedUbicacion = ubicacionSeleccionada || selectedUbicacion;
   
-  console.log('🔍 UserHeader - Objetos convertidos:', {
-    globalSelectedPais,
-    globalSelectedEmpresa,
-    globalSelectedFundo,
-    paises: paises.length,
-    empresas: empresas.length,
-    fundos: fundos.length
-  });
   
   const renderTabControls = () => {
     // Mostrar controles del dashboard para la pestaña principal "Dashboard"

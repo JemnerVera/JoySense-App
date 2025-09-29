@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import { ModernDashboard } from './ModernDashboard';
+import { useFilters } from '../../contexts/FilterContext';
 
 interface DynamicHierarchyProps {
   selectedPais?: any;
@@ -35,11 +36,9 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   onDateFilter,
   onResetFilters
 }) => {
-  // Debug: Verificar que los callbacks estén llegando
-  console.log('🔍 ParametersHierarchy: Callbacks recibidos:', {
-    onEntidadChange: !!onEntidadChange,
-    onUbicacionChange: !!onUbicacionChange
-  })
+  // Hook para acceder a los filtros globales
+  const { entidadSeleccionada, ubicacionSeleccionada } = useFilters()
+  
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [metricas, setMetricas] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
@@ -107,56 +106,38 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   };
 
     loadMediciones();
-  }, [selectedEntidad, selectedUbicacion, startDate, endDate]);
+  }, [entidadSeleccionada, ubicacionSeleccionada, startDate, endDate]);
 
-  // Preparar filtros para el ModernDashboard
+  // Preparar filtros para el ModernDashboard usando contexto global
   const filters = {
-    entidadId: selectedEntidad?.entidadid || null,
-    ubicacionId: selectedUbicacion?.ubicacionid || null,
+    entidadId: entidadSeleccionada?.entidadid || null,
+    ubicacionId: ubicacionSeleccionada?.ubicacionid || null,
     startDate: startDate || '',
     endDate: endDate || ''
   };
 
-  // Log para debug
-  console.log('🔍 ParametersHierarchy: Filtros calculados:', filters);
 
   // Función para manejar cambios en los filtros
   const handleFiltersChange = (newFilters: any) => {
-    console.log('🔍 ParametersHierarchy: Recibiendo cambios de filtros:', newFilters);
-    
     // Actualizar todos los filtros jerárquicos si se proporcionan
     if (onPaisChange && newFilters.paisId) {
       const pais = { paisid: newFilters.paisId };
-      console.log('🔍 ParametersHierarchy: Actualizando país:', pais);
       onPaisChange(pais);
     }
-    
+
     if (onEmpresaChange && newFilters.empresaId) {
       const empresa = { empresaid: newFilters.empresaId };
-      console.log('🔍 ParametersHierarchy: Actualizando empresa:', empresa);
       onEmpresaChange(empresa);
     }
-    
+
     if (onFundoChange && newFilters.fundoId) {
       const fundo = { fundoid: newFilters.fundoId };
-      console.log('🔍 ParametersHierarchy: Actualizando fundo:', fundo);
       onFundoChange(fundo);
     }
-    
-    // Siempre actualizar entidad si se proporciona
-    if (onEntidadChange && newFilters.entidadId) {
-      const entidad = { entidadid: newFilters.entidadId };
-      console.log('🔍 ParametersHierarchy: Actualizando entidad:', entidad);
-      onEntidadChange(entidad);
-    }
-    
-    // Siempre actualizar ubicación si se proporciona
-    if (onUbicacionChange && newFilters.ubicacionId) {
-      const ubicacion = { ubicacionid: newFilters.ubicacionId };
-      console.log('🔍 ParametersHierarchy: Actualizando ubicación:', ubicacion);
-      onUbicacionChange(ubicacion);
-    }
-    
+
+    // NO actualizar entidad y ubicación aquí porque ya se actualizan desde NodeSelector
+    // Esto evita que se sobrescriban los objetos completos con solo los IDs
+
     // Actualizar fechas solo si son diferentes
     if (onDateFilter && (newFilters.startDate !== filters.startDate || newFilters.endDate !== filters.endDate)) {
       onDateFilter(newFilters.startDate, newFilters.endDate);
