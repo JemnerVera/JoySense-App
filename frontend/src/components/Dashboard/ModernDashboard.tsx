@@ -462,14 +462,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             strokeOpacity={0.9}
                           />
                           <Tooltip
-                            labelFormatter={(label) => `Hora: ${label}`}
-                            formatter={(value: number) => [`${value.toFixed(1)} ${metric.unit}`, metric.title]}
+                            labelFormatter={(label) => (
+                              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                Hora: {label}
+                              </div>
+                            )}
+                            formatter={(value: number) => [
+                              <div key="value" style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                                {metric.title}: {value.toFixed(1)} {metric.unit}
+                              </div>
+                            ]}
                             contentStyle={{
                               backgroundColor: "#1f2937",
                               border: "1px solid #374151",
                               borderRadius: "8px",
                               color: "#ffffff",
-                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
+                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+                              padding: "8px 12px"
                             }}
                           />
                         </LineChart>
@@ -591,7 +600,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   {/* Gráfico detallado */}
                   <div className="bg-neutral-800 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 font-mono tracking-wider">
-                      {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title} - ANÁLISIS DETALLADO
+                      {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}
                     </h3>
                     {(() => {
                       const chartData = processChartData(selectedDetailedMetric, true);
@@ -636,14 +645,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             activeDot={{ r: 6, fill: baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.color || "#f59e0b" }}
                           />
                           <Tooltip
-                            labelFormatter={(label) => `Hora: ${label}`}
-                            formatter={(value: number) => [`${value.toFixed(1)} ${baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}`, baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title]}
+                            labelFormatter={(label) => (
+                              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                Hora: {label}
+                              </div>
+                            )}
+                            formatter={(value: number) => [
+                              <div key="value" style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                                {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}: {value.toFixed(1)} {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                              </div>
+                            ]}
                             contentStyle={{
                               backgroundColor: "#1f2937",
                               border: "1px solid #374151",
                               borderRadius: "8px",
                               color: "#ffffff",
-                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
+                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+                              padding: "8px 12px"
                             }}
                           />
                         </LineChart>
