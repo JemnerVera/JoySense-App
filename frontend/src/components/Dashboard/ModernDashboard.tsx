@@ -92,6 +92,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     loadMediciones()
   }, [filters, selectedNode])
 
+  // Recargar datos cuando cambien las fechas del análisis detallado
+  useEffect(() => {
+    if (showDetailedAnalysis && detailedStartDate && detailedEndDate) {
+      console.log('🔄 Fechas del modal cambiaron, recargando gráfico...', {
+        detailedStartDate,
+        detailedEndDate,
+        selectedDetailedMetric
+      })
+      // El gráfico se actualizará automáticamente por el estado
+      // No necesitamos hacer nada más, el componente se re-renderizará
+    }
+  }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis])
+
   // Cargar entidades, ubicaciones, métricas y tipos
   useEffect(() => {
     loadEntidades()
@@ -205,47 +218,84 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const sortedMediciones = metricMediciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
     
     let filteredMediciones = sortedMediciones
+    let isDateRange = false
 
     if (useCustomRange && detailedStartDate && detailedEndDate) {
-      // Usar rango personalizado de fechas
-      const startDate = new Date(detailedStartDate)
-      const endDate = new Date(detailedEndDate)
-      endDate.setHours(23, 59, 59, 999) // Incluir todo el día final
+      // Usar rango personalizado de fechas del modal de detalle
+      const startDate = new Date(detailedStartDate + 'T00:00:00')
+      const endDate = new Date(detailedEndDate + 'T23:59:59')
       
+      console.log('🔍 Filtrando por fechas:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalMediciones: sortedMediciones.length
+      })
       
       filteredMediciones = sortedMediciones.filter(m => {
         const medicionDate = new Date(m.fecha)
-        return medicionDate >= startDate && medicionDate <= endDate
+        const isInRange = medicionDate >= startDate && medicionDate <= endDate
+        return isInRange
       })
+      
+      console.log('🔍 Mediciones filtradas:', filteredMediciones.length)
+      
+      // Determinar si es un rango de días (más de 1 día)
+      const timeDiff = endDate.getTime() - startDate.getTime()
+      const daysDiff = timeDiff / (1000 * 3600 * 24)
+      isDateRange = daysDiff > 1
+      
+      console.log('🔍 Es rango de días:', isDateRange, 'días:', daysDiff)
       
     } else {
       // Usar lógica de 3 horas (comportamiento por defecto)
       const latestDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
       const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
       
-
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
     }
     
-    // Agrupar por hora
+    // Agrupar por hora o por fecha según el rango
     const groupedData: { [key: string]: any } = {}
     
     filteredMediciones.forEach(medicion => {
       const date = new Date(medicion.fecha)
-      const hourKey = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+      let groupKey: string
+      let displayKey: string
       
-      if (!groupedData[hourKey]) {
-        groupedData[hourKey] = {
+      if (isDateRange) {
+        // Agrupar por fecha (DD/MM) para rangos de días
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        groupKey = `${day}/${month}`
+        displayKey = groupKey
+      } else {
+        // Agrupar por hora (HH:MM) para rangos de horas
+        const hour = String(date.getHours()).padStart(2, '0')
+        const minute = String(date.getMinutes()).padStart(2, '0')
+        groupKey = `${hour}:${minute}`
+        displayKey = groupKey
+      }
+      
+      if (!groupedData[groupKey]) {
+        groupedData[groupKey] = {
           timestamp: date.getTime(),
-          time: hourKey,
-          value: 0
+          time: displayKey,
+          value: 0,
+          count: 0
         }
       }
       
-      groupedData[hourKey].value = medicion.medicion
+      // Promediar valores si hay múltiples mediciones en el mismo grupo
+      const currentValue = groupedData[groupKey].value
+      const currentCount = groupedData[groupKey].count
+      const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
+      
+      groupedData[groupKey].value = newValue
+      groupedData[groupKey].count = currentCount + 1
     })
 
     const result = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp)
+    console.log('🔍 Datos procesados para gráfico:', result.length, 'puntos')
     return result
   }
 
@@ -540,8 +590,29 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {showDetailedAnalysis && selectedMetricForAnalysis && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-neutral-900 rounded-xl border border-neutral-700 w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
-              {/* Botón de cerrar */}
-              <div className="flex justify-end p-4">
+              {/* Header con botones de métricas */}
+              <div className="flex items-center justify-between p-4 border-b border-neutral-700">
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-xl font-bold text-white font-mono tracking-wider">
+                    Análisis Detallado
+                  </h2>
+                  {/* Botones de métricas en el header */}
+                  <div className="flex space-x-2">
+                    {baseMetrics.map((metric) => (
+                      <button
+                        key={metric.id}
+                        onClick={() => setSelectedDetailedMetric(metric.dataKey)}
+                        className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm ${
+                          selectedDetailedMetric === metric.dataKey
+                            ? 'bg-green-500 text-white'
+                            : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                        }`}
+                      >
+                        {metric.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button
                   onClick={() => {
                     setShowDetailedAnalysis(false)
@@ -558,22 +629,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               {/* Contenido */}
               <div className="flex-1 overflow-y-auto bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
                 <div className="p-6">
-                  {/* Botones de métricas */}
-                  <div className="flex space-x-3 mb-6">
-                    {baseMetrics.map((metric) => (
-                      <button
-                        key={metric.id}
-                        onClick={() => setSelectedDetailedMetric(metric.dataKey)}
-                        className={`px-4 py-2 rounded-lg font-mono tracking-wider transition-colors ${
-                          selectedDetailedMetric === metric.dataKey
-                            ? 'bg-green-500 text-white'
-                            : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
-                        }`}
-                      >
-                        {metric.title}
-                      </button>
-                    ))}
-                  </div>
 
                   {/* Filtro de fechas */}
                   <div className="flex space-x-4 mb-6">
