@@ -163,6 +163,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     <ModernDashboard 
       filters={filters}
       onFiltersChange={handleFiltersChange}
+      onEntidadChange={onEntidadChange}
+      onUbicacionChange={onUbicacionChange}
     />
   );
   };

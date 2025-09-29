@@ -11,6 +11,9 @@ interface ModernDashboardProps {
     endDate: string
   }
   onFiltersChange: (filters: any) => void
+  // Callbacks para actualizar filtros del header
+  onEntidadChange?: (entidad: any) => void
+  onUbicacionChange?: (ubicacion: any) => void
 }
 
 interface MedicionData {
@@ -68,7 +71,7 @@ const baseMetrics: MetricConfig[] = [
   }
 ]
 
-export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardProps) {
+export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -425,6 +428,8 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
               endDate: filters.endDate
             })
           }}
+          onEntidadChange={onEntidadChange}
+          onUbicacionChange={onUbicacionChange}
         />
 
 

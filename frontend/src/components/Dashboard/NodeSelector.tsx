@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { JoySenseService } from '../../services/backend-api'
 import { InteractiveMap } from './InteractiveMap'
 import { NodeData } from '../../types/NodeData'
+import { useFilters } from '../../contexts/FilterContext'
 
 interface NodeSelectorProps {
   selectedEntidadId: number | null
@@ -14,13 +15,18 @@ interface NodeSelectorProps {
     empresaId?: number | null;
     paisId?: number | null;
   }) => void
+  // Callbacks para actualizar filtros del header
+  onEntidadChange?: (entidad: any) => void
+  onUbicacionChange?: (ubicacion: any) => void
 }
 
 export const NodeSelector: React.FC<NodeSelectorProps> = ({
   selectedEntidadId,
   selectedUbicacionId,
   onNodeSelect,
-  onFiltersUpdate
+  onFiltersUpdate,
+  onEntidadChange,
+  onUbicacionChange
 }) => {
   const [nodes, setNodes] = useState<NodeData[]>([])
   const [filteredNodes, setFilteredNodes] = useState<NodeData[]>([])
@@ -31,6 +37,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
   const [nodeMediciones, setNodeMediciones] = useState<{ [nodeId: number]: number }>({})
   const searchDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Hook para acceder a los filtros globales del sidebar
+  const { setPaisSeleccionado, setEmpresaSeleccionada, setFundoSeleccionado } = useFilters()
 
   // Cargar nodos con localizaciones
   useEffect(() => {
@@ -51,6 +60,44 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       }
     } catch (err) {
       console.error('Error loading node mediciones:', err)
+    }
+  }
+
+  // Función para sincronizar todos los filtros cuando se selecciona un nodo
+  const syncAllFilters = (node: NodeData) => {
+    console.log('🔄 NodeSelector: Sincronizando filtros globales para nodo:', node.nodo)
+    
+    // 1. Actualizar filtros del sidebar (país, empresa, fundo)
+    if (node.ubicacion.fundo.empresa.pais.paisid) {
+      setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
+      console.log('🌍 Filtro país actualizado:', node.ubicacion.fundo.empresa.pais.pais)
+    }
+    
+    if (node.ubicacion.fundo.empresa.empresaid) {
+      setEmpresaSeleccionada(node.ubicacion.fundo.empresa.empresaid.toString())
+      console.log('🏢 Filtro empresa actualizado:', node.ubicacion.fundo.empresa.empresa)
+    }
+    
+    if (node.ubicacion.fundoid) {
+      setFundoSeleccionado(node.ubicacion.fundoid.toString())
+      console.log('🏭 Filtro fundo actualizado:', node.ubicacion.fundo.fundo)
+    }
+    
+    // 2. Actualizar filtros del header (entidad, ubicación)
+    if (onEntidadChange && node.entidad) {
+      onEntidadChange(node.entidad)
+      console.log('🏛️ Filtro entidad actualizado:', node.entidad.entidad)
+    }
+    
+    if (onUbicacionChange) {
+      const ubicacion = {
+        ubicacionid: node.ubicacionid,
+        ubicacion: node.ubicacion.ubicacion,
+        ubicacionabrev: node.ubicacion.ubicacionabrev,
+        fundoid: node.ubicacion.fundoid
+      }
+      onUbicacionChange(ubicacion)
+      console.log('📍 Filtro ubicación actualizado:', node.ubicacion.ubicacion)
     }
   }
 
@@ -94,16 +141,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setIsSearchDropdownOpen(false)
     setSearchTerm('')
     
-    // Actualizar TODOS los filtros globales cuando se selecciona un nodo
-    console.log('🔍 NodeSelector: Actualizando filtros completos desde searchbar:', {
-      entidadId: node.entidad.entidadid,
-      ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion.fundoid,
-      empresaId: node.ubicacion.fundo.empresa.empresaid,
-      paisId: node.ubicacion.fundo.empresa.pais.paisid,
-      nodo: node.nodo
-    })
+    // Sincronizar todos los filtros globales
+    syncAllFilters(node)
     
+    // Actualizar filtros del dashboard
     onFiltersUpdate({
       entidadId: node.entidad.entidadid,
       ubicacionId: node.ubicacionid,
@@ -117,16 +158,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setSelectedNode(node)
     onNodeSelect(node)
     
-    // Actualizar TODOS los filtros globales cuando se selecciona un nodo desde el mapa
-    console.log('🔍 NodeSelector: Actualizando filtros completos desde mapa:', {
-      entidadId: node.entidad.entidadid,
-      ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion.fundoid,
-      empresaId: node.ubicacion.fundo.empresa.empresaid,
-      paisId: node.ubicacion.fundo.empresa.pais.paisid,
-      nodo: node.nodo
-    })
+    // Sincronizar todos los filtros globales
+    syncAllFilters(node)
     
+    // Actualizar filtros del dashboard
     onFiltersUpdate({
       entidadId: node.entidad.entidadid,
       ubicacionId: node.ubicacionid,
