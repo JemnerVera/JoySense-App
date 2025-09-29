@@ -82,11 +82,12 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
   const [detailedStartDate, setDetailedStartDate] = useState<string>('')
   const [detailedEndDate, setDetailedEndDate] = useState<string>('')
+  const [selectedNode, setSelectedNode] = useState<any>(null)
 
   // Cargar datos de mediciones
   useEffect(() => {
     loadMediciones()
-  }, [filters])
+  }, [filters, selectedNode])
 
   // Cargar entidades, ubicaciones, métricas y tipos
   useEffect(() => {
@@ -132,12 +133,20 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
         return
       }
 
-      // Mostrar métricas disponibles en todos los datos
-      const metricasPresentes = Array.from(new Set(allData.map(m => m.metricaid))).sort()
-      console.log('🔍 ModernDashboard: Metricas presentes en todos los datos:', metricasPresentes)
+      // Filtrar por nodo seleccionado si existe
+      let filteredData = allData
+      if (selectedNode) {
+        console.log('🔍 ModernDashboard: Filtrando por nodo seleccionado:', selectedNode.nodoid)
+        filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
+        console.log('🔍 ModernDashboard: Mediciones filtradas por nodo:', filteredData.length)
+      }
+
+      // Mostrar métricas disponibles en los datos filtrados
+      const metricasPresentes = Array.from(new Set(filteredData.map(m => m.metricaid))).sort()
+      console.log('🔍 ModernDashboard: Metricas presentes en datos filtrados:', metricasPresentes)
       
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
-      setMediciones(allData)
+      setMediciones(filteredData)
     } catch (err) {
       setError("Error al cargar las mediciones")
       console.error("Error loading mediciones:", err)
@@ -401,6 +410,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
           selectedUbicacionId={filters.ubicacionId}
           onNodeSelect={(nodeData) => {
             console.log('🔍 ModernDashboard: Nodo seleccionado:', nodeData)
+            setSelectedNode(nodeData)
           }}
           onFiltersUpdate={(newFilters) => {
             console.log('🔍 ModernDashboard: Actualizando filtros desde nodo:', newFilters)

@@ -73,8 +73,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setError(null)
     try {
       const data = await JoySenseService.getNodosConLocalizacion()
-      setNodes(data)
-      console.log('🔍 NodeSelector: Nodos cargados:', data.length)
+      console.log('🔍 NodeSelector: Datos recibidos:', data)
+      
+      // Los datos ya vienen procesados del backend
+      setNodes(data || [])
+      console.log('🔍 NodeSelector: Nodos cargados:', data?.length || 0)
     } catch (err) {
       setError('Error al cargar nodos')
       console.error('Error loading nodes:', err)
@@ -119,7 +122,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   return (
     <div className="bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-orange-500 font-mono tracking-wider">CONSOLA DE SELECCIÓN DE NODO</h3>
+        <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">SELECCIONAR NODO</h3>
         <div className="flex space-x-2">
           <button
             onClick={() => setActiveTab('dropdown')}
@@ -187,7 +190,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                   <button
                     key={node.nodoid}
                     onClick={() => handleNodeSelect(node)}
-                    className="w-full px-4 py-3 text-left hover:bg-neutral-600 transition-colors border-b border-neutral-600 last:border-b-0"
+                    className="w-full px-4 py-3 text-left hover:bg-neutral-600 transition-colors border-b border-neutral-600 last:border-b-0 group relative"
+                    title={`ID: ${node.nodoid} | DevEUI: ${node.deveui} | Ubicación: ${node.ubicacion.ubicacion} | Fundo: ${node.ubicacion.fundo.fundo} | Empresa: ${node.ubicacion.fundo.empresa.empresa} | País: ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | Coordenadas: ${node.latitud}, ${node.longitud}` : ''}`}
                   >
                     <div className="font-medium text-white">{node.nodo}</div>
                     <div className="text-sm text-neutral-400">
@@ -221,15 +225,18 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         <div className="mt-4 p-3 bg-neutral-700 rounded-lg">
           <div className="text-sm text-neutral-300">
             <div className="font-medium text-white mb-1">Nodo Seleccionado:</div>
-            <div><strong>ID:</strong> {selectedNode.nodoid}</div>
-            <div><strong>Nombre:</strong> {selectedNode.nodo}</div>
-            <div><strong>DevEUI:</strong> {selectedNode.deveui}</div>
-            <div><strong>Ubicación:</strong> {selectedNode.ubicacion.ubicacion}</div>
-            <div><strong>Fundo:</strong> {selectedNode.ubicacion.fundo.fundo}</div>
-            <div><strong>Empresa:</strong> {selectedNode.ubicacion.fundo.empresa.empresa}</div>
-            <div><strong>País:</strong> {selectedNode.ubicacion.fundo.empresa.pais.pais}</div>
+            <div className="flex items-center space-x-2">
+              <span><strong>ID:</strong> {selectedNode.nodoid}</span>
+              <span><strong>Nombre:</strong> {selectedNode.nodo}</span>
+              <span><strong>DevEUI:</strong> {selectedNode.deveui}</span>
+            </div>
+            <div className="mt-1 text-xs text-neutral-400">
+              {selectedNode.ubicacion.ubicacion} - {selectedNode.ubicacion.fundo.fundo} - {selectedNode.ubicacion.fundo.empresa.empresa} - {selectedNode.ubicacion.fundo.empresa.pais.pais}
+            </div>
             {selectedNode.latitud && selectedNode.longitud && (
-              <div><strong>Coordenadas:</strong> {selectedNode.latitud}, {selectedNode.longitud}</div>
+              <div className="mt-1 text-xs text-neutral-400">
+                <strong>Coordenadas:</strong> {selectedNode.latitud}, {selectedNode.longitud}
+              </div>
             )}
           </div>
         </div>
