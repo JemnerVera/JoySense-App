@@ -247,7 +247,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           selectedValue={selectedEntidad?.entidad}
           placeholder="Entidad"
           className="w-full"
-          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white font-mono"
+          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-green-500 font-mono tracking-wider"
           dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
         >
           {loadingEntidades ? (
@@ -287,7 +287,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           selectedValue={selectedUbicacion?.ubicacion}
           placeholder="Ubicación"
           className="w-full"
-          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white font-mono"
+          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-green-500 font-mono tracking-wider"
           dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
         >
           {loadingUbicaciones ? (
@@ -323,16 +323,16 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           <button
             onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
             disabled={!fundoSeleccionado}
-            className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white font-mono ${
-              startDate && endDate ? 'border-orange-500' : ''
+            className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-neutral-700 transition-colors px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-green-500 font-mono tracking-wider ${
+              startDate && endDate ? 'border-green-500' : ''
             }`}
           >
             <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <span className={`${startDate && endDate ? 'text-white' : 'text-neutral-400'} truncate`}>
+              <span className={`${startDate && endDate ? 'text-green-500' : 'text-neutral-400'} truncate`}>
                 {formatDateRange()}
               </span>
             </div>
-            <svg className={`w-4 h-4 text-neutral-400 transition-transform ${isFechasDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 text-green-500 transition-transform ${isFechasDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>

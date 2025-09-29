@@ -58,11 +58,11 @@ const OverlayDropdown: React.FC<OverlayDropdownProps> = ({
       >
         <div className="flex items-center space-x-2">
           <span>{icon}</span>
-          <span className={`truncate font-mono tracking-wider ${selectedValue ? 'text-white' : 'text-neutral-400'}`}>
+          <span className={`truncate font-mono tracking-wider ${selectedValue ? 'text-green-500' : 'text-neutral-400'}`}>
             {selectedValue || placeholder}
           </span>
         </div>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -92,7 +92,6 @@ const OverlayDropdown: React.FC<OverlayDropdownProps> = ({
       >
         <div className={dropdownClassName}>
           <div className="p-4">
-            <h3 className="text-white text-sm font-medium mb-3">{icon} {title}</h3>
             <div className="space-y-2">
               {children}
             </div>
