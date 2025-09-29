@@ -543,14 +543,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           />
                           <Tooltip
                             labelFormatter={(label) => (
-                              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
                                 Hora: {label}
-                              </div>
+                              </span>
                             )}
                             formatter={(value: number) => [
-                              <div key="value" style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
                                 {metric.title}: {value.toFixed(1)} {metric.unit}
-                              </div>
+                              </span>
                             ]}
                             contentStyle={{
                               backgroundColor: "#1f2937",
@@ -731,14 +731,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           />
                           <Tooltip
                             labelFormatter={(label) => (
-                              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
                                 Hora: {label}
-                              </div>
+                              </span>
                             )}
                             formatter={(value: number) => [
-                              <div key="value" style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
                                 {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}: {value.toFixed(1)} {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                              </div>
+                              </span>
                             ]}
                             contentStyle={{
                               backgroundColor: "#1f2937",
