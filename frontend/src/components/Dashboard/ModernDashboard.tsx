@@ -309,11 +309,32 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
     setSelectedMetricForAnalysis(metric)
     setSelectedDetailedMetric(metric.dataKey)
     
-    // Establecer fechas por defecto (últimos 7 días)
-    const endDate = new Date()
-    const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
-    setDetailedStartDate(startDate.toISOString().split('T')[0])
-    setDetailedEndDate(endDate.toISOString().split('T')[0])
+    // Obtener fechas reales de los datos disponibles para esta métrica
+    const metricId = getMetricIdFromDataKey(metric.dataKey)
+    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    
+    if (metricMediciones.length > 0) {
+      // Ordenar por fecha para obtener la primera y última fecha
+      const sortedMediciones = metricMediciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+      const firstDate = new Date(sortedMediciones[0].fecha)
+      const lastDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
+      
+      // Establecer fechas basadas en los datos reales
+      setDetailedStartDate(firstDate.toISOString().split('T')[0])
+      setDetailedEndDate(lastDate.toISOString().split('T')[0])
+      
+      console.log(`🔍 Modal - Fechas reales para ${metric.dataKey}:`, {
+        primeraFecha: firstDate.toISOString().split('T')[0],
+        ultimaFecha: lastDate.toISOString().split('T')[0],
+        totalMediciones: metricMediciones.length
+      })
+    } else {
+      // Fallback: usar fechas por defecto si no hay datos
+      const endDate = new Date()
+      const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+      setDetailedStartDate(startDate.toISOString().split('T')[0])
+      setDetailedEndDate(endDate.toISOString().split('T')[0])
+    }
     
     setShowDetailedAnalysis(true)
   }
@@ -590,9 +611,29 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                     <h3 className="text-lg font-semibold text-white mb-4">
                       {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title} - Análisis Detallado
                     </h3>
-                    <div className="h-96">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={processChartData(selectedDetailedMetric, true)}>
+                    {(() => {
+                      const chartData = processChartData(selectedDetailedMetric, true);
+                      if (chartData.length === 0) {
+                        return (
+                          <div className="h-96 flex items-center justify-center bg-neutral-700 rounded-lg">
+                            <div className="text-center">
+                              <div className="text-4xl mb-4">📊</div>
+                              <div className="text-neutral-400 text-lg font-mono">
+                                No hay datos disponibles para el rango de fechas seleccionado
+                              </div>
+                              <div className="text-neutral-500 text-sm font-mono mt-2">
+                                Ajusta las fechas o verifica que existan mediciones
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {processChartData(selectedDetailedMetric, true).length > 0 && (
+                      <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={processChartData(selectedDetailedMetric, true)}>
                           <XAxis
                             dataKey="time"
                             axisLine={false}
@@ -626,6 +667,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
+                    )}
                   </div>
                 </div>
               </div>
