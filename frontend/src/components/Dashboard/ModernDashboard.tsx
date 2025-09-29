@@ -145,7 +145,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Filtrar por nodo seleccionado si existe
       let filteredData = allData
       if (selectedNode) {
+        console.log('🔍 Filtrando por nodo seleccionado:', {
+          selectedNodeId: selectedNode.nodoid,
+          totalData: allData.length,
+          nodosEnData: Array.from(new Set(allData.map(m => m.nodoid))).sort()
+        })
+        
         filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
+        
+        console.log('🔍 Datos filtrados por nodo:', {
+          nodoId: selectedNode.nodoid,
+          medicionesFiltradas: filteredData.length,
+          fechasDisponibles: filteredData.map(m => m.fecha).sort()
+        })
       }
 
       // Mostrar métricas disponibles en los datos filtrados
