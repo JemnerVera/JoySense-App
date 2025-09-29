@@ -35,6 +35,11 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   onDateFilter,
   onResetFilters
 }) => {
+  // Debug: Verificar que los callbacks estén llegando
+  console.log('🔍 ParametersHierarchy: Callbacks recibidos:', {
+    onEntidadChange: !!onEntidadChange,
+    onUbicacionChange: !!onUbicacionChange
+  })
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [metricas, setMetricas] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);

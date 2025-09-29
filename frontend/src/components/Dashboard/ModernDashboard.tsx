@@ -72,6 +72,11 @@ const baseMetrics: MetricConfig[] = [
 ]
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
+  // Debug: Verificar que los callbacks estén llegando
+  console.log('🔍 ModernDashboard: Callbacks recibidos:', {
+    onEntidadChange: !!onEntidadChange,
+    onUbicacionChange: !!onUbicacionChange
+  })
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
