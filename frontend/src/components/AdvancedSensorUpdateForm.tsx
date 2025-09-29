@@ -347,9 +347,9 @@ export function AdvancedSensorUpdateForm({
       <div className="flex justify-center gap-4 mt-6">
         <button
           onClick={handleUpdate}
-          disabled={isUpdating || selectedNodos.length === 0 || selectedTipos.length === 0}
+          disabled={isUpdating || selectedNodos.length === 0}
           className={`px-6 py-2 text-white font-bold rounded-lg transition-all duration-200 font-mono flex items-center space-x-2 ${
-            isUpdating || selectedNodos.length === 0 || selectedTipos.length === 0
+            isUpdating || selectedNodos.length === 0
               ? 'bg-orange-400 cursor-not-allowed opacity-75' 
               : 'bg-orange-600 hover:bg-orange-700 active:bg-orange-800 active:scale-95'
           }`}
