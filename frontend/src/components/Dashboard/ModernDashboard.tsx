@@ -226,10 +226,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(detailedEndDate + 'T23:59:59')
       
       console.log('🔍 Filtrando por fechas:', {
+        detailedStartDate,
+        detailedEndDate,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         totalMediciones: sortedMediciones.length
       })
+      
+      // Mostrar algunas fechas de ejemplo para debug
+      if (sortedMediciones.length > 0) {
+        console.log('🔍 Fechas de ejemplo en mediciones:', sortedMediciones.slice(0, 5).map(m => ({
+          fecha: m.fecha,
+          parsed: new Date(m.fecha).toISOString()
+        })))
+      }
       
       filteredMediciones = sortedMediciones.filter(m => {
         const medicionDate = new Date(m.fecha)
@@ -238,6 +248,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       
       console.log('🔍 Mediciones filtradas:', filteredMediciones.length)
+      
+      // Mostrar fechas de las mediciones filtradas
+      if (filteredMediciones.length > 0) {
+        console.log('🔍 Fechas filtradas:', filteredMediciones.map(m => ({
+          fecha: m.fecha,
+          parsed: new Date(m.fecha).toISOString()
+        })))
+      }
       
       // Determinar si es un rango de días (más de 1 día)
       const timeDiff = endDate.getTime() - startDate.getTime()
