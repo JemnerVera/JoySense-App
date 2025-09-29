@@ -257,7 +257,7 @@ export function AdvancedMetricaSensorUpdateForm({
           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
             NODO
           </h4>
-          <div className="max-h-60 overflow-y-auto space-y-2">
+          <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
             {/* Nodos de las filas seleccionadas */}
             {getNodosFromSelectedRows().map((nodoId) => {
               const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
@@ -294,7 +294,7 @@ export function AdvancedMetricaSensorUpdateForm({
           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
             MÉTRICA
           </h4>
-          <div className="max-h-60 overflow-y-auto space-y-2">
+          <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
             {/* Métricas de las filas seleccionadas */}
             {getMetricasFromSelectedRows().map((metricaId) => {
               const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);

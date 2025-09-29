@@ -665,7 +665,22 @@ const AppContentInternal: React.FC = () => {
                       : 'text-orange-500' // Naranja por defecto
                   }>
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
-                      ? (selectedTable ? `PARÁMETROS / ${getTableNameInSpanish(selectedTable)}` : 'PARÁMETROS')
+                      ? (() => {
+                          let breadcrumb = 'PARÁMETROS';
+                          if (selectedTable) {
+                            breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
+                          }
+                          if (activeSubTab && activeSubTab !== 'status') {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': 'ESTADO',
+                              'insert': 'CREAR',
+                              'update': 'ACTUALIZAR',
+                              'massive': 'MASIVO'
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
                       : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
                       ? (() => {
                           if (activeTab === 'reportes') {
