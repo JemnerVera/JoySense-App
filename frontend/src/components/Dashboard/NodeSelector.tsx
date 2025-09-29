@@ -66,6 +66,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
     console.log('🔄 NodeSelector: Sincronizando filtros globales para nodo:', node.nodo)
+    console.log('🔍 NodeSelector: Callbacks disponibles:', {
+      onEntidadChange: !!onEntidadChange,
+      onUbicacionChange: !!onUbicacionChange
+    })
     
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
     if (node.ubicacion.fundo.empresa.pais.paisid) {
@@ -85,8 +89,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     // 2. Actualizar filtros del header (entidad, ubicación)
     if (onEntidadChange && node.entidad) {
+      console.log('🏛️ Llamando onEntidadChange con:', node.entidad)
       onEntidadChange(node.entidad)
       console.log('🏛️ Filtro entidad actualizado:', node.entidad.entidad)
+    } else {
+      console.log('⚠️ onEntidadChange no disponible o node.entidad faltante:', {
+        onEntidadChange: !!onEntidadChange,
+        nodeEntidad: !!node.entidad
+      })
     }
     
     if (onUbicacionChange) {
@@ -96,8 +106,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         ubicacionabrev: node.ubicacion.ubicacionabrev,
         fundoid: node.ubicacion.fundoid
       }
+      console.log('📍 Llamando onUbicacionChange con:', ubicacion)
       onUbicacionChange(ubicacion)
       console.log('📍 Filtro ubicación actualizado:', node.ubicacion.ubicacion)
+    } else {
+      console.log('⚠️ onUbicacionChange no disponible')
     }
   }
 
