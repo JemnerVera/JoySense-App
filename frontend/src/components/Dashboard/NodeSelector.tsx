@@ -214,7 +214,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
           {/* Dropdown de resultados */}
           {isSearchDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-700 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
+            <div className="absolute z-50 w-full mt-1 bg-neutral-700 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar">
               {loading ? (
                 <div className="px-4 py-3 text-center text-neutral-400">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>

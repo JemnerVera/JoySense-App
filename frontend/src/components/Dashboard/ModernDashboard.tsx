@@ -360,7 +360,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const availableMetrics = getAvailableMetrics()
 
   return (
-    <div className="min-h-screen bg-neutral-900 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
+    <div className="min-h-screen bg-neutral-900 overflow-y-auto dashboard-scrollbar">
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
 
@@ -377,7 +377,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
           </div>
         )}
 
@@ -412,7 +412,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               return (
                 <div
                   key={metric.id}
-                  className={`bg-neutral-800 border border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-orange-500/20 p-6 group ${
+                  className={`bg-neutral-800 border border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-green-500/20 p-6 group ${
                     !hasData ? 'opacity-60' : ''
                   }`}
                 >
@@ -434,7 +434,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   </div>
 
                   <div className="flex items-baseline space-x-2 mb-4">
-                    <span className="text-3xl font-bold text-orange-500 font-mono">
+                    <span className="text-3xl font-bold text-green-500 font-mono">
                       {hasData && typeof currentValue === "number" ? currentValue.toFixed(1) : "--"}
                     </span>
                     <span className="text-sm text-neutral-400 font-mono">{metric.unit}</span>
@@ -511,7 +511,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     <div className="flex justify-center">
                       <button
                         onClick={() => openDetailedAnalysis(metric)}
-                        className="p-2 text-neutral-400 group-hover:text-orange-500 group-hover:bg-orange-500/10 rounded-lg transition-all duration-200 group-hover:scale-110"
+                        className="p-2 text-neutral-400 group-hover:text-green-500 group-hover:bg-green-500/10 rounded-lg transition-all duration-200 group-hover:scale-110"
                         title="Ver análisis detallado"
                       >
                         <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -574,7 +574,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedStartDate}
                         onChange={(e) => setDetailedStartDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                       />
                     </div>
                     <div className="flex flex-col">
@@ -583,7 +583,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedEndDate}
                         onChange={(e) => setDetailedEndDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                       />
                     </div>
                   </div>

@@ -66,3 +66,28 @@
 .filter-text {
   @apply text-gray-300;
 }
+
+/* Scrollbar personalizado para Dashboard - Estilo Verde */
+.dashboard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: #404040; /* neutral-700 */
+  border-radius: 3px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: #22c55e; /* green-500 */
+  border-radius: 3px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #16a34a; /* green-600 */
+}
+
+/* Para Firefox */
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #22c55e #404040;
+}

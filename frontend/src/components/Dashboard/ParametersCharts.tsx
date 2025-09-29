@@ -235,7 +235,7 @@ const SeparateCharts: React.FC<SeparateChartsProps> = React.memo(({
       '#8B5CF6', // violet
       '#06B6D4', // cyan
       '#84CC16', // lime
-      '#F97316', // orange
+      '#22c55e', // green
       '#EC4899', // pink
       '#6B7280'  // gray
     ];
