@@ -539,18 +539,12 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
           </div>
         )}
 
-        {/* Modal de Análisis Detallado - Subpestaña */}
+        {/* Modal de Análisis Detallado */}
         {showDetailedAnalysis && selectedMetricForAnalysis && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-neutral-900 rounded-xl border border-neutral-700 w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
-              {/* Barra de título de subpestaña */}
-              <div className="bg-neutral-800 border-b border-neutral-700 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <h2 className="text-xl font-semibold text-white">
-                    Análisis Detallado - {selectedMetricForAnalysis.title}
-                  </h2>
-                </div>
+              {/* Botón de cerrar */}
+              <div className="flex justify-end p-4">
                 <button
                   onClick={() => {
                     setShowDetailedAnalysis(false)
@@ -564,7 +558,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                 </button>
               </div>
               
-              {/* Contenido de la subpestaña */}
+              {/* Contenido */}
               <div className="flex-1 overflow-y-auto bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
                 <div className="p-6">
                   {/* Botones de métricas */}
@@ -573,9 +567,9 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                       <button
                         key={metric.id}
                         onClick={() => setSelectedDetailedMetric(metric.dataKey)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        className={`px-4 py-2 rounded-lg font-mono tracking-wider transition-colors ${
                           selectedDetailedMetric === metric.dataKey
-                            ? 'bg-orange-500 text-white'
+                            ? 'bg-green-500 text-white'
                             : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
                         }`}
                       >
@@ -587,29 +581,29 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
                   {/* Filtro de fechas */}
                   <div className="flex space-x-4 mb-6">
                     <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2">Fecha Inicio</label>
+                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">FECHA INICIO</label>
                       <input
                         type="date"
                         value={detailedStartDate}
                         onChange={(e) => setDetailedStartDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
                       />
                     </div>
                     <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2">Fecha Fin</label>
+                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">FECHA FIN</label>
                       <input
                         type="date"
                         value={detailedEndDate}
                         onChange={(e) => setDetailedEndDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
                       />
                     </div>
                   </div>
 
                   {/* Gráfico detallado */}
                   <div className="bg-neutral-800 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">
-                      {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title} - Análisis Detallado
+                    <h3 className="text-lg font-semibold text-white mb-4 font-mono tracking-wider">
+                      {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title} - ANÁLISIS DETALLADO
                     </h3>
                     {(() => {
                       const chartData = processChartData(selectedDetailedMetric, true);
