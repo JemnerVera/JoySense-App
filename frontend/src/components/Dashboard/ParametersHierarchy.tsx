@@ -10,6 +10,8 @@ interface DynamicHierarchyProps {
   selectedUbicacion?: any;
   startDate?: string;
   endDate?: string;
+  onPaisChange?: (pais: any) => void;
+  onEmpresaChange?: (empresa: any) => void;
   onFundoChange?: (fundo: any) => void;
   onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
@@ -25,6 +27,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   selectedUbicacion,
   startDate,
   endDate,
+  onPaisChange,
+  onEmpresaChange,
   onFundoChange,
   onEntidadChange,
   onUbicacionChange,
@@ -108,16 +112,47 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     endDate: endDate || ''
   };
 
+  // Log para debug
+  console.log('🔍 ParametersHierarchy: Filtros calculados:', filters);
+
   // Función para manejar cambios en los filtros
   const handleFiltersChange = (newFilters: any) => {
-    if (onEntidadChange && newFilters.entidadId !== filters.entidadId) {
+    console.log('🔍 ParametersHierarchy: Recibiendo cambios de filtros:', newFilters);
+    
+    // Actualizar todos los filtros jerárquicos si se proporcionan
+    if (onPaisChange && newFilters.paisId) {
+      const pais = { paisid: newFilters.paisId };
+      console.log('🔍 ParametersHierarchy: Actualizando país:', pais);
+      onPaisChange(pais);
+    }
+    
+    if (onEmpresaChange && newFilters.empresaId) {
+      const empresa = { empresaid: newFilters.empresaId };
+      console.log('🔍 ParametersHierarchy: Actualizando empresa:', empresa);
+      onEmpresaChange(empresa);
+    }
+    
+    if (onFundoChange && newFilters.fundoId) {
+      const fundo = { fundoid: newFilters.fundoId };
+      console.log('🔍 ParametersHierarchy: Actualizando fundo:', fundo);
+      onFundoChange(fundo);
+    }
+    
+    // Siempre actualizar entidad si se proporciona
+    if (onEntidadChange && newFilters.entidadId) {
       const entidad = { entidadid: newFilters.entidadId };
+      console.log('🔍 ParametersHierarchy: Actualizando entidad:', entidad);
       onEntidadChange(entidad);
     }
-    if (onUbicacionChange && newFilters.ubicacionId !== filters.ubicacionId) {
+    
+    // Siempre actualizar ubicación si se proporciona
+    if (onUbicacionChange && newFilters.ubicacionId) {
       const ubicacion = { ubicacionid: newFilters.ubicacionId };
+      console.log('🔍 ParametersHierarchy: Actualizando ubicación:', ubicacion);
       onUbicacionChange(ubicacion);
     }
+    
+    // Actualizar fechas solo si son diferentes
     if (onDateFilter && (newFilters.startDate !== filters.startDate || newFilters.endDate !== filters.endDate)) {
       onDateFilter(newFilters.startDate, newFilters.endDate);
     }

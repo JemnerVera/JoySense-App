@@ -86,6 +86,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
 
   // Cargar datos de mediciones
   useEffect(() => {
+    console.log('🔍 ModernDashboard: useEffect triggered - filters:', filters, 'selectedNode:', selectedNode)
     loadMediciones()
   }, [filters, selectedNode])
 
@@ -98,8 +99,11 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
   }, [])
 
   const loadMediciones = async () => {
+    console.log('🔍 ModernDashboard: loadMediciones called with filters:', filters, 'selectedNode:', selectedNode)
+    
     if (!filters.entidadId || !filters.ubicacionId) {
       console.log('🔍 ModernDashboard: Faltan filtros - entidadId:', filters.entidadId, 'ubicacionId:', filters.ubicacionId)
+      setMediciones([])
       return
     }
 
@@ -422,6 +426,7 @@ export function ModernDashboard({ filters, onFiltersChange }: ModernDashboardPro
             })
           }}
         />
+
 
         {/* Metrics Cards */}
         {!loading && !error && availableMetrics.length > 0 && (

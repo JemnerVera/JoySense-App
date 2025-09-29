@@ -1923,11 +1923,19 @@ app.get('/api/sense/nodos-con-localizacion', async (req, res) => {
       .select(`
         *,
         fundo: fundoid (
-          *,
+          fundoid,
+          fundo,
+          fundoabrev,
+          empresaid,
           empresa: empresaid (
-            *,
+            empresaid,
+            empresa,
+            empresabrev,
+            paisid,
             pais: paisid (
-              *
+              paisid,
+              pais,
+              paisabrev
             )
           )
         )
@@ -1980,9 +1988,11 @@ app.get('/api/sense/nodos-con-localizacion', async (req, res) => {
             fundo: ubicacion?.fundo?.fundo || 'N/A',
             fundoabrev: ubicacion?.fundo?.fundoabrev || 'N/A',
             empresa: {
+              empresaid: ubicacion?.fundo?.empresa?.empresaid || null,
               empresa: ubicacion?.fundo?.empresa?.empresa || 'N/A',
               empresabrev: ubicacion?.fundo?.empresa?.empresabrev || 'N/A',
               pais: {
+                paisid: ubicacion?.fundo?.empresa?.pais?.paisid || null,
                 pais: ubicacion?.fundo?.empresa?.pais?.pais || 'N/A',
                 paisabrev: ubicacion?.fundo?.empresa?.pais?.paisabrev || 'N/A'
               }
