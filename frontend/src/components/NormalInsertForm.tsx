@@ -1,6 +1,14 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React, { memo, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 interface NormalInsertFormProps {
   visibleColumns: any[];
@@ -24,6 +32,10 @@ interface NormalInsertFormProps {
   fundosData?: any[];
 }
 
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
+
 const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   visibleColumns,
   formData,
@@ -43,17 +55,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   empresasData,
   fundosData
 }) => {
-  console.log('🔍 NormalInsertForm renderizado:', {
-    selectedTable,
-    visibleColumnsLength: visibleColumns?.length,
-    visibleColumns: visibleColumns?.map(c => c.columnName),
-    paisSeleccionado,
-    empresaSeleccionada,
-    fundoSeleccionado,
-    paisesDataLength: paisesData?.length,
-    empresasDataLength: empresasData?.length,
-    fundosDataLength: fundosData?.length
-  });
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
@@ -208,6 +213,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // Para otros campos, usar lógica normal
   return true;
   };
+
+  // ============================================================================
+  // RENDER FUNCTIONS
+  // ============================================================================
 
   // Función para renderizar fila contextual con filtros globales
   const renderContextualRow = (fields: string[]) => {
@@ -522,6 +531,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     return getUniqueOptionsForField('paisid');
   }, [getUniqueOptionsForField]);
 
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
   // Auto-seleccionar País si solo hay una opción
   useEffect(() => {
     if (paisOptions.length === 1 && !formData.paisid) {
@@ -831,15 +844,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     const entidadField = visibleColumns.find(c => c.columnName === 'entidadid');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
     const nodoField = visibleColumns.find(c => c.columnName === 'nodoid');
-    
-    console.log('🔍 renderLocalizacionFields - Segunda fila:', {
-      entidadField: entidadField?.columnName,
-      ubicacionField: ubicacionField?.columnName,
-      nodoField: nodoField?.columnName,
-      visibleColumns: visibleColumns.map(c => c.columnName)
-    });
-    
-    if (entidadField || ubicacionField || nodoField) {
+
+if (entidadField || ubicacionField || nodoField) {
       result.push(
         <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {entidadField && renderLocalizacionField(entidadField, 'entidad')}
@@ -901,8 +907,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       return true;
     });
 
-
-    return filteredNodos;
+return filteredNodos;
   };
 
   // Función para renderizar campos de localización con dependencias en cascada
@@ -1618,6 +1623,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             </div>
           );
   };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div>
