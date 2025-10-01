@@ -411,9 +411,6 @@ const [formData, setFormData] = useState<Record<string, any>>({});
   }, []);
 
 const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
-  // const [copyMessage, setCopyMessage] = useState<Message | null>(null);
-  // const [tableConstraints, setTableConstraints] = useState<any>(null);
-  // const [copyTotalPages, setCopyTotalPages] = useState<number>(0);
 
 // Estados de datos relacionados ahora manejados por useTableDataManagement
 
@@ -836,9 +833,6 @@ return {
 
 // Estados para la tabla de equivalencias mejorada (ya no necesitamos estos)
 
-  // const [equivalenceViewMode, setEquivalenceViewMode] = useState<'table' | 'cards' | 'select'>('table');
-
-  // const [filteredEquivalences, setFilteredEquivalences] = useState<Array<{label: string, value: string}>>([]);
 
 // Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
 
@@ -1303,11 +1297,6 @@ const handleMetricaSensorLastPage = () => {
 
   // Función simple para verificar si hay cambios sin guardar
   const hasUnsavedChanges = useCallback((): boolean => {
-    // Debug temporal
-    console.log('🔍 hasUnsavedChanges called:', {
-      activeSubTab,
-      selectedTable
-    });
 
 // Verificar pestaña "Crear"
 
@@ -1616,51 +1605,6 @@ return false;
 
   }, [activeSubTab, selectedTable]);
 
-// Efecto para interceptar cambios de pestaña y verificar cambios sin guardar - DESACTIVADO
-
-  // useEffect(() => {
-
-  //   // Solo ejecutar si el cambio viene del exterior (no de handleTabChange interno)
-
-  //   if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
-
-  //     console.log('🔄 External tab change detected:', { 
-
-  //       propActiveSubTab, 
-
-  //       currentActiveSubTab: activeSubTab,
-
-  //       selectedTable 
-
-  //     });
-
-//     // Verificar si hay cambios sin guardar
-
-  //     const hasChanges = hasUnsavedChanges();
-
-  //     console.log('🔄 hasUnsavedChanges result:', hasChanges);
-
-//     if (hasChanges) {
-
-  //       console.log('🔄 Showing lost data modal for external change');
-
-  //       setPendingTabChange(propActiveSubTab);
-
-  //       setShowLostDataModal(true);
-
-  //       return;
-
-  //     }
-
-//     // Si no hay cambios, proceder con el cambio
-
-  //     console.log('🔄 No changes, proceeding with external tab change');
-
-  //     setActiveSubTab(propActiveSubTab);
-
-  //   }
-
-  // }, [propActiveSubTab, activeSubTab, selectedTable, hasUnsavedChanges]);
 
 // Función simple para manejar el cambio de tabla
 
@@ -1911,17 +1855,6 @@ loadTableDataWrapper();
 
   // El cambio de tabla se maneja directamente en App.tsx
 
-// Sincronizar con propActiveSubTab - DUPLICADO ELIMINADO (ya existe en línea 463)
-
-  // useEffect(() => {
-
-  //   if (propActiveSubTab && propActiveSubTab !== activeSubTab) {
-
-  //     setActiveSubTab(propActiveSubTab);
-
-  //   }
-
-  // }, [propActiveSubTab]);
 
 // Efecto para limpiar datos cuando se confirma el cambio
 
