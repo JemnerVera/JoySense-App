@@ -1,4 +1,12 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import { JoySenseService } from '../services/backend-api';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 // Sistema de validación modular para formularios de parámetros
 export interface ValidationRule {
@@ -30,6 +38,10 @@ export interface EnhancedValidationResult {
   errors: ValidationError[];
   userFriendlyMessage: string;
 }
+
+// ============================================================================
+// VALIDATION SCHEMAS
+// ============================================================================
 
 // Esquemas de validación para cada tabla
 export const tableValidationSchemas: Record<string, ValidationRule[]> = {
@@ -155,6 +167,10 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ]
 };
 
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
 // Función principal de validación
 export function validateFormData(tableName: string, formData: Record<string, any>): ValidationResult {
   // Validación especial para nodo con habilitación progresiva
@@ -247,6 +263,10 @@ export function validateFormData(tableName: string, formData: Record<string, any
   };
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
 // Función de validación progresiva para nodo
 function validateNodoProgressive(formData: Record<string, any>): ValidationResult {
   const errors: string[] = [];
@@ -284,6 +304,10 @@ export function getValidationMessages(validationResult: ValidationResult): strin
   
   return messages;
 }
+
+// ============================================================================
+// ADVANCED VALIDATION FUNCTIONS
+// ============================================================================
 
 // Función para validación robusta específica por tabla
 // Función general para validación de actualización
@@ -402,6 +426,10 @@ export const validateTableData = async (
       };
   }
 };
+
+// ============================================================================
+// TABLE-SPECIFIC VALIDATION FUNCTIONS
+// ============================================================================
 
 // Validación específica para País
 const validatePaisData = async (
@@ -1347,9 +1375,8 @@ const validatePaisUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.pais || formData.pais.trim() === '') {
     errors.push({
       field: 'pais',
@@ -1442,9 +1469,8 @@ const validateEmpresaUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.empresa || formData.empresa.trim() === '') {
     errors.push({
       field: 'empresa',
@@ -1546,9 +1572,8 @@ const validateFundoUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.fundo || formData.fundo.trim() === '') {
     errors.push({
       field: 'fundo',
@@ -1622,9 +1647,8 @@ const validateFundoUpdate = async (
   
   // 4. Generar mensaje amigable para actualización (mensajes individuales)
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
-  
-  
-  return {
+
+return {
     isValid: errors.length === 0,
     errors,
     userFriendlyMessage
@@ -1650,9 +1674,8 @@ const validateUbicacionUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.ubicacion || formData.ubicacion.trim() === '') {
     errors.push({
       field: 'ubicacion',
@@ -1730,9 +1753,8 @@ const validateLocalizacionUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.ubicacionid || formData.ubicacionid === '') {
     errors.push({
       field: 'ubicacionid',
@@ -1809,9 +1831,8 @@ const validateLocalizacionUpdate = async (
   
   // 4. Generar mensaje amigable para actualización (mensajes individuales)
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
-  
-  
-  return {
+
+return {
     isValid: errors.length === 0,
     errors,
     userFriendlyMessage
@@ -1826,9 +1847,8 @@ const validateEntidadUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.entidad || formData.entidad.trim() === '') {
     errors.push({
       field: 'entidad',
@@ -1905,9 +1925,8 @@ const validateTipoUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.tipo || formData.tipo.trim() === '') {
     errors.push({
       field: 'tipo',
@@ -1998,9 +2017,8 @@ const validateNodoUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.nodo || formData.nodo.trim() === '') {
     errors.push({
       field: 'nodo',
@@ -2100,9 +2118,8 @@ const validateMetricaUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.metrica || formData.metrica.trim() === '') {
     errors.push({
       field: 'metrica',
@@ -2385,9 +2402,8 @@ const validateUmbralUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.umbral || formData.umbral.trim() === '') {
     errors.push({
       field: 'umbral',
@@ -2503,9 +2519,8 @@ const validatePerfilUmbralUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.perfilid || formData.perfilid === '') {
     errors.push({
       field: 'perfilid',
@@ -2561,9 +2576,8 @@ const validateCriticidadUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.criticidad || formData.criticidad.trim() === '') {
     errors.push({
       field: 'criticidad',
@@ -2663,9 +2677,8 @@ const validateMedioUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.nombre || formData.nombre.trim() === '') {
     errors.push({
       field: 'nombre',
@@ -2735,9 +2748,8 @@ const validateContactoUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.usuarioid || formData.usuarioid === '') {
     errors.push({
       field: 'usuarioid',
@@ -2803,9 +2815,8 @@ const validateUsuarioUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.login || formData.login.trim() === '') {
     errors.push({
       field: 'login',
@@ -2934,9 +2945,8 @@ const validatePerfilUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.perfil || formData.perfil.trim() === '') {
     errors.push({
       field: 'perfil',
@@ -3030,9 +3040,8 @@ const validateUsuarioPerfilUpdate = async (
   existingData: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
-  
-  // 1. Validar campos obligatorios
+
+// 1. Validar campos obligatorios
   if (!formData.usuarioid || formData.usuarioid === '') {
     errors.push({
       field: 'usuarioid',
