@@ -480,8 +480,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           onUbicacionChange={onUbicacionChange}
         />
 
-
-        {/* Metrics Cards */}
+{/* Metrics Cards */}
         {!loading && !error && availableMetrics.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {availableMetrics.map((metric) => {

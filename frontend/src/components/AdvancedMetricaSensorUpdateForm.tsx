@@ -144,9 +144,8 @@ export function AdvancedMetricaSensorUpdateForm({
         statusid: row.statusid
       }))
     });
-    
-    
-    // Para cada combinación de nodo-tipo-métrica seleccionada
+
+// Para cada combinación de nodo-tipo-métrica seleccionada
     selectedNodos.forEach(nodoId => {
       selectedTipos.forEach(tipoId => {
         selectedMetricas.forEach(metricaId => {
