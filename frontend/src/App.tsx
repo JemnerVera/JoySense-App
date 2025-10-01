@@ -231,8 +231,7 @@ const AppContentInternal: React.FC = () => {
     loadEntidades();
   }, []);
 
-
-  // Función para verificar si hay cambios significativos en el formulario actual
+// Función para verificar si hay cambios significativos en el formulario actual
   const hasSignificantChanges = () => {
     const currentTable = activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '';
     
@@ -301,17 +300,8 @@ const AppContentInternal: React.FC = () => {
     
     // Para formularios múltiples, verificar si hay datos
     const hasMultipleDataChanges = currentMultipleData.length > 0;
-    
-    console.log('🔍 App: Parameter change detection:', {
-      currentTable,
-      significantFields,
-      currentFormData,
-      hasFormDataChanges,
-      hasMultipleDataChanges,
-      result: hasFormDataChanges || hasMultipleDataChanges
-    });
-    
-    return hasFormDataChanges || hasMultipleDataChanges;
+
+return hasFormDataChanges || hasMultipleDataChanges;
   };
 
   // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
@@ -366,9 +356,7 @@ const AppContentInternal: React.FC = () => {
     setCurrentMassiveFormData(massiveFormData);
   };
 
-
-
-  // Handlers para cambios de pestaña
+// Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
     
     // Navegación simple sin interceptores
