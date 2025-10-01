@@ -1,3 +1,7 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React, { useState, useEffect, startTransition, Suspense, forwardRef, useRef } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -22,6 +26,10 @@ import { useDataLossProtection } from './hooks/useDataLossProtection';
 import { ModalProvider } from './contexts/ModalContext';
 import SimpleAlertModal from './components/SimpleAlertModal';
 
+// ============================================================================
+// COMPONENT WRAPPERS
+// ============================================================================
+
 // Wrapper para SystemParameters con lazy loading
 const SystemParametersWithSuspense = React.forwardRef<
   { handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void },
@@ -39,7 +47,16 @@ const SystemParametersWithSuspense = React.forwardRef<
   <SystemParametersLazyWithBoundary {...props} ref={ref} />
 ));
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 const AppContentInternal: React.FC = () => {
+
+  // ============================================================================
+  // HOOKS & CONTEXTS
+  // ============================================================================
+
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const { } = useFilters();
@@ -49,6 +66,10 @@ const AppContentInternal: React.FC = () => {
 
   // Ref para SystemParameters
   const systemParametersRef = useRef<{ handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void }>(null);
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
 
   // Estados para el dashboard
   const [dashboardSelectedFundo, setDashboardSelectedFundo] = useState<any>(null);
@@ -80,6 +101,10 @@ const AppContentInternal: React.FC = () => {
   //   interceptTabChange,
   //   getPendingChangeInfo
   // } = useChangeInterceptor();
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   // Handler para filtros del dashboard desde DashboardFilters
   const handleDashboardFiltersChange = (filters: {
@@ -825,6 +850,10 @@ return hasFormDataChanges || hasMultipleDataChanges;
     );
   }
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
     <>
       {layoutContent}
@@ -859,6 +888,10 @@ return hasFormDataChanges || hasMultipleDataChanges;
     </>
   );
 };
+
+// ============================================================================
+// COMPONENT WRAPPERS
+// ============================================================================
 
 const AppContent: React.FC = () => {
   return (
