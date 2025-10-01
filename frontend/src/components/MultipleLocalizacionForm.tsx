@@ -1,4 +1,12 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React from 'react';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 interface MultipleLocalizacionFormProps {
   selectedUbicaciones: string[];
@@ -35,6 +43,10 @@ interface MultipleLocalizacionFormProps {
   setReferencia?: (value: string) => void;
 }
 
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
+
 const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   selectedUbicaciones,
   setSelectedUbicaciones,
@@ -68,6 +80,11 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   referencia,
   setReferencia
 }) => {
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   const [ubicacionesDropdownOpen, setUbicacionesDropdownOpen] = React.useState(false);
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
   const [entidadesDropdownOpen, setEntidadesDropdownOpen] = React.useState(false);
@@ -76,6 +93,10 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   const [ubicacionesSearchTerm, setUbicacionesSearchTerm] = React.useState('');
   const [nodosSearchTerm, setNodosSearchTerm] = React.useState('');
   const [entidadesSearchTerm, setEntidadesSearchTerm] = React.useState('');
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
   // Cerrar dropdowns cuando se hace clic fuera
   React.useEffect(() => {
@@ -104,6 +125,10 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
       setMultipleLocalizaciones([]);
     }
   }, [selectedUbicaciones, selectedNodos, selectedEntidades, onInitializeLocalizaciones]);
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
@@ -175,6 +200,10 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
     }
     return null;
   };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="space-y-6">
