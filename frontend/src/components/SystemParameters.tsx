@@ -833,7 +833,6 @@ return {
 
 // Estados para la tabla de equivalencias mejorada (ya no necesitamos estos)
 
-
 // Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
 
   // Estados de copia ahora manejados por useSearchAndFilter
@@ -1473,27 +1472,13 @@ return hasChanges;
       // Verificar si hay cambios reales en el formulario de actualización
       // Solo mostrar modal si se han modificado los datos originales
       if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
-        console.log('🔍 hasUnsavedChanges - Entrando en comparación de valores');
-        // Debug temporal
-        console.log('🔍 hasUnsavedChanges - Update tab Debug:', {
-          selectedRowForUpdate,
-          updateFormData,
-          updateFormDataKeys: Object.keys(updateFormData)
-        });
         
         // Comparar datos originales con datos modificados
         const hasRealChanges = Object.keys(updateFormData).some(key => {
           const originalValue = selectedRowForUpdate[key];
           const currentValue = updateFormData[key];
-          
-          // Debug para cada campo
-          console.log(`🔍 Campo ${key}:`, {
-            originalValue,
-            currentValue,
-            areEqual: originalValue === currentValue
-          });
-          
-          // Comparar valores, manejando diferentes tipos de datos
+
+// Comparar valores, manejando diferentes tipos de datos
           // Considerar null, undefined y string vacío como equivalentes
           const normalizeValue = (val: any) => {
             if (val === null || val === undefined || val === '') return null;
@@ -1504,16 +1489,10 @@ return hasChanges;
           const normalizedCurrent = normalizeValue(currentValue);
           
           const isDifferent = normalizedOriginal !== normalizedCurrent;
-          console.log(`🔍 Campo ${key} normalizado:`, {
-            normalizedOriginal,
-            normalizedCurrent,
-            isDifferent
-          });
           
           return isDifferent;
         });
 
-        console.log('🔍 hasRealChanges result:', hasRealChanges);
         return hasRealChanges;
       }
 
@@ -1604,7 +1583,6 @@ return hasChanges;
 return false;
 
   }, [activeSubTab, selectedTable]);
-
 
 // Función simple para manejar el cambio de tabla
 
@@ -1854,7 +1832,6 @@ loadTableDataWrapper();
 // Sincronizar con propSelectedTable - REMOVIDO para evitar bucle infinito
 
   // El cambio de tabla se maneja directamente en App.tsx
-
 
 // Efecto para limpiar datos cuando se confirma el cambio
 
