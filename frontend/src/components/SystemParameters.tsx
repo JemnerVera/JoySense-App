@@ -205,6 +205,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Pagination Hook
   const { getPaginatedData, goToPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
+  // ============================================================================
+  // STATE MANAGEMENT & EFFECTS
+  // ============================================================================
 
   // Sincronizar estado local con props
 
@@ -226,9 +229,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [propSelectedTable, selectedTable, setSelectedTable]);
 
-  
-
-  useEffect(() => {
+useEffect(() => {
 
     if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
 
@@ -238,14 +239,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [propActiveSubTab, activeSubTab, setActiveSubTab]);
 
-  
+// Función para ejecutar el cambio de pestaña
 
-  // Función para ejecutar el cambio de pestaña
-
-
-
-
-  // Función para manejar el cambio de pestaña y limpiar mensajes
+// Función para manejar el cambio de pestaña y limpiar mensajes
 
   const handleTabChange = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
 
@@ -263,19 +259,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    // Verificar si hay cambios sin guardar
+// Verificar si hay cambios sin guardar
 
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
 
+if (hasChanges) {
 
-    
-
-    if (hasChanges) {
-
-
-      // Mostrar modal de confirmación
+// Mostrar modal de confirmación
 
       showSimpleModal(
 
@@ -287,8 +277,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-
-          // Limpiar datos del formulario antes de cambiar
+// Limpiar datos del formulario antes de cambiar
 
           setFormData(initializeFormData(columns));
 
@@ -318,8 +307,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-
-          // No hacer nada, quedarse en la pestaña actual
+// No hacer nada, quedarse en la pestaña actual
 
         }
 
@@ -327,8 +315,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     } else {
 
-
-      // No hay cambios, proceder normalmente
+// No hay cambios, proceder normalmente
 
       handleSubTabNavigation(tab);
 
@@ -336,11 +323,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [activeSubTab, selectedTable]);
 
-
-
-
-
-  // Efecto para limpiar mensajes cuando cambia la pestaña desde el exterior
+// Efecto para limpiar mensajes cuando cambia la pestaña desde el exterior
 
   useEffect(() => {
 
@@ -356,22 +339,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [activeSubTab]);
 
-
-
-
-
-  const [pendingTableChange, setPendingTableChange] = useState<string>('');
+const [pendingTableChange, setPendingTableChange] = useState<string>('');
 
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
 
   // Estados de datos de tabla ahora manejados por useTableDataManagement
 
-  
-
-
-  
-
-  // Aplicar filtros globales a los datos de la tabla
+// Aplicar filtros globales a los datos de la tabla
 
   const filteredTableData = useGlobalFilterEffect({
 
@@ -381,9 +355,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   });
 
-
-
-  // Actualizar statusFilteredData cuando cambien los filtros globales
+// Actualizar statusFilteredData cuando cambien los filtros globales
 
   useEffect(() => {
 
@@ -395,18 +367,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [filteredTableData, itemsPerPage, setStatusCurrentPage, setStatusFilteredData, setStatusTotalPages]);
 
-
-
-  const [formData, setFormData] = useState<Record<string, any>>({});
+const [formData, setFormData] = useState<Record<string, any>>({});
 
   // loading y setLoading ahora se importan desde useTableDataManagement
 
   const [message, setMessage] = useState<Message | null>(null);
 
-
+// ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
 
   // Función helper para inicializar formData con statusid por defecto
-
   const initializeFormData = useCallback((cols?: any[]) => {
 
     const initialFormData: Record<string, any> = {};
@@ -439,20 +410,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, []);
 
-
-
-  const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
+const [updateMessage, setUpdateMessage] = useState<Message | null>(null);
   // const [copyMessage, setCopyMessage] = useState<Message | null>(null);
   // const [tableConstraints, setTableConstraints] = useState<any>(null);
   // const [copyTotalPages, setCopyTotalPages] = useState<number>(0);
 
+// Estados de datos relacionados ahora manejados por useTableDataManagement
 
-  // Estados de datos relacionados ahora manejados por useTableDataManagement
-
-
+// ============================================================================
+  // DATA GROUPING FUNCTIONS
+  // ============================================================================
 
   // Función para agrupar datos de metricasensor por nodo
-
   const groupMetricaSensorData = (data: any[]) => {
 
     if (selectedTable !== 'metricasensor') {
@@ -461,9 +430,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-
-
-    // Agrupar por nodoid
+// Agrupar por nodoid
 
     const groupedData = data.reduce((acc: any, row: any) => {
 
@@ -475,9 +442,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const nodo = nodosData?.find(n => n.nodoid === nodoid);
 
-        
-
-        acc[nodoid] = {
+acc[nodoid] = {
 
           nodoid: row.nodoid,
 
@@ -505,17 +470,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Buscar el nombre del tipo y métrica (siempre para enriquecer la fila)
+// Buscar el nombre del tipo y métrica (siempre para enriquecer la fila)
 
       const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
 
       const metrica = metricasData?.find(m => m.metricaid === row.metricaid);
 
-      
-
-      // Solo agregar tipos y métricas si están activos (statusid: 1)
+// Solo agregar tipos y métricas si están activos (statusid: 1)
 
       if (row.statusid === 1) {
 
@@ -525,9 +486,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        if (metrica?.metrica) {
+if (metrica?.metrica) {
 
           acc[nodoid].metricas.add(metrica.metrica);
 
@@ -535,9 +494,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Crear fila original con nombres incluidos
+// Crear fila original con nombres incluidos
 
       const enrichedRow = {
 
@@ -553,31 +510,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       };
 
-      
-
-      
-
-      // Agregar fila original enriquecida
+// Agregar fila original enriquecida
 
       acc[nodoid].originalRows.push(enrichedRow);
 
-      
-
-      return acc;
+return acc;
 
     }, {});
 
-
-
-    // Convertir a array y formatear tipos y métricas
+// Convertir a array y formatear tipos y métricas
 
     const result = Object.values(groupedData).map((group: any) => {
 
       const hasActiveMetrics = group.tipos.size > 0 && group.metricas.size > 0;
 
-      
-
-      return {
+return {
 
         ...group,
 
@@ -595,9 +542,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-
-
-    // Ordenar por fecha de modificación más reciente primero
+// Ordenar por fecha de modificación más reciente primero
 
     return result.sort((a: any, b: any) => {
 
@@ -611,9 +556,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para agrupar datos de sensor por nodo
+// Función para agrupar datos de sensor por nodo
 
   const groupSensorData = (data: any[]) => {
 
@@ -623,9 +566,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-
-
-    // Agrupar por nodoid
+// Agrupar por nodoid
 
     const groupedData = data.reduce((acc: any, row: any) => {
 
@@ -637,9 +578,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const nodo = nodosData?.find(n => n.nodoid === nodoid);
 
-        
-
-        acc[nodoid] = {
+acc[nodoid] = {
 
           nodoid: row.nodoid,
 
@@ -665,15 +604,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Buscar el nombre del tipo
+// Buscar el nombre del tipo
 
       const tipo = tiposData?.find(t => t.tipoid === row.tipoid);
 
-      
-
-      // Solo agregar tipos si están activos (statusid: 1)
+// Solo agregar tipos si están activos (statusid: 1)
 
       if (row.statusid === 1) {
 
@@ -685,9 +620,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Crear fila original con nombres incluidos
+// Crear fila original con nombres incluidos
 
       const enrichedRow = {
 
@@ -701,29 +634,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       };
 
-      
-
-      // Agregar fila original enriquecida
+// Agregar fila original enriquecida
 
       acc[nodoid].originalRows.push(enrichedRow);
 
-      
-
-      return acc;
+return acc;
 
     }, {});
 
-
-
-    // Convertir a array y formatear tipos
+// Convertir a array y formatear tipos
 
     const result = Object.values(groupedData).map((group: any) => {
 
       const hasActiveTypes = group.tipos.size > 0;
 
-      
-
-      return {
+return {
 
         ...group,
 
@@ -741,9 +666,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-
-
-    // Ordenar por fecha de modificación más reciente primero
+// Ordenar por fecha de modificación más reciente primero
 
     return result.sort((a: any, b: any) => {
 
@@ -757,9 +680,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para agrupar datos de usuarioperfil por usuario
+// Función para agrupar datos de usuarioperfil por usuario
 
   const groupUsuarioPerfilData = (data: any[]) => {
 
@@ -769,18 +690,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    // Agrupar por usuarioid
+// Agrupar por usuarioid
 
     const groupedData = data.reduce((acc: any, row: any) => {
 
@@ -792,9 +702,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const usuario = userData?.find(u => u.usuarioid === usuarioid);
 
-        
-
-        acc[usuarioid] = {
+acc[usuarioid] = {
 
           usuarioid: row.usuarioid,
 
@@ -822,34 +730,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Buscar el nombre del perfil
+// Buscar el nombre del perfil
 
       const perfil = perfilesData?.find(p => p.perfilid === row.perfilid);
 
-      
+// Solo agregar perfiles si están activos (statusid: 1)
 
-      // Solo agregar perfiles si están activos (statusid: 1)
-
-
-      if (row.statusid === 1) {
+if (row.statusid === 1) {
 
         if (perfil?.perfil) {
 
           acc[usuarioid].perfiles.add(perfil.perfil);
 
-
-        }
+}
 
       } else {
 
+}
 
-      }
-
-      
-
-      // Crear fila original con nombres incluidos
+// Crear fila original con nombres incluidos
 
       const enrichedRow = {
 
@@ -863,29 +762,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       };
 
-      
-
-      // Agregar fila original enriquecida
+// Agregar fila original enriquecida
 
       acc[usuarioid].originalRows.push(enrichedRow);
 
-      
-
-      return acc;
+return acc;
 
     }, {});
 
-
-
-    // Convertir a array y formatear perfiles
+// Convertir a array y formatear perfiles
 
     const result = Object.values(groupedData).map((group: any) => {
 
       const hasActivePerfiles = group.perfiles.size > 0;
 
-      
-
-      return {
+return {
 
         ...group,
 
@@ -899,13 +790,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-
-
-
-
-
-
-    // Ordenar por fecha de modificación más reciente primero
+// Ordenar por fecha de modificación más reciente primero
 
     return result.sort((a: any, b: any) => {
 
@@ -919,13 +804,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// Estados para actualización con paginación - Ahora manejados por useSystemParametersState
 
-
-  // Estados para actualización con paginación - Ahora manejados por useSystemParametersState
-
-
-
-  // Aplicar filtros globales a updateData
+// Aplicar filtros globales a updateData
 
   const filteredUpdateData = useGlobalFilterEffect({
 
@@ -935,9 +816,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   });
 
-
-
-  // Actualizar updateFilteredData cuando cambien los filtros globales
+// Actualizar updateFilteredData cuando cambien los filtros globales
 
   useEffect(() => {
 
@@ -945,9 +824,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [filteredUpdateData, setUpdateFilteredData]);
 
-
-
-  // Reagrupar datos de metricasensor cuando cambien los datos relacionados
+// Reagrupar datos de metricasensor cuando cambien los datos relacionados
 
   // Este useEffect se eliminó para evitar bucles infinitos
 
@@ -955,57 +832,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Estados de actualización - Ahora manejados por useSystemParametersState
 
-  
+// Estados para paginación y búsqueda de la tabla de Estado - Ahora manejados por useSystemParametersState
 
-  // Estados para paginación y búsqueda de la tabla de Estado - Ahora manejados por useSystemParametersState
-
-  
-
-  // Estados para la tabla de equivalencias mejorada (ya no necesitamos estos)
+// Estados para la tabla de equivalencias mejorada (ya no necesitamos estos)
 
   // const [equivalenceViewMode, setEquivalenceViewMode] = useState<'table' | 'cards' | 'select'>('table');
 
   // const [filteredEquivalences, setFilteredEquivalences] = useState<Array<{label: string, value: string}>>([]);
 
-  
-
-  // Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
+// Estados para la funcionalidad de copiar - Ahora manejados por useSystemParametersState
 
   // Estados de copia ahora manejados por useSearchAndFilter
 
-
-
-  
-
-  // Estados para selección múltiple en actualización
+// Estados para selección múltiple en actualización
 
   const [selectedRowsForUpdate, setSelectedRowsForUpdate] = useState<any[]>([]);
 
+const [individualRowStatus, setIndividualRowStatus] = useState<{[key: string]: boolean}>({});
 
-  const [individualRowStatus, setIndividualRowStatus] = useState<{[key: string]: boolean}>({});
-
-  
-
-  // Estados para modal de confirmación
+// Estados para modal de confirmación
 
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const [cancelAction, setCancelAction] = useState<(() => void) | null>(null);
 
-  
+// Estados para modal de pérdida de datos
 
-  // Estados para modal de pérdida de datos
-
-
-
-  
-
-
-  
-
-
-
-  // Funciones para manejar replicación
+// ============================================================================
+  // REPLICATION FUNCTIONS
+  // ============================================================================
 
   const handleReplicateSensor = (nodo: any) => {
 
@@ -1013,9 +868,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const sensoresDelNodo = tableData.filter(sensor => sensor.nodoid === nodo.nodoid);
 
-    
-
-    if (sensoresDelNodo.length > 0) {
+if (sensoresDelNodo.length > 0) {
 
       // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
 
@@ -1023,15 +876,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const tiposUnicos = Array.from(new Set(sensoresDelNodo.map(sensor => sensor.tipoid)));
 
-      
-
-      // Configurar la cantidad basada en los tipos únicos encontrados
+// Configurar la cantidad basada en los tipos únicos encontrados
 
       setSelectedSensorCount(tiposUnicos.length);
 
-      
-
-      // Inicializar sensores con los tipos del nodo fuente, pero para el nodo destino actual
+// Inicializar sensores con los tipos del nodo fuente, pero para el nodo destino actual
 
       if (selectedNodo) {
 
@@ -1049,12 +898,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-
-
-
-  const handleReplicateNodo = (nodo: any) => {
+const handleReplicateNodo = (nodo: any) => {
 
     // Llenar el formulario con los datos del nodo seleccionado
 
@@ -1080,23 +924,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const handleReplicateNodoForMetricaSensor = (nodo: any) => {
+const handleReplicateNodoForMetricaSensor = (nodo: any) => {
 
     // Activar modo replicación
 
     setIsReplicateMode(true);
 
-    
-
-    // Obtener todas las métricas sensor del nodo seleccionado
+// Obtener todas las métricas sensor del nodo seleccionado
 
     const metricasDelNodo = tableData.filter(metrica => metrica.nodoid === nodo.nodoid);
 
-    
-
-    console.log('🔍 Replicando nodo para métricas sensor:', {
+console.log('🔍 Replicando nodo para métricas sensor:', {
 
       nodo: nodo.nodo,
 
@@ -1108,9 +946,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    if (metricasDelNodo.length > 0) {
+if (metricasDelNodo.length > 0) {
 
       // NO cambiar el nodo destino (mantener el que ya está seleccionado en el formulario)
 
@@ -1118,15 +954,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const metricasUnicas = Array.from(new Set(metricasDelNodo.map(metrica => metrica.metricaid)));
 
-      
-
-      // Seleccionar automáticamente las métricas encontradas
+// Seleccionar automáticamente las métricas encontradas
 
       setSelectedMetricas(metricasUnicas.map(id => id.toString()));
 
-      
-
-      // Inicializar métricas con las métricas del nodo fuente, pero para el nodo destino actual
+// Inicializar métricas con las métricas del nodo fuente, pero para el nodo destino actual
 
       if (selectedNodos.length > 0) {
 
@@ -1134,9 +966,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Mostrar mensaje de confirmación
+// Mostrar mensaje de confirmación
 
       setMessage({ 
 
@@ -1156,9 +986,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para abrir el modal de replicación según el tipo de tabla
+// Función para abrir el modal de replicación según el tipo de tabla
 
   const openReplicateModalForTable = async () => {
 
@@ -1168,14 +996,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     let modalVisibleColumns = updateVisibleColumns;
 
-    
-
-
-
-
-    
-
-    // Para sensor, mostrar nodos únicos que tienen sensores
+// Para sensor, mostrar nodos únicos que tienen sensores
 
     if (selectedTable === 'sensor') {
 
@@ -1187,12 +1008,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const nodos = Array.isArray(nodosResponse) ? nodosResponse : ((nodosResponse as any)?.data || []);
 
-        
-
-
-        
-
-        // Obtener nodos únicos que tienen sensores
+// Obtener nodos únicos que tienen sensores
 
         const nodosConSensores = Array.from(new Set(tableData.map(sensor => sensor.nodoid)))
 
@@ -1206,12 +1022,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           .filter(nodo => nodo !== undefined);
 
-        
-
-
-        
-
-        modalData = nodosConSensores;
+modalData = nodosConSensores;
 
         modalTableName = 'nodo';
 
@@ -1227,11 +1038,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         ];
 
-        
-
-
-
-      } catch (error) {
+} catch (error) {
 
         console.error('Error loading nodos data:', error);
 
@@ -1249,9 +1056,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           .filter(nodo => nodo !== undefined);
 
-        
-
-        modalData = nodosConSensores;
+modalData = nodosConSensores;
 
         modalTableName = 'nodo';
 
@@ -1279,9 +1084,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const nodos = Array.isArray(nodosResponse) ? nodosResponse : ((nodosResponse as any)?.data || []);
 
-        
-
-        const nodosConMetricas = Array.from(new Set(tableData.map(metrica => metrica.nodoid)))
+const nodosConMetricas = Array.from(new Set(tableData.map(metrica => metrica.nodoid)))
 
           .map(nodoid => {
 
@@ -1293,9 +1096,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           .filter(nodo => nodo !== undefined);
 
-        
-
-        modalData = nodosConMetricas;
+modalData = nodosConMetricas;
 
         modalTableName = 'nodo';
 
@@ -1327,9 +1128,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           .filter(nodo => nodo !== undefined);
 
-        
-
-        modalData = nodosConMetricas;
+modalData = nodosConMetricas;
 
         modalTableName = 'nodo';
 
@@ -1347,9 +1146,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    const options = {
+const options = {
 
       tableName: modalTableName,
 
@@ -1409,21 +1206,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Estados para selección manual múltiple
+// Estados para selección manual múltiple
 
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
 
   const [selectedRowsForManualUpdate, setSelectedRowsForManualUpdate] = useState<any[]>([]);
 
-
-
-
-
+// ============================================================================
+  // PAGINATION FUNCTIONS
+  // ============================================================================
 
   // Para metricasensor, sensor y usuarioperfil, calcular totalPages basado en datos agrupados
-
   const getTotalPagesForGroupedTable = () => {
 
     if ((selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') && updateData.length > 0) {
@@ -1440,9 +1233,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const calculatedPages = Math.ceil(groupedData.length / itemsPerPage);
 
-      
-
-      return calculatedPages;
+return calculatedPages;
 
     }
 
@@ -1450,28 +1241,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Total de páginas corregido para tablas agrupadas
+// Total de páginas corregido para tablas agrupadas
 
   const correctedTotalPages = getTotalPagesForGroupedTable();
 
-
-
-  // Funciones de navegación corregidas para tablas agrupadas
+// Funciones de navegación corregidas para tablas agrupadas
 
   const correctedHasNextPage = (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage < correctedTotalPages : hasNextPage;
 
   const correctedHasPrevPage = (selectedTable === 'metricasensor' || selectedTable === 'sensor' || selectedTable === 'usuarioperfil') ? paginationCurrentPage > 1 : hasPrevPage;
 
+// Funciones de navegación personalizadas para metricasensor
 
-
-  // Funciones de navegación personalizadas para metricasensor
-
-
-
-
-  const handleMetricaSensorNextPage = () => {
+const handleMetricaSensorNextPage = () => {
 
     if (paginationCurrentPage < correctedTotalPages) {
 
@@ -1481,9 +1263,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const handleMetricaSensorPrevPage = () => {
+const handleMetricaSensorPrevPage = () => {
 
     if (paginationCurrentPage > 1) {
 
@@ -1493,31 +1273,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const handleMetricaSensorFirstPage = () => {
+const handleMetricaSensorFirstPage = () => {
 
     goToPage(1);
 
   };
 
-
-
-  const handleMetricaSensorLastPage = () => {
+const handleMetricaSensorLastPage = () => {
 
     goToPage(correctedTotalPages);
 
   };
 
-
-
-  // Usar paginationCurrentPage para todas las tablas
+// Usar paginationCurrentPage para todas las tablas
 
   const effectiveCurrentPage = paginationCurrentPage;
 
-
-
-  // Resetear página cuando cambie la tabla
+// Resetear página cuando cambie la tabla
 
   useEffect(() => {
 
@@ -1525,10 +1297,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedTable]); // Removido goToPage de las dependencias
 
-
+// ============================================================================
+  // NAVIGATION & CHANGE HANDLING FUNCTIONS
+  // ============================================================================
 
   // Función simple para verificar si hay cambios sin guardar
-
   const hasUnsavedChanges = useCallback((): boolean => {
     // Debug temporal
     console.log('🔍 hasUnsavedChanges called:', {
@@ -1536,10 +1309,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       selectedTable
     });
 
-    
-    
-
-    // Verificar pestaña "Crear"
+// Verificar pestaña "Crear"
 
     if (activeSubTab === 'insert') {
 
@@ -1553,16 +1323,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         let referentialFields: string[] = [];
 
-        
-
-        if (selectedTable === 'pais') {
+if (selectedTable === 'pais') {
 
           // Para pais: pais y paisabrev son campos de entrada
 
           referentialFields = ['paisid', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
 
-
-        } else if (selectedTable === 'fundo') {
+} else if (selectedTable === 'fundo') {
 
           // Para fundo: fundo y fundoabrev son campos de entrada
 
@@ -1594,70 +1361,51 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        const hasChanges = Object.keys(formData).some(key => {
+const hasChanges = Object.keys(formData).some(key => {
 
           const value = formData[key];
 
-          
-
-
-          
-
-          // Excluir campos referenciales
+// Excluir campos referenciales
 
           if (referentialFields.includes(key)) {
 
-
-            return false;
+return false;
 
           }
 
-          
-
-          // Log específico para campos de país
+// Log específico para campos de país
 
           if (selectedTable === 'pais' && (key === 'pais' || key === 'paisabrev')) {
 
+}
 
-          }
-
-          
-
-          // Excluir statusid si es 1 (valor por defecto)
+// Excluir statusid si es 1 (valor por defecto)
 
           if (key === 'statusid') {
 
             const hasStatusChange = value !== 1;
 
-
-            return hasStatusChange;
+return hasStatusChange;
 
           }
 
-          
-
-          // Verificar si hay datos significativos
+// Verificar si hay datos significativos
 
           if (typeof value === 'string' && value.trim() !== '') {
 
-
-            return true;
+return true;
 
           }
 
           if (typeof value === 'number' && value !== null && value !== undefined) {
 
-
-            return true;
+return true;
 
           }
 
           if (Array.isArray(value) && value.length > 0) {
 
-
-            return true;
+return true;
 
           }
 
@@ -1671,35 +1419,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
-
-            return hasObjectData;
+return hasObjectData;
 
           }
 
           if (typeof value === 'boolean' && value === true) {
 
-
-            return true;
+return true;
 
           }
 
-          
-
-
-          return false;
+return false;
 
         });
 
-        
-
-
-        return hasChanges;
+return hasChanges;
 
       }
 
-      
-
-      // Para Usuario Perfil - Crear
+// Para Usuario Perfil - Crear
 
       if (selectedTable === 'usuarioperfil') {
 
@@ -1707,9 +1445,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Para Sensor Métrica - Crear
+// Para Sensor Métrica - Crear
 
       if (selectedTable === 'metricasensor') {
 
@@ -1717,9 +1453,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Para Sensor - Crear
+// Para Sensor - Crear
 
       if (selectedTable === 'sensor') {
 
@@ -1729,9 +1463,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Verificar pestaña "Actualizar"
+// Verificar pestaña "Actualizar"
 
     if (activeSubTab === 'update') {
       console.log('🔍 hasUnsavedChanges - Entrando en sección UPDATE');
@@ -1796,9 +1528,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         return hasRealChanges;
       }
 
-      
-
-      // Verificar si hay múltiples filas seleccionadas para actualizar
+// Verificar si hay múltiples filas seleccionadas para actualizar
 
       if (selectedRowsForUpdate.length > 0) {
 
@@ -1806,9 +1536,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Verificar si hay filas seleccionadas para actualización manual
+// Verificar si hay filas seleccionadas para actualización manual
 
       if (selectedRowsForManualUpdate.length > 0) {
 
@@ -1818,9 +1546,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Verificar pestaña "Masivo"
+// Verificar pestaña "Masivo"
 
     if (activeSubTab === 'massive') {
 
@@ -1840,9 +1566,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           if (referentialFields.includes(key)) return false;
 
-          
-
-          // Verificar si hay datos significativos
+// Verificar si hay datos significativos
 
           if (typeof value === 'string' && value.trim() !== '') return true;
 
@@ -1870,9 +1594,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Para Sensor - Masivo
+// Para Sensor - Masivo
 
       if (selectedTable === 'sensor') {
 
@@ -1880,9 +1602,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Para Métrica Sensor - Masivo
+// Para Métrica Sensor - Masivo
 
       if (selectedTable === 'metricasensor') {
 
@@ -1892,20 +1612,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    return false;
+return false;
 
   }, [activeSubTab, selectedTable]);
 
-
-
-
-
-
-
-
-  // Efecto para interceptar cambios de pestaña y verificar cambios sin guardar - DESACTIVADO
+// Efecto para interceptar cambios de pestaña y verificar cambios sin guardar - DESACTIVADO
 
   // useEffect(() => {
 
@@ -1923,17 +1634,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   //     });
 
-      
-
-  //     // Verificar si hay cambios sin guardar
+//     // Verificar si hay cambios sin guardar
 
   //     const hasChanges = hasUnsavedChanges();
 
   //     console.log('🔄 hasUnsavedChanges result:', hasChanges);
 
-      
-
-  //     if (hasChanges) {
+//     if (hasChanges) {
 
   //       console.log('🔄 Showing lost data modal for external change');
 
@@ -1945,9 +1652,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   //     }
 
-      
-
-  //     // Si no hay cambios, proceder con el cambio
+//     // Si no hay cambios, proceder con el cambio
 
   //     console.log('🔄 No changes, proceeding with external tab change');
 
@@ -1957,30 +1662,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // }, [propActiveSubTab, activeSubTab, selectedTable, hasUnsavedChanges]);
 
-
-
-  // Función simple para manejar el cambio de tabla
+// Función simple para manejar el cambio de tabla
 
   const handleTableChange = useCallback((newTable: string) => {
 
-
-
-
-
-
-    
-
-    // Verificar si hay cambios sin guardar
+// Verificar si hay cambios sin guardar
 
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
 
+if (hasChanges) {
 
-    
-
-    if (hasChanges) {
-
-
-      // Mostrar modal de confirmación
+// Mostrar modal de confirmación
 
       showSimpleModal(
 
@@ -1992,8 +1684,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-
-          // Limpiar datos del formulario antes de cambiar
+// Limpiar datos del formulario antes de cambiar
 
           setFormData(initializeFormData(columns));
 
@@ -2021,8 +1712,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         () => {
 
-
-          // No hacer nada, quedarse en el parámetro actual
+// No hacer nada, quedarse en el parámetro actual
 
         }
 
@@ -2030,8 +1720,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     } else {
 
-
-      // No hay cambios, proceder normalmente
+// No hay cambios, proceder normalmente
 
       handleParameterNavigation(newTable);
 
@@ -2048,22 +1737,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Función executeTableChange eliminada - ahora usamos handleParameterNavigation
 
+// Función simple para manejar el cambio de tabla con confirmación
 
+// Función para limpiar la selección de copiar
 
-  // Función simple para manejar el cambio de tabla con confirmación
-
-
-
-
-  // Función para limpiar la selección de copiar
-
-
-
-
-
-
-
-  // Función para confirmar el cambio de tabla
+// Función para confirmar el cambio de tabla
 
   const confirmTableChange = () => {
 
@@ -2077,9 +1755,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para cancelar el cambio de tabla
+// Función para cancelar el cambio de tabla
 
   const cancelTableChange = () => {
 
@@ -2087,14 +1763,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // SISTEMA ROBUSTO DE NAVEGACIÓN - 3 FUNCIONES ESPECÍFICAS
+// SISTEMA ROBUSTO DE NAVEGACIÓN - 3 FUNCIONES ESPECÍFICAS
 
   const handleParameterNavigation = useCallback((newTable: string) => {
 
-
-    setSelectedTable(newTable);
+setSelectedTable(newTable);
 
     setActiveSubTab('status');
 
@@ -2114,10 +1787,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setIndividualRowStatus({});
 
-
-    
-
-    // Cargar datos de la nueva tabla
+// Cargar datos de la nueva tabla
 
       loadTableDataWrapper();
 
@@ -2129,9 +1799,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadCopyData();
 
-    
-
-    // Notificar al componente padre solo si no viene de handleTableChange
+// Notificar al componente padre solo si no viene de handleTableChange
     // (para evitar loop infinito)
     // if (onTableSelect) {
     //   onTableSelect(newTable);
@@ -2139,12 +1807,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [setSelectedTable, setActiveSubTab]);
 
+const handleSubTabNavigation = useCallback((newSubTab: 'status' | 'insert' | 'update' | 'massive') => {
 
-
-  const handleSubTabNavigation = useCallback((newSubTab: 'status' | 'insert' | 'update' | 'massive') => {
-
-
-    setActiveSubTab(newSubTab);
+setActiveSubTab(newSubTab);
 
     setMessage(null);
 
@@ -2162,8 +1827,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     // Limpiar datos del formulario cuando se cambia de pestaña
 
-
-    setFormData(initializeFormData(columns));
+setFormData(initializeFormData(columns));
 
     setMultipleUsuarioPerfiles([]);
 
@@ -2183,9 +1847,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setSelectedSensorCount(0);
 
-    
-
-    // Limpiar estados específicos de sensor
+// Limpiar estados específicos de sensor
 
     setSelectedNodo('');
 
@@ -2195,9 +1857,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setSelectedStatus(true);
 
-    
-
-    // Limpiar estados específicos de metricasensor
+// Limpiar estados específicos de metricasensor
 
     setSelectedNodos([]);
 
@@ -2205,25 +1865,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     setSelectedMetricas([]);
 
-    
-
-    // Notificar al componente padre PRIMERO para sincronizar
+// Notificar al componente padre PRIMERO para sincronizar
 
     if (onSubTabChange) {
 
-
-      onSubTabChange(newSubTab);
+onSubTabChange(newSubTab);
 
     }
 
   }, [setActiveSubTab, onSubTabChange]);
 
-
-
-
-
-
-  // Cargar datos de usuario y tablas relacionadas
+// Cargar datos de usuario y tablas relacionadas
 
   useEffect(() => {
 
@@ -2233,16 +1885,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, []);
 
-
-
-  // Cargar datos cuando se selecciona una tabla
+// Cargar datos cuando se selecciona una tabla
 
   useEffect(() => {
 
     if (selectedTable) {
 
-
-      loadTableDataWrapper();
+loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -2258,15 +1907,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedTable]);
 
-
-
-  // Sincronizar con propSelectedTable - REMOVIDO para evitar bucle infinito
+// Sincronizar con propSelectedTable - REMOVIDO para evitar bucle infinito
 
   // El cambio de tabla se maneja directamente en App.tsx
 
-
-
-  // Sincronizar con propActiveSubTab - DUPLICADO ELIMINADO (ya existe en línea 463)
+// Sincronizar con propActiveSubTab - DUPLICADO ELIMINADO (ya existe en línea 463)
 
   // useEffect(() => {
 
@@ -2278,16 +1923,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // }, [propActiveSubTab]);
 
-
-
-  // Efecto para limpiar datos cuando se confirma el cambio
+// Efecto para limpiar datos cuando se confirma el cambio
 
   useEffect(() => {
 
     if (clearFormData) {
 
-
-      setFormData(initializeFormData(columns));
+setFormData(initializeFormData(columns));
 
       setMultipleUsuarioPerfiles([]);
 
@@ -2321,9 +1963,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [clearFormData]);
 
-
-
-  // Detectar cambios de pestaña y validar
+// Detectar cambios de pestaña y validar
 
   useEffect(() => {
 
@@ -2339,30 +1979,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     };
 
-
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
+window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
 
   }, [hasUnsavedChanges]);
 
+// loadUserData ahora se importa desde useTableDataManagement
 
+// loadRelatedTablesData ahora se importa desde useTableDataManagement
 
-
-
-
-
-  // loadUserData ahora se importa desde useTableDataManagement
-
-
-
-  // loadRelatedTablesData ahora se importa desde useTableDataManagement
-
-
+// ============================================================================
+  // DATA LOADING FUNCTIONS
+  // ============================================================================
 
   // Función específica para obtener opciones únicas para usuarioperfil
-
   const getUniqueOptionsForUsuarioPerfilField = (columnName: string, filterParams?: { usuarioid?: string; perfilid?: string }) => {
 
     console.log('🔍 getUniqueOptionsForUsuarioPerfilField Debug:', {
@@ -2377,9 +2008,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-
-
-    switch (columnName) {
+switch (columnName) {
 
       case 'usuarioid':
 
@@ -2417,24 +2046,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // loadTableData ahora se importa desde useTableDataManagement
+// loadTableData ahora se importa desde useTableDataManagement
   // Wrapper para mantener compatibilidad con las llamadas existentes
   const loadTableDataWrapper = useCallback(async () => {
     if (!selectedTable) return;
     await loadTableData(selectedTable, initializeFormData);
   }, [selectedTable, loadTableData, initializeFormData]);
 
-
-
-  const loadTableInfo = async () => {
+const loadTableInfo = async () => {
 
     if (!selectedTable) return;
 
-    
-
-    try {
+try {
 
       const [, tableInfo] = await Promise.all([
 
@@ -2446,21 +2069,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Actualizar el estado con la información de la tabla
       setTableInfo(tableInfo);
-      
 
-      // tableData extraído pero no usado localmente - se usa el del hook useTableDataManagement
+// tableData extraído pero no usado localmente - se usa el del hook useTableDataManagement
 
-      
-
-      // Determinar la clave primaria basada en la tabla
+// Determinar la clave primaria basada en la tabla
 
       let primaryKey = 'id';
 
       let hasCompositeKey = false;
 
-      
-
-      if (selectedTable === 'localizacion') {
+if (selectedTable === 'localizacion') {
 
         primaryKey = 'ubicacionid,nodoid'; // Clave primaria compuesta
 
@@ -2500,9 +2118,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      const adaptedInfo: TableInfo = {
+const adaptedInfo: TableInfo = {
 
         tableName: selectedTable,
 
@@ -2530,9 +2146,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       let hasCompositeKey = false;
 
-      
-
-      if (selectedTable === 'localizacion') {
+if (selectedTable === 'localizacion') {
 
         primaryKey = 'ubicacionid,nodoid';
 
@@ -2558,9 +2172,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-
-
-      const defaultInfo: TableInfo = {
+const defaultInfo: TableInfo = {
 
         tableName: selectedTable,
 
@@ -2582,15 +2194,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const loadTableConstraints = async () => {
+const loadTableConstraints = async () => {
 
     if (!selectedTable) return;
 
-    
-
-    try {
+try {
 
       // const constraints = await JoySenseService.getTableConstraints(selectedTable);
 
@@ -2604,15 +2212,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-       const loadUpdateData = async () => {
+const loadUpdateData = async () => {
 
     if (!selectedTable) return;
 
-    
-
-    try {
+try {
 
       // Para actualizar, cargar todos los datos de la tabla (como en copiar)
 
@@ -2620,9 +2224,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
 
-      
-
-      // Ordenar por fecha de modificación (más recientes primero) - igual que en loadTableData
+// Ordenar por fecha de modificación (más recientes primero) - igual que en loadTableData
 
       const sortedData = data.sort((a: any, b: any) => {
 
@@ -2634,9 +2236,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      setUpdateData(sortedData);
+setUpdateData(sortedData);
 
     } catch (error) {
 
@@ -2648,15 +2248,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const loadCopyData = async () => {
+const loadCopyData = async () => {
 
     if (!selectedTable) return;
 
-    
-
-    try {
+try {
 
       // Para copiar, cargar todos los datos de la tabla
 
@@ -2672,8 +2268,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // setCopyTotalPages(Math.ceil(data.length / copyItemsPerPage));
 
-
-      setCopySearchTerm('');
+setCopySearchTerm('');
 
     } catch (error) {
 
@@ -2685,17 +2280,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// getUserName ahora se importa desde systemParametersUtils
 
+// formatDate ahora se importa desde systemParametersUtils
 
-  // getUserName ahora se importa desde systemParametersUtils
-
-
-
-  // formatDate ahora se importa desde systemParametersUtils
-
-
-
-  const getCurrentUserId = () => {
+const getCurrentUserId = () => {
 
     if (!user || !user.email) return 1;
 
@@ -2705,15 +2294,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para obtener el valor de visualización (nombres en lugar de IDs)
+// Función para obtener el valor de visualización (nombres en lugar de IDs)
 
   // Función para validar datos antes de insertar usando el sistema de validación robusto
 
   // validateInsertData ahora se importa desde systemParametersUtils
 
-
+  // ============================================================================
+  // UI & DISPLAY FUNCTIONS
+  // ============================================================================
 
   const getDisplayValueLocal = (row: any, columnName: string) => {
     // Usar la función importada con los datos relacionados
@@ -2738,19 +2327,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-
-
-
+// ============================================================================
+  // CRUD OPERATIONS
+  // ============================================================================
 
   const handleInsert = async () => {
 
     if (!selectedTable || !user) return;
 
-    
-
-    // Validar datos antes de insertar usando el sistema robusto
+// Validar datos antes de insertar usando el sistema robusto
     try {
       // Obtener datos existentes para validación de duplicados
       let existingData: any[] = [];
@@ -2827,21 +2412,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       return;
     }
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
-      
-
-      const preparedData = { ...formData };
+const preparedData = { ...formData };
 
       const usuarioid = getCurrentUserId();
 
-      
-
-      preparedData.usercreatedid = usuarioid;
+preparedData.usercreatedid = usuarioid;
 
       preparedData.usermodifiedid = usuarioid;
 
@@ -2849,15 +2428,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       preparedData.datemodified = new Date().toISOString();
 
-
-
-      // Filtrar datos según la tabla para evitar errores de columnas inexistentes
+// Filtrar datos según la tabla para evitar errores de columnas inexistentes
 
       let filteredData = { ...preparedData };
 
-      
-
-      // Filtrar campos problemáticos según la tabla
+// Filtrar campos problemáticos según la tabla
 
       if (selectedTable === 'ubicacion') {
 
@@ -3041,32 +2616,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       // Para otras tablas, usar todos los datos
 
+// Logging específico para debugging
 
+await JoySenseService.insertTableRow(selectedTable, filteredData);
 
-      // Logging específico para debugging
-
-
-
-
-
-
-      await JoySenseService.insertTableRow(selectedTable, filteredData);
-
-      
-
-      // Agregar el registro insertado al sistema de mensajes
+// Agregar el registro insertado al sistema de mensajes
 
       addInsertedRecord(preparedData);
 
-      
-
-      // Limpiar mensajes de alerta después de inserción exitosa
+// Limpiar mensajes de alerta después de inserción exitosa
 
       setMessage(null);
 
-      
-
-      loadTableDataWrapper();
+loadTableDataWrapper();
 
       loadTableInfo();
 
@@ -3078,15 +2640,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-      // Reinicializar formulario
+// Reinicializar formulario
 
       setFormData(initializeFormData(columns));
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       const errorResponse = handleInsertError(error);
 
@@ -3100,29 +2658,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para manejar la creación masiva de sensores
+// Función para manejar la creación masiva de sensores
 
   const handleMassiveSensorCreation = async (dataToApply: any[]) => {
 
     if (!selectedTable || !user || selectedTable !== 'sensor') return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
-      
-
-      const usuarioid = getCurrentUserId();
+const usuarioid = getCurrentUserId();
 
       const currentTimestamp = new Date().toISOString();
 
-      
-
-      // Preparar datos con información de auditoría
+// Preparar datos con información de auditoría
 
       const preparedData = dataToApply.map(item => ({
 
@@ -3138,13 +2688,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }));
 
-
-
-
-
-      
-
-      // Verificar si hay duplicados antes de enviar
+// Verificar si hay duplicados antes de enviar
 
       const duplicates = preparedData.filter((item, index, self) => 
 
@@ -3158,9 +2702,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       );
 
-      
-
-      if (duplicates.length > 0) {
+if (duplicates.length > 0) {
 
         console.warn('⚠️ Se encontraron duplicados en los datos de sensores:', duplicates);
 
@@ -3178,46 +2720,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         );
 
-
-        preparedData.length = 0;
+preparedData.length = 0;
 
         preparedData.push(...uniqueData);
 
       }
 
-      
-
-      // Verificar que los nodoid y tipoid existen
+// Verificar que los nodoid y tipoid existen
 
       const nodosExistentes = nodosData?.map(n => n.nodoid) || [];
 
       const tiposExistentes = tiposData?.map(t => t.tipoid) || [];
 
-      
-
-      const nodosInvalidos = preparedData.filter(item => !nodosExistentes.includes(item.nodoid));
+const nodosInvalidos = preparedData.filter(item => !nodosExistentes.includes(item.nodoid));
 
       const tiposInvalidos = preparedData.filter(item => !tiposExistentes.includes(item.tipoid));
 
-      
-
-      if (nodosInvalidos.length > 0) {
+if (nodosInvalidos.length > 0) {
 
         console.error('❌ Nodos inválidos encontrados:', nodosInvalidos);
 
       }
 
-      
-
-      if (tiposInvalidos.length > 0) {
+if (tiposInvalidos.length > 0) {
 
         console.error('❌ Tipos inválidos encontrados:', tiposInvalidos);
 
       }
 
-
-
-      // Realizar inserción masiva usando insertTableRow para cada registro
+// Realizar inserción masiva usando insertTableRow para cada registro
 
       for (const record of preparedData) {
 
@@ -3225,9 +2756,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Agregar registros insertados al sistema de mensajes
+// Agregar registros insertados al sistema de mensajes
 
       preparedData.forEach(record => {
 
@@ -3235,15 +2764,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      // Limpiar mensajes de alerta después de inserción exitosa
+// Limpiar mensajes de alerta después de inserción exitosa
 
       setMessage(null);
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -3255,9 +2780,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-      setMessage({ 
+setMessage({ 
 
         type: 'success', 
 
@@ -3265,9 +2788,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       console.error('Error en creación masiva de sensores:', error);
 
@@ -3283,34 +2804,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// handleSearchTermChange ahora se importa desde useSearchAndFilter
 
-
-  // handleSearchTermChange ahora se importa desde useSearchAndFilter
-
-
-
-  // Función para manejar el cambio de campo de búsqueda
+// Función para manejar el cambio de campo de búsqueda
 
   // handleSearchFieldChange ahora se importa desde useSearchAndFilter
 
-
-
-
-
-
-  // Función para manejar la búsqueda en la tabla de Estado
+// Función para manejar la búsqueda en la tabla de Estado
 
   // handleStatusSearch ahora se importa desde useSearchAndFilter
 
-
-
-  // Función para manejar la búsqueda en la tabla de Copiar
+// Función para manejar la búsqueda en la tabla de Copiar
 
   // handleCopySearch ahora se importa desde useSearchAndFilter
 
-
-
-  // Función para cambiar página en la tabla de Estado
+// Función para cambiar página en la tabla de Estado
 
   const handleStatusPageChange = (page: number) => {
 
@@ -3318,22 +2826,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// Función para cambiar página en la tabla de Copiar
 
-
-  // Función para cambiar página en la tabla de Copiar
-
-
-
-
-  // Función para obtener los datos paginados de la tabla de Estado
+// Función para obtener los datos paginados de la tabla de Estado
 
   const getStatusPaginatedData = () => {
 
     // Para la tabla de Estado, siempre mostrar datos desagregados (sin agrupar)
 
-    
-
-    // Para otras tablas, usar datos normales
+// Para otras tablas, usar datos normales
 
     const startIndex = (statusCurrentPage - 1) * itemsPerPage;
 
@@ -3343,11 +2844,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-
-
-  // Función para obtener los datos paginados de la tabla de Actualizar
+// Función para obtener los datos paginados de la tabla de Actualizar
 
   const getUpdatePaginatedData = () => {
     // Usar updateFilteredData para la tabla de Actualizar
@@ -3372,30 +2869,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Asegurar que groupMetricaSensorData tenga acceso a los datos relacionados
+// Asegurar que groupMetricaSensorData tenga acceso a los datos relacionados
 
   // Este useEffect se eliminó para evitar bucles infinitos
 
   // El agrupamiento se maneja directamente en getUpdatePaginatedData
 
-
-
-  // Asegurar que los datos relacionados se carguen para metricasensor
+// Asegurar que los datos relacionados se carguen para metricasensor
 
   // Este useEffect se eliminó para evitar bucles infinitos
 
   // Los datos relacionados se cargan automáticamente cuando se necesita
 
+// Función para obtener los datos paginados de la tabla de Copiar
 
-
-  // Función para obtener los datos paginados de la tabla de Copiar
-
-
-
-
-  const handleSelectRowForUpdate = (row: any) => {
+const handleSelectRowForUpdate = (row: any) => {
 
     // Limpiar mensajes de alerta al seleccionar nueva entrada
     setUpdateMessage(null);
@@ -3404,9 +2892,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const selectedEntries = findEntriesByTimestamp(row, tableData, updateData);
 
-    
-
-    // Para sensor y metricasensor, verificar si ya hay entradas seleccionadas
+// Para sensor y metricasensor, verificar si ya hay entradas seleccionadas
 
     if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
 
@@ -3426,9 +2912,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      if (hasSameTimestamp) {
+if (hasSameTimestamp) {
 
         // Deseleccionar todas las entradas con el mismo timestamp
 
@@ -3444,13 +2928,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
+setSelectedRowsForUpdate(selectedEntries);
 
-      setSelectedRowsForUpdate(selectedEntries);
-
-      
-
-      // Crear formulario con datos del primer nodo (para mostrar valores comunes)
+// Crear formulario con datos del primer nodo (para mostrar valores comunes)
 
       const firstRow = selectedEntries[0];
 
@@ -3473,9 +2953,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setUpdateFormData(newFormData);
 
-      
-
-      setMessage({ 
+setMessage({ 
 
         type: 'success', 
 
@@ -3487,9 +2965,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Para otras tablas, comportamiento normal (una sola fila)
+// Para otras tablas, comportamiento normal (una sola fila)
 
     if (selectedRowForUpdate === row) {
 
@@ -3506,13 +2982,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
+setSelectedRowForUpdate(row);
 
-    setSelectedRowForUpdate(row);
-
-    
-
-    const newFormData: Record<string, any> = {};
+const newFormData: Record<string, any> = {};
 
     columns.forEach(col => {
 
@@ -3529,9 +3001,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    // Agregar el ID de la fila para poder actualizarla
+// Agregar el ID de la fila para poder actualizarla
 
     const rowId = getRowId(row, selectedTable);
 
@@ -3603,9 +3073,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        if (idMapping[selectedTable]) {
+if (idMapping[selectedTable]) {
 
           newFormData[idMapping[selectedTable]] = row[idMapping[selectedTable]];
 
@@ -3615,9 +3083,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    console.log('🔍 Debug - handleSelectRowForUpdate:', {
+console.log('🔍 Debug - handleSelectRowForUpdate:', {
 
       row,
 
@@ -3631,18 +3097,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    setUpdateFormData(newFormData);
+setUpdateFormData(newFormData);
 
   };
 
-
-
-
-
-
-  const handleCancelUpdate = () => {
+const handleCancelUpdate = () => {
     // Debug temporal
     console.log('🔍 handleCancelUpdate Debug:', {
       selectedRowForUpdate: !!selectedRowForUpdate,
@@ -3736,15 +3195,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   };
 
-
-
-
-
-
-
-
-
-  // Función para pegar datos del portapapeles en el formulario de inserción
+// Función para pegar datos del portapapeles en el formulario de inserción
 
   const handlePasteFromClipboardForInsert = async () => {
 
@@ -3752,15 +3203,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const text = await navigator.clipboard.readText();
 
+const pastedData = JSON.parse(text);
 
-      
-
-      const pastedData = JSON.parse(text);
-
-
-      
-
-      if (Array.isArray(pastedData) && pastedData.length > 0) {
+if (Array.isArray(pastedData) && pastedData.length > 0) {
 
         // Verificar que los datos sean de la tabla correcta
 
@@ -3768,9 +3213,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const expectedFields = getExpectedFieldsForTable(selectedTable);
 
-        
-
-        if (!expectedFields.every(field => firstEntry.hasOwnProperty(field))) {
+if (!expectedFields.every(field => firstEntry.hasOwnProperty(field))) {
 
           setMessage({ 
 
@@ -3784,15 +3227,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Usar el primer registro como base para el formulario
+// Usar el primer registro como base para el formulario
 
         const newFormData: Record<string, any> = {};
 
-        
-
-        // Copiar campos relevantes (excluir campos de auditoría y IDs)
+// Copiar campos relevantes (excluir campos de auditoría y IDs)
 
         Object.keys(firstEntry).forEach(key => {
 
@@ -3822,13 +3261,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
+setFormData(newFormData);
 
-        setFormData(newFormData);
-
-        
-
-        setMessage({ 
+setMessage({ 
 
           type: 'success', 
 
@@ -3864,9 +3299,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función auxiliar para obtener los campos esperados para cada tabla
+// Función auxiliar para obtener los campos esperados para cada tabla
 
   const getExpectedFieldsForTable = (table: string): string[] => {
 
@@ -3924,9 +3357,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Funciones para obtener nombres de entidades
+// Funciones para obtener nombres de entidades
 
   const getPaisName = (paisId: string) => {
 
@@ -3936,9 +3367,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const getEmpresaName = (empresaId: string) => {
+const getEmpresaName = (empresaId: string) => {
 
     const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
 
@@ -3946,9 +3375,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const getFundoName = (fundoId: string) => {
+const getFundoName = (fundoId: string) => {
 
     const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
 
@@ -4042,9 +3469,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    switch (columnName) {
+switch (columnName) {
 
       case 'paisid':
 
@@ -4052,8 +3477,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!paisesData || paisesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -4061,18 +3485,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const filteredPaises = paisesData.filter(pais => pais && pais.paisid && pais.paisid.toString() === paisSeleccionado);
 
+const paisResult = filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
 
-          const paisResult = filteredPaises.map(pais => ({ value: pais.paisid, label: pais.pais }));
-
-
-          return paisResult;
+return paisResult;
 
         }
 
         const paisResultAll = paisesData.map(pais => ({ value: pais.paisid, label: pais.pais }));
 
-
-        return paisResultAll;
+return paisResultAll;
 
       case 'empresaid':
 
@@ -4080,8 +3501,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!empresasData || empresasData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -4093,20 +3513,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredEmpresas = empresasData.filter(empresa => empresa && empresa.empresaid && empresa.empresaid.toString() === empresaSeleccionada);
 
-
-        } else if (paisSeleccionado) {
+} else if (paisSeleccionado) {
 
           // Si no hay empresa específica pero sí hay país, filtrar por país
 
           filteredEmpresas = empresasData.filter(empresa => empresa && empresa.paisid && empresa.paisid.toString() === paisSeleccionado);
 
-
-        }
+}
 
         const empresaResult = filteredEmpresas.map(empresa => ({ value: empresa.empresaid, label: empresa.empresa }));
 
-
-        return empresaResult;
+return empresaResult;
 
       case 'fundoid':
 
@@ -4114,8 +3531,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!fundosData || fundosData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -4127,20 +3543,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredFundos = fundosData.filter(fundo => fundo && fundo.fundoid && fundo.fundoid.toString() === fundoSeleccionado);
 
-
-        } else if (empresaSeleccionada) {
+} else if (empresaSeleccionada) {
 
           // Si no hay fundo específico pero sí hay empresa, filtrar por empresa
 
           filteredFundos = fundosData.filter(fundo => fundo && fundo.empresaid && fundo.empresaid.toString() === empresaSeleccionada);
 
-
-        }
+}
 
         const fundoResult = filteredFundos.map(fundo => ({ value: fundo.fundoid, label: fundo.fundo }));
 
-
-        return fundoResult;
+return fundoResult;
 
       case 'ubicacionid':
 
@@ -4148,8 +3561,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!ubicacionesData || ubicacionesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -4159,13 +3571,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           filteredUbicaciones = ubicacionesData.filter(ubicacion => ubicacion && ubicacion.fundoid && ubicacion.fundoid.toString() === fundoSeleccionado);
 
-
-        }
+}
 
         const ubicacionResult = filteredUbicaciones.map(ubicacion => ({ value: ubicacion.ubicacionid, label: ubicacion.ubicacion }));
 
-
-        return ubicacionResult;
+return ubicacionResult;
 
       case 'entidadid':
 
@@ -4175,30 +3585,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!entidadesData || entidadesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
-        
-
-        // Si estamos en el contexto de metricasensor y hay parámetros de filtro, filtrar entidades
+// Si estamos en el contexto de metricasensor y hay parámetros de filtro, filtrar entidades
 
         if (selectedTable === 'metricasensor' && filterParams && filterParams.nodoid) {
 
           const nodoId = filterParams.nodoid;
 
-          
-
-          // Obtener los tipos de sensores del nodo seleccionado
+// Obtener los tipos de sensores del nodo seleccionado
 
           const sensoresDelNodo = sensorsData.filter((sensor: any) => sensor.nodoid === parseInt(nodoId));
 
           const tiposDelNodo = sensoresDelNodo.map((sensor: any) => sensor.tipoid);
 
-          
-
-          // Obtener las entidades únicas de esos tipos
+// Obtener las entidades únicas de esos tipos
 
           const entidadesDelNodo = tiposData
 
@@ -4206,13 +3609,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             .map((tipo: any) => tipo.entidadid);
 
-          
+const entidadesUnicas = Array.from(new Set(entidadesDelNodo));
 
-          const entidadesUnicas = Array.from(new Set(entidadesDelNodo));
-
-          
-
-          // Filtrar entidades que corresponden a los tipos del nodo
+// Filtrar entidades que corresponden a los tipos del nodo
 
           const entidadesFiltradas = entidadesData.filter(entidad => 
 
@@ -4220,23 +3619,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
+const entidadResult = entidadesFiltradas.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
 
-          const entidadResult = entidadesFiltradas.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
-
-
-          return entidadResult;
+return entidadResult;
 
         }
 
-        
-
-        // Mostrar todas las entidades disponibles (no filtrar por fundo)
+// Mostrar todas las entidades disponibles (no filtrar por fundo)
 
         const entidadResult = entidadesData.map(entidad => ({ value: entidad.entidadid, label: entidad.entidad }));
 
-
-        return entidadResult;
+return entidadResult;
 
       case 'nodoid':
 
@@ -4244,16 +3637,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!nodosData || nodosData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
         let filteredNodos = nodosData;
 
-        
-
-        // Para umbral masivo, filtrar nodos que tienen sensor pero NO tienen metricasensor (como metrica sensor)
+// Para umbral masivo, filtrar nodos que tienen sensor pero NO tienen metricasensor (como metrica sensor)
 
         if (selectedTable === 'umbral') {
 
@@ -4273,9 +3663,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
-
-          // Obtener nodos que tienen sensor (desde la tabla sensor)
+// Obtener nodos que tienen sensor (desde la tabla sensor)
 
           let nodosConSensor = sensorsData
 
@@ -4283,9 +3671,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             .map((s: any) => s.nodoid);
 
-          
-
-          console.log('🔍 Nodos con sensores (todos):', {
+console.log('🔍 Nodos con sensores (todos):', {
 
             nodosConSensor: nodosConSensor.length,
 
@@ -4295,9 +3681,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
-
-          // Si se proporciona entidadid, filtrar por entidad
+// Si se proporciona entidadid, filtrar por entidad
 
           if (filterParams?.entidadid) {
 
@@ -4311,9 +3695,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const tiposIds = tiposConEntidad.map((t: any) => t.tipoid);
 
-            
-
-            console.log('🔍 Tipos con entidad:', {
+console.log('🔍 Tipos con entidad:', {
 
               entidadid: filterParams.entidadid,
 
@@ -4323,9 +3705,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
-            
-
-            const sensoresConEntidad = sensorsData.filter((s: any) => 
+const sensoresConEntidad = sensorsData.filter((s: any) => 
 
               s.tipoid && tiposIds.includes(s.tipoid)
 
@@ -4337,9 +3717,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               .map((s: any) => s.nodoid);
 
-              
-
-            console.log('🔍 Sensores con entidad:', {
+console.log('🔍 Sensores con entidad:', {
 
               sensoresConEntidad: sensoresConEntidad.length,
 
@@ -4351,9 +3729,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           }
 
-          
-
-          // Obtener nodos que ya tienen metricasensor (desde la tabla metricasensor)
+// Obtener nodos que ya tienen metricasensor (desde la tabla metricasensor)
 
           // Obtener nodos que ya tienen umbrales asignados (no metricasensor)
           const nodosConUmbral = umbralesData
@@ -4366,9 +3742,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             todosLosNodosConUmbral: nodosConUmbral
           });
 
-          
-
-          // Filtrar nodos que tienen sensor pero NO tienen umbrales asignados
+// Filtrar nodos que tienen sensor pero NO tienen umbrales asignados
           // Y que tienen ubicación asignada (requerido para umbrales)
 
           // Obtener nodos que tienen localización
@@ -4395,9 +3769,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-          console.log('🔍 Nodos filtrados (sensor sin umbral):', {
+console.log('🔍 Nodos filtrados (sensor sin umbral):', {
 
             nodosFiltrados: nodosFiltrados.length,
 
@@ -4446,9 +3818,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             }))
           });
 
-          
-
-          // Para umbral masivo, NO aplicar filtro de fundo porque los nodos pueden no tener localización
+// Para umbral masivo, NO aplicar filtro de fundo porque los nodos pueden no tener localización
 
           // pero sí tener sensores asignados. Sin embargo, filtramos nodos sin ubicación
 
@@ -4462,13 +3832,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
+filteredNodos = nodosFiltrados;
 
-          filteredNodos = nodosFiltrados;
-
-          
-
-          console.log('🔗 Nodos para umbral masivo (con sensor, sin umbral):', { 
+console.log('🔗 Nodos para umbral masivo (con sensor, sin umbral):', { 
 
             fundoid: filterParams?.fundoid,
 
@@ -4496,9 +3862,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
 
-            
-
-            // Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
+// Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
 
             const nodosConLocalizacion = localizacionesData.filter(loc => 
 
@@ -4508,17 +3872,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const nodoIdsDelFundo = nodosConLocalizacion.map(loc => loc.nodoid);
 
-            
-
-            filteredNodos = nodosData.filter(nodo => 
+filteredNodos = nodosData.filter(nodo => 
 
               nodo && nodo.nodoid && nodo.statusid === 1 && nodoIdsDelFundo.includes(nodo.nodoid)
 
             );
 
-            
-
-            console.log('🔗 Nodos filtrados por fundo:', { 
+console.log('🔗 Nodos filtrados por fundo:', { 
 
               fundoid: filterParams.fundoid, 
 
@@ -4550,9 +3910,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const ubicacionIds = ubicacionesDelFundo.map(u => u.ubicacionid);
 
-            
-
-            // Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
+// Filtrar nodos que tienen localización en ubicaciones del fundo seleccionado
 
             const nodosConLocalizacion = localizacionesData.filter(loc => 
 
@@ -4562,17 +3920,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const nodoIdsDelFundo = nodosConLocalizacion.map(loc => loc.nodoid);
 
-            
-
-            filteredNodos = nodosData.filter(nodo => 
+filteredNodos = nodosData.filter(nodo => 
 
               nodo && nodo.nodoid && nodo.statusid === 1 && nodoIdsDelFundo.includes(nodo.nodoid)
 
             );
 
-            
-
-            console.log('🔗 Filtros globales aplicados a nodos:', { 
+console.log('🔗 Filtros globales aplicados a nodos:', { 
 
               fundoSeleccionado, 
 
@@ -4592,29 +3946,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Para sensor y metricasensor masivo, mostrar todos los nodos activos (sin filtros de fundo)
+// Para sensor y metricasensor masivo, mostrar todos los nodos activos (sin filtros de fundo)
 
         if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
 
+filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
 
-          filteredNodos = nodosData.filter(nodo => nodo && nodo.nodoid && nodo.statusid === 1);
+}
 
-
-
-
-        }
-
-        
-
-        // Filtrar nodos según el contexto
+// Filtrar nodos según el contexto
 
         let finalFilteredNodos = filteredNodos;
 
-        
-
-        // Si estamos en el contexto de sensor, filtrar nodos que estén en nodo pero no en sensor
+// Si estamos en el contexto de sensor, filtrar nodos que estén en nodo pero no en sensor
 
         if (selectedTable === 'sensor') {
 
@@ -4622,9 +3966,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const nodosConSensores = new Set(tableData.map(sensor => sensor.nodoid));
 
-          
-
-          finalFilteredNodos = filteredNodos.filter(nodo => {
+finalFilteredNodos = filteredNodos.filter(nodo => {
 
             // Verificar que el nodo esté activo
 
@@ -4634,9 +3976,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            // Verificar que el nodo NO tenga sensores asignados (no esté en tabla sensor)
+// Verificar que el nodo NO tenga sensores asignados (no esté en tabla sensor)
 
             const tieneSensores = nodosConSensores.has(nodo.nodoid);
 
@@ -4644,20 +3984,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
+}
 
-
-
-
-
-
-
-
-        }
-
-        
-
-        // Si estamos en el contexto de metricasensor, mostrar nodos que tienen sensores pero NO tienen métricas sensor
+// Si estamos en el contexto de metricasensor, mostrar nodos que tienen sensores pero NO tienen métricas sensor
 
         if (selectedTable === 'metricasensor') {
 
@@ -4665,15 +3994,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const sensorData = sensorsData || [];
 
-          
-
-          // Obtener nodos que ya tienen métricas sensor asignadas
+// Obtener nodos que ya tienen métricas sensor asignadas
 
           const nodosConMetricasSensor = new Set(tableData.map(ms => ms.nodoid));
 
-          
-
-          finalFilteredNodos = filteredNodos.filter(nodo => {
+finalFilteredNodos = filteredNodos.filter(nodo => {
 
             // Verificar que el nodo esté activo
 
@@ -4683,9 +4008,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            // Verificar que el nodo tenga sensores (esté en tabla sensor)
+// Verificar que el nodo tenga sensores (esté en tabla sensor)
 
             const tieneSensores = sensorData.some((sensor: any) => sensor.nodoid === nodo.nodoid);
 
@@ -4695,9 +4018,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            // Verificar que el nodo NO tenga métricas sensor asignadas
+// Verificar que el nodo NO tenga métricas sensor asignadas
 
             const tieneMetricasSensor = nodosConMetricasSensor.has(nodo.nodoid);
 
@@ -4707,29 +4028,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            // Si hay filtro por entidad, verificar que el nodo tenga sensores con tipos de esa entidad
+// Si hay filtro por entidad, verificar que el nodo tenga sensores con tipos de esa entidad
 
             if (filterParams && filterParams.entidadid) {
 
               const entidadId = parseInt(filterParams.entidadid);
 
-              
-
-              // Obtener los sensores del nodo
+// Obtener los sensores del nodo
 
               const sensoresDelNodo = sensorData.filter((sensor: any) => sensor.nodoid === nodo.nodoid);
 
-              
-
-              // Obtener los tipos de esos sensores
+// Obtener los tipos de esos sensores
 
               const tiposDelNodo = sensoresDelNodo.map((sensor: any) => sensor.tipoid);
 
-              
-
-              // Verificar que al menos uno de esos tipos pertenezca a la entidad seleccionada
+// Verificar que al menos uno de esos tipos pertenezca a la entidad seleccionada
 
               const tieneTiposDeEntidad = tiposData.some((tipo: any) => 
 
@@ -4737,9 +4050,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               );
 
-              
-
-              if (!tieneTiposDeEntidad) {
+if (!tieneTiposDeEntidad) {
 
                 return false;
 
@@ -4747,24 +4058,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            return true;
+return true;
 
           });
 
-          
+}
 
-
-
-
-        }
-
-        
-
-        
-
-        // Ordenar nodos por fecha de modificación (más recientes primero)
+// Ordenar nodos por fecha de modificación (más recientes primero)
 
         const sortedNodos = finalFilteredNodos.sort((a: any, b: any) => {
 
@@ -4776,20 +4076,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
-
-
-
-        
-
-        let nodoResult = sortedNodos.map(nodo => {
+let nodoResult = sortedNodos.map(nodo => {
 
           // Buscar la localización del nodo para verificar si tiene localización activa
 
           const localizacion = localizacionesData?.find(loc => loc.nodoid === nodo.nodoid);
 
-
-          return { 
+return { 
 
             value: nodo.nodoid, 
 
@@ -4803,9 +4096,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
-
-        // Para sensor, metricasensor y umbral masivo, incluir TODOS los nodos (con o sin localización)
+// Para sensor, metricasensor y umbral masivo, incluir TODOS los nodos (con o sin localización)
 
         // Para localizacion, solo incluir nodos SIN localización activa (disponibles para asignar)
 
@@ -4823,31 +4114,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-
-        return nodoResult;
+return nodoResult;
 
       case 'tipoid':
 
         if (!tiposData || tiposData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
-        
+console.log('🏷️ Datos de tipos disponibles:', tiposData.slice(0, 3)); // Mostrar primeros 3 tipos para debug
 
-        console.log('🏷️ Datos de tipos disponibles:', tiposData.slice(0, 3)); // Mostrar primeros 3 tipos para debug
-
-        
-
-        // Filtrar tipos por entidad si se proporciona
+// Filtrar tipos por entidad si se proporciona
 
         let filteredTipos = tiposData;
 
-        
-
-        // Para umbral masivo, filtrar tipos por nodos seleccionados
+// Para umbral masivo, filtrar tipos por nodos seleccionados
 
         if (selectedTable === 'umbral' && filterParams?.nodoids && Array.isArray(filterParams.nodoids)) {
 
@@ -4861,17 +4144,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const tiposDeNodos = sensoresDeNodos.map(sensor => sensor.tipoid);
 
-          
-
-          filteredTipos = filteredTipos.filter(tipo => 
+filteredTipos = filteredTipos.filter(tipo => 
 
             tipo.tipoid && tiposDeNodos.includes(tipo.tipoid)
 
           );
 
-          
-
-          console.log('🏷️ Tipos filtrados por nodos para umbral masivo:', {
+console.log('🏷️ Tipos filtrados por nodos para umbral masivo:', {
 
             nodoIds,
 
@@ -4893,17 +4172,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-          // Si también hay filtro por nodos específicos, filtrar por esos nodos
+// Si también hay filtro por nodos específicos, filtrar por esos nodos
 
           if (filterParams?.nodoids && Array.isArray(filterParams.nodoids)) {
 
             const nodoIds = filterParams.nodoids.map((id: number) => id);
 
-            
-
-            // Obtener tipos que están asociados a estos nodos específicos a través de sensores
+// Obtener tipos que están asociados a estos nodos específicos a través de sensores
 
             const sensoresDeNodos = sensorsData.filter(sensor => 
 
@@ -4913,17 +4188,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             const tiposDeNodos = sensoresDeNodos.map(sensor => sensor.tipoid);
 
-            
-
-            filteredTipos = filteredTipos.filter(tipo => 
+filteredTipos = filteredTipos.filter(tipo => 
 
               tipo.tipoid && tiposDeNodos.includes(tipo.tipoid)
 
             );
 
-            
-
-            console.log('🏷️ Tipos filtrados por entidad y nodos específicos:', {
+console.log('🏷️ Tipos filtrados por entidad y nodos específicos:', {
 
               entidadid: filterParams.entidadid,
 
@@ -4984,23 +4255,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        const tipoResult = filteredTipos.map(tipo => ({ 
+const tipoResult = filteredTipos.map(tipo => ({ 
           value: tipo.tipoid, 
           label: tipo.tipo,
           entidadid: tipo.entidadid 
         }));
 
-
-        return tipoResult;
+return tipoResult;
 
       case 'metricaid':
 
         if (!metricasData || metricasData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -5033,8 +4300,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
           unidad: metrica.unidad 
         }));
 
-
-        return metricaResult;
+return metricaResult;
 
       case 'localizacionid':
 
@@ -5044,50 +4310,43 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         if (!criticidadesData || criticidadesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
         const criticidadResult = criticidadesData.map(criticidad => ({ value: criticidad.criticidadid, label: criticidad.criticidad }));
 
-
-        return criticidadResult;
+return criticidadResult;
 
       case 'perfilid':
 
         if (!perfilesData || perfilesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
         const perfilResult = perfilesData.map(perfil => ({ value: perfil.perfilid, label: perfil.perfil }));
 
-
-        return perfilResult;
+return perfilResult;
 
       case 'umbralid':
 
         if (!umbralesData || umbralesData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
         const umbralResult = umbralesData.map(umbral => ({ value: umbral.umbralid, label: umbral.umbral }));
 
-
-        return umbralResult;
+return umbralResult;
 
       case 'usuarioid':
 
         if (!userData || userData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -5099,30 +4358,26 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }));
 
-
-        return usuarioResult;
+return usuarioResult;
 
       case 'medioid':
 
         if (!mediosData || mediosData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
         const medioResult = mediosData.map(medio => ({ value: medio.medioid, label: medio.nombre }));
 
-
-        return medioResult;
+return medioResult;
 
       case 'usercreatedid':
       case 'usermodifiedid':
 
         if (!userData || userData.length === 0) {
 
-
-          return [];
+return [];
 
         }
 
@@ -5134,8 +4389,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }));
 
-
-        return modifiedByResult;
+return modifiedByResult;
 
       default:
 
@@ -5145,9 +4399,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const getRowId = (row: any, tableName: string) => {
+const getRowId = (row: any, tableName: string) => {
 
     // Para tablas con claves compuestas, necesitamos construir un identificador único
 
@@ -5203,9 +4455,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Para otras tablas, usar el mapeo normal
+// Para otras tablas, usar el mapeo normal
 
     const idMapping: Record<string, string> = {
 
@@ -5247,9 +4497,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     };
 
-    
-
-    const idField = idMapping[tableName];
+const idField = idMapping[tableName];
 
     if (idField && row[idField] !== undefined) {
 
@@ -5257,9 +4505,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    const idFields = Object.keys(row).filter(key => 
+const idFields = Object.keys(row).filter(key => 
 
       key.endsWith('id') && 
 
@@ -5271,9 +4517,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función específica para manejar actualizaciones del formulario avanzado de metricasensor
+// Función específica para manejar actualizaciones del formulario avanzado de metricasensor
 
   const handleAdvancedMetricaSensorUpdate = async (updatedEntries: any[]) => {
 
@@ -5281,18 +4525,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setUpdateLoading(true);
 
-      
-
-
-      
-
-      let successCount = 0;
+let successCount = 0;
       let actualChangesCount = 0;
       let errorCount = 0;
 
-      
-
-      for (let i = 0; i < updatedEntries.length; i++) {
+for (let i = 0; i < updatedEntries.length; i++) {
 
         const row = updatedEntries[i];
 
@@ -5306,9 +4543,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        // Preparar datos para actualización
+// Preparar datos para actualización
 
         const updateData: any = {
 
@@ -5320,10 +4555,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        
-        // Para metricasensor, siempre contar como cambio si se está procesando
+// Para metricasensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
 
@@ -5337,13 +4569,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-
-
-        
-
-        try {
+try {
 
           const result = await JoySenseService.updateTableRowByCompositeKey(
 
@@ -5355,12 +4581,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-
-          
-
-          if (result && result.success) {
+if (result && result.success) {
 
             successCount++;
             
@@ -5369,8 +4590,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-
-          } else {
+} else {
 
             errorCount++;
 
@@ -5388,9 +4608,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (successCount > 0) {
+if (successCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5400,17 +4618,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
-
-        // Recargar datos después de la actualización
+// Recargar datos después de la actualización
 
         await loadUpdateData();
 
         await loadTableDataWrapper();
 
-        
-
-        // Limpiar selección
+// Limpiar selección
 
         setSelectedRowsForUpdate([]);
 
@@ -5424,9 +4638,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (errorCount > 0) {
+if (errorCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5438,9 +4650,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('❌ Error general en actualización avanzada:', error);
 
@@ -5460,29 +4670,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función específica para manejar actualizaciones del formulario avanzado de sensor
+// Función específica para manejar actualizaciones del formulario avanzado de sensor
 
   const handleAdvancedSensorUpdate = async (updatedEntries: any[]) => {
 
-
-    try {
+try {
 
       setUpdateLoading(true);
 
-      
-
-
-      
-
-      let successCount = 0;
+let successCount = 0;
       let actualChangesCount = 0;
       let errorCount = 0;
 
-      
-
-      for (let i = 0; i < updatedEntries.length; i++) {
+for (let i = 0; i < updatedEntries.length; i++) {
 
         const row = updatedEntries[i];
 
@@ -5494,9 +4694,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        // Preparar datos para actualización
+// Preparar datos para actualización
 
         const updateData: any = {
 
@@ -5508,10 +4706,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        
-        // Para sensor, siempre contar como cambio si se está procesando
+// Para sensor, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
 
@@ -5525,13 +4720,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-
-
-        
-
-        try {
+try {
 
           const result = await JoySenseService.updateTableRowByCompositeKey(
 
@@ -5543,12 +4732,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-
-          
-
-          if (result && result.success) {
+if (result && result.success) {
 
             successCount++;
             
@@ -5557,8 +4741,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-
-          } else {
+} else {
 
             errorCount++;
 
@@ -5576,9 +4759,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (successCount > 0) {
+if (successCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5588,17 +4769,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
-
-        // Recargar datos después de la actualización
+// Recargar datos después de la actualización
 
         await loadUpdateData();
 
         await loadTableDataWrapper();
 
-        
-
-        // Limpiar selección
+// Limpiar selección
 
         setSelectedRowsForUpdate([]);
 
@@ -5612,9 +4789,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (errorCount > 0) {
+if (errorCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5626,9 +4801,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('❌ Error general en actualización avanzada de sensor:', error);
 
@@ -5648,9 +4821,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función específica para manejar actualizaciones del formulario avanzado de usuarioperfil
+// Función específica para manejar actualizaciones del formulario avanzado de usuarioperfil
 
   const handleAdvancedUsuarioPerfilUpdate = async (updatedEntries: any[]) => {
 
@@ -5658,18 +4829,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setUpdateLoading(true);
 
-      
-
-
-      
-
-      let successCount = 0;
+let successCount = 0;
       let actualChangesCount = 0;
       let errorCount = 0;
 
-      
-
-      for (let i = 0; i < updatedEntries.length; i++) {
+for (let i = 0; i < updatedEntries.length; i++) {
 
         const row = updatedEntries[i];
 
@@ -5681,9 +4845,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        // Preparar datos para actualización
+// Preparar datos para actualización
 
         const updateData: any = {
 
@@ -5695,10 +4857,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         };
 
-        
-
-        
-        // Para usuarioperfil, siempre contar como cambio si se está procesando
+// Para usuarioperfil, siempre contar como cambio si se está procesando
         // La lógica de detección de cambios reales se maneja en el frontend
         const hasActualChanges = true;
 
@@ -5712,24 +4871,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-
-
-        
-
-        try {
+try {
 
           let result;
 
-          
-
-          // Si es una nueva entrada (sin usercreatedid), usar upsert
+// Si es una nueva entrada (sin usercreatedid), usar upsert
 
           if (!row.usercreatedid) {
 
-
-            result = await JoySenseService.insertTableRow(selectedTable, {
+result = await JoySenseService.insertTableRow(selectedTable, {
 
               usuarioid: row.usuarioid,
 
@@ -5763,12 +4913,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           }
 
-          
-
-
-          
-
-          if (result && result.success) {
+if (result && result.success) {
 
             successCount++;
             
@@ -5777,8 +4922,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               actualChangesCount++;
             }
 
-
-          } else {
+} else {
 
             errorCount++;
 
@@ -5796,9 +4940,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (successCount > 0) {
+if (successCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5808,17 +4950,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         });
 
-        
-
-        // Recargar datos después de la actualización
+// Recargar datos después de la actualización
 
         await loadUpdateData();
 
         await loadTableDataWrapper();
 
-        
-
-        // Limpiar selección
+// Limpiar selección
 
         setSelectedRowsForUpdate([]);
 
@@ -5832,9 +4970,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (errorCount > 0) {
+if (errorCount > 0) {
 
         setUpdateMessage({ 
 
@@ -5846,9 +4982,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('❌ Error general en actualización avanzada usuarioperfil:', error);
 
@@ -5868,9 +5002,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para obtener los campos que se pueden actualizar por tabla
+// Función para obtener los campos que se pueden actualizar por tabla
   const getFieldsToUpdate = (tableName: string): string[] => {
     const fieldMappings: Record<string, string[]> = {
       'pais': ['pais', 'paisabrev', 'statusid'],
@@ -5930,21 +5062,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-
-
-          try {
+try {
 
         setUpdateLoading(true);
 
-
-
-      // Determinar qué entradas actualizar
+// Determinar qué entradas actualizar
 
       let rowsToUpdate: any[] = [];
 
-      
-
-      if (isMultipleSelectionMode && selectedRowsForManualUpdate.length > 0) {
+if (isMultipleSelectionMode && selectedRowsForManualUpdate.length > 0) {
 
         // Modo de selección manual múltiple
 
@@ -5958,8 +5084,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-
-        } else if (selectedTable === 'usuarioperfil') {
+} else if (selectedTable === 'usuarioperfil') {
 
           // Para usuarioperfil agrupado, expandir las filas originales
 
@@ -5969,13 +5094,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-
-        } else {
+} else {
 
           rowsToUpdate = selectedRowsForManualUpdate;
 
-
-        }
+}
 
       } else if (selectedRowsForUpdate && selectedRowsForUpdate.length > 0) {
 
@@ -5983,22 +5106,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         rowsToUpdate = selectedRowsForUpdate;
 
-
-      } else {
+} else {
 
         // Modo de actualización individual
 
         rowsToUpdate = [updateFormData];
 
+}
 
-      }
-
-
-
-
-
-
-      if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
+if (selectedTable === 'sensor' || selectedTable === 'metricasensor') {
 
         // Actualización múltiple para sensor y metricasensor
 
@@ -6008,9 +5124,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         let actualChangesCount = 0;
         let errorCount = 0;
 
-        
-
-        for (let i = 0; i < rowsToUpdate.length; i++) {
+for (let i = 0; i < rowsToUpdate.length; i++) {
 
           const row = rowsToUpdate[i];
 
@@ -6020,17 +5134,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             : { nodoid: row.nodoid, tipoid: row.tipoid, metricaid: row.metricaid };
 
-          
-
-          // Usar el estado individual de cada fila para el statusid
+// Usar el estado individual de cada fila para el statusid
 
           const rowKey = `${row.nodoid || row.id || i}-${i}`;
 
           const individualStatus = individualRowStatus[rowKey];
 
-          
-
-          // Filtrar solo los campos que realmente necesitamos actualizar
+// Filtrar solo los campos que realmente necesitamos actualizar
 
           const fieldsToUpdate = ['statusid']; // Solo actualizar statusid por ahora
 
@@ -6052,16 +5162,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
-
-
-
-
-
-
-          
-
-          try {
+try {
 
             const result = await JoySenseService.updateTableRowByCompositeKey(
 
@@ -6073,8 +5174,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             );
 
-
-            successCount++;
+successCount++;
 
           } catch (error) {
 
@@ -6084,9 +5184,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             console.error(`❌ Datos que fallaron:`, updateFormData);
 
-            
-
-            // Verificar si es un error de validación de negocio
+// Verificar si es un error de validación de negocio
 
             if (error instanceof Error && error.message.includes('HTTP error! status: 409')) {
 
@@ -6094,17 +5192,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             }
 
-            
-
-            errorCount++;
+errorCount++;
 
             // Continuar con las siguientes actualizaciones
 
           }
 
-          
-
-          // Pequeña pausa entre actualizaciones para evitar conflictos
+// Pequeña pausa entre actualizaciones para evitar conflictos
 
           if (i < rowsToUpdate.length - 1) {
 
@@ -6114,13 +5208,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-
-
-        
-
-        // Mostrar mensaje específico si hay errores de validación de negocio
+// Mostrar mensaje específico si hay errores de validación de negocio
 
         if (errorCount > 0) {
 
@@ -6134,9 +5222,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Mostrar mensaje final con detalles
+// Mostrar mensaje final con detalles
 
         if (errorCount > 0) {
 
@@ -6160,9 +5246,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Recargar datos después de actualización exitosa
+// Recargar datos después de actualización exitosa
 
         await loadUpdateData();
 
@@ -6174,12 +5258,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const rowId = getRowId(updateFormData, selectedTable);
 
-
-
-
-        
-
-        if (!rowId) {
+if (!rowId) {
 
           setUpdateMessage({ type: 'error', text: 'No se pudo determinar el ID de la fila a actualizar' });
 
@@ -6189,9 +5268,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Validar datos antes de procesar
+// Validar datos antes de procesar
         try {
           const validationResult = await validateTableUpdate(
             selectedTable,
@@ -6222,9 +5299,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           let filteredUpdateData: Record<string, any> = {};
 
-          
-
-          if (selectedTable === 'localizacion') {
+if (selectedTable === 'localizacion') {
 
             compositeKey = {
 
@@ -6300,21 +5375,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           }
 
-          
-
-          if (!compositeKey) {
+if (!compositeKey) {
 
             throw new Error(`No se pudo construir la clave compuesta para la tabla ${selectedTable}`);
 
           }
 
-
-
-
-
-          
-
-          result = await JoySenseService.updateTableRowByCompositeKey(
+result = await JoySenseService.updateTableRowByCompositeKey(
 
           selectedTable,
 
@@ -6352,11 +5419,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           });
 
-          
-
-
-          
-          // Debug específico para metrica
+// Debug específico para metrica
           if (selectedTable === 'metrica') {
           }
 
@@ -6374,10 +5437,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-
-        
-
-        // Recargar datos después de actualización exitosa
+// Recargar datos después de actualización exitosa
 
         await loadUpdateData();
 
@@ -6385,9 +5445,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         setUpdateMessage({ type: 'success', text: '✅ Entrada actualizada exitosamente' });
 
-        
-
-        // Cerrar el formulario después de actualizar exitosamente
+// Cerrar el formulario después de actualizar exitosamente
 
         setSelectedRowForUpdate(null);
 
@@ -6395,9 +5453,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-
-
-      // Limpiar estados
+// Limpiar estados
 
       setUpdateFormData({});
 
@@ -6409,17 +5465,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setIsMultipleSelectionMode(false);
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       await loadTableDataWrapper();
 
       await loadCopyData();
 
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('Error updating multiple rows:', error);
 
@@ -6439,9 +5491,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Ref para evitar logs repetitivos en getVisibleColumns
+// Ref para evitar logs repetitivos en getVisibleColumns
   const lastLogKeyRef = useRef<string | null>(null);
 
   const getVisibleColumns = useCallback((forTable: boolean = true) => {
@@ -6465,17 +5515,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       return [];
     }
 
-    
+if (selectedTable === 'fundo') {
 
-    if (selectedTable === 'fundo') {
+}
 
-
-
-    }
-
-    
-
-    // Para la tabla nodo, necesitamos incluir campos que están después de usercreatedid
+// Para la tabla nodo, necesitamos incluir campos que están después de usercreatedid
 
     if (selectedTable === 'nodo') {
 
@@ -6485,45 +5529,31 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      // Reordenar los campos para que Status aparezca al final
+// Reordenar los campos para que Status aparezca al final
 
       const reorderedColumns = [];
 
-      
-
-      // Primero: nodo, deveui
+// Primero: nodo, deveui
 
       reorderedColumns.push(...nodoColumns.filter(col => ['nodo', 'deveui'].includes(col.columnName)));
 
-      
-
-      // Segundo: appeui, appkey, atpin
+// Segundo: appeui, appkey, atpin
 
       reorderedColumns.push(...nodoColumns.filter(col => ['appeui', 'appkey', 'atpin'].includes(col.columnName)));
 
-      
-
-      // Tercero: usercreatedid, datecreated, usermodifiedid, datemodified (campos de auditoría)
+// Tercero: usercreatedid, datecreated, usermodifiedid, datemodified (campos de auditoría)
 
       reorderedColumns.push(...nodoColumns.filter(col => ['usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)));
 
-      
-
-      // Último: statusid (Status al final)
+// Último: statusid (Status al final)
 
       reorderedColumns.push(...nodoColumns.filter(col => ['statusid'].includes(col.columnName)));
 
-      
-
-      return reorderedColumns;
+return reorderedColumns;
 
     }
 
-    
-
-    // Para todas las demás tablas, incluir todos los campos de auditoría
+// Para todas las demás tablas, incluir todos los campos de auditoría
 
     let filteredColumns = sourceColumns.filter(col => {
 
@@ -6533,84 +5563,63 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (selectedTable === 'empresa') {
+if (selectedTable === 'empresa') {
 
         return ['paisid', 'empresa', 'empresabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'fundo') {
+if (selectedTable === 'fundo') {
 
         const isIncluded = ['paisid', 'empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
-
-        return isIncluded;
+return isIncluded;
 
       }
 
-      
-
-      if (selectedTable === 'ubicacion') {
+if (selectedTable === 'ubicacion') {
 
         return ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'entidad') {
+if (selectedTable === 'entidad') {
 
         return ['entidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'metrica') {
+if (selectedTable === 'metrica') {
 
         return ['metrica', 'unidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'tipo') {
+if (selectedTable === 'tipo') {
 
         return ['tipo', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'localizacion') {
+if (selectedTable === 'localizacion') {
 
         return ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'sensor') {
+if (selectedTable === 'sensor') {
 
         return ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'metricasensor') {
+if (selectedTable === 'metricasensor') {
 
         return ['nodoid', 'metricaid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      // NUEVAS TABLAS DE UMBRAL (ALERTAS)
+// NUEVAS TABLAS DE UMBRAL (ALERTAS)
 
       if (selectedTable === 'umbral') {
 
@@ -6618,33 +5627,25 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (selectedTable === 'perfilumbral') {
+if (selectedTable === 'perfilumbral') {
 
         return ['perfilid', 'umbralid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'audit_log_umbral') {
+if (selectedTable === 'audit_log_umbral') {
 
         return ['auditid', 'umbralid', 'old_minimo', 'new_minimo', 'old_maximo', 'new_maximo', 'old_criticidadid', 'new_criticidadid', 'modified_by', 'modified_at', 'accion'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'criticidad') {
+if (selectedTable === 'criticidad') {
 
         return ['criticidad', 'criticidadbrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      // NUEVAS TABLAS DE USUARIO (NOTIFICACIONES)
+// NUEVAS TABLAS DE USUARIO (NOTIFICACIONES)
 
       if (selectedTable === 'usuario') {
 
@@ -6652,49 +5653,37 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      if (selectedTable === 'perfil') {
+if (selectedTable === 'perfil') {
 
         return ['perfil', 'nivel', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'usuarioperfil') {
+if (selectedTable === 'usuarioperfil') {
 
         return ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'contacto') {
+if (selectedTable === 'contacto') {
 
         return ['usuarioid', 'medioid', 'celular', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'medio') {
+if (selectedTable === 'medio') {
 
         return ['nombre', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      if (selectedTable === 'mensaje') {
+if (selectedTable === 'mensaje') {
 
         return ['alertaid', 'contactoid', 'mensaje', 'fecha', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-      
-
-      // TABLAS DE ALERTAS
+// TABLAS DE ALERTAS
 
       if (selectedTable === 'alerta') {
 
@@ -6702,9 +5691,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Para cualquier otra tabla, incluir campos de auditoría
+// Para cualquier otra tabla, incluir campos de auditoría
 
       return !col.columnName.endsWith('id') || 
 
@@ -6720,17 +5707,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    // Reordenar para que statusid aparezca al final
+// Reordenar para que statusid aparezca al final
 
     // INYECTAR COLUMNAS FALTANTES PARA FORMULARIOS
 
     const injectedColumns = [...filteredColumns];
 
-    
-
-    if (selectedTable === 'fundo') {
+if (selectedTable === 'fundo') {
 
       // Inyectar paisid si no existe
 
@@ -6758,9 +5741,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    if (selectedTable === 'ubicacion') {
+if (selectedTable === 'ubicacion') {
 
       // Inyectar paisid y empresaid si no existen
 
@@ -6810,9 +5791,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    if (selectedTable === 'localizacion') {
+if (selectedTable === 'localizacion') {
 
       // Inyectar paisid, empresaid, fundoid si no existen
 
@@ -6884,9 +5863,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Reordenar columnas según los requerimientos específicos
+// Reordenar columnas según los requerimientos específicos
 
     const reorderedColumns = [];
 
@@ -6896,17 +5873,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     const otherColumns = injectedColumns.filter(col => !['statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName));
 
-    
+if (selectedTable === 'fundo') {
 
-    if (selectedTable === 'fundo') {
+}
 
-
-
-    }
-
-    
-
-    // Para las tablas, reordenar según los requerimientos específicos (tanto para Estado como para Actualizar)
+// Para las tablas, reordenar según los requerimientos específicos (tanto para Estado como para Actualizar)
 
     if (selectedTable === 'pais') {
 
@@ -7162,15 +6133,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Agregar columnas de auditoría
+// Agregar columnas de auditoría
 
     reorderedColumns.push(...auditColumns);
 
-    
-
-    // Agregar status al final
+// Agregar status al final
 
     if (statusColumn) {
 
@@ -7178,24 +6145,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Debug log para usuarioperfil
+// Debug log para usuarioperfil
 
     if (selectedTable === 'usuarioperfil') {
 
+}
 
-    }
-
-    
-
-    return reorderedColumns;
+return reorderedColumns;
 
   }, [selectedTable, columns, tableColumns]);
 
-
-
-  // Columnas para la tabla de Estado (individuales) - Memoizadas con dependencias correctas
+// Columnas para la tabla de Estado (individuales) - Memoizadas con dependencias correctas
   const statusVisibleColumns = useMemo(() => {
     if (columns.length === 0) return [];
     return getVisibleColumns(false);
@@ -7211,12 +6171,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   if (selectedTable === 'usuarioperfil') {
 
+}
 
-  }
-
-  
-
-  // Debug: verificar que los campos de auditoría estén incluidos
+// Debug: verificar que los campos de auditoría estén incluidos
 
   // console.log('🔍 Debug - Tabla seleccionada:', selectedTable);
 
@@ -7224,29 +6181,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // console.log('🔍 Debug - Columnas visibles (Actualizar):', updateVisibleColumns.map(col => col.columnName));
 
+// Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
 
+// getColumnDisplayName ahora se importa desde systemParametersUtils
 
-     // Función para obtener columnas disponibles para búsqueda (excluyendo campos problemáticos)
+// Función para obtener las equivalencias de un campo
 
-
-
-
-  // getColumnDisplayName ahora se importa desde systemParametersUtils
-
-
-
-
-
-
-     // Función para obtener las equivalencias de un campo
-
-
-
-
-
-
-
-  // Función para determinar si un campo es clave y no debe ser editable
+// Función para determinar si un campo es clave y no debe ser editable
 
   const isKeyField = (columnName: string): boolean => {
 
@@ -7264,9 +6205,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     ];
 
-    
-
-    // Campos que son llaves foráneas (no editables en actualización)
+// Campos que son llaves foráneas (no editables en actualización)
 
     const foreignKeys = [
 
@@ -7278,9 +6217,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     ];
 
-    
-
-    // Campos de auditoría (no editables)
+// Campos de auditoría (no editables)
 
     const auditFields = [
 
@@ -7290,9 +6227,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     ];
 
-    
-
-    // Verificar si es un campo clave
+// Verificar si es un campo clave
 
     return primaryKeys.includes(columnName) || 
 
@@ -7304,9 +6239,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-     // Estados para creación múltiple de sensores
+// Estados para creación múltiple de sensores
 
    const [multipleSensors, setMultipleSensors] = useState<any[]>([]);
 
@@ -7320,9 +6253,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    const [selectedSensorCount, setSelectedSensorCount] = useState<number>(0);
 
-
-
-           // Estados para creación múltiple de métricas sensor
+// Estados para creación múltiple de métricas sensor
 
    const [multipleMetricas, setMultipleMetricas] = useState<any[]>([]);
 
@@ -7332,9 +6263,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    const [selectedMetricas, setSelectedMetricas] = useState<string[]>([]);
 
-
-
-   // Estados para creación múltiple de usuario perfil
+// Estados para creación múltiple de usuario perfil
 
    const [multipleUsuarioPerfiles, setMultipleUsuarioPerfiles] = useState<any[]>([]);
 
@@ -7342,9 +6271,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    const [selectedPerfiles, setSelectedPerfiles] = useState<string[]>([]);
 
-
-
-  // Función para obtener datos múltiples según la tabla seleccionada
+// Función para obtener datos múltiples según la tabla seleccionada
 
   const getMultipleData = useCallback(() => {
 
@@ -7374,9 +6301,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
 
-
-
-  // Memoizar getMultipleData para evitar loops infinitos
+// Memoizar getMultipleData para evitar loops infinitos
 
   const memoizedMultipleData = useMemo(() => {
 
@@ -7384,9 +6309,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
 
-
-
-  // Memoizar el objeto extendido para evitar loops infinitos
+// Memoizar el objeto extendido para evitar loops infinitos
 
   const memoizedExtendedMultipleData = useMemo(() => {
 
@@ -7426,9 +6349,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [memoizedMultipleData, selectedTable, selectedNodo, selectedEntidad, selectedTipo, selectedSensorCount, multipleSensors, selectedNodos, selectedEntidadMetrica, selectedMetricas, multipleMetricas]);
 
-
-
-  // Efecto para notificar cambios en los datos del formulario al componente padre
+// Efecto para notificar cambios en los datos del formulario al componente padre
 
   useEffect(() => {
 
@@ -7440,9 +6361,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [formData, memoizedExtendedMultipleData, onFormDataChange]);
 
-
-
-  // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
+// Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
 
   // useEffect(() => {
 
@@ -7454,30 +6373,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // }, [registerChangeDetector]);
 
+// Estados para creación múltiple de localizaciones
 
+// Estados para campos adicionales de localización
 
-      // Estados para creación múltiple de localizaciones
-
-
-
-
-
-   
-
-   // Estados para campos adicionales de localización
-
-
-
-
-   
-
-   // Estado para detectar si estamos en modo replicación
+// Estado para detectar si estamos en modo replicación
 
    const [isReplicateMode, setIsReplicateMode] = useState(false);
 
-
-
-       // Función para inicializar sensores múltiples
+// Función para inicializar sensores múltiples
 
   const initializeMultipleSensors = async (nodoid: string, count: number, specificTipos?: number[]) => {
 
@@ -7489,43 +6393,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const existingTipos = existingSensors.map(sensor => sensor.tipoid);
 
-      
-
-
-
-      
-
-      // Si se especifican tipos específicos (desde pegado), usarlos como predeterminados
+// Si se especifican tipos específicos (desde pegado), usarlos como predeterminados
 
       let selectedTipos;
 
       if (specificTipos && specificTipos.length > 0) {
 
-
-        
-
-        // Buscar los tipos copiados en los tipos disponibles
+// Buscar los tipos copiados en los tipos disponibles
 
         const copiedTipos = tiposData.filter(tipo => specificTipos.includes(tipo.tipoid));
 
-        
-
-        // Si no se encuentran todos los tipos copiados, usar los disponibles
+// Si no se encuentran todos los tipos copiados, usar los disponibles
 
         if (copiedTipos.length !== specificTipos.length) {
 
-
-          
-
-          // Filtrar tipos disponibles (excluir los que ya están en uso)
+// Filtrar tipos disponibles (excluir los que ya están en uso)
 
           const availableTipos = tiposData.filter(tipo => !existingTipos.includes(tipo.tipoid));
 
           selectedTipos = availableTipos.slice(0, count);
 
-          
-
-          setMessage({ 
+setMessage({ 
 
             type: 'warning', 
 
@@ -7539,9 +6427,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           selectedTipos = copiedTipos.slice(0, count);
 
-          
-
-          // Mensaje de datos copiados eliminado por solicitud del usuario
+// Mensaje de datos copiados eliminado por solicitud del usuario
 
         }
 
@@ -7551,12 +6437,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         const availableTipos = tiposData.filter(tipo => !existingTipos.includes(tipo.tipoid));
 
-        
-
-
-        
-
-        // Verificar que hay suficientes tipos disponibles
+// Verificar que hay suficientes tipos disponibles
 
         if (count > availableTipos.length) {
 
@@ -7572,24 +6453,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-                selectedTipos = availableTipos.slice(0, count);
+selectedTipos = availableTipos.slice(0, count);
 
       }
 
-        
-
-
-        
-
-        // Crear sensores con los tipos seleccionados
+// Crear sensores con los tipos seleccionados
 
         const sensors = [];
 
-        
-
-        for (let i = 1; i <= count; i++) {
+for (let i = 1; i <= count; i++) {
 
          const tipo = selectedTipos[i - 1];
 
@@ -7613,13 +6485,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        }
 
-      
+setMultipleSensors(sensors);
 
-      setMultipleSensors(sensors);
-
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('Error inicializando sensores múltiples:', error);
 
@@ -7635,9 +6503,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-     // Función para inicializar métricas múltiples
+// Función para inicializar métricas múltiples
 
    const initializeMultipleMetricas = React.useCallback(async (nodos: string[], metricas: string[]) => {
 
@@ -7649,9 +6515,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        let index = 1;
 
-       
-
-       for (const nodoid of nodos) {
+for (const nodoid of nodos) {
 
          // 🔑 CAMBIO CLAVE: Obtener tipos de la tabla SENSOR, no de metricasensor
 
@@ -7661,55 +6525,29 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
          const sensorTableData: any[] = Array.isArray(sensorTableDataResponse) ? sensorTableDataResponse : ((sensorTableDataResponse as any)?.data || []);
 
-         
-
-
-
-         
-
-         const existingSensorsForNode = sensorTableData.filter((sensor: any) => sensor.nodoid === parseInt(nodoid));
+const existingSensorsForNode = sensorTableData.filter((sensor: any) => sensor.nodoid === parseInt(nodoid));
 
          const availableTiposForNode = existingSensorsForNode.map((sensor: any) => sensor.tipoid);
 
-         
+if (availableTiposForNode.length === 0) {
 
-
-
-         
-
-         if (availableTiposForNode.length === 0) {
-
-
-           continue;
+continue;
 
          }
 
-         
-
-         // Crear todas las combinaciones válidas: (nodoid, metricaid, tipoid)
+// Crear todas las combinaciones válidas: (nodoid, metricaid, tipoid)
 
          for (const metricaid of metricas) {
 
+for (const tipoid of availableTiposForNode) {
 
-           
-
-           for (const tipoid of availableTiposForNode) {
-
-
-             
-
-             const tipoInfo = tiposData.find(t => t.tipoid === tipoid);
+const tipoInfo = tiposData.find(t => t.tipoid === tipoid);
 
              const metricaInfo = metricasData.find(m => m.metricaid.toString() === metricaid);
 
              const nodoInfo = nodosData.find(n => n.nodoid.toString() === nodoid);
 
-             
-
-
-             
-
-             metricasToCreate.push({
+metricasToCreate.push({
 
                metricaIndex: index++,
 
@@ -7731,13 +6569,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        }
 
-       
+setMultipleMetricas(metricasToCreate);
 
-       setMultipleMetricas(metricasToCreate);
-
-       
-
-       if (metricasToCreate.length > 0) {
+if (metricasToCreate.length > 0) {
 
          // Mensaje eliminado - no es necesario
 
@@ -7753,9 +6587,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        }
 
-       
-
-     } catch (error) {
+} catch (error) {
 
        console.error('Error inicializando métricas múltiples:', error);
 
@@ -7771,9 +6603,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    }, [selectedStatus, tiposData, metricasData, nodosData, setMultipleMetricas, setMessage]);
 
-
-
-  // Función para manejar inserción múltiple de sensores
+// Función para manejar inserción múltiple de sensores
 
   const handleMultipleSensorInsert = async () => {
 
@@ -7785,17 +6615,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       return;
     }
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
       const usuarioid = getCurrentUserId();
 
-      
-
-             // Filtrar sensores que NO tienen toDelete: true y preparar datos para inserción
+// Filtrar sensores que NO tienen toDelete: true y preparar datos para inserción
 
        const sensorsToInsert = multipleSensors
          .filter(sensor => !sensor.toDelete) // Solo sensores que NO están marcados para eliminar
@@ -7819,24 +6645,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        });
 
+// Logging para debugging
 
+// Insertar sensores simultáneamente (ahora que los datos están limpios)
 
-      // Logging para debugging
-
-
-
-
-             // Insertar sensores simultáneamente (ahora que los datos están limpios)
-
-
-       const insertPromises = sensorsToInsert.map((sensor, index) => 
+const insertPromises = sensorsToInsert.map((sensor, index) => 
 
          JoySenseService.insertTableRow(selectedTable, sensor)
 
            .then(result => {
 
-
-             return result;
+return result;
 
            })
 
@@ -7850,13 +6669,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        );
 
-       
+await Promise.all(insertPromises);
 
-       await Promise.all(insertPromises);
-
-      
-
-      // Agregar cada sensor insertado al sistema de mensajes
+// Agregar cada sensor insertado al sistema de mensajes
 
       sensorsToInsert.forEach(sensor => {
 
@@ -7864,15 +6679,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      // Limpiar mensajes de alerta después de inserción exitosa
+// Limpiar mensajes de alerta después de inserción exitosa
 
       setMessage(null);
 
-      
-
-      // Limpiar formulario
+// Limpiar formulario
 
       setMultipleSensors([]);
 
@@ -7880,9 +6691,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setSelectedTipo('');
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -7896,9 +6705,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       const errorResponse = handleMultipleInsertError(error, 'sensores');
 
@@ -7912,29 +6719,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para manejar la creación masiva de umbrales (SOLO INSERTAR UMBRALES)
+// Función para manejar la creación masiva de umbrales (SOLO INSERTAR UMBRALES)
 
   const handleMassiveUmbralCreationSimple = async (dataToApply: any[]) => {
 
     if (!selectedTable || !user || selectedTable !== 'umbral') return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
-      
-
-      const usuarioid = getCurrentUserId();
+const usuarioid = getCurrentUserId();
 
       const currentTimestamp = new Date().toISOString();
 
-      
-
-      // Preparar datos con campos de auditoría
+// Preparar datos con campos de auditoría
 
       const preparedData = dataToApply.map(item => ({
 
@@ -7950,13 +6749,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }));
 
-      
-
-
-
-      
-
-      // Crear umbrales para cada combinación de nodo + tipo + métrica
+// Crear umbrales para cada combinación de nodo + tipo + métrica
       
       for (const umbralData of preparedData) {
         
@@ -7993,9 +6786,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         }
       }
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -8007,9 +6798,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-      setMessage({ 
+setMessage({ 
 
         type: 'success', 
 
@@ -8017,9 +6806,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       console.error('Error en creación masiva de umbrales:', error);
 
@@ -8035,29 +6822,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para manejar la creación masiva de umbrales (LEGACY - COMPLEJA) - COMENTADA
+// Función para manejar la creación masiva de umbrales (LEGACY - COMPLEJA) - COMENTADA
   /*
   const handleMassiveUmbralCreation = async (dataToApply: any[]) => {
 
     if (!selectedTable || !user || selectedTable !== 'umbral') return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
-      
-
-      const usuarioid = getCurrentUserId();
+const usuarioid = getCurrentUserId();
 
       const currentTimestamp = new Date().toISOString();
 
-      
-
-      // Preparar datos con campos de auditoría
+// Preparar datos con campos de auditoría
 
       const preparedData = dataToApply.map(item => ({
 
@@ -8073,13 +6852,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }));
 
-      
-
-
-
-      
-
-      // Verificar campos requeridos
+// Verificar campos requeridos
 
       const camposRequeridos = ['ubicacionid', 'nodoid', 'tipoid', 'metricaid', 'criticidadid', 'umbral'];
 
@@ -8089,9 +6862,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       );
 
-      
-
-      if (registrosInvalidos.length > 0) {
+if (registrosInvalidos.length > 0) {
 
         console.error('❌ Registros con campos requeridos faltantes:', registrosInvalidos);
 
@@ -8099,9 +6870,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Verificar que los IDs existen en las tablas referenciadas
+// Verificar que los IDs existen en las tablas referenciadas
 
       const ubicacionesExistentes = ubicacionesData?.map(u => u.ubicacionid) || [];
 
@@ -8113,9 +6882,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       const criticidadesExistentes = criticidadesData?.map(c => c.criticidadid) || [];
 
-      
-
-      const referenciasInvalidas = preparedData.filter(record => 
+const referenciasInvalidas = preparedData.filter(record => 
 
         !ubicacionesExistentes.includes(record.ubicacionid) ||
 
@@ -8129,9 +6896,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       );
 
-      
-
-      if (referenciasInvalidas.length > 0) {
+if (referenciasInvalidas.length > 0) {
 
         console.error('❌ Registros con referencias inválidas:', referenciasInvalidas);
 
@@ -8139,9 +6904,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Crear umbrales para cada combinación de nodo + tipo + métrica
+// Crear umbrales para cada combinación de nodo + tipo + métrica
       
       for (const umbralData of preparedData) {
         
@@ -8178,16 +6941,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         }
       }
 
-      
-
-      // Para cada nodo, obtener umbrales existentes y aplicar lógica UPSERT
+// Para cada nodo, obtener umbrales existentes y aplicar lógica UPSERT
 
       for (const nodoid of nodosUnicos) {
 
-
-        
-
-        // Obtener umbrales existentes para este nodo
+// Obtener umbrales existentes para este nodo
 
         const umbralesExistentes = umbralesData?.filter(umbral => 
 
@@ -8195,19 +6953,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         ) || [];
 
-        
-
-
-        
-
-        // Obtener datos a aplicar para este nodo
+// Obtener datos a aplicar para este nodo
 
         const datosDelNodo = preparedData.filter(item => item.nodoid === nodoid);
 
-
-        
-
-        // Crear conjunto de combinaciones únicas que se van a activar
+// Crear conjunto de combinaciones únicas que se van a activar
 
         const combinacionesAActivar = new Set(
 
@@ -8215,20 +6965,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         );
 
-        
+// PRIMERO: Crear/actualizar entradas en sensor usando UPSERT
 
+const tiposUnicos = Array.from(new Set(datosDelNodo.map(dato => dato.tipoid)));
 
-        
-
-        // PRIMERO: Crear/actualizar entradas en sensor usando UPSERT
-
-
-
-        const tiposUnicos = Array.from(new Set(datosDelNodo.map(dato => dato.tipoid)));
-
-        
-
-        for (const tipoid of tiposUnicos) {
+for (const tipoid of tiposUnicos) {
 
           // Verificar si ya existe en sensor
 
@@ -8238,10 +6979,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-
-          
-
-          const sensorData = {
+const sensorData = {
 
             nodoid: nodoid,
 
@@ -8259,12 +6997,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           };
 
-          
+if (sensorExistente) {
 
-          if (sensorExistente) {
-
-
-            // Actualizar sensor existente usando endpoint con clave compuesta
+// Actualizar sensor existente usando endpoint con clave compuesta
 
             await JoySenseService.updateTableRowByCompositeKey('sensor', { nodoid, tipoid }, {
 
@@ -8280,25 +7015,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
+} else {
 
-          } else {
-
-
-            try {
+try {
 
               // Intentar crear nuevo sensor
 
               await JoySenseService.insertTableRow('sensor', sensorData);
 
+} catch (error: any) {
 
-            } catch (error: any) {
-
-
-
-
-              
-
-              // Si falla por duplicado o por error 500 (que puede ser duplicado), intentar actualizar
+// Si falla por duplicado o por error 500 (que puede ser duplicado), intentar actualizar
 
               if (error.message?.includes('duplicate key') || 
 
@@ -8312,8 +7039,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
 
-
-                try {
+try {
 
                   await JoySenseService.updateTableRow('sensor', `${nodoid}-${tipoid}`, {
 
@@ -8325,14 +7051,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   });
 
+} catch (updateError: any) {
 
-                } catch (updateError: any) {
+// Si también falla la actualización, asumir que el sensor ya existe y está activo
 
-
-                  // Si también falla la actualización, asumir que el sensor ya existe y está activo
-
-
-                }
+}
 
               } else {
 
@@ -8346,18 +7069,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
+// SEGUNDO: Crear/actualizar entradas en metricasensor usando UPSERT
 
-        // SEGUNDO: Crear/actualizar entradas en metricasensor usando UPSERT
-
-
-        for (const dato of datosDelNodo) {
+for (const dato of datosDelNodo) {
 
           const combinacion = `${dato.tipoid}-${dato.metricaid}`;
 
-          
-
-          // Verificar si ya existe en metricasensor
+// Verificar si ya existe en metricasensor
 
           const metricaSensorExistente = metricasensorData?.find((ms: any) => 
 
@@ -8365,9 +7083,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-          const metricaSensorData = {
+const metricaSensorData = {
 
             nodoid: nodoid,
 
@@ -8387,12 +7103,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           };
 
-          
+if (metricaSensorExistente) {
 
-          if (metricaSensorExistente) {
-
-
-            try {
+try {
 
               // Actualizar metricasensor existente usando endpoint con clave compuesta
 
@@ -8410,33 +7123,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               });
 
+} catch (updateError: any) {
 
-            } catch (updateError: any) {
+// Si falla la actualización, asumir que ya está activo
 
-
-              // Si falla la actualización, asumir que ya está activo
-
-
-            }
+}
 
           } else {
 
-
-            try {
+try {
 
               // Crear nuevo metricasensor
 
               await JoySenseService.insertTableRow('metricasensor', metricaSensorData);
 
+} catch (error: any) {
 
-            } catch (error: any) {
-
-
-
-
-              
-
-              // Si falla por duplicado o por error 500 (que puede ser duplicado), intentar actualizar
+// Si falla por duplicado o por error 500 (que puede ser duplicado), intentar actualizar
 
               if (error.message?.includes('duplicate key') || 
 
@@ -8450,8 +7153,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   (error.response?.data?.error && error.response.data.error.includes('duplicate key'))) {
 
-
-                try {
+try {
 
                   await JoySenseService.updateTableRow('metricasensor', `${nodoid}-${dato.metricaid}-${dato.tipoid}`, {
 
@@ -8463,14 +7165,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   });
 
+} catch (updateError: any) {
 
-                } catch (updateError: any) {
+// Si también falla la actualización, asumir que el metricasensor ya existe y está activo
 
-
-                  // Si también falla la actualización, asumir que el metricasensor ya existe y está activo
-
-
-                }
+}
 
               } else {
 
@@ -8484,22 +7183,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // TERCERO: Inactivar umbrales existentes que NO están en las combinaciones a activar
+// TERCERO: Inactivar umbrales existentes que NO están en las combinaciones a activar
 
         for (const umbralExistente of umbralesExistentes) {
 
           const combinacion = `${umbralExistente.tipoid}-${umbralExistente.metricaid}`;
 
-          
+if (!combinacionesAActivar.has(combinacion)) {
 
-          if (!combinacionesAActivar.has(combinacion)) {
-
-
-            
-
-            // Inactivar el umbral existente
+// Inactivar el umbral existente
 
             await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
 
@@ -8515,17 +7207,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         }
 
-        
-
-        // Insertar/actualizar umbrales para las combinaciones a activar
+// Insertar/actualizar umbrales para las combinaciones a activar
 
         for (const dato of datosDelNodo) {
 
           const combinacion = `${dato.tipoid}-${dato.metricaid}`;
 
-          
-
-          // Buscar si ya existe un umbral para esta combinación
+// Buscar si ya existe un umbral para esta combinación
 
           const umbralExistente = umbralesExistentes.find(umbral => 
 
@@ -8533,9 +7221,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           );
 
-          
-
-          if (umbralExistente) {
+if (umbralExistente) {
 
             // Verificar si los valores críticos son diferentes a los existentes
 
@@ -8549,16 +7235,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               umbralExistente.criticidadid === dato.criticidadid;
 
-            
-
-            if (valoresCriticosIdenticos) {
+if (valoresCriticosIdenticos) {
 
               // Mantener valores originales de la BD (minimo, maximo, criticidadid)
 
-
-              
-
-              // Solo actualizar el nombre (umbral) y asegurar que esté activo
+// Solo actualizar el nombre (umbral) y asegurar que esté activo
 
               await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
 
@@ -8576,10 +7257,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               // Actualizar umbral existente con todos los valores nuevos
 
-
-              
-
-              await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
+await JoySenseService.updateTableRow('umbral', umbralExistente.umbralid, {
 
                 ubicacionid: dato.ubicacionid,
 
@@ -8605,10 +7283,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             // Crear nuevo umbral
 
-
-            
-
-            await JoySenseService.insertTableRow('umbral', dato);
+await JoySenseService.insertTableRow('umbral', dato);
 
           }
 
@@ -8616,9 +7291,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -8630,9 +7303,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-      setMessage({ 
+setMessage({ 
 
         type: 'success', 
 
@@ -8640,9 +7311,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       console.error('Error en creación masiva de umbrales:', error);
 
@@ -8659,29 +7328,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   };
   */
 
-
-
-  // Función para manejar la creación masiva de métricas sensor
+// Función para manejar la creación masiva de métricas sensor
 
   const handleMassiveMetricaSensorCreation = async (dataToApply: any[]) => {
 
     if (!selectedTable || !user || selectedTable !== 'metricasensor') return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
-      
-
-      const usuarioid = getCurrentUserId();
+const usuarioid = getCurrentUserId();
 
       const currentTimestamp = new Date().toISOString();
 
-      
-
-      // Preparar datos con campos de auditoría
+// Preparar datos con campos de auditoría
 
       const preparedData = dataToApply.map(item => ({
 
@@ -8697,13 +7358,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }));
 
-      
-
-
-
-      
-
-      // Verificar si hay duplicados antes de enviar
+// Verificar si hay duplicados antes de enviar
 
       const duplicates = preparedData.filter((item, index, self) => 
 
@@ -8719,9 +7374,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       );
 
-      
-
-      if (duplicates.length > 0) {
+if (duplicates.length > 0) {
 
         console.warn('⚠️ Se encontraron duplicados en los datos:', duplicates);
 
@@ -8741,16 +7394,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         );
 
-
-        preparedData.length = 0;
+preparedData.length = 0;
 
         preparedData.push(...uniqueData);
 
       }
 
-      
-
-      // Realizar inserciones individuales
+// Realizar inserciones individuales
 
       for (const record of preparedData) {
 
@@ -8758,9 +7408,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -8772,9 +7420,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-      setMessage({ 
+setMessage({ 
 
         type: 'success', 
 
@@ -8782,9 +7428,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       console.error('Error en creación masiva de métricas sensor:', error);
 
@@ -8800,9 +7444,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-     // Función para actualizar el tipo de un sensor específico
+// Función para actualizar el tipo de un sensor específico
 
    const updateSensorTipo = (sensorIndex: number, tipoid: number) => {
 
@@ -8818,9 +7460,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    };
 
-
-
-   // Función para toggle del estado de eliminación de un sensor
+// Función para toggle del estado de eliminación de un sensor
 
    const toggleSensorDelete = (sensorIndex: number, toDelete: boolean) => {
 
@@ -8836,9 +7476,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
    };
 
-
-
-  // Función para actualizar el nodo de un sensor específico
+// Función para actualizar el nodo de un sensor específico
 
   const updateSensorNodo = (sensorIndex: number, nodoid: number) => {
 
@@ -8854,9 +7492,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para actualizar solo el nodo de todos los sensores existentes (sin reinicializar)
+// Función para actualizar solo el nodo de todos los sensores existentes (sin reinicializar)
 
   const updateAllSensorsNodo = (nodoid: string) => {
 
@@ -8870,35 +7506,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// Función para actualizar el tipo de una métrica específica
 
+// Función para inicializar localizaciones múltiples
 
-   // Función para actualizar el tipo de una métrica específica
-
-
-
-
-       // Función para inicializar localizaciones múltiples
-
-
-
-
-    // Función para manejar inserción múltiple de métricas sensor
+// Función para manejar inserción múltiple de métricas sensor
 
     const handleMultipleMetricaInsert = async () => {
 
     if (!selectedTable || !user || multipleMetricas.length === 0) return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
       const usuarioid = getCurrentUserId();
 
-      
-
-      // Validar que el nodo seleccionado tenga los sensores necesarios
+// Validar que el nodo seleccionado tenga los sensores necesarios
 
       const selectedNodoId = selectedNodos[0];
 
@@ -8912,25 +7536,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const sensorTableData: any[] = Array.isArray(sensorTableDataResponse) ? sensorTableDataResponse : ((sensorTableDataResponse as any)?.data || []);
 
-          
-
-          // Obtener sensores del nodo seleccionado
+// Obtener sensores del nodo seleccionado
 
           const sensoresDelNodo = sensorTableData.filter((sensor: any) => sensor.nodoid.toString() === selectedNodoId);
 
           const tiposDisponibles = sensoresDelNodo.map((sensor: any) => sensor.tipoid);
 
-          
-
-          // Verificar que todas las métricas tengan tipos de sensor disponibles
+// Verificar que todas las métricas tengan tipos de sensor disponibles
 
           const tiposRequeridos = Array.from(new Set(multipleMetricas.map(metrica => metrica.tipoid)));
 
           const tiposFaltantes = tiposRequeridos.filter(tipo => !tiposDisponibles.includes(tipo));
 
-          
-
-          if (tiposFaltantes.length > 0) {
+if (tiposFaltantes.length > 0) {
 
             const tiposFaltantesNombres = tiposFaltantes.map(tipo => {
 
@@ -8940,9 +7558,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
             });
 
-            
-
-            alert(`❌ El nodo seleccionado no tiene sensores de los siguientes tipos: ${tiposFaltantesNombres.join(', ')}\n\nPor favor, selecciona un nodo que tenga todos los sensores necesarios o crea los sensores faltantes primero.`);
+alert(`❌ El nodo seleccionado no tiene sensores de los siguientes tipos: ${tiposFaltantesNombres.join(', ')}\n\nPor favor, selecciona un nodo que tenga todos los sensores necesarios o crea los sensores faltantes primero.`);
 
             setLoading(false);
 
@@ -8960,9 +7576,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-             // Preparar datos para cada métrica (limpiar campos que no están en la tabla)
+// Preparar datos para cada métrica (limpiar campos que no están en la tabla)
 
        const metricasToInsert = multipleMetricas.map(metrica => {
 
@@ -8984,19 +7598,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        });
 
+// Insertar métricas simultáneamente (ahora que los datos están limpios)
 
-
-             // Insertar métricas simultáneamente (ahora que los datos están limpios)
-
-
-       const insertPromises = metricasToInsert.map((metrica, index) => 
+const insertPromises = metricasToInsert.map((metrica, index) => 
 
          JoySenseService.insertTableRow(selectedTable, metrica)
 
            .then(result => {
 
-
-             return result;
+return result;
 
            })
 
@@ -9010,13 +7620,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
        );
 
-       
+await Promise.all(insertPromises);
 
-       await Promise.all(insertPromises);
-
-      
-
-      // Agregar cada métrica insertada al sistema de mensajes
+// Agregar cada métrica insertada al sistema de mensajes
 
       metricasToInsert.forEach(metrica => {
 
@@ -9024,15 +7630,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
-      
-
-      // Limpiar mensajes de alerta después de inserción exitosa
+// Limpiar mensajes de alerta después de inserción exitosa
 
       setMessage(null);
 
-      
-
-      // Limpiar formulario
+// Limpiar formulario
 
       setMultipleMetricas([]);
 
@@ -9040,9 +7642,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       setSelectedMetricas([]);
 
-      
-
-      // Recargar datos
+// Recargar datos
 
       loadTableDataWrapper();
 
@@ -9056,9 +7656,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       loadRelatedTablesData();
 
-      
-
-    } catch (error: any) {
+} catch (error: any) {
 
       const errorResponse = handleMultipleInsertError(error, 'métricas');
 
@@ -9072,9 +7670,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  // Función para inicializar usuario perfiles múltiples
+// Función para inicializar usuario perfiles múltiples
 
   const initializeMultipleUsuarioPerfiles = React.useCallback(async (usuarios: string[], perfiles: string[]) => {
 
@@ -9086,9 +7682,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       let index = 1;
 
-      
-
-      for (const usuarioid of usuarios) {
+for (const usuarioid of usuarios) {
 
         for (const perfilid of perfiles) {
 
@@ -9096,12 +7690,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           const perfilInfo = perfilesData.find(p => p.perfilid.toString() === perfilid);
 
-          
-
-
-          
-
-          usuarioPerfilesToCreate.push({
+usuarioPerfilesToCreate.push({
 
             usuarioPerfilIndex: index++,
 
@@ -9119,13 +7708,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
+setMultipleUsuarioPerfiles(usuarioPerfilesToCreate);
 
-      setMultipleUsuarioPerfiles(usuarioPerfilesToCreate);
-
-      
-
-      if (usuarioPerfilesToCreate.length > 0) {
+if (usuarioPerfilesToCreate.length > 0) {
 
         // Mensaje eliminado - no es necesario
 
@@ -9141,9 +7726,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       }
 
-      
-
-    } catch (error) {
+} catch (error) {
 
       console.error('Error inicializando usuario perfiles múltiples:', error);
 
@@ -9159,25 +7742,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedStatus, userData, perfilesData, setMultipleUsuarioPerfiles, setMessage]);
 
-
-
-  // Función para manejar inserción múltiple de usuario perfiles
+// Función para manejar inserción múltiple de usuario perfiles
 
   const handleMultipleUsuarioPerfilInsert = async () => {
 
     if (!selectedTable || !user || multipleUsuarioPerfiles.length === 0) return;
 
-    
-
-    try {
+try {
 
       setLoading(true);
 
       const usuarioid = getCurrentUserId();
 
-      
-
-      // Preparar datos para cada usuario perfil (limpiar campos que no están en la tabla)
+// Preparar datos para cada usuario perfil (limpiar campos que no están en la tabla)
 
       const usuarioPerfilesToInsert = multipleUsuarioPerfiles.map(usuarioPerfil => {
 
@@ -9199,19 +7776,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       });
 
+// Insertar usuario perfiles simultáneamente (ahora que los datos están limpios)
 
-
-      // Insertar usuario perfiles simultáneamente (ahora que los datos están limpios)
-
-
-      const insertPromises = usuarioPerfilesToInsert.map((usuarioPerfil, index) => 
+const insertPromises = usuarioPerfilesToInsert.map((usuarioPerfil, index) => 
 
         JoySenseService.insertTableRow(selectedTable, usuarioPerfil)
 
           .then(result => {
 
-
-            return result;
+return result;
 
           })
 
@@ -9225,13 +7798,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       );
 
-      
+await Promise.all(insertPromises);
 
-      await Promise.all(insertPromises);
-
-     
-
-     // Agregar cada usuario perfil insertado al sistema de mensajes
+// Agregar cada usuario perfil insertado al sistema de mensajes
 
      usuarioPerfilesToInsert.forEach(usuarioPerfil => {
 
@@ -9239,15 +7808,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      });
 
-     
-
-     // Limpiar mensajes de alerta después de inserción exitosa
+// Limpiar mensajes de alerta después de inserción exitosa
 
      setMessage(null);
 
-     
-
-     // Limpiar formulario
+// Limpiar formulario
 
      setMultipleUsuarioPerfiles([]);
 
@@ -9255,9 +7820,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      setSelectedPerfiles([]);
 
-     
-
-     // Recargar datos
+// Recargar datos
 
      loadTableDataWrapper();
 
@@ -9271,9 +7834,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
      loadRelatedTablesData();
 
-     
-
-   } catch (error: any) {
+} catch (error: any) {
 
      const errorResponse = handleMultipleInsertError(error, 'usuario perfiles');
 
@@ -9287,31 +7848,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
  };
 
+// Función para manejar inserción múltiple de localizaciones
 
-
-  // Función para manejar inserción múltiple de localizaciones
-
-
-
-
-  // Función helper para obtener ID único de fila (usa la función consolidada)
+// Función helper para obtener ID único de fila (usa la función consolidada)
 
   const getRowIdForSelection = (r: any) => getRowId(r, selectedTable);
 
+// Funciones para selección manual múltiple
 
-
-  // Funciones para selección manual múltiple
-
-
-
-
-  const handleSelectRowForManualUpdate = (row: any, isSelected: boolean) => {
+const handleSelectRowForManualUpdate = (row: any, isSelected: boolean) => {
 
     const rowId = getRowIdForSelection(row);
 
-    
-
-    console.log('🔍 handleSelectRowForManualUpdate:', { 
+console.log('🔍 handleSelectRowForManualUpdate:', { 
 
       rowId, 
 
@@ -9325,9 +7874,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     });
 
-    
-
-    // Para tablas agrupadas (sensor, metricasensor, usuarioperfil), implementar selección única
+// Para tablas agrupadas (sensor, metricasensor, usuarioperfil), implementar selección única
 
     if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
 
@@ -9335,38 +7882,31 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         // Limpiar selección anterior y seleccionar solo esta fila
 
-
-        
-
-        if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
+if (selectedTable === 'metricasensor' && row.originalRows && row.originalRows.length > 0) {
 
           // Para metricasensor, expandir las originalRows
 
           setSelectedRowsForManualUpdate([...row.originalRows]);
 
-
-      } else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
+} else if (selectedTable === 'usuarioperfil' && row.originalRows && row.originalRows.length > 0) {
 
         // Para usuarioperfil, mantener la fila agrupada
 
           setSelectedRowsForManualUpdate([row]);
 
-
-        } else if (selectedTable === 'sensor' && row.originalRows && row.originalRows.length > 0) {
+} else if (selectedTable === 'sensor' && row.originalRows && row.originalRows.length > 0) {
 
           // Para sensor, mantener la fila agrupada
 
           setSelectedRowsForManualUpdate([row]);
 
-
-        } else {
+} else {
 
           // Lógica normal para filas no agrupadas
 
           setSelectedRowsForManualUpdate([row]);
 
-
-        }
+}
 
       } else {
 
@@ -9374,8 +7914,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
         setSelectedRowsForManualUpdate([]);
 
-
-      }
+}
 
     } else {
 
@@ -9387,39 +7926,29 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           setSelectedRowsForManualUpdate(prev => [...prev, row]);
 
+} else {
 
-        } else {
-
-
-      }
+}
 
     } else {
 
         setSelectedRowsForManualUpdate(prev => prev.filter(r => getRowIdForSelection(r) !== rowId));
 
-
-      }
+}
 
     }
 
   };
 
-
-
-  const handleDeselectAll = () => {
+const handleDeselectAll = () => {
 
     setSelectedRowsForManualUpdate([]);
 
   };
 
+// Función para calcular el número correcto de entradas para el botón de actualización
 
-
-  // Función para calcular el número correcto de entradas para el botón de actualización
-
-
-
-
-  const handleGoToManualUpdateForm = () => {
+const handleGoToManualUpdateForm = () => {
 
     if (selectedRowsForManualUpdate.length === 0) {
 
@@ -9429,9 +7958,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    // Validar que los datos relacionados estén cargados
+// Validar que los datos relacionados estén cargados
 
     const needsRelatedData = selectedRowsForManualUpdate.some(row => 
 
@@ -9439,9 +7966,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     );
 
-    
-
-    if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData || !userData || !perfilesData)) {
+if (needsRelatedData && (!nodosData || !tiposData || !metricasData || !ubicacionesData || !userData || !perfilesData)) {
 
       setMessage({ type: 'warning', text: 'Cargando datos relacionados... Por favor espera un momento.' });
 
@@ -9453,9 +7978,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     }
 
-    
-
-    setIsMultipleSelectionMode(true);
+setIsMultipleSelectionMode(true);
 
     setUpdateFormData(selectedRowsForManualUpdate[0]); // Usar la primera como base
 
@@ -9463,12 +7986,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-
-
-
-  // Funciones para manejar el modal de confirmación
+// Funciones para manejar el modal de confirmación
 
   const handleConfirmCancel = () => {
 
@@ -9484,9 +8002,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
-
-
-  const handleCancelModal = () => {
+const handleCancelModal = () => {
 
     setShowCancelModal(false);
 
@@ -9494,17 +8010,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   };
 
+// Funciones para manejar el modal de pérdida de datos
 
-
-  // Funciones para manejar el modal de pérdida de datos
-
-
-
-
-
-
-
-  // Función para manejar cancelación del formulario de inserción
+// Función para manejar cancelación del formulario de inserción
 
   const handleCancelInsert = () => {
     // Obtener los valores iniciales del formulario
@@ -9536,13 +8044,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   };
 
-
-
-
-
-
-
-  // Efecto para limpiar selección cuando cambie la tabla
+// Efecto para limpiar selección cuando cambie la tabla
 
   useEffect(() => {
 
@@ -9552,9 +8054,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [selectedTable]);
 
-
-
-  // Efecto para interceptar cambios de parámetro desde el exterior - DESHABILITADO
+// Efecto para interceptar cambios de parámetro desde el exterior - DESHABILITADO
 
   // Los modales ahora se manejan en ProtectedTableSelector
 
@@ -9562,8 +8062,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
 
-
-      // Cambiar parámetro directamente sin modal
+// Cambiar parámetro directamente sin modal
 
       handleParameterNavigation(propSelectedTable);
 
@@ -9571,9 +8070,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [propSelectedTable, selectedTable, handleParameterNavigation]);
 
-
-
-  // Efecto para interceptar cambios de pestaña desde el exterior - DESHABILITADO
+// Efecto para interceptar cambios de pestaña desde el exterior - DESHABILITADO
 
   // Los modales ahora se manejan en ProtectedSubTabButton
 
@@ -9581,8 +8078,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (propActiveSubTab !== undefined && propActiveSubTab !== activeSubTab) {
 
-
-      // Cambiar pestaña directamente sin modal
+// Cambiar pestaña directamente sin modal
 
       handleSubTabNavigation(propActiveSubTab);
 
@@ -9590,7 +8086,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   }, [propActiveSubTab, activeSubTab, handleSubTabNavigation]);
 
-
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
 
@@ -9603,9 +8101,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         onCancel={cancelTableChange}
       />
 
-
-
-      {/* Contenido principal */}
+{/* Contenido principal */}
 
       <div>
 
@@ -9613,17 +8109,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           <>
 
-
-
-
-
-            {/* Mensajes */}
+{/* Mensajes */}
 
             <MessageDisplay message={message} />
 
-
-
-            {/* Contenido basado en la sub-pestaña activa */}
+{/* Contenido basado en la sub-pestaña activa */}
 
             <div className="space-y-8">
 
@@ -9633,17 +8123,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                  <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
 
-                   
-
-                   {tableInfo && (
+{tableInfo && (
 
                      <TableStatsDisplay tableData={tableData} userData={userData} />
 
                    )}
 
-
-
-                                     {loading ? (
+{loading ? (
 
                      <LoadingSpinner message="Cargando datos..." />
 
@@ -9677,9 +8163,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                          totalCount={filteredTableData.length}
                        />
 
-
-
-                       {/* Tabla con datos */}
+{/* Tabla con datos */}
 
                        <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
@@ -9783,9 +8267,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                        </div>
 
-
-
-                       {/* Paginación */}
+{/* Paginación */}
 
                        <PaginationControls
                          currentPage={statusCurrentPage}
@@ -9802,9 +8284,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               )}
 
-
-
-                                                           {/* Formulario de inserción */}
+{/* Formulario de inserción */}
 
                 {activeSubTab === 'insert' && (
 
@@ -10100,9 +8580,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       }`}>
 
-                        
-
-                      <NormalInsertFormLazyWithBoundary
+<NormalInsertFormLazyWithBoundary
 
                         visibleColumns={getVisibleColumns(false)}
 
@@ -10148,9 +8626,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                 )}
 
-
-
-          {/* Formulario de actualización */}
+{/* Formulario de actualización */}
 
                {activeSubTab === 'update' && (
 
@@ -10178,9 +8654,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   )} */}
 
-
-
-                  {/* Overlay Modal para formulario de actualización */}
+{/* Overlay Modal para formulario de actualización */}
 
                   {(selectedRowForUpdate || selectedRowsForUpdate.length > 0 || isMultipleSelectionMode) && (
 
@@ -10188,9 +8662,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       <div className="bg-neutral-900 bg-opacity-95 rounded-xl border border-neutral-700 p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
 
-                      
-
-                      {/* Información sobre múltiples filas seleccionadas automáticamente */}
+{/* Información sobre múltiples filas seleccionadas automáticamente */}
 
                       {!isMultipleSelectionMode && selectedRowsForUpdate.length > 0 && (
 
@@ -10232,9 +8704,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-                      
-
-                      {/* Formulario normal para actualización de una sola entrada */}
+{/* Formulario normal para actualización de una sola entrada */}
 
                       {selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
 
@@ -10261,13 +8731,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                           if (!displayName) return null;
 
-                          
+const value = updateFormData[col.columnName] || '';
 
-                          const value = updateFormData[col.columnName] || '';
-
-                          
-
-                                                     // Campos automáticos - NO mostrar en formulario de actualización
+// Campos automáticos - NO mostrar en formulario de actualización
 
                            if (['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'].includes(col.columnName)) {
 
@@ -10296,9 +8762,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                              return null;
                            }
 
-
-
-                           // Campos clave - mostrar como solo lectura
+// Campos clave - mostrar como solo lectura
 
                            if (isKeyField(col.columnName)) {
 
@@ -10320,9 +8784,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                 : selectedRowForUpdate ? getDisplayValueLocal(selectedRowForUpdate, col.columnName) : '';
 
-                             
-
-                             return (
+return (
 
                                <div key={col.columnName} className="mb-4">
 
@@ -10352,9 +8814,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                            }
 
-
-
-                           // Campo statusid como checkbox
+// Campo statusid como checkbox
 
                            if (col.columnName === 'statusid') {
 
@@ -10404,9 +8864,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                            }
 
-
-
-                           // Campos de texto normales (editables)
+// Campos de texto normales (editables)
 
                            return (
 
@@ -10447,9 +8905,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-
-
-                      {/* Formulario avanzado para metricasensor */}
+{/* Formulario avanzado para metricasensor */}
 
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'metricasensor' && (
 
@@ -10475,9 +8931,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-
-
-                      {/* Formulario avanzado para sensor */}
+{/* Formulario avanzado para sensor */}
 
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'sensor' && (
 
@@ -10501,9 +8955,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-
-
-                      {/* Formulario avanzado para usuarioperfil */}
+{/* Formulario avanzado para usuarioperfil */}
 
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable === 'usuarioperfil' && (
 
@@ -10525,9 +8977,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-
-
-                      {/* Tabla de entradas seleccionadas para actualización múltiple (otras tablas) */}
+{/* Tabla de entradas seleccionadas para actualización múltiple (otras tablas) */}
 
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && selectedTable !== 'sensor' && selectedTable !== 'usuarioperfil' && (
 
@@ -10553,17 +9003,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                   });
 
-                                  
-
-                                  // Toggle: si todos están seleccionados, deseleccionar todos; si no, seleccionar todos
+// Toggle: si todos están seleccionados, deseleccionar todos; si no, seleccionar todos
 
                                   const newStatus = !allSelected;
 
                                   const newIndividualStatus: {[key: string]: boolean} = {};
 
-                                  
-
-                                  allRows.forEach((row, index) => {
+allRows.forEach((row, index) => {
 
                                     const rowKey = `${row.nodoid || row.id || index}-${index}`;
 
@@ -10571,9 +9017,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                   });
 
-                                  
-
-                                  setIndividualRowStatus(newIndividualStatus);
+setIndividualRowStatus(newIndividualStatus);
 
                                 }}
 
@@ -10689,13 +9133,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                       )}
 
-
-
-
-
-
-
-                      <ActionButtons
+<ActionButtons
                         selectedTable={selectedTable}
                         updateLoading={updateLoading}
                         onUpdate={handleUpdate}
@@ -10708,9 +9146,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   )}
 
-
-
-                                     {/* Sección de Selección y Registros - SOLO cuando NO hay selección */}
+{/* Sección de Selección y Registros - SOLO cuando NO hay selección */}
 
                    {!selectedRowForUpdate && selectedRowsForUpdate.length === 0 && (
 
@@ -10786,9 +9222,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                         </div>
 
-
-
-                        {/* Botones de selección múltiple para sensor y metricasensor - Solo mostrar cuando hay selecciones */}
+{/* Botones de selección múltiple para sensor y metricasensor - Solo mostrar cuando hay selecciones */}
 
                         <MultipleSelectionButtons
                           selectedTable={selectedTable}
@@ -10797,9 +9231,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                           onDeselectAll={handleDeselectAll}
                         />
 
-
-
-                       {/* Tabla de datos para actualizar - Usando la misma lógica que "Estado" */}
+{/* Tabla de datos para actualizar - Usando la misma lógica que "Estado" */}
 
                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
 
@@ -10857,25 +9289,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                  })().map((row, index) => {
 
-                                   
-
-                                   const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') 
+const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') 
 
                                      ? selectedRowsForManualUpdate.some(r => getRowIdForSelection(r) === getRowIdForSelection(row))
 
                                      : selectedRowForUpdate === row;
 
-                                   
-
-                                   // Detectar si no hay métricas activas o perfiles activos
+// Detectar si no hay métricas activas o perfiles activos
 
                                    const hasNoActiveMetrics = row.tipos === 'Sin sensores activos';
 
                                    const hasNoActivePerfiles = row.perfiles === 'Sin perfiles activos';
 
-                                   
-
-                                   return (
+return (
 
                                    <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics || hasNoActivePerfiles ? 'text-red-400' : ''}`} onClick={(e) => {
 
@@ -10947,9 +9373,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
-
-                                             if (col.columnName === 'statusid') {
+if (col.columnName === 'statusid') {
 
                                                return (
 
@@ -10979,17 +9403,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
-
-                                             if (col.columnName === 'datecreated' || col.columnName === 'datemodified') {
+if (col.columnName === 'datecreated' || col.columnName === 'datemodified') {
 
                                                return formatDate(row[col.columnName]);
 
                                              }
 
-                                             
-
-                                             if (col.columnName === 'tipos' && selectedTable === 'metricasensor') {
+if (col.columnName === 'tipos' && selectedTable === 'metricasensor') {
 
                                                return (
 
@@ -11003,9 +9423,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
-
-                                             if (col.columnName === 'tipos' && selectedTable === 'sensor') {
+if (col.columnName === 'tipos' && selectedTable === 'sensor') {
 
                                                return (
 
@@ -11019,12 +9437,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
+if (col.columnName === 'perfiles' && selectedTable === 'usuarioperfil') {
 
-                                             if (col.columnName === 'perfiles' && selectedTable === 'usuarioperfil') {
-
-
-                                               return (
+return (
 
                                                  <div className="whitespace-normal break-words">
 
@@ -11036,12 +9451,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
+if (col.columnName === 'usuario' && selectedTable === 'usuarioperfil') {
 
-                                             if (col.columnName === 'usuario' && selectedTable === 'usuarioperfil') {
-
-
-                                               return (
+return (
 
                                                  <div className="whitespace-normal break-words">
 
@@ -11053,9 +9465,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                                              }
 
-                                             
-
-                                             return getDisplayValueLocal(row, col.columnName);
+return getDisplayValueLocal(row, col.columnName);
 
                                            })()}
 
@@ -11087,9 +9497,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                          </div>
 
-                         
-
-                                                    {/* Paginación */}
+{/* Paginación */}
 
                            {updateFilteredData.length > 0 && totalPages > 1 && (
 
@@ -11175,9 +9583,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               )}
 
-
-
-              {/* Formulario de creación masiva */}
+{/* Formulario de creación masiva */}
 
               {activeSubTab === 'massive' && (
 
@@ -11313,9 +9719,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
               )}
 
-
-
-                      </div>
+</div>
 
           </>
 
@@ -11351,9 +9755,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
                   </div>
 
-
-
-      {/* Modal de confirmación para cancelar */}
+{/* Modal de confirmación para cancelar */}
 
       {showCancelModal && (
 
@@ -11396,9 +9798,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         </div>
       )}
 
-
-
-      {/* Modal de pérdida de datos - Desactivado, usando el sistema de App.tsx */}
+{/* Modal de pérdida de datos - Desactivado, usando el sistema de App.tsx */}
 
       {/* <LostDataModal
 
@@ -11414,9 +9814,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       /> */}
 
-
-
-      {/* Modal de replicación */}
+{/* Modal de replicación */}
 
       {replicateOptions && (
 
@@ -11454,9 +9852,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       )}
 
-      
-
-      {/* Modal simple para confirmación de cambios */}
+{/* Modal simple para confirmación de cambios */}
 
       {modalState && (
 
@@ -11478,19 +9874,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
       )}
 
-      
-
-    </div>
+</div>
 
   );
 
 });
 
-
-
 SystemParameters.displayName = 'SystemParameters';
-
-
 
 export default SystemParameters;
 
