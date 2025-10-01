@@ -5074,7 +5074,7 @@ for (let i = 0; i < rowsToUpdate.length; i++) {
 
 try {
 
-            const result = await JoySenseService.updateTableRowByCompositeKey(
+            await JoySenseService.updateTableRowByCompositeKey(
 
             selectedTable,
 
@@ -5335,7 +5335,7 @@ result = await JoySenseService.updateTableRowByCompositeKey(
 
           // Validación ya se ejecutó arriba
 
-          result = await JoySenseService.updateTableRow(
+          await JoySenseService.updateTableRow(
 
             selectedTable,
 

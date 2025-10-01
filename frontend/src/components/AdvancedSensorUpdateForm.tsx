@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 interface AdvancedSensorUpdateFormProps {
   selectedRows: any[];
@@ -10,6 +18,10 @@ interface AdvancedSensorUpdateFormProps {
   nodosData: any[];
 }
 
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
+
 export function AdvancedSensorUpdateForm({
   selectedRows,
   onUpdate,
@@ -19,8 +31,13 @@ export function AdvancedSensorUpdateForm({
   tiposData,
   nodosData
 }: AdvancedSensorUpdateFormProps) {
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
   // Función robusta para extraer la entidad de las filas seleccionadas
-  const getEntidadFromSelectedRows = () => {
+  const getEntidadFromSelectedRows = useCallback(() => {
     if (selectedRows.length === 0) return null;
     
     // Obtener el primer tipoid de las filas seleccionadas
@@ -34,11 +51,15 @@ export function AdvancedSensorUpdateForm({
     // Buscar la entidad
     const entidad = entidadesData.find(e => e.entidadid === tipo.entidadid);
     return entidad;
-  };
+  }, [selectedRows, tiposData, entidadesData]);
   
-  const entidad = useMemo(() => getEntidadFromSelectedRows(), [selectedRows]);
+  const entidad = useMemo(() => getEntidadFromSelectedRows(), [getEntidadFromSelectedRows]);
   const entidadId = entidad?.entidadid;
   
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   // Estados para los tipos y nodos seleccionados
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
   const [selectedNodos, setSelectedNodos] = useState<string[]>([]);
@@ -53,7 +74,7 @@ export function AdvancedSensorUpdateForm({
   const [nodosSearchTerm, setNodosSearchTerm] = useState('');
 
   // Función robusta para obtener tipos únicos de las filas seleccionadas
-  const getTiposFromSelectedRows = () => {
+  const getTiposFromSelectedRows = useCallback(() => {
     if (selectedRows.length === 0) return [];
     
     // Para tablas agrupadas, los tipos están en originalRows
@@ -65,16 +86,20 @@ export function AdvancedSensorUpdateForm({
         .filter(Boolean)
     );
     return Array.from(tiposSet);
-  };
+  }, [selectedRows]);
   
   // Función robusta para obtener nodos únicos de las filas seleccionadas
-  const getNodosFromSelectedRows = () => {
+  const getNodosFromSelectedRows = useCallback(() => {
     if (selectedRows.length === 0) return [];
     
     // Extraer nodoid únicos de las filas seleccionadas
     const nodosSet = new Set(selectedRows.map(row => row.nodoid?.toString()).filter(Boolean));
     return Array.from(nodosSet);
-  };
+  }, [selectedRows]);
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
   // Inicializar datos basados en las filas seleccionadas
   useEffect(() => {
@@ -86,7 +111,7 @@ export function AdvancedSensorUpdateForm({
       setSelectedTipos(initialTipos);
       setSelectedNodos(initialNodos);
     }
-  }, [selectedRows]);
+  }, [selectedRows, getTiposFromSelectedRows, getNodosFromSelectedRows]);
 
   // Obtener tipos disponibles para la entidad
   const availableTipos = useMemo(() => {
@@ -107,7 +132,7 @@ export function AdvancedSensorUpdateForm({
         label: nodo?.nodo || `Nodo ${nodoId}`
       };
     });
-  }, [selectedRows, nodosData]);
+  }, [selectedRows, nodosData, getNodosFromSelectedRows]);
 
   // Filtrar tipos por término de búsqueda
   const filteredTipos = useMemo(() => {
@@ -129,6 +154,10 @@ export function AdvancedSensorUpdateForm({
   const allOriginalRows = useMemo(() => {
     return selectedRows.flatMap(row => row.originalRows || [row]);
   }, [selectedRows]);
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   const handleUpdate = async () => {
     setIsUpdating(true);
@@ -247,6 +276,10 @@ export function AdvancedSensorUpdateForm({
       </div>
     );
   }
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-6">
