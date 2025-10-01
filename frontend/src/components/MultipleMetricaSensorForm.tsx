@@ -1,5 +1,13 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React, { memo } from 'react';
 import ReplicateButton from './ReplicateButton';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 interface MultipleMetricaSensorFormProps {
   selectedNodos: string[];
@@ -36,6 +44,10 @@ interface MultipleMetricaSensorFormProps {
   fundosData?: any[];
 }
 
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
+
 const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo(({
   selectedNodos,
   setSelectedNodos,
@@ -68,6 +80,11 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
   empresasData,
   fundosData
 }) => {
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   const [nodosDropdownOpen, setNodosDropdownOpen] = React.useState(false);
   const [entidadDropdownOpen, setEntidadDropdownOpen] = React.useState(false);
   const [metricasDropdownOpen, setMetricasDropdownOpen] = React.useState(false);
@@ -80,21 +97,23 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
   // Estado para tipos seleccionados
   const [selectedTiposCheckboxes, setSelectedTiposCheckboxes] = React.useState<string[]>([]);
   
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
   // Función para obtener tipos basándose en los nodos seleccionados
   const getTiposFromSelectedNodos = () => {
     if (selectedNodos.length === 0) return [];
-    
-    
-    const tiposUnicos = new Set<string>();
+
+const tiposUnicos = new Set<string>();
     
     selectedNodos.forEach(nodoId => {
       // Buscar sensores que pertenecen a este nodo específico
       const sensoresDelNodo = sensorsData.filter(sensor => 
         sensor.nodoid && sensor.nodoid.toString() === nodoId
       );
-      
-      
-      // Agregar los tipos únicos de este nodo
+
+// Agregar los tipos únicos de este nodo
       sensoresDelNodo.forEach(sensor => {
         if (sensor.tipoid) {
           tiposUnicos.add(sensor.tipoid.toString());
@@ -106,9 +125,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
       const tipo = tiposData.find(t => t.tipoid.toString() === tipoId);
       return tipo ? { tipoid: tipo.tipoid, tipo: tipo.tipo } : null;
     }).filter(Boolean);
-    
-    
-    return resultado;
+
+return resultado;
   };
   
   const tiposFromNodos = React.useMemo(() => getTiposFromSelectedNodos(), [selectedNodos, selectedEntidad, sensorsData, tiposData]);
@@ -116,9 +134,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
   // Función para analizar similitud de nodos (similar a MassiveUmbralForm)
   const analyzeNodoSimilarity = () => {
     if (selectedNodos.length <= 1) return null;
-    
-    
-    const nodoAnalysis = selectedNodos.map(nodoId => {
+
+const nodoAnalysis = selectedNodos.map(nodoId => {
       const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
       
       // Obtener tipos específicos para este nodo usando getUniqueOptionsForField
@@ -126,9 +143,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
         entidadid: selectedEntidad,
         nodoid: nodoId
       });
-      
-      
-      return {
+
+return {
         nodoid: nodoId,
         nodo: nodo?.nodo || nodoId,
         tipos: tiposDelNodo.map(t => t.label),
@@ -136,9 +152,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
         tiposKey: tiposDelNodo.map(t => t.label).sort().join('|') // Clave única para agrupar
       };
     });
-    
-    
-    // Agrupar nodos por similitud de tipos (mismo patrón que MassiveUmbralForm)
+
+// Agrupar nodos por similitud de tipos (mismo patrón que MassiveUmbralForm)
     const groupedNodes: {[key: string]: {count: number, types: string[], nodos: any[]}} = {};
     
     nodoAnalysis.forEach(nt => {
@@ -155,9 +170,8 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
     
     // Si solo hay un grupo, todos los nodos son consistentes
     const hasDifferences = Object.keys(groupedNodes).length > 1;
-    
-    
-    return {
+
+return {
       nodoAnalysis,
       similarityGroups: Object.values(groupedNodes).map(group => group.nodos),
       hasDifferences,
@@ -179,6 +193,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
     return selectedNodoGroups.length === 1;
   };
   
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
+
   // Función para manejar la inserción y limpiar métricas después
   const handleInsertMetricas = async () => {
     await onInsertMetricas();
@@ -186,6 +204,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
     setSelectedMetricasCheckboxes([]);
   };
   
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
   // Actualizar tipos seleccionados cuando cambien los nodos
   React.useEffect(() => {
     if (selectedNodos.length > 0) {
@@ -286,7 +308,6 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
       }> = [];
       
       selectedMetricasCheckboxes.forEach((metricaId) => {
-        const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
         
         selectedNodos.forEach((nodoId) => {
           selectedTiposCheckboxes.forEach((tipoId) => {
@@ -339,58 +360,10 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
     return fundo ? fundo.fundo : `Fundo ${fundoId}`;
   };
 
-  // Función para renderizar fila contextual con filtros globales
-  const renderContextualRow = () => {
-    const contextualFields = [];
-    
-    if (paisSeleccionado) {
-      contextualFields.push(
-        <div key="pais-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            PAÍS
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-            {getPaisName(paisSeleccionado)}
-          </div>
-        </div>
-      );
-    }
-    
-    if (empresaSeleccionada) {
-      contextualFields.push(
-        <div key="empresa-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            EMPRESA
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-            {getEmpresaName(empresaSeleccionada)}
-          </div>
-        </div>
-      );
-    }
-    
-    if (fundoSeleccionado) {
-      contextualFields.push(
-        <div key="fundo-contextual">
-          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            FUNDO
-          </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
-            {getFundoName(fundoSeleccionado)}
-          </div>
-        </div>
-      );
-    }
 
-    if (contextualFields.length > 0) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {contextualFields}
-        </div>
-      );
-    }
-    return null;
-  };
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="space-y-6">
