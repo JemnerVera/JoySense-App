@@ -1,5 +1,13 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
+
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
 interface MassiveUmbralFormProps {
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
@@ -52,6 +60,10 @@ interface FormData {
   metricasData: MetricaData[];
 }
 
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
+
 export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   getUniqueOptionsForField,
   onApply,
@@ -66,6 +78,11 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   onFormDataChange,
   localizacionesData
 }: MassiveUmbralFormProps) {
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
     entidadid: null,
@@ -146,6 +163,10 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
     }
   }, [metricasOptions]);
 
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
+
   // Manejar selección de nodos
   const handleNodeSelection = (nodoid: number, selected: boolean) => {
     setSelectedNodes(prev =>
@@ -192,15 +213,8 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
         tipo: option.label,
         selected: true // Todos los tipos asignados están siempre seleccionados (solo lectura)
       }));
-      
-      console.log('🔗 Tipos de sensores asignados para nodos seleccionados (umbral):', {
-        nodos: selectedNodesData.map(n => n.nodo),
-        nodoIds,
-        entidadid: formData.entidadid,
-        tipos: assignedTypes.map(t => t.tipo)
-      });
-      
-      setAssignedSensorTypes(assignedTypes);
+
+setAssignedSensorTypes(assignedTypes);
       
       // Cargar tipos de sensores por nodo individual para validación
       const nodeTypesMap: {[nodoid: number]: SelectedTipo[]} = {};
@@ -384,9 +398,8 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
           entidadid: formData.entidadid.toString(),
           nodoids: [node.nodoid] // Solo este nodo específico
         });
-        
-        
-        for (const tipoOption of tiposDelNodo) {
+
+for (const tipoOption of tiposDelNodo) {
           const tipo = {
             tipoid: parseInt(tipoOption.value.toString()),
             tipo: tipoOption.label,
@@ -402,20 +415,10 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
               }).some(m => m.value === metrica.metricaid);
               
               if (!existeEnMetricasensor) {
-                console.log('⚠️ Saltando métrica que no existe en metricasensor para este nodo:', {
-                  nodo: node.nodo,
-                  metrica: metrica.metrica,
-                  tipo: tipo.tipo
-                });
                 continue;
               }
               
               const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid];
-              console.log('🔍 Verificando umbral para tipo:', { 
-                metrica: metrica.metrica, 
-                tipo: tipo.tipo, 
-                umbralTipo: umbralTipo 
-              });
               
               // Solo incluir si el umbral para este tipo tiene todos los campos requeridos
               if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
@@ -444,15 +447,6 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
                 
                 dataToApply.push(umbralData);
               } else {
-                console.log('❌ Umbral incompleto para tipo:', { 
-                  metrica: metrica.metrica, 
-                  tipo: tipo.tipo, 
-                  umbralTipo: umbralTipo,
-                  tieneMinimo: !!umbralTipo?.minimo,
-                  tieneMaximo: !!umbralTipo?.maximo,
-                  tieneCriticidad: !!umbralTipo?.criticidadid,
-                  tieneUmbral: !!umbralTipo?.umbral
-                });
               }
             }
           }
@@ -617,6 +611,10 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
       </div>
     );
   };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="space-y-6">
@@ -925,8 +923,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
         </div>
       )}
 
-
-      {/* Resumen de selección */}
+{/* Resumen de selección */}
       {selectedNodesCount > 0 && (
         <div className="bg-neutral-800 rounded-lg p-4">
           <h5 className="text-orange-400 font-mono tracking-wider font-bold mb-3">
