@@ -1,13 +1,22 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
+// React Core
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 
-import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
-
+// Contexts
 import { useAuth } from '../contexts/AuthContext';
+import { useFilters } from '../contexts/FilterContext';
 
+// Services
 import { JoySenseService } from '../services/backend-api';
 
+// Types
 import { TableInfo, Message } from '../types/systemParameters';
 
+// Utils
+import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
 import { 
   getColumnDisplayName, 
   getDisplayValue, 
@@ -15,15 +24,21 @@ import {
   getUserName, 
   type RelatedData 
 } from '../utils/systemParametersUtils';
-// import { groupMetricaSensorData, groupSensorData, groupUsuarioPerfilData } from '../utils/dataGroupingUtils';
-// import { replicateSensor, replicateNodo, replicateNodoForMetricaSensor } from '../utils/replicationUtils';
-// import { getTotalPagesForGroupedTable, goToNextPage, goToPrevPage, goToFirstPage, goToLastPage } from '../utils/paginationUtils';
-// import { initializeFormData } from '../utils/formInitializationUtils';
-// import { clearCopySelectionOnTableChange, clearCopySelectionOnTabChange } from '../utils/copySelectionUtils';
+import { hasSignificantChanges } from '../utils/changeDetection';
+import { validateTableData, validateTableUpdate } from '../utils/formValidation';
+
+// Hooks
 import { useTableDataManagement } from '../hooks/useTableDataManagement';
 import { useSearchAndFilter } from '../hooks/useSearchAndFilter';
 import { useMultipleSelection } from '../hooks/useMultipleSelection';
 import { usePagination } from '../hooks/usePagination';
+import { useSimpleModal } from '../hooks/useSimpleModal';
+import { useInsertionMessages } from '../hooks/useInsertionMessages';
+import { useReplicate } from '../hooks/useReplicate';
+import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
+import { useSystemParametersState } from '../hooks/useSystemParametersState';
+
+// Components - SystemParameters
 import { TableChangeConfirmationModal } from './SystemParameters/TableChangeConfirmationModal';
 import { TableStatsDisplay } from './SystemParameters/TableStatsDisplay';
 import { PaginationControls } from './SystemParameters/PaginationControls';
@@ -33,114 +48,71 @@ import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
 
-import SimpleModal from './SimpleModal';
-
-import { useSimpleModal } from '../hooks/useSimpleModal';
-
-import { hasSignificantChanges } from '../utils/changeDetection';
-
+// Components - Forms
 import MultipleSensorForm from './MultipleSensorForm';
-
-import { MultipleMetricaSensorFormLazyWithBoundary } from './LazyComponents';
-
 import MultipleUsuarioPerfilForm from './MultipleUsuarioPerfilForm';
-
 import { MassiveSensorForm } from './MassiveSensorForm';
-
-import { MassiveUmbralFormLazyWithBoundary } from './LazyComponents';
-
 import { MassiveMetricaSensorForm } from './MassiveMetricaSensorForm';
-
 import { AdvancedUsuarioPerfilUpdateForm } from './AdvancedUsuarioPerfilUpdateForm';
-
-
-import { NormalInsertFormLazyWithBoundary } from './LazyComponents';
-
-import InsertionMessage from './InsertionMessage';
-
 import { AdvancedMetricaSensorUpdateForm } from './AdvancedMetricaSensorUpdateForm';
-
 import { AdvancedSensorUpdateForm } from './AdvancedSensorUpdateForm';
 
-import { useInsertionMessages } from '../hooks/useInsertionMessages';
+// Components - Lazy
+import { MultipleMetricaSensorFormLazyWithBoundary } from './LazyComponents';
+import { MassiveUmbralFormLazyWithBoundary } from './LazyComponents';
+import { NormalInsertFormLazyWithBoundary } from './LazyComponents';
 
+// Components - Other
+import SimpleModal from './SimpleModal';
+import InsertionMessage from './InsertionMessage';
 import ReplicateModal from './ReplicateModal';
 
+// ============================================================================
+// INTERFACES & TYPES
+// ============================================================================
 
-import { useReplicate } from '../hooks/useReplicate';
-
-import { useGlobalFilterEffect } from '../hooks/useGlobalFilterEffect';
-
-import { useFilters } from '../contexts/FilterContext';
-
-
-import { validateTableData, validateTableUpdate } from '../utils/formValidation';
-
-// Hooks personalizados para refactoring
-import { useSystemParametersState } from '../hooks/useSystemParametersState';
 interface SystemParametersProps {
-
   selectedTable?: string;
-
   onTableSelect?: (table: string) => void;
-
   activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
-
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
-
   activeTab?: string;
-
   onParameterChangeWithConfirmation?: (newTable: string) => void;
-
   onTabChangeWithConfirmation?: (newTab: string) => void;
-
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[] | any) => void;
-
   clearFormData?: boolean;
-
 }
-
-
 
 export interface SystemParametersRef {
-
   hasUnsavedChanges: () => boolean;
-
   handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-
   handleTableChange: (table: string) => void;
-
 }
 
-
+// ============================================================================
+// COMPONENT DECLARATION
+// ============================================================================
 
 const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(({ 
-
   selectedTable: propSelectedTable, 
-
   onTableSelect,
-
   activeSubTab: propActiveSubTab,
-
   onSubTabChange,
-
   activeTab,
-
   onParameterChangeWithConfirmation,
-
   onTabChangeWithConfirmation,
-
   onFormDataChange,
-
   clearFormData = false,
-
 }, ref) => {
 
+  // ============================================================================
+  // HOOKS & CONTEXTS
+  // ============================================================================
+  
   const { user } = useAuth();
-
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
-  // Hook para manejo de datos de tabla
+  // Data Management Hook
   const {
     tableData,
     columns,
@@ -170,7 +142,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setLoading
   } = useTableDataManagement();
 
-  // Hook para búsquedas y filtros
+  // Search & Filter Hook
   const {
     searchTerm,
     searchField,
@@ -187,6 +159,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     handleStatusSearch,
   } = useSearchAndFilter();
 
+  // System Parameters State Hook
   const {
     selectedTable,
     activeSubTab,
@@ -209,25 +182,28 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setCopyData,
   } = useSystemParametersState(propSelectedTable, propActiveSubTab);
 
-  
-
-  // Hook simple para modales
-
+  // Simple Modal Hook
   const {
-
     modalState,
-
     showModal: showSimpleModal,
-
-
     confirmAction,
-
     cancelAction: cancelSimpleAction
-
   } = useSimpleModal();
 
+  // Insertion Messages Hook
+  const { insertedRecords, addInsertedRecord, clearInsertedRecords, clearOnTabChange } = useInsertionMessages(activeSubTab, activeTab, selectedTable);
 
-  // Hook de operaciones de búsqueda ahora manejado por useSearchAndFilter
+  // Replicate Hook
+  const { showModal, replicateOptions, openReplicateModal, closeReplicateModal, handleReplicate } = useReplicate();
+
+  // Multiple Selection Hook
+  const { findEntriesByTimestamp } = useMultipleSelection(selectedTable, searchByCriteria);
+
+  // Constants
+  const itemsPerPage = 10;
+
+  // Pagination Hook
+  const { getPaginatedData, goToPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
 
   // Sincronizar estado local con props
@@ -392,9 +368,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   
 
-  // Usar 10 items por página por defecto
-
-  const itemsPerPage = 10;
 
   
 
@@ -1027,15 +1000,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   
 
-  // Hook para manejar mensajes de inserción
-
-  const { insertedRecords, addInsertedRecord, clearInsertedRecords, clearOnTabChange } = useInsertionMessages(activeSubTab, activeTab, selectedTable);
-
-  
-
-  // Hook para manejar replicación
-
-  const { showModal, replicateOptions, openReplicateModal, closeReplicateModal, handleReplicate } = useReplicate();
 
   
 
@@ -1455,9 +1419,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
 
 
-  const { findEntriesByTimestamp } = useMultipleSelection(selectedTable, searchByCriteria);
-
-  const { getPaginatedData, goToPage, hasNextPage, hasPrevPage, currentPage: paginationCurrentPage, totalPages } = usePagination(updateFilteredData, itemsPerPage);
 
 
 
