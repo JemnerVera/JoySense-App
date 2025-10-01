@@ -1,8 +1,15 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import React, { useState, useEffect, memo } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
 import SeparateCharts from './DashboardCharts';
-import { useAuth } from '../contexts/AuthContext';
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 // Funciones helper para obtener nombres y unidades de métricas
 const getMetricaName = (metricaid: number, metricas: any[]) => {
@@ -25,12 +32,13 @@ const getTipoName = (tipoid: number, tipos: any[]) => {
   return tipo ? tipo.tipo : `Tipo ${tipoid}`;
 };
 
+// ============================================================================
+// COMPONENTS
+// ============================================================================
+
 // Componente de estadísticas para la vista dinámica
 const DynamicStats: React.FC<{ mediciones: any[]; metricas: any[]; nodos: any[]; tipos: any[] }> = ({ mediciones, metricas, nodos, tipos }) => {
   const totalMediciones = mediciones.length;
-  const promedio = mediciones.length > 0 
-    ? mediciones.reduce((sum, m) => sum + m.medicion, 0) / mediciones.length 
-    : 0;
   const ultimaMedicion = mediciones.length > 0 ? mediciones[0]?.fecha : null;
   const sensoresActivos = mediciones.length > 0 ? new Set(mediciones.map(m => m.nodoid)).size : 0;
 
@@ -92,9 +100,22 @@ const DynamicStats: React.FC<{ mediciones: any[]; metricas: any[]; nodos: any[];
   );
 };
 
+// ============================================================================
+// INTERFACES
+// ============================================================================
+
 interface DynamicHierarchyProps {}
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   const [paises, setPaises] = useState<Pais[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [fundos, setFundos] = useState<Fundo[]>([]);
@@ -118,8 +139,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentStep, setCurrentStep] = useState<'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'results'>('pais');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const { user } = useAuth();
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
   // Cargar países y métricas al inicio
   useEffect(() => {
@@ -136,6 +159,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
       handleDateFilter();
     }
   }, [selectedEntidad]);
+
+  // ============================================================================
+  // DATA LOADING FUNCTIONS
+  // ============================================================================
 
   const loadPaises = async () => {
     try {
@@ -184,6 +211,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
       console.error('Error loading entidades:', error);
     }
   };
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   const handlePaisSelect = async (pais: Pais) => {
     setSelectedPais(pais);
@@ -757,6 +788,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
         return null;
     }
   };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="max-w-4xl mx-auto p-4">
