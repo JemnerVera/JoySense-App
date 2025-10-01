@@ -102,7 +102,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
   // ============================================================================
 
   // Función para obtener tipos basándose en los nodos seleccionados
-  const getTiposFromSelectedNodos = () => {
+  const getTiposFromSelectedNodos = React.useCallback(() => {
     if (selectedNodos.length === 0) return [];
 
 const tiposUnicos = new Set<string>();
@@ -127,12 +127,12 @@ const tiposUnicos = new Set<string>();
     }).filter(Boolean);
 
 return resultado;
-  };
+  }, [selectedNodos, sensorsData, tiposData]);
   
-  const tiposFromNodos = React.useMemo(() => getTiposFromSelectedNodos(), [selectedNodos, selectedEntidad, sensorsData, tiposData]);
+  const tiposFromNodos = React.useMemo(() => getTiposFromSelectedNodos(), [getTiposFromSelectedNodos]);
   
   // Función para analizar similitud de nodos (similar a MassiveUmbralForm)
-  const analyzeNodoSimilarity = () => {
+  const analyzeNodoSimilarity = React.useCallback(() => {
     if (selectedNodos.length <= 1) return null;
 
 const nodoAnalysis = selectedNodos.map(nodoId => {
@@ -177,9 +177,9 @@ return {
       hasDifferences,
       groupedNodes
     };
-  };
+  }, [selectedNodos, selectedEntidad, getUniqueOptionsForField, nodosData]);
   
-  const similarityAnalysis = React.useMemo(() => analyzeNodoSimilarity(), [selectedNodos, selectedEntidad, getUniqueOptionsForField]);
+  const similarityAnalysis = React.useMemo(() => analyzeNodoSimilarity(), [analyzeNodoSimilarity]);
   
   // Función para validar si la selección de nodos es válida
   const isValidNodoSelection = () => {
@@ -216,7 +216,7 @@ return {
     } else {
       setSelectedTiposCheckboxes([]);
     }
-  }, [selectedNodos, selectedEntidad]);
+  }, [selectedNodos, selectedEntidad, tiposFromNodos]);
   
   // Estado para métricas seleccionadas con checkboxes
   const [selectedMetricasCheckboxes, setSelectedMetricasCheckboxes] = React.useState<string[]>([]);
@@ -276,7 +276,7 @@ return {
     if (selectedMetricas.length > 0 && JSON.stringify(selectedMetricas) !== JSON.stringify(selectedMetricasCheckboxes)) {
       setSelectedMetricasCheckboxes(selectedMetricas);
     }
-  }, [selectedMetricas]);
+  }, [selectedMetricas, selectedMetricasCheckboxes]);
 
   // Limpiar tipos y métricas cuando cambia la entidad
   React.useEffect(() => {
@@ -292,7 +292,7 @@ return {
       const todosLosTipos = tiposDisponibles.map(tipo => tipo.value.toString());
       setSelectedTiposCheckboxes(todosLosTipos);
     }
-  }, [selectedEntidad]);
+  }, [selectedEntidad, getUniqueOptionsForField]);
 
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
@@ -326,7 +326,7 @@ return {
     } else {
       setMultipleMetricas([]);
     }
-  }, [selectedMetricasCheckboxes, selectedTiposCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData]);
+  }, [selectedMetricasCheckboxes, selectedTiposCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData, setMultipleMetricas, setSelectedMetricas]);
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -340,25 +340,9 @@ return {
       // Solo limpiar métricas si no estamos en modo replicación y hay métricas
       setMultipleMetricas([]);
     }
-  }, [selectedNodos, selectedMetricas, onInitializeMetricas, isReplicateMode]);
+  }, [selectedNodos, selectedMetricas, onInitializeMetricas, isReplicateMode, multipleMetricas.length, setMultipleMetricas]);
 
   // Función para obtener el nombre de un país por ID
-  const getPaisName = (paisId: string) => {
-    const pais = paisesData?.find(p => p.paisid.toString() === paisId);
-    return pais ? pais.pais : `País ${paisId}`;
-  };
-
-  // Función para obtener el nombre de una empresa por ID
-  const getEmpresaName = (empresaId: string) => {
-    const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
-    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
-  };
-
-  // Función para obtener el nombre de un fundo por ID
-  const getFundoName = (fundoId: string) => {
-    const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
-    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
-  };
 
 
   // ============================================================================

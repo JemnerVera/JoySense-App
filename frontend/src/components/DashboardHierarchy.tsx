@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
 import SeparateCharts from './DashboardCharts';
@@ -153,12 +153,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
     loadEntidades();
   }, []);
 
-  // Efecto para actualizar mediciones cuando cambia la entidad seleccionada
-  useEffect(() => {
-    if (selectedUbicacion && (selectedEntidad || startDate || endDate)) {
-      handleDateFilter();
-    }
-  }, [selectedEntidad]);
 
   // ============================================================================
   // DATA LOADING FUNCTIONS
@@ -345,7 +339,7 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
     }
   };
 
-  const handleDateFilter = async () => {
+  const handleDateFilter = useCallback(async () => {
     if (!selectedUbicacion) return;
     
     try {
@@ -389,7 +383,14 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedUbicacion, startDate, endDate, selectedEntidad]);
+
+  // Efecto para actualizar mediciones cuando cambia la entidad seleccionada
+  useEffect(() => {
+    if (selectedUbicacion && (selectedEntidad || startDate || endDate)) {
+      handleDateFilter();
+    }
+  }, [selectedEntidad, selectedUbicacion, startDate, endDate, handleDateFilter]);
 
   const resetSelection = () => {
     setSelectedPais(null);
