@@ -772,7 +772,7 @@ app.get('/api/sense/codigotelefono', async (req, res) => {
       .from('codigotelefono')
       .select('*')
       .eq('statusid', 1)
-      .order('paistelefono')
+      .order('codigotelefonoid')
       .limit(parseInt(limit));
     if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
     console.log('✅ Backend: Codigotelefono obtenido:', data?.length || 0);
