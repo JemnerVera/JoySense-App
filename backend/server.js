@@ -200,12 +200,15 @@ const tableMetadata = {
     columns: [
       { column_name: 'criticidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
       { column_name: 'criticidad', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'criticidadbrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
+      { column_name: 'grado', data_type: 'integer', is_nullable: 'YES', column_default: null },
       { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
       { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
       { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
       { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+      { column_name: 'frecuencia', data_type: 'integer', is_nullable: 'YES', column_default: null },
+      { column_name: 'escalamiento', data_type: 'integer', is_nullable: 'YES', column_default: null },
+      { column_name: 'escalon', data_type: 'integer', is_nullable: 'YES', column_default: null }
     ],
     info: { table_name: 'criticidad', table_type: 'BASE TABLE' },
     constraints: [
@@ -365,8 +368,7 @@ const tableMetadata = {
         { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
         { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
         { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'auth_user_id', data_type: 'uuid', is_nullable: 'YES', column_default: null }
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
       ],
       info: { table_name: 'usuario', table_type: 'BASE TABLE' },
       constraints: [
@@ -2380,12 +2382,15 @@ app.post('/api/sense/criticidad', async (req, res) => {
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
       criticidad: insertData.criticidad,
-      criticidadbrev: insertData.criticidadbrev,
+      grado: insertData.grado,
       statusid: insertData.statusid,
       usercreatedid: insertData.usercreatedid,
       usermodifiedid: insertData.usermodifiedid,
       datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      datemodified: insertData.datemodified,
+      frecuencia: insertData.frecuencia,
+      escalamiento: insertData.escalamiento,
+      escalon: insertData.escalon
     };
     
     const { data, error } = await supabase
@@ -2534,8 +2539,7 @@ app.post('/api/sense/usuario', async (req, res) => {
       usercreatedid: insertData.usercreatedid,
       usermodifiedid: insertData.usermodifiedid,
       datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified,
-      auth_user_id: insertData.auth_user_id
+      datemodified: insertData.datemodified
     };
     
     const { data, error } = await supabase

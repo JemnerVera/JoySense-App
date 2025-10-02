@@ -2494,7 +2494,13 @@ preparedData.usercreatedid = usuarioid;
 
           criticidad: preparedData.criticidad,
 
-          criticidadbrev: preparedData.criticidadbrev,
+          grado: preparedData.grado,
+
+          frecuencia: preparedData.frecuencia,
+
+          escalamiento: preparedData.escalamiento,
+
+          escalon: preparedData.escalon,
 
           statusid: preparedData.statusid,
 
@@ -4929,7 +4935,7 @@ if (errorCount > 0) {
       'metrica': ['metrica', 'unidad', 'statusid'],
     'umbral': ['umbral', 'ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid', 'minimo', 'maximo', 'statusid'],
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
-    'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
+    'criticidad': ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid'],
     'perfil': ['perfil', 'nivel', 'statusid'],
     'usuario': ['login', 'firstname', 'lastname', 'statusid'],
     'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'statusid'],
@@ -5553,7 +5559,7 @@ if (selectedTable === 'audit_log_umbral') {
 
 if (selectedTable === 'criticidad') {
 
-        return ['criticidad', 'criticidadbrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 

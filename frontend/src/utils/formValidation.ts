@@ -163,7 +163,10 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   criticidad: [
     { field: 'criticidad', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la criticidad es obligatorio' },
-    { field: 'criticidadbrev', required: true, type: 'string', minLength: 1, maxLength: 10, customMessage: 'La abreviatura de la criticidad es obligatoria' }
+    { field: 'grado', required: false, type: 'number', customMessage: 'El grado debe ser un número válido' },
+    { field: 'frecuencia', required: false, type: 'number', customMessage: 'La frecuencia debe ser un número válido' },
+    { field: 'escalamiento', required: false, type: 'number', customMessage: 'El escalamiento debe ser un número válido' },
+    { field: 'escalon', required: false, type: 'number', customMessage: 'El escalón debe ser un número válido' }
   ],
   
   status: [
