@@ -751,7 +751,7 @@ app.get('/api/sense/contacto', async (req, res) => {
       .select(`
         *,
         codigotelefono:codigotelefonoid(codigotelefono, paistelefono),
-        usuario:usuarioid(login, nombre, apellido)
+        usuario:usuarioid(login, firstname, lastname)
       `)
       .order('contactoid')
       .limit(parseInt(limit));
