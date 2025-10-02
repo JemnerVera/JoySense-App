@@ -190,8 +190,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     if (columnName === 'usuarioid') {
       return true; // Siempre habilitado
     }
-    // Para el resto de campos (medioid, celular, correo, statusid)
-    if (['medioid', 'celular', 'correo', 'statusid'].includes(columnName)) {
+    // Para el resto de campos (codigotelefonoid, celular, statusid)
+    if (['codigotelefonoid', 'celular', 'statusid'].includes(columnName)) {
       return !!(formData.usuarioid && formData.usuarioid !== 0);
     }
   }

@@ -309,10 +309,8 @@ const tableMetadata = {
       columns: [
         { column_name: 'contactoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.contacto_contactoid_seq\'::regclass)' },
         { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'tipo_contacto', data_type: 'character varying', is_nullable: 'NO', column_default: null }, // 'telefono' o 'correo'
+        { column_name: 'celular', data_type: 'text', is_nullable: 'YES', column_default: null },
         { column_name: 'codigotelefonoid', data_type: 'integer', is_nullable: 'YES', column_default: null }, // FK a codigotelefono
-        { column_name: 'numero_telefono', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'correoid', data_type: 'integer', is_nullable: 'YES', column_default: null }, // FK a correo
         { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
         { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
         { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
@@ -323,8 +321,7 @@ const tableMetadata = {
       constraints: [
         { constraint_name: 'contacto_pkey', constraint_type: 'PRIMARY KEY' },
         { constraint_name: 'contacto_usuarioid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'contacto_codigotelefonoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'contacto_correoid_fkey', constraint_type: 'FOREIGN KEY' }
+        { constraint_name: 'contacto_codigotelefonoid_fkey', constraint_type: 'FOREIGN KEY' }
       ]
     },
     codigotelefono: {
@@ -754,7 +751,7 @@ app.get('/api/sense/contacto', async (req, res) => {
       .select(`
         *,
         codigotelefono:codigotelefonoid(codigotelefono, paistelefono),
-        correo:correoid(correo)
+        usuario:usuarioid(login, nombre, apellido)
       `)
       .order('contactoid')
       .limit(parseInt(limit));
@@ -2454,10 +2451,8 @@ app.post('/api/sense/contacto', async (req, res) => {
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
       usuarioid: insertData.usuarioid,
-      tipo_contacto: insertData.tipo_contacto,
+      celular: insertData.celular,
       codigotelefonoid: insertData.codigotelefonoid,
-      numero_telefono: insertData.numero_telefono,
-      correoid: insertData.correoid,
       statusid: insertData.statusid || 1,
       usercreatedid: insertData.usercreatedid,
       usermodifiedid: insertData.usermodifiedid,

@@ -66,6 +66,7 @@ import { NormalInsertFormLazyWithBoundary } from './LazyComponents';
 import SimpleModal from './SimpleModal';
 import InsertionMessage from './InsertionMessage';
 import ReplicateModal from './ReplicateModal';
+import ContactTypeModal from './ContactTypeModal';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -207,6 +208,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // ============================================================================
   // STATE MANAGEMENT & EFFECTS
   // ============================================================================
+  
+  // Estado para modal de tipo de contacto
+  const [contactTypeModalOpen, setContactTypeModalOpen] = useState(false);
+  const [pendingContactData, setPendingContactData] = useState<any>(null);
 
   // Sincronizar estado local con props
 
@@ -2235,13 +2240,75 @@ const getCurrentUserId = () => {
 
   };
 
-// ============================================================================
+  // ============================================================================
   // CRUD OPERATIONS
   // ============================================================================
+
+  // Función para manejar la selección del tipo de contacto
+  const handleContactTypeSelection = async (type: 'phone' | 'email', contactData: any) => {
+    if (!selectedTable || !user || !pendingContactData) return;
+
+    try {
+      setLoading(true);
+      
+      // Preparar datos base
+      const baseData = {
+        ...pendingContactData,
+        usercreatedid: user.id,
+        datecreated: new Date().toISOString(),
+        usermodifiedid: user.id,
+        datemodified: new Date().toISOString()
+      };
+
+      // Agregar datos específicos del tipo de contacto
+      const finalData = {
+        ...baseData,
+        ...contactData
+      };
+
+      // Insertar en la base de datos
+      await JoySenseService.insertTableRow(selectedTable, finalData);
+      
+      // Agregar el registro insertado al sistema de mensajes
+      addInsertedRecord(finalData);
+      
+      // Limpiar mensajes de alerta
+      setMessage(null);
+      
+      // Recargar datos
+      loadTableDataWrapper();
+      loadTableInfo();
+      loadUpdateData();
+      
+      // Limpiar formulario
+      setFormData({});
+      
+      // Mostrar mensaje de éxito
+      setMessage({
+        type: 'success',
+        text: `✅ ${type === 'email' ? 'Correo' : 'Teléfono'} agregado exitosamente`
+      });
+      
+    } catch (error) {
+      console.error('Error insertando contacto:', error);
+      handleInsertError(error as any);
+    } finally {
+      setLoading(false);
+      setContactTypeModalOpen(false);
+      setPendingContactData(null);
+    }
+  };
 
   const handleInsert = async () => {
 
     if (!selectedTable || !user) return;
+
+    // Para la tabla contacto, abrir modal de selección de tipo
+    if (selectedTable === 'contacto') {
+      setPendingContactData(formData);
+      setContactTypeModalOpen(true);
+      return;
+    }
 
 // Validar datos antes de insertar usando el sistema robusto
     try {
@@ -4893,7 +4960,7 @@ if (errorCount > 0) {
     'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
     'perfil': ['perfil', 'nivel', 'statusid'],
     'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
-    'contacto': ['usuarioid', 'celular', 'correo', 'statusid'],
+    'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };
     
@@ -5540,7 +5607,7 @@ if (selectedTable === 'usuarioperfil') {
 
 if (selectedTable === 'contacto') {
 
-        return ['usuarioid', 'celular', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['usuarioid', 'celular', 'codigotelefonoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
@@ -9739,6 +9806,17 @@ return getDisplayValueLocal(row, col.columnName);
         />
 
       )}
+
+      {/* Modal de selección de tipo de contacto */}
+      <ContactTypeModal
+        isOpen={contactTypeModalOpen}
+        onClose={() => {
+          setContactTypeModalOpen(false);
+          setPendingContactData(null);
+        }}
+        onSelectType={handleContactTypeSelection}
+        userId={typeof user?.id === 'number' ? user.id : 0}
+      />
 
 </div>
 

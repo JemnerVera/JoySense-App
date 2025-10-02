@@ -88,6 +88,8 @@ export const getColumnDisplayName = (columnName: string): string => {
     'direccion': 'Dirección',
     'telefono': 'Teléfono',
     'contacto': 'Contacto',
+    'celular': 'Celular',
+    'codigotelefonoid': 'Código País',
     'observaciones': 'Observaciones',
     'fecha_inicio': 'Fecha de Inicio',
     'fecha_fin': 'Fecha de Fin',
