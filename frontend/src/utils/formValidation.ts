@@ -125,8 +125,9 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   usuario: [
-    { field: 'usuario', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de usuario es obligatorio' },
-    { field: 'usuarioabrev', required: false, type: 'string', maxLength: 10, customMessage: 'La abreviatura no puede exceder 10 caracteres' }
+    { field: 'login', required: true, type: 'email', minLength: 1, customMessage: 'El login debe tener formato de email válido (ejemplo@dominio.com)' },
+    { field: 'firstname', required: false, type: 'string', maxLength: 255, customMessage: 'El nombre no puede exceder 255 caracteres' },
+    { field: 'lastname', required: false, type: 'string', maxLength: 255, customMessage: 'El apellido no puede exceder 255 caracteres' }
   ],
   
   medio: [
@@ -135,9 +136,8 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   contacto: [
     { field: 'usuarioid', required: true, type: 'number', customMessage: 'Debe seleccionar un usuario' },
-    { field: 'medioid', required: true, type: 'number', customMessage: 'Debe seleccionar un medio' },
-    { field: 'celular', required: false, type: 'phone', customMessage: 'El formato del celular no es válido' },
-    { field: 'correo', required: false, type: 'email', customMessage: 'El formato del correo no es válido' }
+    { field: 'codigotelefonoid', required: false, type: 'number', customMessage: 'Debe seleccionar un código de país' },
+    { field: 'celular', required: false, type: 'phone', customMessage: 'El formato del celular no es válido' }
   ],
   
   perfil: [
