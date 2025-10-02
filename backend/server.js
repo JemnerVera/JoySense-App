@@ -309,9 +309,10 @@ const tableMetadata = {
       columns: [
         { column_name: 'contactoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.contacto_contactoid_seq\'::regclass)' },
         { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'medioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'celular', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'correo', data_type: 'text', is_nullable: 'YES', column_default: null },
+        { column_name: 'tipo_contacto', data_type: 'character varying', is_nullable: 'NO', column_default: null }, // 'telefono' o 'correo'
+        { column_name: 'codigotelefonoid', data_type: 'integer', is_nullable: 'YES', column_default: null }, // FK a codigotelefono
+        { column_name: 'numero_telefono', data_type: 'text', is_nullable: 'YES', column_default: null },
+        { column_name: 'correoid', data_type: 'integer', is_nullable: 'YES', column_default: null }, // FK a correo
         { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
         { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
         { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
@@ -322,7 +323,39 @@ const tableMetadata = {
       constraints: [
         { constraint_name: 'contacto_pkey', constraint_type: 'PRIMARY KEY' },
         { constraint_name: 'contacto_usuarioid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'contacto_medioid_fkey', constraint_type: 'FOREIGN KEY' }
+        { constraint_name: 'contacto_codigotelefonoid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'contacto_correoid_fkey', constraint_type: 'FOREIGN KEY' }
+      ]
+    },
+    codigotelefono: {
+      columns: [
+        { column_name: 'codigotelefonoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.codigotelefono_codigotelefonoid_seq\'::regclass)' },
+        { column_name: 'codigotelefono', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'paistelefono', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      ],
+      info: { table_name: 'codigotelefono', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'codigotelefono_pkey', constraint_type: 'PRIMARY KEY' }
+      ]
+    },
+    correo: {
+      columns: [
+        { column_name: 'correoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.correo_correoid_seq\'::regclass)' },
+        { column_name: 'correo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      ],
+      info: { table_name: 'correo', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'correo_pkey', constraint_type: 'PRIMARY KEY' }
       ]
     },
     usuario: {
@@ -718,13 +751,51 @@ app.get('/api/sense/contacto', async (req, res) => {
     console.log('🔍 Backend: Obteniendo contacto del schema sense...');
     const { data, error } = await supabase
       .from('contacto')
-      .select('*')
+      .select(`
+        *,
+        codigotelefono:codigotelefonoid(codigotelefono, paistelefono),
+        correo:correoid(correo)
+      `)
       .order('contactoid')
       .limit(parseInt(limit));
     if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
     console.log('✅ Backend: Contacto obtenido:', data?.length || 0);
     res.json(data || []);
   } catch (error) { console.error('❌ Error in /api/sense/contacto:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Ruta para codigotelefono - usada por el frontend
+app.get('/api/sense/codigotelefono', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    console.log('🔍 Backend: Obteniendo codigotelefono del schema sense...');
+    const { data, error } = await supabase
+      .from('codigotelefono')
+      .select('*')
+      .eq('statusid', 1)
+      .order('paistelefono')
+      .limit(parseInt(limit));
+    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
+    console.log('✅ Backend: Codigotelefono obtenido:', data?.length || 0);
+    res.json(data || []);
+  } catch (error) { console.error('❌ Error in /api/sense/codigotelefono:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Ruta para correo - usada por el frontend
+app.get('/api/sense/correo', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    console.log('🔍 Backend: Obteniendo correo del schema sense...');
+    const { data, error } = await supabase
+      .from('correo')
+      .select('*')
+      .eq('statusid', 1)
+      .order('correoid')
+      .limit(parseInt(limit));
+    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
+    console.log('✅ Backend: Correo obtenido:', data?.length || 0);
+    res.json(data || []);
+  } catch (error) { console.error('❌ Error in /api/sense/correo:', error); res.status(500).json({ error: error.message }); }
 });
 
 // Ruta para localizacion - usada por el frontend
@@ -2383,10 +2454,11 @@ app.post('/api/sense/contacto', async (req, res) => {
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
       usuarioid: insertData.usuarioid,
-      medioid: insertData.medioid,
-      celular: insertData.celular,
-      correo: insertData.correo,
-      statusid: insertData.statusid,
+      tipo_contacto: insertData.tipo_contacto,
+      codigotelefonoid: insertData.codigotelefonoid,
+      numero_telefono: insertData.numero_telefono,
+      correoid: insertData.correoid,
+      statusid: insertData.statusid || 1,
       usercreatedid: insertData.usercreatedid,
       usermodifiedid: insertData.usermodifiedid,
       datecreated: insertData.datecreated,
@@ -2404,6 +2476,46 @@ app.post('/api/sense/contacto', async (req, res) => {
     }
     
     console.log(`✅ Backend: Contacto insertado: ${data.length} registros`);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Error backend:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Ruta POST para insertar correo
+app.post('/api/sense/correo', async (req, res) => {
+  try {
+    const insertData = req.body;
+    console.log('🔍 Backend: Insertando correo...');
+    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    
+    // Validar formato de correo
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(insertData.correo)) {
+      return res.status(400).json({ error: 'Formato de correo inválido' });
+    }
+    
+    const filteredData = {
+      correo: insertData.correo,
+      statusid: insertData.statusid || 1,
+      usercreatedid: insertData.usercreatedid,
+      usermodifiedid: insertData.usermodifiedid,
+      datecreated: insertData.datecreated,
+      datemodified: insertData.datemodified
+    };
+    
+    const { data, error } = await supabase
+      .from('correo')
+      .insert(filteredData)
+      .select();
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log(`✅ Backend: Correo insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
     console.error('❌ Error backend:', error);

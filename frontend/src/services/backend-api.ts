@@ -626,6 +626,62 @@ export class JoySenseService {
     }
   }
 
+  // Obtener códigos telefónicos
+  static async getCodigosTelefonicos(): Promise<any[]> {
+    try {
+      const detectedSchema = await this.detectSchema();
+      
+      if (detectedSchema === 'sense') {
+        const data = await backendAPI.get('/sense/codigotelefono');
+        return data || [];
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error in getCodigosTelefonicos:', error);
+      throw error;
+    }
+  }
+
+  // Obtener correos
+  static async getCorreos(): Promise<any[]> {
+    try {
+      const detectedSchema = await this.detectSchema();
+      
+      if (detectedSchema === 'sense') {
+        const data = await backendAPI.get('/sense/correo');
+        return data || [];
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error in getCorreos:', error);
+      throw error;
+    }
+  }
+
+  // Insertar correo
+  static async insertCorreo(correoData: any): Promise<any> {
+    try {
+      const data = await backendAPI.post('/sense/correo', correoData);
+      return data;
+    } catch (error) {
+      console.error('Error in insertCorreo:', error);
+      throw error;
+    }
+  }
+
+  // Insertar contacto
+  static async insertContacto(contactoData: any): Promise<any> {
+    try {
+      const data = await backendAPI.post('/sense/contacto', contactoData);
+      return data;
+    } catch (error) {
+      console.error('Error in insertContacto:', error);
+      throw error;
+    }
+  }
+
   // Obtener nodos
   static async getNodos(): Promise<any[]> {
     try {
