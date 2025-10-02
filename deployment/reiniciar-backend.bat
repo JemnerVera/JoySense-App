@@ -46,8 +46,19 @@ if %errorlevel% equ 0 (
 echo.
 
 REM Esperar un momento para que se liberen los puertos
-echo ⏳ Esperando 2 segundos para liberar puertos...
-timeout /t 2 /nobreak >nul
+echo ⏳ Esperando 3 segundos para liberar puertos...
+timeout /t 3 /nobreak >nul
+
+REM Verificar que el puerto 3001 esté libre
+echo 🔍 Verificando que el puerto 3001 esté libre...
+netstat -ano | findstr :3001 >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ⚠️ El puerto 3001 aún está en uso, esperando más tiempo...
+    timeout /t 2 /nobreak >nul
+) else (
+    echo ✅ Puerto 3001 está libre
+)
+echo.
 
 REM Iniciar Backend
 echo 🚀 Iniciando Backend...
