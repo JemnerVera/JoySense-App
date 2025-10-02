@@ -33,6 +33,7 @@ interface NormalInsertFormProps {
   // Props específicas para contacto
   selectedContactType?: 'phone' | 'email' | null;
   countryCodes?: any[];
+  resetContactType?: () => void;
 }
 
 // ============================================================================
@@ -58,7 +59,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   empresasData,
   fundosData,
   selectedContactType,
-  countryCodes
+  countryCodes,
+  resetContactType
 }) => {
 
   // ============================================================================
@@ -1649,18 +1651,6 @@ return filteredNodos;
           />
         </div>
 
-        {/* Campo Status */}
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-neutral-200">
-            {getColumnDisplayName('statusid')} *
-          </label>
-          <SelectWithPlaceholder
-            value={formData.statusid || ''}
-            onChange={(value) => setFormData({ ...formData, statusid: value })}
-            options={getUniqueOptionsForField('statusid')}
-            placeholder="Seleccionar estado..."
-          />
-        </div>
 
         {/* Campo dinámico según tipo de contacto */}
         {selectedContactType === 'phone' && (
@@ -1746,7 +1736,7 @@ return filteredNodos;
                       celular: fullPhoneNumber
                     });
                   }}
-                  placeholder="999999999"
+                  placeholder="Ej: 987654321"
                   className="flex-1 px-4 py-3 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                 />
               </div>
@@ -1814,6 +1804,17 @@ return filteredNodos;
           <span>❌</span>
           <span>CANCELAR</span>
         </button>
+
+        {/* Botón para volver a selección de tipo de contacto */}
+        {selectedTable === 'contacto' && selectedContactType && resetContactType && (
+          <button
+            onClick={resetContactType}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          >
+            <span>↩️</span>
+            <span>VOLVER</span>
+          </button>
+        )}
         
         {selectedTable === 'sensor' && onPasteFromClipboard && (
           <button

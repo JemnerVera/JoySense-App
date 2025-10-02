@@ -240,6 +240,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   };
 
+  const resetContactType = () => {
+    setSelectedContactType(null);
+  };
+
   // Sincronizar estado local con props
 
   useEffect(() => {
@@ -8563,6 +8567,7 @@ const handleCancelModal = () => {
                             // Props específicas para contacto
                             selectedContactType={selectedContactType}
                             countryCodes={countryCodes}
+                            resetContactType={resetContactType}
 
                           />
                         ) : (
@@ -8605,6 +8610,7 @@ const handleCancelModal = () => {
                             // Props específicas para contacto
                             selectedContactType={selectedContactType}
                             countryCodes={countryCodes}
+                            resetContactType={resetContactType}
 
                           />
                         )}
