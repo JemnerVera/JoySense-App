@@ -76,7 +76,9 @@ export const extractDuplicateKeyInfo = (error: BackendError): { fieldName: strin
     'metrica': 'métrica',
     'sensor': 'sensor',
     'metricasensor': 'métrica sensor',
-    'localizacion': 'localización'
+    'localizacion': 'localización',
+    'usuario': 'usuario',
+    'login': 'login'
   };
   
   // Aplicar mapeo si existe
@@ -98,16 +100,32 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
   if (isDuplicateKeyError(error)) {
     const { fieldName, conflictingValue } = extractDuplicateKeyInfo(error);
     
-    // Mejorar el mensaje para evitar repetición de "campo"
-    let displayFieldName = fieldName;
-    if (fieldName === 'campo' && conflictingValue !== 'valor duplicado') {
-      // Si tenemos el valor pero no el nombre del campo, usar el valor como referencia
-      displayFieldName = 'entidad';
+    // Simplificar mensajes según el tipo de campo
+    let message = '';
+    if (fieldName === 'login' || fieldName === 'usuario') {
+      message = `⚠️ El login ya existe`;
+    } else if (fieldName === 'pais') {
+      message = `⚠️ El país se repite`;
+    } else if (fieldName === 'empresa') {
+      message = `⚠️ La empresa se repite`;
+    } else if (fieldName === 'fundo') {
+      message = `⚠️ El fundo se repite`;
+    } else if (fieldName === 'nodo') {
+      message = `⚠️ El nodo se repite`;
+    } else if (fieldName === 'metrica') {
+      message = `⚠️ La métrica se repite`;
+    } else if (fieldName === 'tipo') {
+      message = `⚠️ El tipo se repite`;
+    } else if (fieldName === 'entidad') {
+      message = `⚠️ La entidad se repite`;
+    } else {
+      // Fallback para otros campos
+      message = `⚠️ Esta entrada ya existe`;
     }
     
     return {
       type: 'warning',
-      message: `⚠️ Alerta: Esta entrada se repite en el campo "${displayFieldName}" (${conflictingValue}). Verifique que no esté duplicando información.`
+      message
     };
   }
   
@@ -123,10 +141,11 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
       };
     }
     
-    // Si es un error 500 genérico, mostrar un mensaje más específico
+    // Si es un error 500, intentar mostrar el mensaje específico del backend
+    const backendError = error.response?.data?.error || error.message;
     return {
       type: 'warning',
-      message: `⚠️ Alerta: No se pudo guardar la información. Verifique que todos los campos estén completos y que no haya duplicados.`
+      message: `⚠️ Alerta: ${backendError || 'No se pudo guardar la información. Verifique que todos los campos estén completos y que no haya duplicados.'}`
     };
   }
   
@@ -157,16 +176,32 @@ export const handleMultipleInsertError = (error: BackendError, entityType: strin
   if (isDuplicateKeyError(error)) {
     const { fieldName, conflictingValue } = extractDuplicateKeyInfo(error);
     
-    // Mejorar el mensaje para evitar repetición de "campo"
-    let displayFieldName = fieldName;
-    if (fieldName === 'campo' && conflictingValue !== 'valor duplicado') {
-      // Si tenemos el valor pero no el nombre del campo, usar el valor como referencia
-      displayFieldName = 'entidad';
+    // Simplificar mensajes según el tipo de campo
+    let message = '';
+    if (fieldName === 'login' || fieldName === 'usuario') {
+      message = `⚠️ El login ya existe`;
+    } else if (fieldName === 'pais') {
+      message = `⚠️ El país se repite`;
+    } else if (fieldName === 'empresa') {
+      message = `⚠️ La empresa se repite`;
+    } else if (fieldName === 'fundo') {
+      message = `⚠️ El fundo se repite`;
+    } else if (fieldName === 'nodo') {
+      message = `⚠️ El nodo se repite`;
+    } else if (fieldName === 'metrica') {
+      message = `⚠️ La métrica se repite`;
+    } else if (fieldName === 'tipo') {
+      message = `⚠️ El tipo se repite`;
+    } else if (fieldName === 'entidad') {
+      message = `⚠️ La entidad se repite`;
+    } else {
+      // Fallback para otros campos
+      message = `⚠️ Esta entrada ya existe`;
     }
     
     return {
       type: 'warning',
-      message: `⚠️ Alerta: Esta entrada se repite en el campo "${displayFieldName}" (${conflictingValue}). Verifique que no esté duplicando información.`
+      message
     };
   }
   

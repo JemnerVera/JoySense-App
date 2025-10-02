@@ -140,6 +140,11 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
     { field: 'celular', required: false, type: 'phone', customMessage: 'El formato del celular no es válido' }
   ],
   
+  correo: [
+    { field: 'usuarioid', required: true, type: 'number', customMessage: 'Debe seleccionar un usuario' },
+    { field: 'correo', required: true, type: 'email', customMessage: 'El correo electrónico es obligatorio y debe tener formato válido' }
+  ],
+  
   perfil: [
     { field: 'perfil', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del perfil es obligatorio' },
     { field: 'nivel', required: false, type: 'string', customMessage: 'El nivel del perfil es obligatorio' }
@@ -2816,7 +2821,7 @@ const validateUsuarioUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
 
-// 1. Validar campos obligatorios
+// 1. Validar campos obligatorios (solo login es obligatorio según el esquema)
   if (!formData.login || formData.login.trim() === '') {
     errors.push({
       field: 'login',
@@ -2825,29 +2830,20 @@ const validateUsuarioUpdate = async (
     });
   }
   
-  if (!formData.nombre || formData.nombre.trim() === '') {
-    errors.push({
-      field: 'nombre',
-      message: 'El nombre es obligatorio',
-      type: 'required'
-    });
+  // Validar formato de email para login
+  if (formData.login && formData.login.trim() !== '') {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(formData.login)) {
+      errors.push({
+        field: 'login',
+        message: 'El login debe tener formato de email válido',
+        type: 'format'
+      });
+    }
   }
   
-  if (!formData.apellido || formData.apellido.trim() === '') {
-    errors.push({
-      field: 'apellido',
-      message: 'El apellido es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.rol || formData.rol.trim() === '') {
-    errors.push({
-      field: 'rol',
-      message: 'El rol es obligatorio',
-      type: 'required'
-    });
-  }
+  // firstname y lastname son opcionales según el esquema (is_nullable: 'YES')
+  // No se validan como obligatorios
   
   // 2. Validar duplicados (excluyendo el registro actual)
   if (formData.login && formData.login.trim() !== '') {
@@ -2866,22 +2862,7 @@ const validateUsuarioUpdate = async (
     }
   }
   
-  // Validar email único (si existe el campo)
-  if (formData.email && formData.email.trim() !== '') {
-    const emailExists = existingData.some(item => 
-      item.usuarioid !== originalData.usuarioid && 
-      item.email && 
-      item.email.toLowerCase() === formData.email.toLowerCase()
-    );
-    
-    if (emailExists) {
-      errors.push({
-        field: 'email',
-        message: 'El email ya existe',
-        type: 'duplicate'
-      });
-    }
-  }
+  // No hay campo email en el esquema real de usuario
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
