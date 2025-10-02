@@ -2342,6 +2342,9 @@ const getCurrentUserId = () => {
         case 'contacto':
           existingData = contactosData || [];
           break;
+        case 'correo':
+          existingData = contactosData || []; // Usar los mismos datos para validación
+          break;
         case 'perfil':
           existingData = perfilesData || [];
           break;
@@ -2559,7 +2562,10 @@ preparedData.usercreatedid = usuarioid;
 
 // Logging específico para debugging
 
-await JoySenseService.insertTableRow(selectedTable, filteredData);
+// Determinar la tabla de destino según el tipo de contacto
+const targetTable = (selectedTable === 'contacto' && selectedContactType === 'email') ? 'correo' : selectedTable;
+
+await JoySenseService.insertTableRow(targetTable, filteredData);
 
 // Agregar el registro insertado al sistema de mensajes
 
@@ -8504,27 +8510,27 @@ const handleCancelModal = () => {
                         {/* Para contacto, mostrar selector de tipo si no se ha seleccionado */}
                         {selectedTable === 'contacto' && !selectedContactType ? (
                           <div className="text-center py-8">
-                            <label className="block text-lg font-medium text-neutral-300 mb-6">
-                              ¿Cómo desea que se le contacte?
+                            <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-6">
+                              ¿CÓMO DESEA QUE SE LE CONTACTE?
                             </label>
                             <div className="flex flex-col space-y-4 max-w-md mx-auto">
                               <button
                                 type="button"
                                 onClick={() => setSelectedContactType('phone')}
-                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102"
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
-                                📞 Teléfono
+                                📞 TELÉFONO
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setSelectedContactType('email')}
-                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102"
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
-                                📧 Correo Electrónico
+                                📧 CORREO ELECTRÓNICO
                               </button>
                             </div>
-                            <p className="text-xs text-neutral-500 mt-4 opacity-75">
-                              Seleccione una opción para continuar.
+                            <p className="text-xs text-neutral-500 mt-4 opacity-75 font-mono tracking-wider">
+                              SELECCIONE UNA OPCIÓN PARA CONTINUAR.
                             </p>
                           </div>
                         ) : selectedTable === 'contacto' && selectedContactType ? (

@@ -1640,8 +1640,8 @@ return filteredNodos;
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Campo Usuario */}
         <div className="space-y-3">
-          <label className="block text-sm font-semibold text-neutral-200">
-            {getColumnDisplayName('usuarioid')} *
+          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
+            {getColumnDisplayName('usuarioid')?.toUpperCase()} *
           </label>
           <SelectWithPlaceholder
             value={formData.usuarioid || ''}
@@ -1657,8 +1657,8 @@ return filteredNodos;
           <>
             {/* Campo País */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-neutral-200">
-                País *
+              <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
+                PAÍS *
               </label>
               <SelectWithPlaceholder
                 value={formData.codigotelefonoid || ''}
@@ -1692,17 +1692,22 @@ return filteredNodos;
                     label: country.paistelefono
                   })) || [];
                 })()}
-                placeholder="Seleccionar país..."
+                placeholder={formData.usuarioid ? "Seleccionar país..." : "Primero seleccione un usuario"}
+                disabled={!formData.usuarioid}
               />
             </div>
 
             {/* Campo Número de Teléfono */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-neutral-200">
-                Número de Teléfono *
+              <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
+                NÚMERO DE TELÉFONO *
               </label>
               <div className="flex">
-                <span className="px-4 py-3 bg-orange-600 border border-orange-500 rounded-l-lg text-white text-sm font-medium min-w-[80px] text-center">
+                <span className={`px-4 py-3 border rounded-l-lg text-white text-sm font-medium min-w-[80px] text-center ${
+                  formData.codigotelefonoid 
+                    ? 'bg-orange-600 border-orange-500' 
+                    : 'bg-neutral-800 border-neutral-700'
+                }`}>
                   {(() => {
                     const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
                     console.log('🔍 Debug teléfono:', {
@@ -1736,8 +1741,13 @@ return filteredNodos;
                       celular: fullPhoneNumber
                     });
                   }}
-                  placeholder="Ej: 987654321"
-                  className="flex-1 px-4 py-3 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                  placeholder={formData.codigotelefonoid ? "Ej: 987654321" : "Primero seleccione un país"}
+                  disabled={!formData.codigotelefonoid}
+                  className={`flex-1 px-4 py-3 border border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                    formData.codigotelefonoid 
+                      ? 'bg-neutral-700 border-neutral-600' 
+                      : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
+                  }`}
                 />
               </div>
             </div>
@@ -1746,18 +1756,56 @@ return filteredNodos;
 
         {selectedContactType === 'email' && (
           <div className="space-y-3">
-            <label className="block text-sm font-semibold text-neutral-200">
-              Correo Electrónico *
+            <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
+              CORREO ELECTRÓNICO *
             </label>
             <input
               type="email"
               value={formData.celular || ''}
-              onChange={(e) => setFormData({ ...formData, celular: e.target.value })}
-              placeholder="usuario@dominio.com"
-              className="w-full px-4 py-3 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+              onChange={(e) => {
+                const email = e.target.value;
+                // Validación regex para formato email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (email === '' || emailRegex.test(email)) {
+                  setFormData({ ...formData, celular: email });
+                }
+              }}
+              placeholder={formData.usuarioid ? "usuario@dominio.com" : "Primero seleccione un usuario"}
+              disabled={!formData.usuarioid}
+              className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                formData.usuarioid 
+                  ? 'bg-neutral-700 border-neutral-600' 
+                  : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
+              }`}
             />
+            {formData.celular && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.celular) && (
+              <p className="text-red-400 text-sm font-mono">
+                Formato de correo inválido. Use: usuario@dominio.com
+              </p>
+            )}
           </div>
         )}
+
+        {/* Campo Status (siempre visible en contacto) */}
+        <div className="mb-4">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            STATUS*
+          </label>
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={formData.statusid === 1}
+              onChange={(e) => setFormData({
+                ...formData,
+                statusid: e.target.checked ? 1 : 0
+              })}
+              className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+            />
+            <span className="text-white font-mono tracking-wider">
+              {formData.statusid === 1 ? 'ACTIVO' : 'INACTIVO'}
+            </span>
+          </div>
+        </div>
       </div>
     );
   };
