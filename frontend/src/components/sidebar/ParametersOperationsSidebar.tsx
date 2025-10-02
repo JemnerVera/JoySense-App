@@ -83,8 +83,8 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
       // Solo Estado para AUDIT LOG UMBRAL
       return allOperations.filter(op => op.id === 'status');
     } else if (selectedTable === 'usuario') {
-      // Solo Estado y Actualizar para USUARIO (sin Crear)
-      return allOperations.filter(op => op.id !== 'insert' && op.id !== 'massive');
+      // Estado, Crear y Actualizar para USUARIO (sin Masivo)
+      return allOperations.filter(op => op.id !== 'massive');
     } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'umbral') {
       // Para tablas de multiple insert: Estado, Crear, Actualizar y Masivo
       return allOperations;
