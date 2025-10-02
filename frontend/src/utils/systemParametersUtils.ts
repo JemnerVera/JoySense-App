@@ -68,6 +68,8 @@ export const getColumnDisplayName = (columnName: string): string => {
     'escalamiento': 'Escalamiento',
     'escalon': 'Escalón',
     'perfil': 'Perfil',
+    'nivel': 'Nivel',
+    'jefeid': 'Jefe',
     'umbral': 'Umbral',
     'usuario': 'Usuario',
     'medio': 'Medio',

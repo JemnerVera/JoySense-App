@@ -147,7 +147,8 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   perfil: [
     { field: 'perfil', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del perfil es obligatorio' },
-    { field: 'nivel', required: false, type: 'string', customMessage: 'El nivel del perfil es obligatorio' }
+    { field: 'nivel', required: true, type: 'number', customMessage: 'El nivel del perfil es obligatorio' },
+    { field: 'jefeid', required: false, type: 'number', customMessage: 'El jefe debe ser un número válido' }
   ],
   
   metricasensor: [
@@ -1335,9 +1336,16 @@ const validatePerfilData = async (
     });
   }
   
-  // Nivel es opcional según el schema de la BD
+  // 2. Validar nivel (ahora es obligatorio y debe ser número)
+  if (!formData.nivel || formData.nivel === '' || isNaN(Number(formData.nivel))) {
+    errors.push({
+      field: 'nivel',
+      message: 'El nivel del perfil es obligatorio y debe ser un número',
+      type: 'required'
+    });
+  }
   
-  // 2. Validar duplicados si hay datos existentes
+  // 3. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
     const perfilExists = existingData.some(item => 
       item.perfil && item.perfil.toLowerCase() === formData.perfil?.toLowerCase()
@@ -2941,9 +2949,16 @@ const validatePerfilUpdate = async (
     });
   }
   
-  // Nivel es opcional según el schema de la BD
+  // 2. Validar nivel (ahora es obligatorio y debe ser número)
+  if (!formData.nivel || formData.nivel === '' || isNaN(Number(formData.nivel))) {
+    errors.push({
+      field: 'nivel',
+      message: 'El nivel del perfil es obligatorio y debe ser un número',
+      type: 'required'
+    });
+  }
   
-  // 2. Validar duplicados (excluyendo el registro actual)
+  // 3. Validar duplicados (excluyendo el registro actual)
   if (formData.perfil && formData.perfil.trim() !== '') {
     const perfilExists = existingData.some(item => 
       item.perfilid !== originalData.perfilid && 

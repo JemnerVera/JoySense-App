@@ -4936,7 +4936,7 @@ if (errorCount > 0) {
     'umbral': ['umbral', 'ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid', 'minimo', 'maximo', 'statusid'],
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
     'criticidad': ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid'],
-    'perfil': ['perfil', 'nivel', 'statusid'],
+    'perfil': ['perfil', 'nivel', 'jefeid', 'statusid'],
     'usuario': ['login', 'firstname', 'lastname', 'statusid'],
     'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
@@ -5573,7 +5573,7 @@ if (selectedTable === 'criticidad') {
 
 if (selectedTable === 'perfil') {
 
-        return ['perfil', 'nivel', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['perfil', 'nivel', 'jefeid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 

@@ -219,12 +219,13 @@ const tableMetadata = {
     columns: [
       { column_name: 'perfilid', data_type: 'integer', is_nullable: 'NO', column_default: null },
       { column_name: 'perfil', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'nivel', data_type: 'character varying', is_nullable: 'YES', column_default: null },
       { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+      { column_name: 'nivel', data_type: 'integer', is_nullable: 'NO', column_default: '0' },
+      { column_name: 'jefeid', data_type: 'integer', is_nullable: 'YES', column_default: null }
     ],
     info: { table_name: 'perfil', table_type: 'BASE TABLE' },
     constraints: [
@@ -2570,12 +2571,13 @@ app.post('/api/sense/perfil', async (req, res) => {
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
       perfil: insertData.perfil,
-      nivel: insertData.nivel,
       statusid: insertData.statusid,
       usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
       datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      usermodifiedid: insertData.usermodifiedid,
+      datemodified: insertData.datemodified,
+      nivel: insertData.nivel,
+      jefeid: insertData.jefeid
     };
     
     const { data, error } = await supabase
