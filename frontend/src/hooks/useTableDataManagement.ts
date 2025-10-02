@@ -27,7 +27,6 @@ export const useTableDataManagement = () => {
   const [criticidadesData, setCriticidadesData] = useState<any[]>([]);
   const [perfilesData, setPerfilesData] = useState<any[]>([]);
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
-  const [mediosData, setMediosData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
   const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
@@ -73,7 +72,6 @@ export const useTableDataManagement = () => {
         criticidadesResponse,
         perfilesResponse,
         umbralesResponse,
-        mediosResponse,
         usuariosResponse,
         sensorsResponse,
         metricasensorResponse,
@@ -92,7 +90,6 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('criticidad', 500),
         JoySenseService.getTableData('perfil', 500),
         JoySenseService.getTableData('umbral', 500),
-        JoySenseService.getTableData('medio', 500),
         JoySenseService.getTableData('usuario', 500),
         JoySenseService.getTableData('sensor', 500),
         JoySenseService.getTableData('metricasensor', 500),
@@ -120,7 +117,6 @@ export const useTableDataManagement = () => {
       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
       const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
-      const medios = Array.isArray(mediosResponse) ? mediosResponse : ((mediosResponse as any)?.data || []);
       const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
@@ -140,7 +136,6 @@ export const useTableDataManagement = () => {
       setCriticidadesData(criticidades);
       setPerfilesData(perfiles);
       setUmbralesData(umbrales);
-      setMediosData(medios);
       setSensorsData(sensors);
       setMetricasensorData(metricasensor);
       setPerfilumbralData(perfilumbral);
@@ -345,7 +340,6 @@ export const useTableDataManagement = () => {
     criticidadesData,
     perfilesData,
     umbralesData,
-    mediosData,
     sensorsData,
     metricasensorData,
     perfilumbralData,
@@ -374,7 +368,6 @@ export const useTableDataManagement = () => {
     setCriticidadesData,
     setPerfilesData,
     setUmbralesData,
-    setMediosData,
     setSensorsData,
     setMetricasensorData,
     setPerfilumbralData,

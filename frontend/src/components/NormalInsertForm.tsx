@@ -30,6 +30,9 @@ interface NormalInsertFormProps {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  // Props específicas para contacto
+  selectedContactType?: 'phone' | 'email' | null;
+  countryCodes?: any[];
 }
 
 // ============================================================================
@@ -53,7 +56,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   fundoSeleccionado,
   paisesData,
   empresasData,
-  fundosData
+  fundosData,
+  selectedContactType,
+  countryCodes
 }) => {
 
   // ============================================================================
@@ -1625,6 +1630,125 @@ return filteredNodos;
   };
 
   // ============================================================================
+  // RENDER FUNCTIONS
+  // ============================================================================
+
+  const renderContactFields = () => {
+    if (!selectedContactType) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-neutral-400">Seleccione un tipo de contacto primero</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Campo Usuario */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-neutral-300">
+            {getColumnDisplayName('usuarioid')} *
+          </label>
+          <SelectWithPlaceholder
+            value={formData.usuarioid || ''}
+            onChange={(value) => setFormData({ ...formData, usuarioid: value })}
+            options={getUniqueOptionsForField('usuarioid')}
+            placeholder="Seleccionar usuario..."
+            className="w-full"
+          />
+        </div>
+
+        {/* Campo Status */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-neutral-300">
+            {getColumnDisplayName('statusid')} *
+          </label>
+          <SelectWithPlaceholder
+            value={formData.statusid || ''}
+            onChange={(value) => setFormData({ ...formData, statusid: value })}
+            options={getUniqueOptionsForField('statusid')}
+            placeholder="Seleccionar estado..."
+            className="w-full"
+          />
+        </div>
+
+        {/* Campo dinámico según tipo de contacto */}
+        {selectedContactType === 'phone' && (
+          <>
+            {/* Campo País */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-300">
+                País *
+              </label>
+              <SelectWithPlaceholder
+                value={formData.codigotelefonoid || ''}
+                onChange={(value) => {
+                  const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === value);
+                  setFormData({ 
+                    ...formData, 
+                    codigotelefonoid: value,
+                    celular: selectedCountry ? selectedCountry.codigotelefono : ''
+                  });
+                }}
+                options={(() => {
+                  console.log('🌍 Country codes en formulario:', countryCodes);
+                  return countryCodes?.map(country => ({
+                    value: country.codigotelefonoid,
+                    label: `${country.paistelefono} (${country.codigotelefono})`
+                  })) || [];
+                })()}
+                placeholder="Seleccionar país..."
+                className="w-full"
+              />
+            </div>
+
+            {/* Campo Número de Teléfono */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-300">
+                Número de Teléfono *
+              </label>
+              <div className="flex">
+                <span className="px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-l-md text-neutral-300 text-sm">
+                  {countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid)?.codigotelefono || '+'}
+                </span>
+                <input
+                  type="tel"
+                  value={formData.phoneNumber || ''}
+                  onChange={(e) => {
+                    const countryCode = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid)?.codigotelefono || '';
+                    setFormData({ 
+                      ...formData, 
+                      phoneNumber: e.target.value,
+                      celular: `${countryCode}${e.target.value}`
+                    });
+                  }}
+                  placeholder="123456789"
+                  className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedContactType === 'email' && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-neutral-300">
+              Correo Electrónico *
+            </label>
+            <input
+              type="email"
+              value={formData.celular || ''}
+              onChange={(e) => setFormData({ ...formData, celular: e.target.value })}
+              placeholder="usuario@dominio.com"
+              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================================
   // RENDER
   // ============================================================================
 
@@ -1632,9 +1756,9 @@ return filteredNodos;
     <div>
       {/* Contenido del formulario */}
       <div>
-        {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral'].includes(selectedTable) ? (
+        {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
           <div>
-            {renderSpecialLayoutFields()}
+            {selectedTable === 'contacto' ? renderContactFields() : renderSpecialLayoutFields()}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

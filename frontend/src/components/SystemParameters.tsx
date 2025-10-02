@@ -211,7 +211,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   
   // Estado para modal de tipo de contacto
   const [contactTypeModalOpen, setContactTypeModalOpen] = useState(false);
-  const [pendingContactData, setPendingContactData] = useState<any>(null);
+  const [selectedContactType, setSelectedContactType] = useState<'phone' | 'email' | null>(null);
+  const [countryCodes, setCountryCodes] = useState<any[]>([]);
+
+  // Cargar códigos de país cuando se selecciona tipo teléfono
+  useEffect(() => {
+    if (selectedContactType === 'phone' && countryCodes.length === 0) {
+      loadCountryCodes();
+    }
+  }, [selectedContactType]);
+
+  // Limpiar estado de contacto cuando se cambia de tabla
+  useEffect(() => {
+    if (selectedTable !== 'contacto') {
+      setSelectedContactType(null);
+      setCountryCodes([]);
+    }
+  }, [selectedTable]);
+
+  const loadCountryCodes = async () => {
+    try {
+      console.log('🔍 Cargando códigos telefónicos...');
+      const data = await JoySenseService.getCodigosTelefonicos();
+      console.log('📞 Códigos telefónicos cargados:', data);
+      setCountryCodes(data || []);
+    } catch (error) {
+      console.error('❌ Error cargando códigos telefónicos:', error);
+    }
+  };
 
   // Sincronizar estado local con props
 
@@ -2245,68 +2272,27 @@ const getCurrentUserId = () => {
   // ============================================================================
 
   // Función para manejar la selección del tipo de contacto
-  const handleContactTypeSelection = async (type: 'phone' | 'email', contactData: any) => {
-    if (!selectedTable || !user || !pendingContactData) return;
-
-    try {
-      setLoading(true);
-      
-      // Preparar datos base
-      const baseData = {
-        ...pendingContactData,
-        usercreatedid: user.id,
-        datecreated: new Date().toISOString(),
-        usermodifiedid: user.id,
-        datemodified: new Date().toISOString()
-      };
-
-      // Agregar datos específicos del tipo de contacto
-      const finalData = {
-        ...baseData,
-        ...contactData
-      };
-
-      // Insertar en la base de datos
-      await JoySenseService.insertTableRow(selectedTable, finalData);
-      
-      // Agregar el registro insertado al sistema de mensajes
-      addInsertedRecord(finalData);
-      
-      // Limpiar mensajes de alerta
-      setMessage(null);
-      
-      // Recargar datos
-      loadTableDataWrapper();
-      loadTableInfo();
-      loadUpdateData();
-      
-      // Limpiar formulario
-      setFormData({});
-      
-      // Mostrar mensaje de éxito
-      setMessage({
-        type: 'success',
-        text: `✅ ${type === 'email' ? 'Correo' : 'Teléfono'} agregado exitosamente`
-      });
-      
-    } catch (error) {
-      console.error('Error insertando contacto:', error);
-      handleInsertError(error as any);
-    } finally {
-      setLoading(false);
-      setContactTypeModalOpen(false);
-      setPendingContactData(null);
-    }
+  const handleContactTypeSelection = (type: 'phone' | 'email') => {
+    setSelectedContactType(type);
+    setContactTypeModalOpen(false);
+    
+    // Inicializar formulario con campos básicos
+    setFormData({
+      usuarioid: '',
+      statusid: 1
+    });
   };
 
   const handleInsert = async () => {
 
     if (!selectedTable || !user) return;
 
-    // Para la tabla contacto, abrir modal de selección de tipo
-    if (selectedTable === 'contacto') {
-      setPendingContactData(formData);
-      setContactTypeModalOpen(true);
+    // Para la tabla contacto, validar que se haya seleccionado un tipo
+    if (selectedTable === 'contacto' && !selectedContactType) {
+      setMessage({
+        type: 'error',
+        text: '❌ Debe seleccionar un tipo de contacto primero'
+      });
       return;
     }
 
@@ -8514,43 +8500,60 @@ const handleCancelModal = () => {
 
                       }`}>
 
-<NormalInsertFormLazyWithBoundary
+                        {/* Para contacto, mostrar mensaje si no se ha seleccionado tipo */}
+                        {selectedTable === 'contacto' && !selectedContactType ? (
+                          <div className="text-center py-8">
+                            <p className="text-neutral-400 mb-4">Seleccione un tipo de contacto para continuar</p>
+                            <button
+                              onClick={() => setContactTypeModalOpen(true)}
+                              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                            >
+                              Seleccionar Tipo de Contacto
+                            </button>
+                          </div>
+                        ) : (
+                          <NormalInsertFormLazyWithBoundary
 
-                        visibleColumns={getVisibleColumns(false)}
+                            visibleColumns={getVisibleColumns(false)}
 
-                        formData={formData}
+                            formData={formData}
 
-                        setFormData={setFormData}
+                            setFormData={setFormData}
 
-                        selectedTable={selectedTable}
+                            selectedTable={selectedTable}
 
-                        loading={loading}
+                            loading={loading}
 
-                        onInsert={handleInsert}
+                            onInsert={handleInsert}
 
-                          onCancel={handleCancelInsert}
+                              onCancel={handleCancelInsert}
 
-                        getColumnDisplayName={getColumnDisplayName}
+                            getColumnDisplayName={getColumnDisplayName}
 
-                        getUniqueOptionsForField={getUniqueOptionsForField}
+                            getUniqueOptionsForField={getUniqueOptionsForField}
 
-                          onPasteFromClipboard={handlePasteFromClipboardForInsert}
+                              onPasteFromClipboard={handlePasteFromClipboardForInsert}
 
-                        onReplicateClick={openReplicateModalForTable}
+                            onReplicateClick={openReplicateModalForTable}
 
-                        paisSeleccionado={paisSeleccionado}
+                            paisSeleccionado={paisSeleccionado}
 
-                        empresaSeleccionada={empresaSeleccionada}
+                            empresaSeleccionada={empresaSeleccionada}
 
-                        fundoSeleccionado={fundoSeleccionado}
+                            fundoSeleccionado={fundoSeleccionado}
 
-                        paisesData={paisesData}
+                            paisesData={paisesData}
 
-                        empresasData={empresasData}
+                            empresasData={empresasData}
 
-                        fundosData={fundosData}
+                            fundosData={fundosData}
 
-                      />
+                            // Props específicas para contacto
+                            selectedContactType={selectedContactType}
+                            countryCodes={countryCodes}
+
+                          />
+                        )}
 
                       </div>
 
@@ -9812,10 +9815,8 @@ return getDisplayValueLocal(row, col.columnName);
         isOpen={contactTypeModalOpen}
         onClose={() => {
           setContactTypeModalOpen(false);
-          setPendingContactData(null);
         }}
         onSelectType={handleContactTypeSelection}
-        userId={typeof user?.id === 'number' ? user.id : 0}
       />
 
 </div>
