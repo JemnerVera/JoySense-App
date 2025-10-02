@@ -1634,19 +1634,11 @@ return filteredNodos;
   // ============================================================================
 
   const renderContactFields = () => {
-    if (!selectedContactType) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-neutral-400">Seleccione un tipo de contacto primero</p>
-        </div>
-      );
-    }
-
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Campo Usuario */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-300">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-neutral-200">
             {getColumnDisplayName('usuarioid')} *
           </label>
           <SelectWithPlaceholder
@@ -1654,13 +1646,12 @@ return filteredNodos;
             onChange={(value) => setFormData({ ...formData, usuarioid: value })}
             options={getUniqueOptionsForField('usuarioid')}
             placeholder="Seleccionar usuario..."
-            className="w-full"
           />
         </div>
 
         {/* Campo Status */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-300">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-neutral-200">
             {getColumnDisplayName('statusid')} *
           </label>
           <SelectWithPlaceholder
@@ -1668,7 +1659,6 @@ return filteredNodos;
             onChange={(value) => setFormData({ ...formData, statusid: value })}
             options={getUniqueOptionsForField('statusid')}
             placeholder="Seleccionar estado..."
-            className="w-full"
           />
         </div>
 
@@ -1676,8 +1666,8 @@ return filteredNodos;
         {selectedContactType === 'phone' && (
           <>
             {/* Campo País */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-neutral-300">
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-neutral-200">
                 País *
               </label>
               <SelectWithPlaceholder
@@ -1713,17 +1703,16 @@ return filteredNodos;
                   })) || [];
                 })()}
                 placeholder="Seleccionar país..."
-                className="w-full"
               />
             </div>
 
             {/* Campo Número de Teléfono */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-neutral-300">
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-neutral-200">
                 Número de Teléfono *
               </label>
               <div className="flex">
-                <span className="px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-l-md text-neutral-300 text-sm">
+                <span className="px-4 py-3 bg-orange-600 border border-orange-500 rounded-l-lg text-white text-sm font-medium min-w-[80px] text-center">
                   {(() => {
                     const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
                     console.log('🔍 Debug teléfono:', {
@@ -1758,7 +1747,7 @@ return filteredNodos;
                     });
                   }}
                   placeholder="999999999"
-                  className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-3 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                 />
               </div>
             </div>
@@ -1766,8 +1755,8 @@ return filteredNodos;
         )}
 
         {selectedContactType === 'email' && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-neutral-300">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-neutral-200">
               Correo Electrónico *
             </label>
             <input
@@ -1775,7 +1764,7 @@ return filteredNodos;
               value={formData.celular || ''}
               onChange={(e) => setFormData({ ...formData, celular: e.target.value })}
               placeholder="usuario@dominio.com"
-              className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
             />
           </div>
         )}

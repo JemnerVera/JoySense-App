@@ -2287,12 +2287,9 @@ const getCurrentUserId = () => {
 
     if (!selectedTable || !user) return;
 
-    // Para la tabla contacto, validar que se haya seleccionado un tipo
+    // Para la tabla contacto, abrir el modal de selección de tipo
     if (selectedTable === 'contacto' && !selectedContactType) {
-      setMessage({
-        type: 'error',
-        text: '❌ Debe seleccionar un tipo de contacto primero'
-      });
+      setContactTypeModalOpen(true);
       return;
     }
 
@@ -8500,17 +8497,74 @@ const handleCancelModal = () => {
 
                       }`}>
 
-                        {/* Para contacto, mostrar mensaje si no se ha seleccionado tipo */}
+                        {/* Para contacto, mostrar selector de tipo si no se ha seleccionado */}
                         {selectedTable === 'contacto' && !selectedContactType ? (
                           <div className="text-center py-8">
-                            <p className="text-neutral-400 mb-4">Seleccione un tipo de contacto para continuar</p>
-                            <button
-                              onClick={() => setContactTypeModalOpen(true)}
-                              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                            >
-                              Seleccionar Tipo de Contacto
-                            </button>
+                            <label className="block text-lg font-medium text-neutral-300 mb-6">
+                              ¿Cómo desea que se le contacte?
+                            </label>
+                            <div className="flex flex-col space-y-4 max-w-md mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedContactType('phone')}
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102"
+                              >
+                                📞 Teléfono
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedContactType('email')}
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102"
+                              >
+                                📧 Correo Electrónico
+                              </button>
+                            </div>
+                            <p className="text-xs text-neutral-500 mt-4 opacity-75">
+                              Seleccione una opción para continuar.
+                            </p>
                           </div>
+                        ) : selectedTable === 'contacto' && selectedContactType ? (
+                          <NormalInsertFormLazyWithBoundary
+
+                            visibleColumns={getVisibleColumns(false)}
+
+                            formData={formData}
+
+                            setFormData={setFormData}
+
+                            selectedTable={selectedTable}
+
+                            loading={loading}
+
+                            onInsert={handleInsert}
+
+                              onCancel={handleCancelInsert}
+
+                            getColumnDisplayName={getColumnDisplayName}
+
+                            getUniqueOptionsForField={getUniqueOptionsForField}
+
+                              onPasteFromClipboard={handlePasteFromClipboardForInsert}
+
+                            onReplicateClick={openReplicateModalForTable}
+
+                            paisSeleccionado={paisSeleccionado}
+
+                            empresaSeleccionada={empresaSeleccionada}
+
+                            fundoSeleccionado={fundoSeleccionado}
+
+                            paisesData={paisesData}
+
+                            empresasData={empresasData}
+
+                            fundosData={fundosData}
+
+                            // Props específicas para contacto
+                            selectedContactType={selectedContactType}
+                            countryCodes={countryCodes}
+
+                          />
                         ) : (
                           <NormalInsertFormLazyWithBoundary
 
