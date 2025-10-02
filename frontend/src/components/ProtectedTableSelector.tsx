@@ -56,7 +56,6 @@ const ProtectedTableSelector: React.FC<ProtectedTableSelectorProps> = ({
     
     // Grupo 4: Comunicación y usuarios
     group4: [
-      { value: 'medio', label: 'Medio' },
       { value: 'contacto', label: 'Contacto' },
       { value: 'usuario', label: 'Usuario' },
       { value: 'usuarioperfil', label: 'Usuario Perfil' },

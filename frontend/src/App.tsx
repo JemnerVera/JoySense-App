@@ -146,7 +146,6 @@ const AppContentInternal: React.FC = () => {
       'perfilumbral': 'PERFIL UMBRAL',
       'audit_log_umbral': 'AUDIT LOG UMBRAL',
       'criticidad': 'CRITICIDAD',
-      'medio': 'MEDIO',
       'contacto': 'CONTACTO',
       'usuario': 'USUARIO',
       'usuarioperfil': 'USUARIO PERFIL',

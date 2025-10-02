@@ -131,7 +131,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     criticidadesData,
     perfilesData,
     umbralesData,
-    mediosData,
     sensorsData,
     metricasensorData,
     perfilumbralData,
@@ -388,7 +387,7 @@ const [formData, setFormData] = useState<Record<string, any>>({});
 
         initialFormData[col.columnName] = 1;
 
-      } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'medioid', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
+      } else if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid', 'modified_by', 'modified_at', 'contactoid', 'usuarioid', 'perfilid', 'criticidadid'].includes(col.columnName)) {
 
         // Para campos de dropdown (ID), inicializar como null en lugar de string vacío
 
@@ -2020,7 +2019,7 @@ if (selectedTable === 'localizacion') {
 
           col.columnName.endsWith('id') && 
 
-          !['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'metricaid', 'criticidadid', 'perfilid', 'umbralid', 'usuarioid', 'medioid', 'usercreatedid', 'usermodifiedid', 'statusid'].includes(col.columnName)
+          !['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'metricaid', 'criticidadid', 'perfilid', 'umbralid', 'usuarioid', 'usercreatedid', 'usermodifiedid', 'statusid'].includes(col.columnName)
 
         );
 
@@ -2230,7 +2229,6 @@ const getCurrentUserId = () => {
       perfilesData,
       umbralesData,
       userData: userData,
-      mediosData
     };
     
     return getDisplayValue(row, columnName, relatedData);
@@ -2286,9 +2284,6 @@ const getCurrentUserId = () => {
           break;
         case 'criticidad':
           existingData = criticidadesData || [];
-          break;
-        case 'medio':
-          existingData = mediosData || [];
           break;
         case 'contacto':
           existingData = contactosData || [];
@@ -2456,23 +2451,6 @@ preparedData.usercreatedid = usuarioid;
 
         };
 
-      } else if (selectedTable === 'medio') {
-
-        filteredData = {
-
-          nombre: preparedData.nombre,
-
-          statusid: preparedData.statusid,
-
-          usercreatedid: preparedData.usercreatedid,
-
-          usermodifiedid: preparedData.usermodifiedid,
-
-          datecreated: preparedData.datecreated,
-
-          datemodified: preparedData.datemodified
-
-        };
 
       } else if (selectedTable === 'contacto') {
 
@@ -2480,7 +2458,6 @@ preparedData.usercreatedid = usuarioid;
 
           usuarioid: preparedData.usuarioid,
 
-          medioid: preparedData.medioid,
 
           celular: preparedData.celular,
 
@@ -2979,7 +2956,6 @@ const newFormData: Record<string, any> = {};
 
           'contacto': 'contactoid',
 
-          'medio': 'medioid'
 
         };
 
@@ -4270,17 +4246,6 @@ return [];
 
 return usuarioResult;
 
-      case 'medioid':
-
-        if (!mediosData || mediosData.length === 0) {
-
-return [];
-
-        }
-
-        const medioResult = mediosData.map(medio => ({ value: medio.medioid, label: medio.nombre }));
-
-return medioResult;
 
       case 'usercreatedid':
       case 'usermodifiedid':
@@ -4403,7 +4368,6 @@ const getRowId = (row: any, tableName: string) => {
 
       'contacto': 'contactoid',
 
-      'medio': 'medioid'
 
     };
 
@@ -4927,10 +4891,9 @@ if (errorCount > 0) {
     'umbral': ['umbral', 'ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid', 'minimo', 'maximo', 'statusid'],
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
     'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
-    'medio': ['nombre', 'statusid'],
     'perfil': ['perfil', 'nivel', 'statusid'],
     'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
-    'contacto': ['usuarioid', 'medioid', 'celular', 'correo', 'statusid'],
+    'contacto': ['usuarioid', 'celular', 'correo', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };
     
@@ -5577,15 +5540,10 @@ if (selectedTable === 'usuarioperfil') {
 
 if (selectedTable === 'contacto') {
 
-        return ['usuarioid', 'medioid', 'celular', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['usuarioid', 'celular', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
-if (selectedTable === 'medio') {
-
-        return ['nombre', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
-
-      }
 
 if (selectedTable === 'mensaje') {
 
@@ -6111,7 +6069,7 @@ return reorderedColumns;
 
       'usuarioid', 'metricasensorid', 'umbralid', 'perfilid', 'auditid',
 
-      'criticidadid', 'medioid', 'contactoid'
+      'criticidadid', 'contactoid'
 
     ];
 
@@ -6123,7 +6081,7 @@ return reorderedColumns;
 
       'nodoid', 'tipoid', 'metricaid', 'localizacionid', 'sensorid',
 
-      'umbralid', 'perfilid', 'criticidadid', 'medioid', 'usuarioid'
+      'umbralid', 'perfilid', 'criticidadid', 'usuarioid'
 
     ];
 
@@ -8065,7 +8023,6 @@ const handleCancelModal = () => {
                              perfilesData,
                              umbralesData,
                              userData,
-                             mediosData
                            };
                            handleStatusSearch(value, filteredTableData, statusVisibleColumns, userData, setStatusCurrentPage, relatedData);
                          }}
@@ -9105,7 +9062,6 @@ setIndividualRowStatus(newIndividualStatus);
                                     perfilesData,
                                     umbralesData,
                                     userData,
-                                    mediosData
                                   };
                                   handleSearchTermChange(e.target.value, updateData, updateVisibleColumns, userData, updateData, setUpdateFilteredData, relatedData);
                                 }}
