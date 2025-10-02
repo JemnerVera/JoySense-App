@@ -1369,6 +1369,42 @@ app.put('/api/sense/contacto/:id', async (req, res) => {
   }
 });
 
+// Ruta para actualizar correo
+app.put('/api/sense/correo/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    console.log(`🔍 Backend: Actualizando correo con ID ${id}...`);
+    console.log('🔍 Backend: Datos de actualización:', JSON.stringify(updateData, null, 2));
+    
+    // Validar formato de correo si se está actualizando
+    if (updateData.correo) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.correo)) {
+        return res.status(400).json({ error: 'Formato de correo inválido' });
+      }
+    }
+    
+    const { data, error } = await supabase
+      .from('correo')
+      .update(updateData)
+      .eq('correoid', id)
+      .select();
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log(`✅ Backend: Correo actualizado: ${data.length} registros`);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Error backend:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.put('/api/sense/usuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
