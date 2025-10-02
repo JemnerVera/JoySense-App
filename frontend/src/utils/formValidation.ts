@@ -358,6 +358,8 @@ export const validateTableUpdate = async (
                   return await validateMedioUpdate(formData, originalData, existingData || []);
                 case 'contacto':
                   return await validateContactoUpdate(formData, originalData, existingData || []);
+                case 'correo':
+                  return await validateCorreoUpdate(formData, originalData, existingData || []);
                 case 'usuario':
                   return await validateUsuarioUpdate(formData, originalData, existingData || []);
                 case 'perfil':
@@ -2874,6 +2876,72 @@ const validateContactoUpdate = async (
   
   // 4. Validar relaciones padre-hijo (solo si se está inactivando)
   // Según el schema, contacto NO es referenciada por ninguna otra tabla
+  // Por lo tanto, no hay restricciones para inactivar
+  
+  // 5. Generar mensaje amigable para actualización (mensajes individuales)
+  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
+// ===== VALIDACIÓN DE ACTUALIZACIÓN PARA CORREO =====
+const validateCorreoUpdate = async (
+  formData: Record<string, any>,
+  originalData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+
+  // 1. Validar campos obligatorios
+  if (!formData.usuarioid || formData.usuarioid === '') {
+    errors.push({
+      field: 'usuarioid',
+      message: 'El usuario es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar que el correo esté presente y tenga formato válido
+  if (!formData.correo || formData.correo.trim() === '') {
+    errors.push({
+      field: 'correo',
+      message: 'El correo electrónico es obligatorio',
+      type: 'required'
+    });
+  } else {
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.correo)) {
+      errors.push({
+        field: 'correo',
+        message: 'Formato de correo inválido. Use: usuario@dominio.com',
+        type: 'format'
+      });
+    }
+  }
+  
+  // 3. Validar duplicados (excluyendo el registro actual)
+  if (formData.correo) {
+    const correoExists = existingData.some(item => 
+      item.correoid !== originalData.correoid && 
+      item.correo === formData.correo
+    );
+    
+    if (correoExists) {
+      errors.push({
+        field: 'general',
+        message: 'Ya existe un correo con esta dirección',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 4. Validar relaciones padre-hijo (solo si se está inactivando)
+  // Según el schema, correo NO es referenciada por ninguna otra tabla
   // Por lo tanto, no hay restricciones para inactivar
   
   // 5. Generar mensaje amigable para actualización (mensajes individuales)
