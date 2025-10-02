@@ -1683,18 +1683,33 @@ return filteredNodos;
               <SelectWithPlaceholder
                 value={formData.codigotelefonoid || ''}
                 onChange={(value) => {
-                  const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === value);
+                  if (!value) return;
+                  
+                  const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === value.toString());
+                  console.log('🌍 País seleccionado:', {
+                    value,
+                    selectedCountry,
+                    codigotelefono: selectedCountry?.codigotelefono,
+                    paistelefono: selectedCountry?.paistelefono
+                  });
+                  
+                  // Si ya hay un número escrito, concatenarlo con el nuevo código
+                  const existingPhoneNumber = formData.phoneNumber || '';
+                  const newCountryCode = selectedCountry?.codigotelefono || '';
+                  const newFullPhoneNumber = newCountryCode && existingPhoneNumber ? `${newCountryCode}${existingPhoneNumber}` : '';
+                  
                   setFormData({ 
                     ...formData, 
                     codigotelefonoid: value,
-                    celular: selectedCountry ? selectedCountry.codigotelefono : ''
+                    phoneNumber: existingPhoneNumber, // Mantener el número existente
+                    celular: newFullPhoneNumber // Actualizar con el nuevo código
                   });
                 }}
                 options={(() => {
                   console.log('🌍 Country codes en formulario:', countryCodes);
                   return countryCodes?.map(country => ({
                     value: country.codigotelefonoid,
-                    label: `${country.paistelefono} (${country.codigotelefono})`
+                    label: country.paistelefono
                   })) || [];
                 })()}
                 placeholder="Seleccionar país..."
@@ -1709,20 +1724,40 @@ return filteredNodos;
               </label>
               <div className="flex">
                 <span className="px-3 py-2 bg-neutral-600 border border-neutral-500 rounded-l-md text-neutral-300 text-sm">
-                  {countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid)?.codigotelefono || '+'}
+                  {(() => {
+                    const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
+                    console.log('🔍 Debug teléfono:', {
+                      countryCodes: countryCodes?.length,
+                      codigotelefonoid: formData.codigotelefonoid,
+                      selectedCountry,
+                      codigotelefono: selectedCountry?.codigotelefono
+                    });
+                    return selectedCountry?.codigotelefono || '+';
+                  })()}
                 </span>
                 <input
                   type="tel"
                   value={formData.phoneNumber || ''}
                   onChange={(e) => {
-                    const countryCode = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid)?.codigotelefono || '';
+                    const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
+                    const countryCode = selectedCountry?.codigotelefono || '';
+                    const phoneNumber = e.target.value;
+                    const fullPhoneNumber = countryCode && phoneNumber ? `${countryCode}${phoneNumber}` : phoneNumber;
+                    
+                    console.log('📱 Actualizando teléfono:', {
+                      countryCode,
+                      phoneNumber,
+                      fullPhoneNumber,
+                      selectedCountry
+                    });
+                    
                     setFormData({ 
                       ...formData, 
-                      phoneNumber: e.target.value,
-                      celular: `${countryCode}${e.target.value}`
+                      phoneNumber: phoneNumber,
+                      celular: fullPhoneNumber
                     });
                   }}
-                  placeholder="123456789"
+                  placeholder="999999999"
                   className="flex-1 px-3 py-2 bg-neutral-700 border border-neutral-600 border-l-0 rounded-r-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
