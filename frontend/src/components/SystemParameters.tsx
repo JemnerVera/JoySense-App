@@ -2515,10 +2515,9 @@ preparedData.usercreatedid = usuarioid;
 
           usuarioid: preparedData.usuarioid,
 
-
           celular: preparedData.celular,
 
-          correo: preparedData.correo,
+          codigotelefonoid: preparedData.codigotelefonoid,
 
           statusid: preparedData.statusid,
 
@@ -2550,11 +2549,10 @@ preparedData.usercreatedid = usuarioid;
 
           datecreated: preparedData.datecreated,
 
-          datemodified: preparedData.datemodified,
-
-          auth_user_id: preparedData.auth_user_id
+          datemodified: preparedData.datemodified
 
         };
+        
 
       }
 
@@ -3395,25 +3393,6 @@ const getFundoName = (fundoId: string) => {
 
     const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: string }) => {
 
-    console.log('🔍 getUniqueOptionsForField Debug:', {
-
-      columnName,
-
-      paisSeleccionado,
-
-      empresaSeleccionada,
-
-      fundoSeleccionado,
-
-      paisesDataLength: paisesData.length,
-
-      empresasDataLength: empresasData.length,
-
-      fundosDataLength: fundosData.length,
-
-      ubicacionesDataLength: ubicacionesData.length
-
-    });
 
 switch (columnName) {
 
@@ -4300,7 +4279,7 @@ return [];
 
           value: user.usuarioid, 
 
-          label: `${user.firstname} ${user.lastname}` 
+          label: user.login || `Usuario ${user.usuarioid}`
 
         }));
 
@@ -4320,7 +4299,7 @@ return [];
 
           value: user.usuarioid, 
 
-          label: `${user.firstname} ${user.lastname}` 
+          label: user.login || `Usuario ${user.usuarioid}`
 
         }));
 
@@ -4952,7 +4931,7 @@ if (errorCount > 0) {
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
     'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
     'perfil': ['perfil', 'nivel', 'statusid'],
-    'usuario': ['login', 'nombre', 'apellido', 'rol', 'activo', 'statusid'],
+    'usuario': ['login', 'firstname', 'lastname', 'statusid'],
     'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };

@@ -1271,34 +1271,36 @@ const validateContactoData = async (
     });
   }
   
-  if (!formData.medioid || formData.medioid === 0) {
+  // 2. Validar constraint de negocio: al menos uno de celular debe estar presente
+  // (según el nuevo esquema, contacto solo maneja teléfonos, no correos)
+  if (!formData.celular || formData.celular.trim() === '') {
     errors.push({
-      field: 'medioid',
-      message: 'Debe seleccionar un medio',
+      field: 'celular',
+      message: 'Debe proporcionar un número de teléfono',
       type: 'required'
     });
   }
   
-  // 2. Validar constraint de negocio: al menos uno de celular o correo debe estar presente
-  if ((!formData.celular || formData.celular.trim() === '') && 
-      (!formData.correo || formData.correo.trim() === '')) {
+  // 3. Validar que si hay celular, también debe haber código de país
+  if (formData.celular && formData.celular.trim() !== '' && 
+      (!formData.codigotelefonoid || formData.codigotelefonoid === 0)) {
     errors.push({
-      field: 'contacto',
-      message: 'Debe proporcionar al menos un celular o correo',
+      field: 'codigotelefonoid',
+      message: 'Debe seleccionar un código de país',
       type: 'required'
     });
   }
   
-  // 3. Validar duplicados si hay datos existentes (constraint: usuarioid + medioid único)
+  // 4. Validar duplicados si hay datos existentes (constraint: usuarioid único para contacto)
   if (existingData && existingData.length > 0) {
     const contactoExists = existingData.some(item => 
-      item.usuarioid === formData.usuarioid && item.medioid === formData.medioid
+      item.usuarioid === formData.usuarioid
     );
     
     if (contactoExists) {
       errors.push({
         field: 'general',
-        message: 'Ya existe un contacto para este usuario y medio',
+        message: 'Ya existe un contacto para este usuario',
         type: 'duplicate'
       });
     }

@@ -1686,7 +1686,6 @@ return filteredNodos;
                   });
                 }}
                 options={(() => {
-                  console.log('🌍 Country codes en formulario:', countryCodes);
                   return countryCodes?.map(country => ({
                     value: country.codigotelefonoid,
                     label: country.paistelefono
@@ -1710,12 +1709,6 @@ return filteredNodos;
                 }`}>
                   {(() => {
                     const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
-                    console.log('🔍 Debug teléfono:', {
-                      countryCodes: countryCodes?.length,
-                      codigotelefonoid: formData.codigotelefonoid,
-                      selectedCountry,
-                      codigotelefono: selectedCountry?.codigotelefono
-                    });
                     return selectedCountry?.codigotelefono || '+';
                   })()}
                 </span>
