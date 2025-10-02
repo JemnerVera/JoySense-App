@@ -417,6 +417,8 @@ export const validateTableData = async (
       return await validateMedioData(formData, existingData);
     case 'contacto':
       return await validateContactoData(formData, existingData);
+    case 'correo':
+      return await validateCorreoData(formData, existingData);
     case 'perfil':
       return await validatePerfilData(formData, existingData);
     default:
@@ -1260,6 +1262,64 @@ const validateMedioData = async (
 };
 
 // Validación específica para Contacto
+const validateCorreoData = async (
+  formData: Record<string, any>, 
+  existingData?: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+  
+  // 1. Validar campos obligatorios
+  if (!formData.usuarioid || formData.usuarioid === 0) {
+    errors.push({
+      field: 'usuarioid',
+      message: 'Debe seleccionar un usuario',
+      type: 'required'
+    });
+  }
+  
+  // 2. Validar que el correo esté presente y tenga formato válido
+  if (!formData.correo || formData.correo.trim() === '') {
+    errors.push({
+      field: 'correo',
+      message: 'Debe proporcionar un correo electrónico',
+      type: 'required'
+    });
+  } else {
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.correo)) {
+      errors.push({
+        field: 'correo',
+        message: 'Formato de correo inválido. Use: usuario@dominio.com',
+        type: 'format'
+      });
+    }
+  }
+  
+  // 3. Validar duplicados si hay datos existentes
+  if (existingData && existingData.length > 0) {
+    const correoExists = existingData.some(item => 
+      item.correo === formData.correo
+    );
+    
+    if (correoExists) {
+      errors.push({
+        field: 'general',
+        message: 'Ya existe un correo con esta dirección',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 const validateContactoData = async (
   formData: Record<string, any>, 
   existingData?: any[]

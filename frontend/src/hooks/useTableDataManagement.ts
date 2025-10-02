@@ -31,6 +31,7 @@ export const useTableDataManagement = () => {
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
   const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
   const [contactosData, setContactosData] = useState<any[]>([]);
+  const [correosData, setCorreosData] = useState<any[]>([]);
 
   // Referencias para control de carga
   const loadingTableRef = useRef<string | null>(null);
@@ -76,7 +77,8 @@ export const useTableDataManagement = () => {
         sensorsResponse,
         metricasensorResponse,
         perfilumbralResponse,
-        contactosResponse
+        contactosResponse,
+        correosResponse
       ] = await Promise.all([
         JoySenseService.getTableData('pais', 500),
         JoySenseService.getTableData('empresa', 500),
@@ -94,7 +96,8 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('sensor', 500),
         JoySenseService.getTableData('metricasensor', 500),
         JoySenseService.getTableData('perfilumbral', 500),
-        JoySenseService.getTableData('contacto', 500)
+        JoySenseService.getTableData('contacto', 500),
+        JoySenseService.getTableData('correo', 500)
       ]);
 
       // Procesar respuestas
@@ -122,6 +125,7 @@ export const useTableDataManagement = () => {
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
       const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
+      const correos = Array.isArray(correosResponse) ? correosResponse : ((correosResponse as any)?.data || []);
 
       // Establecer todos los datos
       setPaisesData(paises);
@@ -140,6 +144,7 @@ export const useTableDataManagement = () => {
       setMetricasensorData(metricasensor);
       setPerfilumbralData(perfilumbral);
       setContactosData(contactos);
+      setCorreosData(correos);
 
       const endTime = performance.now();
     } catch (error) {
@@ -344,6 +349,7 @@ export const useTableDataManagement = () => {
     metricasensorData,
     perfilumbralData,
     contactosData,
+    correosData,
     
     // Funciones de carga
     loadUserData,
@@ -371,6 +377,7 @@ export const useTableDataManagement = () => {
     setSensorsData,
     setMetricasensorData,
     setPerfilumbralData,
-    setContactosData
+    setContactosData,
+    setCorreosData
   };
 };

@@ -136,6 +136,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     metricasensorData,
     perfilumbralData,
     contactosData,
+    correosData,
     loadUserData,
     loadRelatedTablesData,
     loadTableData,
@@ -2280,11 +2281,22 @@ const getCurrentUserId = () => {
     setSelectedContactType(type);
     setContactTypeModalOpen(false);
     
-    // Inicializar formulario con campos básicos
-    setFormData({
-      usuarioid: '',
-      statusid: 1
-    });
+    // Inicializar formulario con campos básicos según el tipo
+    if (type === 'email') {
+      setFormData({
+        usuarioid: '',
+        correo: '',
+        statusid: 1
+      });
+    } else {
+      setFormData({
+        usuarioid: '',
+        celular: '',
+        codigotelefonoid: '',
+        phoneNumber: '',
+        statusid: 1
+      });
+    }
   };
 
   const handleInsert = async () => {
@@ -2296,6 +2308,9 @@ const getCurrentUserId = () => {
       setContactTypeModalOpen(true);
       return;
     }
+
+    // Determinar la tabla de destino según el tipo de contacto
+    const targetTable = (selectedTable === 'contacto' && selectedContactType === 'email') ? 'correo' : selectedTable;
 
 // Validar datos antes de insertar usando el sistema robusto
     try {
@@ -2343,7 +2358,7 @@ const getCurrentUserId = () => {
           existingData = contactosData || [];
           break;
         case 'correo':
-          existingData = contactosData || []; // Usar los mismos datos para validación
+          existingData = correosData || []; // Usar datos de correo para validación
           break;
         case 'perfil':
           existingData = perfilesData || [];
@@ -2361,8 +2376,8 @@ const getCurrentUserId = () => {
           existingData = [];
       }
 
-      // Usar el sistema de validación robusta
-      const validationResult = await validateTableData(selectedTable, formData, existingData);
+      // Usar el sistema de validación robusta con la tabla correcta
+      const validationResult = await validateTableData(targetTable, formData, existingData);
       
       if (!validationResult.isValid) {
         setMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
@@ -2516,26 +2531,29 @@ preparedData.usercreatedid = usuarioid;
 
 
       } else if (selectedTable === 'contacto') {
-
-        filteredData = {
-
-          usuarioid: preparedData.usuarioid,
-
-          celular: preparedData.celular,
-
-          codigotelefonoid: preparedData.codigotelefonoid,
-
-          statusid: preparedData.statusid,
-
-          usercreatedid: preparedData.usercreatedid,
-
-          usermodifiedid: preparedData.usermodifiedid,
-
-          datecreated: preparedData.datecreated,
-
-          datemodified: preparedData.datemodified
-
-        };
+        // Determinar qué campos incluir según el tipo de contacto
+        if (selectedContactType === 'email') {
+          filteredData = {
+            usuarioid: preparedData.usuarioid,
+            correo: preparedData.correo,
+            statusid: preparedData.statusid,
+            usercreatedid: preparedData.usercreatedid,
+            usermodifiedid: preparedData.usermodifiedid,
+            datecreated: preparedData.datecreated,
+            datemodified: preparedData.datemodified
+          };
+        } else {
+          filteredData = {
+            usuarioid: preparedData.usuarioid,
+            celular: preparedData.celular,
+            codigotelefonoid: preparedData.codigotelefonoid,
+            statusid: preparedData.statusid,
+            usercreatedid: preparedData.usercreatedid,
+            usermodifiedid: preparedData.usermodifiedid,
+            datecreated: preparedData.datecreated,
+            datemodified: preparedData.datemodified
+          };
+        }
 
       } else if (selectedTable === 'usuario') {
 
@@ -2566,8 +2584,6 @@ preparedData.usercreatedid = usuarioid;
 
 // Logging específico para debugging
 
-// Determinar la tabla de destino según el tipo de contacto
-const targetTable = (selectedTable === 'contacto' && selectedContactType === 'email') ? 'correo' : selectedTable;
 
 await JoySenseService.insertTableRow(targetTable, filteredData);
 
@@ -4938,7 +4954,7 @@ if (errorCount > 0) {
     'criticidad': ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid'],
     'perfil': ['perfil', 'nivel', 'jefeid', 'statusid'],
     'usuario': ['login', 'firstname', 'lastname', 'statusid'],
-    'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'statusid'],
+    'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'correo', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };
     
@@ -5584,9 +5600,12 @@ if (selectedTable === 'usuarioperfil') {
       }
 
 if (selectedTable === 'contacto') {
-
-        return ['usuarioid', 'celular', 'codigotelefonoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
-
+        // Incluir campos según el tipo de contacto
+        if (selectedContactType === 'email') {
+          return ['usuarioid', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        } else {
+          return ['usuarioid', 'celular', 'codigotelefonoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        }
       }
 
 

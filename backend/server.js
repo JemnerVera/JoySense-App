@@ -347,6 +347,7 @@ const tableMetadata = {
     correo: {
       columns: [
         { column_name: 'correoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.correo_correoid_seq\'::regclass)' },
+        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
         { column_name: 'correo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
         { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
         { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
@@ -788,7 +789,10 @@ app.get('/api/sense/correo', async (req, res) => {
     console.log('🔍 Backend: Obteniendo correo del schema sense...');
     const { data, error } = await supabase
       .from('correo')
-      .select('*')
+      .select(`
+        *,
+        usuario:usuarioid(login, firstname, lastname)
+      `)
       .eq('statusid', 1)
       .order('correoid')
       .limit(parseInt(limit));
@@ -2498,6 +2502,7 @@ app.post('/api/sense/correo', async (req, res) => {
     }
     
     const filteredData = {
+      usuarioid: insertData.usuarioid,
       correo: insertData.correo,
       statusid: insertData.statusid || 1,
       usercreatedid: insertData.usercreatedid,

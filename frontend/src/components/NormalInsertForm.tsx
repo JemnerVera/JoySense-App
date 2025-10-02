@@ -197,8 +197,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     if (columnName === 'usuarioid') {
       return true; // Siempre habilitado
     }
-    // Para el resto de campos (codigotelefonoid, celular, statusid)
-    if (['codigotelefonoid', 'celular', 'statusid'].includes(columnName)) {
+    // Para el resto de campos (codigotelefonoid, celular, correo, statusid)
+    if (['codigotelefonoid', 'celular', 'correo', 'statusid'].includes(columnName)) {
       return !!(formData.usuarioid && formData.usuarioid !== 0);
     }
   }
@@ -1754,14 +1754,11 @@ return filteredNodos;
             </label>
             <input
               type="email"
-              value={formData.celular || ''}
+              value={formData.correo || ''}
               onChange={(e) => {
                 const email = e.target.value;
-                // Validación regex para formato email
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (email === '' || emailRegex.test(email)) {
-                  setFormData({ ...formData, celular: email });
-                }
+                // Permitir cualquier texto, solo validar formato al final
+                setFormData({ ...formData, correo: email });
               }}
               placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : "PRIMERO SELECCIONE UN USUARIO"}
               disabled={!formData.usuarioid}
@@ -1771,7 +1768,7 @@ return filteredNodos;
                   : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
               }`}
             />
-            {formData.celular && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.celular) && (
+            {formData.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo) && (
               <p className="text-red-400 text-sm font-mono">
                 Formato de correo inválido. Use: usuario@dominio.com
               </p>
