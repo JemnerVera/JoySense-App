@@ -1647,7 +1647,7 @@ return filteredNodos;
             value={formData.usuarioid || ''}
             onChange={(value) => setFormData({ ...formData, usuarioid: value })}
             options={getUniqueOptionsForField('usuarioid')}
-            placeholder="Seleccionar usuario..."
+            placeholder="SELECCIONAR USUARIO..."
           />
         </div>
 
@@ -1692,7 +1692,7 @@ return filteredNodos;
                     label: country.paistelefono
                   })) || [];
                 })()}
-                placeholder={formData.usuarioid ? "Seleccionar país..." : "Primero seleccione un usuario"}
+                placeholder={formData.usuarioid ? "SELECCIONAR PAÍS..." : "PRIMERO SELECCIONE UN USUARIO"}
                 disabled={!formData.usuarioid}
               />
             </div>
@@ -1741,9 +1741,9 @@ return filteredNodos;
                       celular: fullPhoneNumber
                     });
                   }}
-                  placeholder={formData.codigotelefonoid ? "Ej: 987654321" : "Primero seleccione un país"}
+                  placeholder={formData.codigotelefonoid ? "EJ: 987654321" : "PRIMERO SELECCIONE UN PAÍS"}
                   disabled={!formData.codigotelefonoid}
-                  className={`flex-1 px-4 py-3 border border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+                  className={`flex-1 px-4 py-3 border border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
                     formData.codigotelefonoid 
                       ? 'bg-neutral-700 border-neutral-600' 
                       : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
@@ -1770,9 +1770,9 @@ return filteredNodos;
                   setFormData({ ...formData, celular: email });
                 }
               }}
-              placeholder={formData.usuarioid ? "usuario@dominio.com" : "Primero seleccione un usuario"}
+              placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : "PRIMERO SELECCIONE UN USUARIO"}
               disabled={!formData.usuarioid}
-              className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all ${
+              className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
                 formData.usuarioid 
                   ? 'bg-neutral-700 border-neutral-600' 
                   : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
