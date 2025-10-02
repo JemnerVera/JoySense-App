@@ -2768,37 +2768,37 @@ const validateContactoUpdate = async (
     });
   }
   
-  if (!formData.medioid || formData.medioid === '') {
+  // 2. Validar que el celular esté presente (según el nuevo esquema, contacto solo maneja teléfonos)
+  if (!formData.celular || formData.celular.trim() === '') {
     errors.push({
-      field: 'medioid',
-      message: 'El medio es obligatorio',
+      field: 'celular',
+      message: 'El número de teléfono es obligatorio',
       type: 'required'
     });
   }
   
-  // 2. Validar que al menos uno de los campos de contacto esté presente
-  if ((!formData.celular || formData.celular.trim() === '') && 
-      (!formData.correo || formData.correo.trim() === '')) {
+  // 3. Validar que si hay celular, también debe haber código de país
+  if (formData.celular && formData.celular.trim() !== '' && 
+      (!formData.codigotelefonoid || formData.codigotelefonoid === 0)) {
     errors.push({
-      field: 'contacto',
-      message: 'Debe proporcionar al menos un celular o correo',
+      field: 'codigotelefonoid',
+      message: 'Debe seleccionar un código de país',
       type: 'required'
     });
   }
   
-  // 3. Validar duplicados (excluyendo el registro actual)
-  // Para contacto, la clave primaria es compuesta (usuarioid, medioid)
-  if (formData.usuarioid && formData.medioid) {
+  // 4. Validar duplicados (excluyendo el registro actual)
+  // Para contacto, la clave primaria es solo usuarioid (único por usuario)
+  if (formData.usuarioid) {
     const contactoExists = existingData.some(item => 
-      (item.usuarioid !== originalData.usuarioid || item.medioid !== originalData.medioid) && 
-      item.usuarioid === formData.usuarioid && 
-      item.medioid === formData.medioid
+      item.contactoid !== originalData.contactoid && 
+      item.usuarioid === formData.usuarioid
     );
     
     if (contactoExists) {
       errors.push({
-        field: 'composite',
-        message: 'Ya existe un contacto para este usuario y medio',
+        field: 'general',
+        message: 'Ya existe un contacto para este usuario',
         type: 'duplicate'
       });
     }
