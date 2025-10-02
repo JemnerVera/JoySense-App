@@ -209,7 +209,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               <div className="text-sm">
                 <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
                 <div className="space-y-1">
-                  <div><strong>ID:</strong> {node.nodoid}</div>
                   <div><strong>DevEUI:</strong> {node.deveui}</div>
                   <div><strong>Ubicación:</strong> {node.ubicacion.ubicacion}</div>
                   <div><strong>Fundo:</strong> {node.ubicacion.fundo.fundo}</div>

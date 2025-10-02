@@ -231,7 +231,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                     key={node.nodoid}
                     onClick={() => handleNodeSelect(node)}
                     className="w-full px-4 py-3 text-left hover:bg-neutral-600 transition-colors border-b border-neutral-600 last:border-b-0 group relative"
-                    title={`ID: ${node.nodoid} | DevEUI: ${node.deveui} | Ubicación: ${node.ubicacion.ubicacion} | Fundo: ${node.ubicacion.fundo.fundo} | Empresa: ${node.ubicacion.fundo.empresa.empresa} | País: ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | Coordenadas: ${node.latitud}, ${node.longitud}` : ''}`}
+                    title={`DevEUI: ${node.deveui} | Ubicación: ${node.ubicacion.ubicacion} | Fundo: ${node.ubicacion.fundo.fundo} | Empresa: ${node.ubicacion.fundo.empresa.empresa} | País: ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | Coordenadas: ${node.latitud}, ${node.longitud}` : ''}`}
                   >
                     <div className="font-medium text-white">{node.nodo}</div>
                     <div className="text-sm text-neutral-400">

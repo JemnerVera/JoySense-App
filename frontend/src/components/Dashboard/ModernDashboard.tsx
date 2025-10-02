@@ -64,7 +64,7 @@ const baseMetrics: MetricConfig[] = [
     id: "conductividad",
     title: "Electroconductividad",
     color: "#10b981",
-    unit: "mS/cm",
+    unit: "uS/cm",
     dataKey: "conductividad",
     description: "Conductividad eléctrica del sustrato",
     ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
@@ -212,9 +212,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
   }
 
-  // Procesar datos para gráficos - específico por métrica
+  // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
-    if (!mediciones.length) {
+    if (!mediciones.length || !tipos.length) {
       return []
     }
 
@@ -237,44 +237,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const startDate = new Date(detailedStartDate + 'T00:00:00')
       const endDate = new Date(detailedEndDate + 'T23:59:59')
       
-      console.log('🔍 Filtrando por fechas:', {
-        detailedStartDate,
-        detailedEndDate,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        totalMediciones: sortedMediciones.length
-      })
-      
-      // Mostrar algunas fechas de ejemplo para debug
-      if (sortedMediciones.length > 0) {
-        console.log('🔍 Fechas de ejemplo en mediciones:', sortedMediciones.slice(0, 5).map(m => ({
-          fecha: m.fecha,
-          parsed: new Date(m.fecha).toISOString()
-        })))
-      }
-      
       filteredMediciones = sortedMediciones.filter(m => {
         const medicionDate = new Date(m.fecha)
-        const isInRange = medicionDate >= startDate && medicionDate <= endDate
-        return isInRange
+        return medicionDate >= startDate && medicionDate <= endDate
       })
-      
-      console.log('🔍 Mediciones filtradas:', filteredMediciones.length)
-      
-      // Mostrar fechas de las mediciones filtradas
-      if (filteredMediciones.length > 0) {
-        console.log('🔍 Fechas filtradas:', filteredMediciones.map(m => ({
-          fecha: m.fecha,
-          parsed: new Date(m.fecha).toISOString()
-        })))
-      }
       
       // Determinar si es un rango de días (más de 1 día)
       const timeDiff = endDate.getTime() - startDate.getTime()
       const daysDiff = timeDiff / (1000 * 3600 * 24)
       isDateRange = daysDiff > 1
-      
-      console.log('🔍 Es rango de días:', isDateRange, 'días:', daysDiff)
       
     } else {
       // Usar lógica de 3 horas (comportamiento por defecto)
@@ -284,48 +255,98 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
     }
     
-    // Agrupar por hora o por fecha según el rango
-    const groupedData: { [key: string]: any } = {}
+    // Agrupar por tipo de sensor y luego por tiempo
+    const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)))
+    const datosPorTipo: { [tipoid: number]: any[] } = {}
     
+    // Inicializar datos para cada tipo
+    tiposEnMediciones.forEach(tipoid => {
+      datosPorTipo[tipoid] = []
+    })
+    
+    // Agrupar mediciones por tipo y tiempo
     filteredMediciones.forEach(medicion => {
       const date = new Date(medicion.fecha)
-      let groupKey: string
-      let displayKey: string
+      let timeKey: string
       
       if (isDateRange) {
         // Agrupar por fecha (DD/MM) para rangos de días
         const day = String(date.getDate()).padStart(2, '0')
         const month = String(date.getMonth() + 1).padStart(2, '0')
-        groupKey = `${day}/${month}`
-        displayKey = groupKey
+        timeKey = `${day}/${month}`
       } else {
         // Agrupar por hora (HH:MM) para rangos de horas
         const hour = String(date.getHours()).padStart(2, '0')
         const minute = String(date.getMinutes()).padStart(2, '0')
-        groupKey = `${hour}:${minute}`
-        displayKey = groupKey
+        timeKey = `${hour}:${minute}`
       }
       
-      if (!groupedData[groupKey]) {
-        groupedData[groupKey] = {
+      // Buscar si ya existe un punto para este tipo y tiempo
+      const existingPoint = datosPorTipo[medicion.tipoid].find(p => p.time === timeKey)
+      
+      if (existingPoint) {
+        // Promediar con el valor existente
+        const currentValue = existingPoint.value
+        const currentCount = existingPoint.count
+        const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
+        existingPoint.value = newValue
+        existingPoint.count = currentCount + 1
+      } else {
+        // Crear nuevo punto
+        datosPorTipo[medicion.tipoid].push({
           timestamp: date.getTime(),
-          time: displayKey,
-          value: 0,
-          count: 0
-        }
+          time: timeKey,
+          value: medicion.medicion,
+          count: 1,
+          tipoid: medicion.tipoid,
+          tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
+        })
       }
-      
-      // Promediar valores si hay múltiples mediciones en el mismo grupo
-      const currentValue = groupedData[groupKey].value
-      const currentCount = groupedData[groupKey].count
-      const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
-      
-      groupedData[groupKey].value = newValue
-      groupedData[groupKey].count = currentCount + 1
     })
-
-    const result = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp)
-    console.log('🔍 Datos procesados para gráfico:', result.length, 'puntos')
+    
+    // Obtener todos los tiempos únicos y ordenarlos
+    const allTimes = Array.from(new Set(filteredMediciones.map(m => {
+      const date = new Date(m.fecha)
+      if (isDateRange) {
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        return `${day}/${month}`
+      } else {
+        const hour = String(date.getHours()).padStart(2, '0')
+        const minute = String(date.getMinutes()).padStart(2, '0')
+        return `${hour}:${minute}`
+      }
+    }))).sort((a, b) => {
+      // Ordenar por timestamp
+      const aTime = datosPorTipo[tiposEnMediciones[0]]?.find(p => p.time === a)?.timestamp || 0
+      const bTime = datosPorTipo[tiposEnMediciones[0]]?.find(p => p.time === b)?.timestamp || 0
+      return aTime - bTime
+    })
+    
+    // Crear estructura de datos con todas las líneas
+    const result: any[] = []
+    
+    allTimes.forEach(time => {
+      const timeData: any = { time }
+      
+      tiposEnMediciones.forEach(tipoid => {
+        const tipoData = datosPorTipo[tipoid].find(p => p.time === time)
+        const tipo = tipos.find(t => t.tipoid === tipoid)
+        const tipoName = tipo?.tipo || `Tipo ${tipoid}`
+        
+        // Usar el nombre del tipo como key para la línea
+        timeData[tipoName] = tipoData ? tipoData.value : null
+      })
+      
+      result.push(timeData)
+    })
+    
+    console.log('🔍 Datos procesados para gráfico con múltiples líneas:', {
+      totalPuntos: result.length,
+      tipos: tiposEnMediciones.length,
+      tiposNombres: tiposEnMediciones.map(tid => tipos.find(t => t.tipoid === tid)?.tipo)
+    })
+    
     return result
   }
 
@@ -531,24 +552,37 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             interval="preserveStartEnd"
                           />
                           <YAxis hide />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke={metric.color}
-                            strokeWidth={3}
-                            dot={false}
-                            activeDot={{ r: 5, fill: metric.color, stroke: metric.color, strokeWidth: 2 }}
-                            strokeOpacity={0.9}
-                          />
+                          {(() => {
+                            const chartData = processChartData(metric.dataKey)
+                            if (chartData.length === 0) return null
+                            
+                            // Obtener todas las claves de tipo (excluyendo 'time')
+                            const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
+                            const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                            
+                            return tipoKeys.map((tipoKey, index) => (
+                              <Line
+                                key={tipoKey}
+                                type="monotone"
+                                dataKey={tipoKey}
+                                stroke={colors[index % colors.length]}
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
+                                strokeOpacity={0.8}
+                                connectNulls={false}
+                              />
+                            ))
+                          })()}
                           <Tooltip
                             labelFormatter={(label) => (
                               <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
                                 Hora: {label}
                               </span>
                             )}
-                            formatter={(value: number) => [
+                            formatter={(value: number, name: string) => [
                               <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                {metric.title}: {value.toFixed(1)} {metric.unit}
+                                {name}: {value ? value.toFixed(1) : '--'} {metric.unit}
                               </span>
                             ]}
                             contentStyle={{
@@ -720,23 +754,36 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                           />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke={baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.color || "#f59e0b"}
-                            strokeWidth={3}
-                            dot={{ r: 4, fill: baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.color || "#f59e0b" }}
-                            activeDot={{ r: 6, fill: baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.color || "#f59e0b" }}
-                          />
+                          {(() => {
+                            const chartData = processChartData(selectedDetailedMetric, true)
+                            if (chartData.length === 0) return null
+                            
+                            // Obtener todas las claves de tipo (excluyendo 'time')
+                            const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
+                            const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                            
+                            return tipoKeys.map((tipoKey, index) => (
+                              <Line
+                                key={tipoKey}
+                                type="monotone"
+                                dataKey={tipoKey}
+                                stroke={colors[index % colors.length]}
+                                strokeWidth={3}
+                                dot={{ r: 4, fill: colors[index % colors.length] }}
+                                activeDot={{ r: 6, fill: colors[index % colors.length] }}
+                                connectNulls={false}
+                              />
+                            ))
+                          })()}
                           <Tooltip
                             labelFormatter={(label) => (
                               <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
                                 Hora: {label}
                               </span>
                             )}
-                            formatter={(value: number) => [
+                            formatter={(value: number, name: string) => [
                               <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}: {value.toFixed(1)} {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                {name}: {value ? value.toFixed(1) : '--'} {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
                               </span>
                             ]}
                             contentStyle={{
