@@ -448,6 +448,62 @@ const tableMetadata = {
         { constraint_name: 'mensaje_alertaid_fkey', constraint_type: 'FOREIGN KEY' },
         { constraint_name: 'mensaje_contactoid_fkey', constraint_type: 'FOREIGN KEY' }
       ]
+    },
+    medicion: {
+      columns: [
+        { column_name: 'medicionid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.medicion_medicionid_seq\'::regclass)' },
+        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'medicion', data_type: 'double precision', is_nullable: 'NO', column_default: null },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      ],
+      info: { table_name: 'medicion', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'medicion_pkey', constraint_type: 'PRIMARY KEY' },
+        { constraint_name: 'medicion_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'medicion_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'medicion_tipoid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'medicion_metricaid_fkey', constraint_type: 'FOREIGN KEY' }
+      ]
+    },
+    alertaconsolidado: {
+      columns: [
+        { column_name: 'alertaconsolidadoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.alertaconsolidado_alertaconsolidadoid_seq\'::regclass)' },
+        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'alertas_agrupadas', data_type: 'integer[]', is_nullable: 'YES', column_default: null },
+        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'criticidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'fecha_inicio', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'fecha_fin', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
+        { column_name: 'cantidad_alertas', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'valor_minimo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
+        { column_name: 'valor_maximo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
+        { column_name: 'valor_promedio', data_type: 'double precision', is_nullable: 'YES', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
+      ],
+      info: { table_name: 'alertaconsolidado', table_type: 'BASE TABLE' },
+      constraints: [
+        { constraint_name: 'alertaconsolidado_pkey', constraint_type: 'PRIMARY KEY' },
+        { constraint_name: 'alertaconsolidado_alertaid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alertaconsolidado_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alertaconsolidado_metricaid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alertaconsolidado_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alertaconsolidado_tipoid_fkey', constraint_type: 'FOREIGN KEY' },
+        { constraint_name: 'alertaconsolidado_criticidadid_fkey', constraint_type: 'FOREIGN KEY' }
+      ]
     }
 };
 console.log('✅ Cliente Supabase configurado');
@@ -866,6 +922,22 @@ app.get('/api/sense/mensaje', async (req, res) => {
   } catch (error) { console.error('❌ Error in /api/sense/mensaje:', error); res.status(500).json({ error: error.message }); }
 });
 
+// Ruta para alertaconsolidado - usada por el frontend
+app.get('/api/sense/alertaconsolidado', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    console.log('🔍 Obteniendo alertas consolidadas de sense.alertaconsolidado...');
+    const { data, error } = await supabase
+      .from('alertaconsolidado')
+      .select('*')
+      .order('fecha_inicio', { ascending: false })
+      .limit(parseInt(limit));
+    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
+    console.log('✅ Alertas consolidadas encontradas:', data?.length || 0);
+    res.json(data || []);
+  } catch (error) { console.error('❌ Error in /api/sense/alertaconsolidado:', error); res.status(500).json({ error: error.message }); }
+});
+
 // Rutas para obtener información de las tablas (usadas por el frontend de parámetros)
 app.get('/api/sense/:tableName/columns', async (req, res) => {
   try {
@@ -1263,6 +1335,19 @@ app.put('/api/sense/perfil/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando perfil con ID ${id}...`);
+    console.log('🔍 Backend: Datos de actualización:', JSON.stringify(updateData, null, 2));
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      console.error('❌ Error: ID debe ser un número');
+      return res.status(400).json({ error: 'ID debe ser un número' });
+    }
+    
+    // Validar que updateData no esté vacío
+    if (!updateData || Object.keys(updateData).length === 0) {
+      console.error('❌ Error: No hay datos para actualizar');
+      return res.status(400).json({ error: 'No hay datos para actualizar' });
+    }
     
     const { data, error } = await supabase
       .from('perfil')

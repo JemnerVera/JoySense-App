@@ -5202,14 +5202,25 @@ if (!rowId) {
 
         }
 
-// Validar datos antes de procesar
+        // Validar datos antes de procesar
         try {
+          console.log('🔍 Debug - Datos que se van a validar:');
+          console.log('selectedTable:', selectedTable);
+          console.log('updateFormData:', updateFormData);
+          console.log('selectedRowForUpdate:', selectedRowForUpdate);
+          console.log('tableDataLength:', tableData?.length);
+          
           const validationResult = await validateTableUpdate(
             selectedTable,
             updateFormData, // Usar datos originales del formulario
             selectedRowForUpdate, // Datos originales de la BD
             tableData // Datos existentes para validar duplicados
           );
+          
+          console.log('🔍 Debug - Resultado de validación:');
+          console.log('isValid:', validationResult.isValid);
+          console.log('errors:', validationResult.errors);
+          console.log('userFriendlyMessage:', validationResult.userFriendlyMessage);
           
           if (!validationResult.isValid) {
             setUpdateMessage({ type: 'warning', text: validationResult.userFriendlyMessage });
@@ -5358,6 +5369,20 @@ result = await JoySenseService.updateTableRowByCompositeKey(
           }
 
           // Validación ya se ejecutó arriba
+          
+          // Convertir strings vacíos a null para campos que pueden ser null
+          const cleanedData = { ...filteredUpdateData };
+          Object.keys(cleanedData).forEach(key => {
+            if (cleanedData[key] === '') {
+              cleanedData[key] = null;
+            }
+          });
+
+          console.log('🔍 Debug - Datos que se van a enviar al backend:');
+          console.log('selectedTable:', selectedTable);
+          console.log('rowId:', rowId);
+          console.log('filteredUpdateData:', filteredUpdateData);
+          console.log('cleanedData:', cleanedData);
 
           await JoySenseService.updateTableRow(
 
@@ -5365,7 +5390,7 @@ result = await JoySenseService.updateTableRowByCompositeKey(
 
             rowId,
 
-            filteredUpdateData
+            cleanedData
 
           );
 
