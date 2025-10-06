@@ -15,7 +15,8 @@ export const authService = {
     try {
       
       // Usar el backend para autenticación
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 
+        (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:3001/api');
       const response = await fetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: {
