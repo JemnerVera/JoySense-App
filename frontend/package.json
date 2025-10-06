@@ -29,7 +29,7 @@
         "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
         "test": "react-scripts test",
         "eject": "react-scripts eject",
-        "vercel-build": "REACT_APP_SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X REACT_APP_BACKEND_URL=https://lorawan-sense-app.vercel.app/api npm run build"
+        "vercel-build": "npm run build"
     },
     "eslintConfig": {
         "extends": [

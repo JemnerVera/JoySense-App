@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // Configuración de Supabase - Service Role Key (SOLO BACKEND)
-const supabaseUrl = process.env.SUPABASE_URL || 'https://fagswxnjkcavchfrnrhs.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZ3N3eG5qa2NhdmNoZnJucmhzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE1NDMyNywiZXhwIjoyMDYyNzMwMzI3fQ.ioeluR-iTWJ7-w_7UAuMl_aPXHJM6nlhv6Nh4hohBjw';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Crear cliente de Supabase con Service Role Key
 console.log('🔧 Configurando cliente Supabase...');

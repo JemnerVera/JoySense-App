@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { AuthUser, AuthError } from '../types';
 
 // Configuración de Supabase Auth
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://fagswxnjkcavchfrnrhs.supabase.co';
-const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || '';
 
 // Crear cliente de Supabase para autenticación
 export const supabaseAuth = createClient(supabaseUrl, supabasePublishableKey);
