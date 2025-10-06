@@ -126,8 +126,8 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   usuario: [
     { field: 'login', required: true, type: 'email', minLength: 1, customMessage: 'El login debe tener formato de email válido (ejemplo@dominio.com)' },
-    { field: 'firstname', required: false, type: 'string', maxLength: 255, customMessage: 'El nombre no puede exceder 255 caracteres' },
-    { field: 'lastname', required: false, type: 'string', maxLength: 255, customMessage: 'El apellido no puede exceder 255 caracteres' }
+    { field: 'firstname', required: true, type: 'string', minLength: 1, maxLength: 50, customMessage: 'El nombre es obligatorio y no puede exceder 50 caracteres' },
+    { field: 'lastname', required: true, type: 'string', minLength: 1, maxLength: 50, customMessage: 'El apellido es obligatorio y no puede exceder 50 caracteres' }
   ],
   
   medio: [
@@ -420,6 +420,8 @@ export const validateTableData = async (
       return await validateCorreoData(formData, existingData);
     case 'perfil':
       return await validatePerfilData(formData, existingData);
+    case 'usuario':
+      return await validateUsuarioData(formData, existingData || []);
     default:
       // Fallback a validación básica
       const basicResult = validateFormData(tableName, formData);
@@ -2361,6 +2363,37 @@ const generateUserFriendlyMessage = (errors: ValidationError[]): string => {
       processedFields.add('medioid');
     }
     
+    // Usuario: login + nombre + apellido
+    const loginRequired = requiredErrors.some(e => e.field === 'login');
+    const loginFormat = errors.some(e => e.field === 'login' && e.type === 'format');
+    const firstnameRequired = requiredErrors.some(e => e.field === 'firstname');
+    const lastnameRequired = requiredErrors.some(e => e.field === 'lastname');
+    
+    if (loginRequired && firstnameRequired && lastnameRequired) {
+      messages.push('⚠️ El login, nombre y apellido son obligatorios');
+      processedFields.add('login');
+      processedFields.add('firstname');
+      processedFields.add('lastname');
+    } else if (firstnameRequired && lastnameRequired) {
+      messages.push('⚠️ El nombre y apellido son obligatorios');
+      processedFields.add('firstname');
+      processedFields.add('lastname');
+    } else if (loginRequired && firstnameRequired) {
+      messages.push('⚠️ El login y nombre son obligatorios');
+      processedFields.add('login');
+      processedFields.add('firstname');
+    } else if (loginRequired && lastnameRequired) {
+      messages.push('⚠️ El login y apellido son obligatorios');
+      processedFields.add('login');
+      processedFields.add('lastname');
+    }
+    
+    // Manejar error de formato de login por separado
+    if (loginFormat) {
+      messages.push('⚠️ El login debe tener formato de email válido');
+      processedFields.add('login');
+    }
+    
     // Perfil: solo nombre (nivel es opcional)
     if (requiredErrors.some(e => e.field === 'perfil')) {
       messages.push('⚠️ El nombre del perfil es obligatorio');
@@ -2951,6 +2984,76 @@ const validateCorreoUpdate = async (
   };
 };
 
+// ===== VALIDACIÓN DE INSERCIÓN PARA USUARIO =====
+const validateUsuarioData = async (
+  formData: Record<string, any>,
+  existingData: any[]
+): Promise<EnhancedValidationResult> => {
+  const errors: ValidationError[] = [];
+
+  // 1. Validar campos obligatorios
+  if (!formData.login || formData.login.trim() === '') {
+    errors.push({
+      field: 'login',
+      message: 'El login es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.firstname || formData.firstname.trim() === '') {
+    errors.push({
+      field: 'firstname',
+      message: 'El nombre es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.lastname || formData.lastname.trim() === '') {
+    errors.push({
+      field: 'lastname',
+      message: 'El apellido es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // Validar formato de email para login
+  if (formData.login && formData.login.trim() !== '') {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(formData.login)) {
+      errors.push({
+        field: 'login',
+        message: 'El login debe tener formato de email válido',
+        type: 'format'
+      });
+    }
+  }
+  
+  // 2. Validar duplicados
+  if (formData.login && formData.login.trim() !== '') {
+    const loginExists = existingData.some(item => 
+      item.login && 
+      item.login.toLowerCase() === formData.login.toLowerCase()
+    );
+    
+    if (loginExists) {
+      errors.push({
+        field: 'login',
+        message: 'El login ya existe',
+        type: 'duplicate'
+      });
+    }
+  }
+  
+  // 3. Generar mensaje amigable para inserción
+  const userFriendlyMessage = generateUserFriendlyMessage(errors);
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    userFriendlyMessage
+  };
+};
+
 // ===== VALIDACIÓN DE ACTUALIZACIÓN PARA USUARIO =====
 const validateUsuarioUpdate = async (
   formData: Record<string, any>,
@@ -2980,8 +3083,22 @@ const validateUsuarioUpdate = async (
     }
   }
   
-  // firstname y lastname son opcionales según el esquema (is_nullable: 'YES')
-  // No se validan como obligatorios
+  // Validar campos obligatorios: firstname y lastname (NOT NULL en schema)
+  if (!formData.firstname || formData.firstname.trim() === '') {
+    errors.push({
+      field: 'firstname',
+      message: 'El nombre es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.lastname || formData.lastname.trim() === '') {
+    errors.push({
+      field: 'lastname',
+      message: 'El apellido es obligatorio',
+      type: 'required'
+    });
+  }
   
   // 2. Validar duplicados (excluyendo el registro actual)
   if (formData.login && formData.login.trim() !== '') {
