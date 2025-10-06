@@ -8,8 +8,8 @@ echo.
 echo 🔐 CONFIRMACIÓN DE SEGURIDAD:
 echo.
 echo ✅ SEGURO de publicar en GitHub:
-echo    - Supabase URL: https://fagswxnjkcavchfrnrhs.supabase.co
-echo    - Supabase Publishable Key: sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X
+echo    - Supabase URL: [CONFIGURAR_EN_VERCEL_UI]
+echo    - Supabase Publishable Key: [CONFIGURAR_EN_VERCEL_UI]
 echo.
 echo ❌ NUNCA publicar (Service Role Key):
 echo    - [CONFIGURAR_EN_VERCEL_UI]
@@ -29,9 +29,9 @@ echo.
 echo 3. Conectar repositorio en Vercel
 echo.
 echo 4. Configurar variables de entorno en Vercel:
-echo    - SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
+echo    - SUPABASE_URL=[TU_SUPABASE_URL_PRIVADA]
 echo    - SUPABASE_SERVICE_ROLE_KEY=[TU_SERVICE_ROLE_KEY_PRIVADA]
-echo    - REACT_APP_BACKEND_URL=https://tu-backend.vercel.app
+echo    - REACT_APP_BACKEND_URL=[TU_BACKEND_URL]
 echo.
 echo 5. Desplegar backend separado:
 echo    - Subir carpeta 'backend' a repositorio separado
