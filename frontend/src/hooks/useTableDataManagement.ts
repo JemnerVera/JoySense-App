@@ -58,7 +58,7 @@ export const useTableDataManagement = () => {
    */
   const loadRelatedTablesData = useCallback(async () => {
     try {
-      const startTime = performance.now();
+      // const startTime = performance.now(); // Para debugging de performance
 
       const [
         paisesResponse,
@@ -120,7 +120,7 @@ export const useTableDataManagement = () => {
       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
       const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
-      const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
+      // const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []); // Para uso futuro
       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
       const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
@@ -146,7 +146,7 @@ export const useTableDataManagement = () => {
       setContactosData(contactos);
       setCorreosData(correos);
 
-      const endTime = performance.now();
+      // const endTime = performance.now(); // Para debugging de performance
     } catch (error) {
       console.error('Error loading related tables data:', error);
     }
@@ -182,7 +182,7 @@ export const useTableDataManagement = () => {
       setLoading(true);
 
 
-      const startTime = performance.now();
+      // const startTime = performance.now(); // Para debugging de performance
 
       // Cargar las columnas para la tabla actual
       
@@ -308,7 +308,7 @@ export const useTableDataManagement = () => {
         setSensorsData([]);
       }
 
-      const endTime = performance.now();
+      // const endTime = performance.now(); // Para debugging de performance
 
       return { formData, sortedData };
 

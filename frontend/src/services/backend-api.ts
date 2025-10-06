@@ -1,6 +1,6 @@
 import { 
-  Pais, Empresa, Fundo, Ubicacion, Medicion, 
-  MetricaSensor, Sensor, Tipo, Metrica
+  Pais, Empresa, Fundo, Ubicacion
+  // Medicion, MetricaSensor, Sensor, Tipo, Metrica // Para uso futuro
 } from '../types';
 
 // Configuración del Backend API
