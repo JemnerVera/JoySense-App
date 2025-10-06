@@ -19,7 +19,7 @@ Se ha implementado un sistema de autenticación completo usando Supabase Auth en
 ## 🔧 Configuración
 
 ### Supabase Auth
-- **URL**: `https://fagswxnjkcavchfrnrhs.supabase.co`
+- **URL**: `[CONFIGURAR_EN_VERCEL_UI]`
 - **Anon Key**: Configurada en `supabase-auth.ts`
 - **Service Role Key**: Configurada en `backend/server.js`
 
