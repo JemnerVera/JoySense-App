@@ -98,7 +98,7 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
   
   // Detectar errores de clave única
   if (isDuplicateKeyError(error)) {
-    const { fieldName, conflictingValue } = extractDuplicateKeyInfo(error);
+    const { fieldName } = extractDuplicateKeyInfo(error);
     
     // Simplificar mensajes según el tipo de campo
     let message = '';
@@ -174,7 +174,7 @@ export const handleMultipleInsertError = (error: BackendError, entityType: strin
   
   // Detectar errores de clave única
   if (isDuplicateKeyError(error)) {
-    const { fieldName, conflictingValue } = extractDuplicateKeyInfo(error);
+    const { fieldName } = extractDuplicateKeyInfo(error);
     
     // Simplificar mensajes según el tipo de campo
     let message = '';

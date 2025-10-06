@@ -240,7 +240,7 @@ export function validateFormData(tableName: string, formData: Record<string, any
           break;
         case 'phone':
           if (typeof value === 'string' && value.trim() !== '') {
-            const phonePattern = /^[\+]?[0-9\s\-\(\)]{7,15}$/;
+            const phonePattern = /^[+]?[0-9\s\-()]{7,15}$/;
             if (!phonePattern.test(value)) {
               errors.push(rule.customMessage || `El formato del teléfono no es válido`);
             }
@@ -327,8 +327,6 @@ export const validateTableUpdate = async (
   existingData?: any[]
 ): Promise<EnhancedValidationResult> => {
   
-  const errors: ValidationError[] = [];
-  
   switch (tableName) {
     case 'pais':
       return await validatePaisUpdate(formData, originalData, existingData || []);
@@ -388,7 +386,6 @@ export const validateTableData = async (
   formData: Record<string, any>, 
   existingData?: any[]
 ): Promise<EnhancedValidationResult> => {
-  const errors: ValidationError[] = [];
   
   switch (tableName) {
     case 'pais':

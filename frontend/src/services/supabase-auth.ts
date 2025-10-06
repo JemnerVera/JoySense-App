@@ -62,16 +62,9 @@ export const authService = {
 
   // Obtener usuario actual (modo desarrollo)
   async getCurrentUser(): Promise<{ user: AuthUser | null; error: AuthError | null }> {
-    try {
-      // En modo desarrollo, no mantenemos sesiones persistentes
-      // El usuario debe iniciar sesión cada vez
-      return { user: null, error: null };
-    } catch (error) {
-      return { 
-        user: null, 
-        error: { message: 'Error inesperado al obtener usuario actual' } 
-      };
-    }
+    // En modo desarrollo, no mantenemos sesiones persistentes
+    // El usuario debe iniciar sesión cada vez
+    return { user: null, error: null };
   },
 
   // Escuchar cambios en la autenticación
