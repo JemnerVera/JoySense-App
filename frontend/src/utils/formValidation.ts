@@ -146,7 +146,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   perfil: [
-    { field: 'perfil', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del perfil es obligatorio' },
+    { field: 'perfil', required: true, type: 'string', minLength: 1, maxLength: 50, customMessage: 'El nombre del perfil es obligatorio y no puede exceder 50 caracteres' },
     { field: 'nivel', required: true, type: 'number', customMessage: 'El nivel del perfil es obligatorio' },
     { field: 'jefeid', required: false, type: 'number', customMessage: 'El jefe debe ser un número válido' }
   ],
@@ -1397,7 +1397,7 @@ const validatePerfilData = async (
     });
   }
   
-  // 2. Validar nivel (ahora es obligatorio y debe ser número)
+  // 2. Validar nivel (obligatorio y debe ser número)
   if (!formData.nivel || formData.nivel === '' || isNaN(Number(formData.nivel))) {
     errors.push({
       field: 'nivel',
@@ -1406,7 +1406,30 @@ const validatePerfilData = async (
     });
   }
   
-  // 3. Validar duplicados si hay datos existentes
+  // 3. Validar constraint de jerarquía: si hay jefeid, nivel debe ser > 0
+  if (formData.jefeid && formData.jefeid !== '' && formData.nivel !== '' && !isNaN(Number(formData.nivel))) {
+    if (Number(formData.nivel) <= 0) {
+      errors.push({
+        field: 'nivel',
+        message: 'Si se asigna un jefe, el nivel debe ser mayor a 0',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Validar que el jefe tenga nivel menor (si se asigna jefe)
+  if (formData.jefeid && formData.jefeid !== '' && formData.nivel !== '' && !isNaN(Number(formData.nivel))) {
+    const jefePerfil = existingData?.find(item => item.perfilid === formData.jefeid);
+    if (jefePerfil && jefePerfil.nivel >= Number(formData.nivel)) {
+      errors.push({
+        field: 'jefeid',
+        message: `El jefe debe tener nivel menor al perfil (jefe: ${jefePerfil.nivel}, perfil: ${formData.nivel})`,
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 5. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
     const perfilExists = existingData.some(item => 
       item.perfil && item.perfil.toLowerCase() === formData.perfil?.toLowerCase()
@@ -3191,7 +3214,7 @@ const validatePerfilUpdate = async (
     });
   }
   
-  // 2. Validar nivel (ahora es obligatorio y debe ser número)
+  // 2. Validar nivel (obligatorio y debe ser número)
   if (!formData.nivel || formData.nivel === '' || isNaN(Number(formData.nivel))) {
     errors.push({
       field: 'nivel',
@@ -3200,7 +3223,30 @@ const validatePerfilUpdate = async (
     });
   }
   
-  // 3. Validar duplicados (excluyendo el registro actual)
+  // 3. Validar constraint de jerarquía: si hay jefeid, nivel debe ser > 0
+  if (formData.jefeid && formData.jefeid !== '' && formData.nivel !== '' && !isNaN(Number(formData.nivel))) {
+    if (Number(formData.nivel) <= 0) {
+      errors.push({
+        field: 'nivel',
+        message: 'Si se asigna un jefe, el nivel debe ser mayor a 0',
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 4. Validar que el jefe tenga nivel menor (si se asigna jefe)
+  if (formData.jefeid && formData.jefeid !== '' && formData.nivel !== '' && !isNaN(Number(formData.nivel))) {
+    const jefePerfil = existingData.find(item => item.perfilid === formData.jefeid);
+    if (jefePerfil && jefePerfil.nivel >= Number(formData.nivel)) {
+      errors.push({
+        field: 'jefeid',
+        message: `El jefe debe tener nivel menor al perfil (jefe: ${jefePerfil.nivel}, perfil: ${formData.nivel})`,
+        type: 'constraint'
+      });
+    }
+  }
+  
+  // 5. Validar duplicados (excluyendo el registro actual)
   if (formData.perfil && formData.perfil.trim() !== '') {
     const perfilExists = existingData.some(item => 
       item.perfilid !== originalData.perfilid && 
@@ -3217,11 +3263,11 @@ const validatePerfilUpdate = async (
     }
   }
   
-  if (formData.nivel && formData.nivel.trim() !== '') {
+  if (formData.nivel && formData.nivel !== '') {
     const nivelExists = existingData.some(item => 
       item.perfilid !== originalData.perfilid && 
       item.nivel && 
-      item.nivel.toString().toLowerCase() === formData.nivel.toLowerCase()
+      item.nivel.toString() === formData.nivel.toString()
     );
     
     if (nivelExists) {
@@ -3233,7 +3279,7 @@ const validatePerfilUpdate = async (
     }
   }
   
-  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
+  // 6. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {
     // Verificar si hay usuarioperfil o perfilumbral que referencian este perfil
     const hasDependentRecords = await checkPerfilDependencies(originalData.perfilid);

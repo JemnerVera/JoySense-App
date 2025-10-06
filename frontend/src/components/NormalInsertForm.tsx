@@ -1558,6 +1558,27 @@ return filteredNodos;
             );
           }
 
+          // Combobox para perfil - jefeid (mostrar nivel - perfil)
+          if (col.columnName === 'jefeid' && selectedTable === 'perfil') {
+            const options = getUniqueOptionsForField(col.columnName);
+            return (
+              <div key={col.columnName} className="mb-4">
+                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                  {displayName.toUpperCase()}{isRequired ? '*' : ''}
+                </label>
+                <SelectWithPlaceholder
+                  value={value}
+                  onChange={(newValue) => setFormData({
+                    ...formData,
+                    [col.columnName]: newValue ? parseInt(newValue.toString()) : null
+                  })}
+                  options={options}
+                  placeholder={`SELECCIONAR JEFE (NIVEL - PERFIL)`}
+                />
+              </div>
+            );
+          }
+
           // Combobox para contacto - usuarioid, medioid
           if (col.columnName === 'usuarioid' && selectedTable === 'contacto') {
             const options = getUniqueOptionsForField(col.columnName);

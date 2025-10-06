@@ -67,6 +67,7 @@ import SimpleModal from './SimpleModal';
 import InsertionMessage from './InsertionMessage';
 import ReplicateModal from './ReplicateModal';
 import ContactTypeModal from './ContactTypeModal';
+import SelectWithPlaceholder from './SelectWithPlaceholder';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -3413,7 +3414,7 @@ const getFundoName = (fundoId: string) => {
     return null;
   };
 
-    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: string }) => {
+    const getUniqueOptionsForField = (columnName: string, filterParams?: { entidadid?: string; nodoid?: string; fundoid?: string; nodoids?: string; formData?: Record<string, any> }) => {
 
 
 switch (columnName) {
@@ -4326,6 +4327,24 @@ return [];
         }));
 
 return modifiedByResult;
+
+      case 'jefeid':
+        if (!perfilesData || perfilesData.length === 0) {
+          return [];
+        }
+        
+        // Filtrar perfiles que tengan nivel menor al perfil actual (si se está editando)
+        const currentNivel = filterParams?.formData?.nivel ? Number(filterParams.formData.nivel) : null;
+        const filteredPerfiles = currentNivel 
+          ? perfilesData.filter((perfil: any) => perfil.nivel < currentNivel)
+          : perfilesData;
+        
+        const jefeResult = filteredPerfiles.map((perfil: any) => ({ 
+          value: perfil.perfilid, 
+          label: `${perfil.nivel} - ${perfil.perfil}`
+        }));
+        
+        return jefeResult;
 
       default:
 
@@ -6192,7 +6211,7 @@ return reorderedColumns;
 
            auditFields.includes(columnName) ||
 
-           (columnName.endsWith('id') && !['statusid'].includes(columnName));
+           (columnName.endsWith('id') && !['statusid', 'jefeid'].includes(columnName));
 
   };
 
@@ -8894,6 +8913,27 @@ return (
 
                              );
 
+                           }
+
+// Campo jefeid como combobox (solo para perfil)
+                           if (col.columnName === 'jefeid' && selectedTable === 'perfil') {
+                             const options = getUniqueOptionsForField(col.columnName, { formData: updateFormData });
+                             return (
+                               <div key={col.columnName} className="mb-4">
+                                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                   {displayName.toUpperCase()}
+                                 </label>
+                                 <SelectWithPlaceholder
+                                   value={value}
+                                   onChange={(newValue: any) => setUpdateFormData((prev: Record<string, any>) => ({
+                                     ...prev,
+                                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
+                                   }))}
+                                   options={options}
+                                   placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
+                                 />
+                               </div>
+                             );
                            }
 
 // Campos de texto normales (editables)

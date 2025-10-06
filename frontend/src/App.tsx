@@ -682,7 +682,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
                           if (selectedTable) {
                             breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
                           }
-                          if (activeSubTab && activeSubTab !== 'status') {
+                          if (activeSubTab) {
                             const subTabNames: { [key: string]: string } = {
                               'status': 'ESTADO',
                               'insert': 'CREAR',
