@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 export const useSidebar = (initialOpen: boolean = false, activeTab?: string) => {
   const [sidebarVisible, setSidebarVisible] = useState(initialOpen); // Expandido si se muestra ventana de bienvenida
   const [isHovering, setIsHovering] = useState(false);
-  const closeTimeoutRef = useRef<number | null>(null); // Para manejar el timeout de cierre
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Para manejar el timeout de cierre
 
   // Efecto para mantener el sidebar expandido cuando se muestra la ventana de bienvenida
   useEffect(() => {

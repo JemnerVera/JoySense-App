@@ -10,7 +10,7 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
   const [auxiliarySidebarVisible, setAuxiliarySidebarVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [hoverLocation, setHoverLocation] = useState<'none' | 'main' | 'auxiliary' | 'content'>('none');
-  const closeTimeoutRef = useRef<number | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Función para calcular si hay sidebar auxiliar visible (función normal, no useCallback)
   const hasAuxiliarySidebar = (tab?: string) => {

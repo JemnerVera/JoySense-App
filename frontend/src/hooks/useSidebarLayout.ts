@@ -8,7 +8,7 @@ interface UseSidebarLayoutProps {
 export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutProps) => {
   const [mainSidebarExpanded, setMainSidebarExpanded] = useState(showWelcome);
   const [auxiliarySidebarExpanded, setAuxiliarySidebarExpanded] = useState(false);
-  const closeTimeoutRef = useRef<number | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Función para determinar si hay sidebar auxiliar
   const hasAuxiliarySidebar = useCallback((tab?: string) => {
