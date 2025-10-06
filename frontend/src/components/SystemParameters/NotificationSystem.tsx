@@ -34,7 +34,7 @@ export function NotificationSystem({
 
   // Auto-remover notificaciones no persistentes
   useEffect(() => {
-    const timers: number[] = [];
+    const timers: NodeJS.Timeout[] = [];
 
     notifications.forEach(notification => {
       if (!notification.persistent && notification.duration !== 0) {
