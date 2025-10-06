@@ -1,6 +1,6 @@
 import { 
   Pais, Empresa, Fundo, Ubicacion, Medicion, 
-  MetricaSensor, Sensor, Tipo, Metrica, Entidad, Nodo 
+  MetricaSensor, Sensor, Tipo, Metrica
 } from '../types';
 
 // Configuración del Backend API
@@ -821,7 +821,7 @@ export class JoySenseService {
   // Métodos para operaciones CRUD genéricas
   static async getTableData(tableName: string, limit: number = 100): Promise<any[]> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}?limit=${limit}`;
       const data = await backendAPI.get(endpoint);
       return Array.isArray(data) ? data : (data?.data || []);
@@ -834,7 +834,7 @@ export class JoySenseService {
 
   static async getTableColumns(tableName: string): Promise<any[]> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}/columns`;
       const data = await backendAPI.get(endpoint);
       const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
@@ -856,7 +856,7 @@ export class JoySenseService {
 
   static async getTableInfoByName(tableName: string): Promise<any> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}/info`;
       const data = await backendAPI.get(endpoint);
       return data || {};
@@ -868,7 +868,7 @@ export class JoySenseService {
 
   static async getTableConstraints(tableName: string): Promise<any[]> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}/constraints`;
       const data = await backendAPI.get(endpoint);
       return Array.isArray(data) ? data : (data?.constraints || []);
@@ -880,7 +880,7 @@ export class JoySenseService {
 
   static async insertTableRow(tableName: string, data: Record<string, any>): Promise<any> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}`;
       const result = await backendAPI.post(endpoint, data);
       return result;
@@ -892,7 +892,7 @@ export class JoySenseService {
 
   static async updateTableRow(tableName: string, id: string, data: Record<string, any>): Promise<any> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}/${id}`;
       const result = await backendAPI.put(endpoint, data);
       return result;
@@ -904,7 +904,7 @@ export class JoySenseService {
 
   static async updateTableRowByCompositeKey(tableName: string, compositeKey: Record<string, any>, data: Record<string, any>): Promise<any> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const keyParams = new URLSearchParams(compositeKey).toString();
       const endpoint = `/sense/${tableName}/composite?${keyParams}`;
       const result = await backendAPI.put(endpoint, data);
@@ -917,7 +917,7 @@ export class JoySenseService {
 
   static async deleteTableRow(tableName: string, id: string): Promise<any> {
     try {
-      const schemaPrefix = this.getSchemaPrefix();
+      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
       const endpoint = `/sense/${tableName}/${id}`;
       const result = await backendAPI.delete(endpoint);
       return result;

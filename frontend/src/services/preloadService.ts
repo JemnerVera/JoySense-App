@@ -128,7 +128,7 @@ class PreloadService {
     console.log('⏳ Procesando preloads en idle:', idleComponents.map(([name]) => name));
 
     // Preload uno por uno para no bloquear
-    for (const [name, _] of idleComponents) {
+    for (const [name] of idleComponents) {
       if (!this.isIdle) break; // Salir si ya no estamos idle
       
       const importFunction = this.getImportFunction(name);
