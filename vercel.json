@@ -10,11 +10,6 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
-      },
-      "env": {
-        "REACT_APP_SUPABASE_URL": "@react_app_supabase_url",
-        "REACT_APP_SUPABASE_PUBLISHABLE_KEY": "@react_app_supabase_publishable_key",
-        "REACT_APP_BACKEND_URL": "@react_app_backend_url"
       }
     }
   ],
@@ -31,6 +26,9 @@
   "env": {
     "NODE_ENV": "production",
     "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key"
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "REACT_APP_SUPABASE_URL": "@react_app_supabase_url",
+    "REACT_APP_SUPABASE_PUBLISHABLE_KEY": "@react_app_supabase_publishable_key",
+    "REACT_APP_BACKEND_URL": "@react_app_backend_url"
   }
 }
