@@ -15,8 +15,7 @@ export const authService = {
     try {
       
       // Usar el backend para autenticación
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 
-    (typeof window !== 'undefined' ? 'https://lorawan-sense-app.vercel.app/api' : 'http://localhost:3001/api');
+  const backendUrl = 'https://lorawan-sense-app.vercel.app/api';
       const response = await fetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: {
