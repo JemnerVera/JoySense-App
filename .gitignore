@@ -15,6 +15,13 @@ backend/dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+
+# Archivos de configuración con keys reales
+config.json
+secrets.json
+*.key
+*.pem
 
 # Logs
 logs
