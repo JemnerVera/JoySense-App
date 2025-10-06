@@ -126,7 +126,7 @@ Sensores/
 
 ### **Acceso:**
 - **URL:** [Tu URL de despliegue]
-- **Usuario:** `patricio.sandoval@migivagroup.com`
+- **Usuario:** usuario administrador
 - **Contraseña:** Cualquier contraseña (temporal)
 
 ### **Navegación:**

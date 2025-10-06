@@ -142,7 +142,7 @@ Si quieres que otros prueben la aplicación con tu backend local:
 
 2. **Instrucciones para usuarios:**
    - Abrir el enlace en cualquier navegador
-   - Usar: `patricio.sandoval@migivagroup.com` (cualquier contraseña)
+   - Usar: usuario administrador (cualquier contraseña)
    - Todas las funcionalidades están disponibles
 
 ### **Ventajas de la versión web:**

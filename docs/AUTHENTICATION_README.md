@@ -37,7 +37,7 @@ Se ha implementado un sistema de autenticación completo usando Supabase Auth en
 4. **Persistencia de sesión** - El usuario permanece logueado al recargar
 5. **Logout** - Cerrar sesión completamente
 6. **Estados de carga** - Loading states durante autenticación
-7. **Acceso temporal** - Configurado para `patricio.sandoval@migivagroup.com`
+7. **Acceso temporal** - Configurado para usuario administrador
 
 ### 🔄 Preparadas para Futuro
 1. **Verificación de tokens en backend** - Middleware listo
@@ -74,7 +74,7 @@ Se ha implementado un sistema de autenticación completo usando Supabase Auth en
 ### Para Usuarios
 1. Acceder a la aplicación
 2. Ver formulario de login
-3. **Acceso Temporal:** Usar `patricio.sandoval@migivagroup.com` con cualquier contraseña
+3. **Acceso Temporal:** Usar usuario administrador con cualquier contraseña
 4. Acceder al dashboard protegido
 
 **Nota:** Este es un acceso temporal para desarrollo. En producción se requerirá autenticación real.

@@ -79,3 +79,21 @@ frontend/out/
 
 # Vercel
 .vercel
+
+# Archivos con datos sensibles (NO publicar)
+sql/*_data.sql
+sql/*_sensitive.sql
+sql/*_personal.sql
+sql/*_users.sql
+sql/*_contacts.sql
+sql/*_emails.sql
+
+# Documentación con datos sensibles
+docs/*_sensitive.md
+docs/*_personal.md
+docs/*_users.md
+
+# Archivos de configuración con datos reales
+*_real.json
+*_production.json
+*_sensitive.json
