@@ -2,7 +2,6 @@
     "name": "joysense-dashboard",
     "version": "0.1.0",
     "private": true,
-    "main": "public/electron.js",
     "homepage": "./",
     "dependencies": {
         "@headlessui/react": "^2.0.0",
