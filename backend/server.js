@@ -6,8 +6,20 @@ const { createClient } = require('@supabase/supabase-js');
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Sistema de logging configurable
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info'; // debug, info, warn, error
+const isDebugMode = LOG_LEVEL === 'debug';
+const isInfoMode = ['debug', 'info'].includes(LOG_LEVEL);
+
+const logger = {
+  debug: (message, ...args) => isDebugMode && console.log(`🔍 ${message}`, ...args),
+  info: (message, ...args) => isInfoMode && console.log(`✅ ${message}`, ...args),
+  warn: (message, ...args) => console.log(`⚠️ ${message}`, ...args),
+  error: (message, ...args) => console.error(`❌ ${message}`, ...args)
+};
+
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -18,10 +30,10 @@ const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Crear cliente de Supabase con Service Role Key
-console.log('🔧 Configurando cliente Supabase...');
+logger.info('Configurando cliente Supabase...');
 const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
-    schema: 'sense'
+    schema: process.env.DB_SCHEMA || 'sense'
   }
 });
 
@@ -96,7 +108,34 @@ const getHardcodedMetadata = (tableName) => {
   };
 };
 
-console.log('✅ Cliente Supabase configurado');
+logger.info('Cliente Supabase configurado');
+
+// Función genérica para rutas de tablas
+const createTableRoute = (tableName, orderBy = `${tableName}id`, selectQuery = '*') => {
+  return async (req, res) => {
+    try {
+      const { limit = process.env.DEFAULT_LIMIT || 100 } = req.query;
+      logger.debug(`Obteniendo ${tableName} del schema sense...`);
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select(selectQuery)
+        .order(orderBy)
+        .limit(parseInt(limit));
+      
+      if (error) {
+        logger.error(`Error backend en ${tableName}:`, error);
+        return res.status(500).json({ error: error.message });
+      }
+      
+      logger.debug(`${tableName} obtenido:`, data?.length || 0);
+      res.json(data || []);
+    } catch (error) {
+      logger.error(`Error in /api/sense/${tableName}:`, error);
+      res.status(500).json({ error: error.message });
+    }
+  };
+};
 
 // Middleware para verificar autenticación (opcional por ahora)
 const verifyAuth = async (req, res, next) => {
@@ -124,35 +163,9 @@ const verifyAuth = async (req, res, next) => {
 };
 
 // Rutas para tablas en singular - usadas por el frontend de parámetros
-app.get('/api/sense/pais', async (req, res) => {
-  try {
-    const { limit = 100 } = req.query;
-    console.log('🔍 Backend: Obteniendo pais del schema sense...');
-    const { data, error } = await supabase
-      .from('pais')
-      .select('*')
-      .order('paisid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Pais obtenido:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/pais:', error); res.status(500).json({ error: error.message }); }
-});
+app.get('/api/sense/pais', createTableRoute('pais', 'paisid'));
 
-app.get('/api/sense/empresa', async (req, res) => {
-  try {
-    const { limit = 100 } = req.query;
-    console.log('🔍 Backend: Obteniendo empresa del schema sense...');
-    const { data, error } = await supabase
-      .from('empresa')
-      .select('*')
-      .order('empresaid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Empresa obtenida:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/empresa:', error); res.status(500).json({ error: error.message }); }
-});
+app.get('/api/sense/empresa', createTableRoute('empresa', 'empresaid'));
 
 app.get('/api/sense/fundo', async (req, res) => {
   try {
