@@ -136,12 +136,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         <div className="mt-8 p-4 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded mx-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-800 dark:text-white font-mono">SISTEMA EN LÍNEA</span>
+            <span className="text-xs text-gray-800 dark:text-white font-mono">{t('system.online')}</span>
           </div>
           <div className="text-xs text-gray-600 dark:text-neutral-500 font-mono">
-            <div>TIEMPO ACTIVO: 72:14:33</div>
-            <div>SENSORES: 847 ACTIVOS</div>
-            <div>ALERTAS: 23 EN CURSO</div>
+            <div>{t('system.active_time')} 72:14:33</div>
+            <div>{t('system.sensors')} 847 {t('system.active')}</div>
+            <div>{t('system.alerts')} 23 {t('system.in_progress')}</div>
           </div>
         </div>
       )}

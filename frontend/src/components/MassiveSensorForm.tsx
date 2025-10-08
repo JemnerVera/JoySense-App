@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MassiveSensorFormProps {
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
@@ -26,6 +27,7 @@ export function MassiveSensorForm({
   loading = false,
   entidadesData = []
 }: MassiveSensorFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     selectedTipos: []
   });
@@ -203,12 +205,12 @@ export function MassiveSensorForm({
                   </div>
                   <div className="col-span-6">
                     <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
-                      NODO
+                      {t('table_headers.node')}
                     </span>
                   </div>
                   <div className="col-span-5">
                     <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
-                      FECHA DE CREACIÓN
+                      {t('sensor.creation_date')}
                     </span>
                   </div>
                 </div>
@@ -318,19 +320,19 @@ export function MassiveSensorForm({
       {isFormValid() && (
         <div className="bg-orange-900 bg-opacity-30 border border-orange-600 rounded-lg p-4">
           <h5 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            RESUMEN DE SELECCIÓN
+            {t('sensor.selection_summary')}
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
             <div>
-              <span className="text-orange-400">Nodos seleccionados:</span>
+              <span className="text-orange-400">{t('sensor.selected_nodes')}</span>
               <span className="text-white ml-2">{selectedNodesCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Tipos seleccionados:</span>
+              <span className="text-orange-400">{t('sensor.selected_types')}</span>
               <span className="text-white ml-2">{formData.selectedTipos.length}</span>
             </div>
             <div>
-              <span className="text-orange-400">Total de sensores a crear:</span>
+              <span className="text-orange-400">{t('sensor.total_sensors_to_create')}</span>
               <span className="text-white ml-2 font-bold">{totalCombinations}</span>
             </div>
           </div>

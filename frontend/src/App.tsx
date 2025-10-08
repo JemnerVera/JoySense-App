@@ -620,8 +620,8 @@ return hasFormDataChanges || hasMultipleDataChanges;
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
           <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-            <h2 className="text-2xl font-bold text-white mb-4 font-mono tracking-wider">SISTEMA DE MONITOREO</h2>
-            <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR</p>
+            <h2 className="text-2xl font-bold text-white mb-4 font-mono tracking-wider">{t('welcome.subtitle')}</h2>
+            <p className="text-neutral-300 font-mono tracking-wider">{t('welcome.instruction')}</p>
           </div>
         </div>
       </div>
@@ -745,7 +745,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
               
               <div className="flex items-center gap-4">
                 <div className="text-xs text-neutral-500 font-mono">
-                  ÚLTIMA ACTUALIZACIÓN: {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
+                  {t('header.last_update')} {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
                 </div>
                 
                 {/* User Controls - Siempre visibles */}
@@ -775,11 +775,11 @@ return hasFormDataChanges || hasMultipleDataChanges;
                       </div>
                       
                       <h1 className="text-5xl font-bold text-orange-500 mb-4 leading-tight font-mono tracking-wider">
-                        BIENVENIDO A JOYSENSE APP
+                        {t('welcome.title')}
                       </h1>
                       
                       <p className="text-2xl text-gray-600 dark:text-neutral-300 mb-12 font-mono tracking-wider">
-                        SISTEMA DE MONITOREO INTELIGENTE
+                        {t('welcome.subtitle')}
                       </p>
                       
                       {/* Instrucción con diseño táctico */}
@@ -791,7 +791,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
                             </svg>
                           </div>
                           <p className="text-xl text-gray-900 dark:text-white font-mono tracking-wider">
-                            SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR
+                            {t('welcome.instruction')}
                           </p>
                         </div>
                         

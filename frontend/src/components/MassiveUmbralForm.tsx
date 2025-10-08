@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -78,6 +79,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   onFormDataChange,
   localizacionesData
 }: MassiveUmbralFormProps) {
+  const { t } = useLanguage();
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -533,7 +535,7 @@ for (const tipoOption of tiposDelNodo) {
         return (
           <div key="fundo-contextual">
             <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-              FUNDO
+              {t('table_headers.fund')}
             </label>
             {fundosOptions.length === 1 ? (
               <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
@@ -550,7 +552,7 @@ for (const tipoOption of tiposDelNodo) {
                     entidadid: null
                   }));
                 }}
-                placeholder="SELECCIONAR FUNDO"
+                placeholder={t('umbral.select_fund')}
                 disabled={loading}
               />
             )}
@@ -560,7 +562,7 @@ for (const tipoOption of tiposDelNodo) {
         return (
           <div key="entidad-contextual">
             <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-              ENTIDAD
+              {t('table_headers.entity')}
             </label>
             {entidadesOptions.length === 1 ? (
               <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
@@ -576,7 +578,7 @@ for (const tipoOption of tiposDelNodo) {
                     entidadid: value ? parseInt(value.toString()) : null
                   }));
                 }}
-                placeholder="SELECCIONAR ENTIDAD"
+                placeholder={t('umbral.select_entity')}
                 disabled={loading}
               />
             )}
@@ -767,7 +769,7 @@ for (const tipoOption of tiposDelNodo) {
             ) : (
               <div className="text-center py-8">
                 <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
-                  {formData.fundoid ? (formData.entidadid ? 'CARGANDO NODOS...' : 'SELECCIONA UNA ENTIDAD PARA VER LOS NODOS CON SENSORES') : 'SELECCIONA UN FUNDO PARA VER LOS NODOS'}
+                  {formData.fundoid ? (formData.entidadid ? t('metricsensor.loading_nodes') : t('metricsensor.select_entity_to_see_nodes')) : t('umbral.select_fund_to_see_nodes')}
                 </div>
               </div>
             )}
@@ -778,7 +780,7 @@ for (const tipoOption of tiposDelNodo) {
         {assignedSensorTypes.length > 0 && (
           <div>
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-              TIPOS DE SENSORES ASIGNADOS
+              {t('umbral.assigned_sensor_types')}
             </h4>
             
             <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
@@ -927,24 +929,24 @@ for (const tipoOption of tiposDelNodo) {
       {selectedNodesCount > 0 && (
         <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4">
           <h5 className="text-orange-400 font-mono tracking-wider font-bold mb-3">
-            RESUMEN DE SELECCIÓN
+            {t('umbral.selection_summary')}
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="text-orange-400">Nodos seleccionados:</span>
+              <span className="text-orange-400">{t('umbral.selected_nodes')}</span>
               <span className="text-gray-900 dark:text-white ml-2">{selectedNodesCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Tipos asignados:</span>
+              <span className="text-orange-400">{t('umbral.assigned_types')}</span>
               <span className="text-gray-900 dark:text-white ml-2">{assignedTiposCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Métricas configuradas:</span>
+              <span className="text-orange-400">{t('umbral.configured_metrics')}</span>
               <span className="text-gray-900 dark:text-white ml-2">{validMetricasCount}</span>
             </div>
           </div>
           <div className="mt-3 text-orange-300 font-mono text-sm">
-            Total de umbrales a crear: <span className="font-bold">{totalCombinations}</span>
+            {t('umbral.total_thresholds_to_create')} <span className="font-bold">{totalCombinations}</span>
           </div>
         </div>
       )}

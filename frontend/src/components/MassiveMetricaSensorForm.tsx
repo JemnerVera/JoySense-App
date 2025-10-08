@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MassiveMetricaSensorFormProps {
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
@@ -41,6 +42,7 @@ export function MassiveMetricaSensorForm({
   loading = false,
   onFormDataChange
 }: MassiveMetricaSensorFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     entidadid: null,
     metricasData: []
@@ -274,7 +276,7 @@ export function MassiveMetricaSensorForm({
         {/* Entidad */}
         <div>
           <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            ENTIDAD
+            {t('table_headers.entity')}
           </label>
           <SelectWithPlaceholder
             options={entidadesOptions}
@@ -286,7 +288,7 @@ export function MassiveMetricaSensorForm({
                 selectedTipos: []
               }));
             }}
-            placeholder="SELECCIONAR ENTIDAD"
+            placeholder={t('metricsensor.select_entity')}
             disabled={loading}
           />
         </div>
@@ -315,12 +317,12 @@ export function MassiveMetricaSensorForm({
                   </div>
                   <div className="col-span-6">
                     <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
-                      NODO
+                      {t('table_headers.node')}
                     </span>
                   </div>
                   <div className="col-span-5">
                     <span className="text-orange-500 text-sm font-mono tracking-wider font-bold">
-                      FECHA DE CREACIÓN
+                      {t('metricsensor.creation_date')}
                     </span>
                   </div>
                 </div>
@@ -358,7 +360,7 @@ export function MassiveMetricaSensorForm({
             ) : (
               <div className="text-center py-8">
                 <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
-                  {formData.entidadid ? 'CARGANDO NODOS...' : 'SELECCIONA UNA ENTIDAD PARA VER LOS NODOS CON SENSORES'}
+                  {formData.entidadid ? t('metricsensor.loading_nodes') : t('metricsensor.select_entity_to_see_nodes')}
                 </div>
               </div>
             )}
@@ -371,7 +373,7 @@ export function MassiveMetricaSensorForm({
           {assignedSensorTypes.length > 0 && (
             <div>
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-                TIPOS DE SENSORES ASIGNADOS
+                {t('metricsensor.assigned_sensor_types')}
               </h4>
               
               <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
@@ -396,7 +398,7 @@ export function MassiveMetricaSensorForm({
           {assignedSensorTypes.length > 0 && (
             <div>
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-                MÉTRICAS
+                {t('metricsensor.metrics')}
               </h4>
               
               <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
@@ -426,23 +428,23 @@ export function MassiveMetricaSensorForm({
       {isFormValid() && (
         <div className="bg-orange-900 bg-opacity-30 border border-orange-600 rounded-lg p-4">
           <h5 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
-            RESUMEN DE SELECCIÓN
+            {t('metricsensor.selection_summary')}
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm font-mono">
             <div>
-              <span className="text-orange-400">Nodos seleccionados:</span>
+              <span className="text-orange-400">{t('metricsensor.selected_nodes')}</span>
               <span className="text-white ml-2">{selectedNodesCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Tipos asignados:</span>
+              <span className="text-orange-400">{t('metricsensor.assigned_types')}</span>
               <span className="text-white ml-2">{assignedTiposCount}</span>
             </div>
             <div>
-              <span className="text-orange-400">Métricas configuradas:</span>
+              <span className="text-orange-400">{t('metricsensor.configured_metrics')}</span>
               <span className="text-white ml-2">{formData.metricasData.filter(m => m.selected).length}</span>
             </div>
             <div>
-              <span className="text-orange-400">Total de métricas a crear:</span>
+              <span className="text-orange-400">{t('metricsensor.total_metrics_to_create')}</span>
               <span className="text-white ml-2 font-bold">{totalCombinations}</span>
             </div>
           </div>
