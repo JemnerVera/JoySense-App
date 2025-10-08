@@ -4074,7 +4074,6 @@ return [];
 
         }
 
-console.log('🏷️ Datos de tipos disponibles:', tiposData.slice(0, 3)); // Mostrar primeros 3 tipos para debug
 
 // Filtrar tipos por entidad si se proporciona
 
@@ -4144,23 +4143,7 @@ filteredTipos = filteredTipos.filter(tipo =>
 
             );
 
-console.log('🏷️ Tipos filtrados por entidad y nodos específicos:', {
 
-              entidadid: filterParams.entidadid,
-
-              nodoIds,
-
-              sensoresDeNodos: sensoresDeNodos.length,
-
-              tiposDeNodos: tiposDeNodos.length,
-
-              totalTipos: tiposData.length,
-
-              tiposFiltrados: filteredTipos.length,
-
-              tiposFiltradosData: filteredTipos.slice(0, 3)
-
-            });
 
           } else if (filterParams?.nodoid) {
             // Filtrar tipos por nodo específico individual (para metrica sensor)
@@ -4178,28 +4161,9 @@ console.log('🏷️ Tipos filtrados por entidad y nodos específicos:', {
               tipo.tipoid && tiposDelNodo.includes(tipo.tipoid)
             );
             
-            console.log('🏷️ Tipos filtrados por entidad y nodo específico:', {
-              entidadid: filterParams.entidadid,
-              nodoid: filterParams.nodoid,
-              sensoresDelNodo: sensoresDelNodo.length,
-              tiposDelNodo: tiposDelNodo.length,
-              tiposFiltrados: filteredTipos.length,
-              tiposFiltradosData: filteredTipos.slice(0, 3)
-            });
 
           } else {
 
-          console.log('🏷️ Tipos filtrados por entidad:', {
-
-            entidadid: filterParams.entidadid,
-
-            totalTipos: tiposData.length,
-
-            tiposFiltrados: filteredTipos.length,
-
-              tiposFiltradosData: filteredTipos.slice(0, 3)
-
-          });
 
           }
 

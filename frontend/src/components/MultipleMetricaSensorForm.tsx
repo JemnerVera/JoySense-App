@@ -177,7 +177,7 @@ return {
       hasDifferences,
       groupedNodes
     };
-  }, [selectedNodos, selectedEntidad, getUniqueOptionsForField, nodosData]);
+  }, [selectedNodos, selectedEntidad, nodosData]); // Removido getUniqueOptionsForField de las dependencias
   
   const similarityAnalysis = React.useMemo(() => analyzeNodoSimilarity(), [analyzeNodoSimilarity]);
   
@@ -272,11 +272,7 @@ return {
   }, [selectedNodos, selectedEntidad]);
 
   // Sincronizar selectedMetricasCheckboxes con selectedMetricas (props)
-  React.useEffect(() => {
-    if (selectedMetricas.length > 0 && JSON.stringify(selectedMetricas) !== JSON.stringify(selectedMetricasCheckboxes)) {
-      setSelectedMetricasCheckboxes(selectedMetricas);
-    }
-  }, [selectedMetricas, selectedMetricasCheckboxes]);
+  // Sincronizar selectedMetricas con selectedMetricasCheckboxes - REMOVIDO para evitar loop infinito
 
   // Limpiar tipos y métricas cuando cambia la entidad
   React.useEffect(() => {
@@ -292,7 +288,7 @@ return {
       const todosLosTipos = tiposDisponibles.map(tipo => tipo.value.toString());
       setSelectedTiposCheckboxes(todosLosTipos);
     }
-  }, [selectedEntidad, getUniqueOptionsForField]);
+  }, [selectedEntidad]); // Removido getUniqueOptionsForField de las dependencias
 
   // Actualizar selectedMetricas y generar combinaciones cuando cambien los checkboxes
   React.useEffect(() => {
@@ -326,7 +322,7 @@ return {
     } else {
       setMultipleMetricas([]);
     }
-  }, [selectedMetricasCheckboxes, selectedTiposCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData, setMultipleMetricas, setSelectedMetricas]);
+  }, [selectedMetricasCheckboxes, selectedTiposCheckboxes, selectedNodos, selectedEntidad, combinacionesStatus, metricasData]); // Removidas funciones set para evitar loops
 
   // Agregar useEffect para generar combinaciones automáticamente
   React.useEffect(() => {
@@ -340,7 +336,7 @@ return {
       // Solo limpiar métricas si no estamos en modo replicación y hay métricas
       setMultipleMetricas([]);
     }
-  }, [selectedNodos, selectedMetricas, onInitializeMetricas, isReplicateMode, multipleMetricas.length, setMultipleMetricas]);
+  }, [selectedNodos, selectedMetricas, isReplicateMode, multipleMetricas.length]); // Removidas funciones para evitar loops infinitos
 
   // Función para obtener el nombre de un país por ID
 
