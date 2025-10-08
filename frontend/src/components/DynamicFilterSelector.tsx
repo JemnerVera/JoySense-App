@@ -46,13 +46,13 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-2 py-1.5 bg-neutral-800 border border-neutral-600 rounded-md text-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between font-mono ${
+        className={`w-full px-2 py-1.5 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md text-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between font-mono ${
           selectedOption ? 'border-orange-500' : ''
         }`}
       >
         <div className="flex items-center space-x-2 min-w-0 flex-1">
-          {icon && <span className="text-gray-400 flex-shrink-0 w-3 h-3">{icon}</span>}
-          <span className={`${selectedOption ? 'text-white' : 'text-neutral-400'} truncate tracking-wider`}>
+          {icon && <span className="text-gray-600 dark:text-gray-400 flex-shrink-0 w-3 h-3">{icon}</span>}
+          <span className={`${selectedOption ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'} truncate tracking-wider`}>
             {selectedOption ? selectedOption.name.toUpperCase() : placeholder.toUpperCase()}
           </span>
         </div>
@@ -60,7 +60,7 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
           {selectedOption && (
             <span
               onClick={handleClear}
-              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors cursor-pointer"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -68,7 +68,7 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
             </span>
           )}
           <svg 
-            className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            className={`w-3 h-3 text-gray-600 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -80,15 +80,15 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
           {/* Barra de búsqueda */}
-          <div className="p-2 border-b border-neutral-700">
+          <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar..."
-              className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
+              className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 font-mono"
               autoFocus
             />
           </div>
@@ -103,14 +103,14 @@ const DynamicFilterSelector: React.FC<DynamicFilterSelectorProps> = ({
                   className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
                     selectedOption?.id === option.id 
                       ? 'bg-orange-500 text-white' 
-                      : 'text-neutral-300 hover:bg-neutral-800'
+                      : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                   }`}
                 >
                   {option.name.toUpperCase()}
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-sm text-neutral-400 font-mono">
+              <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
                 No se encontraron resultados
               </div>
             )}

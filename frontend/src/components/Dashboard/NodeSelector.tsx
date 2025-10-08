@@ -187,7 +187,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [])
 
   return (
-    <div className="bg-neutral-800 rounded-lg p-4 mb-6">
+    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">SELECCIONAR NODO</h3>
         
@@ -203,10 +203,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
               placeholder="Buscar nodo por nombre, DevEUI, ubicación..."
-              className="w-full px-4 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -214,15 +214,15 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
           {/* Dropdown de resultados */}
           {isSearchDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-neutral-700 border border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar">
+            <div className="absolute z-50 w-full mt-1 bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar">
               {loading ? (
-                <div className="px-4 py-3 text-center text-neutral-400">
+                <div className="px-4 py-3 text-center text-gray-600 dark:text-neutral-400">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
                 </div>
               ) : error ? (
                 <div className="px-4 py-3 text-red-400">{error}</div>
               ) : filteredNodes.length === 0 ? (
-                <div className="px-4 py-3 text-neutral-400">
+                <div className="px-4 py-3 text-gray-600 dark:text-neutral-400">
                   {searchTerm.trim() ? 'No se encontraron nodos' : 'No hay nodos disponibles'}
                 </div>
               ) : (
@@ -230,14 +230,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                   <button
                     key={node.nodoid}
                     onClick={() => handleNodeSelect(node)}
-                    className="w-full px-4 py-3 text-left hover:bg-neutral-600 transition-colors border-b border-neutral-600 last:border-b-0 group relative"
+                    className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
                     title={`DevEUI: ${node.deveui} | Ubicación: ${node.ubicacion.ubicacion} | Fundo: ${node.ubicacion.fundo.fundo} | Empresa: ${node.ubicacion.fundo.empresa.empresa} | País: ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | Coordenadas: ${node.latitud}, ${node.longitud}` : ''}`}
                   >
-                    <div className="font-medium text-white">{node.nodo}</div>
-                    <div className="text-sm text-neutral-400">
+                    <div className="font-medium text-gray-800 dark:text-white">{node.nodo}</div>
+                    <div className="text-sm text-gray-600 dark:text-neutral-400">
                       {node.ubicacion.ubicacion} - {node.ubicacion.fundo.fundo}
                     </div>
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-xs text-gray-500 dark:text-neutral-500">
                       {node.ubicacion.fundo.empresa.empresa} - {node.ubicacion.fundo.empresa.pais.pais}
                     </div>
                   </button>

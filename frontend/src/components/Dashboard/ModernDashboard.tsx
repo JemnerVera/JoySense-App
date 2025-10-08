@@ -461,14 +461,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const availableMetrics = getAvailableMetrics()
 
   return (
-    <div className="min-h-screen bg-neutral-900 overflow-y-auto dashboard-scrollbar">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar">
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
 
         {/* Error State */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg">
-            <div className="flex items-center space-x-2 text-red-300">
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
+            <div className="flex items-center space-x-2 text-red-700 dark:text-red-300">
               <div className="w-5 h-5">⚠️</div>
               <span>{error}</span>
             </div>
@@ -512,22 +512,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               return (
                 <div
                   key={metric.id}
-                  className={`bg-neutral-800 border border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-green-500/20 p-6 group ${
+                  className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-green-500/20 p-6 group ${
                     !hasData ? 'opacity-60' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="text-2xl text-white">
+                      <div className="text-2xl text-gray-800 dark:text-white">
                         {metric.id === 'temperatura' ? '🌡' : 
                          metric.id === 'humedad' ? '💧' : '⚡'}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white font-mono tracking-wider">{metric.title}</h3>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white font-mono tracking-wider">{metric.title}</h3>
                       </div>
                     </div>
                     {!hasData && (
-                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-gray-900 text-gray-300 border-gray-700 font-mono tracking-wider">
+                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-gray-200 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 font-mono tracking-wider">
                         SIN DATOS
                       </span>
                     )}
@@ -597,8 +597,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full bg-neutral-700/30 rounded-lg">
-                        <div className="text-center text-neutral-500">
+                      <div className="flex items-center justify-center h-full bg-gray-200 dark:bg-neutral-700/30 rounded-lg">
+                        <div className="text-center text-gray-600 dark:text-neutral-500">
                           <div className="text-2xl mb-2">📊</div>
                           <div className="text-sm font-mono tracking-wider">SIN DATOS DISPONIBLES</div>
                         </div>
@@ -652,11 +652,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {/* Modal de Análisis Detallado */}
         {showDetailedAnalysis && selectedMetricForAnalysis && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-neutral-900 rounded-xl border border-neutral-700 w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
               {/* Header con botones de métricas */}
-              <div className="flex items-center justify-between p-4 border-b border-neutral-700">
+              <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
                 <div className="flex items-center space-x-4">
-                  <h2 className="text-xl font-bold text-white font-mono tracking-wider">
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
                     Análisis Detallado
                   </h2>
                   {/* Botones de métricas en el header */}
@@ -668,7 +668,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm ${
                           selectedDetailedMetric === metric.dataKey
                             ? 'bg-green-500 text-white'
-                            : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
                         }`}
                       >
                         {metric.title}
@@ -681,7 +681,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     setShowDetailedAnalysis(false)
                     setSelectedMetricForAnalysis(null)
                   }}
-                  className="text-neutral-400 hover:text-white transition-colors p-2 hover:bg-neutral-700 rounded-lg"
+                  className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -690,7 +690,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               </div>
               
               {/* Contenido */}
-              <div className="flex-1 overflow-y-auto bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
+              <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
                 <div className="p-6">
 
                   {/* Filtro de fechas */}
@@ -701,7 +701,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedStartDate}
                         onChange={(e) => setDetailedStartDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                        className="px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                       />
                     </div>
                     <div className="flex flex-col">
@@ -710,27 +710,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedEndDate}
                         onChange={(e) => setDetailedEndDate(e.target.value)}
-                        className="px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                        className="px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                       />
                     </div>
                   </div>
 
                   {/* Gráfico detallado */}
-                  <div className="bg-neutral-800 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 font-mono tracking-wider">
+                  <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 font-mono tracking-wider">
                       {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}
                     </h3>
                     {(() => {
                       const chartData = processChartData(selectedDetailedMetric, true);
                       if (chartData.length === 0) {
                         return (
-                          <div className="h-96 flex items-center justify-center bg-neutral-700 rounded-lg">
+                          <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                             <div className="text-center">
                               <div className="text-4xl mb-4">📊</div>
-                              <div className="text-neutral-400 text-lg font-mono">
+                              <div className="text-gray-600 dark:text-neutral-400 text-lg font-mono">
                                 No hay datos disponibles para el rango de fechas seleccionado
                               </div>
-                              <div className="text-neutral-500 text-sm font-mono mt-2">
+                              <div className="text-gray-500 dark:text-neutral-500 text-sm font-mono mt-2">
                                 Ajusta las fechas o verifica que existan mediciones
                               </div>
                             </div>

@@ -98,7 +98,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   return (
-    <div className="bg-neutral-700 rounded-lg p-4 h-96 relative">
+    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 h-96 relative">
       <style dangerouslySetInnerHTML={{
         __html: `
           .custom-node-icon {
@@ -166,10 +166,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           }
           
           .leaflet-popup-content-wrapper {
-            background: #1f2937;
-            color: white;
+            background: #f3f4f6;
+            color: #1f2937;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          }
+          
+          .dark .leaflet-popup-content-wrapper {
+            background: #1f2937;
+            color: white;
           }
           
           .leaflet-popup-content {
@@ -178,6 +183,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           }
           
           .leaflet-popup-tip {
+            background: #f3f4f6;
+          }
+          
+          .dark .leaflet-popup-tip {
             background: #1f2937;
           }
         `

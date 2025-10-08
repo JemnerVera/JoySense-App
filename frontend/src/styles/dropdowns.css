@@ -6,8 +6,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #404040; /* neutral-700 */
+  background: #d1d5db; /* gray-300 para modo claro */
   border-radius: 3px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #404040; /* neutral-700 para modo oscuro */
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -22,7 +26,11 @@
 /* Para Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #f97316 #404040;
+  scrollbar-color: #f97316 #d1d5db; /* orange-500 gray-300 */
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: #f97316 #404040; /* orange-500 neutral-700 */
 }
 
 /* Ocultar scrollbar cuando está colapsado */
@@ -37,20 +45,20 @@
 
 /* Estilos estandarizados para select elements */
 .standard-select {
-  @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 }
 
 .standard-select option {
-  @apply bg-gray-700 text-white;
+  @apply bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white;
 }
 
 /* Estilos para dropdowns personalizados */
 .standard-dropdown {
-  @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  @apply w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
 }
 
 .standard-dropdown-option {
-  @apply w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors;
+  @apply w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
 }
 
 .standard-dropdown-option-selected {
@@ -59,12 +67,12 @@
 
 /* Placeholder con opacidad */
 .standard-placeholder {
-  @apply text-gray-400;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 /* Texto de filtros globales con opacidad */
 .filter-text {
-  @apply text-gray-300;
+  @apply text-gray-600 dark:text-gray-300;
 }
 
 /* Scrollbar personalizado para Dashboard - Estilo Verde */
@@ -73,8 +81,12 @@
 }
 
 .dashboard-scrollbar::-webkit-scrollbar-track {
-  background: #404040; /* neutral-700 */
+  background: #d1d5db; /* gray-300 para modo claro */
   border-radius: 3px;
+}
+
+.dark .dashboard-scrollbar::-webkit-scrollbar-track {
+  background: #404040; /* neutral-700 para modo oscuro */
 }
 
 .dashboard-scrollbar::-webkit-scrollbar-thumb {
@@ -89,5 +101,9 @@
 /* Para Firefox */
 .dashboard-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #22c55e #404040;
+  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+}
+
+.dark .dashboard-scrollbar {
+  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
 }

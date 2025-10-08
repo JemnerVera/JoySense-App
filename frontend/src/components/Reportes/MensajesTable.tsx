@@ -90,7 +90,7 @@ const MensajesTable: React.FC = () => {
         );
       default:
         return (
-          <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-900 text-gray-300 border border-gray-700 font-mono tracking-wider">
+          <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-200 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 font-mono tracking-wider">
             DESCONOCIDO
           </span>
         );
@@ -108,7 +108,7 @@ const MensajesTable: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-neutral-400 font-mono tracking-wider">CARGANDO MENSAJES...</p>
+          <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">CARGANDO MENSAJES...</p>
         </div>
       </div>
     );
@@ -120,7 +120,7 @@ const MensajesTable: React.FC = () => {
         <div className="text-center">
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
           <h3 className="text-xl font-bold text-red-500 mb-2 font-mono tracking-wider">ERROR</h3>
-          <p className="text-neutral-400 mb-4">{error}</p>
+          <p className="text-gray-600 dark:text-neutral-400 mb-4">{error}</p>
           <button
             onClick={loadMensajes}
             className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
@@ -137,52 +137,52 @@ const MensajesTable: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-xl font-bold text-white mb-2 font-mono tracking-wider">NO HAY MENSAJES</h3>
-          <p className="text-neutral-400 font-mono tracking-wider">No se encontraron registros de mensajes en la base de datos</p>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider">NO HAY MENSAJES</h3>
+          <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">No se encontraron registros de mensajes en la base de datos</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-neutral-800 rounded-lg p-6 border border-neutral-700">
+      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
           REGISTRO DE MENSAJES
         </h2>
-        <div className="text-sm text-neutral-400 font-mono">
-          {mensajes.length} MENSAJE(S) TOTAL
-        </div>
+          <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
+            {mensajes.length} MENSAJE(S) TOTAL
+          </div>
       </div>
 
       {/* Tabla */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-neutral-700">
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ALERTA ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">CONTACTO ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MENSAJE</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">USUARIO CREADOR</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA CREACIÓN</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">STATUS</th>
-            </tr>
-          </thead>
+            <thead>
+              <tr className="border-b border-gray-300 dark:border-neutral-700">
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ALERTA ID</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">CONTACTO ID</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MENSAJE</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">USUARIO CREADOR</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA CREACIÓN</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">STATUS</th>
+              </tr>
+            </thead>
           <tbody>
             {currentMensajes.map((mensaje, index) => (
-              <tr key={`${mensaje.alertaid}-${mensaje.contactoid}-${index}`} className="border-b border-neutral-800 hover:bg-neutral-800/50">
-                <td className="py-3 px-4 text-white font-mono">{mensaje.alertaid}</td>
-                <td className="py-3 px-4 text-white font-mono">{mensaje.contactoid}</td>
-                <td className="py-3 px-4 text-white font-mono max-w-md truncate" title={mensaje.mensaje}>
+              <tr key={`${mensaje.alertaid}-${mensaje.contactoid}-${index}`} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{mensaje.alertaid}</td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{mensaje.contactoid}</td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono max-w-md truncate" title={mensaje.mensaje}>
                   {mensaje.mensaje}
                 </td>
-                <td className="py-3 px-4 text-white font-mono">
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {formatDate(mensaje.fecha)}
                 </td>
-                <td className="py-3 px-4 text-white font-mono">{mensaje.usercreatedid || 'N/A'}</td>
-                <td className="py-3 px-4 text-white font-mono">
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{mensaje.usercreatedid || 'N/A'}</td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {formatDate(mensaje.datecreated)}
                 </td>
                 <td className="py-3 px-4">
@@ -197,21 +197,21 @@ const MensajesTable: React.FC = () => {
       {/* Paginación */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-neutral-400 font-mono">
+          <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
             PÁGINA {currentPage} DE {totalPages}
           </div>
           <div className="flex space-x-2">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider"
             >
               ANTERIOR
             </button>
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider"
             >
               SIGUIENTE
             </button>

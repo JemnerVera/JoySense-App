@@ -160,7 +160,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
                 } ${
                   isActive
                     ? "bg-orange-500 text-white"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                    : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
                 }`}
               >
                 <div className="flex-shrink-0">

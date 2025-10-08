@@ -19,7 +19,7 @@ export function PaginationControls({
       <button
         onClick={() => onPageChange(1)}
         disabled={currentPage <= 1}
-        className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+        className="px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
         title="Primera página"
       >
         ⏮️
@@ -28,19 +28,19 @@ export function PaginationControls({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
-        className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+        className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
       >
         ← ANTERIOR
       </button>
 
-      <span className="text-white flex items-center px-3 font-mono tracking-wider">
+      <span className="text-gray-800 dark:text-white flex items-center px-3 font-mono tracking-wider">
         PÁGINA {currentPage} DE {totalPages}
       </span>
 
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
-        className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+        className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
       >
         SIGUIENTE →
       </button>
@@ -48,7 +48,7 @@ export function PaginationControls({
       <button
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage >= totalPages}
-        className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+        className="px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
         title="Última página"
       >
         ⏭️

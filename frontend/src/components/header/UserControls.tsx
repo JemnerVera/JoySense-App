@@ -5,7 +5,10 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 export const UserControls: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolvedTheme, toggleTheme } = useTheme();
+  
+  // Debug: Log theme changes
+  console.log('🎨 UserControls - Current theme:', theme, 'Resolved:', resolvedTheme);
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -39,13 +42,18 @@ export const UserControls: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-3">
+      {/* Indicador de tema actual (temporal para debug) */}
+      <div className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+        {resolvedTheme}
+      </div>
+      
       {/* Botón de cambio de tema */}
       <button
         onClick={toggleTheme}
-        className="w-10 h-10 bg-neutral-800 hover:bg-neutral-700 rounded-full flex items-center justify-center transition-all duration-200 border border-neutral-600 shadow-lg hover:shadow-xl hover:scale-105"
-        aria-label={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
+        className="w-10 h-10 bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 rounded-full flex items-center justify-center transition-all duration-200 border border-gray-300 dark:border-neutral-600 shadow-lg hover:shadow-xl hover:scale-105"
+        aria-label={`Cambiar a modo ${resolvedTheme === 'dark' ? 'claro' : 'oscuro'}`}
       >
-        {theme === 'dark' ? (
+        {resolvedTheme === 'dark' ? (
           // Icono de sol para modo claro
           <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />

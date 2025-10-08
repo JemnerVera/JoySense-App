@@ -14,7 +14,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   onChange,
   options,
   placeholder,
-  className = "w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white text-base font-mono",
+  className = "w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 dark:text-white text-base font-mono",
   disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,7 +60,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center`}
       >
-        <span className={value && value !== 0 ? 'text-white' : 'text-neutral-400'} style={{fontFamily: 'monospace'}}>
+        <span className={value && value !== 0 ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'} style={{fontFamily: 'monospace'}}>
           {selectedOption ? selectedOption.label.toUpperCase() : placeholder.toUpperCase()}
         </span>
         <span className="text-neutral-400">▼</span>

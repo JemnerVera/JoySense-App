@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperat
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
 import { useFilters } from '../contexts/FilterContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Services
 import { JoySenseService } from '../services/backend-api';
@@ -113,6 +114,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { t } = useLanguage();
 
   // Data Management Hook
   const {
@@ -3366,7 +3368,7 @@ const getFundoName = (fundoId: string) => {
       contextualFields.push(
         <div key="pais-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            PAÍS 🔒
+{t('fields.country')} 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getPaisName(paisSeleccionado)}
@@ -3380,7 +3382,7 @@ const getFundoName = (fundoId: string) => {
       contextualFields.push(
         <div key="empresa-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            EMPRESA 🔒
+{t('fields.company')} 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getEmpresaName(empresaSeleccionada)}
@@ -3394,7 +3396,7 @@ const getFundoName = (fundoId: string) => {
       contextualFields.push(
         <div key="fundo-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            FUNDO 🔒
+{t('fields.fund')} 🔒
           </label>
           <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
             {getFundoName(fundoSeleccionado)}

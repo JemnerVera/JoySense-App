@@ -21,6 +21,7 @@ import { Pais, Empresa } from './types';
 // import { SkipLink } from './components/Accessibility';
 import { UserHeader } from './components/UserHeader';
 import { UserControls } from './components/header/UserControls';
+import ConfigurationPanel from './components/ConfigurationPanel';
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
 import { ModalProvider } from './contexts/ModalContext';
@@ -551,9 +552,9 @@ return hasFormDataChanges || hasMultipleDataChanges;
   return (
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="text-center">
-            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">REPORTES</h2>
-              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA SUBPESTAÑA PARA CONTINUAR</p>
+            <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">{t('tabs.reports')}</h2>
+              <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">{t('forms.select_subtab')}</p>
             </div>
           </div>
         </div>
@@ -569,9 +570,9 @@ return hasFormDataChanges || hasMultipleDataChanges;
                 <svg className="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
+                <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">{t('tabs.parameters')}</h2>
               </div>
-              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
+              <p className="text-neutral-300 font-mono tracking-wider">{t('forms.select_option')}</p>
             </div>
           </div>
         </div>
@@ -580,13 +581,8 @@ return hasFormDataChanges || hasMultipleDataChanges;
 
     if (activeTab === 'umbrales') {
       return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-          <div className="text-center">
-            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">CONFIGURACIÓN</h2>
-              <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
-            </div>
-          </div>
+        <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
+          <ConfigurationPanel />
         </div>
       );
     }
@@ -633,7 +629,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
   };
 
   const layoutContent = (
-    <div className="h-screen bg-black overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-black overflow-hidden">
       {/* Skip Link para accesibilidad */}
       {/* <SkipLink targetId="main-content">Saltar al contenido principal</SkipLink> */}
       
@@ -656,7 +652,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
 
         {/* Área principal con header fijo y contenido scrolleable */}
         <div 
-          className={`${getMainContentClasses(sidebarVisible)} bg-black flex-1`}
+          className={`${getMainContentClasses(sidebarVisible)} bg-gray-50 dark:bg-black flex-1`}
           onMouseEnter={handleContentMouseEnter}
           onMouseLeave={handleContentMouseLeave}
         >
@@ -664,9 +660,9 @@ return hasFormDataChanges || hasMultipleDataChanges;
         {!showWelcomeIntegrated && (
           <div className="flex-shrink-0">
             {/* Tactical Header */}
-            <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
+            <div className="h-16 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
-                <div className="text-sm text-neutral-400 font-mono">
+                <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
                   JOYSENSE APP / <span className={
                     activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? 'text-orange-500' // Naranja para Parámetros
@@ -678,16 +674,16 @@ return hasFormDataChanges || hasMultipleDataChanges;
                   }>
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? (() => {
-                          let breadcrumb = 'PARÁMETROS';
+                          let breadcrumb = t('tabs.parameters');
                           if (selectedTable) {
                             breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
                           }
                           if (activeSubTab) {
                             const subTabNames: { [key: string]: string } = {
-                              'status': 'ESTADO',
-                              'insert': 'CREAR',
-                              'update': 'ACTUALIZAR',
-                              'massive': 'MASIVO'
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update'),
+                              'massive': t('subtabs.massive')
                             };
                             breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
                           }
@@ -696,18 +692,18 @@ return hasFormDataChanges || hasMultipleDataChanges;
                       : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
                       ? (() => {
                           if (activeTab === 'reportes') {
-                            return 'REPORTES';
+                            return t('tabs.reports');
                           }
                           const reporteTab = activeTab.replace('reportes-', '');
                           const reporteNames: { [key: string]: string } = {
-                            'dashboard': 'DASHBOARD',
-                            'alertas': 'ALERTAS',
-                            'mensajes': 'MENSAJES'
+                            'dashboard': t('subtabs.dashboard'),
+                            'alertas': t('subtabs.alerts'),
+                            'mensajes': t('subtabs.messages')
                           };
-                          return `REPORTES / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
+                          return `${t('tabs.reports')} / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                      ? 'CONFIGURACIÓN'
+                      ? t('tabs.configuration')
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>

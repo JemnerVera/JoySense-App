@@ -31,7 +31,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
   onResetFilters
 }) => {
   return (
-    <div className="p-6 bg-black min-h-screen">
+    <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
       {/* Dashboard con jerarquía dinámica */}
       <DynamicHierarchy
         selectedPais={selectedPais}

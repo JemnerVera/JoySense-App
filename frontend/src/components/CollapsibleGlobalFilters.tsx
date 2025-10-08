@@ -96,35 +96,35 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
       {/* Header colapsable */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
       >
         <div className="flex items-center space-x-3">
           {/* Icono embudo */}
-          <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           
           {/* Chips de filtros activos */}
           <div className="flex items-center space-x-2">
             {selectedPaisName && (
-              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedPaisName.toUpperCase()}
               </span>
             )}
             {selectedEmpresaName && (
-              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedEmpresaName.toUpperCase()}
               </span>
             )}
             {selectedFundoName && (
-              <span className="bg-neutral-600 text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
                 {selectedFundoName.toUpperCase()}
               </span>
             )}
           </div>
         </div>
         <svg 
-          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+          className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"

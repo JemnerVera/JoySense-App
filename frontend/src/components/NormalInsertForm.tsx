@@ -5,6 +5,7 @@
 import React, { memo, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -66,6 +67,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // ============================================================================
   // UTILITY FUNCTIONS
   // ============================================================================
+
+  const { t } = useLanguage();
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
@@ -1122,7 +1125,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR PAÍS`}
+                  placeholder={`${t('buttons.select')} ${t('fields.country')}`}
                 />
               </div>
             );
@@ -1143,7 +1146,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR EMPRESA`}
+                  placeholder={`${t('buttons.select')} ${t('fields.company')}`}
                 />
               </div>
             );
@@ -1164,7 +1167,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR FUNDO`}
+                  placeholder={`${t('buttons.select')} ${t('fields.fund')}`}
                 />
               </div>
             );
@@ -1641,10 +1644,10 @@ return filteredNodos;
                   }
                 }}
                 disabled={!isEnabled}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white text-base placeholder-neutral-400 font-mono ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 dark:text-white text-base placeholder-gray-500 dark:placeholder-neutral-400 font-mono ${
                   isEnabled 
-                    ? 'bg-neutral-800 border-neutral-600' 
-                    : 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
+                    ? 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600' 
+                    : 'bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 opacity-50 cursor-not-allowed'
                 }`}
                   placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 10 caracteres)' : ''}${col.columnName === 'fundoabrev' ? ' (hasta 10 caracteres)' : ''}`}
               />
@@ -1712,7 +1715,7 @@ return filteredNodos;
                     label: country.paistelefono
                   })) || [];
                 })()}
-                placeholder={formData.usuarioid ? "SELECCIONAR PAÍS..." : "PRIMERO SELECCIONE UN USUARIO"}
+                placeholder={formData.usuarioid ? `${t('buttons.select')} ${t('fields.country')}...` : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.user')}`}
                 disabled={!formData.usuarioid}
               />
             </div>
@@ -1755,7 +1758,7 @@ return filteredNodos;
                       celular: fullPhoneNumber
                     });
                   }}
-                  placeholder={formData.codigotelefonoid ? "EJ: 987654321" : "PRIMERO SELECCIONE UN PAÍS"}
+                  placeholder={formData.codigotelefonoid ? "EJ: 987654321" : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.country')}`}
                   disabled={!formData.codigotelefonoid}
                   className={`flex-1 px-4 py-3 border border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
                     formData.codigotelefonoid 

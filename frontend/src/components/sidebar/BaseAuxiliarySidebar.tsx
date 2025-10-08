@@ -23,14 +23,14 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-neutral-900 border-r border-neutral-700 transition-all duration-300 h-full flex flex-col flex-shrink-0 ${
+      className={`bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full flex flex-col flex-shrink-0 ${
         isExpanded ? 'w-64' : 'w-16'
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Título - Tactical Style */}
-      <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4 flex-shrink-0">
+      <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 p-4 flex-shrink-0">
         {isExpanded ? (
           <h3 className={`font-bold text-sm tracking-wider ${
             color === 'green' ? 'text-green-500' :
@@ -38,7 +38,7 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
             'text-orange-500'
           }`}>{title.toUpperCase()}</h3>
         ) : (
-          <div className="flex items-center justify-center text-white">
+          <div className="flex items-center justify-center text-gray-800 dark:text-white">
             {collapsedText ? (
               <div className="text-lg font-bold">{collapsedText}</div>
             ) : (

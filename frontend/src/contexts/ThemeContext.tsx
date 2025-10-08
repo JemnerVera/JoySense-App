@@ -17,12 +17,12 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Get theme from localStorage or default to 'system'
+    // Get theme from localStorage or default to 'dark'
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme;
-      return savedTheme || 'system';
+      return savedTheme || 'dark';
     }
-    return 'system';
+    return 'dark';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
@@ -54,12 +54,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     
+    console.log('🎨 Applying theme:', resolvedTheme);
+    
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
+      console.log('🌙 Dark theme applied');
     } else {
       root.classList.add('light');
       root.classList.remove('dark');
+      console.log('☀️ Light theme applied');
     }
   }, [resolvedTheme]);
 
@@ -72,16 +76,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const toggleTheme = () => {
     setTheme(prev => {
-      switch (prev) {
-        case 'light':
-          return 'dark';
-        case 'dark':
-          return 'system';
-        case 'system':
-          return 'light';
-        default:
-          return 'dark';
-      }
+      const newTheme = prev === 'dark' ? 'light' : 'dark';
+      console.log('🔄 Toggling theme from', prev, 'to', newTheme);
+      return newTheme;
     });
   };
 

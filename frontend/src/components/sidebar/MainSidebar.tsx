@@ -1,5 +1,6 @@
 import React from 'react';
 import SidebarFilters from '../SidebarFilters';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MainSidebarProps {
   isExpanded: boolean;
@@ -18,10 +19,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   activeTab,
   authToken
 }) => {
+  const { t } = useLanguage();
   const mainTabs = [
     {
       id: 'reportes',
-      label: 'Reportes',
+      label: t('tabs.reports'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -31,7 +33,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     },
     {
       id: 'parameters',
-      label: 'Parámetros',
+      label: t('tabs.parameters'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -41,7 +43,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     },
     {
       id: 'umbrales',
-      label: 'Configuración',
+      label: t('tabs.configuration'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" 
@@ -75,12 +77,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
   return (
     <div 
-      className="bg-neutral-900 border-r border-neutral-700 transition-all duration-300 h-full"
+      className="bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Logo - Tactical Style */}
-      <div className="h-16 flex items-center justify-center border-b border-neutral-700 p-4">
+      <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 p-4">
         {isExpanded ? (
           <div className="flex items-center space-x-3">
             <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
@@ -95,7 +97,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
       {/* Filtros globales */}
       {isExpanded && (
-        <div className="px-4 py-4 border-b border-neutral-700">
+        <div className="px-4 py-4 border-b border-gray-300 dark:border-neutral-700">
           <SidebarFilters authToken={authToken} />
         </div>
       )}
@@ -114,7 +116,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                 } ${
                   isActive
                     ? `${getActiveTabColor(tab.color)} text-white`
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                    : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
                 }`}
               >
                 <div className="flex-shrink-0">
@@ -131,12 +133,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
       {/* System Status - Tactical Style */}
       {isExpanded && (
-        <div className="mt-8 p-4 bg-neutral-800 border border-neutral-700 rounded mx-4">
+        <div className="mt-8 p-4 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded mx-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-xs text-white font-mono">SISTEMA EN LÍNEA</span>
+            <span className="text-xs text-gray-800 dark:text-white font-mono">SISTEMA EN LÍNEA</span>
           </div>
-          <div className="text-xs text-neutral-500 font-mono">
+          <div className="text-xs text-gray-600 dark:text-neutral-500 font-mono">
             <div>TIEMPO ACTIVO: 72:14:33</div>
             <div>SENSORES: 847 ACTIVOS</div>
             <div>ALERTAS: 23 EN CURSO</div>
