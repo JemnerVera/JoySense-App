@@ -1,12 +1,14 @@
 import React from 'react';
 import { useAlertasFilterSafe } from '../../contexts/AlertasFilterContext';
 import { ALERTAS_CONFIG } from '../../config/alertasConfig';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AlertasFiltersProps {
   isExpanded: boolean;
 }
 
 const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
+  const { t } = useLanguage();
   // Hook seguro que no lanza error si no hay contexto
   const alertasFilter = useAlertasFilterSafe();
 
@@ -32,13 +34,13 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
   return (
     <div className={ALERTAS_CONFIG.STYLES.FILTER_CONTAINER}>
       <h4 className={ALERTAS_CONFIG.STYLES.FILTER_TITLE}>
-        {ALERTAS_CONFIG.SIDEBAR.FILTERS_SECTION_TITLE}
+        {t('alerts.filters.title')}
       </h4>
       
       {/* Filtro de Criticidad */}
       <div className="mb-4">
         <label className={ALERTAS_CONFIG.STYLES.FILTER_LABEL}>
-          {ALERTAS_CONFIG.SIDEBAR.CRITICIDAD_LABEL}
+          {t('alerts.filters.criticality')}
         </label>
         <select
           value={filtroCriticidad}
@@ -46,7 +48,7 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
           className={ALERTAS_CONFIG.STYLES.FILTER_SELECT}
         >
           <option value={ALERTAS_CONFIG.DEFAULT_FILTERS.CRITICIDAD}>
-            {ALERTAS_CONFIG.SIDEBAR.TODAS_OPTION}
+            {t('alerts.filters.all')}
           </option>
           {Array.isArray(criticidadesDisponibles) && criticidadesDisponibles.map(criticidad => (
             <option key={criticidad} value={criticidad} className={ALERTAS_CONFIG.STYLES.FILTER_OPTION}>
@@ -59,7 +61,7 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
       {/* Filtro de Ubicación */}
       <div className="mb-4">
         <label className={ALERTAS_CONFIG.STYLES.FILTER_LABEL}>
-          {ALERTAS_CONFIG.SIDEBAR.UBICACION_LABEL}
+          {t('alerts.filters.location')}
         </label>
         <select
           value={filtroUbicacion}
@@ -67,7 +69,7 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
           className={ALERTAS_CONFIG.STYLES.FILTER_SELECT}
         >
           <option value={ALERTAS_CONFIG.DEFAULT_FILTERS.UBICACION}>
-            {ALERTAS_CONFIG.SIDEBAR.TODAS_OPTION}
+            {t('alerts.filters.all')}
           </option>
           {Array.isArray(ubicacionesDisponibles) && ubicacionesDisponibles.map(ubicacion => (
             <option key={ubicacion} value={ubicacion} className={ALERTAS_CONFIG.STYLES.FILTER_OPTION}>

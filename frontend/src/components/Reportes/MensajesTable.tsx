@@ -1,5 +1,6 @@
 import React, { useState, useEffect, startTransition } from 'react';
 import { JoySenseService } from '../../services/backend-api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MensajeData {
   alertaid: number;
@@ -15,6 +16,7 @@ interface MensajeData {
 }
 
 const MensajesTable: React.FC = () => {
+  const { t } = useLanguage();
   const [mensajes, setMensajes] = useState<MensajeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +110,7 @@ const MensajesTable: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">CARGANDO MENSAJES...</p>
+          <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">{t('reports.messages.loading')}</p>
         </div>
       </div>
     );
@@ -137,7 +139,7 @@ const MensajesTable: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider">NO HAY MENSAJES</h3>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider">{t('reports.messages.no_data')}</h3>
           <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">No se encontraron registros de mensajes en la base de datos</p>
         </div>
       </div>
@@ -149,10 +151,10 @@ const MensajesTable: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
-          REGISTRO DE MENSAJES
+          {t('reports.messages.title')}
         </h2>
           <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-            {mensajes.length} MENSAJE(S) TOTAL
+            {mensajes.length} {t('reports.messages.total')}
           </div>
       </div>
 
@@ -161,13 +163,13 @@ const MensajesTable: React.FC = () => {
         <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-300 dark:border-neutral-700">
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ALERTA ID</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">CONTACTO ID</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MENSAJE</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">USUARIO CREADOR</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA CREACIÓN</th>
-                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">STATUS</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.alert_id')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.contact_id')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.message')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.date')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creator_user')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
+                <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.status')}</th>
               </tr>
             </thead>
           <tbody>

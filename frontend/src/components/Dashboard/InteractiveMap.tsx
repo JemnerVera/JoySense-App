@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { NodeData } from '../../types/NodeData'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 // Importar iconos de Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -63,6 +64,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   loading = false,
   nodeMediciones = {}
 }) => {
+  const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
 
   // Calcular centro del mapa basado en los nodos disponibles
@@ -218,14 +220,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               <div className="text-sm">
                 <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
                 <div className="space-y-1">
-                  <div><strong>DevEUI:</strong> {node.deveui}</div>
-                  <div><strong>Ubicación:</strong> {node.ubicacion.ubicacion}</div>
-                  <div><strong>Fundo:</strong> {node.ubicacion.fundo.fundo}</div>
-                  <div><strong>Empresa:</strong> {node.ubicacion.fundo.empresa.empresa}</div>
-                  <div><strong>País:</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
-                  <div><strong>Entidad:</strong> {node.entidad.entidad}</div>
+                  <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
+                  <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
+                  <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
+                  <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
+                  <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
+                  <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
                   <div className="mt-2 pt-2 border-t border-neutral-600">
-                    <div><strong>Coordenadas:</strong></div>
+                    <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
                     <div className="text-xs text-neutral-400">
                       {node.latitud}, {node.longitud}
                     </div>

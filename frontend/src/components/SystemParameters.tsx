@@ -20,6 +20,7 @@ import { TableInfo, Message } from '../types/systemParameters';
 import { handleInsertError, handleMultipleInsertError } from '../utils/errorHandler';
 import { 
   getColumnDisplayName, 
+  getColumnDisplayNameTranslated,
   getDisplayValue, 
   formatDate, 
   getUserName, 
@@ -107,6 +108,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   onFormDataChange,
   clearFormData = false,
 }, ref) => {
+  const { t } = useLanguage();
 
   // ============================================================================
   // HOOKS & CONTEXTS
@@ -114,7 +116,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   
   const { user } = useAuth();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
-  const { t } = useLanguage();
 
   // Data Management Hook
   const {
@@ -8105,7 +8106,7 @@ const handleCancelModal = () => {
 
                                {statusVisibleColumns.map(col => {
 
-                                 const displayName = getColumnDisplayName(col.columnName);
+                                 const displayName = getColumnDisplayNameTranslated(col.columnName, t);
 
                                  return displayName ? (
 
@@ -8128,7 +8129,7 @@ const handleCancelModal = () => {
                              {statusVisibleColumns.length === 0 ? (
                                <tr>
                                  <td colSpan={10} className="px-6 py-8 text-center text-neutral-400">
-                                   Cargando columnas...
+                                   {t('status.loading_columns')}
                                  </td>
                                </tr>
                              ) : getStatusPaginatedData().map((row, index) => (
@@ -8137,7 +8138,7 @@ const handleCancelModal = () => {
 
                                  {statusVisibleColumns.map(col => {
 
-                                   const displayName = getColumnDisplayName(col.columnName);
+                                   const displayName = getColumnDisplayNameTranslated(col.columnName, t);
 
                                    return displayName ? (
 
@@ -8165,10 +8166,10 @@ const handleCancelModal = () => {
                                                // Para filas agrupadas, verificar si al menos una fila original está activa
                                                if (row.originalRows && row.originalRows.length > 0) {
                                                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                                                 return hasActiveRow ? 'Activo' : 'Inactivo';
+                                                 return hasActiveRow ? t('status.active') : t('status.inactive');
                                                }
                                                // Para filas normales, usar el statusid directamente
-                                               return (row[col.columnName] === 1 ? 'Activo' : 'Inactivo');
+                                               return (row[col.columnName] === 1 ? t('status.active') : t('status.inactive'));
                                              })()}
 
                                            </span>
@@ -8733,7 +8734,7 @@ const handleCancelModal = () => {
 
                         {updateVisibleColumns.map(col => {
 
-                          const displayName = getColumnDisplayName(col.columnName);
+                          const displayName = getColumnDisplayNameTranslated(col.columnName, t);
 
                           if (!displayName) return null;
 
@@ -8782,10 +8783,10 @@ const value = updateFormData[col.columnName] || '';
               // Para filas agrupadas, verificar si al menos una fila original está activa
               if (selectedRowForUpdate && selectedRowForUpdate.originalRows && selectedRowForUpdate.originalRows.length > 0) {
                 const hasActiveRow = selectedRowForUpdate.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                return hasActiveRow ? 'Activo' : 'Inactivo';
+                return hasActiveRow ? t('status.active') : t('status.inactive');
               }
               // Para filas normales, usar el statusid directamente
-              return (value === 1 ? 'Activo' : 'Inactivo');
+              return (value === 1 ? t('status.active') : t('status.inactive'));
             })()
 
                                 : selectedRowForUpdate ? getDisplayValueLocal(selectedRowForUpdate, col.columnName) : '';
@@ -9076,7 +9077,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                       <th key={col.columnName} className="text-left py-2 px-2 text-neutral-300 font-medium font-mono tracking-wider">
 
-                                        {getColumnDisplayName(col.columnName).toUpperCase()}
+                                        {getColumnDisplayNameTranslated(col.columnName, t).toUpperCase()}
 
                                       </th>
 
@@ -9281,7 +9282,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                      {updateVisibleColumns.map(col => {
 
-                                       const displayName = getColumnDisplayName(col.columnName);
+                                       const displayName = getColumnDisplayNameTranslated(col.columnName, t);
 
                                        return displayName ? (
 
@@ -9304,7 +9305,7 @@ setIndividualRowStatus(newIndividualStatus);
                                  {updateVisibleColumns.length === 0 ? (
                                    <tr>
                                      <td colSpan={10} className="px-6 py-8 text-center text-neutral-400">
-                                       Cargando columnas...
+                                       {t('status.loading_columns')}
                                      </td>
                                    </tr>
                                  ) : (() => {
@@ -9385,7 +9386,7 @@ return (
 
                                      {updateVisibleColumns.map(col => {
 
-                                       const displayName = getColumnDisplayName(col.columnName);
+                                       const displayName = getColumnDisplayNameTranslated(col.columnName, t);
 
                                        return displayName ? (
 
@@ -9417,10 +9418,10 @@ if (col.columnName === 'statusid') {
                                                // Para filas agrupadas, verificar si al menos una fila original está activa
                                                if (row.originalRows && row.originalRows.length > 0) {
                                                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                                                 return hasActiveRow ? 'Activo' : 'Inactivo';
+                                                 return hasActiveRow ? t('status.active') : t('status.inactive');
                                                }
                                                // Para filas normales, usar el statusid directamente
-                                               return (row[col.columnName] === 1 ? 'Activo' : 'Inactivo');
+                                               return (row[col.columnName] === 1 ? t('status.active') : t('status.inactive'));
                                              })()}
 
                                                  </span>

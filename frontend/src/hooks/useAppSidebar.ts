@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface UseAppSidebarProps {
   showWelcome: boolean;
@@ -6,6 +7,7 @@ interface UseAppSidebarProps {
 }
 
 export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) => {
+  const { t } = useLanguage();
   const [sidebarVisible, setSidebarVisible] = useState(showWelcome);
   const [auxiliarySidebarVisible, setAuxiliarySidebarVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -126,16 +128,16 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
   // Función para obtener el nombre de la pestaña
   const getTabName = useCallback((tabId: string) => {
     const tabNames: { [key: string]: string } = {
-      'reportes': 'Reportes',
-      'reportes-dashboard': 'Dashboard',
-      'reportes-alertas': 'Alertas',
-      'reportes-mensajes': 'Mensajes',
-      'parameters': 'Parámetros',
-      'configuration': 'Configuración',
-      'umbrales': 'Umbrales'
+      'reportes': t('tabs.reports'),
+      'reportes-dashboard': t('subtabs.dashboard'),
+      'reportes-alertas': t('subtabs.alerts'),
+      'reportes-mensajes': t('subtabs.messages'),
+      'parameters': t('tabs.parameters'),
+      'configuration': t('tabs.configuration'),
+      'umbrales': t('tabs.configuration')
     };
     return tabNames[tabId] || tabId;
-  }, []);
+  }, [t]);
 
   return {
     sidebarVisible,

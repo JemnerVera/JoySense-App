@@ -3,6 +3,8 @@
  * Funciones sin estado ni efectos secundarios que pueden ser reutilizadas
  */
 
+import { useLanguage } from '../contexts/LanguageContext';
+
 // Tipos para las funciones de utilidad
 export interface RelatedData {
   paisesData?: any[];
@@ -22,7 +24,7 @@ export interface RelatedData {
 }
 
 /**
- * Obtiene el nombre de display para una columna
+ * Obtiene el nombre de display para una columna (versión estática)
  */
 export const getColumnDisplayName = (columnName: string): string => {
   const columnMappings: Record<string, string> = {
@@ -82,6 +84,159 @@ export const getColumnDisplayName = (columnName: string): string => {
     'descripcion': 'Descripción',
     'activo': 'Activo',
     'inactivo': 'Inactivo',
+    'valor_minimo': 'Valor Mínimo',
+    'valor_maximo': 'Valor Máximo',
+    'unidad': 'Unidad',
+    'frecuencia': 'Frecuencia',
+    'tolerancia': 'Tolerancia',
+    'latitud': 'Latitud',
+    'longitud': 'Longitud',
+    'altitud': 'Altitud',
+    'direccion': 'Dirección',
+    'telefono': 'Teléfono',
+    'contacto': 'Contacto',
+    'celular': 'Celular',
+    'codigotelefonoid': 'Código País',
+    'correo': 'Correo Electrónico',
+    'observaciones': 'Observaciones',
+    'fecha_inicio': 'Fecha de Inicio',
+    'fecha_fin': 'Fecha de Fin',
+    'estado': 'Estado',
+    'tipo_sensor': 'Tipo de Sensor',
+    'marca': 'Marca',
+    'modelo': 'Modelo',
+    'serie': 'Serie',
+    'fecha_instalacion': 'Fecha de Instalación',
+    'fecha_calibracion': 'Fecha de Calibración',
+    'proxima_calibracion': 'Próxima Calibración',
+    'rango_minimo': 'Rango Mínimo',
+    'rango_maximo': 'Rango Máximo',
+    'precision': 'Precisión',
+    'resolucion': 'Resolución',
+    'drift': 'Drift',
+    'temperatura_operacion': 'Temperatura de Operación',
+    'humedad_operacion': 'Humedad de Operación',
+    'presion_operacion': 'Presión de Operación',
+    'voltaje_operacion': 'Voltaje de Operación',
+    'corriente_operacion': 'Corriente de Operación',
+    'frecuencia_muestreo': 'Frecuencia de Muestreo',
+    'tiempo_respuesta': 'Tiempo de Respuesta',
+    'vida_util': 'Vida Útil',
+    'costo': 'Costo',
+    'proveedor': 'Proveedor',
+    'garantia': 'Garantía',
+    'manual': 'Manual',
+    'certificado': 'Certificado',
+    'calibracion': 'Calibración',
+    'mantenimiento': 'Mantenimiento',
+    'reparacion': 'Reparación',
+    'reemplazo': 'Reemplazo',
+    'disposicion': 'Disposición',
+    'reciclaje': 'Reciclaje',
+    'impacto_ambiental': 'Impacto Ambiental',
+    'sostenibilidad': 'Sostenibilidad',
+    'eficiencia_energetica': 'Eficiencia Energética',
+    'huella_carbono': 'Huella de Carbono',
+    'certificacion_iso': 'Certificación ISO',
+    'certificacion_ce': 'Certificación CE',
+    'certificacion_fcc': 'Certificación FCC',
+    'certificacion_ul': 'Certificación UL',
+    'certificacion_csa': 'Certificación CSA',
+    'certificacion_iecex': 'Certificación IECEx',
+    'certificacion_atex': 'Certificación ATEX',
+    'certificacion_sil': 'Certificación SIL',
+    'certificacion_ieee': 'Certificación IEEE',
+    'certificacion_ansi': 'Certificación ANSI',
+    'certificacion_astm': 'Certificación ASTM',
+    'certificacion_din': 'Certificación DIN',
+    'certificacion_bs': 'Certificación BS',
+    'certificacion_jis': 'Certificación JIS',
+    'certificacion_gb': 'Certificación GB',
+    'certificacion_gost': 'Certificación GOST',
+    'certificacion_sabs': 'Certificación SABS',
+    'certificacion_icasa': 'Certificación ICASA',
+    'certificacion_anatel': 'Certificación ANATEL',
+    'certificacion_conatel': 'Certificación CONATEL',
+    'certificacion_sutel': 'Certificación SUTEL',
+    'certificacion_mtc': 'Certificación MTC',
+    'certificacion_senatel': 'Certificación SENATEL',
+    'certificacion_arcotel': 'Certificación ARCOTEL',
+    'certificacion_supercom': 'Certificación SUPERCOM',
+    'certificacion_mintic': 'Certificación MINTIC',
+    'certificacion_ict': 'Certificación ICT',
+    'certificacion_ift': 'Certificación IFT',
+    'certificacion_crt': 'Certificación CRT',
+    'certificacion_cofetel': 'Certificación COFETEL',
+    'certificacion_ifetel': 'Certificación IFETEL',
+    'certificacion_telecom': 'Certificación TELECOM',
+    'certificacion_osiptel': 'Certificación OSIPTEL',
+  };
+
+  return columnMappings[columnName] || columnName;
+};
+
+/**
+ * Obtiene el nombre de display para una columna con traducciones dinámicas
+ */
+export const getColumnDisplayNameTranslated = (columnName: string, t: (key: string) => string): string => {
+  const columnMappings: Record<string, string> = {
+    'paisid': t('table_headers.country'),
+    'empresaid': t('table_headers.company'),
+    'fundoid': 'Fundo', // No hay traducción específica
+    'ubicacionid': 'Ubicación', // No hay traducción específica
+    'entidadid': 'Entidad', // No hay traducción específica
+    'nodoid': 'Nodo', // No hay traducción específica
+    'tipoid': 'Tipo', // No hay traducción específica
+    'metricaid': 'Métrica', // No hay traducción específica
+    'tipos': 'Tipo', // No hay traducción específica
+    'metricas': 'Métrica', // No hay traducción específica
+    'localizacionid': 'Localización', // No hay traducción específica
+    'criticidadid': 'Criticidad', // No hay traducción específica
+    'perfilid': 'Perfil', // No hay traducción específica
+    'umbralid': 'Umbral', // No hay traducción específica
+    'usuarioid': 'Usuario', // No hay traducción específica
+    'medioid': 'Medio', // No hay traducción específica
+    'paisabrev': t('table_headers.abbreviation'),
+    'empresabrev': t('table_headers.abbreviation'),
+    'empresaabrev': t('table_headers.abbreviation'),
+    'farmabrev': t('table_headers.abbreviation'),
+    'fundoabrev': t('table_headers.abbreviation'),
+    'ubicacionabrev': t('table_headers.abbreviation'),
+    'statusid': t('table_headers.status'),
+    'usercreatedid': t('table_headers.created_by'),
+    'usermodifiedid': t('table_headers.modified_by'),
+    'datecreated': t('table_headers.creation_date'),
+    'datemodified': t('table_headers.modification_date'),
+    'modified_by': t('table_headers.modified_by'),
+    'pais': t('table_headers.country'),
+    'empresa': t('table_headers.company'),
+    'fundo': 'Fundo', // No hay traducción específica
+    'ubicacion': 'Ubicación', // No hay traducción específica
+    'entidad': 'Entidad', // No hay traducción específica
+    'nodo': 'Nodo', // No hay traducción específica
+    'tipo': 'Tipo', // No hay traducción específica
+    'metrica': 'Métrica', // No hay traducción específica
+    'localizacion': 'Localización', // No hay traducción específica
+    'criticidad': 'Criticidad', // No hay traducción específica
+    'grado': 'Grado', // No hay traducción específica
+    'escalamiento': 'Escalamiento', // No hay traducción específica
+    'escalon': 'Escalón', // No hay traducción específica
+    'perfil': 'Perfil', // No hay traducción específica
+    'nivel': 'Nivel', // No hay traducción específica
+    'jefeid': 'Jefe', // No hay traducción específica
+    'umbral': 'Umbral', // No hay traducción específica
+    'usuario': 'Usuario', // No hay traducción específica
+    'medio': 'Medio', // No hay traducción específica
+    'login': 'Login', // No hay traducción específica
+    'firstname': 'Nombre', // No hay traducción específica
+    'lastname': 'Apellido', // No hay traducción específica
+    'email': 'Email', // No hay traducción específica
+    'nombre': 'Nombre', // No hay traducción específica
+    'abreviatura': t('table_headers.abbreviation'),
+    'descripcion': 'Descripción', // No hay traducción específica
+    'activo': t('status.active'),
+    'inactivo': t('status.inactive'),
+    // Mantener el resto de los campos como estaban
     'valor_minimo': 'Valor Mínimo',
     'valor_maximo': 'Valor Máximo',
     'unidad': 'Unidad',

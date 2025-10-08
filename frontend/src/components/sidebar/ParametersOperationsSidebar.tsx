@@ -1,6 +1,7 @@
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import ProtectedSubTabButton from '../ProtectedSubTabButton';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ParametersOperationsSidebarProps {
   isExpanded: boolean;
@@ -25,15 +26,17 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
   multipleData = [],
   massiveFormData = {}
 }) => {
-  // Definir todas las operaciones disponibles
-  const allOperations: Array<{
+  const { t } = useLanguage();
+  
+  // Función para obtener las operaciones con traducciones dinámicas
+  const getAllOperations = (): Array<{
     id: 'status' | 'insert' | 'update' | 'massive';
     label: string;
     icon: React.ReactNode;
-  }> = [
+  }> => [
     {
       id: 'status',
-      label: 'Estado',
+      label: t('parameters.operations.status'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -42,7 +45,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
     },
     {
       id: 'insert',
-      label: 'Crear',
+      label: t('parameters.operations.create'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -51,7 +54,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
     },
     {
       id: 'update',
-      label: 'Actualizar',
+      label: t('parameters.operations.update'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -60,7 +63,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
     },
     {
       id: 'massive',
-      label: 'Masivo',
+      label: t('parameters.operations.massive'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -68,6 +71,9 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
       )
     }
   ];
+
+  // Obtener las operaciones con traducciones dinámicas
+  const allOperations = getAllOperations();
 
   // Icono para el sidebar de operaciones
   const operationsIcon = (
@@ -102,27 +108,27 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
   // Obtener el nombre de la tabla seleccionada para mostrar en el título
   const getTableDisplayName = (tableValue: string): string => {
     const tableNames: Record<string, string> = {
-      'pais': 'País',
-      'empresa': 'Empresa',
-      'fundo': 'Fundo',
-      'ubicacion': 'Ubicación',
-      'localizacion': 'Localización',
-      'entidad': 'Entidad',
-      'tipo': 'Tipo',
-      'nodo': 'Nodo',
-      'sensor': 'Sensor',
-      'metricasensor': 'Métrica Sensor',
-      'metrica': 'Métrica',
-      'umbral': 'Umbral',
-      'perfilumbral': 'Perfil Umbral',
-      'audit_log_umbral': 'Audit Log Umbral',
-      'criticidad': 'Criticidad',
-      'medio': 'Medio',
-      'contacto': 'Contacto',
-      'correo': 'Correo',
-      'usuario': 'Usuario',
-      'usuarioperfil': 'Usuario Perfil',
-      'perfil': 'Perfil'
+      'pais': t('parameters.tables.country'),
+      'empresa': t('parameters.tables.company'),
+      'fundo': t('parameters.tables.fund'),
+      'ubicacion': t('parameters.tables.location'),
+      'localizacion': t('parameters.tables.localization'),
+      'entidad': t('parameters.tables.entity'),
+      'tipo': t('parameters.tables.type'),
+      'nodo': t('parameters.tables.node'),
+      'sensor': t('parameters.tables.sensor'),
+      'metricasensor': t('parameters.tables.metric_sensor'),
+      'metrica': t('parameters.tables.metric'),
+      'umbral': t('parameters.tables.threshold'),
+      'perfilumbral': t('parameters.tables.threshold_profile'),
+      'audit_log_umbral': t('parameters.tables.audit_log_threshold'),
+      'criticidad': t('parameters.tables.criticality'),
+      'medio': 'Medio', // No hay traducción específica para este
+      'contacto': t('parameters.tables.contact'),
+      'correo': t('parameters.tables.email'),
+      'usuario': t('parameters.tables.user'),
+      'usuarioperfil': t('parameters.tables.user_profile'),
+      'perfil': t('parameters.tables.profile')
     };
     
     return tableNames[tableValue] || tableValue;
@@ -133,7 +139,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title={selectedTable ? `${getTableDisplayName(selectedTable)}` : "Operaciones"}
+      title={selectedTable ? `${getTableDisplayName(selectedTable)}` : t('parameters.operations.title')}
       icon={operationsIcon}
       color="orange"
       collapsedText="..."

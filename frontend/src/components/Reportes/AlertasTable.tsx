@@ -147,7 +147,7 @@ const AlertasTable: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider">NO HAY ALERTAS</h3>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider">{t('reports.alerts.no_data')}</h3>
           <p className="text-gray-600 dark:text-neutral-400 font-mono tracking-wider">No se encontraron registros de alertas en la base de datos</p>
         </div>
       </div>
@@ -159,10 +159,10 @@ const AlertasTable: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
-          REGISTRO DE ALERTAS
+          {t('reports.alerts.title')}
         </h2>
         <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-          {alertas.length} ALERTA(S) TOTAL
+          {alertas.length} {t('reports.alerts.total')}
         </div>
       </div>
 
@@ -171,13 +171,13 @@ const AlertasTable: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-300 dark:border-neutral-700">
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">ID ALERTA</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">UMBRAL ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">MEDICIÓN ID</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA ALERTA</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">USUARIO CREADOR</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">FECHA CREACIÓN</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">STATUS</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.threshold_id')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.measurement_id')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creator_user')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.status')}</th>
             </tr>
           </thead>
           <tbody>

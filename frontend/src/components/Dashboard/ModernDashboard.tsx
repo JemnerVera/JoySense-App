@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
+import { useLanguage } from "../../contexts/LanguageContext"
 
 interface ModernDashboardProps {
   filters: {
@@ -72,6 +73,38 @@ const baseMetrics: MetricConfig[] = [
 ]
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
+  const { t } = useLanguage();
+  
+  // Función para obtener métricas con traducciones dinámicas
+  const getTranslatedMetrics = (): MetricConfig[] => [
+    {
+      id: "temperatura",
+      title: t('dashboard.metrics.temperature'),
+      color: "#f59e0b",
+      unit: "°C",
+      dataKey: "temperatura",
+      description: "Temperatura del suelo/sustrato",
+      ranges: { min: 15, max: 35, optimal: [20, 28] }
+    },
+    {
+      id: "humedad",
+      title: t('dashboard.metrics.humidity'),
+      color: "#3b82f6",
+      unit: "%",
+      dataKey: "humedad",
+      description: "Humedad relativa del suelo",
+      ranges: { min: 40, max: 90, optimal: [60, 75] }
+    },
+    {
+      id: "conductividad",
+      title: t('dashboard.metrics.electroconductivity'),
+      color: "#10b981",
+      unit: "uS/cm",
+      dataKey: "conductividad",
+      description: "Conductividad eléctrica del sustrato",
+      ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
+    }
+  ];
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -435,7 +468,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Obtener métricas disponibles (solo las 3 principales)
   const getAvailableMetrics = () => {
     // Solo mostrar las 3 métricas principales: Temperatura, Humedad, Electroconductividad
-    return baseMetrics
+    return getTranslatedMetrics()
   }
 
   // Verificar si una métrica tiene datos
@@ -528,7 +561,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     </div>
                     {!hasData && (
                       <span className="px-2 py-1 text-xs font-bold rounded-full border bg-gray-200 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 font-mono tracking-wider">
-                        SIN DATOS
+                        {t('dashboard.no_data')}
                       </span>
                     )}
                   </div>
@@ -577,7 +610,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           <Tooltip
                             labelFormatter={(label) => (
                               <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                Hora: {label}
+                                {t('dashboard.tooltip.hour')} {label}
                               </span>
                             )}
                             formatter={(value: number, name: string) => [
@@ -600,7 +633,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <div className="flex items-center justify-center h-full bg-gray-200 dark:bg-neutral-700/30 rounded-lg">
                         <div className="text-center text-gray-600 dark:text-neutral-500">
                           <div className="text-2xl mb-2">📊</div>
-                          <div className="text-sm font-mono tracking-wider">SIN DATOS DISPONIBLES</div>
+                          <div className="text-sm font-mono tracking-wider">{t('dashboard.no_data_available')}</div>
                         </div>
                       </div>
                     )}
@@ -615,7 +648,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       const latestDate = new Date(latest.fecha)
                       return (
                         <div className="text-xs text-neutral-400 text-center mb-3">
-                          Última medida: {latestDate.toLocaleString('es-ES', { 
+                          {t('dashboard.last_measurement')} {latestDate.toLocaleString('es-ES', { 
                             day: '2-digit', 
                             month: '2-digit', 
                             year: 'numeric',
@@ -657,11 +690,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
                 <div className="flex items-center space-x-4">
                   <h2 className="text-xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
-                    Análisis Detallado
+                    {t('dashboard.detailed_analysis')}
                   </h2>
                   {/* Botones de métricas en el header */}
                   <div className="flex space-x-2">
-                    {baseMetrics.map((metric) => (
+                    {getTranslatedMetrics().map((metric) => (
                       <button
                         key={metric.id}
                         onClick={() => setSelectedDetailedMetric(metric.dataKey)}
@@ -696,7 +729,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   {/* Filtro de fechas */}
                   <div className="flex space-x-4 mb-6">
                     <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">FECHA INICIO</label>
+                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_start')}</label>
                       <input
                         type="date"
                         value={detailedStartDate}
@@ -705,7 +738,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       />
                     </div>
                     <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">FECHA FIN</label>
+                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_end')}</label>
                       <input
                         type="date"
                         value={detailedEndDate}
@@ -718,7 +751,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   {/* Gráfico detallado */}
                   <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 font-mono tracking-wider">
-                      {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.title}
+                      {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
                     </h3>
                     {(() => {
                       const chartData = processChartData(selectedDetailedMetric, true);
@@ -778,12 +811,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           <Tooltip
                             labelFormatter={(label) => (
                               <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                Hora: {label}
+                                {t('dashboard.tooltip.hour')} {label}
                               </span>
                             )}
                             formatter={(value: number, name: string) => [
                               <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                {name}: {value ? value.toFixed(1) : '--'} {baseMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                {name}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
                               </span>
                             ]}
                             contentStyle={{

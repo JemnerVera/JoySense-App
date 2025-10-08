@@ -1,10 +1,13 @@
 
+import { useLanguage } from '../../contexts/LanguageContext';
+
 interface TableStatsDisplayProps {
   tableData: any[];
   userData?: any[];
 }
 
 export function TableStatsDisplay({ tableData, userData }: TableStatsDisplayProps) {
+  const { t } = useLanguage();
   // Buscar el último registro modificado
   const lastModified = tableData
     ?.filter((row: any) => row.usermodifiedid || row.usercreatedid)
@@ -34,17 +37,17 @@ export function TableStatsDisplay({ tableData, userData }: TableStatsDisplayProp
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
-        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">REGISTROS</div>
+        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.records')}</div>
         <div className="text-2xl font-bold text-orange-500 font-mono">{tableData.length}</div>
       </div>
 
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
-        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMA ACTUALIZACIÓN</div>
+        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_update')}</div>
         <div className="text-2xl font-bold text-orange-500 font-mono">{new Date().toLocaleDateString('es-ES')}</div>
       </div>
 
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
-        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">ÚLTIMO USUARIO</div>
+        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_user')}</div>
         <div className="text-2xl font-bold text-orange-500 font-mono">
           {getLastUser()}
         </div>

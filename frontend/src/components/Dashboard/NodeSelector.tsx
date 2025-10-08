@@ -3,6 +3,7 @@ import { JoySenseService } from '../../services/backend-api'
 import { InteractiveMap } from './InteractiveMap'
 import { NodeData } from '../../types/NodeData'
 import { useFilters } from '../../contexts/FilterContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface NodeSelectorProps {
   selectedEntidadId: number | null
@@ -28,6 +29,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   onEntidadChange,
   onUbicacionChange
 }) => {
+  const { t } = useLanguage();
   const [nodes, setNodes] = useState<NodeData[]>([])
   const [filteredNodes, setFilteredNodes] = useState<NodeData[]>([])
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null)
@@ -189,7 +191,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   return (
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">SELECCIONAR NODO</h3>
+        <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
         
         {/* Combobox con searchbar */}
         <div className="relative w-80" ref={searchDropdownRef}>
@@ -202,7 +204,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                 setIsSearchDropdownOpen(true)
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="Buscar nodo por nombre, DevEUI, ubicación..."
+              placeholder={t('dashboard.search_node_placeholder')}
               className="w-full px-4 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -231,7 +233,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                     key={node.nodoid}
                     onClick={() => handleNodeSelect(node)}
                     className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
-                    title={`DevEUI: ${node.deveui} | Ubicación: ${node.ubicacion.ubicacion} | Fundo: ${node.ubicacion.fundo.fundo} | Empresa: ${node.ubicacion.fundo.empresa.empresa} | País: ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | Coordenadas: ${node.latitud}, ${node.longitud}` : ''}`}
+                    title={`${t('dashboard.tooltip.deveui')} ${node.deveui} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
                   >
                     <div className="font-medium text-gray-800 dark:text-white">{node.nodo}</div>
                     <div className="text-sm text-gray-600 dark:text-neutral-400">
