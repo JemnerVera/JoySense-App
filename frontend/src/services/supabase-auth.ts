@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { AuthUser, AuthError } from '../types';
 
+// Declaración para TypeScript
+declare const process: any;
+
 // Configuración de Supabase Auth
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
 const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || '';
