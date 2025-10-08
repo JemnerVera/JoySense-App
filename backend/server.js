@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
+// Constantes de validación
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const app = express();
 const PORT = 3001;
 
@@ -586,19 +589,26 @@ app.get('/api/sense/:tableName/constraints', async (req, res) => {
   }
 });
 
-// Ruta temporal para verificar tablas disponibles
+// Ruta para obtener tablas disponibles dinámicamente
 app.get('/api/sense/tables', async (req, res) => {
   try {
-    console.log('🔍 Verificando tablas disponibles en schema sense...');
+    console.log('🔍 Obteniendo tablas disponibles en schema sense...');
     
-    const tables = Object.keys(tableMetadata).map(tableName => ({
-      table_name: tableName
-    }));
+    const { data: tables, error } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'sense')
+      .eq('table_type', 'BASE TABLE');
     
-    console.log('✅ Tablas encontradas:', tables);
-    res.json({ tables });
+    if (error) {
+      console.error('❌ Error obteniendo tablas:', error);
+      return res.status(500).json({ error: 'Error obteniendo tablas' });
+    }
+    
+    console.log('✅ Tablas encontradas:', tables.length);
+    res.json(tables);
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('❌ Error inesperado obteniendo tablas:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -761,7 +771,7 @@ app.put('/api/sense/ubicacion/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('ubicacion')
@@ -922,7 +932,7 @@ app.put('/api/sense/perfil/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando perfil con ID ${id}...`);
-    console.log('🔍 Backend: Datos de actualización:', JSON.stringify(updateData, null, 2));
+    console.log('🔍 Backend: Actualizando perfil');
     
     // Validar que el ID sea un número
     if (isNaN(id)) {
@@ -961,7 +971,7 @@ app.put('/api/sense/umbral/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando umbral con ID ${id}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     console.log(`🔍 Backend: Tipos de datos:`, Object.keys(updateData).map(key => `${key}: ${typeof updateData[key]}`));
     
     const { data, error } = await supabase
@@ -1048,12 +1058,11 @@ app.put('/api/sense/correo/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando correo con ID ${id}...`);
-    console.log('🔍 Backend: Datos de actualización:', JSON.stringify(updateData, null, 2));
+    console.log('🔍 Backend: Actualizando perfil');
     
     // Validar formato de correo si se está actualizando
     if (updateData.correo) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(updateData.correo)) {
+      if (!EMAIL_REGEX.test(updateData.correo)) {
         return res.status(400).json({ error: 'Formato de correo inválido' });
       }
     }
@@ -1138,7 +1147,7 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando localizacion con query params - ubicacionid: ${ubicacionid}, nodoid: ${nodoid}, entidadid: ${entidadid}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     console.log(`🔍 Backend: Tipos de datos - ubicacionid: ${typeof ubicacionid}, nodoid: ${typeof nodoid}, entidadid: ${typeof entidadid}`);
     
     const { data, error } = await supabase
@@ -1198,7 +1207,7 @@ app.put('/api/sense/perfilumbral/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando perfilumbral con query params - perfilid: ${perfilid}, umbralid: ${umbralid}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('perfilumbral')
@@ -1254,7 +1263,7 @@ app.put('/api/sense/usuarioperfil/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando usuarioperfil con query params - usuarioid: ${usuarioid}, perfilid: ${perfilid}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('usuarioperfil')
@@ -1310,7 +1319,7 @@ app.put('/api/sense/metricasensor/composite', async (req, res) => {
     const { nodoid, metricaid, tipoid } = req.query;
     const updateData = req.body;
     console.log(`🔍 Backend: Actualizando metricasensor con query params - nodoid: ${nodoid}, metricaid: ${metricaid}, tipoid: ${tipoid}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
 
     // Para metricasensor, la validación de negocio es diferente
     // No hay restricción de entidad como en sensor, solo validamos que no haya conflictos
@@ -1344,10 +1353,12 @@ app.put('/api/sense/sensor/composite', async (req, res) => {
     const { nodoid, tipoid } = req.query;
     const updateData = req.body;
     console.log(`🔍 Backend: Actualizando sensor con query params - nodoid: ${nodoid}, tipoid: ${tipoid}...`);
-    console.log(`🔍 Backend: Datos recibidos:`, JSON.stringify(updateData, null, 2));
+    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
 
-    // Validación de negocio simplificada - temporalmente deshabilitada para debugging
-    console.log('🔍 Backend: Saltando validación de negocio para debugging');
+    // Validación de negocio
+    if (!nodoid || !tipoid) {
+      return res.status(400).json({ error: 'nodoid y tipoid son requeridos' });
+    }
 
     // Usar upsert para crear o actualizar la entrada (similar a metricasensor)
     const { data, error } = await supabase
@@ -1829,7 +1840,7 @@ app.post('/api/sense/pais', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando país...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
 
     const { data, error } = await supabase
       .from('pais')
@@ -1854,7 +1865,7 @@ app.post('/api/sense/empresa', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando empresa...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('empresa')
@@ -1879,7 +1890,7 @@ app.post('/api/sense/fundo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando fundo...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('fundo')
@@ -1904,7 +1915,7 @@ app.post('/api/sense/ubicacion', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando ubicación...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla (omitir ubicacionabrev por problemas de cache)
     const filteredData = {
@@ -1940,7 +1951,7 @@ app.post('/api/sense/entidad', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando entidad...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('entidad')
@@ -1965,7 +1976,7 @@ app.post('/api/sense/tipo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando tipo...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('tipo')
@@ -1990,7 +2001,7 @@ app.post('/api/sense/nodo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando nodo...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('nodo')
@@ -2015,7 +2026,7 @@ app.post('/api/sense/metrica', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando métrica...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('metrica')
@@ -2040,7 +2051,7 @@ app.post('/api/sense/umbral', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando umbral...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2090,7 +2101,7 @@ app.post('/api/sense/criticidad', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando criticidad...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2129,7 +2140,7 @@ app.post('/api/sense/medio', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando medio...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2164,7 +2175,7 @@ app.post('/api/sense/contacto', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando contacto...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2201,11 +2212,10 @@ app.post('/api/sense/correo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando correo...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Validar formato de correo
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(insertData.correo)) {
+    if (!EMAIL_REGEX.test(insertData.correo)) {
       return res.status(400).json({ error: 'Formato de correo inválido' });
     }
     
@@ -2242,7 +2252,7 @@ app.post('/api/sense/usuario', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando usuario...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2279,7 +2289,7 @@ app.post('/api/sense/perfil', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando perfil...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
@@ -2316,7 +2326,7 @@ app.post('/api/sense/localizacion', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando localización...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('localizacion')
@@ -2341,7 +2351,7 @@ app.post('/api/sense/perfilumbral', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando perfilumbral...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('perfilumbral')
@@ -2366,7 +2376,7 @@ app.post('/api/sense/usuarioperfil', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando usuarioperfil...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
       .from('usuarioperfil')
@@ -2391,7 +2401,7 @@ app.post('/api/sense/sensor', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando sensor...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
         .from('sensor')
@@ -2416,7 +2426,7 @@ app.post('/api/sense/metricasensor', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando metricasensor...');
-    console.log('🔍 Backend: Datos recibidos:', JSON.stringify(insertData, null, 2));
+    console.log('🔍 Backend: Insertando datos');
     
     const { data, error } = await supabase
             .from('metricasensor')
@@ -2549,9 +2559,15 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
         return res.status(500).json({ error: ubicError.message });
       }
       
-      // Por ahora, devolver todas las mediciones si hay entidadId
-      // TODO: Implementar filtro por entidad correctamente
-      filteredData = data;
+      // Filtrar mediciones por entidad usando ubicaciones
+      if (ubicaciones && ubicaciones.length > 0) {
+        const ubicacionIds = ubicaciones.map(u => u.ubicacionid);
+        filteredData = data.filter(medicion => 
+          ubicacionIds.includes(medicion.ubicacionid)
+        );
+      } else {
+        filteredData = [];
+      }
     }
     
     if (countOnly === 'true') {
