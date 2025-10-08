@@ -5477,17 +5477,6 @@ result = await JoySenseService.updateTableRowByCompositeKey(
   const getVisibleColumns = useCallback((forTable: boolean = true) => {
     const sourceColumns = forTable ? tableColumns : columns;
     
-    // Solo hacer log si hay cambios significativos para evitar spam
-    const logKey = `${selectedTable}-${forTable}-${sourceColumns?.length}`;
-    if (!lastLogKeyRef.current || lastLogKeyRef.current !== logKey) {
-      console.log('🔍 getVisibleColumns Debug:', {
-        selectedTable,
-        forTable,
-        columnsLength: sourceColumns?.length,
-        allColumns: sourceColumns?.map(c => c.columnName)
-      });
-      lastLogKeyRef.current = logKey;
-    }
 
     // FIX: Validar que las columnas estén cargadas antes de continuar
     if (!sourceColumns || sourceColumns.length === 0) {

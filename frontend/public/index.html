@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <script>
+      // Force dark theme before React loads
+      (function() {
+        const root = document.documentElement;
+        root.classList.add('dark');
+        root.classList.remove('light');
+        // Clear any existing theme preference
+        localStorage.removeItem('theme');
+        localStorage.setItem('theme', 'dark');
+      })();
+    </script>
     <meta
       name="description"
       content="Web site created using create-react-app"

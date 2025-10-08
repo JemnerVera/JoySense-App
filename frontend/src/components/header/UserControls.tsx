@@ -7,8 +7,6 @@ export const UserControls: React.FC = () => {
   const { user, signOut } = useAuth();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
   
-  // Debug: Log theme changes
-  console.log('🎨 UserControls - Current theme:', theme, 'Resolved:', resolvedTheme);
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

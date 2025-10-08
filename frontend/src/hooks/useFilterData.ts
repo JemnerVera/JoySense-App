@@ -31,11 +31,6 @@ export const useFilterData = (authToken: string): FilterData => {
           JoySenseService.getFundos() // Usar método específico
         ]);
 
-        console.log('📊 Datos cargados:', {
-          paises: paisesData?.length || 0,
-          empresas: empresasData?.length || 0,
-          fundos: fundosData?.length || 0
-        });
 
         setPaises(paisesData || []);
         setEmpresas(empresasData || []);

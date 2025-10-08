@@ -17,15 +17,26 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Get theme from localStorage or default to 'dark'
+    // Force dark theme as default - ignore localStorage for now
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as Theme;
-      return savedTheme || 'dark';
+      // Clear any existing theme preference to force dark mode
+      localStorage.removeItem('theme');
+      // Force dark theme
+      const root = document.documentElement;
+      root.classList.add('dark');
+      root.classList.remove('light');
     }
     return 'dark';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+
+  // Initialize theme immediately on mount
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('dark');
+    root.classList.remove('light');
+  }, []);
 
   // Resolve theme based on system preference
   useEffect(() => {
@@ -54,16 +65,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     
-    console.log('🎨 Applying theme:', resolvedTheme);
-    
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
-      console.log('🌙 Dark theme applied');
     } else {
       root.classList.add('light');
       root.classList.remove('dark');
-      console.log('☀️ Light theme applied');
     }
   }, [resolvedTheme]);
 
@@ -73,6 +80,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
+
+  const setThemeCustom = (newTheme: Theme) => {
+    // Force dark theme if no theme is specified or if it's invalid
+    const themeToSet = newTheme || 'dark';
+    setTheme(themeToSet);
+  };
 
   const toggleTheme = () => {
     setTheme(prev => {
@@ -84,7 +97,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const value: ThemeContextType = {
     theme,
-    setTheme,
+    setTheme: setThemeCustom,
     resolvedTheme,
     toggleTheme
   };

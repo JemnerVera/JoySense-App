@@ -73,19 +73,12 @@ class PreloadService {
    */
   async preloadComponent(componentName: string, importFunction: () => Promise<any>): Promise<void> {
     if (this.preloadedComponents.has(componentName)) {
-      console.log(`🎯 Componente ${componentName} ya preloaded`);
       return;
     }
 
     try {
-      console.log(`🚀 Preloading ${componentName}...`);
-      const startTime = performance.now();
-      
       await importFunction();
       this.preloadedComponents.add(componentName);
-      
-      const endTime = performance.now();
-      console.log(`✅ ${componentName} preloaded en ${(endTime - startTime).toFixed(2)}ms`);
     } catch (error) {
       console.error(`❌ Error preloading ${componentName}:`, error);
     }
@@ -99,7 +92,6 @@ class PreloadService {
       .filter(([_, config]) => config.priority === 'high')
       .map(([name, _]) => name);
 
-    console.log('🔥 Preloading componentes críticos:', criticalComponents);
     
     // Preload en paralelo
     const preloadPromises = criticalComponents.map(name => {
@@ -125,7 +117,6 @@ class PreloadService {
 
     if (idleComponents.length === 0) return;
 
-    console.log('⏳ Procesando preloads en idle:', idleComponents.map(([name]) => name));
 
     // Preload uno por uno para no bloquear
     for (const [name] of idleComponents) {
