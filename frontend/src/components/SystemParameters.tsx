@@ -3368,9 +3368,9 @@ const getFundoName = (fundoId: string) => {
       contextualFields.push(
         <div key="pais-contextual">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-{t('fields.country')} 🔒
+            {t('fields.country')} 🔒
           </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+          <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white text-base font-mono cursor-not-allowed opacity-75">
             {getPaisName(paisSeleccionado)}
           </div>
         </div>
@@ -3384,7 +3384,7 @@ const getFundoName = (fundoId: string) => {
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
 {t('fields.company')} 🔒
           </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+          <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white text-base font-mono cursor-not-allowed opacity-75">
             {getEmpresaName(empresaSeleccionada)}
           </div>
         </div>
@@ -3398,7 +3398,7 @@ const getFundoName = (fundoId: string) => {
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
 {t('fields.fund')} 🔒
           </label>
-          <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+          <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white text-base font-mono cursor-not-allowed opacity-75">
             {getFundoName(fundoSeleccionado)}
           </div>
         </div>
@@ -8070,7 +8070,7 @@ const handleCancelModal = () => {
 
   return (
 
-    <div className="animate-fadeIn">
+    <div className="animate-fadeIn bg-white dark:bg-neutral-900 min-h-screen">
 
       {/* Modal de confirmación para cambio de tabla */}
       <TableChangeConfirmationModal
@@ -8099,7 +8099,7 @@ const handleCancelModal = () => {
 
                {activeSubTab === 'status' && (
 
-                 <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                 <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
 
 {tableInfo && (
 
@@ -8144,9 +8144,9 @@ const handleCancelModal = () => {
 
                        <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
-                         <table className="w-full text-sm text-left text-neutral-300">
+                         <table className="w-full text-sm text-left text-gray-900 dark:text-neutral-300">
 
-                           <thead className="text-xs text-neutral-400 bg-neutral-800">
+                           <thead className="text-xs text-gray-500 dark:text-neutral-400 bg-gray-200 dark:bg-neutral-800">
 
                              <tr>
 
@@ -8156,7 +8156,7 @@ const handleCancelModal = () => {
 
                                  return displayName ? (
 
-                                   <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider">
+                                   <th key={col.columnName} className="px-6 py-3 font-mono tracking-wider text-gray-700 dark:text-gray-300">
 
                                      {displayName.toUpperCase()}
 
@@ -8180,7 +8180,7 @@ const handleCancelModal = () => {
                                </tr>
                              ) : getStatusPaginatedData().map((row, index) => (
 
-                               <tr key={index} className="bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800">
+                               <tr key={index} className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800">
 
                                  {statusVisibleColumns.map(col => {
 
@@ -8188,7 +8188,7 @@ const handleCancelModal = () => {
 
                                    return displayName ? (
 
-                                     <td key={col.columnName} className="px-6 py-4 text-xs font-mono">
+                                     <td key={col.columnName} className="px-6 py-4 text-xs font-mono text-gray-900 dark:text-white">
 
                                        {col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' 
 
@@ -8265,7 +8265,7 @@ const handleCancelModal = () => {
 
                 {activeSubTab === 'insert' && (
 
-                  <div className={`bg-neutral-900 border border-neutral-700 rounded-xl p-6 ${
+                  <div className={`bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6 ${
 
                     selectedTable === 'sensor' || selectedTable === 'metricasensor' 
 
@@ -8567,19 +8567,19 @@ const handleCancelModal = () => {
                               <button
                                 type="button"
                                 onClick={() => setSelectedContactType('phone')}
-                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-gray-200 dark:bg-neutral-700 text-gray-900 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
                                 📞 TELÉFONO
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setSelectedContactType('email')}
-                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-neutral-700 text-neutral-300 hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
+                                className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-gray-200 dark:bg-neutral-700 text-gray-900 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
                                 📧 CORREO ELECTRÓNICO
                               </button>
                             </div>
-                            <p className="text-xs text-neutral-500 mt-4 opacity-75 font-mono tracking-wider">
+                            <p className="text-xs text-gray-500 dark:text-neutral-500 mt-4 opacity-75 font-mono tracking-wider">
                               SELECCIONE UNA OPCIÓN PARA CONTINUAR.
                             </p>
                           </div>
@@ -8699,7 +8699,7 @@ const handleCancelModal = () => {
 
                       'bg-red-600 bg-opacity-20 border border-red-500'
 
-                    } text-white font-mono tracking-wider`}>
+                    } text-gray-900 dark:text-white font-mono tracking-wider`}>
 
                       {updateMessage.text}
 
@@ -8713,13 +8713,13 @@ const handleCancelModal = () => {
 
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
 
-                      <div className="bg-neutral-900 bg-opacity-95 rounded-xl border border-neutral-700 p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+                      <div className="bg-gray-100 dark:bg-neutral-900 bg-opacity-95 rounded-xl border border-gray-300 dark:border-neutral-700 p-4 sm:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
 
 {/* Información sobre múltiples filas seleccionadas automáticamente */}
 
                       {!isMultipleSelectionMode && selectedRowsForUpdate.length > 0 && (
 
-                        <div className="mb-6 p-4 bg-neutral-800 border border-neutral-600 rounded-lg">
+                        <div className="mb-6 p-4 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg">
 
                           <h3 className="text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
 
@@ -8768,7 +8768,7 @@ const handleCancelModal = () => {
                               updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
                               updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
                               'bg-red-600 bg-opacity-20 border border-red-500'
-                            } text-white font-mono tracking-wider`}>
+                            } text-gray-900 dark:text-white font-mono tracking-wider`}>
                               {updateMessage.text}
                             </div>
                           )}
@@ -8855,7 +8855,7 @@ return (
 
                                    readOnly
 
-                                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75"
+                                    className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white text-base font-mono cursor-not-allowed opacity-75"
 
                                     title="Campo clave - No editable"
 
@@ -8899,11 +8899,11 @@ return (
 
                                      }))}
 
-                                     className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                                     className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
 
                                    />
 
-                                   <label htmlFor={'update-' + col.columnName} className="text-white text-lg font-medium font-mono tracking-wider">
+                                   <label htmlFor={'update-' + col.columnName} className="text-gray-900 dark:text-white text-lg font-medium font-mono tracking-wider">
 
                                      ACTIVO
 
@@ -8964,7 +8964,7 @@ return (
 
                                  }))}
 
-                                 className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
+                                 className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
 
                                />
 
@@ -9055,7 +9055,7 @@ return (
 
                       {(selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) && selectedTable !== 'metricasensor' && selectedTable !== 'sensor' && selectedTable !== 'usuarioperfil' && (
 
-                        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
+                        <div className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 mb-6">
 
                           <div className="flex justify-between items-center mb-4">
 
@@ -9113,7 +9113,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                               <thead>
 
-                                <tr className="border-b border-neutral-600">
+                                <tr className="border-b border-gray-200 dark:border-neutral-600">
 
                                   {updateVisibleColumns
 
@@ -9139,7 +9139,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                 {(selectedRowsForUpdate.length > 0 ? selectedRowsForUpdate : selectedRowsForManualUpdate).map((row, index) => (
 
-                                  <tr key={index} className="border-b border-neutral-600">
+                                  <tr key={index} className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
 
                                     {updateVisibleColumns
 
@@ -9147,7 +9147,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                       .map(col => (
 
-                                        <td key={col.columnName} className="py-2 px-2 text-white font-mono">
+                                        <td key={col.columnName} className="py-2 px-2 text-gray-900 dark:text-white font-mono">
 
                                           {getDisplayValueLocal(row, col.columnName)}
 
@@ -9179,11 +9179,11 @@ setIndividualRowStatus(newIndividualStatus);
 
                                           }}
 
-                                          className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                                          className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
 
                                         />
 
-                                        <span className="text-white text-sm font-mono tracking-wider">
+                                        <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
 
                                           {individualRowStatus[`${row.nodoid || row.id || index}-${index}`] ? 'ACTIVO' : 'INACTIVO'}
 
@@ -9233,14 +9233,14 @@ setIndividualRowStatus(newIndividualStatus);
                                                   updateMessage.type === 'warning' ? 'bg-yellow-600 bg-opacity-20 border border-yellow-500' :
                                                   updateMessage.type === 'info' ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
                                                   'bg-red-600 bg-opacity-20 border border-red-500'
-                                                } text-white font-mono tracking-wider`}>
+                                                } text-gray-900 dark:text-white font-mono tracking-wider`}>
                                                   {updateMessage.text}
                                                 </div>
                                               )}
 
                                               {/* Búsqueda simple - Igual que en "Estado" */}
 
-                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                        <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
 
                           <div className="space-y-4">
 
@@ -9275,7 +9275,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                 placeholder="🔍 Buscar en todos los campos..."
 
-                                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-neutral-400 font-mono"
+                                className="w-full px-4 py-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 font-mono"
 
                               />
 
@@ -9306,7 +9306,7 @@ setIndividualRowStatus(newIndividualStatus);
 
 {/* Tabla de datos para actualizar - Usando la misma lógica que "Estado" */}
 
-                       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                       <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
 
                          <div className="overflow-x-auto -mx-2 sm:mx-0 custom-scrollbar">
 
@@ -9314,9 +9314,9 @@ setIndividualRowStatus(newIndividualStatus);
                              return updateFilteredData.length > 0;
                            })() ? (
 
-                             <table className="w-full text-sm text-left text-neutral-300">
+                             <table className="w-full text-sm text-left text-gray-900 dark:text-neutral-300">
 
-                                                                <thead className="text-xs text-neutral-400 bg-neutral-800">
+                                                                <thead className="text-xs text-gray-500 dark:text-neutral-400 bg-gray-200 dark:bg-neutral-800">
 
                                    <tr>
 
@@ -9332,7 +9332,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                        return displayName ? (
 
-                                         <th key={col.columnName} className={`px-6 py-3 font-mono tracking-wider ${col.columnName === 'tipos' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
+                                         <th key={col.columnName} className={`px-6 py-3 font-mono tracking-wider text-gray-700 dark:text-gray-300 ${col.columnName === 'tipos' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
 
                                            {displayName.toUpperCase()}
 
@@ -9376,7 +9376,7 @@ const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasens
 
 return (
 
-                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-neutral-900 border-b border-neutral-700 hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics || hasNoActivePerfiles ? 'text-red-400' : ''}`} onClick={(e) => {
+                                   <tr key={(effectiveCurrentPage - 1) * itemsPerPage + index} className={`bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 cursor-pointer ${hasNoActiveMetrics || hasNoActivePerfiles ? 'text-red-400' : ''}`} onClick={(e) => {
 
                                      // Solo ejecutar si no se hizo clic en el checkbox
 
@@ -9424,7 +9424,7 @@ return (
 
                                          }}
 
-                                         className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                                         className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
 
                                        />
 
@@ -9436,7 +9436,7 @@ return (
 
                                        return displayName ? (
 
-                                         <td key={col.columnName} className={`px-6 py-4 text-xs font-mono ${col.columnName === 'tipos' || col.columnName === 'perfiles' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
+                                         <td key={col.columnName} className={`px-6 py-4 text-xs font-mono text-gray-900 dark:text-white ${col.columnName === 'tipos' || col.columnName === 'perfiles' ? 'min-w-[300px] max-w-[400px]' : ''}`}>
 
                                            {(() => {
 
@@ -9582,7 +9582,7 @@ return getDisplayValueLocal(row, col.columnName);
 
                                  disabled={!correctedHasPrevPage}
 
-                                 className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 className="px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
 
                                  title="Primera página"
 
@@ -9598,7 +9598,7 @@ return getDisplayValueLocal(row, col.columnName);
 
                                  disabled={!correctedHasPrevPage}
 
-                                 className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
 
                                >
 
@@ -9606,7 +9606,7 @@ return getDisplayValueLocal(row, col.columnName);
 
                                </button>
 
-                               <span className="text-white flex items-center px-3 font-mono tracking-wider">
+                               <span className="text-gray-900 dark:text-white flex items-center px-3 font-mono tracking-wider">
 
                                  PÁGINA {effectiveCurrentPage} DE {correctedTotalPages}
 
@@ -9618,7 +9618,7 @@ return getDisplayValueLocal(row, col.columnName);
 
                                  disabled={!correctedHasNextPage}
 
-                                 className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
 
                                >
 
@@ -9632,7 +9632,7 @@ return getDisplayValueLocal(row, col.columnName);
 
                                  disabled={!correctedHasNextPage}
 
-                                 className="px-3 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
+                                 className="px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 font-mono tracking-wider"
 
                                  title="Última página"
 
@@ -9660,7 +9660,7 @@ return getDisplayValueLocal(row, col.columnName);
 
               {activeSubTab === 'massive' && (
 
-                <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+                        <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
 
                   {selectedTable === 'sensor' ? (
 
@@ -9802,7 +9802,7 @@ return getDisplayValueLocal(row, col.columnName);
 
             <div className="text-center">
 
-              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
 
                 <div className="flex items-center justify-center mb-4">
 
@@ -9812,15 +9812,15 @@ return getDisplayValueLocal(row, col.columnName);
 
                   </svg>
 
-                  <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">SELECCIONAR PARÁMETRO</h2>
+                  <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">PARÁMETROS</h2>
 
                 </div>
 
-                <p className="text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DEL MENÚ LATERAL PARA CONTINUAR</p>
 
               </div>
 
-                    </div>
+            </div>
 
                         </div>
 
@@ -9834,7 +9834,7 @@ return getDisplayValueLocal(row, col.columnName);
 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 
-          <div className="bg-neutral-800 border border-orange-500 rounded-lg p-6 max-w-md mx-4">
+          <div className="bg-white dark:bg-neutral-800 border border-orange-500 rounded-lg p-6 max-w-md mx-4">
 
             {/* Solo el icono centrado */}
             <div className="flex justify-center mb-6">
@@ -9847,7 +9847,7 @@ return getDisplayValueLocal(row, col.columnName);
             
             {/* Mensaje centrado */}
             <div className="mb-6 text-center">
-              <p className="text-white font-mono text-sm leading-relaxed">
+              <p className="text-gray-900 dark:text-white font-mono text-sm leading-relaxed">
                 Se perderá toda la información ingresada en el formulario.
               </p>
             </div>
@@ -9862,7 +9862,7 @@ return getDisplayValueLocal(row, col.columnName);
               </button>
               <button
                 onClick={handleCancelModal}
-                className="px-6 py-2 bg-neutral-600 hover:bg-neutral-500 text-white font-mono tracking-wider rounded-lg transition-colors"
+                className="px-6 py-2 bg-gray-200 dark:bg-neutral-600 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-neutral-500 font-mono tracking-wider rounded-lg transition-colors"
               >
                 CANCELAR
               </button>
@@ -9871,7 +9871,7 @@ return getDisplayValueLocal(row, col.columnName);
         </div>
       )}
 
-{/* Modal de pérdida de datos - Desactivado, usando el sistema de App.tsx */}
+      {/* Modal de pérdida de datos - Desactivado, usando el sistema de App.tsx */}
 
       {/* <LostDataModal
 

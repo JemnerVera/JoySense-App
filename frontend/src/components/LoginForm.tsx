@@ -27,7 +27,7 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-24 h-24 flex items-center justify-center">
@@ -41,13 +41,13 @@ const LoginForm: React.FC = () => {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-orange-500 font-mono tracking-wider">
           JOYSENSE APP
         </h2>
-        <p className="mt-2 text-center text-sm text-neutral-300 font-mono tracking-wider">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-neutral-300 font-mono tracking-wider">
           SISTEMA DE MONITOREO AGRÍCOLA INTELIGENTE
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-neutral-900 py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-neutral-700">
+        <div className="bg-white dark:bg-neutral-900 py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-gray-300 dark:border-neutral-700">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-900 border border-red-600 rounded-md p-4">
@@ -77,7 +77,7 @@ const LoginForm: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-neutral-600 rounded-md placeholder-neutral-400 bg-neutral-800 text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
                   placeholder="usuario@ejemplo.com"
                 />
               </div>
@@ -96,7 +96,7 @@ const LoginForm: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-neutral-600 rounded-md placeholder-neutral-400 bg-neutral-800 text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
                   placeholder="••••••••"
                 />
               </div>
@@ -123,10 +123,10 @@ const LoginForm: React.FC = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-neutral-600" />
+                <div className="w-full border-t border-gray-300 dark:border-neutral-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-neutral-900 text-neutral-400 font-mono tracking-wider">SISTEMA DE MONITOREO AGRÍCOLA</span>
+                <span className="px-2 bg-white dark:bg-neutral-900 text-gray-500 dark:text-neutral-400 font-mono tracking-wider">SISTEMA DE MONITOREO AGRÍCOLA</span>
               </div>
             </div>
           </div>

@@ -15,18 +15,18 @@
 ## 🔧 Configuración de Variables de Entorno
 
 ### Para Desarrollo Local
-Los archivos `.env` deben contener las keys de **DESARROLLO**:
+Los archivos `.env` deben contener las keys de **PRODUCCIÓN** (ahora usando Supabase PROD):
 
 **`backend/.env`:**
 ```
-SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZ3N3eG5qa2NhdmNoZnJucmhzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE1NDMyNywiZXhwIjoyMDYyNzMwMzI3fQ.ioeluR-iTWJ7-w_7UAuMl_aPXHJM6nlhv6Nh4hohBjw
+SUPABASE_URL=https://lezgsicqyyobsxnwwcqq.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlemdzaWNxeXlvYnN4bnd3Y3FxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzQ2MTg1NSwiZXhwIjoyMDY5MDM3ODU1fQ.EMpygX_ZTlVxp5x5VAO3GT8iQxd4MTqHutG3NoUJJKk
 ```
 
 **`frontend/.env`:**
 ```
-REACT_APP_SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
-REACT_APP_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZ3N3eG5qa2NhdmNoZnJucmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTQzMjcsImV4cCI6MjA2MjczMDMyN30.13bSx7s-r9jt7ZmIKOYsqTreAwGxqFB8_c5A1XrQBqc
+REACT_APP_SUPABASE_URL=https://lezgsicqyyobsxnwwcqq.supabase.co
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlemdzaWNxeXlvYnN4bnd3Y3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjE4NTUsImV4cCI6MjA2OTAzNzg1NX0.pcMqujGAmgUWFJaXK0LBlZeH2qEDaQVANhVyOLt9IVY
 REACT_APP_BACKEND_URL=http://localhost:3001/api
 ```
 

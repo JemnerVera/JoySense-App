@@ -300,17 +300,17 @@ export function MassiveMetricaSensorForm({
             NODO
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg h-96 overflow-y-auto custom-scrollbar">
             {selectedNodes.length > 0 ? (
               <div>
                 {/* Header del grid - Sticky */}
-                <div className="sticky top-0 z-10 grid grid-cols-12 gap-4 px-4 py-3 bg-neutral-900 border-b border-neutral-600">
+                <div className="sticky top-0 z-10 grid grid-cols-12 gap-4 px-4 py-3 bg-gray-100 dark:bg-neutral-900 border-b border-gray-300 dark:border-neutral-600">
                   <div className="col-span-1">
                     <input
                       type="checkbox"
                       checked={allNodesSelected}
                       onChange={(e) => handleSelectAllNodes(e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                     />
                   </div>
                   <div className="col-span-6">
@@ -327,22 +327,22 @@ export function MassiveMetricaSensorForm({
                 
                 {/* Filas de nodos */}
                 {selectedNodes.map((node) => (
-                  <label key={node.nodoid} className="grid grid-cols-12 gap-4 px-4 py-2 hover:bg-neutral-700 cursor-pointer transition-colors">
+                  <label key={node.nodoid} className="grid grid-cols-12 gap-4 px-4 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors">
                     <div className="col-span-1 flex items-center">
                       <input
                         type="checkbox"
                         checked={node.selected}
                         onChange={(e) => handleNodeSelection(node.nodoid, e.target.checked)}
-                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                       />
                     </div>
                     <div className="col-span-6 flex items-center">
-                      <span className="text-white text-sm font-mono tracking-wider">
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {node.nodo.toUpperCase()}
                       </span>
                     </div>
                     <div className="col-span-5 flex items-center">
-                      <span className="text-neutral-300 text-sm font-mono">
+                      <span className="text-gray-600 dark:text-neutral-300 text-sm font-mono">
                         {node.datecreated ? new Date(node.datecreated).toLocaleDateString('es-PE', {
                           day: '2-digit',
                           month: '2-digit',
@@ -357,7 +357,7 @@ export function MassiveMetricaSensorForm({
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
                   {formData.entidadid ? 'CARGANDO NODOS...' : 'SELECCIONA UNA ENTIDAD PARA VER LOS NODOS CON SENSORES'}
                 </div>
               </div>
@@ -374,14 +374,14 @@ export function MassiveMetricaSensorForm({
                 TIPOS DE SENSORES ASIGNADOS
               </h4>
               
-              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
+              <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
                 <div className="space-y-2">
                   {assignedSensorTypes.map((tipo) => (
-                    <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-neutral-800 rounded">
+                    <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-gray-100 dark:bg-neutral-800 rounded">
                       <div className="w-4 h-4 bg-orange-500 rounded mr-3 flex items-center justify-center">
                         <span className="text-white text-xs">✓</span>
                       </div>
-                      <span className="text-white text-sm font-mono tracking-wider">
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {tipo.tipo.toUpperCase()}
                       </span>
                       <span className="ml-auto text-orange-400 text-sm">🔒</span>
@@ -399,18 +399,18 @@ export function MassiveMetricaSensorForm({
                 MÉTRICAS
               </h4>
               
-              <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
+              <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
                 <div className="space-y-2">
                   {formData.metricasData.map((metrica) => (
-                    <label key={metrica.metricaid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                    <label key={metrica.metricaid} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                       <input
                         type="checkbox"
                         checked={metrica.selected}
                         onChange={(e) => handleMetricaSelection(metrica.metricaid, e.target.checked)}
-                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                         disabled={loading}
                       />
-                      <span className="text-white text-sm font-mono tracking-wider">
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {metrica.metrica.toUpperCase()}
                       </span>
                     </label>
@@ -463,7 +463,7 @@ export function MassiveMetricaSensorForm({
         <button
           onClick={handleCancel}
           disabled={loading}
-          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
           <span>CANCELAR</span>

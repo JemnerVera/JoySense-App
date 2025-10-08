@@ -766,11 +766,11 @@ return hasFormDataChanges || hasMultipleDataChanges;
         >
           {/* Contenido de bienvenida o contenido dinámico */}
               {showWelcomeIntegrated ? (
-                <div className="flex items-center justify-center h-full min-h-screen bg-black">
+                <div className="flex items-center justify-center h-full min-h-screen bg-white dark:bg-black">
                   <div className="text-center max-w-2xl mx-auto px-6">
                     {/* Logo táctico */}
                     <div className="mb-12">
-                      <div className="w-32 h-32 bg-neutral-900 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                      <div className="w-32 h-32 bg-gray-200 dark:bg-neutral-900 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
                         <img src="/Logo - icono.png" alt="JoySense" className="w-16 h-16" />
                       </div>
                       
@@ -778,19 +778,19 @@ return hasFormDataChanges || hasMultipleDataChanges;
                         BIENVENIDO A JOYSENSE APP
                       </h1>
                       
-                      <p className="text-2xl text-neutral-300 mb-12 font-mono tracking-wider">
+                      <p className="text-2xl text-gray-600 dark:text-neutral-300 mb-12 font-mono tracking-wider">
                         SISTEMA DE MONITOREO INTELIGENTE
                       </p>
                       
                       {/* Instrucción con diseño táctico */}
-                      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-8">
+                      <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-2xl p-8">
                         <div className="flex items-center justify-center mb-4">
                           <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
-                          <p className="text-xl text-white font-mono tracking-wider">
+                          <p className="text-xl text-gray-900 dark:text-white font-mono tracking-wider">
                             SELECCIONA UNA PESTAÑA DEL MENÚ LATERAL PARA COMENZAR
                           </p>
                         </div>

@@ -212,7 +212,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
             
             <button
               onClick={onCancel}
-              className="px-4 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider text-sm"
+              className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider text-sm"
             >
               <span>❌</span>
               <span>CANCELAR</span>
@@ -223,29 +223,29 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
         {/* Segunda columna: Container de sensores */}
         <div>
           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">SENSORES A CREAR:</h4>
-          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+          <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <div className="space-y-3 max-h-96 overflow-y-auto">
             {multipleSensors.length > 0 ? (
               multipleSensors.map((sensor, index) => (
                 <div key={index} className={`rounded-lg p-3 transition-colors ${
                   sensor.toDelete 
-                    ? 'bg-red-900/30 border border-red-600' 
-                    : 'bg-neutral-700 border border-neutral-600'
+                    ? 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-600' 
+                    : 'bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600'
                 }`}>
                   <div className="flex items-center justify-between">
                     {/* Lado izquierdo: Número y tipo */}
                     <div className="flex items-center space-x-3 flex-1">
                       {/* Número de sensor */}
                       <span className={`font-bold font-mono min-w-[30px] ${
-                        sensor.toDelete ? 'text-red-400' : 'text-orange-500'
+                        sensor.toDelete ? 'text-red-600 dark:text-red-400' : 'text-orange-500'
                       }`}>#{sensor.sensorIndex}</span>
                       
                       {/* Mostrar tipo como texto o selector */}
                       {sensor.tipoid ? (
-                        <div className={`flex-1 px-3 py-2 border rounded-lg text-white font-mono ${
+                        <div className={`flex-1 px-3 py-2 border rounded-lg font-mono ${
                           sensor.toDelete 
-                            ? 'bg-red-800/50 border-red-600 text-red-200' 
-                            : 'bg-neutral-700 border-neutral-600'
+                            ? 'bg-red-200 dark:bg-red-800/50 border-red-300 dark:border-red-600 text-red-800 dark:text-red-200' 
+                            : 'bg-gray-200 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white'
                         }`}>
                           {tiposData.find(tipo => tipo.tipoid === sensor.tipoid)?.tipo || 'Tipo no encontrado'}
                         </div>
@@ -255,7 +255,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                           onChange={(newValue) => onUpdateSensorTipo(sensor.sensorIndex, newValue ? parseInt(newValue.toString()) : 0)}
                           options={getUniqueOptionsForField('tipoid', { entidadid: selectedEntidad })}
                           placeholder="Seleccionar tipo"
-                          className="flex-1 px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white font-mono"
+                          className="flex-1 px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
                           disabled={sensor.toDelete}
                         />
                       )}
@@ -267,8 +267,8 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                         onClick={() => onToggleSensorDelete(sensor.sensorIndex, !sensor.toDelete)}
                         className={`p-1 rounded transition-colors ${
                           sensor.toDelete 
-                            ? 'text-red-300 bg-red-800/50 hover:bg-red-700/50' 
-                            : 'text-red-500 hover:text-red-400 hover:bg-red-900/20'
+                            ? 'text-red-600 dark:text-red-300 bg-red-200 dark:bg-red-800/50 hover:bg-red-300 dark:hover:bg-red-700/50' 
+                            : 'text-red-500 hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20'
                         }`}
                         title={sensor.toDelete ? "Restaurar entrada" : "Eliminar esta entrada"}
                       >
@@ -282,7 +282,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
               ))
             ) : (
               <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
                   SELECCIONA NODO Y ENTIDAD PARA CREAR SENSORES
                 </div>
               </div>

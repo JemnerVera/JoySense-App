@@ -287,17 +287,17 @@ const AlertasDashboard: React.FC = () => {
       </div>
 
       {/* Filtros */}
-      <div className="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-        <h3 className="text-lg font-medium text-white mb-4">Filtros</h3>
+      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Filtros</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Criticidad
             </label>
             <select
               value={filtroCriticidad}
               onChange={(e) => setFiltroCriticidad(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white"
             >
               <option value="todas">Todas las criticidades</option>
               {Object.keys(estadisticas.porCriticidad).map(criticidad => (
@@ -309,13 +309,13 @@ const AlertasDashboard: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Ubicación
             </label>
             <select
               value={filtroUbicacion}
               onChange={(e) => setFiltroUbicacion(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white"
             >
               <option value="todas">Todas las ubicaciones</option>
               {Object.keys(estadisticas.porUbicacion).map(ubicacion => (

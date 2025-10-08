@@ -264,12 +264,12 @@ export function AdvancedSensorUpdateForm({
 
   if (!entidad) {
     return (
-      <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-6">
+      <div className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-6">
         <div className="text-center">
-          <div className="text-red-400 text-lg font-mono tracking-wider mb-4">
+          <div className="text-red-500 dark:text-red-400 text-lg font-mono tracking-wider mb-4">
             ⚠️ ERROR: No se pudo determinar la entidad
           </div>
-          <p className="text-neutral-400 text-sm font-mono">
+          <p className="text-gray-600 dark:text-neutral-400 text-sm font-mono">
             Las filas seleccionadas no tienen una entidad válida asociada.
           </p>
         </div>
@@ -282,17 +282,17 @@ export function AdvancedSensorUpdateForm({
   // ============================================================================
 
   return (
-    <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-6">
+    <div className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-6">
       <div className="mb-6">
         <h3 className="text-xl font-bold text-orange-500 mb-2 font-mono tracking-wider">
           ACTUALIZAR SENSORES
         </h3>
         {/* Información de entidad como referencia */}
         {entidad && (
-          <div className="mt-3 p-3 bg-neutral-700 border border-neutral-600 rounded-lg">
+          <div className="mt-3 p-3 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg">
             <div className="flex items-center space-x-2">
               <span className="text-orange-500 font-mono tracking-wider text-sm">ENTIDAD:</span>
-              <span className="text-white font-mono text-sm">{entidad.entidad}</span>
+              <span className="text-gray-900 dark:text-white font-mono text-sm">{entidad.entidad}</span>
               <span className="text-orange-500 text-sm">🔒</span>
             </div>
           </div>
@@ -303,7 +303,7 @@ export function AdvancedSensorUpdateForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Container 1: Nodos disponibles con checkboxes */}
-        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4">
+        <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4">
           <div className="mb-4">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
               NODO
@@ -312,7 +312,7 @@ export function AdvancedSensorUpdateForm({
           
           <div className="max-h-60 overflow-y-auto space-y-2">
             {filteredNodos.map((option) => (
-              <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+              <label key={option.value} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                 <input
                   type="checkbox"
                   checked={selectedNodos.includes(option.value.toString())}
@@ -324,9 +324,9 @@ export function AdvancedSensorUpdateForm({
                       // Los nodos seleccionados permanecen marcados
                     }
                   }}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                  className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                 />
-                <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                 {/* Icono de candado para nodos que no se pueden desmarcar */}
                 {selectedNodos.includes(option.value.toString()) && (
                   <span className="ml-auto text-orange-500 text-sm">🔒</span>
@@ -334,7 +334,7 @@ export function AdvancedSensorUpdateForm({
               </label>
             ))}
             {filteredNodos.length === 0 && (
-              <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+              <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                 {nodosSearchTerm ? 'NO SE ENCONTRÓ EL NODO' : 'NO HAY NODO SELECCIONADO'}
               </div>
             )}
@@ -342,7 +342,7 @@ export function AdvancedSensorUpdateForm({
         </div>
 
         {/* Container 2: Tipos disponibles con checkboxes */}
-        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4">
+        <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4">
           <div className="mb-4">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
               SENSOR
@@ -351,7 +351,7 @@ export function AdvancedSensorUpdateForm({
           
           <div className="max-h-60 overflow-y-auto space-y-2">
             {filteredTipos.map((option) => (
-              <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+              <label key={option.value} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                 <input
                   type="checkbox"
                   checked={selectedTipos.includes(option.value.toString())}
@@ -362,13 +362,13 @@ export function AdvancedSensorUpdateForm({
                       setSelectedTipos(selectedTipos.filter(id => id !== option.value.toString()));
                     }
                   }}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                  className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                 />
-                <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
               </label>
             ))}
             {filteredTipos.length === 0 && (
-              <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+              <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                 {tiposSearchTerm ? 'NO SE ENCONTRARON TIPOS' : 'NO HAY TIPOS DISPONIBLES'}
               </div>
             )}
@@ -401,7 +401,7 @@ export function AdvancedSensorUpdateForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           ❌ CANCELAR
         </button>

@@ -19,7 +19,7 @@ export function MultipleSelectionButtons({
   }
 
   return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4">
+    <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-4">
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
         <button
           onClick={onGoToManualUpdateForm}
@@ -30,7 +30,7 @@ export function MultipleSelectionButtons({
 
         <button
           onClick={onDeselectAll}
-          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-mono tracking-wider"
         >
           🗑️ Limpiar Selección
         </button>

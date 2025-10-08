@@ -153,20 +153,20 @@ export function AdvancedUsuarioPerfilUpdateForm({
   };
 
   return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
+    <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6">
       
       {/* Usuario (solo lectura) */}
       <div className="mb-4">
         <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
           USUARIO
         </label>
-        <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-neutral-400 font-mono">
+        <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded text-gray-600 dark:text-neutral-400 font-mono">
           {usuario?.login || 'N/A'}
         </div>
       </div>
 
       {/* Container Perfiles */}
-      <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4 mb-6">
+      <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 mb-6">
         <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
           PERFILES
         </h4>
@@ -178,7 +178,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
             placeholder="🔍 Buscar perfiles..."
             value={perfilesSearchTerm}
             onChange={(e) => setPerfilesSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+            className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
           />
         </div>
         
@@ -187,7 +187,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
           {getUniquePerfilesFromRows().map((perfilId) => {
             const perfil = perfilesData.find(p => p.perfilid.toString() === perfilId);
             return (
-              <label key={perfilId} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+              <label key={perfilId} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                 <input
                   type="checkbox"
                   checked={selectedPerfiles.includes(perfilId)}
@@ -198,9 +198,9 @@ export function AdvancedUsuarioPerfilUpdateForm({
                       setSelectedPerfiles(selectedPerfiles.filter(id => id !== perfilId));
                     }
                   }}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                  className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                 />
-                <span className="text-white text-sm font-mono tracking-wider">{perfil?.perfil?.toUpperCase() || perfilId}</span>
+                <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{perfil?.perfil?.toUpperCase() || perfilId}</span>
               </label>
             );
           })}
@@ -213,7 +213,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
               perfil.descripcion?.toLowerCase().includes(perfilesSearchTerm.toLowerCase())
             )
             .map((perfil) => (
-              <label key={perfil.perfilid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+              <label key={perfil.perfilid} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                 <input
                   type="checkbox"
                   checked={selectedPerfiles.includes(perfil.perfilid.toString())}
@@ -224,9 +224,9 @@ export function AdvancedUsuarioPerfilUpdateForm({
                       setSelectedPerfiles(selectedPerfiles.filter(id => id !== perfil.perfilid.toString()));
                     }
                   }}
-                  className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                  className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                 />
-                <span className="text-white text-sm font-mono tracking-wider">{perfil.perfil?.toUpperCase() || perfil.perfilid}</span>
+                <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{perfil.perfil?.toUpperCase() || perfil.perfilid}</span>
               </label>
             ))}
         </div>
@@ -244,7 +244,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
           <span>CANCELAR</span>

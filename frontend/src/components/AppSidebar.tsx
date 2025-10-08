@@ -229,14 +229,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
     <div className="flex h-full">
       {/* Sidebar principal - Franja de iconos */}
       <div 
-        className={`bg-gray-900 border-r border-gray-700 transition-all duration-300 ${
+        className={`bg-white dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 transition-all duration-300 ${
           isExpanded ? 'w-64' : 'w-16'
         }`}
         onMouseEnter={onMainSidebarMouseEnter}
         onMouseLeave={onMainSidebarMouseLeave}
       >
         {/* Logo - Altura uniforme con header */}
-        <div className="h-20 flex items-center justify-center border-b border-gray-700">
+        <div className="h-20 flex items-center justify-center border-b border-gray-300 dark:border-gray-700">
           {isExpanded ? (
             <div className="flex items-center space-x-3">
               <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
@@ -277,7 +277,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 className={`w-full flex items-center px-4 py-3 text-left transition-all duration-200 ${
                   isActive 
                     ? `${getActiveTabColor(tab.color)} text-white` 
-                    : `${getTabColor(tab.color)} hover:bg-gray-800`
+                    : `${getTabColor(tab.color)} hover:bg-gray-200 dark:hover:bg-gray-800`
                 }`}
               >
                 <div className="flex-shrink-0">
@@ -287,7 +287,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                   <span className="ml-3 font-medium">{tab.label}</span>
                 )}
                 {!isExpanded && hoveredTab === tab.id && (
-                  <div className="absolute left-16 ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-md shadow-lg z-50 whitespace-nowrap">
+                  <div className="absolute left-16 ml-2 px-3 py-2 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white text-sm rounded-md shadow-lg z-50 whitespace-nowrap">
                     {tab.label}
                   </div>
                 )}
@@ -300,15 +300,15 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Sidebar auxiliar para subpestañas (excepto parámetros) */}
       {currentMainTab && currentSubTabs.length > 0 && currentMainTab.id !== 'parameters' && (
         <div 
-          className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
+          className={`bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 transition-all duration-300 ${
             auxiliarySidebarVisible ? 'w-64' : 'w-16'
           }`}
           onMouseEnter={onAuxiliarySidebarMouseEnter}
           onMouseLeave={onAuxiliarySidebarMouseLeave}
         >
-          <div className="h-20 flex items-center justify-center border-b border-gray-700">
+          <div className="h-20 flex items-center justify-center border-b border-gray-300 dark:border-gray-700">
             {auxiliarySidebarVisible ? (
-              <h3 className="text-white font-medium">{currentMainTab?.label}</h3>
+              <h3 className="text-gray-900 dark:text-white font-medium">{currentMainTab?.label}</h3>
             ) : (
               <div className="w-8 h-8 flex items-center justify-center">
                 {currentMainTab?.icon}
@@ -327,7 +327,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                               } ${
                                 isActive 
                                   ? 'bg-green-600 text-white' 
-                                  : 'text-gray-300 hover:bg-gray-700'
+                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                               }`}
                             >
                   <div className="flex-shrink-0">

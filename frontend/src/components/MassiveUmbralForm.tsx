@@ -513,7 +513,7 @@ for (const tipoOption of tiposDelNodo) {
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               PAÍS
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+            <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
               {getPaisName(paisSeleccionado)}
             </div>
           </div>
@@ -524,7 +524,7 @@ for (const tipoOption of tiposDelNodo) {
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
               EMPRESA
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+            <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
               {getEmpresaName(empresaSeleccionada)}
             </div>
           </div>
@@ -536,7 +536,7 @@ for (const tipoOption of tiposDelNodo) {
               FUNDO
             </label>
             {fundosOptions.length === 1 ? (
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
                 {fundosOptions[0].label}
               </div>
             ) : (
@@ -563,7 +563,7 @@ for (const tipoOption of tiposDelNodo) {
               ENTIDAD
             </label>
             {entidadesOptions.length === 1 ? (
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white font-mono cursor-not-allowed opacity-75">
+              <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-600 dark:text-white font-mono cursor-not-allowed opacity-75">
                 {entidadesOptions[0].label}
               </div>
             ) : (
@@ -649,7 +649,7 @@ for (const tipoOption of tiposDelNodo) {
                     {Object.values(validationResult.groupedNodes).map((group, groupIndex) => (
                       <div 
                         key={groupIndex} 
-                        className="bg-neutral-800 border border-neutral-600 rounded p-2 cursor-pointer hover:bg-neutral-700 transition-colors"
+                        className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
                         onClick={() => {
                           // Seleccionar solo los nodos de este grupo
                           const nodosDelGrupo = group.nodos.map(nodo => nodo.nodoid);
@@ -695,24 +695,24 @@ for (const tipoOption of tiposDelNodo) {
                         </div>
                         <div className="flex flex-wrap gap-1 mb-1">
                           {group.nodos.slice(0, 3).map(nodo => (
-                            <span key={nodo.nodoid} className="text-white font-mono text-xs bg-neutral-700 px-2 py-1 rounded">
+                            <span key={nodo.nodoid} className="text-gray-900 dark:text-white font-mono text-xs bg-gray-200 dark:bg-neutral-700 px-2 py-1 rounded">
                               {nodo.nodo}
                             </span>
                           ))}
                           {group.nodos.length > 3 && (
-                            <span className="text-neutral-400 font-mono text-xs px-2 py-1">
+                            <span className="text-gray-500 dark:text-neutral-400 font-mono text-xs px-2 py-1">
                               +{group.nodos.length - 3} más
                             </span>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {group.types.slice(0, 2).map((tipo, tipoIndex) => (
-                            <span key={tipoIndex} className="text-orange-300 font-mono text-xs bg-orange-900 bg-opacity-30 px-2 py-1 rounded">
+                            <span key={tipoIndex} className="text-orange-600 dark:text-orange-300 font-mono text-xs bg-orange-100 dark:bg-orange-900 bg-opacity-50 dark:bg-opacity-30 px-2 py-1 rounded">
                               {tipo}
                             </span>
                           ))}
                           {group.types.length > 2 && (
-                            <span className="text-orange-300 font-mono text-xs px-2 py-1">
+                            <span className="text-orange-600 dark:text-orange-300 font-mono text-xs px-2 py-1">
                               +{group.types.length - 2} más
                             </span>
                           )}
@@ -725,17 +725,17 @@ for (const tipoOption of tiposDelNodo) {
             </div>
           )}
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 h-44 overflow-y-auto custom-scrollbar">
             {formData.entidadid ? (
               <div className="space-y-2">
                 {/* Checkbox para seleccionar todos */}
                 {selectedNodes.length > 0 && (
-                  <label className="flex items-center px-3 py-2 bg-neutral-800 rounded cursor-pointer hover:bg-neutral-700 transition-colors">
+                  <label className="flex items-center px-3 py-2 bg-gray-100 dark:bg-neutral-800 rounded cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors">
                     <input
                       type="checkbox"
                       checked={allNodesSelected}
                       onChange={(e) => handleSelectAllNodes(e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
                     <span className="text-orange-400 text-sm font-mono tracking-wider font-bold">
                       SELECCIONAR TODOS
@@ -744,19 +744,19 @@ for (const tipoOption of tiposDelNodo) {
                 )}
                 
                 {selectedNodes.map((node) => (
-                  <label key={node.nodoid} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                  <label key={node.nodoid} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                     <input
                       type="checkbox"
                       checked={node.selected}
                       onChange={(e) => handleNodeSelection(node.nodoid, e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
                     <div className="flex-1">
-                      <div className="text-white text-sm font-mono tracking-wider">
+                      <div className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {node.nodo.toUpperCase()}
                       </div>
                       {node.datecreated && (
-                        <div className="text-neutral-400 text-xs font-mono">
+                        <div className="text-gray-500 dark:text-neutral-400 text-xs font-mono">
                           {new Date(node.datecreated).toLocaleString()}
                         </div>
                       )}
@@ -766,7 +766,7 @@ for (const tipoOption of tiposDelNodo) {
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
                   {formData.fundoid ? (formData.entidadid ? 'CARGANDO NODOS...' : 'SELECCIONA UNA ENTIDAD PARA VER LOS NODOS CON SENSORES') : 'SELECCIONA UN FUNDO PARA VER LOS NODOS'}
                 </div>
               </div>
@@ -781,14 +781,14 @@ for (const tipoOption of tiposDelNodo) {
               TIPOS DE SENSORES ASIGNADOS
             </h4>
             
-            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
+            <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
               <div className="space-y-2">
                 {assignedSensorTypes.map((tipo) => (
-                  <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-neutral-800 rounded">
+                  <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-gray-100 dark:bg-neutral-800 rounded">
                     <div className="w-4 h-4 bg-orange-500 rounded mr-3 flex items-center justify-center">
                       <span className="text-white text-xs">✓</span>
                     </div>
-                    <span className="text-white text-sm font-mono tracking-wider">
+                    <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                       {tipo.tipo.toUpperCase()}
                     </span>
                   </div>
@@ -806,23 +806,23 @@ for (const tipoOption of tiposDelNodo) {
             MÉTRICAS
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             <div className="space-y-4">
               {formData.metricasData.map((metrica) => (
-                <div key={metrica.metricaid} className="bg-neutral-800 rounded-lg">
+                <div key={metrica.metricaid} className="bg-gray-100 dark:bg-neutral-800 rounded-lg">
                   <div className="flex items-center justify-between p-3">
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={metrica.selected}
                         onChange={(e) => handleMetricaSelection(metrica.metricaid, e.target.checked)}
-                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                       />
-                      <span className="text-white text-sm font-mono tracking-wider">
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {metrica.metrica.toUpperCase()}
                       </span>
                       {metrica.unidad && (
-                        <span className="text-neutral-400 text-xs ml-2">
+                        <span className="text-gray-500 dark:text-neutral-400 text-xs ml-2">
                           ({metrica.unidad})
                         </span>
                       )}
@@ -839,7 +839,7 @@ for (const tipoOption of tiposDelNodo) {
                   
                   {/* Contenido expandible */}
                   {metrica.expanded && metrica.selected && (
-                    <div className="px-3 pb-3 border-t border-neutral-600">
+                    <div className="px-3 pb-3 border-t border-gray-300 dark:border-neutral-600">
                       <div className="space-y-4 mt-3">
                         {assignedSensorTypes.map((tipo) => {
                           const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid] || {
@@ -850,14 +850,14 @@ for (const tipoOption of tiposDelNodo) {
                           };
                           
                           return (
-                            <div key={tipo.tipoid} className="bg-neutral-700 rounded-lg p-4">
+                            <div key={tipo.tipoid} className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4">
                               <h6 className="text-orange-300 font-mono tracking-wider font-bold mb-3">
                                 {tipo.tipo.toUpperCase()}
                               </h6>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <label className="block text-xs text-neutral-300 mb-1 font-mono">
+                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
                                     VALOR MÍNIMO
                                   </label>
                                   <input
@@ -865,13 +865,13 @@ for (const tipoOption of tiposDelNodo) {
                                     step="0.01"
                                     value={umbralTipo.minimo || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'minimo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="0.00"
                                   />
                                 </div>
                                 
                                 <div>
-                                  <label className="block text-xs text-neutral-300 mb-1 font-mono">
+                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
                                     VALOR MÁXIMO
                                   </label>
                                   <input
@@ -879,13 +879,13 @@ for (const tipoOption of tiposDelNodo) {
                                     step="0.01"
                                     value={umbralTipo.maximo || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'maximo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     placeholder="100.00"
                                   />
                                 </div>
                                 
                                 <div>
-                                  <label className="block text-xs text-neutral-300 mb-1 font-mono">
+                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
                                     CRITICIDAD
                                   </label>
                                   <SelectWithPlaceholder
@@ -898,14 +898,14 @@ for (const tipoOption of tiposDelNodo) {
                                 </div>
                                 
                                 <div>
-                                  <label className="block text-xs text-neutral-300 mb-1 font-mono">
+                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
                                     NOMBRE UMBRAL
                                   </label>
                                   <input
                                     type="text"
                                     value={umbralTipo.umbral || ''}
                                     onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'umbral', e.target.value)}
-                                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
+                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
                                     placeholder="Nombre del umbral"
                                   />
                                 </div>
@@ -923,24 +923,24 @@ for (const tipoOption of tiposDelNodo) {
         </div>
       )}
 
-{/* Resumen de selección */}
+      {/* Resumen de selección */}
       {selectedNodesCount > 0 && (
-        <div className="bg-neutral-800 rounded-lg p-4">
+        <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4">
           <h5 className="text-orange-400 font-mono tracking-wider font-bold mb-3">
             RESUMEN DE SELECCIÓN
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-orange-400">Nodos seleccionados:</span>
-              <span className="text-white ml-2">{selectedNodesCount}</span>
+              <span className="text-gray-900 dark:text-white ml-2">{selectedNodesCount}</span>
             </div>
             <div>
               <span className="text-orange-400">Tipos asignados:</span>
-              <span className="text-white ml-2">{assignedTiposCount}</span>
+              <span className="text-gray-900 dark:text-white ml-2">{assignedTiposCount}</span>
             </div>
             <div>
               <span className="text-orange-400">Métricas configuradas:</span>
-              <span className="text-white ml-2">{validMetricasCount}</span>
+              <span className="text-gray-900 dark:text-white ml-2">{validMetricasCount}</span>
             </div>
           </div>
           <div className="mt-3 text-orange-300 font-mono text-sm">
@@ -974,7 +974,7 @@ for (const tipoOption of tiposDelNodo) {
         <button
           onClick={handleCancel}
           disabled={loading}
-          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
           <span>CANCELAR</span>

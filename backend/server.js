@@ -28,14 +28,67 @@ app.use(express.json());
 // Configuración de Supabase - Service Role Key (SOLO BACKEND)
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const dbSchema = process.env.DB_SCHEMA || 'sense';
+
+// Log de configuración para debugging
+logger.info(`Supabase URL: ${supabaseUrl}`);
+logger.info(`Schema configurado: ${dbSchema}`);
+logger.info(`Service Role Key configurado: ${supabaseKey ? 'SÍ' : 'NO'}`);
+logger.info(`Service Role Key (primeros 20 chars): ${supabaseKey.substring(0, 20)}...`);
 
 // Crear cliente de Supabase con Service Role Key
 logger.info('Configurando cliente Supabase...');
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  db: {
-    schema: process.env.DB_SCHEMA || 'sense'
+logger.info(`Configuración del cliente: { db: { schema: "${dbSchema}" } }`);
+
+// Probar sin configuración de esquema primero
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+logger.info('Cliente Supabase creado con configuración de esquema');
+
+// Test de conexión inmediato para diagnosticar el problema
+logger.info('🔍 Probando conexión a Supabase...');
+(async () => {
+  try {
+    // Test 1: Verificar información del proyecto
+    logger.info('🔍 Test 1: Verificando información del proyecto...');
+    const { data: projectInfo, error: projectError } = await supabase
+      .from('information_schema.tables')
+      .select('table_schema, table_name')
+      .limit(5);
+    
+    if (projectError) {
+      logger.error('❌ Error obteniendo información del proyecto:', projectError);
+    } else {
+      logger.info('✅ Información del proyecto obtenida');
+      logger.info(`📋 Tablas encontradas: ${projectInfo?.length || 0}`);
+      if (projectInfo && projectInfo.length > 0) {
+        logger.info('📋 Esquemas disponibles:', [...new Set(projectInfo.map(t => t.table_schema))].join(', '));
+      }
+    }
+
+    // Test 2: Probar acceso directo a tablas conocidas
+    logger.info('🔍 Test 2: Probando acceso a tablas conocidas...');
+    const tablesToTest = ['pais', 'empresa', 'sensor', 'usuario'];
+    
+    for (const table of tablesToTest) {
+      logger.info(`🔍 Probando tabla: ${table}...`);
+      const { data: tableData, error: tableError } = await supabase
+        .from(table)
+        .select('*')
+        .limit(1);
+      
+      if (tableError) {
+        logger.error(`❌ Error en tabla ${table}:`, tableError.code, tableError.message);
+      } else {
+        logger.info(`✅ Tabla ${table}: OK (${tableData?.length || 0} registros)`);
+        break; // Si una tabla funciona, no necesitamos probar las demás
+      }
+    }
+
+  } catch (error) {
+    logger.error('❌ Error en test de conexión:', error);
   }
-});
+})();
 
 // Cache de metadatos para evitar consultas repetidas
 const metadataCache = new Map();

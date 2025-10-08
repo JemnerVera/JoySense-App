@@ -217,7 +217,7 @@ export function AdvancedMetricaSensorUpdateForm({
   };
 
   return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
+    <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6">
       <h3 className="text-xl font-bold text-orange-500 mb-6 font-mono tracking-wider">
         ACTUALIZAR SENSOR MÉTRICA
       </h3>
@@ -227,7 +227,7 @@ export function AdvancedMetricaSensorUpdateForm({
         <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
           ENTIDAD
         </label>
-        <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-neutral-400 font-mono">
+        <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded text-gray-600 dark:text-neutral-400 font-mono">
           {entidad?.entidad || 'N/A'}
         </div>
       </div>
@@ -237,7 +237,7 @@ export function AdvancedMetricaSensorUpdateForm({
         <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
           TIPO 🔒
         </label>
-        <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+        <div className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white text-base font-mono cursor-not-allowed opacity-75">
           {selectedTipos.length > 0 
             ? selectedTipos.map(id => {
                 const tipo = tiposData.find(t => t.tipoid.toString() === id);
@@ -252,7 +252,7 @@ export function AdvancedMetricaSensorUpdateForm({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         
         {/* Container Nodos */}
-        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+        <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
             NODO
           </h4>
@@ -261,7 +261,7 @@ export function AdvancedMetricaSensorUpdateForm({
             {getNodosFromSelectedRows().map((nodoId) => {
               const nodo = nodosData.find(n => n.nodoid.toString() === nodoId);
               return (
-                <label key={nodoId} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                <label key={nodoId} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                   <input
                     type="checkbox"
                     checked={selectedNodos.includes(nodoId)}
@@ -273,9 +273,9 @@ export function AdvancedMetricaSensorUpdateForm({
                         // Los nodos seleccionados permanecen marcados
                       }
                     }}
-                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                   />
-                  <span className="text-white text-sm font-mono tracking-wider">{nodo?.nodo?.toUpperCase() || nodoId}</span>
+                  <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{nodo?.nodo?.toUpperCase() || nodoId}</span>
                   {/* Icono de candado para nodos que no se pueden desmarcar */}
                   {selectedNodos.includes(nodoId) && (
                     <span className="ml-auto text-orange-500 text-sm">🔒</span>
@@ -289,7 +289,7 @@ export function AdvancedMetricaSensorUpdateForm({
         </div>
 
         {/* Container Métricas */}
-        <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+        <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
           <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
             MÉTRICA
           </h4>
@@ -298,7 +298,7 @@ export function AdvancedMetricaSensorUpdateForm({
             {getMetricasFromSelectedRows().map((metricaId) => {
               const metrica = metricasData.find(m => m.metricaid.toString() === metricaId);
               return (
-                <label key={metricaId} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                <label key={metricaId} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                   <input
                     type="checkbox"
                     checked={selectedMetricas.includes(metricaId)}
@@ -309,9 +309,9 @@ export function AdvancedMetricaSensorUpdateForm({
                         setSelectedMetricas(selectedMetricas.filter(id => id !== metricaId));
                       }
                     }}
-                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                   />
-                  <span className="text-white text-sm font-mono tracking-wider">{metrica?.metrica?.toUpperCase() || metricaId}</span>
+                  <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{metrica?.metrica?.toUpperCase() || metricaId}</span>
                 </label>
               );
             })}
@@ -320,7 +320,7 @@ export function AdvancedMetricaSensorUpdateForm({
             {entidadId && getUniqueOptionsForField('metricaid', { entidadid: entidadId })
               .filter(option => !getMetricasFromSelectedRows().includes(option.value.toString()))
               .map((option) => (
-                <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                <label key={option.value} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                   <input
                     type="checkbox"
                     checked={selectedMetricas.includes(option.value.toString())}
@@ -331,9 +331,9 @@ export function AdvancedMetricaSensorUpdateForm({
                         setSelectedMetricas(selectedMetricas.filter(id => id !== option.value.toString()));
                       }
                     }}
-                    className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                   />
-                  <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                  <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                 </label>
               ))}
           </div>
@@ -365,7 +365,7 @@ export function AdvancedMetricaSensorUpdateForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors font-mono"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           ❌ CANCELAR
         </button>

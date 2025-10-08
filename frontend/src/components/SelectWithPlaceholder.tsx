@@ -63,19 +63,19 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
         <span className={value && value !== 0 ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'} style={{fontFamily: 'monospace'}}>
           {selectedOption ? selectedOption.label.toUpperCase() : placeholder.toUpperCase()}
         </span>
-        <span className="text-neutral-400">▼</span>
+        <span className="text-gray-500 dark:text-neutral-400">▼</span>
       </div>
       
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
           {/* Barra de búsqueda */}
-          <div className="p-2 border-b border-neutral-700">
+          <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
             <input
               type="text"
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -87,17 +87,17 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                 <div
                   key={option.value}
                   onClick={() => handleOptionClick(option.value)}
-                  className={`px-3 py-2 cursor-pointer text-white font-mono tracking-wider transition-colors ${
+                  className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
                     selectedOption?.value === option.value 
                       ? 'bg-orange-500' 
-                      : 'hover:bg-neutral-800'
+                      : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
                   }`}
                 >
                   {option.label.toUpperCase()}
                 </div>
               ))
             ) : (
-              <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+              <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                 NO SE ENCONTRARON RESULTADOS
               </div>
             )}

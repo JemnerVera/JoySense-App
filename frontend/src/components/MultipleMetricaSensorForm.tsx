@@ -359,26 +359,26 @@ return {
          <div className="relative dropdown-container">
              <div
                onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
-               className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
+               className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white cursor-pointer focus:ring-2 focus:ring-orange-500 focus:border-orange-500 flex justify-between items-center font-mono"
              >
-               <span className={selectedEntidad ? 'text-white' : 'text-neutral-400'}>
+               <span className={selectedEntidad ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                  {selectedEntidad 
                    ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
                    : 'ENTIDAD'
                  }
                </span>
-               <span className="text-neutral-400">▼</span>
+               <span className="text-gray-500 dark:text-neutral-400">▼</span>
              </div>
              
             {entidadDropdownOpen && (
-              <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
-                <div className="p-2 border-b border-neutral-700">
+              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+                <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
                   <input
                     type="text"
                     placeholder="Buscar..."
                     value={entidadSearchTerm}
                     onChange={(e) => setEntidadSearchTerm(e.target.value)}
-                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -397,16 +397,16 @@ return {
                          // Limpiar nodos seleccionados cuando se cambia la entidad
                          setSelectedNodos([]);
                        }}
-                       className="px-3 py-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                       className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
                      >
-                       <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                       <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                      </div>
                    ))}
                    {getUniqueOptionsForField('entidadid')
                      .filter(option => 
                        option.label.toLowerCase().includes(entidadSearchTerm.toLowerCase())
                      ).length === 0 && (
-                     <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                     <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                        NO SE ENCONTRARON RESULTADOS
                      </div>
                    )}
@@ -420,12 +420,12 @@ return {
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
              TIPO 🔒
            </label>
-           <div className={`w-full px-3 py-2 border rounded-lg text-white font-mono ${
+           <div className={`w-full px-3 py-2 border rounded-lg font-mono ${
              selectedNodos.length > 0 
-               ? 'bg-neutral-700 border-neutral-600' 
-               : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
+               ? 'bg-gray-200 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white' 
+               : 'bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 cursor-not-allowed opacity-50 text-gray-500 dark:text-neutral-400'
            }`}>
-             <span className={selectedNodos.length > 0 ? 'text-white' : 'text-neutral-400'}>
+             <span className={selectedNodos.length > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                {selectedNodos.length > 0 
                  ? tiposFromNodos.length > 0
                    ? tiposFromNodos.filter(t => t !== null).map(t => t!.tipo).join(', ')
@@ -439,13 +439,13 @@ return {
 
       {/* Mensaje de validación de similitud de nodos (compacto e interactivo) */}
       {similarityAnalysis?.hasDifferences && (
-        <div className="mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg">
+        <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900 bg-opacity-20 dark:bg-opacity-20 border border-yellow-500 rounded-lg">
           <div className="flex items-start">
             <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
               <span className="text-black text-xs font-bold">⚠</span>
             </div>
             <div className="flex-1">
-              <h5 className="text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
+              <h5 className="text-yellow-600 dark:text-yellow-400 font-bold text-sm font-mono tracking-wider mb-2">
                 TIPOS DE SENSORES INCONSISTENTES
               </h5>
               
@@ -454,7 +454,7 @@ return {
                 {Object.values(similarityAnalysis.groupedNodes).map((group, groupIndex) => (
                   <div 
                     key={groupIndex} 
-                    className="bg-neutral-800 border border-neutral-600 rounded p-2 cursor-pointer hover:bg-neutral-700 transition-colors"
+                    className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
                     onClick={() => {
                       // Seleccionar solo los nodos de este grupo
                       const nodosDelGrupo = group.nodos.map(nodo => nodo.nodoid);
@@ -465,30 +465,30 @@ return {
                       <span className="text-orange-500 font-mono text-xs font-bold">
                         GRUPO {groupIndex + 1} - {group.count} TIPO(S)
                       </span>
-                      <span className="text-green-400 font-mono text-xs">
+                      <span className="text-green-600 dark:text-green-400 font-mono text-xs">
                         CLICK PARA SELECCIONAR
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-1">
                       {group.nodos.slice(0, 3).map(nodo => (
-                        <span key={nodo.nodoid} className="text-white font-mono text-xs bg-neutral-700 px-2 py-1 rounded">
+                        <span key={nodo.nodoid} className="text-gray-900 dark:text-white font-mono text-xs bg-gray-200 dark:bg-neutral-700 px-2 py-1 rounded">
                           {nodo.nodo}
                         </span>
                       ))}
                       {group.nodos.length > 3 && (
-                        <span className="text-neutral-400 font-mono text-xs px-2 py-1">
+                        <span className="text-gray-500 dark:text-neutral-400 font-mono text-xs px-2 py-1">
                           +{group.nodos.length - 3} más
                         </span>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {group.types.slice(0, 2).map((tipo, tipoIndex) => (
-                        <span key={tipoIndex} className="text-orange-300 font-mono text-xs bg-orange-900 bg-opacity-30 px-2 py-1 rounded">
+                        <span key={tipoIndex} className="text-orange-600 dark:text-orange-300 font-mono text-xs bg-orange-100 dark:bg-orange-900 bg-opacity-50 dark:bg-opacity-30 px-2 py-1 rounded">
                           {tipo}
                         </span>
                       ))}
                       {group.types.length > 2 && (
-                        <span className="text-orange-300 font-mono text-xs px-2 py-1">
+                        <span className="text-orange-600 dark:text-orange-300 font-mono text-xs px-2 py-1">
                           +{group.types.length - 2} más
                         </span>
                       )}
@@ -506,14 +506,14 @@ return {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Container 1: Nodos disponibles con checkboxes */}
-          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+          <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
               NODO
             </h4>
             <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
               {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
                 .map((option) => (
-                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                     <input
                       type="checkbox"
                       checked={selectedNodos.includes(option.value.toString())}
@@ -524,13 +524,13 @@ return {
                           setSelectedNodos(selectedNodos.filter(id => id !== option.value.toString()));
                         }
                       }}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
-                    <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                    <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                   </label>
                 ))}
               {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad }).length === 0 && (
-                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                   NO HAY NODOS DISPONIBLES PARA ESTA ENTIDAD
                 </div>
               )}
@@ -538,12 +538,12 @@ return {
           </div>
 
           {/* Container 2: Métricas disponibles con checkboxes */}
-          <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-4">
+          <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
                 MÉTRICA
               </h4>
-              <label className="flex items-center space-x-3 cursor-pointer bg-orange-900/20 border border-orange-500/30 rounded-lg px-3 py-2 hover:bg-orange-900/30 transition-colors">
+              <label className="flex items-center space-x-3 cursor-pointer bg-orange-100 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-500/30 rounded-lg px-3 py-2 hover:bg-orange-200 dark:hover:bg-orange-900/30 transition-colors">
                 <input
                   type="checkbox"
                   checked={selectedMetricasCheckboxes.length === getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length && getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length > 0}
@@ -557,18 +557,18 @@ return {
                       setSelectedMetricasCheckboxes([]);
                     }
                   }}
-                  className="w-5 h-5 text-orange-500 bg-neutral-800 border-orange-500 rounded focus:ring-orange-500 focus:ring-2"
+                  className="w-5 h-5 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-orange-500 rounded focus:ring-orange-500 focus:ring-2"
                 />
                 <div className="flex items-center space-x-2">
-                  <span className="text-orange-400 text-lg">📋</span>
-                  <span className="text-orange-400 font-bold text-sm font-mono tracking-wider">TODAS</span>
+                  <span className="text-orange-600 dark:text-orange-400 text-lg">📋</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-bold text-sm font-mono tracking-wider">TODAS</span>
                 </div>
               </label>
             </div>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad })
                 .map((option) => (
-                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-neutral-700 cursor-pointer transition-colors rounded">
+                  <label key={option.value} className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded">
                     <input
                       type="checkbox"
                       checked={selectedMetricasCheckboxes.includes(option.value.toString())}
@@ -579,13 +579,13 @@ return {
                           setSelectedMetricasCheckboxes(selectedMetricasCheckboxes.filter(id => id !== option.value.toString()));
                         }
                       }}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
                     />
-                    <span className="text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
+                    <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">{option.label.toUpperCase()}</span>
                   </label>
                 ))}
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length === 0 && (
-                <div className="px-3 py-2 text-neutral-400 text-sm font-mono">
+                <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
                   NO HAY MÉTRICAS DISPONIBLES PARA ESTA ENTIDAD
                 </div>
               )}
@@ -613,7 +613,7 @@ return {
         
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-neutral-800 border border-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
           <span>CANCELAR</span>

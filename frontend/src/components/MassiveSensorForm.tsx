@@ -188,17 +188,17 @@ export function MassiveSensorForm({
             NODO
           </h4>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg max-h-96 overflow-y-auto custom-scrollbar">
             {selectedNodes.length > 0 ? (
               <div>
                 {/* Header del grid - Sticky */}
-                <div className="sticky top-0 z-10 grid grid-cols-12 gap-4 px-4 py-3 bg-neutral-900 border-b border-neutral-600">
+                <div className="sticky top-0 z-10 grid grid-cols-12 gap-4 px-4 py-3 bg-gray-100 dark:bg-neutral-900 border-b border-gray-300 dark:border-neutral-600">
                   <div className="col-span-1">
                     <input
                       type="checkbox"
                       checked={allNodesSelected}
                       onChange={(e) => handleSelectAllNodes(e.target.checked)}
-                      className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                     />
                   </div>
                   <div className="col-span-6">
@@ -215,22 +215,22 @@ export function MassiveSensorForm({
                 
                 {/* Filas de nodos */}
                 {selectedNodes.map((node) => (
-                  <label key={node.nodoid} className="grid grid-cols-12 gap-4 px-4 py-2 hover:bg-neutral-700 cursor-pointer transition-colors">
+                  <label key={node.nodoid} className="grid grid-cols-12 gap-4 px-4 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors">
                     <div className="col-span-1 flex items-center">
                       <input
                         type="checkbox"
                         checked={node.selected}
                         onChange={(e) => handleNodeSelection(node.nodoid, e.target.checked)}
-                        className="w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                       />
                     </div>
                     <div className="col-span-6 flex items-center">
-                      <span className="text-white text-sm font-mono tracking-wider">
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
                         {node.nodo.toUpperCase()}
                       </span>
                     </div>
                     <div className="col-span-5 flex items-center">
-                      <span className="text-neutral-300 text-sm font-mono">
+                      <span className="text-gray-600 dark:text-neutral-300 text-sm font-mono">
                         {node.datecreated ? new Date(node.datecreated).toLocaleDateString('es-PE', {
                           day: '2-digit',
                           month: '2-digit',
@@ -245,7 +245,7 @@ export function MassiveSensorForm({
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
                   CARGANDO NODOS DISPONIBLES...
                 </div>
               </div>
@@ -269,7 +269,7 @@ export function MassiveSensorForm({
             )}
           </div>
           
-          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
             {allTiposOptions.length > 0 ? (
               <div className="space-y-2">
                 {allTiposOptions.map((option) => {
@@ -281,7 +281,7 @@ export function MassiveSensorForm({
                       key={option.value} 
                       className={`flex items-center px-3 py-2 transition-colors rounded ${
                         isAvailable 
-                          ? 'hover:bg-neutral-700 cursor-pointer' 
+                          ? 'hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer' 
                           : 'opacity-40 cursor-not-allowed'
                       }`}
                     >
@@ -290,12 +290,12 @@ export function MassiveSensorForm({
                         checked={isSelected}
                         onChange={(e) => handleTipoSelection(parseInt(option.value.toString()), e.target.checked)}
                         disabled={!isAvailable}
-                        className={`w-4 h-4 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3 ${
+                        className={`w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3 ${
                           !isAvailable ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       />
                       <span className={`text-sm font-mono tracking-wider ${
-                        isAvailable ? 'text-white' : 'text-neutral-500'
+                        isAvailable ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-neutral-500'
                       }`}>
                         {option.label.toUpperCase()}
                       </span>
@@ -305,7 +305,7 @@ export function MassiveSensorForm({
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-neutral-400 text-sm font-mono tracking-wider">
+                <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
                   CARGANDO TIPOS DE SENSORES...
                 </div>
               </div>
@@ -351,7 +351,7 @@ export function MassiveSensorForm({
         <button
           onClick={handleCancel}
           disabled={loading}
-          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
+          className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
           <span>CANCELAR</span>
