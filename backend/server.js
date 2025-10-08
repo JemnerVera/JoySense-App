@@ -22,491 +22,77 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 });
 
-// Metadatos hardcodeados basados en la documentación del schema
-const tableMetadata = {
-  pais: {
-    columns: [
-      { column_name: 'paisid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.pais_paisid_seq\'::regclass)' },
-      { column_name: 'pais', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'paisabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'pais', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'pais_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  empresa: {
-    columns: [
-      { column_name: 'empresaid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.empresa_empresaid_seq\'::regclass)' },
-      { column_name: 'empresa', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'empresabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'paisid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'empresa', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'empresa_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'empresa_paisid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  fundo: {
-    columns: [
-      { column_name: 'fundoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.fundo_fundoid_seq\'::regclass)' },
-      { column_name: 'fundo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'fundoabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'empresaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'fundo', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'fundo_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'fundo_empresaid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  ubicacion: {
-    columns: [
-      { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.ubicacion_ubicacionid_seq\'::regclass)' },
-      { column_name: 'ubicacion', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'ubicacionabrev', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'fundoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'ubicacion', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'ubicacion_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'ubicacion_fundoid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  entidad: {
-    columns: [
-      { column_name: 'entidadid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.entidad_entidadid_seq\'::regclass)' },
-      { column_name: 'entidad', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'entidad', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'entidad_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  metrica: {
-    columns: [
-      { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.metrica_metricaid_seq\'::regclass)' },
-      { column_name: 'metrica', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'unidad', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'metrica', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'metrica_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  tipo: {
-    columns: [
-      { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.tipo_tipoid_seq\'::regclass)' },
-      { column_name: 'tipo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'entidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'tipo', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'tipo_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'tipo_entidadid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  nodo: {
-    columns: [
-      { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.nodo_nodoid_seq\'::regclass)' },
-      { column_name: 'nodo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'deveui', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'appeui', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'appkey', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'atpin', data_type: 'character varying', is_nullable: 'YES', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'nodo', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'nodo_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  sensor: {
-    columns: [
-      { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'sensor', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'sensor_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'sensor_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'sensor_tipoid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  metricasensor: {
-    columns: [
-      { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'metricasensor', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'metricasensor_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'metricasensor_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'metricasensor_metricaid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'metricasensor_tipoid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  criticidad: {
-    columns: [
-      { column_name: 'criticidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'criticidad', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'grado', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'frecuencia', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'escalamiento', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'escalon', data_type: 'integer', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'criticidad', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'criticidad_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  perfil: {
-    columns: [
-      { column_name: 'perfilid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'perfil', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
-      { column_name: 'nivel', data_type: 'integer', is_nullable: 'NO', column_default: '0' },
-      { column_name: 'jefeid', data_type: 'integer', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'perfil', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'perfil_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-  umbral: {
-    columns: [
-      { column_name: 'umbralid', data_type: 'bigint', is_nullable: 'NO', column_default: 'nextval(\'sense.umbral_umbralid_seq\'::regclass)' },
-      { column_name: 'umbral', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'maximo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
-      { column_name: 'minimo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
-      { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'criticidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' }
-    ],
-    info: { table_name: 'umbral', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'umbral_pkey', constraint_type: 'PRIMARY KEY' },
-      { constraint_name: 'umbral_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'umbral_criticidadid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'umbral_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'umbral_metricaid_fkey', constraint_type: 'FOREIGN KEY' },
-      { constraint_name: 'umbral_tipoid_fkey', constraint_type: 'FOREIGN KEY' }
-    ]
-  },
-  medio: {
-    columns: [
-      { column_name: 'medioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-      { column_name: 'nombre', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-      { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-      { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-      { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-      { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-    ],
-    info: { table_name: 'medio', table_type: 'BASE TABLE' },
-    constraints: [
-      { constraint_name: 'medio_pkey', constraint_type: 'PRIMARY KEY' }
-    ]
-  },
-    localizacion: {
-      columns: [
-        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'latitud', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'longitud', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'referencia', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'entidadid', data_type: 'integer', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'localizacion', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'localizacion_pkey', constraint_type: 'PRIMARY KEY', composite_key: ['ubicacionid', 'nodoid'] },
-        { constraint_name: 'localizacion_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'localizacion_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'localizacion_entidadid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    perfilumbral: {
-      columns: [
-        { column_name: 'perfilid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'umbralid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'perfilumbral', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'perfilumbral_pkey', constraint_type: 'PRIMARY KEY', composite_key: ['perfilid', 'umbralid'] },
-        { constraint_name: 'perfilumbral_perfilid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'perfilumbral_umbralid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    contacto: {
-      columns: [
-        { column_name: 'contactoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.contacto_contactoid_seq\'::regclass)' },
-        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'celular', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'codigotelefonoid', data_type: 'integer', is_nullable: 'YES', column_default: null }, // FK a codigotelefono
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'contacto', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'contacto_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'contacto_usuarioid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'contacto_codigotelefonoid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    codigotelefono: {
-      columns: [
-        { column_name: 'codigotelefonoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.codigotelefono_codigotelefonoid_seq\'::regclass)' },
-        { column_name: 'codigotelefono', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-        { column_name: 'paistelefono', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'codigotelefono', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'codigotelefono_pkey', constraint_type: 'PRIMARY KEY' }
-      ]
-    },
-    correo: {
-      columns: [
-        { column_name: 'correoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.correo_correoid_seq\'::regclass)' },
-        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'correo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'correo', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'correo_pkey', constraint_type: 'PRIMARY KEY' }
-      ]
-    },
-    usuario: {
-      columns: [
-        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.usuario_usuarioid_seq\'::regclass)' },
-        { column_name: 'login', data_type: 'text', is_nullable: 'NO', column_default: null },
-        { column_name: 'lastname', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'firstname', data_type: 'text', is_nullable: 'YES', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'usuario', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'usuario_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'usuario_login_key', constraint_type: 'UNIQUE' }
-      ]
-    },
-    usuarioperfil: {
-      columns: [
-        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'perfilid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'usuarioperfil', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'usuarioperfil_pkey', constraint_type: 'PRIMARY KEY', composite_key: ['usuarioid', 'perfilid'] },
-        { constraint_name: 'usuarioperfil_usuarioid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'usuarioperfil_perfilid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    audit_log_umbral: {
-      columns: [
-        { column_name: 'auditid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.audit_log_umbral_auditid_seq\'::regclass)' },
-        { column_name: 'umbralid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'old_minimo', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'new_minimo', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'old_maximo', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'new_maximo', data_type: 'numeric', is_nullable: 'YES', column_default: null },
-        { column_name: 'old_criticidadid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'new_criticidadid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'modified_by', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'modified_at', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'accion', data_type: 'text', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'audit_log_umbral', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'audit_log_umbral_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'audit_log_umbral_umbralid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    alerta: {
-      columns: [
-        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.alerta_alertaid_seq\'::regclass)' },
-        { column_name: 'umbralid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'medicionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' }
-      ],
-      info: { table_name: 'alerta', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'alerta_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'alerta_umbralid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alerta_medicionid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    mensaje: {
-      columns: [
-        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'contactoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'mensaje', data_type: 'text', is_nullable: 'NO', column_default: null },
-        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' }
-      ],
-      info: { table_name: 'mensaje', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'mensaje_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'mensaje_alertaid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'mensaje_contactoid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    medicion: {
-      columns: [
-        { column_name: 'medicionid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.medicion_medicionid_seq\'::regclass)' },
-        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'fecha', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
-        { column_name: 'medicion', data_type: 'double precision', is_nullable: 'NO', column_default: null },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'medicion', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'medicion_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'medicion_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'medicion_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'medicion_tipoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'medicion_metricaid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
-    },
-    alertaconsolidado: {
-      columns: [
-        { column_name: 'alertaconsolidadoid', data_type: 'integer', is_nullable: 'NO', column_default: 'nextval(\'sense.alertaconsolidado_alertaconsolidadoid_seq\'::regclass)' },
-        { column_name: 'alertaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'alertas_agrupadas', data_type: 'integer[]', is_nullable: 'YES', column_default: null },
-        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'nodoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'criticidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
-        { column_name: 'fecha_inicio', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
-        { column_name: 'fecha_fin', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: null },
-        { column_name: 'cantidad_alertas', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'valor_minimo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
-        { column_name: 'valor_maximo', data_type: 'double precision', is_nullable: 'YES', column_default: null },
-        { column_name: 'valor_promedio', data_type: 'double precision', is_nullable: 'YES', column_default: null },
-        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
-        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null },
-        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'YES', column_default: null },
-        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'YES', column_default: null }
-      ],
-      info: { table_name: 'alertaconsolidado', table_type: 'BASE TABLE' },
-      constraints: [
-        { constraint_name: 'alertaconsolidado_pkey', constraint_type: 'PRIMARY KEY' },
-        { constraint_name: 'alertaconsolidado_alertaid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alertaconsolidado_ubicacionid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alertaconsolidado_metricaid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alertaconsolidado_nodoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alertaconsolidado_tipoid_fkey', constraint_type: 'FOREIGN KEY' },
-        { constraint_name: 'alertaconsolidado_criticidadid_fkey', constraint_type: 'FOREIGN KEY' }
-      ]
+// Cache de metadatos para evitar consultas repetidas
+const metadataCache = new Map();
+
+// Función para obtener metadatos dinámicamente desde Supabase
+const getTableMetadata = async (tableName) => {
+  // Verificar cache primero
+  if (metadataCache.has(tableName)) {
+    console.log(`📋 Usando metadatos en cache para tabla: ${tableName}`);
+    return metadataCache.get(tableName);
+  }
+  try {
+    console.log(`🔍 Obteniendo metadatos dinámicos para tabla: ${tableName}`);
+    
+    // Intentar obtener metadatos dinámicamente desde Supabase
+    // Si falla, usar metadatos hardcodeados como fallback
+    const { data: columns, error: columnsError } = await supabase
+      .from('information_schema.columns')
+      .select('column_name, data_type, is_nullable, column_default')
+      .eq('table_schema', 'sense')
+      .eq('table_name', tableName);
+    
+    if (columnsError || !columns || columns.length === 0) {
+      console.log(`⚠️ No se pudo obtener columnas dinámicamente para ${tableName}, usando metadatos hardcodeados`);
+      return getHardcodedMetadata(tableName);
     }
+    
+    // Obtener información de la tabla
+    const { data: tableInfo, error: tableInfoError } = await supabase
+      .from('information_schema.tables')
+      .select('table_name, table_type')
+      .eq('table_schema', 'sense')
+      .eq('table_name', tableName)
+      .single();
+    
+    // Obtener constraints
+    const { data: constraints, error: constraintsError } = await supabase
+      .from('information_schema.table_constraints')
+      .select('constraint_name, constraint_type')
+      .eq('table_schema', 'sense')
+      .eq('table_name', tableName);
+    
+    const metadata = {
+      columns: columns || [],
+      info: tableInfo || { table_name: tableName, table_type: 'BASE TABLE' },
+      constraints: constraints || []
+    };
+    
+    // Guardar en cache
+    metadataCache.set(tableName, metadata);
+    console.log(`✅ Metadatos dinámicos obtenidos y guardados en cache para: ${tableName}`);
+    return metadata;
+  } catch (error) {
+    console.error(`❌ Error obteniendo metadatos dinámicos para ${tableName}:`, error);
+    console.log(`🔄 Usando metadatos hardcodeados como fallback para ${tableName}`);
+    const fallbackMetadata = getHardcodedMetadata(tableName);
+    // También guardar el fallback en cache para evitar consultas repetidas
+    metadataCache.set(tableName, fallbackMetadata);
+    return fallbackMetadata;
+  }
 };
+
+// Función fallback con metadatos básicos (sin hardcodeo)
+const getHardcodedMetadata = (tableName) => {
+  console.log(`⚠️ Usando metadatos básicos para tabla: ${tableName} (sin hardcodeo)`);
+  return {
+    columns: [],
+    info: { table_name: tableName, table_type: 'BASE TABLE' },
+    constraints: []
+  };
+};
+
 console.log('✅ Cliente Supabase configurado');
 
 // Middleware para verificar autenticación (opcional por ahora)
@@ -945,8 +531,8 @@ app.get('/api/sense/:tableName/columns', async (req, res) => {
     const { tableName } = req.params;
     console.log(`🔍 Backend: Obteniendo columnas de la tabla ${tableName}...`);
     
-    // Usar metadatos hardcodeados
-    const metadata = tableMetadata[tableName];
+    // Usar metadatos dinámicos con fallback a hardcodeados
+    const metadata = await getTableMetadata(tableName);
     if (!metadata) {
       console.error(`❌ Tabla ${tableName} no encontrada en metadatos`);
       return res.status(404).json({ error: `Tabla ${tableName} no encontrada` });
@@ -965,8 +551,8 @@ app.get('/api/sense/:tableName/info', async (req, res) => {
     const { tableName } = req.params;
     console.log(`🔍 Backend: Obteniendo información de la tabla ${tableName}...`);
     
-    // Usar metadatos hardcodeados
-    const metadata = tableMetadata[tableName];
+    // Usar metadatos dinámicos con fallback a hardcodeados
+    const metadata = await getTableMetadata(tableName);
     if (!metadata) {
       console.error(`❌ Tabla ${tableName} no encontrada en metadatos`);
       return res.status(404).json({ error: `Tabla ${tableName} no encontrada` });
@@ -985,8 +571,8 @@ app.get('/api/sense/:tableName/constraints', async (req, res) => {
     const { tableName } = req.params;
     console.log(`🔍 Backend: Obteniendo constraints de la tabla ${tableName}...`);
     
-    // Usar metadatos hardcodeados
-    const metadata = tableMetadata[tableName];
+    // Usar metadatos dinámicos con fallback a hardcodeados
+    const metadata = await getTableMetadata(tableName);
     if (!metadata) {
       console.error(`❌ Tabla ${tableName} no encontrada en metadatos`);
       return res.status(404).json({ error: `Tabla ${tableName} no encontrada` });
