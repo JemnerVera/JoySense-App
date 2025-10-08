@@ -1,5 +1,6 @@
 import React from 'react';
 import ReplicateButton from './ReplicateButton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MultipleUsuarioPerfilFormProps {
   selectedUsuarios: string[];
@@ -60,6 +61,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
   empresasData,
   fundosData
 }) => {
+  const { t } = useLanguage();
   const [usuariosDropdownOpen, setUsuariosDropdownOpen] = React.useState(false);
   const [perfilesDropdownOpen, setPerfilesDropdownOpen] = React.useState(false);
   
@@ -263,14 +265,14 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-              USUARIOS SIN PERFIL
+              {t('userprofile.users_without_profile')}
             </h4>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="BUSCAR USUARIOS..."
+              placeholder={t('userprofile.search_users')}
               value={usuariosSearchTerm}
               onChange={(e) => setUsuariosSearchTerm(e.target.value)}
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
@@ -300,7 +302,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
               ))}
               {filteredUsuarios.length === 0 && (
                 <div className="p-3 text-neutral-400 text-center font-mono">
-                  {usuariosSearchTerm ? 'NO SE ENCONTRARON USUARIOS' : 'NO HAY USUARIOS SIN PERFIL'}
+                  {usuariosSearchTerm ? t('userprofile.no_users_found') : t('userprofile.no_users_without_profile')}
                 </div>
               )}
             </div>
@@ -311,14 +313,14 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-              PERFILES DISPONIBLES
+              {t('userprofile.profiles_available')}
             </h4>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="BUSCAR PERFILES..."
+              placeholder={t('userprofile.search_profiles')}
               value={perfilesSearchTerm}
               onChange={(e) => setPerfilesSearchTerm(e.target.value)}
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
@@ -344,7 +346,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
               ))}
               {filteredPerfiles.length === 0 && (
                 <div className="p-3 text-neutral-400 text-center font-mono">
-                  {perfilesSearchTerm ? 'NO SE ENCONTRARON PERFILES' : 'NO HAY PERFILES DISPONIBLES'}
+                  {perfilesSearchTerm ? t('userprofile.no_profiles_found') : t('userprofile.no_profiles_available')}
                 </div>
               )}
             </div>

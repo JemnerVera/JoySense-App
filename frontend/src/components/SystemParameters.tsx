@@ -8515,7 +8515,7 @@ const handleCancelModal = () => {
                         {selectedTable === 'contacto' && !selectedContactType ? (
                           <div className="text-center py-8">
                             <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-6">
-                              ¿CÓMO DESEA QUE SE LE CONTACTE?
+                              {t('contact.title')}
                             </label>
                             <div className="flex flex-col space-y-4 max-w-md mx-auto">
                               <button
@@ -8523,18 +8523,18 @@ const handleCancelModal = () => {
                                 onClick={() => setSelectedContactType('phone')}
                                 className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-gray-200 dark:bg-neutral-700 text-gray-900 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
-                                📞 TELÉFONO
+                                📞 {t('contact.phone')}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setSelectedContactType('email')}
                                 className="px-6 py-4 rounded-lg font-medium transition-all duration-200 text-center bg-gray-200 dark:bg-neutral-700 text-gray-900 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600 hover:scale-102 font-mono tracking-wider"
                               >
-                                📧 CORREO ELECTRÓNICO
+                                📧 {t('contact.email')}
                               </button>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-neutral-500 mt-4 opacity-75 font-mono tracking-wider">
-                              SELECCIONE UNA OPCIÓN PARA CONTINUAR.
+                              {t('contact.select_option')}
                             </p>
                           </div>
                         ) : selectedTable === 'contacto' && selectedContactType ? (
@@ -9227,7 +9227,7 @@ setIndividualRowStatus(newIndividualStatus);
                                   handleSearchTermChange(e.target.value, updateData, updateVisibleColumns, userData, updateData, setUpdateFilteredData, relatedData);
                                 }}
 
-                                placeholder="🔍 Buscar en todos los campos..."
+                                placeholder={`🔍 ${t('update.search_placeholder')}`}
 
                                 className="w-full px-4 py-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 font-mono"
 

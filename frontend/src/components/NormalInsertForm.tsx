@@ -6,6 +6,7 @@ import React, { memo, useEffect, useMemo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -63,12 +64,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   countryCodes,
   resetContactType
 }) => {
+  const { t } = useLanguage();
 
   // ============================================================================
   // UTILITY FUNCTIONS
   // ============================================================================
-
-  const { t } = useLanguage();
 
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
@@ -237,7 +237,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         return (
           <div key="pais-contextual">
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              PAÍS
+              {t('create.country')}
             </label>
             <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getPaisName(paisSeleccionado)}
@@ -250,7 +250,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         return (
           <div key="empresa-contextual">
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              EMPRESA
+              {t('create.company')}
             </label>
             <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getEmpresaName(empresaSeleccionada)}
@@ -263,7 +263,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         return (
           <div key="fundo-contextual">
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              FUNDO
+              {t('table_headers.fund')}
             </label>
             <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
               {getFundoName(fundoSeleccionado)}
@@ -395,7 +395,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Función para renderizar un campo de umbral con lógica de cascada
   const renderUmbralField = (col: any, isEnabled: boolean): React.ReactNode => {
-    const displayName = getColumnDisplayName(col.columnName);
+    const displayName = getColumnDisplayNameTranslated(col.columnName, t);
     if (!displayName) return null;
     
     const value = formData[col.columnName] || '';
@@ -435,7 +435,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             <span className={`font-mono tracking-wider ${
               isEnabled ? 'text-white' : 'text-gray-500'
             }`}>
-              {value === 1 ? 'ACTIVO' : 'INACTIVO'}
+              {value === 1 ? t('create.active') : t('create.inactive')}
             </span>
           </div>
         </div>
@@ -565,7 +565,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
           <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
               <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                PAÍS
+                {t('create.country')}
               </label>
               <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
                 {paisOptions[0].label}
@@ -922,7 +922,7 @@ return filteredNodos;
 
   // Función para renderizar campos de localización con dependencias en cascada
   const renderLocalizacionField = (col: any, fieldType: 'entidad' | 'ubicacion' | 'nodo' | 'coordenadas'): React.ReactNode => {
-    const displayName = getColumnDisplayName(col.columnName);
+    const displayName = getColumnDisplayNameTranslated(col.columnName, t);
     if (!displayName) return null;
     
     const value = formData[col.columnName] || '';
@@ -1074,7 +1074,7 @@ return filteredNodos;
 
   // Función para renderizar un campo individual
   const renderField = (col: any): React.ReactNode => {
-          const displayName = getColumnDisplayName(col.columnName);
+          const displayName = getColumnDisplayNameTranslated(col.columnName, t);
           if (!displayName) return null;
           
           const value = formData[col.columnName] || '';
@@ -1103,7 +1103,7 @@ return filteredNodos;
                     className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-white font-mono tracking-wider">
-                    {value === 1 ? 'ACTIVO' : 'INACTIVO'}
+                    {value === 1 ? t('create.active') : t('create.inactive')}
                   </span>
                 </div>
               </div>
@@ -1188,7 +1188,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR UBICACIÓN`}
+                  placeholder={t('create.select_location')}
                 />
               </div>
             );
@@ -1208,7 +1208,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR NODO`}
+                  placeholder={t('create.select_node')}
                 />
               </div>
             );
@@ -1216,7 +1216,7 @@ return filteredNodos;
 
           if (col.columnName === 'entidadid' && (selectedTable === 'localizacion' || selectedTable === 'tipo')) {
             const options = getUniqueOptionsForField(col.columnName);
-            const displayName = getColumnDisplayName(col.columnName);
+            const displayName = getColumnDisplayNameTranslated(col.columnName, t);
             return (
               <div key={col.columnName} className="mb-4">
                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
@@ -1250,7 +1250,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR NODO`}
+                  placeholder={t('create.select_node')}
                 />
               </div>
             );
@@ -1291,7 +1291,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR NODO`}
+                  placeholder={t('create.select_node')}
                 />
               </div>
             );
@@ -1311,7 +1311,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR MÉTRICA`}
+                  placeholder={t('create.select_metric')}
                 />
               </div>
             );
@@ -1352,7 +1352,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR UBICACIÓN`}
+                  placeholder={t('create.select_location')}
                 />
               </div>
             );
@@ -1372,7 +1372,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR CRITICIDAD`}
+                  placeholder={t('create.select_criticality')}
                 />
               </div>
             );
@@ -1392,7 +1392,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR NODO`}
+                  placeholder={t('create.select_node')}
                 />
               </div>
             );
@@ -1412,7 +1412,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR MÉTRICA`}
+                  placeholder={t('create.select_metric')}
                 />
               </div>
             );
@@ -1453,7 +1453,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`PERFIL`}
+                  placeholder={t('create.profile')}
                 />
               </div>
             );
@@ -1473,7 +1473,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`UMBRAL`}
+                  placeholder={t('create.threshold')}
                 />
               </div>
             );
@@ -1494,7 +1494,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR UMBRAL`}
+                  placeholder={t('create.select_threshold')}
                 />
               </div>
             );
@@ -1514,7 +1514,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR USUARIO`}
+                  placeholder={t('create.select_user')}
                 />
               </div>
             );
@@ -1535,7 +1535,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR USUARIO`}
+                  placeholder={t('create.select_user')}
                 />
               </div>
             );
@@ -1555,7 +1555,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR PERFIL`}
+                  placeholder={t('create.select_profile')}
                 />
               </div>
             );
@@ -1576,7 +1576,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`SELECCIONAR JEFE (NIVEL - PERFIL)`}
+                  placeholder={t('create.select_boss')}
                 />
               </div>
             );
@@ -1597,7 +1597,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`USUARIO`}
+                  placeholder={t('create.user')}
                 />
               </div>
             );
@@ -1617,7 +1617,7 @@ return filteredNodos;
                     [col.columnName]: newValue ? parseInt(newValue.toString()) : null
                   })}
                   options={options}
-                  placeholder={`MEDIO`}
+                  placeholder={t('create.medium')}
                 />
               </div>
             );
@@ -1649,7 +1649,7 @@ return filteredNodos;
                     ? 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600' 
                     : 'bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 opacity-50 cursor-not-allowed'
                 }`}
-                  placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ' (hasta 2 caracteres)' : ''}${col.columnName === 'empresabrev' ? ' (hasta 10 caracteres)' : ''}${col.columnName === 'fundoabrev' ? ' (hasta 10 caracteres)' : ''}`}
+                  placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ` (${t('create.abbreviation_2_chars').split('(')[1]}` : ''}${col.columnName === 'empresabrev' ? ` (${t('create.abbreviation_10_chars').split('(')[1]}` : ''}${col.columnName === 'fundoabrev' ? ` (${t('create.abbreviation_10_chars').split('(')[1]}` : ''}`}
               />
             </div>
           );
@@ -1665,13 +1665,13 @@ return filteredNodos;
         {/* Campo Usuario */}
         <div className="space-y-3">
           <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-            {getColumnDisplayName('usuarioid')?.toUpperCase()} *
+            {getColumnDisplayNameTranslated('usuarioid', t)?.toUpperCase()} *
           </label>
           <SelectWithPlaceholder
             value={formData.usuarioid || ''}
             onChange={(value) => setFormData({ ...formData, usuarioid: value })}
             options={getUniqueOptionsForField('usuarioid')}
-            placeholder="SELECCIONAR USUARIO..."
+            placeholder={`${t('create.select_user')}...`}
           />
         </div>
 
@@ -1682,7 +1682,7 @@ return filteredNodos;
             {/* Campo País */}
             <div className="space-y-3">
               <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-                PAÍS *
+                {t('create.country')} *
               </label>
               <SelectWithPlaceholder
                 value={formData.codigotelefonoid || ''}
@@ -1723,7 +1723,7 @@ return filteredNodos;
             {/* Campo Número de Teléfono */}
             <div className="space-y-3">
               <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-                NÚMERO DE TELÉFONO *
+                {t('contact.phone_number')} *
               </label>
               <div className="flex">
                 <span className={`px-4 py-3 border rounded-l-lg text-white text-sm font-medium min-w-[80px] text-center ${
@@ -1774,7 +1774,7 @@ return filteredNodos;
         {selectedContactType === 'email' && (
           <div className="space-y-3">
             <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-              CORREO ELECTRÓNICO *
+              {t('contact.email_address')} *
             </label>
             <input
               type="email"
@@ -1784,7 +1784,7 @@ return filteredNodos;
                 // Permitir cualquier texto, solo validar formato al final
                 setFormData({ ...formData, correo: email });
               }}
-              placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : "PRIMERO SELECCIONE UN USUARIO"}
+              placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : t('contact.select_user_first')}
               disabled={!formData.usuarioid}
               className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
                 formData.usuarioid 
@@ -1803,7 +1803,7 @@ return filteredNodos;
         {/* Campo Status (siempre visible en contacto) */}
         <div className="mb-4">
           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-            STATUS*
+            {t('create.status')}*
           </label>
           <div className="flex items-center space-x-3">
             <input
@@ -1816,7 +1816,7 @@ return filteredNodos;
               className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
             />
             <span className="text-white font-mono tracking-wider">
-              {formData.statusid === 1 ? 'ACTIVO' : 'INACTIVO'}
+              {formData.statusid === 1 ? t('create.active') : t('create.inactive')}
             </span>
           </div>
         </div>
@@ -1845,7 +1845,7 @@ return filteredNodos;
 
       {/* Leyenda de campos obligatorios en esquina inferior izquierda */}
       <div className="absolute bottom-0 left-0 text-sm text-neutral-400 font-mono">
-        (*) Campo obligatorio
+        {t('create.required_field')}
       </div>
 
       {/* Botones de acción centrados */}
@@ -1856,7 +1856,7 @@ return filteredNodos;
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
+          <span>{loading ? 'GUARDANDO...' : t('create.save')}</span>
         </button>
         
         <button
@@ -1864,7 +1864,7 @@ return filteredNodos;
           className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>CANCELAR</span>
+          <span>{t('create.cancel')}</span>
         </button>
 
         {/* Botón para volver a selección de tipo de contacto */}

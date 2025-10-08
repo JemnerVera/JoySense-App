@@ -4,6 +4,7 @@
 
 import React, { memo } from 'react';
 import ReplicateButton from './ReplicateButton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -80,6 +81,7 @@ const MultipleMetricaSensorForm: React.FC<MultipleMetricaSensorFormProps> = memo
   empresasData,
   fundosData
 }) => {
+  const { t } = useLanguage();
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -351,7 +353,7 @@ return {
       {/* Selección de Entidad y Nodos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
-           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">ENTIDAD*</label>
+           <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">{t('table_headers.entity')}*</label>
          <div className="relative dropdown-container">
              <div
                onClick={() => setEntidadDropdownOpen(!entidadDropdownOpen)}
@@ -360,7 +362,7 @@ return {
                <span className={selectedEntidad ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                  {selectedEntidad 
                    ? entidadesData.find(e => e.entidadid.toString() === selectedEntidad)?.entidad || `Entidad ${selectedEntidad}`
-                   : 'ENTIDAD'
+                   : t('table_headers.entity')
                  }
                </span>
                <span className="text-gray-500 dark:text-neutral-400">▼</span>
@@ -414,7 +416,7 @@ return {
 
          <div>
            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-             TIPO 🔒
+             {t('metricsensor.type_locked')}
            </label>
            <div className={`w-full px-3 py-2 border rounded-lg font-mono ${
              selectedNodos.length > 0 
@@ -425,8 +427,8 @@ return {
                {selectedNodos.length > 0 
                  ? tiposFromNodos.length > 0
                    ? tiposFromNodos.filter(t => t !== null).map(t => t!.tipo).join(', ')
-                   : 'NO HAY TIPOS DISPONIBLES PARA LOS NODOS SELECCIONADOS'
-                 : 'SELECCIONAR NODOS PRIMERO'
+                   : t('metricsensor.no_types_available')
+                 : t('metricsensor.select_nodes_first')
                }
              </span>
            </div>
@@ -504,7 +506,7 @@ return {
           {/* Container 1: Nodos disponibles con checkboxes */}
           <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">
-              NODO
+              {t('metricsensor.node')}
             </h4>
             <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
               {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad })
@@ -527,7 +529,7 @@ return {
                 ))}
               {getUniqueOptionsForField('nodoid', { entidadid: selectedEntidad }).length === 0 && (
                 <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
-                  NO HAY NODOS DISPONIBLES PARA ESTA ENTIDAD
+                  {t('metricsensor.no_nodes_available')}
                 </div>
               )}
             </div>
@@ -537,7 +539,7 @@ return {
           <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-                MÉTRICA
+                {t('metricsensor.metric')}
               </h4>
               <label className="flex items-center space-x-3 cursor-pointer bg-orange-100 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-500/30 rounded-lg px-3 py-2 hover:bg-orange-200 dark:hover:bg-orange-900/30 transition-colors">
                 <input
@@ -557,7 +559,7 @@ return {
                 />
                 <div className="flex items-center space-x-2">
                   <span className="text-orange-600 dark:text-orange-400 text-lg">📋</span>
-                  <span className="text-orange-600 dark:text-orange-400 font-bold text-sm font-mono tracking-wider">TODAS</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-bold text-sm font-mono tracking-wider">{t('metricsensor.all')}</span>
                 </div>
               </label>
             </div>
@@ -582,7 +584,7 @@ return {
                 ))}
               {getUniqueOptionsForField('metricaid', { entidadid: selectedEntidad }).length === 0 && (
                 <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
-                  NO HAY MÉTRICAS DISPONIBLES PARA ESTA ENTIDAD
+                  {t('metricsensor.no_metrics_available')}
                 </div>
               )}
             </div>

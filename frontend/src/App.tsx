@@ -134,7 +134,7 @@ const AppContentInternal: React.FC = () => {
     const tableNames: { [key: string]: string } = {
       'pais': 'PAÍS',
       'empresa': 'EMPRESA',
-      'fundo': 'FUNDO',
+      'fundo': 'FARM',
       'ubicacion': 'UBICACIÓN',
       'localizacion': 'LOCALIZACIÓN',
       'entidad': 'ENTIDAD',

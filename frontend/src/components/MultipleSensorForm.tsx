@@ -1,6 +1,7 @@
 import React from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import ReplicateButton from './ReplicateButton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MultipleSensorFormProps {
   selectedNodo: string;
@@ -72,6 +73,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
   empresasData,
   fundosData
 }) => {
+  const { t } = useLanguage();
   
   // Función para obtener el nombre de un país por ID
   const getPaisName = (paisId: string) => {
@@ -154,7 +156,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
           {/* Fila 2: Nodo */}
           <div>
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              NODO*
+              {t('table_headers.node')}*
             </label>
             <SelectWithPlaceholder
               value={selectedNodo}
@@ -164,14 +166,14 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                 setSelectedEntidad('');
               }}
               options={getUniqueOptionsForField('nodoid')}
-              placeholder="NODO"
+              placeholder={t('table_headers.node')}
             />
           </div>
 
           {/* Fila 3: Entidad */}
           <div>
             <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-              ENTIDAD*
+              {t('table_headers.entity')}*
             </label>
             <SelectWithPlaceholder
               value={selectedEntidad}
@@ -188,7 +190,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
                 }
               }}
               options={getUniqueOptionsForField('entidadid')}
-              placeholder="ENTIDAD"
+              placeholder={t('table_headers.entity')}
               disabled={!selectedNodo}
             />
           </div>
@@ -201,7 +203,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider text-sm"
             >
               <span>➕</span>
-              <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
+              <span>{loading ? t('sensor.saving') : t('sensor.save')}</span>
             </button>
             
             {/* Botón de replicar */}
@@ -215,14 +217,14 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
               className="px-4 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider text-sm"
             >
               <span>❌</span>
-              <span>CANCELAR</span>
+              <span>{t('sensor.cancel')}</span>
             </button>
           </div>
         </div>
 
         {/* Segunda columna: Container de sensores */}
         <div>
-          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">SENSORES A CREAR:</h4>
+          <h4 className="text-lg font-bold text-orange-500 mb-4 font-mono tracking-wider">{t('sensor.sensors_to_create')}</h4>
           <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
             <div className="space-y-3 max-h-96 overflow-y-auto">
             {multipleSensors.length > 0 ? (
@@ -283,7 +285,7 @@ const MultipleSensorForm: React.FC<MultipleSensorFormProps> = ({
             ) : (
               <div className="text-center py-8">
                 <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono tracking-wider">
-                  SELECCIONA NODO Y ENTIDAD PARA CREAR SENSORES
+                  {t('sensor.select_node_entity')}
                 </div>
               </div>
             )}

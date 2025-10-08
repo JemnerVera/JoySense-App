@@ -79,25 +79,19 @@ export const getColumnDisplayName = (columnName: string): string => {
     'firstname': 'Nombre',
     'lastname': 'Apellido',
     'email': 'Email',
-    'nombre': 'Nombre',
     'abreviatura': 'Abreviatura',
     'descripcion': 'Descripción',
     'activo': 'Activo',
     'inactivo': 'Inactivo',
     'valor_minimo': 'Valor Mínimo',
     'valor_maximo': 'Valor Máximo',
-    'unidad': 'Unidad',
     'frecuencia': 'Frecuencia',
     'tolerancia': 'Tolerancia',
-    'latitud': 'Latitud',
-    'longitud': 'Longitud',
     'altitud': 'Altitud',
     'direccion': 'Dirección',
-    'telefono': 'Teléfono',
     'contacto': 'Contacto',
     'celular': 'Celular',
     'codigotelefonoid': 'Código País',
-    'correo': 'Correo Electrónico',
     'observaciones': 'Observaciones',
     'fecha_inicio': 'Fecha de Inicio',
     'fecha_fin': 'Fecha de Fin',
@@ -182,20 +176,20 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
   const columnMappings: Record<string, string> = {
     'paisid': t('table_headers.country'),
     'empresaid': t('table_headers.company'),
-    'fundoid': 'Fundo', // No hay traducción específica
-    'ubicacionid': 'Ubicación', // No hay traducción específica
-    'entidadid': 'Entidad', // No hay traducción específica
-    'nodoid': 'Nodo', // No hay traducción específica
-    'tipoid': 'Tipo', // No hay traducción específica
-    'metricaid': 'Métrica', // No hay traducción específica
-    'tipos': 'Tipo', // No hay traducción específica
-    'metricas': 'Métrica', // No hay traducción específica
-    'localizacionid': 'Localización', // No hay traducción específica
-    'criticidadid': 'Criticidad', // No hay traducción específica
-    'perfilid': 'Perfil', // No hay traducción específica
-    'umbralid': 'Umbral', // No hay traducción específica
-    'usuarioid': 'Usuario', // No hay traducción específica
-    'medioid': 'Medio', // No hay traducción específica
+    'fundoid': t('table_headers.fund'),
+    'ubicacionid': t('table_headers.location'),
+    'entidadid': t('table_headers.entity'),
+    'nodoid': t('table_headers.node'),
+    'tipoid': t('table_headers.type'),
+    'metricaid': t('table_headers.metric'),
+    'tipos': t('table_headers.type'),
+    'metricas': t('table_headers.metric'),
+    'localizacionid': t('table_headers.localization'),
+    'criticidadid': t('table_headers.criticality'),
+    'perfilid': t('table_headers.profile'),
+    'umbralid': t('table_headers.threshold'),
+    'usuarioid': t('table_headers.user'),
+    'medioid': t('table_headers.medium'),
     'paisabrev': t('table_headers.abbreviation'),
     'empresabrev': t('table_headers.abbreviation'),
     'empresaabrev': t('table_headers.abbreviation'),
@@ -210,17 +204,27 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'modified_by': t('table_headers.modified_by'),
     'pais': t('table_headers.country'),
     'empresa': t('table_headers.company'),
-    'fundo': 'Fundo', // No hay traducción específica
-    'ubicacion': 'Ubicación', // No hay traducción específica
-    'entidad': 'Entidad', // No hay traducción específica
-    'nodo': 'Nodo', // No hay traducción específica
-    'tipo': 'Tipo', // No hay traducción específica
-    'metrica': 'Métrica', // No hay traducción específica
-    'localizacion': 'Localización', // No hay traducción específica
-    'criticidad': 'Criticidad', // No hay traducción específica
-    'grado': 'Grado', // No hay traducción específica
-    'escalamiento': 'Escalamiento', // No hay traducción específica
-    'escalon': 'Escalón', // No hay traducción específica
+    'fundo': t('table_headers.fund'),
+    'ubicacion': t('table_headers.location'),
+    'entidad': t('table_headers.entity'),
+    'nodo': t('table_headers.node'),
+    'tipo': t('table_headers.type'),
+    'metrica': t('table_headers.metric'),
+    'localizacion': t('table_headers.localization'),
+    'latitud': t('table_headers.latitude'),
+    'longitud': t('table_headers.longitude'),
+    'referencia': t('table_headers.reference'),
+    'criticidad': t('table_headers.criticality'),
+    'grado': t('table_headers.grade'),
+    'escalamiento': t('table_headers.escalation'),
+    'escalon': t('table_headers.step'),
+    'nombre': t('table_headers.name'),
+    'apellido': t('table_headers.last_name'),
+    'firstname': t('table_headers.name'),
+    'lastname': t('table_headers.last_name'),
+    'telefono': t('table_headers.phone_number'),
+    'correo': t('table_headers.email_address'),
+    'unidad': t('table_headers.unit'),
     'perfil': 'Perfil', // No hay traducción específica
     'nivel': 'Nivel', // No hay traducción específica
     'jefeid': 'Jefe', // No hay traducción específica
@@ -228,10 +232,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'usuario': 'Usuario', // No hay traducción específica
     'medio': 'Medio', // No hay traducción específica
     'login': 'Login', // No hay traducción específica
-    'firstname': 'Nombre', // No hay traducción específica
-    'lastname': 'Apellido', // No hay traducción específica
     'email': 'Email', // No hay traducción específica
-    'nombre': 'Nombre', // No hay traducción específica
     'abreviatura': t('table_headers.abbreviation'),
     'descripcion': 'Descripción', // No hay traducción específica
     'activo': t('status.active'),
@@ -239,18 +240,13 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     // Mantener el resto de los campos como estaban
     'valor_minimo': 'Valor Mínimo',
     'valor_maximo': 'Valor Máximo',
-    'unidad': 'Unidad',
     'frecuencia': 'Frecuencia',
     'tolerancia': 'Tolerancia',
-    'latitud': 'Latitud',
-    'longitud': 'Longitud',
     'altitud': 'Altitud',
     'direccion': 'Dirección',
-    'telefono': 'Teléfono',
     'contacto': 'Contacto',
     'celular': 'Celular',
     'codigotelefonoid': 'Código País',
-    'correo': 'Correo Electrónico',
     'observaciones': 'Observaciones',
     'fecha_inicio': 'Fecha de Inicio',
     'fecha_fin': 'Fecha de Fin',
