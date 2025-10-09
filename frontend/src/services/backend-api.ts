@@ -4,7 +4,8 @@ import {
 } from '../types';
 
 // Configuración del Backend API
-const BACKEND_URL = 'https://lorawan-sense-app.vercel.app/api';
+// URL hardcoded para deploy en Vercel: 'https://lorawan-sense-app.vercel.app/api'
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
 
 // Cliente para llamadas al backend
 export const backendAPI = {
