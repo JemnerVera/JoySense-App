@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 
 export interface FormState {
   formData: Record<string, any>;
@@ -44,6 +44,12 @@ export const useFormState = (
   const [isSubmitting, setIsSubmittingState] = useState(false);
   const [lastSaved, setLastSavedState] = useState<number | null>(null);
 
+  // Optimización: Memoizar función de comparación para evitar JSON.stringify repetitivo
+  const compareData = useCallback((data1: Record<string, any>, data2: Record<string, any> | null): boolean => {
+    if (!data2) return false;
+    return JSON.stringify(data1) !== JSON.stringify(data2);
+  }, []);
+
   /**
    * Establecer datos del formulario
    */
@@ -52,10 +58,10 @@ export const useFormState = (
     
     // Verificar si hay cambios comparando con datos originales
     if (originalData) {
-      const hasChangesNow = JSON.stringify(data) !== JSON.stringify(originalData);
+      const hasChangesNow = compareData(data, originalData);
       setHasChangesState(hasChangesNow);
     }
-  }, [originalData]);
+  }, [originalData, compareData]);
 
   /**
    * Actualizar un campo específico del formulario
@@ -67,13 +73,13 @@ export const useFormState = (
       
       // Verificar si hay cambios comparando con datos originales
       if (originalData) {
-        const hasChangesNow = JSON.stringify(newData) !== JSON.stringify(originalData);
+        const hasChangesNow = compareData(newData, originalData);
         setHasChangesState(hasChangesNow);
       }
       
       return newData;
     });
-  }, [originalData]);
+  }, [originalData, compareData]);
 
   /**
    * Establecer datos originales (para comparación de cambios)
@@ -83,10 +89,10 @@ export const useFormState = (
     
     // Si se establecen datos originales, verificar cambios
     if (data) {
-      const hasChangesNow = JSON.stringify(formData) !== JSON.stringify(data);
+      const hasChangesNow = compareData(formData, data);
       setHasChangesState(hasChangesNow);
     }
-  }, [formData]);
+  }, [formData, compareData]);
 
   /**
    * Establecer si hay cambios

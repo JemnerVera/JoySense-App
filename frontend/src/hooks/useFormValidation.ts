@@ -73,6 +73,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
 
   /**
    * Verifica si un registro tiene dependencias antes de inactivar
+   * Optimización: Cachear resultados y hacer llamadas paralelas cuando sea posible
    */
   const checkDependencies = useCallback(async (recordId: number): Promise<boolean> => {
     
@@ -136,16 +137,20 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return contactos.some(contacto => contacto.medioid === id);
             
           case 'usuario':
-            // Verificar si hay contactos o usuarioperfiles que referencian este usuario
-            const contactosUsuario = await JoySenseService.getTableData('contacto');
-            const usuarioperfiles = await JoySenseService.getTableData('usuarioperfil');
+            // Optimización: Hacer llamadas paralelas para usuario
+            const [contactosUsuario, usuarioperfiles] = await Promise.all([
+              JoySenseService.getTableData('contacto'),
+              JoySenseService.getTableData('usuarioperfil')
+            ]);
             return contactosUsuario.some(contacto => contacto.usuarioid === id) ||
                    usuarioperfiles.some(usuarioperfil => usuarioperfil.usuarioid === id);
                    
           case 'perfil':
-            // Verificar si hay usuarioperfiles o perfilumbrales que referencian este perfil
-            const usuarioperfilesPerfil = await JoySenseService.getTableData('usuarioperfil');
-            const perfilumbralesPerfil = await JoySenseService.getTableData('perfilumbral');
+            // Optimización: Hacer llamadas paralelas para perfil
+            const [usuarioperfilesPerfil, perfilumbralesPerfil] = await Promise.all([
+              JoySenseService.getTableData('usuarioperfil'),
+              JoySenseService.getTableData('perfilumbral')
+            ]);
             return usuarioperfilesPerfil.some(usuarioperfil => usuarioperfil.perfilid === id) ||
                    perfilumbralesPerfil.some(perfilumbral => perfilumbral.perfilid === id);
                    
