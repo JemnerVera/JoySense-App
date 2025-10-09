@@ -39,7 +39,8 @@
         "rules": {
             "@typescript-eslint/no-unused-vars": "off",
             "no-unreachable": "warn",
-            "no-useless-escape": "warn"
+            "no-useless-escape": "warn",
+            "react-hooks/exhaustive-deps": "off"
         }
     },
     "browserslist": {
