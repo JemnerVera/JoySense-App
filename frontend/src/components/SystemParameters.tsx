@@ -24,6 +24,7 @@ import {
   getDisplayValue, 
   formatDate, 
   getUserName, 
+  clearDisplayValueCache,
   type RelatedData 
 } from '../utils/systemParametersUtils';
 import { hasSignificantChanges } from '../utils/changeDetection';
@@ -1852,6 +1853,9 @@ onSubTabChange(newSubTab);
   useEffect(() => {
 
     if (selectedTable) {
+
+      // Limpiar cache de valores de display al cambiar de tabla
+      clearDisplayValueCache();
 
 loadTableDataWrapper();
 

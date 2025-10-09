@@ -324,8 +324,41 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
   return columnMappings[columnName] || columnName;
 };
 
+// Cache eficiente para valores de display
+const displayValueCache = new Map<string, string>();
+
 /**
- * Obtiene el valor de display para una celda de tabla
+ * Limpia el cache de valores de display
+ */
+export const clearDisplayValueCache = () => {
+  displayValueCache.clear();
+};
+
+/**
+ * Obtiene el array de datos relacionados de forma eficiente
+ */
+const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[] => {
+  switch (tableName) {
+    case 'pais': return relatedData.paisesData || [];
+    case 'empresa': return relatedData.empresasData || [];
+    case 'fundo': return relatedData.fundosData || [];
+    case 'ubicacion': return relatedData.ubicacionesData || [];
+    case 'entidad': return relatedData.entidadesData || [];
+    case 'nodo': return relatedData.nodosData || [];
+    case 'tipo': return relatedData.tiposData || [];
+    case 'metrica': return relatedData.metricasData || [];
+    case 'localizacion': return relatedData.localizacionesData || [];
+    case 'criticidad': return relatedData.criticidadesData || [];
+    case 'perfil': return relatedData.perfilesData || [];
+    case 'umbral': return relatedData.umbralesData || [];
+    case 'usuario': return relatedData.userData || [];
+    case 'medio': return relatedData.mediosData || [];
+    default: return [];
+  }
+};
+
+/**
+ * Obtiene el valor de display para una celda de tabla - VERSIÓN OPTIMIZADA
  */
 export const getDisplayValue = (row: any, columnName: string, relatedData: RelatedData = {}): string => {
   // Validar que row no sea null o undefined
@@ -354,80 +387,67 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'new_criticidadid': { table: 'criticidad', nameField: 'criticidad' }
   };
 
-  // Si es un campo de ID, buscar el nombre en los datos de las tablas relacionadas
+  // Para campos que son IDs de tablas relacionadas - VERSIÓN SÚPER OPTIMIZADA
   if (idToNameMapping[columnName]) {
     const mapping = idToNameMapping[columnName];
     const idValue = row[columnName];
     
     if (idValue) {
-      // Buscar en los datos de la tabla relacionada
-      let relatedDataArray: any[] = [];
+      // Crear clave de cache eficiente
+      const cacheKey = `${mapping.table}_${idValue}`;
       
-      switch (mapping.table) {
-        case 'pais':
-          relatedDataArray = relatedData.paisesData || [];
-          break;
-        case 'empresa':
-          relatedDataArray = relatedData.empresasData || [];
-          break;
-        case 'fundo':
-          relatedDataArray = relatedData.fundosData || [];
-          break;
-        case 'ubicacion':
-          relatedDataArray = relatedData.ubicacionesData || [];
-          break;
-        case 'entidad':
-          relatedDataArray = relatedData.entidadesData || [];
-          break;
-        case 'nodo':
-          relatedDataArray = relatedData.nodosData || [];
-          break;
-        case 'tipo':
-          relatedDataArray = relatedData.tiposData || [];
-          break;
-        case 'metrica':
-          relatedDataArray = relatedData.metricasData || [];
-          break;
-        case 'localizacion':
-          relatedDataArray = relatedData.localizacionesData || [];
-          break;
-        case 'criticidad':
-          relatedDataArray = relatedData.criticidadesData || [];
-          break;
-        case 'perfil':
-          relatedDataArray = relatedData.perfilesData || [];
-          break;
-        case 'umbral':
-          relatedDataArray = relatedData.umbralesData || [];
-          break;
-        case 'usuario':
-          relatedDataArray = relatedData.userData || [];
-          break;
-        case 'medio':
-          relatedDataArray = relatedData.mediosData || [];
-          break;
+      // Verificar cache primero (más rápido)
+      if (displayValueCache.has(cacheKey)) {
+        return displayValueCache.get(cacheKey)!;
+      }
+      
+      // Obtener datos relacionados de forma eficiente
+      const relatedDataArray = getRelatedDataArray(mapping.table, relatedData);
+      
+      // Si no hay datos, retornar ID directamente (más eficiente que "N/A")
+      if (relatedDataArray.length === 0) {
+        return idValue.toString();
       }
 
-      const relatedItem = relatedDataArray.find(item => {
-        const idField = `${mapping.table}id`;
-        return item[idField] && item[idField].toString() === idValue.toString();
-      });
+      // Buscar el item relacionado
+      const idField = `${mapping.table}id`;
+      const relatedItem = relatedDataArray.find(item => 
+        item[idField] && item[idField].toString() === idValue.toString()
+      );
 
       if (relatedItem) {
-        return relatedItem[mapping.nameField] || idValue.toString();
+        const displayValue = relatedItem[mapping.nameField] || idValue.toString();
+        // Cachear solo si es diferente al ID (optimización de memoria)
+        if (displayValue !== idValue.toString()) {
+          displayValueCache.set(cacheKey, displayValue);
+        }
+        return displayValue;
       }
     }
     
     return idValue ? idValue.toString() : 'N/A';
   }
 
-  // Para campos de usuario (usercreatedid, usermodifiedid, modified_by)
+  // Para campos de usuario - VERSIÓN OPTIMIZADA
   if (columnName === 'usercreatedid' || columnName === 'usermodifiedid' || columnName === 'modified_by') {
     const userId = row[columnName];
-    if (userId && relatedData.userData) {
-      const user = relatedData.userData.find((u: any) => u.usuarioid === userId);
-      if (user) {
-        return `${user.firstname || ''} ${user.lastname || ''}`.trim() || user.login || `Usuario ${userId}`;
+    if (userId) {
+      // Crear clave de cache para usuario
+      const userCacheKey = `user_${userId}`;
+      
+      // Verificar cache primero
+      if (displayValueCache.has(userCacheKey)) {
+        return displayValueCache.get(userCacheKey)!;
+      }
+      
+      if (relatedData.userData && relatedData.userData.length > 0) {
+        const user = relatedData.userData.find((u: any) => u.usuarioid === userId);
+        if (user) {
+          const displayValue = `${user.firstname || ''} ${user.lastname || ''}`.trim() || user.login || `Usuario ${userId}`;
+          // Cachear el resultado
+          displayValueCache.set(userCacheKey, displayValue);
+          return displayValue;
+        }
       }
     }
     return userId ? `Usuario ${userId}` : 'N/A';
