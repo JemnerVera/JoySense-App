@@ -110,40 +110,40 @@ export const useSearchAndFilter = () => {
   /**
    * Manejar cambio de término de búsqueda
    */
+  // Optimización: Memoizar la función de filtrado para evitar recreaciones innecesarias
+  const filterDataByTerm = useCallback((term: string, dataToFilter: any[], visibleColumns: any[], userData: any[], relatedData?: any) => {
+    return dataToFilter.filter(row => {
+      return visibleColumns.some(col => {
+        const value = row[col.columnName];
+        if (value === null || value === undefined) return false;
+
+        // Usar getDisplayValue si tenemos relatedData, sino usar lógica simple
+        const displayValue = relatedData 
+          ? getDisplayValue(row, col.columnName, relatedData)
+          : col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
+          ? getUserName(value, userData)
+          : col.columnName === 'statusid'
+          ? (() => {
+              // Para filas agrupadas, verificar si al menos una fila original está activa
+              if (row.originalRows && row.originalRows.length > 0) {
+                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                return hasActiveRow ? 'Activo' : 'Inactivo';
+              }
+              return value === 1 ? 'Activo' : 'Inactivo';
+            })()
+          : value.toString();
+
+        return displayValue.toLowerCase().includes(term.toLowerCase());
+      });
+    });
+  }, []);
+
   const handleSearchTermChange = useCallback((term: string, dataToFilter: any[], visibleColumns: any[], userData: any[], originalData: any[], setFilteredData?: (data: any[]) => void, relatedData?: any) => {
     setSearchTerm(term);
 
     if (term.trim()) {
       setHasSearched(true);
-
-      // Filtrar datos basado en el término de búsqueda
-      const filtered = dataToFilter.filter(row => {
-        return visibleColumns.some(col => {
-          const value = row[col.columnName];
-          if (value === null || value === undefined) return false;
-
-          // Usar getDisplayValue si tenemos relatedData, sino usar lógica simple
-          const displayValue = relatedData 
-            ? getDisplayValue(row, col.columnName, relatedData)
-            : col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-            ? getUserName(value, userData)
-            : col.columnName === 'statusid'
-            ? (() => {
-                // Para filas agrupadas, verificar si al menos una fila original está activa
-                if (row.originalRows && row.originalRows.length > 0) {
-                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                  return hasActiveRow ? 'Activo' : 'Inactivo';
-                }
-                return value === 1 ? 'Activo' : 'Inactivo';
-              })()
-            : value.toString();
-
-          const matches = displayValue.toLowerCase().includes(term.toLowerCase());
-          if (matches) {
-          }
-          return matches;
-        });
-      });
+      const filtered = filterDataByTerm(term, dataToFilter, visibleColumns, userData, relatedData);
 
       if (setFilteredData) {
         setFilteredData(filtered);
@@ -159,7 +159,7 @@ export const useSearchAndFilter = () => {
         setSearchFilteredData(originalData);
       }
     }
-  }, []);
+  }, [filterDataByTerm]);
 
   /**
    * Manejar cambio de campo de búsqueda
@@ -181,39 +181,14 @@ export const useSearchAndFilter = () => {
 
     if (searchTerm.trim()) {
       setStatusHasSearched(true);
-
-      const filtered = filteredTableData.filter(row => {
-        return statusVisibleColumns.some(col => {
-          const value = row[col.columnName];
-          if (value === null || value === undefined) return false;
-
-          // Usar getDisplayValue si tenemos relatedData, sino usar lógica simple
-          const displayValue = relatedData 
-            ? getDisplayValue(row, col.columnName, relatedData)
-            : col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-            ? getUserName(value, userData)
-            : col.columnName === 'statusid'
-            ? (() => {
-                // Para filas agrupadas, verificar si al menos una fila original está activa
-                if (row.originalRows && row.originalRows.length > 0) {
-                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                  return hasActiveRow ? 'Activo' : 'Inactivo';
-                }
-                return value === 1 ? 'Activo' : 'Inactivo';
-              })()
-            : value.toString();
-
-          return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
-        });
-      });
-
+      const filtered = filterDataByTerm(searchTerm, filteredTableData, statusVisibleColumns, userData, relatedData);
       setStatusFilteredData(filtered);
     } else {
       setStatusHasSearched(false);
       // Restaurar datos originales sin filtro
       setStatusFilteredData(filteredTableData);
     }
-  }, []);
+  }, [filterDataByTerm]);
 
   /**
    * Manejar búsqueda de actualización
@@ -224,37 +199,14 @@ export const useSearchAndFilter = () => {
 
     if (searchTerm.trim()) {
       setHasSearched(true);
-
-      // Filtrar datos basado en el término de búsqueda
-      const filtered = updateData.filter(row => {
-        return updateVisibleColumns.some(col => {
-          const value = row[col.columnName];
-          if (value === null || value === undefined) return false;
-
-          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-            ? getUserName(value, userData)
-            : col.columnName === 'statusid'
-            ? (() => {
-                // Para filas agrupadas, verificar si al menos una fila original está activa
-                if (row.originalRows && row.originalRows.length > 0) {
-                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                  return hasActiveRow ? 'Activo' : 'Inactivo';
-                }
-                return value === 1 ? 'Activo' : 'Inactivo';
-              })()
-            : value.toString();
-
-          return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
-        });
-      });
-
+      const filtered = filterDataByTerm(searchTerm, updateData, updateVisibleColumns, userData);
       setUpdateFilteredData(filtered);
     } else {
       setHasSearched(false);
       // Restaurar datos originales sin filtro
       setUpdateFilteredData(originalData);
     }
-  }, []);
+  }, [filterDataByTerm]);
 
   /**
    * Manejar búsqueda de copia
@@ -264,33 +216,12 @@ export const useSearchAndFilter = () => {
     setCopyCurrentPage(1); // Resetear a la primera página
 
     if (searchTerm.trim()) {
-      const filtered = copyData.filter(row => {
-        return statusVisibleColumns.some(col => {
-          const value = row[col.columnName];
-          if (value === null || value === undefined) return false;
-
-          const displayValue = col.columnName === 'usercreatedid' || col.columnName === 'usermodifiedid' || col.columnName === 'modified_by'
-            ? getUserName(value, userData)
-            : col.columnName === 'statusid'
-            ? (() => {
-                // Para filas agrupadas, verificar si al menos una fila original está activa
-                if (row.originalRows && row.originalRows.length > 0) {
-                  const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
-                  return hasActiveRow ? 'Activo' : 'Inactivo';
-                }
-                return value === 1 ? 'Activo' : 'Inactivo';
-              })()
-            : value.toString();
-
-          return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
-        });
-      });
-
+      const filtered = filterDataByTerm(searchTerm, copyData, statusVisibleColumns, userData);
       setCopyFilteredData(filtered);
     } else {
       setCopyFilteredData([]);
     }
-  }, []);
+  }, [filterDataByTerm]);
 
   /**
    * Obtener columnas buscables

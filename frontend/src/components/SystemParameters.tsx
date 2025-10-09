@@ -6243,55 +6243,46 @@ return reorderedColumns;
 
 // Memoizar el objeto extendido para evitar loops infinitos
 
+  // Optimización: Separar en useMemo más pequeños para reducir re-renders
+  const sensorStates = useMemo(() => {
+    return selectedTable === 'sensor' ? {
+      selectedNodo,
+      selectedEntidad,
+      selectedTipo,
+      selectedSensorCount,
+      multipleSensors
+    } : null;
+  }, [selectedTable, selectedNodo, selectedEntidad, selectedTipo, selectedSensorCount, multipleSensors]);
+
+  const metricasensorStates = useMemo(() => {
+    return selectedTable === 'metricasensor' ? {
+      selectedNodos,
+      selectedEntidadMetrica,
+      selectedMetricas,
+      multipleMetricas
+    } : null;
+  }, [selectedTable, selectedNodos, selectedEntidadMetrica, selectedMetricas, multipleMetricas]);
+
   const memoizedExtendedMultipleData = useMemo(() => {
-
     return {
-
       multipleData: memoizedMultipleData,
-
-      // Estados específicos para sensor y metricasensor
-
-      sensorStates: selectedTable === 'sensor' ? {
-
-        selectedNodo,
-
-        selectedEntidad,
-
-        selectedTipo,
-
-        selectedSensorCount,
-
-        multipleSensors
-
-      } : null,
-
-      metricasensorStates: selectedTable === 'metricasensor' ? {
-
-        selectedNodos,
-
-        selectedEntidadMetrica,
-
-        selectedMetricas,
-
-        multipleMetricas
-
-      } : null
-
+      sensorStates,
+      metricasensorStates
     };
-
-  }, [memoizedMultipleData, selectedTable, selectedNodo, selectedEntidad, selectedTipo, selectedSensorCount, multipleSensors, selectedNodos, selectedEntidadMetrica, selectedMetricas, multipleMetricas]);
+  }, [memoizedMultipleData, sensorStates, metricasensorStates]);
 
 // Efecto para notificar cambios en los datos del formulario al componente padre
 
-  useEffect(() => {
-
+  // Optimización: Usar useCallback para evitar re-renders innecesarios
+  const handleFormDataChange = useCallback(() => {
     if (onFormDataChange) {
-
       onFormDataChange(formData, memoizedExtendedMultipleData);
-
     }
+  }, [onFormDataChange, formData, memoizedExtendedMultipleData]);
 
-  }, [formData, memoizedExtendedMultipleData, onFormDataChange]);
+  useEffect(() => {
+    handleFormDataChange();
+  }, [handleFormDataChange]);
 
 // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
 
