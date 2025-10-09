@@ -6085,7 +6085,7 @@ if (selectedTable === 'fundo') {
 
 return reorderedColumns;
 
-  }, [selectedTable, columns, tableColumns]);
+  }, [selectedTable, columns, tableColumns, selectedContactType]);
 
 // Columnas para la tabla de Estado (individuales) - Memoizadas con dependencias correctas
   const statusVisibleColumns = useMemo(() => {
