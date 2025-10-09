@@ -224,7 +224,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     if (selectedContactType === 'phone' && countryCodes.length === 0) {
       loadCountryCodes();
     }
-  }, [selectedContactType]);
+  }, [selectedContactType, countryCodes.length]);
 
   // Limpiar estado de contacto cuando se cambia de tabla
   useEffect(() => {
@@ -377,7 +377,7 @@ if (hasChanges) {
 
     clearOnTabChange();
 
-  }, [activeSubTab]);
+  }, [activeSubTab, clearOnTabChange]);
 
 const [pendingTableChange, setPendingTableChange] = useState<string>('');
 
@@ -1328,7 +1328,7 @@ const handleMetricaSensorLastPage = () => {
 
     goToPage(1);
 
-  }, [selectedTable]); // Removido goToPage de las dependencias
+  }, [selectedTable, goToPage]);
 
 // ============================================================================
   // NAVIGATION & CHANGE HANDLING FUNCTIONS
