@@ -1845,7 +1845,7 @@ onSubTabChange(newSubTab);
 
     loadRelatedTablesData();
 
-  }, []);
+  }, [loadUserData, loadRelatedTablesData]);
 
 // Cargar datos cuando se selecciona una tabla
 
@@ -1911,7 +1911,7 @@ setFormData(initializeFormData(columns));
 
     }
 
-  }, [clearFormData]);
+  }, [clearFormData, columns, initializeFormData]);
 
 // Detectar cambios de pestaña y validar
 
