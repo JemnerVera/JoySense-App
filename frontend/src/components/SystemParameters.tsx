@@ -6239,7 +6239,7 @@ return reorderedColumns;
 
     return getMultipleData();
 
-  }, [selectedTable, multipleUsuarioPerfiles, multipleMetricas, multipleSensors]);
+  }, [getMultipleData]);
 
 // Memoizar el objeto extendido para evitar loops infinitos
 
