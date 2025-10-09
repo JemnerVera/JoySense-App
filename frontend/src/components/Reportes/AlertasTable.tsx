@@ -11,6 +11,25 @@ interface AlertaData {
   datecreated: string;
   statusid: number;
   // Campos relacionados (se obtendrán de joins)
+  umbral?: {
+    umbralid: number;
+    umbral: string;
+    minimo: number;
+    maximo: number;
+    nodoid: number;
+    tipoid: number;
+    metricaid: number;
+    ubicacionid: number;
+    criticidadid: number;
+  };
+  medicion?: {
+    medicionid: number;
+    valor: number;
+    fecha: string;
+    nodoid: number;
+    tipoid: number;
+    metricaid: number;
+  };
   nodo?: string;
   metrica?: string;
   tipo?: string;
@@ -39,7 +58,11 @@ const AlertasTable: React.FC = () => {
       startTransition(() => {
         JoySenseService.getTableData('alerta', 1000)
           .then(data => {
+            console.log('🔍 Frontend - Datos recibidos de alerta:', data);
             if (Array.isArray(data)) {
+              if (data.length > 0) {
+                console.log('🔍 Frontend - Primera alerta:', JSON.stringify(data[0], null, 2));
+              }
               setAlertas(data);
             } else {
               setAlertas([]);
@@ -158,7 +181,7 @@ const AlertasTable: React.FC = () => {
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-orange-500 font-mono tracking-wider">
+        <h2 className="text-2xl font-bold text-green-500 font-mono tracking-wider">
           {t('reports.alerts.title')}
         </h2>
         <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
@@ -171,25 +194,30 @@ const AlertasTable: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-300 dark:border-neutral-700">
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.threshold_id')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.measurement_id')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creator_user')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
-              <th className="text-left py-3 px-4 font-bold text-orange-500 font-mono tracking-wider">{t('reports.table.status')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.threshold')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.measurement')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.status')}</th>
             </tr>
           </thead>
           <tbody>
             {currentAlertas.map((alerta) => (
               <tr key={alerta.alertaid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.alertaid}</td>
-                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.umbralid}</td>
-                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.medicionid}</td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
+                  {alerta.umbral?.umbral || `Umbral ${alerta.umbralid}`}
+                </td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
+                  {alerta.medicion ? 
+                    `Valor: ${alerta.medicion.valor}` : 
+                    `Medición ${alerta.medicionid}`
+                  }
+                </td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {formatDate(alerta.fecha)}
                 </td>
-                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.usercreatedid || 'N/A'}</td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {formatDate(alerta.datecreated)}
                 </td>

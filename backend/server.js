@@ -499,11 +499,35 @@ app.get('/api/sense/alerta', async (req, res) => {
     console.log('🔍 Obteniendo alertas de sense.alerta...');
     const { data, error } = await supabase
       .from('alerta')
-      .select('*')
+      .select(`
+        *,
+        umbral:umbralid(
+          umbralid,
+          umbral,
+          minimo,
+          maximo,
+          nodoid,
+          tipoid,
+          metricaid,
+          ubicacionid,
+          criticidadid
+        ),
+        medicion:medicionid(
+          medicionid,
+          valor,
+          fecha,
+          nodoid,
+          tipoid,
+          metricaid
+        )
+      `)
       .order('alertaid', { ascending: false })
       .limit(parseInt(limit));
     if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
     console.log('✅ Alertas encontradas:', data?.length || 0);
+    if (data && data.length > 0) {
+      console.log('🔍 Primera alerta:', JSON.stringify(data[0], null, 2));
+    }
     res.json(data || []);
   } catch (error) { console.error('❌ Error in /api/sense/alerta:', error); res.status(500).json({ error: error.message }); }
 });
@@ -515,11 +539,22 @@ app.get('/api/sense/mensaje', async (req, res) => {
     console.log('🔍 Obteniendo mensajes de sense.mensaje...');
     const { data, error } = await supabase
       .from('mensaje')
-      .select('*')
+      .select(`
+        *,
+        contacto:contactoid(
+          contactoid,
+          celular,
+          usuarioid,
+          usuario:usuarioid(login, firstname, lastname)
+        )
+      `)
       .order('fecha', { ascending: false })
       .limit(parseInt(limit));
     if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
     console.log('✅ Mensajes encontrados:', data?.length || 0);
+    if (data && data.length > 0) {
+      console.log('🔍 Primer mensaje:', JSON.stringify(data[0], null, 2));
+    }
     res.json(data || []);
   } catch (error) { console.error('❌ Error in /api/sense/mensaje:', error); res.status(500).json({ error: error.message }); }
 });
