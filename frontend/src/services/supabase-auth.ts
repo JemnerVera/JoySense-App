@@ -4,9 +4,26 @@ import { AuthUser, AuthError } from '../types';
 // Declaración para TypeScript
 declare const process: any;
 
-// Configuración de Supabase Auth
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || '';
+// Configuración de Supabase Auth - SEGURO: Usando publishable key
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://fagswxnjkcavchfrnrhs.supabase.co';
+const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
+
+// Debug: Verificar variables de entorno
+console.log('🔍 Debug Supabase Auth:');
+console.log('REACT_APP_SUPABASE_URL:', supabaseUrl);
+console.log('REACT_APP_SUPABASE_PUBLISHABLE_KEY:', supabasePublishableKey ? 'Presente' : 'Ausente');
+console.log('process.env keys:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP')));
+console.log('🔧 Usando valores hardcodeados temporalmente');
+
+// Verificar que sea PUBLISHABLE KEY (seguro para frontend)
+const isServiceRole = supabasePublishableKey.includes('service_role');
+const isPublishableKey = supabasePublishableKey.startsWith('sb_publishable_');
+const isAnonKey = supabasePublishableKey.includes('anon');
+console.log('🔑 Tipo de key detectado:');
+console.log('  - Service Role Key:', isServiceRole ? '❌ PELIGROSO' : '✅ NO');
+console.log('  - Publishable Key:', isPublishableKey ? '✅ SÍ' : '❌ NO');
+console.log('  - Anon Key:', isAnonKey ? '✅ SÍ' : '❌ NO');
+console.log('  - Key completa (primeros 30 chars):', supabasePublishableKey.substring(0, 30) + '...');
 
 // Crear cliente de Supabase para autenticación
 export const supabaseAuth = createClient(supabaseUrl, supabasePublishableKey);

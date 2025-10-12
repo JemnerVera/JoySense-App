@@ -39,53 +39,46 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // Cache de metadatos para evitar consultas repetidas
 const metadataCache = new Map();
 
-// Función para obtener metadatos dinámicamente desde Supabase
+// Función para obtener metadatos dinámicamente usando Stored Procedure
 const getTableMetadata = async (tableName) => {
   // Verificar cache primero
   if (metadataCache.has(tableName)) {
     console.log(`📋 Usando metadatos en cache para tabla: ${tableName}`);
     return metadataCache.get(tableName);
   }
+  
   try {
-    console.log(`🔍 Obteniendo metadatos dinámicos para tabla: ${tableName}`);
+    console.log(`🔍 Obteniendo metadatos dinámicos para tabla: ${tableName} usando stored procedure`);
     
-    // Intentar obtener metadatos dinámicamente desde Supabase
-    // Si falla, usar metadatos hardcodeados como fallback
-    const { data: columns, error: columnsError } = await supabase
-      .from('information_schema.columns')
-      .select('column_name, data_type, is_nullable, column_default')
-      .eq('table_schema', 'sense')
-      .eq('table_name', tableName);
+    // Usar la función stored procedure que creamos en Supabase
+    const { data, error } = await supabase.rpc('get_table_metadata', {
+      tbl_name: tableName
+    });
     
-    if (columnsError || !columns || columns.length === 0) {
-      console.log(`⚠️ No se pudo obtener columnas dinámicamente para ${tableName}, usando metadatos hardcodeados`);
-      return getHardcodedMetadata(tableName);
+    if (error) {
+      console.log(`⚠️ Error en stored procedure para ${tableName}:`, error);
+      console.log(`🔄 Usando metadatos hardcodeados como fallback para ${tableName}`);
+      const fallbackMetadata = getHardcodedMetadata(tableName);
+      metadataCache.set(tableName, fallbackMetadata);
+      return fallbackMetadata;
     }
     
-    // Obtener información de la tabla
-    const { data: tableInfo, error: tableInfoError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name, table_type')
-      .eq('table_schema', 'sense')
-      .eq('table_name', tableName)
-      .single();
+    if (!data || !data.columns || data.columns.length === 0) {
+      console.log(`⚠️ Stored procedure no retornó columnas para ${tableName}, usando fallback`);
+      const fallbackMetadata = getHardcodedMetadata(tableName);
+      metadataCache.set(tableName, fallbackMetadata);
+      return fallbackMetadata;
+    }
     
-    // Obtener constraints
-    const { data: constraints, error: constraintsError } = await supabase
-      .from('information_schema.table_constraints')
-      .select('constraint_name, constraint_type')
-      .eq('table_schema', 'sense')
-      .eq('table_name', tableName);
-    
-    const metadata = {
-      columns: columns || [],
-      info: tableInfo || { table_name: tableName, table_type: 'BASE TABLE' },
-      constraints: constraints || []
-    };
+    // La función stored procedure ya retorna el formato correcto
+    const metadata = data;
     
     // Guardar en cache
     metadataCache.set(tableName, metadata);
-    console.log(`✅ Metadatos dinámicos obtenidos y guardados en cache para: ${tableName}`);
+    console.log(`✅ Metadatos dinámicos obtenidos via stored procedure para: ${tableName}`);
+    console.log(`📊 Columnas encontradas: ${metadata.columns.length}`);
+    console.log(`🔗 Constraints encontrados: ${metadata.constraints.length}`);
+    
     return metadata;
   } catch (error) {
     console.error(`❌ Error obteniendo metadatos dinámicos para ${tableName}:`, error);
@@ -97,14 +90,147 @@ const getTableMetadata = async (tableName) => {
   }
 };
 
-// Función fallback con metadatos básicos (sin hardcodeo)
+// Función fallback con metadatos hardcodeados
 const getHardcodedMetadata = (tableName) => {
-  console.log(`⚠️ Usando metadatos básicos para tabla: ${tableName} (sin hardcodeo)`);
-  return {
+  console.log(`⚠️ Usando metadatos hardcodeados para tabla: ${tableName}`);
+  
+  // Metadatos hardcodeados para las tablas principales
+  const hardcodedMetadata = {
+    pais: {
+      columns: [
+        { column_name: 'paisid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'pais', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'pais', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_pais', constraint_type: 'PRIMARY KEY' }]
+    },
+    empresa: {
+      columns: [
+        { column_name: 'empresaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'empresa', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'paisid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'empresa', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_empresa', constraint_type: 'PRIMARY KEY' }]
+    },
+    fundo: {
+      columns: [
+        { column_name: 'fundoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'fundo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'empresaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'fundo', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_fundo', constraint_type: 'PRIMARY KEY' }]
+    },
+    ubicacion: {
+      columns: [
+        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'ubicacion', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'fundoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'ubicacion', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_ubicacion', constraint_type: 'PRIMARY KEY' }]
+    },
+    entidad: {
+      columns: [
+        { column_name: 'entidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'entidad', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'ubicacionid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'entidad', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_entidad', constraint_type: 'PRIMARY KEY' }]
+    },
+    metrica: {
+      columns: [
+        { column_name: 'metricaid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'metrica', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'unidad', data_type: 'character varying', is_nullable: 'YES', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'metrica', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_metrica', constraint_type: 'PRIMARY KEY' }]
+    },
+    tipo: {
+      columns: [
+        { column_name: 'tipoid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'tipo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'tipo', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_tipo', constraint_type: 'PRIMARY KEY' }]
+    },
+    nodo: {
+      columns: [
+        { column_name: 'nodoid', data_type: 'bigint', is_nullable: 'NO', column_default: null },
+        { column_name: 'nodo', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'entidadid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'nodo', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_nodo', constraint_type: 'PRIMARY KEY' }]
+    },
+    usuario: {
+      columns: [
+        { column_name: 'usuarioid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'usuario', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'email', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'password', data_type: 'character varying', is_nullable: 'NO', column_default: null },
+        { column_name: 'statusid', data_type: 'integer', is_nullable: 'NO', column_default: '1' },
+        { column_name: 'usercreatedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datecreated', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' },
+        { column_name: 'usermodifiedid', data_type: 'integer', is_nullable: 'NO', column_default: null },
+        { column_name: 'datemodified', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()' }
+      ],
+      info: { table_name: 'usuario', table_type: 'BASE TABLE' },
+      constraints: [{ constraint_name: 'pk_usuario', constraint_type: 'PRIMARY KEY' }]
+    }
+  };
+  
+  const metadata = hardcodedMetadata[tableName] || {
     columns: [],
     info: { table_name: tableName, table_type: 'BASE TABLE' },
     constraints: []
   };
+  
+  console.log(`🔍 DEBUG: getHardcodedMetadata devolviendo ${metadata.columns.length} columnas para ${tableName}`);
+  return metadata;
 };
 
 logger.info('Cliente Supabase configurado');
