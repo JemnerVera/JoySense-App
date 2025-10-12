@@ -51,7 +51,7 @@ const getTableMetadata = async (tableName) => {
     console.log(`🔍 Obteniendo metadatos dinámicos para tabla: ${tableName} usando stored procedure`);
     
     // Usar la función stored procedure que creamos en Supabase
-    const { data, error } = await supabase.rpc('get_table_metadata', {
+    const { data, error } = await supabase.rpc('fn_get_table_metadata', {
       tbl_name: tableName
     });
     

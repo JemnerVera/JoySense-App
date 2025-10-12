@@ -1,8 +1,9 @@
 -- Eliminar función existente
 DROP FUNCTION IF EXISTS sense.get_table_metadata(text);
+DROP FUNCTION IF EXISTS sense.fn_get_table_metadata(text);
 
 -- Crear función corregida con nombre de parámetro diferente
-CREATE OR REPLACE FUNCTION sense.get_table_metadata(tbl_name text)
+CREATE OR REPLACE FUNCTION sense.fn_get_table_metadata(tbl_name text)
 RETURNS json AS $$
 DECLARE
   result json;
@@ -51,4 +52,4 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Probar la función
-SELECT sense.get_table_metadata('pais');
+SELECT sense.fn_get_table_metadata('pais');
