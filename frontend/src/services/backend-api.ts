@@ -9,15 +9,37 @@ declare const process: any;
 // ============================================================================
 // BACKEND API SERVICE
 // ============================================================================
-// Lee URL del backend directamente de process.env (del archivo .env)
+// Configuración mediante variables de entorno (12-Factor App)
+// Este archivo NO contiene URLs hardcodeadas → Se puede commitear de forma segura
 // ============================================================================
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+/**
+ * Obtiene y valida la URL del backend
+ * Usa fallback a localhost solo en desarrollo
+ */
+function getBackendUrl(): string {
+  const url = process.env.REACT_APP_BACKEND_URL;
+  
+  // En desarrollo, permitir fallback a localhost
+  if (process.env.NODE_ENV === 'development' && !url) {
+    console.warn('⚠️ REACT_APP_BACKEND_URL no configurada, usando localhost por defecto');
+    return 'http://localhost:3001/api';
+  }
+  
+  // En producción, requerir configuración explícita
+  if (process.env.NODE_ENV === 'production' && !url) {
+    console.error('❌ ERROR: REACT_APP_BACKEND_URL no configurada en producción');
+    throw new Error('REACT_APP_BACKEND_URL is required in production');
+  }
+  
+  return url || 'http://localhost:3001/api';
+}
+
+const BACKEND_URL = getBackendUrl();
 
 // Debug en desarrollo
 if (process.env.NODE_ENV === 'development') {
   console.log('🌐 Backend API - URL:', BACKEND_URL);
-  console.log('  - Leyendo desde:', process.env.REACT_APP_BACKEND_URL ? '.env' : 'fallback');
 }
 
 // Cliente para llamadas al backend

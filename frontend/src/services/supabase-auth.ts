@@ -7,29 +7,82 @@ declare const process: any;
 // ============================================================================
 // SUPABASE AUTH SERVICE
 // ============================================================================
-// Lee credenciales directamente de process.env (del archivo .env)
-// El archivo .env está en .gitignore (NO se commitea)
+// Configuración mediante variables de entorno (12-Factor App)
+// Este archivo NO contiene credenciales → Se puede commitear de forma segura
+// 
+// Setup: Crea frontend/.env con las variables requeridas
+// Ver: frontend/env.example para plantilla
 // ============================================================================
 
-// Obtener credenciales desde process.env con fallbacks
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://fagswxnjkcavchfrnrhs.supabase.co';
-const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
+/**
+ * Lee y valida las variables de entorno requeridas
+ * Lanza error claro si falta alguna configuración
+ */
+function getSupabaseConfig() {
+  const url = process.env.REACT_APP_SUPABASE_URL;
+  const key = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY;
 
-// Validación de seguridad
-if (supabasePublishableKey.includes('service_role')) {
-  throw new Error('❌ PELIGRO: Service Role Key detectada en el frontend. Solo usar Anon/Publishable Key.');
+  // Validación: Variables requeridas
+  if (!url || !key) {
+    const missing = [];
+    if (!url) missing.push('REACT_APP_SUPABASE_URL');
+    if (!key) missing.push('REACT_APP_SUPABASE_PUBLISHABLE_KEY');
+
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('❌ ERROR: Configuración de Supabase incompleta');
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('Variables faltantes:', missing.join(', '));
+    console.error('');
+    console.error('📝 SOLUCIÓN:');
+    console.error('1. Crea el archivo: frontend/.env');
+    console.error('2. Agrega las siguientes variables:');
+    console.error('');
+    console.error('   REACT_APP_SUPABASE_URL=https://tu-proyecto.supabase.co');
+    console.error('   REACT_APP_SUPABASE_PUBLISHABLE_KEY=tu-anon-key');
+    console.error('   REACT_APP_BACKEND_URL=http://localhost:3001/api');
+    console.error('');
+    console.error('📚 Ver: frontend/env.example para plantilla');
+    console.error('🔗 Obtén tus credenciales en: https://supabase.com/dashboard');
+    console.error('═══════════════════════════════════════════════════════════');
+
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Validación: NO permitir Service Role Key en frontend (seguridad crítica)
+  if (key.includes('service_role')) {
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('❌ PELIGRO: Service Role Key detectada en el frontend');
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('La Service Role Key tiene acceso total a la base de datos');
+    console.error('y NUNCA debe usarse en el frontend (código público).');
+    console.error('');
+    console.error('✅ Usa en su lugar:');
+    console.error('  - anon key (público, seguro)');
+    console.error('  - publishable key (público, seguro)');
+    console.error('');
+    console.error('🔗 Encuentra estas keys en:');
+    console.error('   https://supabase.com/dashboard/project/_/settings/api');
+    console.error('═══════════════════════════════════════════════════════════');
+
+    throw new Error('Service Role Key cannot be used in frontend');
+  }
+
+  // Debug en desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔐 Supabase Auth - Configuración validada:');
+    console.log('  - URL:', url);
+    console.log('  - Key:', key.substring(0, 30) + '...');
+    console.log('  - Tipo:', key.includes('anon') ? 'Anon Key ✅' : 'Publishable Key ✅');
+  }
+
+  return { url, key };
 }
 
-// Debug en desarrollo
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔐 Supabase Auth - Configuración:');
-  console.log('  - URL:', supabaseUrl);
-  console.log('  - Key:', supabasePublishableKey ? '✅ Configurada' : '❌ No configurada');
-  console.log('  - Leyendo desde:', process.env.REACT_APP_SUPABASE_URL ? '.env' : 'fallback');
-}
+// Obtener y validar configuración
+const config = getSupabaseConfig();
 
-// Crear cliente de Supabase
-export const supabaseAuth = createClient(supabaseUrl, supabasePublishableKey);
+// Crear cliente de Supabase con configuración validada
+export const supabaseAuth = createClient(config.url, config.key);
 
 // Funciones de autenticación
 export const authService = {
