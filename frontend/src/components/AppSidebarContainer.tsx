@@ -80,13 +80,15 @@ const AppSidebarContainer: React.FC<AppSidebarContainerProps> = ({
       {/* Indicador visual sutil */}
       <div className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-16 rounded-l-full sidebar-indicator transition-opacity duration-300 ${getIndicatorClasses(sidebarVisible)}`} />
       
-      {/* Debug info */}
-      <SidebarDebug
-        sidebarVisible={sidebarVisible}
-        auxiliarySidebarVisible={auxiliarySidebarVisible}
-        activeTab={activeTab}
-        hasAuxiliarySidebar={hasAuxiliarySidebar(activeTab)}
-      />
+      {/* Debug info - Solo en desarrollo */}
+      {process.env.NODE_ENV === 'development' && (
+        <SidebarDebug
+          sidebarVisible={sidebarVisible}
+          auxiliarySidebarVisible={auxiliarySidebarVisible}
+          activeTab={activeTab}
+          hasAuxiliarySidebar={hasAuxiliarySidebar(activeTab)}
+        />
+      )}
     </div>
   );
 };
