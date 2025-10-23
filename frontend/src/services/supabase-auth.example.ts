@@ -5,15 +5,21 @@ import { AuthUser, AuthError } from '../types';
 declare const process: any;
 
 // ============================================================================
-// SUPABASE AUTH SERVICE
+// SUPABASE AUTH SERVICE - TEMPLATE
 // ============================================================================
-// Lee credenciales directamente de process.env (del archivo .env)
-// El archivo .env está en .gitignore (NO se commitea)
+// INSTRUCCIONES:
+// 1. Copia este archivo como: supabase-auth.ts
+// 2. Reemplaza los fallbacks con tus credenciales reales de Supabase
+// 3. Asegúrate de tener el archivo .env en frontend/ con las variables
+// 
+// OBTENER CREDENCIALES:
+// - Ve a: https://supabase.com/dashboard/project/_/settings/api
+// - Copia: Project URL y anon/public key
 // ============================================================================
 
 // Obtener credenciales desde process.env con fallbacks
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://fagswxnjkcavchfrnrhs.supabase.co';
-const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OTw0aSfLWFXIyQkYc-jRzg_KkeFvn3X';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabasePublishableKey = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'your-anon-or-publishable-key-here';
 
 // Validación de seguridad
 if (supabasePublishableKey.includes('service_role')) {
@@ -104,3 +110,4 @@ export const authService = {
     });
   }
 };
+

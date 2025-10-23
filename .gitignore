@@ -30,6 +30,10 @@ backend/dist/
 .env.local
 .env.development.local
 
+# Archivos con credenciales en fallbacks (NO COMMITEAR si tienen keys reales)
+frontend/src/services/supabase-auth.ts
+frontend/src/services/backend-api.ts
+
 # ============================================================================
 # ARCHIVOS DE CONFIGURACIÓN SENSIBLES
 # ============================================================================

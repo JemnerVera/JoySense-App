@@ -642,12 +642,12 @@ app.post('/api/auth/login', async (req, res) => {
     // Verificar si el usuario existe en la tabla sense.usuario
     const { data: userData, error: userError } = await supabase
       .from('usuario')
-        .select('*')
+      .select('*')
       .eq('login', email)
       .single();
 
     if (userError || !userData) {
-      console.error('❌ Usuario no encontrado en sense.usuario:', userError);
+      console.error('❌ Usuario no encontrado en sense.usuario:', userError?.message);
       return res.status(401).json({ 
         success: false,
         error: 'Usuario no encontrado. Verifique el email.' 

@@ -3,9 +3,22 @@ import {
   // Medicion, MetricaSensor, Sensor, Tipo, Metrica // Para uso futuro
 } from '../types';
 
-// Configuración del Backend API
-// URL hardcoded para deploy en Vercel: 'https://lorawan-sense-app.vercel.app/api'
+// Declaración para TypeScript
+declare const process: any;
+
+// ============================================================================
+// BACKEND API SERVICE
+// ============================================================================
+// Lee URL del backend directamente de process.env (del archivo .env)
+// ============================================================================
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+
+// Debug en desarrollo
+if (process.env.NODE_ENV === 'development') {
+  console.log('🌐 Backend API - URL:', BACKEND_URL);
+  console.log('  - Leyendo desde:', process.env.REACT_APP_BACKEND_URL ? '.env' : 'fallback');
+}
 
 // Cliente para llamadas al backend
 export const backendAPI = {
