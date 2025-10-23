@@ -487,7 +487,7 @@ app.get('/api/sense/alerta', async (req, res) => {
         ),
         medicion:medicionid(
           medicionid,
-          valor,
+          medicion,
           fecha,
           nodoid,
           tipoid,
