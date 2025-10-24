@@ -2603,6 +2603,26 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
   }
 });
 
+// ==========================================
+// SERVIR FRONTEND EN PRODUCCIÓN (AZURE)
+// ==========================================
+if (process.env.NODE_ENV === 'production') {
+  const path = require('path')
+  
+  // Servir archivos estáticos del frontend
+  const frontendBuildPath = path.join(__dirname, '../frontend/build')
+  app.use(express.static(frontendBuildPath))
+  
+  console.log('✅ Sirviendo frontend desde:', frontendBuildPath)
+  
+  // Todas las rutas no-API deben servir index.html (SPA)
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendBuildPath, 'index.html'))
+    }
+  })
+}
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 JoySense Backend API running on port ${PORT}`);

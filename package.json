@@ -1,0 +1,23 @@
+{
+  "name": "joysense-azure",
+  "version": "1.0.0",
+  "description": "JoySense Dashboard - Full Stack Application",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "build-frontend": "cd frontend && npm run build",
+    "start": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "joysense",
+    "dashboard",
+    "supabase",
+    "react",
+    "node"
+  ],
+  "author": "JoySense Team",
+  "license": "MIT"
+}
+
