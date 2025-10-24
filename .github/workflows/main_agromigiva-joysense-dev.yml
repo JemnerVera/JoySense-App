@@ -46,11 +46,33 @@ jobs:
           fi
           echo "✅ Frontend build successful"
 
+      - name: Prepare deployment package
+        run: |
+          echo "📦 Preparando paquete optimizado para deployment..."
+          mkdir -p deploy-package
+          
+          # Copiar backend (sin node_modules, se instalarán en Azure)
+          cp -r backend deploy-package/
+          rm -rf deploy-package/backend/node_modules
+          
+          # Copiar solo el build del frontend (sin src, sin node_modules)
+          mkdir -p deploy-package/frontend
+          cp -r frontend/build deploy-package/frontend/
+          cp frontend/package.json deploy-package/frontend/
+          
+          # Copiar archivos de configuración raíz
+          cp package.json deploy-package/ 2>/dev/null || echo "No root package.json"
+          cp web.config deploy-package/ 2>/dev/null || echo "No web.config"
+          
+          echo "✅ Paquete optimizado preparado"
+          echo "📊 Tamaño del paquete:"
+          du -sh deploy-package
+      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: deploy-package
 
   deploy:
     runs-on: ubuntu-latest
