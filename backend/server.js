@@ -766,9 +766,13 @@ app.get('/api/sense/alerta', async (req, res) => {
 // Ruta para mensaje - usada por el frontend
 app.get('/api/sense/mensaje', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
+    const { page, pageSize = 100, search = '', ...filters } = req.query;
+    const usePagination = page !== undefined && page !== null;
+    
     console.log('🔍 Obteniendo mensajes de sense.mensaje...');
-    const { data, error } = await supabase
+    
+    // Query base con joins
+    let query = supabase
       .from('mensaje')
       .select(`
         *,
@@ -778,16 +782,99 @@ app.get('/api/sense/mensaje', async (req, res) => {
           usuarioid,
           usuario:usuarioid(login, firstname, lastname)
         )
-      `)
-      .order('fecha', { ascending: false })
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Mensajes encontrados:', data?.length || 0);
-    if (data && data.length > 0) {
-      console.log('🔍 Primer mensaje:', JSON.stringify(data[0], null, 2));
+      `, { count: 'exact' });
+    
+    // Aplicar filtros
+    Object.keys(filters).forEach(key => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        const numValue = Number(value);
+        query = query.eq(key, isNaN(numValue) ? value : numValue);
+      }
+    });
+    
+    // Búsqueda
+    if (search && search.trim() !== '') {
+      const searchTerm = search.trim().toLowerCase();
+      query = query.or(`mensaje.ilike.%${searchTerm}%,contactoid.ilike.%${searchTerm}%`);
     }
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/mensaje:', error); res.status(500).json({ error: error.message }); }
+    
+    // Obtener total
+    const { count: totalRecords } = await query;
+    
+    // Ordenar por fecha (más recientes primero)
+    query = query.order('fecha', { ascending: false });
+    
+    if (usePagination) {
+      const pageNum = parseInt(page);
+      const pageSizeNum = parseInt(pageSize);
+      const from = (pageNum - 1) * pageSizeNum;
+      const to = from + pageSizeNum - 1;
+      query = query.range(from, to);
+      
+      console.log(`📄 Paginación: Tabla=mensaje, Página=${pageNum}, Tamaño=${pageSizeNum}, Total=${totalRecords}`);
+      
+      const { data, error } = await query;
+      if (error) { 
+        console.error('❌ Error backend:', error); 
+        return res.status(500).json({ error: error.message }); 
+      }
+      
+      console.log(`✅ Mensajes encontrados: ${data?.length || 0} de ${totalRecords}`);
+      const totalPages = Math.ceil(totalRecords / pageSizeNum);
+      
+      res.json({
+        data: data || [],
+        pagination: {
+          page: pageNum,
+          pageSize: pageSizeNum,
+          total: totalRecords || 0,
+          totalPages: totalPages,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      });
+    } else {
+      // Modo legacy: obtener todos
+      console.log(`📚 Modo legacy: Cargando todos los mensajes`);
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batchData, error } = await supabase
+          .from('mensaje')
+          .select(`
+            *,
+            contacto:contactoid(
+              contactoid,
+              celular,
+              usuarioid,
+              usuario:usuarioid(login, firstname, lastname)
+            )
+          `)
+          .order('fecha', { ascending: false })
+          .range(from, from + batchSize - 1);
+
+        if (error) throw error;
+
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          hasMore = batchData.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`✅ Mensajes encontrados (modo legacy): ${allData.length}`);
+      res.json(allData);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/mensaje:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // Ruta para alertaconsolidado - usada por el frontend
