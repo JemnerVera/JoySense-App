@@ -265,8 +265,8 @@ export const useTableDataManagement = () => {
         return;
       }
       
-      // Para metricasensor, no aplicar límite para obtener todos los registros
-      const dataResponse = selectedTable === 'metricasensor' 
+      // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
+      const dataResponse = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
         ? await JoySenseService.getTableData(selectedTable)
         : await JoySenseService.getTableData(selectedTable, 1000);
       

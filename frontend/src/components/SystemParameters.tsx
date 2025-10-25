@@ -2173,8 +2173,8 @@ const loadUpdateData = async () => {
 try {
 
       // Para actualizar, cargar todos los datos de la tabla
-      // Para metricasensor, no aplicar límite para obtener todos los registros
-      const response = selectedTable === 'metricasensor' 
+      // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
+      const response = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
         ? await JoySenseService.getTableData(selectedTable)
         : await JoySenseService.getTableData(selectedTable, 1000);
 
@@ -2211,8 +2211,8 @@ const loadCopyData = async () => {
 try {
 
       // Para copiar, cargar todos los datos de la tabla
-      // Para metricasensor, no aplicar límite para obtener todos los registros
-      const response = selectedTable === 'metricasensor' 
+      // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
+      const response = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
         ? await JoySenseService.getTableData(selectedTable)
         : await JoySenseService.getTableData(selectedTable, 1000);
 

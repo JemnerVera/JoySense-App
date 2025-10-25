@@ -591,17 +591,20 @@ app.get('/api/sense/correo', async (req, res) => {
 // Ruta para localizacion - usada por el frontend
 app.get('/api/sense/localizacion', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
     console.log('🔍 Backend: Obteniendo localizacion del schema sense...');
-    const { data, error } = await supabase
-      .from('localizacion')
-      .select('*')
-      .order('ubicacionid, nodoid') // Ordenar por clave primaria compuesta
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Localizacion obtenida:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/localizacion:', error); res.status(500).json({ error: error.message }); }
+    const result = await paginateAndFilter('localizacion', req.query);
+    
+    if (result.pagination) {
+      console.log(`✅ Backend: Localizacion obtenidas: ${result.data.length} de ${result.pagination.total}`);
+      res.json(result);
+    } else {
+      console.log(`✅ Backend: Localizacion obtenidas (modo legacy): ${result.length}`);
+      res.json(result);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/localizacion:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // Ruta para usuario - usada por el frontend
@@ -2729,21 +2732,14 @@ app.post('/api/sense/metricasensor', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando metricasensor...');
-    console.log('📥 Datos recibidos:', JSON.stringify(insertData, null, 2));
     
     // Eliminar metricasensorid si existe (es auto-increment)
     const { metricasensorid, ...dataWithoutId } = insertData;
     
-    console.log('📤 Datos a insertar (sin ID):', JSON.stringify(dataWithoutId, null, 2));
-    
-    // USAR UPSERT en lugar de INSERT para manejar duplicados
-    // Si la combinación (nodoid, metricaid, tipoid) existe, actualiza
+    // Usar INSERT estándar - debe fallar si ya existe (comportamiento correcto)
     const { data, error } = await supabase
       .from('metricasensor')
-      .upsert(dataWithoutId, {
-        onConflict: 'nodoid,metricaid,tipoid',
-        ignoreDuplicates: false // Actualizar si existe
-      })
+      .insert(dataWithoutId)
       .select();
     
     if (error) {
@@ -2751,30 +2747,7 @@ app.post('/api/sense/metricasensor', async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
     
-    console.log(`✅ Backend: Metricasensor insertado/actualizado: ${data?.length || 0} registros`);
-    console.log('📊 Datos devueltos por Supabase:', JSON.stringify(data, null, 2));
-    
-    // 🔍 VERIFICACIÓN INMEDIATA: Buscar el registro que acabamos de insertar
-    if (data && data.length > 0) {
-      const insertedRecord = data[0];
-      console.log('🔍 Verificando registro insertado...');
-      const { data: verification, error: verifyError } = await supabase
-        .from('metricasensor')
-        .select('*')
-        .eq('nodoid', insertedRecord.nodoid)
-        .eq('metricaid', insertedRecord.metricaid)
-        .eq('tipoid', insertedRecord.tipoid)
-        .single();
-      
-      if (verifyError) {
-        console.error('❌ Error verificando:', verifyError);
-      } else if (verification) {
-        console.log('✅ VERIFICACIÓN: Registro encontrado en BD:', JSON.stringify(verification, null, 2));
-      } else {
-        console.error('❌ VERIFICACIÓN: Registro NO encontrado en BD inmediatamente después del insert!');
-      }
-    }
-    
+    console.log(`✅ Backend: Metricasensor insertado: ${data?.length || 0} registros`);
     res.json(data);
   } catch (error) {
     console.error('❌ Error backend:', error);
