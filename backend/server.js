@@ -1167,7 +1167,6 @@ app.put('/api/sense/localizacion/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando localizacion con query params - ubicacionid: ${ubicacionid}, nodoid: ${nodoid}, entidadid: ${entidadid}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     console.log(`🔍 Backend: Tipos de datos - ubicacionid: ${typeof ubicacionid}, nodoid: ${typeof nodoid}, entidadid: ${typeof entidadid}`);
     
     const { data, error } = await supabase
