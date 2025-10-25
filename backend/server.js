@@ -1860,11 +1860,13 @@ app.post('/api/sense/pais', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando país...');
-    console.log('🔍 Backend: Insertando datos');
+
+    // Eliminar paisid para que PostgreSQL lo genere automáticamente
+    const { paisid, ...dataWithoutId } = insertData;
 
     const { data, error } = await supabase
       .from('pais')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
 
     if (error) {
@@ -1885,11 +1887,13 @@ app.post('/api/sense/empresa', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando empresa...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar empresaid para que PostgreSQL lo genere automáticamente
+    const { empresaid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('empresa')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
     
     if (error) {
@@ -1910,11 +1914,13 @@ app.post('/api/sense/fundo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando fundo...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar fundoid para que PostgreSQL lo genere automáticamente
+    const { fundoid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('fundo')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
 
     if (error) {
@@ -1935,17 +1941,17 @@ app.post('/api/sense/ubicacion', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando ubicación...');
-    console.log('🔍 Backend: Insertando datos');
     
     // Filtrar solo las columnas que existen en la tabla (omitir ubicacionabrev por problemas de cache)
+    const { ubicacionid, ...dataWithoutId } = insertData;
     const filteredData = {
-      ubicacion: insertData.ubicacion,
-      fundoid: insertData.fundoid,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      ubicacion: dataWithoutId.ubicacion,
+      fundoid: dataWithoutId.fundoid,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
 
     const { data, error } = await supabase
@@ -1971,11 +1977,13 @@ app.post('/api/sense/entidad', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando entidad...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar entidadid para que PostgreSQL lo genere automáticamente
+    const { entidadid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('entidad')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
     
     if (error) {
@@ -1996,11 +2004,13 @@ app.post('/api/sense/tipo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando tipo...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar tipoid para que PostgreSQL lo genere automáticamente
+    const { tipoid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('tipo')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
 
     if (error) {
@@ -2021,11 +2031,13 @@ app.post('/api/sense/nodo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando nodo...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar nodoid para que PostgreSQL lo genere automáticamente
+    const { nodoid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('nodo')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
 
     if (error) {
@@ -2046,11 +2058,13 @@ app.post('/api/sense/metrica', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando métrica...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar metricaid para que PostgreSQL lo genere automáticamente
+    const { metricaid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('metrica')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
     
     if (error) {
@@ -2071,26 +2085,26 @@ app.post('/api/sense/umbral', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando umbral...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar umbralid para que PostgreSQL lo genere automáticamente
+    const { umbralid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      ubicacionid: insertData.ubicacionid,
-      nodoid: insertData.nodoid,
-      tipoid: insertData.tipoid,
-      metricaid: insertData.metricaid,
-      criticidadid: insertData.criticidadid,
-      umbral: insertData.umbral,
-      minimo: insertData.minimo,
-      maximo: insertData.maximo,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      ubicacionid: dataWithoutId.ubicacionid,
+      nodoid: dataWithoutId.nodoid,
+      tipoid: dataWithoutId.tipoid,
+      metricaid: dataWithoutId.metricaid,
+      criticidadid: dataWithoutId.criticidadid,
+      umbral: dataWithoutId.umbral,
+      minimo: dataWithoutId.minimo,
+      maximo: dataWithoutId.maximo,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
-    
-    console.log('🔍 Backend: Datos filtrados:', JSON.stringify(filteredData, null, 2));
     
     const { data, error } = await supabase
       .from('umbral')
@@ -2099,7 +2113,6 @@ app.post('/api/sense/umbral', async (req, res) => {
     
     if (error) {
       console.error('❌ Error backend:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return res.status(500).json({ 
         error: error.message,
         details: error.details,
@@ -2121,20 +2134,22 @@ app.post('/api/sense/criticidad', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando criticidad...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar criticidadid para que PostgreSQL lo genere automáticamente
+    const { criticidadid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      criticidad: insertData.criticidad,
-      grado: insertData.grado,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified,
-      frecuencia: insertData.frecuencia,
-      escalamiento: insertData.escalamiento,
-      escalon: insertData.escalon
+      criticidad: dataWithoutId.criticidad,
+      grado: dataWithoutId.grado,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified,
+      frecuencia: dataWithoutId.frecuencia,
+      escalamiento: dataWithoutId.escalamiento,
+      escalon: dataWithoutId.escalon
     };
     
     const { data, error } = await supabase
@@ -2160,16 +2175,18 @@ app.post('/api/sense/medio', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando medio...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar medioid para que PostgreSQL lo genere automáticamente
+    const { medioid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      nombre: insertData.nombre,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      nombre: dataWithoutId.nombre,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
     
     const { data, error } = await supabase
@@ -2181,7 +2198,7 @@ app.post('/api/sense/medio', async (req, res) => {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-
+    
     console.log(`✅ Backend: Medio insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2195,18 +2212,20 @@ app.post('/api/sense/contacto', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando contacto...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar contactoid para que PostgreSQL lo genere automáticamente
+    const { contactoid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      usuarioid: insertData.usuarioid,
-      celular: insertData.celular,
-      codigotelefonoid: insertData.codigotelefonoid,
-      statusid: insertData.statusid || 1,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      usuarioid: dataWithoutId.usuarioid,
+      celular: dataWithoutId.celular,
+      codigotelefonoid: dataWithoutId.codigotelefonoid,
+      statusid: dataWithoutId.statusid || 1,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
     
     const { data, error } = await supabase
@@ -2232,21 +2251,23 @@ app.post('/api/sense/correo', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando correo...');
-    console.log('🔍 Backend: Insertando datos');
     
     // Validar formato de correo
     if (!EMAIL_REGEX.test(insertData.correo)) {
       return res.status(400).json({ error: 'Formato de correo inválido' });
     }
     
+    // Eliminar correoid para que PostgreSQL lo genere automáticamente
+    const { correoid, ...dataWithoutId } = insertData;
+    
     const filteredData = {
-      usuarioid: insertData.usuarioid,
-      correo: insertData.correo,
-      statusid: insertData.statusid || 1,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      usuarioid: dataWithoutId.usuarioid,
+      correo: dataWithoutId.correo,
+      statusid: dataWithoutId.statusid || 1,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
     
     const { data, error } = await supabase
@@ -2272,18 +2293,20 @@ app.post('/api/sense/usuario', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando usuario...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar usuarioid para que PostgreSQL lo genere automáticamente
+    const { usuarioid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      login: insertData.login,
-      lastname: insertData.lastname,
-      firstname: insertData.firstname,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      usermodifiedid: insertData.usermodifiedid,
-      datecreated: insertData.datecreated,
-      datemodified: insertData.datemodified
+      login: dataWithoutId.login,
+      lastname: dataWithoutId.lastname,
+      firstname: dataWithoutId.firstname,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datecreated: dataWithoutId.datecreated,
+      datemodified: dataWithoutId.datemodified
     };
     
     const { data, error } = await supabase
@@ -2309,18 +2332,20 @@ app.post('/api/sense/perfil', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando perfil...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar perfilid para que PostgreSQL lo genere automáticamente
+    const { perfilid, ...dataWithoutId } = insertData;
     
     // Filtrar solo las columnas que existen en la tabla
     const filteredData = {
-      perfil: insertData.perfil,
-      statusid: insertData.statusid,
-      usercreatedid: insertData.usercreatedid,
-      datecreated: insertData.datecreated,
-      usermodifiedid: insertData.usermodifiedid,
-      datemodified: insertData.datemodified,
-      nivel: insertData.nivel,
-      jefeid: insertData.jefeid
+      perfil: dataWithoutId.perfil,
+      statusid: dataWithoutId.statusid,
+      usercreatedid: dataWithoutId.usercreatedid,
+      datecreated: dataWithoutId.datecreated,
+      usermodifiedid: dataWithoutId.usermodifiedid,
+      datemodified: dataWithoutId.datemodified,
+      nivel: dataWithoutId.nivel,
+      jefeid: dataWithoutId.jefeid
     };
     
     const { data, error } = await supabase
@@ -2341,16 +2366,18 @@ app.post('/api/sense/perfil', async (req, res) => {
   }
 });
 
-// Ruta POST para insertar localización (clave compuesta)
+// Ruta POST para insertar localización
 app.post('/api/sense/localizacion', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando localización...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar localizacionid para que PostgreSQL lo genere automáticamente
+    const { localizacionid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
       .from('localizacion')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
     
     if (error) {
@@ -2421,11 +2448,13 @@ app.post('/api/sense/sensor', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando sensor...');
-    console.log('🔍 Backend: Insertando datos');
+    
+    // Eliminar sensorid para que PostgreSQL lo genere automáticamente
+    const { sensorid, ...dataWithoutId } = insertData;
     
     const { data, error } = await supabase
         .from('sensor')
-      .insert(insertData)
+      .insert(dataWithoutId)
       .select();
     
     if (error) {

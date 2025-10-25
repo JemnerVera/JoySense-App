@@ -1166,13 +1166,7 @@ const validateCriticidadData = async (
     });
   }
   
-  if (!formData.criticidadbrev || formData.criticidadbrev.trim() === '') {
-    errors.push({
-      field: 'criticidadbrev',
-      message: 'La abreviatura de la criticidad es obligatoria',
-      type: 'required'
-    });
-  }
+  // NOTA: criticidadbrev no existe en la tabla, validación eliminada
   
   // 2. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
@@ -1180,26 +1174,10 @@ const validateCriticidadData = async (
       item.criticidad && item.criticidad.toLowerCase() === formData.criticidad?.toLowerCase()
     );
     
-    const criticidadbrevExists = existingData.some(item => 
-      item.criticidadbrev && item.criticidadbrev.toLowerCase() === formData.criticidadbrev?.toLowerCase()
-    );
-    
-    if (criticidadExists && criticidadbrevExists) {
-      errors.push({
-        field: 'both',
-        message: 'La criticidad y abreviatura ya existen',
-        type: 'duplicate'
-      });
-    } else if (criticidadExists) {
+    if (criticidadExists) {
       errors.push({
         field: 'criticidad',
         message: 'El nombre de la criticidad ya existe',
-        type: 'duplicate'
-      });
-    } else if (criticidadbrevExists) {
-      errors.push({
-        field: 'criticidadbrev',
-        message: 'La abreviatura de la criticidad ya existe',
         type: 'duplicate'
       });
     }
@@ -2744,21 +2722,7 @@ const validateCriticidadUpdate = async (
     }
   }
   
-  if (formData.criticidadbrev && formData.criticidadbrev.trim() !== '') {
-    const criticidadbrevExists = existingData.some(item => 
-      item.criticidadid !== originalData.criticidadid && 
-      item.criticidadbrev && 
-      item.criticidadbrev.toLowerCase() === formData.criticidadbrev.toLowerCase()
-    );
-    
-    if (criticidadbrevExists) {
-      errors.push({
-        field: 'criticidadbrev',
-        message: 'La abreviatura de la criticidad ya existe',
-        type: 'duplicate'
-      });
-    }
-  }
+  // NOTA: criticidadbrev no existe en la tabla, validación eliminada
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
   if (formData.statusid === 0 && originalData.statusid !== 0) {

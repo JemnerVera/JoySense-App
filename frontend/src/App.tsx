@@ -758,7 +758,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
         {/* Contenido principal scrolleable */}
         <main 
           id="main-content"
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto custom-scrollbar"
           style={{ 
             maxHeight: showWelcomeIntegrated ? '100vh' : 'calc(100vh - 56px)',
             scrollBehavior: 'smooth'
