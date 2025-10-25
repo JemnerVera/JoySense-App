@@ -855,14 +855,70 @@ export class JoySenseService {
   }
 
   // Métodos para operaciones CRUD genéricas
-  static async getTableData(tableName: string, limit: number = 100): Promise<any[]> {
+  static async getTableData(tableName: string, limit?: number): Promise<any[]> {
     try {
       // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}?limit=${limit}`;
+      const endpoint = limit ? `/sense/${tableName}?limit=${limit}` : `/sense/${tableName}`;
       const data = await backendAPI.get(endpoint);
       return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
       console.error(`Error in getTableData for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene datos de una tabla con soporte de paginación, búsqueda y filtros
+   * @param tableName - Nombre de la tabla
+   * @param options - Opciones de paginación, búsqueda y filtros
+   * @returns Respuesta con data y pagination (si se especificó page) o array simple (modo legacy)
+   */
+  static async getTableDataPaginated(
+    tableName: string, 
+    options: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      [key: string]: any; // Otros filtros como nodoid, tipoid, etc.
+    } = {}
+  ): Promise<{ data: any[]; pagination?: any }> {
+    try {
+      // Construir query params
+      const params = new URLSearchParams();
+      
+      // Solo agregar parámetros si tienen valor
+      if (options.page !== undefined) params.append('page', options.page.toString());
+      if (options.pageSize !== undefined) params.append('pageSize', options.pageSize.toString());
+      if (options.search) params.append('search', options.search);
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+      
+      // Agregar filtros adicionales
+      Object.keys(options).forEach(key => {
+        if (!['page', 'pageSize', 'search', 'sortBy', 'sortOrder'].includes(key)) {
+          const value = options[key];
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString());
+          }
+        }
+      });
+      
+      const queryString = params.toString();
+      const endpoint = `/sense/${tableName}${queryString ? '?' + queryString : ''}`;
+      const response = await backendAPI.get(endpoint);
+      
+      // Si la respuesta tiene paginación, devolverla tal cual
+      if (response && response.pagination) {
+        return response;
+      }
+      
+      // Si no, devolver en formato estándar (modo legacy)
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      return { data };
+    } catch (error) {
+      console.error(`Error in getTableDataPaginated for ${tableName}:`, error);
       throw error;
     }
   }

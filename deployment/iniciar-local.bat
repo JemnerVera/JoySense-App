@@ -72,7 +72,7 @@ timeout /t 4 /nobreak >nul
 
 REM Iniciar Frontend
 echo 🎨 Iniciando Frontend...
-start "JoySense Frontend" cmd /k "cd /d "%~dp0..\frontend" && echo Iniciando aplicación frontend... && "%NPM_PATH%" install && "%NPM_PATH%" start"
+start "JoySense Frontend" cmd /k "cd /d "%~dp0..\frontend" && echo Iniciando aplicación frontend... && "%NPM_PATH%" start"
 
 echo.
 echo 🔍 Verificando que los servicios estén funcionando...

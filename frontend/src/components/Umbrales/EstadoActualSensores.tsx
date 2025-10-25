@@ -70,7 +70,7 @@ const useSensorData = () => {
         ubicaciones,
         criticidades
       ] = await Promise.all([
-        JoySenseService.getTableData('metricasensor', 1000).then(data => {
+        JoySenseService.getTableData('metricasensor').then(data => { // Sin límite
           return data;
         }),
         JoySenseService.getTableData('umbral', 1000).then(data => {

@@ -94,7 +94,7 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('umbral', 500),
         JoySenseService.getTableData('usuario', 500),
         JoySenseService.getTableData('sensor', 500),
-        JoySenseService.getTableData('metricasensor', 500),
+        JoySenseService.getTableData('metricasensor'), // Sin límite para obtener todos los registros
         JoySenseService.getTableData('perfilumbral', 500),
         JoySenseService.getTableData('contacto', 500),
         JoySenseService.getTableData('correo', 500)
@@ -265,7 +265,10 @@ export const useTableDataManagement = () => {
         return;
       }
       
-      const dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
+      // Para metricasensor, no aplicar límite para obtener todos los registros
+      const dataResponse = selectedTable === 'metricasensor' 
+        ? await JoySenseService.getTableData(selectedTable)
+        : await JoySenseService.getTableData(selectedTable, 1000);
       
       // Verificar si la llamada fue cancelada después de recibir los datos
       if (abortController.signal.aborted) {

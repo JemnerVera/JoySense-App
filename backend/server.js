@@ -39,6 +39,146 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // Cache de metadatos para evitar consultas repetidas
 const metadataCache = new Map();
 
+// ============================================================================
+// HELPER: PAGINACIÓN, BÚSQUEDA Y FILTROS
+// ============================================================================
+
+/**
+ * Configuración de campos buscables por tabla
+ */
+const SEARCHABLE_FIELDS = {
+  metricasensor: ['nodoid', 'tipoid', 'metricaid'],
+  sensor: ['nodoid', 'tipoid'],
+  nodo: ['nodo', 'nodoid'],
+  alerta: ['nodoid', 'alerta'],
+  umbral: ['nodoid', 'tipoid', 'metricaid'],
+  medicion: ['nodoid', 'medicion'],
+  localizacion: ['nodoid', 'ubicacionid'],
+  usuario: ['login', 'nombre', 'email'],
+  // Agregar más tablas según sea necesario
+};
+
+/**
+ * Helper para paginar, buscar y filtrar datos de cualquier tabla
+ * @param {string} tableName - Nombre de la tabla
+ * @param {Object} params - Parámetros de paginación, búsqueda y filtros
+ * @returns {Promise<Object>} - { data, pagination } o data (modo legacy)
+ */
+async function paginateAndFilter(tableName, params = {}) {
+  const {
+    page,
+    pageSize = 100,
+    search = '',
+    sortBy = 'datemodified',
+    sortOrder = 'desc',
+    ...filters // Otros filtros como nodoid, tipoid, statusid, etc.
+  } = params;
+
+  // Modo legacy: Si no se especifica 'page', devolver array simple (compatibilidad hacia atrás)
+  const usePagination = page !== undefined && page !== null;
+
+  try {
+    // Iniciar query base con count
+    let query = supabase
+      .from(tableName)
+      .select('*', { count: 'exact' });
+
+    // Aplicar filtros específicos
+    Object.keys(filters).forEach(key => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        // Convertir a número si es necesario
+        const numValue = Number(value);
+        query = query.eq(key, isNaN(numValue) ? value : numValue);
+      }
+    });
+
+    // Aplicar búsqueda en múltiples campos
+    if (search && search.trim() !== '') {
+      const searchFields = SEARCHABLE_FIELDS[tableName] || ['nodoid'];
+      const searchTerm = search.trim().toLowerCase();
+      
+      // Construir filtro OR para buscar en múltiples campos
+      const orFilters = searchFields.map(field => `${field}.ilike.%${searchTerm}%`).join(',');
+      query = query.or(orFilters);
+    }
+
+    // Obtener total de registros (antes de paginar)
+    const { count: totalRecords } = await query;
+
+    // Aplicar ordenamiento
+    if (sortBy) {
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+    }
+
+    // Aplicar paginación si está habilitada
+    if (usePagination) {
+      const pageNum = parseInt(page);
+      const pageSizeNum = parseInt(pageSize);
+      const from = (pageNum - 1) * pageSizeNum;
+      const to = from + pageSizeNum - 1;
+      
+      query = query.range(from, to);
+      
+      console.log(`📄 Paginación: Tabla=${tableName}, Página=${pageNum}, Tamaño=${pageSizeNum}, Total=${totalRecords}`);
+    } else {
+      // Modo legacy: Usar paginación interna para obtener todos los registros
+      console.log(`📚 Modo legacy: Cargando todos los registros de ${tableName}`);
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batchData, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .order(sortBy, { ascending: sortOrder === 'asc' })
+          .range(from, from + batchSize - 1);
+
+        if (error) throw error;
+
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          hasMore = batchData.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allData; // Retornar array simple para compatibilidad
+    }
+
+    // Ejecutar query con paginación
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`❌ Error en paginateAndFilter para ${tableName}:`, error);
+      throw error;
+    }
+
+    // Retornar con información de paginación
+    const totalPages = Math.ceil(totalRecords / parseInt(pageSize));
+    
+    return {
+      data: data || [],
+      pagination: {
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        total: totalRecords || 0,
+        totalPages: totalPages,
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1
+      }
+    };
+
+  } catch (error) {
+    console.error(`❌ Error en paginateAndFilter para ${tableName}:`, error);
+    throw error;
+  }
+}
+
 // Función para obtener metadatos dinámicamente usando Stored Procedure
 const getTableMetadata = async (tableName) => {
   // Verificar cache primero
@@ -224,17 +364,20 @@ app.get('/api/sense/tipo', async (req, res) => {
 
 app.get('/api/sense/nodo', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
     console.log('🔍 Backend: Obteniendo nodo del schema sense...');
-    const { data, error } = await supabase
-      .from('nodo')
-      .select('*')
-      .order('nodoid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Nodo obtenido:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/nodo:', error); res.status(500).json({ error: error.message }); }
+    const result = await paginateAndFilter('nodo', req.query);
+    
+    if (result.pagination) {
+      console.log(`✅ Backend: Nodo obtenidos: ${result.data.length} de ${result.pagination.total}`);
+      res.json(result);
+    } else {
+      console.log(`✅ Backend: Nodo obtenidos (modo legacy): ${result.length}`);
+      res.json(result);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/nodo:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.get('/api/sense/criticidad', async (req, res) => {
@@ -269,17 +412,20 @@ app.get('/api/sense/perfil', async (req, res) => {
 
 app.get('/api/sense/umbral', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
     console.log('🔍 Backend: Obteniendo umbral del schema sense...');
-    const { data, error } = await supabase
-      .from('umbral')
-      .select('*')
-      .order('umbralid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Umbral obtenido:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/umbral:', error); res.status(500).json({ error: error.message }); }
+    const result = await paginateAndFilter('umbral', req.query);
+    
+    if (result.pagination) {
+      console.log(`✅ Backend: Umbral obtenidos: ${result.data.length} de ${result.pagination.total}`);
+      res.json(result);
+    } else {
+      console.log(`✅ Backend: Umbral obtenidos (modo legacy): ${result.length}`);
+      res.json(result);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/umbral:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.get('/api/sense/medio', async (req, res) => {
@@ -299,33 +445,42 @@ app.get('/api/sense/medio', async (req, res) => {
 
 app.get('/api/sense/sensor', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
     console.log('🔍 Backend: Obteniendo sensor del schema sense...');
-    const { data, error } = await supabase
-      .from('sensor')
-      .select('*')
-      .order('nodoid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Sensor obtenido:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/sensor:', error); res.status(500).json({ error: error.message }); }
+    const result = await paginateAndFilter('sensor', req.query);
+    
+    if (result.pagination) {
+      console.log(`✅ Backend: Sensor obtenidos: ${result.data.length} de ${result.pagination.total}`);
+      res.json(result);
+    } else {
+      console.log(`✅ Backend: Sensor obtenidos (modo legacy): ${result.length}`);
+      res.json(result);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/sensor:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // Ruta para metricasensor - usada por el frontend
 app.get('/api/sense/metricasensor', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
     console.log('🔍 Backend: Obteniendo metricasensor del schema sense...');
-    const { data, error } = await supabase
-      .from('metricasensor')
-      .select('*')
-      .order('nodoid')
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Backend: Metricasensor obtenidos:', data?.length || 0);
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/metricasensor:', error); res.status(500).json({ error: error.message }); }
+    
+    // Usar el helper de paginación
+    const result = await paginateAndFilter('metricasensor', req.query);
+    
+    // Si el resultado tiene paginación, enviarla; si no, enviar array simple (modo legacy)
+    if (result.pagination) {
+      console.log(`✅ Backend: Metricasensor obtenidos: ${result.data.length} de ${result.pagination.total}`);
+      res.json(result);
+    } else {
+      console.log(`✅ Backend: Metricasensor obtenidos (modo legacy): ${result.length}`);
+      res.json(result);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/metricasensor:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // Ruta para perfilumbral - usada por el frontend
@@ -468,9 +623,13 @@ app.get('/api/sense/usuario', async (req, res) => {
 // Ruta para alerta - usada por el frontend
 app.get('/api/sense/alerta', async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
+    const { page, pageSize = 100, search = '', ...filters } = req.query;
+    const usePagination = page !== undefined && page !== null;
+    
     console.log('🔍 Obteniendo alertas de sense.alerta...');
-    const { data, error } = await supabase
+    
+    // Query base con joins
+    let query = supabase
       .from('alerta')
       .select(`
         *,
@@ -493,16 +652,112 @@ app.get('/api/sense/alerta', async (req, res) => {
           tipoid,
           metricaid
         )
-      `)
-      .order('alertaid', { ascending: false })
-      .limit(parseInt(limit));
-    if (error) { console.error('❌ Error backend:', error); return res.status(500).json({ error: error.message }); }
-    console.log('✅ Alertas encontradas:', data?.length || 0);
-    if (data && data.length > 0) {
-      console.log('🔍 Primera alerta:', JSON.stringify(data[0], null, 2));
+      `, { count: 'exact' });
+    
+    // Aplicar filtros
+    Object.keys(filters).forEach(key => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        const numValue = Number(value);
+        query = query.eq(key, isNaN(numValue) ? value : numValue);
+      }
+    });
+    
+    // Búsqueda
+    if (search && search.trim() !== '') {
+      const searchTerm = search.trim().toLowerCase();
+      query = query.or(`alerta.ilike.%${searchTerm}%,nodoid.ilike.%${searchTerm}%`);
     }
-    res.json(data || []);
-  } catch (error) { console.error('❌ Error in /api/sense/alerta:', error); res.status(500).json({ error: error.message }); }
+    
+    // Obtener total
+    const { count: totalRecords } = await query;
+    
+    // Ordenar
+    query = query.order('alertaid', { ascending: false });
+    
+    if (usePagination) {
+      const pageNum = parseInt(page);
+      const pageSizeNum = parseInt(pageSize);
+      const from = (pageNum - 1) * pageSizeNum;
+      const to = from + pageSizeNum - 1;
+      query = query.range(from, to);
+      
+      console.log(`📄 Paginación: Tabla=alerta, Página=${pageNum}, Tamaño=${pageSizeNum}, Total=${totalRecords}`);
+      
+      const { data, error } = await query;
+      if (error) { 
+        console.error('❌ Error backend:', error); 
+        return res.status(500).json({ error: error.message }); 
+      }
+      
+      console.log(`✅ Alertas encontradas: ${data?.length || 0} de ${totalRecords}`);
+      const totalPages = Math.ceil(totalRecords / pageSizeNum);
+      
+      res.json({
+        data: data || [],
+        pagination: {
+          page: pageNum,
+          pageSize: pageSizeNum,
+          total: totalRecords || 0,
+          totalPages: totalPages,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      });
+    } else {
+      // Modo legacy: obtener todos
+      console.log(`📚 Modo legacy: Cargando todas las alertas`);
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batchData, error } = await supabase
+          .from('alerta')
+          .select(`
+            *,
+            umbral:umbralid(
+              umbralid,
+              umbral,
+              minimo,
+              maximo,
+              nodoid,
+              tipoid,
+              metricaid,
+              ubicacionid,
+              criticidadid
+            ),
+            medicion:medicionid(
+              medicionid,
+              medicion,
+              fecha,
+              nodoid,
+              tipoid,
+              metricaid
+            )
+          `)
+          .order('alertaid', { ascending: false })
+          .range(from, from + batchSize - 1);
+
+        if (error) throw error;
+
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          hasMore = batchData.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`✅ Alertas encontradas (modo legacy): ${allData.length}`);
+      res.json(allData);
+    }
+  } catch (error) { 
+    console.error('❌ Error in /api/sense/alerta:', error); 
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // Ruta para mensaje - usada por el frontend
@@ -642,7 +897,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Verificar si el usuario existe en la tabla sense.usuario
     const { data: userData, error: userError } = await supabase
       .from('usuario')
-      .select('*')
+        .select('*')
       .eq('login', email)
       .single();
 
@@ -2197,7 +2452,7 @@ app.post('/api/sense/medio', async (req, res) => {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Medio insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2474,11 +2729,21 @@ app.post('/api/sense/metricasensor', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando metricasensor...');
-    console.log('🔍 Backend: Insertando datos');
+    console.log('📥 Datos recibidos:', JSON.stringify(insertData, null, 2));
     
+    // Eliminar metricasensorid si existe (es auto-increment)
+    const { metricasensorid, ...dataWithoutId } = insertData;
+    
+    console.log('📤 Datos a insertar (sin ID):', JSON.stringify(dataWithoutId, null, 2));
+    
+    // USAR UPSERT en lugar de INSERT para manejar duplicados
+    // Si la combinación (nodoid, metricaid, tipoid) existe, actualiza
     const { data, error } = await supabase
-            .from('metricasensor')
-      .insert(insertData)
+      .from('metricasensor')
+      .upsert(dataWithoutId, {
+        onConflict: 'nodoid,metricaid,tipoid',
+        ignoreDuplicates: false // Actualizar si existe
+      })
       .select();
     
     if (error) {
@@ -2486,7 +2751,30 @@ app.post('/api/sense/metricasensor', async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
     
-    console.log(`✅ Backend: Metricasensor insertado: ${data.length} registros`);
+    console.log(`✅ Backend: Metricasensor insertado/actualizado: ${data?.length || 0} registros`);
+    console.log('📊 Datos devueltos por Supabase:', JSON.stringify(data, null, 2));
+    
+    // 🔍 VERIFICACIÓN INMEDIATA: Buscar el registro que acabamos de insertar
+    if (data && data.length > 0) {
+      const insertedRecord = data[0];
+      console.log('🔍 Verificando registro insertado...');
+      const { data: verification, error: verifyError } = await supabase
+        .from('metricasensor')
+        .select('*')
+        .eq('nodoid', insertedRecord.nodoid)
+        .eq('metricaid', insertedRecord.metricaid)
+        .eq('tipoid', insertedRecord.tipoid)
+        .single();
+      
+      if (verifyError) {
+        console.error('❌ Error verificando:', verifyError);
+      } else if (verification) {
+        console.log('✅ VERIFICACIÓN: Registro encontrado en BD:', JSON.stringify(verification, null, 2));
+      } else {
+        console.error('❌ VERIFICACIÓN: Registro NO encontrado en BD inmediatamente después del insert!');
+      }
+    }
+    
     res.json(data);
   } catch (error) {
     console.error('❌ Error backend:', error);

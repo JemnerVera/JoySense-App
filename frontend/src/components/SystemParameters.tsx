@@ -2172,9 +2172,11 @@ const loadUpdateData = async () => {
 
 try {
 
-      // Para actualizar, cargar todos los datos de la tabla (como en copiar)
-
-      const response = await JoySenseService.getTableData(selectedTable, 1000);
+      // Para actualizar, cargar todos los datos de la tabla
+      // Para metricasensor, no aplicar límite para obtener todos los registros
+      const response = selectedTable === 'metricasensor' 
+        ? await JoySenseService.getTableData(selectedTable)
+        : await JoySenseService.getTableData(selectedTable, 1000);
 
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
 
@@ -2209,8 +2211,10 @@ const loadCopyData = async () => {
 try {
 
       // Para copiar, cargar todos los datos de la tabla
-
-      const response = await JoySenseService.getTableData(selectedTable, 1000);
+      // Para metricasensor, no aplicar límite para obtener todos los registros
+      const response = selectedTable === 'metricasensor' 
+        ? await JoySenseService.getTableData(selectedTable)
+        : await JoySenseService.getTableData(selectedTable, 1000);
 
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
 
@@ -9309,7 +9313,7 @@ setIndividualRowStatus(newIndividualStatus);
 
                                    return data;
 
-                                 })().map((row, index) => {
+                                 })().map((row: any, index: number) => {
 
 const isSelected = (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') 
 
