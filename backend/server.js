@@ -1136,7 +1136,6 @@ app.put('/api/sense/ubicacion/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('ubicacion')
@@ -1336,7 +1335,38 @@ app.put('/api/sense/umbral/:id', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando umbral con ID ${id}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
+    
+    // VALIDACIÓN EMPRESARIAL: Si se reactiva umbral (statusid = 1), metricasensor debe estar activo
+    const statusId = parseInt(updateData.statusid);
+    
+    if (statusId === 1 && updateData.nodoid && updateData.tipoid && updateData.metricaid) {
+      const { data: metricasensor, error: metricaError } = await supabase
+        .from('metricasensor')
+        .select('statusid')
+        .eq('nodoid', parseInt(updateData.nodoid))
+        .eq('tipoid', parseInt(updateData.tipoid))
+        .eq('metricaid', parseInt(updateData.metricaid))
+        .single();
+      
+      if (metricaError && metricaError.code !== 'PGRST116') {
+        console.error('❌ Error al verificar metricasensor:', metricaError);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'No se pudo verificar el estado de la métrica' 
+        });
+      }
+      
+      if (metricasensor && metricasensor.statusid !== 1) {
+        console.log('⚠️ Validación: Intento de reactivar umbral con métrica inactiva');
+        return res.status(400).json({ 
+          success: false,
+          error: 'No se puede reactivar el umbral: la métrica del sensor está inactiva',
+          requireAction: 'activate_metricasensor_first',
+          metricasensorStatus: metricasensor.statusid
+        });
+      }
+    }
+    
     console.log(`🔍 Backend: Tipos de datos:`, Object.keys(updateData).map(key => `${key}: ${typeof updateData[key]}`));
     
     const { data, error } = await supabase
@@ -1571,7 +1601,6 @@ app.put('/api/sense/perfilumbral/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando perfilumbral con query params - perfilid: ${perfilid}, umbralid: ${umbralid}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('perfilumbral')
@@ -1627,7 +1656,6 @@ app.put('/api/sense/usuarioperfil/composite', async (req, res) => {
     const updateData = req.body;
     
     console.log(`🔍 Backend: Actualizando usuarioperfil con query params - usuarioid: ${usuarioid}, perfilid: ${perfilid}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
     
     const { data, error } = await supabase
       .from('usuarioperfil')
@@ -1683,11 +1711,37 @@ app.put('/api/sense/metricasensor/composite', async (req, res) => {
     const { nodoid, metricaid, tipoid } = req.query;
     const updateData = req.body;
     console.log(`🔍 Backend: Actualizando metricasensor con query params - nodoid: ${nodoid}, metricaid: ${metricaid}, tipoid: ${tipoid}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
 
-    // Para metricasensor, la validación de negocio es diferente
-    // No hay restricción de entidad como en sensor, solo validamos que no haya conflictos
-    // La tabla metricasensor no tiene columna entidadid
+    // VALIDACIÓN EMPRESARIAL: Si se reactiva métrica (statusid = 1), sensor debe estar activo
+    // Convertir a número para comparación (puede venir como string desde el frontend)
+    const statusId = parseInt(updateData.statusid);
+    
+    if (statusId === 1) {
+      const { data: sensor, error: sensorError } = await supabase
+        .from('sensor')
+        .select('statusid')
+        .eq('nodoid', parseInt(nodoid))
+        .eq('tipoid', parseInt(tipoid))
+        .single();
+      
+      if (sensorError) {
+        console.error('❌ Error verificando sensor:', sensorError);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Error verificando estado del sensor' 
+        });
+      }
+      
+      if (sensor && sensor.statusid !== 1) {
+        console.log('⚠️ Validación: Intento de reactivar métrica con sensor inactivo');
+        return res.status(400).json({ 
+          success: false,
+          error: 'No se puede reactivar la métrica: el sensor está inactivo',
+          requireAction: 'activate_sensor_first',
+          sensorStatus: sensor.statusid
+        });
+      }
+    }
 
     // Usar upsert para crear o actualizar la entrada
     const { data, error } = await supabase
@@ -1699,10 +1753,12 @@ app.put('/api/sense/metricasensor/composite', async (req, res) => {
         ...updateData
       })
       .select();
+    
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
+    
     console.log(`✅ Backend: Metricasensor actualizado: ${data.length} registros`);
     res.json({ success: true, data: data });
   } catch (error) {
@@ -1717,14 +1773,13 @@ app.put('/api/sense/sensor/composite', async (req, res) => {
     const { nodoid, tipoid } = req.query;
     const updateData = req.body;
     console.log(`🔍 Backend: Actualizando sensor con query params - nodoid: ${nodoid}, tipoid: ${tipoid}...`);
-    console.log(`🔍 Backend: Actualizando ubicacion con ID ${id}`);
 
     // Validación de negocio
     if (!nodoid || !tipoid) {
       return res.status(400).json({ error: 'nodoid y tipoid son requeridos' });
     }
 
-    // Usar upsert para crear o actualizar la entrada (similar a metricasensor)
+    // Usar upsert para crear o actualizar la entrada
     const { data, error } = await supabase
       .from('sensor')
       .upsert({
@@ -1733,11 +1788,56 @@ app.put('/api/sense/sensor/composite', async (req, res) => {
         ...updateData
       })
       .select();
+    
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
+    
     console.log(`✅ Backend: Sensor actualizado: ${data.length} registros`);
+    
+    // CASCADA EMPRESARIAL: Si se desactiva sensor (statusid = 0), desactivar métricas Y umbrales asociados
+    const statusId = parseInt(updateData.statusid);
+    
+    if (statusId === 0) {
+      // 1. Desactivar metricasensor asociados
+      const cascadeUpdate = {
+        statusid: 0,
+        datemodified: new Date().toISOString()
+      };
+      
+      if (updateData.usermodifiedid) {
+        cascadeUpdate.usermodifiedid = updateData.usermodifiedid;
+      }
+      
+      const { data: cascadeMetricas, error: cascadeMetricasError } = await supabase
+        .from('metricasensor')
+        .update(cascadeUpdate)
+        .eq('nodoid', parseInt(nodoid))
+        .eq('tipoid', parseInt(tipoid))
+        .select();
+      
+      if (cascadeMetricasError) {
+        console.error('⚠️ Error en cascada de métricas:', cascadeMetricasError);
+      } else {
+        console.log(`✅ Cascada Nivel 1: ${cascadeMetricas?.length || 0} métricas desactivadas`);
+      }
+      
+      // 2. Desactivar umbrales asociados
+      const { data: cascadeUmbrales, error: cascadeUmbralesError } = await supabase
+        .from('umbral')
+        .update(cascadeUpdate)
+        .eq('nodoid', parseInt(nodoid))
+        .eq('tipoid', parseInt(tipoid))
+        .select();
+      
+      if (cascadeUmbralesError) {
+        console.error('⚠️ Error en cascada de umbrales:', cascadeUmbralesError);
+      } else {
+        console.log(`✅ Cascada Nivel 2: ${cascadeUmbrales?.length || 0} umbrales desactivados`);
+      }
+    }
+    
     res.json({ success: true, data: data });
   } catch (error) {
     console.error('❌ Error backend:', error);
