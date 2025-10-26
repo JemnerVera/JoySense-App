@@ -4454,13 +4454,51 @@ const idFields = Object.keys(row).filter(key =>
 
       setUpdateLoading(true);
 
-let successCount = 0;
+      let successCount = 0;
       let actualChangesCount = 0;
       let errorCount = 0;
+      let skippedCount = 0;
 
-for (let i = 0; i < updatedEntries.length; i++) {
+      // VALIDACIÓN PREVIA: Filtrar métricas según estado del sensor
+      const entriesToProcess = [];
+      const skippedEntries = [];
 
-        const row = updatedEntries[i];
+      for (const row of updatedEntries) {
+        // Si se intenta activar (statusid = 1), verificar que el sensor esté activo
+        if (row.statusid === 1) {
+          // Buscar el sensor correspondiente
+          const sensor = sensorsData.find(
+            s => s.nodoid === row.nodoid && s.tipoid === row.tipoid
+          );
+          
+          if (sensor && sensor.statusid !== 1) {
+            // Sensor inactivo, omitir esta métrica
+            skippedEntries.push(row);
+            skippedCount++;
+            continue;
+          }
+        }
+        
+        // Métrica válida, procesar
+        entriesToProcess.push(row);
+      }
+
+      // Mostrar advertencia si hay métricas omitidas
+      if (skippedCount > 0) {
+        const skipMsg = `⚠️ ${skippedCount} métrica(s) omitida(s): no se pueden activar métricas si su sensor está inactivo. Active primero el sensor.`;
+        console.warn(skipMsg);
+        setUpdateMessage({ type: 'warning', text: skipMsg });
+      }
+
+      // Si no hay nada que procesar, terminar
+      if (entriesToProcess.length === 0) {
+        setUpdateLoading(false);
+        return;
+      }
+
+      for (let i = 0; i < entriesToProcess.length; i++) {
+
+        const row = entriesToProcess[i];
 
         const compositeKey = { 
 
@@ -5104,7 +5142,7 @@ try {
 
 successCount++;
 
-          } catch (error) {
+          } catch (error: any) {
 
             console.error(`❌ Error en actualización ${i + 1}/${rowsToUpdate.length}:`, error);
 
@@ -5112,8 +5150,14 @@ successCount++;
 
             console.error(`❌ Datos que fallaron:`, updateFormData);
 
-// Verificar si es un error de validación de negocio
+            // Verificar si es un error de validación empresarial (400)
+            if (error?.response?.status === 400 && error?.response?.data?.error) {
+              const errorMsg = error.response.data.error;
+              console.warn(`⚠️ Validación empresarial: ${errorMsg}`);
+              alert(`⚠️ ${errorMsg}`);
+            }
 
+            // Verificar si es un error de validación de negocio (409)
             if (error instanceof Error && error.message.includes('HTTP error! status: 409')) {
 
               console.warn(`⚠️ Validación de negocio: No se pueden mezclar tipos de sensores de diferentes entidades en el mismo nodo`);
