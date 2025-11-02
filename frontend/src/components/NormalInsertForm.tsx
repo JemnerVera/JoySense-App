@@ -289,8 +289,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     
     if (selectedTable === 'umbral') {
       return renderUmbralFields();
-    } else if (selectedTable === 'empresa') {
-      return renderEmpresaFields();
     } else if (selectedTable === 'fundo') {
       return renderFundoFields();
     } else if (selectedTable === 'ubicacion') {
@@ -309,8 +307,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       return renderSensorMetricaFields();
     } else if (selectedTable === 'metrica') {
       return renderMetricaFields();
-    } else if (selectedTable === 'usuario') {
-      return renderStatusRightFields();
     } else {
       return visibleColumns.map(col => renderField(col));
     }
@@ -1824,6 +1820,49 @@ return filteredNodos;
     );
   };
 
+  // Función para renderizar formulario de usuario con campo password
+  const renderUsuarioForm = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+
+    // Primera fila: Login, Contraseña
+    const loginField = visibleColumns.find(c => c.columnName === 'login');
+    result.push(
+      <div key="login-password-row" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {loginField && renderField(loginField)}
+        <div className="mb-4">
+          <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+            CONTRASEÑA*
+          </label>
+          <input
+            type="password"
+            value={formData.password || ''}
+            onChange={(e) => setFormData({
+              ...formData,
+              password: e.target.value
+            })}
+            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="••••••••"
+          />
+        </div>
+      </div>
+    );
+
+    // Segunda fila: Nombre, Apellido, Status
+    const firstnameField = visibleColumns.find(c => c.columnName === 'firstname');
+    const lastnameField = visibleColumns.find(c => c.columnName === 'lastname');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+
+    result.push(
+      <div key="name-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {firstnameField && renderField(firstnameField)}
+        {lastnameField && renderField(lastnameField)}
+        {statusField && renderField(statusField)}
+      </div>
+    );
+
+    return result;
+  };
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -1832,7 +1871,11 @@ return filteredNodos;
     <div>
       {/* Contenido del formulario */}
       <div>
-        {['usuario', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
+        {selectedTable === 'usuario' ? (
+          renderUsuarioForm()
+        ) : selectedTable === 'empresa' ? (
+          renderEmpresaFields()
+        ) : ['fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
           <div>
             {selectedTable === 'contacto' ? renderContactFields() : renderSpecialLayoutFields()}
           </div>

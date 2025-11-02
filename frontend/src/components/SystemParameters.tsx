@@ -382,6 +382,19 @@ if (hasChanges) {
 
 const [pendingTableChange, setPendingTableChange] = useState<string>('');
 
+  // Estado para controlar visibilidad de contraseñas
+  const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
+
+  // Estado local para campo de contraseña en actualización (siempre vacío inicialmente)
+  const [localPasswordValue, setLocalPasswordValue] = useState<string>('');
+
+  // Limpiar estado local de contraseña cuando se cambia de fila o se cancela
+  useEffect(() => {
+    if (!selectedRowForUpdate) {
+      setLocalPasswordValue('');
+    }
+  }, [selectedRowForUpdate]);
+
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
 
   // Estados de datos de tabla ahora manejados por useTableDataManagement
@@ -1495,20 +1508,10 @@ return hasChanges;
 // Verificar pestaña "Actualizar"
 
     if (activeSubTab === 'update') {
-      console.log('🔍 hasUnsavedChanges - Entrando en sección UPDATE');
-
       // Verificar si hay búsqueda activa
       if (searchField || searchTerm) {
-        console.log('🔍 hasUnsavedChanges - Hay búsqueda activa, retornando true');
         return true;
       }
-
-      // Debug de la condición principal
-      console.log('🔍 hasUnsavedChanges - Verificando condición principal:', {
-        hasSelectedRowForUpdate: !!selectedRowForUpdate,
-        updateFormDataKeysLength: Object.keys(updateFormData).length,
-        updateFormDataKeys: Object.keys(updateFormData)
-      });
 
       // Verificar si hay cambios reales en el formulario de actualización
       // Solo mostrar modal si se han modificado los datos originales
@@ -2004,8 +2007,10 @@ switch (columnName) {
   // Wrapper para mantener compatibilidad con las llamadas existentes
   const loadTableDataWrapper = useCallback(async () => {
     if (!selectedTable) return;
+    // Limpiar formData cuando cambia la tabla
+    setFormData(initializeFormData(columns));
     await loadTableData(selectedTable, initializeFormData);
-  }, [selectedTable, loadTableData, initializeFormData]);
+  }, [selectedTable, loadTableData, initializeFormData, columns]);
 
 const loadTableInfo = async () => {
 
@@ -2577,6 +2582,8 @@ preparedData.usercreatedid = usuarioid;
 
           firstname: preparedData.firstname,
 
+          password: preparedData.password, // Campo de contraseña para encriptación
+
           statusid: preparedData.statusid,
 
           usercreatedid: preparedData.usercreatedid,
@@ -3080,16 +3087,9 @@ setUpdateFormData(newFormData);
   };
 
 const handleCancelUpdate = () => {
-    // Debug temporal
-    console.log('🔍 handleCancelUpdate Debug:', {
-      selectedRowForUpdate: !!selectedRowForUpdate,
-      updateFormDataKeys: Object.keys(updateFormData),
-      updateFormData: updateFormData,
-      selectedRowsForUpdateLength: selectedRowsForUpdate.length,
-      selectedRowsForManualUpdateLength: selectedRowsForManualUpdate.length,
-      searchField,
-      searchTerm
-    });
+    // Limpiar estado local de contraseña
+    setLocalPasswordValue('');
+
 
     // Verificar cambios directamente aquí, sin usar hasUnsavedChanges
     let hasChanges = false;
@@ -3097,18 +3097,15 @@ const handleCancelUpdate = () => {
     // Verificar si hay búsqueda activa
     if (searchField || searchTerm) {
       hasChanges = true;
-      console.log('🔍 Hay búsqueda activa');
     }
     
     // Verificar si hay múltiples filas seleccionadas
     if (selectedRowsForUpdate.length > 0 || selectedRowsForManualUpdate.length > 0) {
       hasChanges = true;
-      console.log('🔍 Hay filas seleccionadas para actualización múltiple');
     }
     
     // Verificar si hay cambios reales en el formulario de actualización
     if (selectedRowForUpdate && Object.keys(updateFormData).length > 0) {
-      console.log('🔍 Verificando cambios en formulario de actualización');
       
       const hasRealChanges = Object.keys(updateFormData).some(key => {
         const originalValue = selectedRowForUpdate[key];
@@ -3126,12 +3123,7 @@ const handleCancelUpdate = () => {
         const isDifferent = normalizedOriginal !== normalizedCurrent;
         
         if (isDifferent) {
-          console.log(`🔍 Campo ${key} ha cambiado:`, {
-            original: originalValue,
-            current: currentValue,
-            normalizedOriginal,
-            normalizedCurrent
-          });
+          // Campo ha cambiado
         }
         
         return isDifferent;
@@ -3139,15 +3131,11 @@ const handleCancelUpdate = () => {
       
       if (hasRealChanges) {
         hasChanges = true;
-        console.log('🔍 Hay cambios reales en el formulario');
       }
     }
-    
-    console.log('🔍 hasChanges result:', hasChanges);
-    
+
     if (hasChanges) {
       // Solo mostrar modal si hay cambios reales
-      console.log('🔍 Mostrando modal de cancelación');
       setCancelAction(() => () => {
         setSelectedRowForUpdate(null);
         setSelectedRowsForUpdate([]);
@@ -3162,7 +3150,6 @@ const handleCancelUpdate = () => {
       setShowCancelModal(true);
     } else {
       // Si no hay cambios, cancelar directamente sin modal
-      console.log('🔍 No hay cambios, cancelando directamente');
       setSelectedRowForUpdate(null);
       setSelectedRowsForUpdate([]);
       setSelectedRowsForManualUpdate([]);
@@ -5388,9 +5375,16 @@ result = await JoySenseService.updateTableRowByCompositeKey(
 
             if (updateFormData[field] !== undefined) {
 
+              // Para contraseña de usuario: si está vacía, no actualizar (mantener contraseña actual)
+              if (selectedTable === 'usuario' && field === 'password_hash' &&
+                  (!updateFormData[field] || updateFormData[field].trim() === '')) {
+                // No incluir campo de contraseña vacío en la actualización
+                return;
+              }
+
               // Para campos opcionales vacíos, no incluir el campo en la actualización
-              if (typeof updateFormData[field] === 'string' && 
-                  updateFormData[field].trim() === '' && 
+              if (typeof updateFormData[field] === 'string' &&
+                  updateFormData[field].trim() === '' &&
                   isOptionalField(selectedTable, field)) {
                 // No incluir campos opcionales vacíos en la actualización
                 return;
@@ -5635,7 +5629,7 @@ if (selectedTable === 'criticidad') {
 
       if (selectedTable === 'usuario') {
 
-        return ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['login', 'firstname', 'lastname', 'password_hash', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
@@ -6031,13 +6025,15 @@ if (selectedTable === 'fundo') {
 
       } else if (selectedTable === 'usuario') {
 
-        // Usuario, Nombre, Apellido
+        // Usuario, Nombre, Apellido, Contraseña
 
         reorderedColumns.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
+
+        reorderedColumns.push(...otherColumns.filter(col => ['password_hash'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
 
@@ -8223,6 +8219,35 @@ const handleCancelModal = () => {
 
                                          ? formatDate(row[col.columnName])
 
+                                         : col.columnName === 'password_hash'
+
+                                         ? (
+                                           <div className="flex items-center gap-2">
+                                             <span className="font-mono">
+                                               {showPasswords[row.usuarioid || row.login] ? row[col.columnName] : '••••••••'}
+                                             </span>
+                                             <button
+                                               type="button"
+                                               onClick={() => setShowPasswords(prev => ({
+                                                 ...prev,
+                                                 [row.usuarioid || row.login]: !prev[row.usuarioid || row.login]
+                                               }))}
+                                               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                             >
+                                               {showPasswords[row.usuarioid || row.login] ? (
+                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                                 </svg>
+                                               ) : (
+                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                 </svg>
+                                               )}
+                                             </button>
+                                           </div>
+                                         )
+
                                          : getDisplayValueLocal(row, col.columnName)}
 
                                      </td>
@@ -8781,7 +8806,7 @@ const handleCancelModal = () => {
 
                           if (!displayName) return null;
 
-const value = updateFormData[col.columnName] || '';
+                          const value = updateFormData[col.columnName] || '';
 
 // Campos automáticos - NO mostrar en formulario de actualización
 
@@ -8930,6 +8955,31 @@ return (
                                    }))}
                                    options={options}
                                    placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
+                                 />
+                               </div>
+                             );
+                           }
+
+// Campo especial para contraseña en tabla usuario
+                           if (selectedTable === 'usuario' && col.columnName === 'password_hash') {
+                             return (
+                               <div key={col.columnName} className="mb-4">
+                                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                   {displayName.toUpperCase()}
+                                 </label>
+                                 <input
+                                   type="password"
+                                   value={localPasswordValue}
+                                   placeholder="••••••••"
+                                   onChange={(e) => {
+                                     const newValue = e.target.value;
+                                     setLocalPasswordValue(newValue);
+                                     setUpdateFormData((prev: Record<string, any>) => ({
+                                       ...prev,
+                                       [col.columnName]: newValue
+                                     }));
+                                   }}
+                                   className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
                                  />
                                </div>
                              );
@@ -9476,6 +9526,37 @@ if (col.columnName === 'statusid') {
 if (col.columnName === 'datecreated' || col.columnName === 'datemodified') {
 
                                                return formatDate(row[col.columnName]);
+
+                                             }
+
+                                             if (col.columnName === 'password_hash') {
+
+                                               return (
+                                                 <div className="flex items-center gap-2">
+                                                   <span className="font-mono">
+                                                     {showPasswords[row.usuarioid || row.login] ? row[col.columnName] : '••••••••'}
+                                                   </span>
+                                                   <button
+                                                     type="button"
+                                                     onClick={() => setShowPasswords(prev => ({
+                                                       ...prev,
+                                                       [row.usuarioid || row.login]: !prev[row.usuarioid || row.login]
+                                                     }))}
+                                                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                                   >
+                                                     {showPasswords[row.usuarioid || row.login] ? (
+                                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                                       </svg>
+                                                     ) : (
+                                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                       </svg>
+                                                     )}
+                                                   </button>
+                                                 </div>
+                                               );
 
                                              }
 

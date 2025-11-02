@@ -257,7 +257,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/paises');
+        const data = await backendAPI.get('/sense/pais');
         return data || [];
       } else {
         // Fallback para schema public
@@ -276,7 +276,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/empresas');
+        const data = await backendAPI.get('/sense/empresa');
         return data || [];
       } else {
         // Fallback para schema public
@@ -295,7 +295,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/empresas?paisId=${paisId}`);
+        const data = await backendAPI.get(`/sense/empresa?paisId=${paisId}`);
         return data || [];
       } else {
         return [];
@@ -313,7 +313,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/fundos');
+        const data = await backendAPI.get('/sense/fundo');
         return data || [];
       } else {
         return [];
@@ -331,7 +331,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/fundos?empresaId=${empresaId}`);
+        const data = await backendAPI.get(`/sense/fundo?empresaId=${empresaId}`);
         return data || [];
       } else {
         return [];
@@ -349,7 +349,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/ubicaciones');
+        const data = await backendAPI.get('/sense/ubicacion');
         return data || [];
       } else {
         return [];
@@ -367,7 +367,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/ubicaciones?fundoId=${fundoId}`);
+        const data = await backendAPI.get(`/sense/ubicacion?fundoId=${fundoId}`);
         return data || [];
       } else {
         return [];
@@ -761,7 +761,7 @@ export class JoySenseService {
       const detectedSchema = await this.detectSchema();
       
       if (detectedSchema === 'sense') {
-        let endpoint = '/sense/entidades';
+        let endpoint = '/sense/entidad';
         if (ubicacionId) {
           endpoint += `?ubicacionId=${ubicacionId}`;
         }

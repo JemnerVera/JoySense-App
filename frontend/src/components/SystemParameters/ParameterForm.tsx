@@ -81,7 +81,7 @@ export function ParameterForm({
   };
 
   // Renderizar campo de entrada
-  const renderField = (fieldName: string, fieldType: 'text' | 'number' | 'select' = 'text', options?: any[]) => {
+  const renderField = (fieldName: string, fieldType: 'text' | 'number' | 'password' | 'select' = 'text', options?: any[]) => {
     if (!shouldShowField(fieldName, localFormData)) {
       return null;
     }
@@ -200,7 +200,20 @@ export function ParameterForm({
           ])}
         </>
       )}
-      
+
+      {selectedTable === 'usuario' && (
+        <>
+          {renderField('login', 'text')}
+          {renderField('firstname', 'text')}
+          {renderField('lastname', 'text')}
+          {renderField('password', 'password')}
+          {renderField('statusid', 'select', [
+            { value: 1, label: 'Activo' },
+            { value: 2, label: 'Inactivo' }
+          ])}
+        </>
+      )}
+
       {/* Agregar más casos según sea necesario */}
       
       {/* Mostrar errores de validación */}

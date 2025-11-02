@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcrypt');
 
 // Constantes de validación
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1481,24 +1482,105 @@ app.put('/api/sense/correo/:id', async (req, res) => {
   }
 });
 
+// Endpoint para detectar si el esquema sense está disponible (usado por frontend)
+app.get('/api/sense/detect', async (req, res) => {
+  try {
+    console.log(`🔍 Backend: Detectando esquema '${dbSchema}' para frontend...`);
+
+    // Verificar si podemos acceder a una tabla del esquema
+    const { data, error } = await supabase
+      .from('usuario')
+      .select('count', { count: 'exact', head: true });
+
+    if (error) {
+      console.error(`❌ Error detectando esquema ${dbSchema}:`, error);
+      return res.status(404).json({
+        available: false,
+        error: `Esquema ${dbSchema} no disponible`,
+        details: error.message
+      });
+    }
+
+    console.log(`✅ Esquema '${dbSchema}' detectado exitosamente`);
+    res.json({
+      available: true,
+      schema: dbSchema,
+      totalUsers: data,
+      message: `Esquema '${dbSchema}' está disponible`
+    });
+  } catch (error) {
+    console.error(`❌ Error inesperado detectando esquema ${dbSchema}:`, error);
+    res.status(404).json({
+      available: false,
+      error: `Error interno detectando esquema ${dbSchema}`,
+      details: error.message
+    });
+  }
+});
+
+// Endpoint genérico POST para insertar en cualquier tabla del esquema sense
+app.post('/api/sense/:tableName', async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const insertData = req.body;
+
+    console.log(`🔍 Backend: Insertando en tabla '${tableName}'...`);
+
+    // MANEJO ESPECIAL PARA USUARIOS: Encriptar contraseña si viene
+    if (tableName === 'usuario' && insertData.password) {
+      console.log(`🔐 Encriptando contraseña para nuevo usuario...`);
+      insertData.password_hash = await bcrypt.hash(insertData.password, 10);
+      delete insertData.password; // Eliminar contraseña en texto plano
+    }
+
+    const { data, error } = await supabase
+      .from(tableName)
+      .insert([insertData])
+      .select();
+
+    if (error) {
+      console.error(`❌ Error insertando en ${tableName}:`, error);
+      return res.status(500).json({
+        error: `Error insertando en tabla ${tableName}`,
+        details: error.message
+      });
+    }
+
+    console.log(`✅ Registro insertado en '${tableName}':`, data.length, 'registros');
+    res.json(data);
+  } catch (error) {
+    console.error(`❌ Error inesperado insertando en ${req.params.tableName}:`, error);
+    res.status(500).json({
+      error: `Error interno del servidor insertando en ${req.params.tableName}`,
+      details: error.message
+    });
+  }
+});
+
 app.put('/api/sense/usuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    
+
     console.log(`🔍 Backend: Actualizando usuario con ID ${id}...`);
-    
+
+    // Encriptar contraseña si está presente
+    if (updateData.password) {
+      updateData.password_hash = await bcrypt.hash(updateData.password, 10);
+      delete updateData.password; // Eliminar contraseña en texto plano
+    }
+
     const { data, error } = await supabase
       .from('usuario')
       .update(updateData)
       .eq('usuarioid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Usuario actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {

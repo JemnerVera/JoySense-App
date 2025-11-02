@@ -197,6 +197,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'fundoabrev': t('table_headers.abbreviation'),
     'ubicacionabrev': t('table_headers.abbreviation'),
     'statusid': t('table_headers.status'),
+    'password_hash': t('table_headers.password'),
     'usercreatedid': t('table_headers.created_by'),
     'usermodifiedid': t('table_headers.modified_by'),
     'datecreated': t('table_headers.creation_date'),
