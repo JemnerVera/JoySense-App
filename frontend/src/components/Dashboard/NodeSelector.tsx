@@ -9,9 +9,9 @@ interface NodeSelectorProps {
   selectedEntidadId: number | null
   selectedUbicacionId: number | null
   onNodeSelect: (nodeData: NodeData) => void
-  onFiltersUpdate: (filters: { 
-    entidadId: number; 
-    ubicacionId: number;
+  onFiltersUpdate: (filters: {
+    entidadId: number | null;
+    ubicacionId: number | null;
     fundoId?: number | null;
     empresaId?: number | null;
     paisId?: number | null;
@@ -54,6 +54,41 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     loadNodes()
     loadNodeMediciones()
   }, [])
+
+  // Filtrar nodos basado en filtros seleccionados y nodo seleccionado
+  useEffect(() => {
+    let filtered = nodes
+
+    // Si hay un nodo seleccionado, solo mostrar ese nodo
+    if (selectedNode) {
+      filtered = nodes.filter(node => node.nodoid === selectedNode.nodoid)
+    }
+    // Si no hay nodo seleccionado, aplicar filtros de entidad y ubicación
+    else {
+      if (selectedEntidadId) {
+        filtered = filtered.filter(node => node.entidad?.entidadid === selectedEntidadId)
+      }
+
+      if (selectedUbicacionId) {
+        filtered = filtered.filter(node => node.ubicacionid === selectedUbicacionId)
+      }
+    }
+
+    // Aplicar filtro de búsqueda si hay término de búsqueda
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(node =>
+        node.nodo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        node.deveui.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        node.ubicacion.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        node.ubicacion.fundo.fundo.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Debug resumido
+    console.log(`🔍 NodeSelector: ${nodes.length} nodos total → ${filtered.length} filtrados ${selectedNode ? '(solo seleccionado)' : '(con filtros)'}`)
+
+    setFilteredNodes(filtered)
+  }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm])
 
   // Cargar conteo de mediciones por nodo
   const loadNodeMediciones = async () => {
@@ -250,9 +285,44 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         </div>
       </div>
 
-      {/* Mapa siempre visible */}
+      {/* Botón para cancelar selección de nodo */}
+      {selectedNode && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => {
+              setSelectedNode(null)
+              onNodeSelect(null as any) // Notificar que se canceló la selección
+
+              // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
+              onFiltersUpdate({
+                entidadId: null, // Sin filtro de entidad
+                ubicacionId: null, // Sin filtro de ubicación
+                fundoId: null,
+                empresaId: null,
+                paisId: null
+              })
+
+              // También limpiar los filtros del header
+              if (onEntidadChange) onEntidadChange(null)
+              if (onUbicacionChange) onUbicacionChange(null)
+
+              // Limpiar también el contexto global de filtros
+              setEntidadSeleccionada(null)
+              setUbicacionSeleccionada(null)
+            }}
+            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            {t('dashboard.cancel_selection')}
+          </button>
+        </div>
+      )}
+
+      {/* Mapa con nodos filtrados */}
       <InteractiveMap
-        nodes={nodes}
+        nodes={filteredNodes}
         selectedNode={selectedNode}
         onNodeSelect={handleMapNodeClick}
         loading={loading}

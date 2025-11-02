@@ -67,6 +67,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
 
+  // Debug resumido
+  const nodesWithGPS = nodes.filter(n => n.latitud != null && n.longitud != null && !isNaN(n.latitud) && !isNaN(n.longitud))
+  console.log(`🗺️ InteractiveMap: ${nodes.length} nodos recibidos → ${nodesWithGPS.length} con GPS válido`)
+
   // Calcular centro del mapa basado en los nodos disponibles
   useEffect(() => {
     if (nodes.length > 0) {
@@ -207,44 +211,49 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         
         <MapController selectedNode={selectedNode} />
         
-        {nodes.map((node) => (
-          <Marker
-            key={node.nodoid}
-            position={[node.latitud, node.longitud]}
-            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
-            eventHandlers={{
-              click: () => onNodeSelect(node)
-            }}
-          >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
-                <div className="space-y-1">
-                  <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
-                  <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
-                  <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
-                  <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
-                  <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
-                  <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
-                  <div className="mt-2 pt-2 border-t border-neutral-600">
-                    <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
-                    <div className="text-xs text-neutral-400">
-                      {node.latitud}, {node.longitud}
-                    </div>
-                  </div>
-                  {/* Indicador de datos */}
-                  {nodeMediciones[node.nodoid] === 0 && (
-                    <div className="mt-2 pt-2 border-t border-red-600">
-                      <div className="text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded font-mono">
-                        Sin data
+        {nodes
+          .filter(node => {
+            const hasValidCoords = node.latitud != null && node.longitud != null && !isNaN(node.latitud) && !isNaN(node.longitud)
+            return hasValidCoords
+          })
+          .map((node) => (
+            <Marker
+              key={node.nodoid}
+              position={[node.latitud, node.longitud]}
+              icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
+              eventHandlers={{
+                click: () => onNodeSelect(node)
+              }}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
+                  <div className="space-y-1">
+                    <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
+                    <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
+                    <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
+                    <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
+                    <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
+                    <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
+                    <div className="mt-2 pt-2 border-t border-neutral-600">
+                      <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
+                      <div className="text-xs text-neutral-400">
+                        {node.latitud}, {node.longitud}
                       </div>
                     </div>
-                  )}
+                    {/* Indicador de datos */}
+                    {nodeMediciones[node.nodoid] === 0 && (
+                      <div className="mt-2 pt-2 border-t border-red-600">
+                        <div className="text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded font-mono">
+                          Sin data
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))}
       </MapContainer>
     </div>
   )

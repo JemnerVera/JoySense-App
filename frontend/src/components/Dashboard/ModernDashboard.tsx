@@ -534,8 +534,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           onUbicacionChange={onUbicacionChange}
         />
 
-{/* Metrics Cards */}
-        {!loading && !error && availableMetrics.length > 0 && (
+{/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado */}
+        {!loading && !error && availableMetrics.length > 0 && selectedNode && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {availableMetrics.map((metric) => {
               const hasData = hasMetricData(metric.dataKey)
