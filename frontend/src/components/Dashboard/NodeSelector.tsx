@@ -108,33 +108,39 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
-    
+    console.log('🔄 syncAllFilters - Sincronizando filtros para nodo:', node.nodo)
+
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
     if (node.ubicacion.fundo.empresa.pais.paisid) {
+      console.log('🔄 Seteando pais:', node.ubicacion.fundo.empresa.pais.paisid.toString())
       setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
     }
 
     if (node.ubicacion.fundo.empresa.empresaid) {
+      console.log('🔄 Seteando empresa:', node.ubicacion.fundo.empresa.empresaid.toString())
       setEmpresaSeleccionada(node.ubicacion.fundo.empresa.empresaid.toString())
     }
 
     if (node.ubicacion.fundoid) {
+      console.log('🔄 Seteando fundo:', node.ubicacion.fundoid.toString())
       setFundoSeleccionado(node.ubicacion.fundoid.toString())
     }
-    
+
     // 2. Actualizar filtros del header (entidad, ubicación) usando contexto global
     // Usar setTimeout para asegurar que el contexto se actualice en el siguiente tick
     setTimeout(() => {
       if (node.entidad) {
+        console.log('🔄 Seteando entidad:', node.entidad.entidad)
         setEntidadSeleccionada(node.entidad)
       }
-      
+
       const ubicacion = {
         ubicacionid: node.ubicacionid,
         ubicacion: node.ubicacion.ubicacion,
         ubicacionabrev: node.ubicacion.ubicacionabrev,
         fundoid: node.ubicacion.fundoid
       }
+      console.log('🔄 Seteando ubicación:', ubicacion.ubicacion)
       setUbicacionSeleccionada(ubicacion)
     }, 0)
   }
@@ -193,20 +199,29 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }
 
   const handleMapNodeClick = (node: NodeData) => {
+    console.log('🗺️ Click en mapa - Nodo seleccionado:', {
+      nodo: node.nodo,
+      entidad: node.entidad?.entidad,
+      ubicacion: node.ubicacion?.ubicacion,
+      ubicacionid: node.ubicacionid
+    })
+
     setSelectedNode(node)
     onNodeSelect(node)
-    
+
     // Sincronizar todos los filtros globales
     syncAllFilters(node)
-    
+
     // Actualizar filtros del dashboard
-    onFiltersUpdate({
+    const filtersUpdate = {
       entidadId: node.entidad.entidadid,
       ubicacionId: node.ubicacionid,
       fundoId: node.ubicacion.fundoid,
       empresaId: node.ubicacion.fundo.empresa.empresaid,
       paisId: node.ubicacion.fundo.empresa.pais.paisid
-    })
+    }
+    console.log('🗺️ Enviando onFiltersUpdate:', filtersUpdate)
+    onFiltersUpdate(filtersUpdate)
   }
 
   // Cerrar dropdown al hacer click fuera
@@ -227,7 +242,41 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
-        
+
+        {/* Botón de cancelar selección - Solo visible cuando hay nodo seleccionado */}
+        {selectedNode && (
+          <button
+            onClick={() => {
+              setSelectedNode(null)
+              onNodeSelect(null as any) // Notificar que se canceló la selección
+
+              // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
+              onFiltersUpdate({
+                entidadId: null, // Sin filtro de entidad
+                ubicacionId: null, // Sin filtro de ubicación
+                fundoId: null,
+                empresaId: null,
+                paisId: null
+              })
+
+              // También limpiar los filtros del header
+              if (onEntidadChange) onEntidadChange(null)
+              if (onUbicacionChange) onUbicacionChange(null)
+
+              // Limpiar también el contexto global de filtros
+              setEntidadSeleccionada(null)
+              setUbicacionSeleccionada(null)
+            }}
+            className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
+            title="Cancelar selección"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span className="text-sm">CANCELAR</span>
+          </button>
+        )}
+
         {/* Combobox con searchbar */}
         <div className="relative w-80" ref={searchDropdownRef}>
           <div className="relative">
@@ -285,40 +334,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         </div>
       </div>
 
-      {/* Botón para cancelar selección de nodo */}
-      {selectedNode && (
-        <div className="flex justify-center mb-4">
-          <button
-            onClick={() => {
-              setSelectedNode(null)
-              onNodeSelect(null as any) // Notificar que se canceló la selección
-
-              // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
-              onFiltersUpdate({
-                entidadId: null, // Sin filtro de entidad
-                ubicacionId: null, // Sin filtro de ubicación
-                fundoId: null,
-                empresaId: null,
-                paisId: null
-              })
-
-              // También limpiar los filtros del header
-              if (onEntidadChange) onEntidadChange(null)
-              if (onUbicacionChange) onUbicacionChange(null)
-
-              // Limpiar también el contexto global de filtros
-              setEntidadSeleccionada(null)
-              setUbicacionSeleccionada(null)
-            }}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            {t('dashboard.cancel_selection')}
-          </button>
-        </div>
-      )}
 
       {/* Mapa con nodos filtrados */}
       <InteractiveMap
