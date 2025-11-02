@@ -1008,7 +1008,24 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    console.log('✅ Usuario autenticado en modo desarrollo:', email);
+    // Validar contraseña con bcrypt si existe password_hash
+    if (userData.password_hash) {
+      console.log('🔐 Validando contraseña con hash bcrypt...');
+      const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
+
+      if (!isPasswordValid) {
+        console.error('❌ Contraseña incorrecta');
+        return res.status(401).json({
+          success: false,
+          error: 'Contraseña incorrecta. Verifique sus credenciales.'
+        });
+      }
+      console.log('✅ Contraseña validada correctamente');
+    } else {
+      console.warn('⚠️ Usuario sin password_hash - permitiendo login por compatibilidad');
+    }
+
+    console.log('✅ Usuario autenticado exitosamente:', email);
 
     // Crear respuesta de usuario autenticado
     const authenticatedUser = {
