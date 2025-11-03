@@ -144,7 +144,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     };
 
     cargarEntidades();
-  }, [fundoSeleccionado]);
+  }, [fundoSeleccionado, selectedEntidad]); // Agregar selectedEntidad para forzar recarga cuando cambia
 
   // Cargar ubicaciones basadas en el fundo seleccionado y entidad seleccionada
   useEffect(() => {
@@ -160,9 +160,29 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         const ubicacionesData = await JoySenseService.getTableData('ubicacion');
         
         // Filtrar ubicaciones del fundo seleccionado
-        let ubicacionesFiltradas = ubicacionesData.filter((ubicacion: any) => 
+        let ubicacionesFiltradas = ubicacionesData.filter((ubicacion: any) =>
           ubicacion.fundoid === parseInt(fundoSeleccionado)
         );
+
+        // Obtener nodos con GPS para filtrar solo ubicaciones que tienen nodos con coordenadas
+        try {
+          const nodosConGPS = await JoySenseService.getNodosConLocalizacion();
+
+          // Extraer ubicaciones únicas que tienen nodos con GPS
+          const ubicacionesConGPS = Array.from(new Set(
+            nodosConGPS
+              .filter((nodo: any) => nodo.latitud && nodo.longitud) // Solo nodos con coordenadas
+              .map((nodo: any) => nodo.ubicacionid)
+          ));
+
+          // Filtrar ubicaciones para mostrar solo las que tienen nodos con GPS
+          ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) =>
+            ubicacionesConGPS.includes(ubicacion.ubicacionid)
+          );
+        } catch (error) {
+          console.error('Error obteniendo nodos con GPS para filtrar ubicaciones:', error);
+          // En caso de error, continuar con todas las ubicaciones del fundo
+        }
         
         // Si hay una entidad seleccionada, filtrar también por entidad
         if (selectedEntidad) {
@@ -191,6 +211,55 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     };
 
     cargarUbicaciones();
+  }, [fundoSeleccionado, selectedEntidad]);
+
+  // Forzar recarga de entidades cuando se limpia la selección y hay fundo seleccionado
+  // Esto asegura que las listas se actualicen después de cancelar la selección del nodo
+  useEffect(() => {
+    // Si hay fundo seleccionado pero no entidad seleccionada y las entidades están vacías
+    // o si cambió selectedEntidad a null, recargar
+    if (fundoSeleccionado && !selectedEntidad) {
+      // Verificar si necesitamos recargar
+      const shouldReload = entidades.length === 0;
+      
+      if (shouldReload) {
+        const cargarEntidades = async () => {
+          try {
+            setLoadingEntidades(true);
+            
+            const entidadesData = await JoySenseService.getTableData('entidad');
+            const ubicacionesData = await JoySenseService.getTableData('ubicacion');
+            const ubicacionesDelFundo = ubicacionesData.filter((ubicacion: any) => 
+              ubicacion.fundoid === parseInt(fundoSeleccionado)
+            );
+            
+            const localizacionesData = await JoySenseService.getTableData('localizacion');
+            
+            const entidadIds = new Set();
+            ubicacionesDelFundo.forEach((ubicacion: any) => {
+              const localizacionesDeUbicacion = localizacionesData.filter((loc: any) => 
+                loc.ubicacionid === ubicacion.ubicacionid
+              );
+              localizacionesDeUbicacion.forEach((loc: any) => {
+                entidadIds.add(loc.entidadid);
+              });
+            });
+            
+            const entidadesFiltradas = entidadesData.filter((entidad: any) => 
+              entidadIds.has(entidad.entidadid)
+            );
+            
+            setEntidades(entidadesFiltradas);
+          } catch (error) {
+            console.error('❌ Error recargando entidades:', error);
+          } finally {
+            setLoadingEntidades(false);
+          }
+        };
+        
+        cargarEntidades();
+      }
+    }
   }, [fundoSeleccionado, selectedEntidad]);
 
   // Filtrar entidades basadas en el fundo seleccionado
@@ -259,7 +328,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           placeholder="Entidad"
           className="w-full"
           buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider"
-          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
+          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar"
         >
           {loadingEntidades ? (
             <div className="text-center py-4">
@@ -273,7 +342,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 onClick={() => handleEntidadSelect(entidad)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedEntidad?.entidadid === entidad.entidadid
-                    ? 'bg-orange-500 text-white' 
+                    ? 'bg-green-500 text-white' 
                     : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800'
                 }`}
               >
@@ -299,7 +368,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           placeholder="Ubicación"
           className="w-full"
           buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider"
-          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden"
+          dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar"
         >
           {loadingUbicaciones ? (
             <div className="text-center py-4">
@@ -313,7 +382,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 onClick={() => handleUbicacionSelect(ubicacion)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedUbicacion?.ubicacionid === ubicacion.ubicacionid
-                    ? 'bg-orange-500 text-white' 
+                    ? 'bg-green-500 text-white' 
                     : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800'
                 }`}
               >

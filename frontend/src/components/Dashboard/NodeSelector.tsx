@@ -39,6 +39,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
   const [nodeMediciones, setNodeMediciones] = useState<{ [nodeId: number]: number }>({})
   const searchDropdownRef = useRef<HTMLDivElement>(null)
+  const lastProcessedUbicacionId = useRef<number | null>(null)
 
   // Hook para acceder a los filtros globales del sidebar y header
   const { 
@@ -54,6 +55,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     loadNodes()
     loadNodeMediciones()
   }, [])
+
 
   // Filtrar nodos basado en filtros seleccionados y nodo seleccionado
   useEffect(() => {
@@ -173,6 +175,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setIsSearchDropdownOpen(false)
     setSearchTerm('')
     
+    // Actualizar el ref de última ubicación procesada
+    lastProcessedUbicacionId.current = node.ubicacionid
+    
     // Sincronizar todos los filtros globales
     syncAllFilters(node)
     
@@ -186,9 +191,39 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     })
   }
 
+  // Seleccionar automáticamente el primer nodo cuando cambia la ubicación en el filtro
+  // Solo se ejecuta cuando cambia selectedUbicacionId y hay nodos disponibles
+  useEffect(() => {
+    // Solo actuar si hay una ubicación seleccionada, hay nodos cargados, y es una ubicación diferente a la última procesada
+    if (selectedUbicacionId && nodes.length > 0 && lastProcessedUbicacionId.current !== selectedUbicacionId) {
+      // Verificar si el nodo actual pertenece a la ubicación seleccionada
+      const currentNodeMatches = selectedNode && selectedNode.ubicacionid === selectedUbicacionId
+      
+      // Si no hay nodo seleccionado o el nodo actual no coincide con la ubicación, buscar el primer nodo de esa ubicación
+      if (!currentNodeMatches) {
+        // Buscar nodos de la ubicación seleccionada
+        const nodesInUbicacion = nodes.filter(node => node.ubicacionid === selectedUbicacionId)
+        
+        // Si hay nodos en esa ubicación, seleccionar el primero
+        if (nodesInUbicacion.length > 0) {
+          const firstNode = nodesInUbicacion[0]
+          // Actualizar el ref antes de seleccionar para evitar bucles
+          lastProcessedUbicacionId.current = selectedUbicacionId
+          handleNodeSelect(firstNode)
+        }
+      } else {
+        // Si el nodo actual ya coincide, solo actualizar el ref
+        lastProcessedUbicacionId.current = selectedUbicacionId
+      }
+    }
+  }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
+
   const handleMapNodeClick = (node: NodeData) => {
     setSelectedNode(node)
     onNodeSelect(node)
+
+    // Actualizar el ref de última ubicación procesada
+    lastProcessedUbicacionId.current = node.ubicacionid
 
     // Sincronizar todos los filtros globales
     syncAllFilters(node)
@@ -246,6 +281,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                 // Limpiar también el contexto global de filtros
                 setEntidadSeleccionada(null)
                 setUbicacionSeleccionada(null)
+                
+                // Limpiar el ref de última ubicación procesada para permitir nueva selección automática
+                lastProcessedUbicacionId.current = null
               }}
               className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
               title="Cancelar selección"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,15 +26,66 @@ interface InteractiveMapProps {
   nodeMediciones?: { [nodeId: number]: number } // Mapa de nodoId -> cantidad de mediciones
 }
 
-// Componente para centrar el mapa en el nodo seleccionado
-function MapController({ selectedNode }: { selectedNode: NodeData | null }) {
+// Componente para centrar el mapa en el nodo seleccionado con animación en dos pasos
+function MapController({ selectedNode, onAnimationComplete }: { selectedNode: NodeData | null, onAnimationComplete?: () => void }) {
   const map = useMap()
+  const previousNodeId = useRef<number | null>(null)
 
   useEffect(() => {
-    if (selectedNode) {
-      map.setView([selectedNode.latitud, selectedNode.longitud], 16)
+    if (selectedNode && selectedNode.latitud != null && selectedNode.longitud != null) {
+      const lat = selectedNode.latitud
+      const lng = selectedNode.longitud
+      
+      // Validar coordenadas
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        const currentNodeId = selectedNode.nodoid
+        
+        // Si cambió el nodo (no es la primera carga)
+        if (previousNodeId.current !== null && previousNodeId.current !== currentNodeId) {
+          // Obtener posición actual del mapa
+          const currentCenter = map.getCenter()
+          
+          // Paso 1: Alejar el zoom en la posición actual (zoom 10)
+          map.flyTo([currentCenter.lat, currentCenter.lng], 10, {
+            duration: 1.2,
+            easeLinearity: 0.25
+          })
+          
+          // Paso 2: Volar al nuevo nodo manteniendo el zoom alejado (después del paso 1)
+          setTimeout(() => {
+            map.flyTo([lat, lng], 10, {
+              duration: 1.5,
+              easeLinearity: 0.25
+            })
+            
+            // Paso 3: Acercar el zoom al nuevo nodo (después del paso 2)
+            setTimeout(() => {
+              map.flyTo([lat, lng], 16, {
+                duration: 1.2,
+                easeLinearity: 0.25
+              })
+              
+              // Esperar a que termine la animación y luego abrir el popup
+              setTimeout(() => {
+                if (onAnimationComplete) {
+                  onAnimationComplete()
+                }
+              }, 1300) // 1200ms de duración + 100ms de margen
+            }, 1600) // 1500ms de duración + 100ms de margen
+          }, 1300) // 1200ms de duración + 100ms de margen
+        } else {
+          // Primera carga o mismo nodo: ir directamente
+          map.flyTo([lat, lng], 16, {
+            duration: 1.5,
+            easeLinearity: 0.25
+          })
+        }
+        
+        // Actualizar el ref del nodo anterior
+        previousNodeId.current = currentNodeId
+      }
     }
-  }, [selectedNode, map])
+  }, [selectedNode?.nodoid, selectedNode?.latitud, selectedNode?.longitud, map, onAnimationComplete]) // Usar nodoid específicamente para detectar cambios
 
   return null
 }
@@ -66,17 +117,46 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 }) => {
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
+  const markerRefs = useRef<Map<number, L.Marker>>(new Map())
 
   const nodesWithGPS = nodes.filter(n => n.latitud != null && n.longitud != null && !isNaN(n.latitud) && !isNaN(n.longitud))
 
-  // Calcular centro del mapa basado en los nodos disponibles
-  useEffect(() => {
-    if (nodes.length > 0) {
-      const avgLat = nodes.reduce((sum, node) => sum + node.latitud, 0) / nodes.length
-      const avgLng = nodes.reduce((sum, node) => sum + node.longitud, 0) / nodes.length
-      setMapCenter([avgLat, avgLng])
+  // Función para abrir el popup del nodo seleccionado
+  const openSelectedNodePopup = () => {
+    if (selectedNode) {
+      const marker = markerRefs.current.get(selectedNode.nodoid)
+      if (marker) {
+        marker.openPopup()
+      }
     }
-  }, [nodes])
+  }
+
+  // Calcular centro del mapa basado en el nodo seleccionado o en los nodos disponibles
+  useEffect(() => {
+    // Si hay un nodo seleccionado con coordenadas válidas, usar ese como centro
+    if (selectedNode && selectedNode.latitud != null && selectedNode.longitud != null) {
+      const lat = selectedNode.latitud
+      const lng = selectedNode.longitud
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        setMapCenter([lat, lng])
+        return
+      }
+    }
+    
+    // Si no hay nodo seleccionado, calcular centro basado en todos los nodos disponibles
+    if (nodes.length > 0) {
+      const nodesWithValidCoords = nodes.filter(n => 
+        n.latitud != null && n.longitud != null && 
+        !isNaN(n.latitud) && !isNaN(n.longitud) && 
+        n.latitud !== 0 && n.longitud !== 0
+      )
+      if (nodesWithValidCoords.length > 0) {
+        const avgLat = nodesWithValidCoords.reduce((sum, node) => sum + node.latitud, 0) / nodesWithValidCoords.length
+        const avgLng = nodesWithValidCoords.reduce((sum, node) => sum + node.longitud, 0) / nodesWithValidCoords.length
+        setMapCenter([avgLat, avgLng])
+      }
+    }
+  }, [selectedNode?.nodoid, nodes])
 
   if (loading) {
     return (
@@ -207,7 +287,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        <MapController selectedNode={selectedNode} />
+        <MapController selectedNode={selectedNode} onAnimationComplete={openSelectedNodePopup} />
         
         {nodes
           .filter(node => {
@@ -217,6 +297,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           .map((node) => (
             <Marker
               key={node.nodoid}
+              ref={(ref) => {
+                if (ref) {
+                  markerRefs.current.set(node.nodoid, ref)
+                } else {
+                  markerRefs.current.delete(node.nodoid)
+                }
+              }}
               position={[node.latitud, node.longitud]}
               icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
               eventHandlers={{
