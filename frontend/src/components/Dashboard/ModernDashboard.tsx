@@ -155,12 +155,62 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setError(null)
 
     try {
-      // Obtener todas las mediciones sin filtro de tiempo
-      const allData = await JoySenseService.getMediciones({
-        entidadId: filters.entidadId,
-        ubicacionId: filters.ubicacionId,
-        getAll: true // Obtener todos los datos sin límite
-      })
+      // Si hay un nodo seleccionado, buscar todas las mediciones disponibles para ese nodo
+      // Si no hay nodo seleccionado, limitar a las últimas 6 horas
+      let allData
+      
+      if (selectedNode) {
+        // Cuando hay nodo seleccionado, obtener más datos para asegurar que haya información
+        // Limitar a las últimas 30 días para tener datos suficientes pero no sobrecargar
+        const endDate = new Date()
+        const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
+        
+        const formatDate = (date: Date) => {
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          const hours = String(date.getHours()).padStart(2, '0')
+          const minutes = String(date.getMinutes()).padStart(2, '0')
+          const seconds = String(date.getSeconds()).padStart(2, '0')
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+        }
+        
+        const startDateStr = formatDate(startDate)
+        const endDateStr = formatDate(endDate)
+
+        allData = await JoySenseService.getMediciones({
+          entidadId: filters.entidadId,
+          ubicacionId: filters.ubicacionId,
+          startDate: startDateStr,
+          endDate: endDateStr,
+          limit: 10000 // Más registros para tener historial del nodo
+        })
+      } else {
+        // Sin nodo seleccionado, usar las últimas 6 horas
+        const endDate = new Date()
+        const startDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000) // Últimas 6 horas
+        
+        const formatDate = (date: Date) => {
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          const hours = String(date.getHours()).padStart(2, '0')
+          const minutes = String(date.getMinutes()).padStart(2, '0')
+          const seconds = String(date.getSeconds()).padStart(2, '0')
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+        }
+        
+        const startDateStr = formatDate(startDate)
+        const endDateStr = formatDate(endDate)
+
+        allData = await JoySenseService.getMediciones({
+          entidadId: filters.entidadId,
+          ubicacionId: filters.ubicacionId,
+          startDate: startDateStr,
+          endDate: endDateStr,
+          limit: 5000 // Límite razonable para las últimas horas
+        })
+      }
 
       // Verificar que allData sea un array
       if (!Array.isArray(allData)) {
@@ -169,28 +219,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return
       }
 
-      if (allData.length === 0) {
-        setMediciones([])
-        setLoading(false)
-        return
-      }
-
       // Filtrar por nodo seleccionado si existe
       let filteredData = allData
       if (selectedNode) {
-        console.log('🔍 Filtrando por nodo seleccionado:', {
-          selectedNodeId: selectedNode.nodoid,
-          totalData: allData.length,
-          nodosEnData: Array.from(new Set(allData.map(m => m.nodoid))).sort()
-        })
-        
         filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
         
-        console.log('🔍 Datos filtrados por nodo:', {
-          nodoId: selectedNode.nodoid,
-          medicionesFiltradas: filteredData.length,
-          fechasDisponibles: filteredData.map(m => m.fecha).sort()
-        })
+        // Si después de filtrar no hay datos, intentar sin límite de tiempo
+        if (filteredData.length === 0) {
+          // Buscar todas las mediciones del nodo sin límite de tiempo (pero con límite de registros)
+          const allDataNoLimit = await JoySenseService.getMediciones({
+            entidadId: filters.entidadId,
+            ubicacionId: filters.ubicacionId,
+            limit: 10000
+          })
+          
+          if (Array.isArray(allDataNoLimit)) {
+            filteredData = allDataNoLimit.filter(m => m.nodoid === selectedNode.nodoid)
+          }
+        }
+      }
+      
+      if (filteredData.length === 0) {
+        setMediciones([])
+        setLoading(false)
+        return
       }
 
       // Mostrar métricas disponibles en los datos filtrados
@@ -286,6 +338,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
       
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
+      
+      // Si no hay datos en las últimas 3 horas, mostrar las últimas entradas disponibles
+      // (máximo 20 mediciones o las últimas 24 horas, lo que sea más relevante)
+      if (filteredMediciones.length === 0 && sortedMediciones.length > 0) {
+        // Obtener las últimas 20 mediciones o las últimas 24 horas, lo que sea menor
+        const oneDayAgo = new Date(latestDate.getTime() - 24 * 60 * 60 * 1000)
+        const lastDayMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= oneDayAgo)
+        
+        if (lastDayMediciones.length > 0) {
+          // Si hay datos del último día, usar esos (máximo 20)
+          filteredMediciones = lastDayMediciones.slice(-20)
+        } else {
+          // Si no hay datos del último día, usar las últimas 20 mediciones disponibles
+          filteredMediciones = sortedMediciones.slice(-20)
+        }
+      }
     }
     
     // Agrupar por tipo de sensor y luego por tiempo

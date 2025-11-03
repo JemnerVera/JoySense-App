@@ -94,7 +94,7 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('umbral', 500),
         JoySenseService.getTableData('usuario', 500),
         JoySenseService.getTableData('sensor', 500),
-        JoySenseService.getTableData('metricasensor'), // Sin límite para obtener todos los registros
+        JoySenseService.getTableData('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
         JoySenseService.getTableData('perfilumbral', 500),
         JoySenseService.getTableData('contacto', 500),
         JoySenseService.getTableData('correo', 500)

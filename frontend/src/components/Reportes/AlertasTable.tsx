@@ -48,30 +48,38 @@ const AlertasTable: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [totalRecords, setTotalRecords] = useState(0);
 
-  const loadAlertas = async () => {
+  const loadAlertas = async (page: number = 1) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Usar startTransition para evitar el error de Suspense
+      // Usar paginación del servidor en lugar de cargar todas las alertas
       startTransition(() => {
-        JoySenseService.getTableData('alerta', 1000)
-          .then(data => {
-            console.log('🔍 Frontend - Datos recibidos de alerta:', data);
-            if (Array.isArray(data)) {
-              if (data.length > 0) {
-                console.log('🔍 Frontend - Primera alerta:', JSON.stringify(data[0], null, 2));
-              }
-              setAlertas(data);
+        JoySenseService.getTableDataPaginated('alerta', {
+          page,
+          pageSize: itemsPerPage,
+          sortBy: 'datecreated',
+          sortOrder: 'desc'
+        })
+          .then(result => {
+            if (result.pagination) {
+              // Respuesta con paginación
+              setAlertas(Array.isArray(result.data) ? result.data : []);
+              setTotalRecords(result.pagination.total);
             } else {
-              setAlertas([]);
+              // Modo legacy (fallback)
+              const data = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+              setAlertas(data);
+              setTotalRecords(data.length);
             }
           })
           .catch(err => {
             console.error('Error cargando alertas:', err);
             setError('Error al cargar las alertas');
             setAlertas([]);
+            setTotalRecords(0);
           })
           .finally(() => {
             setLoading(false);
@@ -85,8 +93,8 @@ const AlertasTable: React.FC = () => {
   };
 
   useEffect(() => {
-    loadAlertas();
-  }, []);
+    loadAlertas(currentPage);
+  }, [currentPage]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -130,11 +138,8 @@ const AlertasTable: React.FC = () => {
   };
 
 
-  // Paginación
-  const totalPages = Math.ceil(alertas.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAlertas = alertas.slice(startIndex, endIndex);
+  // Paginación - Los datos ya vienen paginados del servidor
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
   if (loading) {
     return (
@@ -155,7 +160,7 @@ const AlertasTable: React.FC = () => {
             <h3 className="text-xl font-bold text-red-500 mb-2 font-mono tracking-wider">{t('status.error')}</h3>
           <p className="text-gray-600 dark:text-neutral-400 mb-4">{error}</p>
           <button
-            onClick={loadAlertas}
+            onClick={() => loadAlertas(currentPage)}
             className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
           >
 {t('buttons.retry')}
@@ -185,7 +190,7 @@ const AlertasTable: React.FC = () => {
           {t('reports.alerts.title')}
         </h2>
         <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-          {alertas.length} {t('reports.alerts.total')}
+          {totalRecords} {t('reports.alerts.total')}
         </div>
       </div>
 
@@ -203,7 +208,7 @@ const AlertasTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {currentAlertas.map((alerta) => (
+            {alertas.map((alerta) => (
               <tr key={alerta.alertaid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.alertaid}</td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
@@ -238,18 +243,50 @@ const AlertasTable: React.FC = () => {
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1 || loading}
+              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Primera página"
             >
-              ANTERIOR
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
             </button>
             <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              onClick={() => {
+                const newPage = Math.max(1, currentPage - 1)
+                setCurrentPage(newPage)
+              }}
+              disabled={currentPage === 1 || loading}
+              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Página anterior"
             >
-              SIGUIENTE
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                const newPage = Math.min(totalPages, currentPage + 1)
+                setCurrentPage(newPage)
+              }}
+              disabled={currentPage === totalPages || loading}
+              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Página siguiente"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages || loading}
+              className="px-3 py-1 bg-neutral-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Última página"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>

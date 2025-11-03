@@ -627,7 +627,7 @@ app.get('/api/sense/usuario', async (req, res) => {
 // Ruta para alerta - usada por el frontend
 app.get('/api/sense/alerta', async (req, res) => {
   try {
-    const { page, pageSize = 100, search = '', ...filters } = req.query;
+    const { page, pageSize = 100, search = '', sortBy = 'datecreated', sortOrder = 'desc', ...filters } = req.query;
     const usePagination = page !== undefined && page !== null;
     
     console.log('🔍 Obteniendo alertas de sense.alerta...');
@@ -658,12 +658,14 @@ app.get('/api/sense/alerta', async (req, res) => {
         )
       `, { count: 'exact' });
     
-    // Aplicar filtros
+    // Aplicar filtros (excluir sortBy y sortOrder)
     Object.keys(filters).forEach(key => {
-      const value = filters[key];
-      if (value !== undefined && value !== null && value !== '') {
-        const numValue = Number(value);
-        query = query.eq(key, isNaN(numValue) ? value : numValue);
+      if (key !== 'sortBy' && key !== 'sortOrder') {
+        const value = filters[key];
+        if (value !== undefined && value !== null && value !== '') {
+          const numValue = Number(value);
+          query = query.eq(key, isNaN(numValue) ? value : numValue);
+        }
       }
     });
     
@@ -676,8 +678,10 @@ app.get('/api/sense/alerta', async (req, res) => {
     // Obtener total
     const { count: totalRecords } = await query;
     
-    // Ordenar
-    query = query.order('alertaid', { ascending: false });
+    // Ordenar usando sortBy y sortOrder del query string
+    const sortColumn = sortBy || 'datecreated';
+    const ascending = sortOrder === 'asc';
+    query = query.order(sortColumn, { ascending });
     
     if (usePagination) {
       const pageNum = parseInt(page);
@@ -735,13 +739,13 @@ app.get('/api/sense/alerta', async (req, res) => {
             medicion:medicionid(
               medicionid,
               medicion,
-              fecha,
-              nodoid,
-              tipoid,
-              metricaid
-            )
-          `)
-          .order('alertaid', { ascending: false })
+          fecha,
+          nodoid,
+          tipoid,
+          metricaid
+        )
+      `)
+      .order('alertaid', { ascending: false })
           .range(from, from + batchSize - 1);
 
         if (error) throw error;
@@ -767,7 +771,7 @@ app.get('/api/sense/alerta', async (req, res) => {
 // Ruta para mensaje - usada por el frontend
 app.get('/api/sense/mensaje', async (req, res) => {
   try {
-    const { page, pageSize = 100, search = '', ...filters } = req.query;
+    const { page, pageSize = 100, search = '', sortBy = 'datecreated', sortOrder = 'desc', ...filters } = req.query;
     const usePagination = page !== undefined && page !== null;
     
     console.log('🔍 Obteniendo mensajes de sense.mensaje...');
@@ -785,12 +789,14 @@ app.get('/api/sense/mensaje', async (req, res) => {
         )
       `, { count: 'exact' });
     
-    // Aplicar filtros
+    // Aplicar filtros (excluir sortBy y sortOrder)
     Object.keys(filters).forEach(key => {
-      const value = filters[key];
-      if (value !== undefined && value !== null && value !== '') {
-        const numValue = Number(value);
-        query = query.eq(key, isNaN(numValue) ? value : numValue);
+      if (key !== 'sortBy' && key !== 'sortOrder') {
+        const value = filters[key];
+        if (value !== undefined && value !== null && value !== '') {
+          const numValue = Number(value);
+          query = query.eq(key, isNaN(numValue) ? value : numValue);
+        }
       }
     });
     
@@ -803,8 +809,10 @@ app.get('/api/sense/mensaje', async (req, res) => {
     // Obtener total
     const { count: totalRecords } = await query;
     
-    // Ordenar por fecha (más recientes primero)
-    query = query.order('fecha', { ascending: false });
+    // Ordenar usando sortBy y sortOrder del query string
+    const sortColumn = sortBy || 'datecreated';
+    const ascending = sortOrder === 'asc';
+    query = query.order(sortColumn, { ascending });
     
     if (usePagination) {
       const pageNum = parseInt(page);
@@ -845,17 +853,17 @@ app.get('/api/sense/mensaje', async (req, res) => {
 
       while (hasMore) {
         const { data: batchData, error } = await supabase
-          .from('mensaje')
-          .select(`
-            *,
-            contacto:contactoid(
-              contactoid,
-              celular,
-              usuarioid,
-              usuario:usuarioid(login, firstname, lastname)
-            )
-          `)
-          .order('fecha', { ascending: false })
+      .from('mensaje')
+      .select(`
+        *,
+        contacto:contactoid(
+          contactoid,
+          celular,
+          usuarioid,
+          usuario:usuarioid(login, firstname, lastname)
+        )
+      `)
+      .order('fecha', { ascending: false })
           .range(from, from + batchSize - 1);
 
         if (error) throw error;
@@ -984,11 +992,11 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log('🔐 Backend: Intentando autenticar usuario (modo desarrollo):', email);
-    
+
     // Verificar si el usuario existe en la tabla sense.usuario
     const { data: userData, error: userError } = await supabase
       .from('usuario')
-        .select('*')
+      .select('*')
       .eq('login', email)
       .single();
 
@@ -1011,14 +1019,14 @@ app.post('/api/auth/login', async (req, res) => {
     // Validar contraseña con bcrypt si existe password_hash
     if (userData.password_hash) {
       console.log('🔐 Validando contraseña con hash bcrypt...');
-      const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
+    const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
 
-      if (!isPasswordValid) {
+    if (!isPasswordValid) {
         console.error('❌ Contraseña incorrecta');
-        return res.status(401).json({
-          success: false,
+      return res.status(401).json({ 
+        success: false,
           error: 'Contraseña incorrecta. Verifique sus credenciales.'
-        });
+      });
       }
       console.log('✅ Contraseña validada correctamente');
     } else {
@@ -1956,12 +1964,12 @@ app.put('/api/sense/audit_log_umbral/:id', async (req, res) => {
       .update(updateData)
       .eq('auditid', id)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Audit_log_umbral actualizado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2609,7 +2617,7 @@ app.post('/api/sense/metrica', async (req, res) => {
       .from('metrica')
       .insert(dataWithoutId)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
@@ -2999,12 +3007,12 @@ app.post('/api/sense/sensor', async (req, res) => {
         .from('sensor')
       .insert(dataWithoutId)
       .select();
-    
+
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Sensor insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {

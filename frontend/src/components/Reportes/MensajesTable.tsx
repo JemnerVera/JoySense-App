@@ -33,30 +33,38 @@ const MensajesTable: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [totalRecords, setTotalRecords] = useState(0);
 
-  const loadMensajes = async () => {
+  const loadMensajes = async (page: number = 1) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Usar startTransition para evitar el error de Suspense
+      // Usar paginación del servidor en lugar de cargar todos los mensajes
       startTransition(() => {
-        JoySenseService.getTableData('mensaje', 1000)
-          .then(data => {
-            console.log('🔍 Frontend - Datos recibidos de mensaje:', data);
-            if (Array.isArray(data)) {
-              if (data.length > 0) {
-                console.log('🔍 Frontend - Primer mensaje:', JSON.stringify(data[0], null, 2));
-              }
-              setMensajes(data);
+        JoySenseService.getTableDataPaginated('mensaje', {
+          page,
+          pageSize: itemsPerPage,
+          sortBy: 'datecreated',
+          sortOrder: 'desc'
+        })
+          .then(result => {
+            if (result.pagination) {
+              // Respuesta con paginación
+              setMensajes(Array.isArray(result.data) ? result.data : []);
+              setTotalRecords(result.pagination.total);
             } else {
-              setMensajes([]);
+              // Modo legacy (fallback)
+              const data = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+              setMensajes(data);
+              setTotalRecords(data.length);
             }
           })
           .catch(err => {
             console.error('Error cargando mensajes:', err);
             setError('Error al cargar los mensajes');
             setMensajes([]);
+            setTotalRecords(0);
           })
           .finally(() => {
             setLoading(false);
@@ -70,8 +78,8 @@ const MensajesTable: React.FC = () => {
   };
 
   useEffect(() => {
-    loadMensajes();
-  }, []);
+    loadMensajes(currentPage);
+  }, [currentPage]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -114,11 +122,8 @@ const MensajesTable: React.FC = () => {
     }
   };
 
-  // Paginación
-  const totalPages = Math.ceil(mensajes.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentMensajes = mensajes.slice(startIndex, endIndex);
+  // Paginación - Los datos ya vienen paginados del servidor
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
   if (loading) {
     return (
@@ -139,7 +144,7 @@ const MensajesTable: React.FC = () => {
           <h3 className="text-xl font-bold text-red-500 mb-2 font-mono tracking-wider">ERROR</h3>
           <p className="text-gray-600 dark:text-neutral-400 mb-4">{error}</p>
           <button
-            onClick={loadMensajes}
+            onClick={() => loadMensajes(currentPage)}
             className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
           >
             REINTENTAR
@@ -169,7 +174,7 @@ const MensajesTable: React.FC = () => {
           {t('reports.messages.title')}
         </h2>
           <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-            {mensajes.length} {t('reports.messages.total')}
+            {totalRecords} {t('reports.messages.total')}
           </div>
       </div>
 
@@ -187,7 +192,7 @@ const MensajesTable: React.FC = () => {
               </tr>
             </thead>
           <tbody>
-            {currentMensajes.map((mensaje, index) => (
+            {mensajes.map((mensaje, index) => (
               <tr key={`${mensaje.mensajeid}-${mensaje.contactoid}-${index}`} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{mensaje.mensajeid}</td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
@@ -222,18 +227,50 @@ const MensajesTable: React.FC = () => {
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1 || loading}
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Primera página"
             >
-              ANTERIOR
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
             </button>
             <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider"
+              onClick={() => {
+                const newPage = Math.max(1, currentPage - 1)
+                setCurrentPage(newPage)
+              }}
+              disabled={currentPage === 1 || loading}
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Página anterior"
             >
-              SIGUIENTE
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                const newPage = Math.min(totalPages, currentPage + 1)
+                setCurrentPage(newPage)
+              }}
+              disabled={currentPage === totalPages || loading}
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Página siguiente"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages || loading}
+              className="px-3 py-1 bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors flex items-center justify-center"
+              title="Última página"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
