@@ -67,9 +67,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
 
-  // Debug resumido
   const nodesWithGPS = nodes.filter(n => n.latitud != null && n.longitud != null && !isNaN(n.latitud) && !isNaN(n.longitud))
-  console.log(`🗺️ InteractiveMap: ${nodes.length} nodos recibidos → ${nodesWithGPS.length} con GPS válido`)
 
   // Calcular centro del mapa basado en los nodos disponibles
   useEffect(() => {

@@ -84,8 +84,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       )
     }
 
-    // Debug resumido
-    console.log(`🔍 NodeSelector: ${nodes.length} nodos total → ${filtered.length} filtrados ${selectedNode ? '(solo seleccionado)' : '(con filtros)'}`)
 
     setFilteredNodes(filtered)
   }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm])
@@ -108,21 +106,16 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
-    console.log('🔄 syncAllFilters - Sincronizando filtros para nodo:', node.nodo)
-
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
     if (node.ubicacion.fundo.empresa.pais.paisid) {
-      console.log('🔄 Seteando pais:', node.ubicacion.fundo.empresa.pais.paisid.toString())
       setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
     }
 
     if (node.ubicacion.fundo.empresa.empresaid) {
-      console.log('🔄 Seteando empresa:', node.ubicacion.fundo.empresa.empresaid.toString())
       setEmpresaSeleccionada(node.ubicacion.fundo.empresa.empresaid.toString())
     }
 
     if (node.ubicacion.fundoid) {
-      console.log('🔄 Seteando fundo:', node.ubicacion.fundoid.toString())
       setFundoSeleccionado(node.ubicacion.fundoid.toString())
     }
 
@@ -130,7 +123,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     // Usar setTimeout para asegurar que el contexto se actualice en el siguiente tick
     setTimeout(() => {
       if (node.entidad) {
-        console.log('🔄 Seteando entidad:', node.entidad.entidad)
         setEntidadSeleccionada(node.entidad)
       }
 
@@ -140,7 +132,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         ubicacionabrev: node.ubicacion.ubicacionabrev,
         fundoid: node.ubicacion.fundoid
       }
-      console.log('🔄 Seteando ubicación:', ubicacion.ubicacion)
       setUbicacionSeleccionada(ubicacion)
     }, 0)
   }
@@ -166,11 +157,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setError(null)
     try {
       const data = await JoySenseService.getNodosConLocalizacion()
-      console.log('🔍 NodeSelector: Datos recibidos:', data)
-      
       // Los datos ya vienen procesados del backend
       setNodes(data || [])
-      console.log('🔍 NodeSelector: Nodos cargados:', data?.length || 0)
     } catch (err) {
       setError('Error al cargar nodos')
       console.error('Error loading nodes:', err)
@@ -199,13 +187,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }
 
   const handleMapNodeClick = (node: NodeData) => {
-    console.log('🗺️ Click en mapa - Nodo seleccionado:', {
-      nodo: node.nodo,
-      entidad: node.entidad?.entidad,
-      ubicacion: node.ubicacion?.ubicacion,
-      ubicacionid: node.ubicacionid
-    })
-
     setSelectedNode(node)
     onNodeSelect(node)
 
@@ -213,15 +194,13 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     syncAllFilters(node)
 
     // Actualizar filtros del dashboard
-    const filtersUpdate = {
+    onFiltersUpdate({
       entidadId: node.entidad.entidadid,
       ubicacionId: node.ubicacionid,
       fundoId: node.ubicacion.fundoid,
       empresaId: node.ubicacion.fundo.empresa.empresaid,
       paisId: node.ubicacion.fundo.empresa.pais.paisid
-    }
-    console.log('🗺️ Enviando onFiltersUpdate:', filtersUpdate)
-    onFiltersUpdate(filtersUpdate)
+    })
   }
 
   // Cerrar dropdown al hacer click fuera
@@ -243,41 +222,42 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-green-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
 
-        {/* Botón de cancelar selección - Solo visible cuando hay nodo seleccionado */}
-        {selectedNode && (
-          <button
-            onClick={() => {
-              setSelectedNode(null)
-              onNodeSelect(null as any) // Notificar que se canceló la selección
+        <div className="flex items-center gap-3">
+          {/* Botón de cancelar selección - Al costado izquierdo del searchbar */}
+          {selectedNode && (
+            <button
+              onClick={() => {
+                setSelectedNode(null)
+                onNodeSelect(null as any) // Notificar que se canceló la selección
 
-              // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
-              onFiltersUpdate({
-                entidadId: null, // Sin filtro de entidad
-                ubicacionId: null, // Sin filtro de ubicación
-                fundoId: null,
-                empresaId: null,
-                paisId: null
-              })
+                // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
+                onFiltersUpdate({
+                  entidadId: null, // Sin filtro de entidad
+                  ubicacionId: null, // Sin filtro de ubicación
+                  fundoId: null,
+                  empresaId: null,
+                  paisId: null
+                })
 
-              // También limpiar los filtros del header
-              if (onEntidadChange) onEntidadChange(null)
-              if (onUbicacionChange) onUbicacionChange(null)
+                // También limpiar los filtros del header
+                if (onEntidadChange) onEntidadChange(null)
+                if (onUbicacionChange) onUbicacionChange(null)
 
-              // Limpiar también el contexto global de filtros
-              setEntidadSeleccionada(null)
-              setUbicacionSeleccionada(null)
-            }}
-            className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
-            title="Cancelar selección"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="text-sm">CANCELAR</span>
-          </button>
-        )}
+                // Limpiar también el contexto global de filtros
+                setEntidadSeleccionada(null)
+                setUbicacionSeleccionada(null)
+              }}
+              className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
+              title="Cancelar selección"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="text-sm">CANCELAR</span>
+            </button>
+          )}
 
-        {/* Combobox con searchbar */}
+          {/* Combobox con searchbar */}
         <div className="relative w-80" ref={searchDropdownRef}>
           <div className="relative">
             <input
@@ -331,6 +311,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
               )}
             </div>
           )}
+        </div>
         </div>
       </div>
 
