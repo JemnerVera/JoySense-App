@@ -661,10 +661,10 @@ app.get('/api/sense/alerta', async (req, res) => {
     // Aplicar filtros (excluir sortBy y sortOrder)
     Object.keys(filters).forEach(key => {
       if (key !== 'sortBy' && key !== 'sortOrder') {
-        const value = filters[key];
-        if (value !== undefined && value !== null && value !== '') {
-          const numValue = Number(value);
-          query = query.eq(key, isNaN(numValue) ? value : numValue);
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        const numValue = Number(value);
+        query = query.eq(key, isNaN(numValue) ? value : numValue);
         }
       }
     });
@@ -792,10 +792,10 @@ app.get('/api/sense/mensaje', async (req, res) => {
     // Aplicar filtros (excluir sortBy y sortOrder)
     Object.keys(filters).forEach(key => {
       if (key !== 'sortBy' && key !== 'sortOrder') {
-        const value = filters[key];
-        if (value !== undefined && value !== null && value !== '') {
-          const numValue = Number(value);
-          query = query.eq(key, isNaN(numValue) ? value : numValue);
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== '') {
+        const numValue = Number(value);
+        query = query.eq(key, isNaN(numValue) ? value : numValue);
         }
       }
     });
@@ -2547,7 +2547,7 @@ app.post('/api/sense/entidad', async (req, res) => {
   } catch (error) {
     console.error('❌ Error backend:', error);
     res.status(500).json({ error: error.message });
-  }
+    }
 });
 
 // Ruta POST para insertar tipo
@@ -2601,7 +2601,7 @@ app.post('/api/sense/nodo', async (req, res) => {
   } catch (error) {
     console.error('❌ Error backend:', error);
     res.status(500).json({ error: error.message });
-  }
+    }
 });
 
 // Ruta POST para insertar métrica
@@ -2609,7 +2609,7 @@ app.post('/api/sense/metrica', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando métrica...');
-    
+
     // Eliminar metricaid para que PostgreSQL lo genere automáticamente
     const { metricaid, ...dataWithoutId } = insertData;
     
@@ -2844,7 +2844,7 @@ app.post('/api/sense/usuario', async (req, res) => {
   try {
     const insertData = req.body;
     console.log('🔍 Backend: Insertando usuario...');
-    
+
     // Eliminar usuarioid para que PostgreSQL lo genere automáticamente
     const { usuarioid, ...dataWithoutId } = insertData;
     
@@ -2908,7 +2908,7 @@ app.post('/api/sense/perfil', async (req, res) => {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Perfil insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -2985,7 +2985,7 @@ app.post('/api/sense/usuarioperfil', async (req, res) => {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
-    
+
     console.log(`✅ Backend: Usuarioperfil insertado: ${data.length} registros`);
     res.json(data);
   } catch (error) {
@@ -3123,7 +3123,7 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
     
     if (startDate) {
       query = query.gte('fecha', startDate);
-    }
+  }
     
     if (endDate) {
       query = query.lte('fecha', endDate);

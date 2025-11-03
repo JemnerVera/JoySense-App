@@ -2964,6 +2964,12 @@ const newFormData: Record<string, any> = {};
 
     columns.forEach(col => {
 
+      // Excluir password_hash y password del formulario de actualización
+      // (password se agrega manualmente después como campo vacío)
+      if (col.columnName === 'password_hash' || col.columnName === 'password') {
+        return; // Saltar estos campos
+      }
+
       if (!col.isIdentity && !['datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid'].includes(col.columnName)) {
 
         // Para statusid, preservar el valor 0 (inactivo) en lugar de convertirlo a cadena vacía
@@ -2976,6 +2982,15 @@ const newFormData: Record<string, any> = {};
       }
 
     });
+
+    // Para usuario, inicializar password vacío para que el usuario pueda cambiarlo opcionalmente
+    // Siempre forzar password a cadena vacía (nunca mostrar valor previo)
+    if (selectedTable === 'usuario') {
+      // Forzar password a cadena vacía explícitamente (no usar valor de row)
+      newFormData.password = '';
+      // Asegurar que no haya valores residuales de password_hash o password anterior
+      delete newFormData.password_hash;
+    }
 
 // Agregar el ID de la fila para poder actualizarla
 
@@ -4992,7 +5007,7 @@ if (errorCount > 0) {
     'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
     'criticidad': ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid'],
     'perfil': ['perfil', 'nivel', 'jefeid', 'statusid'],
-    'usuario': ['login', 'firstname', 'lastname', 'statusid'],
+    'usuario': ['login', 'firstname', 'lastname', 'password', 'statusid'],
     'contacto': ['usuarioid', 'celular', 'codigotelefonoid', 'correo', 'statusid'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid']
     };
@@ -5017,7 +5032,7 @@ if (errorCount > 0) {
       'criticidad': [],
       'medio': [],
       'perfil': ['nivel'],
-      'usuario': [],
+      'usuario': ['password'],
       'contacto': ['celular', 'correo'],
       'usuarioperfil': []
     };
@@ -5395,6 +5410,15 @@ result = await JoySenseService.updateTableRowByCompositeKey(
 
             if (updateFormData[field] !== undefined) {
 
+              // Manejo especial para password: solo incluir si tiene valor
+              if (field === 'password') {
+                if (updateFormData[field] && updateFormData[field].trim() !== '') {
+                  filteredUpdateData[field] = updateFormData[field];
+                }
+                // Si está vacío, no incluir (mantener contraseña actual)
+                return;
+              }
+
               // Para campos opcionales vacíos, no incluir el campo en la actualización
               if (typeof updateFormData[field] === 'string' &&
                   updateFormData[field].trim() === '' &&
@@ -5416,9 +5440,10 @@ result = await JoySenseService.updateTableRowByCompositeKey(
           // Validación ya se ejecutó arriba
           
           // Convertir strings vacíos a null para campos que pueden ser null
+          // Excluir password de esta conversión (solo se incluye si tiene valor)
           const cleanedData = { ...filteredUpdateData };
           Object.keys(cleanedData).forEach(key => {
-            if (cleanedData[key] === '') {
+            if (key !== 'password' && cleanedData[key] === '') {
               cleanedData[key] = null;
             }
           });
@@ -8795,7 +8820,109 @@ const handleCancelModal = () => {
                           {/* Filtros globales para formularios de actualización */}
                           {renderGlobalFiltersForUpdate()}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        {/* Layout especial para formulario de usuario */}
+                        {selectedTable === 'usuario' && selectedRowForUpdate ? (
+                          <div className="space-y-4">
+                            {/* Primera fila: Login y Contraseña */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                              {/* Login */}
+                              <div className="mb-4">
+                                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                  {getColumnDisplayNameTranslated('login', t)?.toUpperCase() || 'LOGIN'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={updateFormData.login || ''}
+                                  onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
+                                    ...prev,
+                                    login: e.target.value
+                                  }))}
+                                  className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
+                                />
+                              </div>
+                              {/* Contraseña */}
+                              <div className="mb-4">
+                                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                  CONTRASEÑA
+                                </label>
+                                <input
+                                  key={`password-${selectedRowForUpdate?.usuarioid || 'new'}`}
+                                  type="password"
+                                  value={updateFormData.password || ''}
+                                  onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
+                                    ...prev,
+                                    password: e.target.value
+                                  }))}
+                                  placeholder="Nueva contraseña (opcional)"
+                                  className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
+                                  autoComplete="new-password"
+                                />
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                  Si no ingresa una contraseña, se mantendrá la contraseña actual
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Segunda fila: Nombre y Apellido */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                              {/* Nombre */}
+                              <div className="mb-4">
+                                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                  {getColumnDisplayNameTranslated('firstname', t)?.toUpperCase() || 'NOMBRE'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={updateFormData.firstname || ''}
+                                  onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
+                                    ...prev,
+                                    firstname: e.target.value
+                                  }))}
+                                  className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
+                                />
+                              </div>
+                              {/* Apellido */}
+                              <div className="mb-4">
+                                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                  {getColumnDisplayNameTranslated('lastname', t)?.toUpperCase() || 'APELLIDO'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={updateFormData.lastname || ''}
+                                  onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
+                                    ...prev,
+                                    lastname: e.target.value
+                                  }))}
+                                  className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Tercera fila: Status (alineado a la derecha) */}
+                            <div className="flex justify-end">
+                              <div className="mb-4 w-full sm:w-auto">
+                                <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+                                  {getColumnDisplayNameTranslated('statusid', t)?.toUpperCase() || 'STATUS'}
+                                </label>
+                                <div className="flex items-center space-x-3">
+                                  <input
+                                    type="checkbox"
+                                    id="update-statusid-usuario"
+                                    checked={updateFormData.statusid === 1 || updateFormData.statusid === true}
+                                    onChange={(e) => setUpdateFormData((prev: Record<string, any>) => ({
+                                      ...prev,
+                                      statusid: e.target.checked ? 1 : 0
+                                    }))}
+                                    className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+                                  />
+                                  <label htmlFor="update-statusid-usuario" className="text-gray-900 dark:text-white text-lg font-medium font-mono tracking-wider">
+                                    ACTIVO
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                         {updateVisibleColumns.map(col => {
 
@@ -8957,9 +9084,9 @@ return (
                              );
                            }
 
-// Campo password_hash oculto para tabla usuario (no mostrar en formulario)
-                           if (selectedTable === 'usuario' && col.columnName === 'password_hash') {
-                             return null; // No mostrar el campo de contraseña en el formulario
+// Campos de usuario - no mostrar en mapeo normal (se muestran en layout especial)
+                           if (selectedTable === 'usuario' && ['password_hash', 'login', 'firstname', 'lastname', 'statusid'].includes(col.columnName)) {
+                             return null; // Estos campos se muestran en el layout especial de usuario
                            }
 
 // Campos de texto normales (editables)
@@ -8999,6 +9126,7 @@ return (
                         })}
 
                           </div>
+                        )}
                       </div>
 
                       )}
