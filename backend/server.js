@@ -3152,24 +3152,28 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
     // Si hay entidadId, filtrar después de obtener los datos
     let filteredData = data || [];
     if (entidadId && data) {
-      // Obtener ubicaciones que pertenecen a la entidad - query simple
-      const { data: ubicaciones, error: ubicError } = await supabase
-        .from('ubicacion')
-        .select('ubicacionid');
+      // Obtener localizaciones que pertenecen a la entidad
+      const { data: localizaciones, error: locError } = await supabase
+        .from('localizacion')
+        .select('ubicacionid')
+        .eq('entidadid', parseInt(entidadId));
       
-      if (ubicError) {
-        console.error('❌ Error obteniendo ubicaciones:', ubicError);
-        return res.status(500).json({ error: ubicError.message });
-      }
-      
-      // Filtrar mediciones por entidad usando ubicaciones
-      if (ubicaciones && ubicaciones.length > 0) {
-        const ubicacionIds = ubicaciones.map(u => u.ubicacionid);
-        filteredData = data.filter(medicion => 
-          ubicacionIds.includes(medicion.ubicacionid)
-        );
-      } else {
+      if (locError) {
+        console.error('❌ Error obteniendo localizaciones por entidad:', locError);
+        // En lugar de retornar error 500, devolver array vacío
+        console.warn('⚠️ Continuando con array vacío debido a error en localizaciones');
         filteredData = [];
+      } else {
+        // Filtrar mediciones por entidad usando ubicaciones de localizaciones
+        if (localizaciones && localizaciones.length > 0) {
+          const ubicacionIds = [...new Set(localizaciones.map(l => l.ubicacionid))];
+          filteredData = data.filter(medicion => 
+            ubicacionIds.includes(medicion.ubicacionid)
+          );
+        } else {
+          // No hay localizaciones para esta entidad, retornar array vacío
+          filteredData = [];
+        }
       }
     }
     

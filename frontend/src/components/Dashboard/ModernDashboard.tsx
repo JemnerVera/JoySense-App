@@ -250,9 +250,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       setMediciones(filteredData)
-    } catch (err) {
-      setError("Error al cargar las mediciones")
-      console.error("Error loading mediciones:", err)
+      setError(null) // Limpiar cualquier error previo
+    } catch (err: any) {
+      // Solo mostrar errores críticos, no errores temporales o de "no hay datos"
+      const errorMessage = err?.message || String(err)
+      const isNetworkError = errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')
+      const isServerError = errorMessage.includes('status: 500') || errorMessage.includes('HTTP error')
+      
+      // Si es un error de servidor o de red temporal, no mostrar error al usuario
+      // Solo loguear para debugging
+      if (isServerError || isNetworkError) {
+        console.warn('⚠️ Error temporal al cargar mediciones (sin datos disponibles):', err)
+        // Tratar como "sin datos" en lugar de error crítico
+        setMediciones([])
+        setError(null) // No mostrar error al usuario
+      } else {
+        // Error crítico no relacionado con datos, mostrar al usuario
+        console.error("❌ Error crítico cargando mediciones:", err)
+        setError("Error al cargar las mediciones")
+      }
     } finally {
       setLoading(false)
     }

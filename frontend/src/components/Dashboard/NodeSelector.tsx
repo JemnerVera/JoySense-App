@@ -40,6 +40,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [nodeMediciones, setNodeMediciones] = useState<{ [nodeId: number]: number }>({})
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const lastProcessedUbicacionId = useRef<number | null>(null)
+  const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; fundoid: number } | null>(null)
 
   // Hook para acceder a los filtros globales del sidebar y header
   const { 
@@ -47,7 +48,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setEmpresaSeleccionada, 
     setFundoSeleccionado,
     setEntidadSeleccionada,
-    setUbicacionSeleccionada
+    setUbicacionSeleccionada,
+    entidadSeleccionada
   } = useFilters()
 
   // Cargar nodos con localizaciones
@@ -122,21 +124,35 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
 
     // 2. Actualizar filtros del header (entidad, ubicación) usando contexto global
-    // Usar setTimeout para asegurar que el contexto se actualice en el siguiente tick
-    setTimeout(() => {
-      if (node.entidad) {
-        setEntidadSeleccionada(node.entidad)
-      }
-
-      const ubicacion = {
+    // Primero actualizar entidad para que las ubicaciones se recarguen
+    if (node.entidad) {
+      setEntidadSeleccionada(node.entidad)
+      
+      // Guardar la ubicación pendiente para establecerla después de que se recarguen las ubicaciones
+      pendingUbicacion.current = {
         ubicacionid: node.ubicacionid,
         ubicacion: node.ubicacion.ubicacion,
         ubicacionabrev: node.ubicacion.ubicacionabrev,
         fundoid: node.ubicacion.fundoid
       }
-      setUbicacionSeleccionada(ubicacion)
-    }, 0)
+    }
   }
+
+  // useEffect para establecer la ubicación después de que la entidad se haya actualizado y las ubicaciones se hayan recargado
+  useEffect(() => {
+    // Solo establecer ubicación si hay una pendiente y la entidad está seleccionada
+    if (pendingUbicacion.current && entidadSeleccionada) {
+      // Esperar un tiempo para que el useEffect de ubicaciones en DashboardFilters se ejecute
+      const timeoutId = setTimeout(() => {
+        if (pendingUbicacion.current) {
+          setUbicacionSeleccionada(pendingUbicacion.current)
+          pendingUbicacion.current = null // Limpiar después de establecer
+        }
+      }, 400) // Delay suficiente para que se recarguen las ubicaciones
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [entidadSeleccionada, setUbicacionSeleccionada])
 
   // Filtrar nodos para el searchbar
   useEffect(() => {
@@ -282,8 +298,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                 setEntidadSeleccionada(null)
                 setUbicacionSeleccionada(null)
                 
-                // Limpiar el ref de última ubicación procesada para permitir nueva selección automática
+                // Limpiar el ref de última ubicación procesada y ubicación pendiente
                 lastProcessedUbicacionId.current = null
+                pendingUbicacion.current = null
               }}
               className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
               title="Cancelar selección"
