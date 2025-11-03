@@ -1,0 +1,18 @@
+# Variables de entorno para el backend (NO publicar - contiene credenciales sensibles)
+# IMPORTANTE: Copia este archivo como .env y configura con tus valores reales
+
+# Supabase Configuration (Service Role Key - Solo para backend)
+SUPABASE_URL=https://your-new-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
+
+# Database Schema
+DB_SCHEMA=sense
+
+# Server Configuration
+PORT=3001
+LOG_LEVEL=info
+
+# Importante:
+# 1. Obtén tu Service Role Key desde: https://supabase.com/dashboard/project/_/settings/api
+# 2. La Service Role Key tiene acceso total - NUNCA la uses en el frontend
+# 3. Configura RLS (Row Level Security) en Supabase para seguridad adicional
