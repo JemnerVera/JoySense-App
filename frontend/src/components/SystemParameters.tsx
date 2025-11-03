@@ -385,16 +385,6 @@ const [pendingTableChange, setPendingTableChange] = useState<string>('');
   // Estado para controlar visibilidad de contraseñas
   const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
 
-  // Estado local para campo de contraseña en actualización (siempre vacío inicialmente)
-  const [localPasswordValue, setLocalPasswordValue] = useState<string>('');
-
-  // Limpiar estado local de contraseña cuando se cambia de fila o se cancela
-  useEffect(() => {
-    if (!selectedRowForUpdate) {
-      setLocalPasswordValue('');
-    }
-  }, [selectedRowForUpdate]);
-
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
 
   // Estados de datos de tabla ahora manejados por useTableDataManagement
@@ -3086,9 +3076,7 @@ setUpdateFormData(newFormData);
 
   };
 
-const handleCancelUpdate = () => {
-    // Limpiar estado local de contraseña
-    setLocalPasswordValue('');
+  const handleCancelUpdate = () => {
 
 
     // Verificar cambios directamente aquí, sin usar hasUnsavedChanges
@@ -4441,25 +4429,41 @@ const idFields = Object.keys(row).filter(key =>
 
       setUpdateLoading(true);
 
+      // IMPORTANTE: Obtener datos de sensores directamente de la API para tener el estado más reciente
+      // Esto es necesario porque los datos en sensorsData pueden estar desactualizados después de activar sensores
+      let currentSensorsData = sensorsData;
+      try {
+        const freshSensorsData = await JoySenseService.getTableData('sensor', 1000);
+        if (Array.isArray(freshSensorsData)) {
+          currentSensorsData = freshSensorsData;
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudieron recargar sensores, usando datos en caché:', error);
+      }
+
       let successCount = 0;
       let actualChangesCount = 0;
       let errorCount = 0;
       let skippedCount = 0;
+
 
       // VALIDACIÓN PREVIA: Filtrar métricas según estado del sensor
       const entriesToProcess = [];
       const skippedEntries = [];
 
       for (const row of updatedEntries) {
-        // Si se intenta activar (statusid = 1), verificar que el sensor esté activo
+        // Si se intenta activar (statusid = 1), verificar que el sensor exista y esté activo
         if (row.statusid === 1) {
-          // Buscar el sensor correspondiente
-          const sensor = sensorsData.find(
-            s => s.nodoid === row.nodoid && s.tipoid === row.tipoid
+          // Buscar el sensor correspondiente - usar datos recargados directamente de la API
+          const sensor = currentSensorsData.find(
+            s => 
+              (s.nodoid?.toString() === row.nodoid?.toString() || s.nodoid === row.nodoid) &&
+              (s.tipoid?.toString() === row.tipoid?.toString() || s.tipoid === row.tipoid)
           );
           
-          if (sensor && sensor.statusid !== 1) {
-            // Sensor inactivo, omitir esta métrica
+          // Rechazar si el sensor no existe o si existe pero está inactivo
+          if (!sensor || sensor.statusid !== 1) {
+            // Sensor no existe o está inactivo, omitir esta métrica
             skippedEntries.push(row);
             skippedCount++;
             continue;
@@ -4472,7 +4476,23 @@ const idFields = Object.keys(row).filter(key =>
 
       // Mostrar advertencia si hay métricas omitidas
       if (skippedCount > 0) {
-        const skipMsg = `⚠️ ${skippedCount} métrica(s) omitida(s): no se pueden activar métricas si su sensor está inactivo. Active primero el sensor.`;
+        const skippedDetails = skippedEntries.map(entry => {
+          const tipo = tiposData.find(t => 
+            (t.tipoid?.toString() === entry.tipoid?.toString() || t.tipoid === entry.tipoid)
+          );
+          const sensor = currentSensorsData.find(s => 
+            (s.nodoid?.toString() === entry.nodoid?.toString() || s.nodoid === entry.nodoid) &&
+            (s.tipoid?.toString() === entry.tipoid?.toString() || s.tipoid === entry.tipoid)
+          );
+          if (!sensor) {
+            return `Sensor no existe para ${tipo?.tipo || `Tipo ${entry.tipoid}`}`;
+          } else if (sensor.statusid !== 1) {
+            return `Sensor inactivo para ${tipo?.tipo || `Tipo ${entry.tipoid}`}`;
+          }
+          return `Tipo ${entry.tipoid}`;
+        }).join(', ');
+        
+        const skipMsg = `⚠️ ${skippedCount} métrica(s) omitida(s): ${skippedDetails}. Active primero el sensor correspondiente.`;
         console.warn(skipMsg);
         setUpdateMessage({ type: 'warning', text: skipMsg });
       }
@@ -5375,13 +5395,6 @@ result = await JoySenseService.updateTableRowByCompositeKey(
 
             if (updateFormData[field] !== undefined) {
 
-              // Para contraseña de usuario: si está vacía, no actualizar (mantener contraseña actual)
-              if (selectedTable === 'usuario' && field === 'password_hash' &&
-                  (!updateFormData[field] || updateFormData[field].trim() === '')) {
-                // No incluir campo de contraseña vacío en la actualización
-                return;
-              }
-
               // Para campos opcionales vacíos, no incluir el campo en la actualización
               if (typeof updateFormData[field] === 'string' &&
                   updateFormData[field].trim() === '' &&
@@ -5629,7 +5642,7 @@ if (selectedTable === 'criticidad') {
 
       if (selectedTable === 'usuario') {
 
-        return ['login', 'firstname', 'lastname', 'password_hash', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
+        return ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName);
 
       }
 
@@ -6025,15 +6038,13 @@ if (selectedTable === 'fundo') {
 
       } else if (selectedTable === 'usuario') {
 
-        // Usuario, Nombre, Apellido, Contraseña
+        // Usuario, Nombre, Apellido
 
         reorderedColumns.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
-
-        reorderedColumns.push(...otherColumns.filter(col => ['password_hash'].includes(col.columnName)));
 
         reorderedColumns.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
 
@@ -8960,29 +8971,9 @@ return (
                              );
                            }
 
-// Campo especial para contraseña en tabla usuario
+// Campo password_hash oculto para tabla usuario (no mostrar en formulario)
                            if (selectedTable === 'usuario' && col.columnName === 'password_hash') {
-                             return (
-                               <div key={col.columnName} className="mb-4">
-                                 <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
-                                   {displayName.toUpperCase()}
-                                 </label>
-                                 <input
-                                   type="password"
-                                   value={localPasswordValue}
-                                   placeholder="••••••••"
-                                   onChange={(e) => {
-                                     const newValue = e.target.value;
-                                     setLocalPasswordValue(newValue);
-                                     setUpdateFormData((prev: Record<string, any>) => ({
-                                       ...prev,
-                                       [col.columnName]: newValue
-                                     }));
-                                   }}
-                                   className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 dark:text-white font-mono"
-                                 />
-                               </div>
-                             );
+                             return null; // No mostrar el campo de contraseña en el formulario
                            }
 
 // Campos de texto normales (editables)
