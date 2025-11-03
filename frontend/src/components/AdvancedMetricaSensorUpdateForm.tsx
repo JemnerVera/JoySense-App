@@ -132,18 +132,6 @@ export function AdvancedMetricaSensorUpdateForm({
     // Obtener todas las filas originales (individuales) de las filas agrupadas
     const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
     
-    console.log('🔍 Debug - handleUpdate:', {
-      selectedNodos,
-      selectedTipos,
-      selectedMetricas,
-      selectedRowsLength: selectedRows.length,
-      allOriginalRows: allOriginalRows.map(row => ({
-        nodoid: row.nodoid,
-        tipoid: row.tipoid,
-        metricaid: row.metricaid,
-        statusid: row.statusid
-      }))
-    });
 
 // Para cada combinación de nodo-tipo-métrica seleccionada
     selectedNodos.forEach(nodoId => {
@@ -200,13 +188,6 @@ export function AdvancedMetricaSensorUpdateForm({
       }
     });
     
-      console.log('🔍 Debug - Entradas a enviar:', updatedEntries.map(entry => ({
-        nodoid: entry.nodoid,
-        tipoid: entry.tipoid,
-        metricaid: entry.metricaid,
-        statusid: entry.statusid,
-        isNew: !entry.usercreatedid ? 'NUEVA' : 'EXISTENTE'
-      })));
       
       await onUpdate(updatedEntries);
     } catch (error) {

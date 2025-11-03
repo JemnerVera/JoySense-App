@@ -7842,20 +7842,6 @@ const handleSelectRowForManualUpdate = (row: any, isSelected: boolean) => {
 
     const rowId = getRowIdForSelection(row);
 
-console.log('🔍 handleSelectRowForManualUpdate:', { 
-
-      rowId, 
-
-      isSelected, 
-
-      currentSelection: selectedRowsForManualUpdate.length,
-
-      hasOriginalRows: row.originalRows?.length,
-
-      selectedTable
-
-    });
-
 // Para tablas agrupadas (sensor, metricasensor, usuarioperfil), implementar selección única
 
     if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'usuarioperfil') {
