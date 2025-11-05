@@ -125,6 +125,43 @@ export const authService = {
     }
   },
 
+  // Reset de contraseña
+  async resetPassword(login: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${backendUrl}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ login })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error('❌ Error al resetear contraseña:', result.error);
+        return { 
+          success: false, 
+          error: result.error || 'Error al resetear la contraseña' 
+        };
+      }
+
+      console.log('✅ Reset de contraseña exitoso');
+      return { 
+        success: true, 
+        message: result.message || 'Se ha enviado una nueva contraseña al correo registrado' 
+      };
+
+    } catch (error) {
+      console.error('❌ Error inesperado durante reset de contraseña:', error);
+      return { 
+        success: false, 
+        error: 'Error inesperado durante el reset de contraseña' 
+      };
+    }
+  },
+
   // Cerrar sesión
   async signOut(): Promise<{ error: AuthError | null }> {
     try {
