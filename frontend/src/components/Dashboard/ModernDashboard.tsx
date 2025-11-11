@@ -146,12 +146,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const startDateFormatted = formatDate(startDateStr, false)
       const endDateFormatted = formatDate(endDateStr, true)
 
-      console.log('📊 Cargando datos para análisis detallado:', {
-        startDate: startDateFormatted,
-        endDate: endDateFormatted,
-        nodoId: selectedNode.nodoid
-      })
-
       // Usar getAll: true para obtener todos los registros del rango (con paginación en backend)
       const allData = await JoySenseService.getMediciones({
         entidadId: filters.entidadId,
@@ -169,8 +163,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Filtrar por nodo seleccionado
       const filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
-
-      console.log(`✅ Datos cargados para análisis detallado: ${filteredData.length} mediciones`)
 
       // Actualizar mediciones con los nuevos datos
       // Combinar con datos existentes para no perder información de otras métricas
@@ -202,13 +194,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Recargar datos cuando cambien las fechas del análisis detallado
   useEffect(() => {
     if (showDetailedAnalysis && detailedStartDate && detailedEndDate && selectedNode) {
-      console.log('🔄 Fechas del modal cambiaron, recargando datos del backend...', {
-        detailedStartDate,
-        detailedEndDate,
-        selectedDetailedMetric,
-        nodoId: selectedNode.nodoid
-      })
-      
       // Recargar datos del backend con el nuevo rango de fechas
       loadMedicionesForDetailedAnalysis(detailedStartDate, detailedEndDate)
     }
@@ -534,12 +519,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       result.push(timeData)
     })
     
-    console.log('🔍 Datos procesados para gráfico con múltiples líneas:', {
-      totalPuntos: result.length,
-      tipos: tiposEnMediciones.length,
-      tiposNombres: tiposEnMediciones.map(tid => tipos.find(t => t.tipoid === tid)?.tipo)
-    })
-    
     return result
   }
 
@@ -606,12 +585,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Establecer fechas basadas en los datos reales
       setDetailedStartDate(firstDate.toISOString().split('T')[0])
       setDetailedEndDate(lastDate.toISOString().split('T')[0])
-      
-      console.log(`🔍 Modal - Fechas reales para ${metric.dataKey}:`, {
-        primeraFecha: firstDate.toISOString().split('T')[0],
-        ultimaFecha: lastDate.toISOString().split('T')[0],
-        totalMediciones: metricMediciones.length
-      })
     } else {
       // Fallback: usar fechas por defecto si no hay datos
       const endDate = new Date()
