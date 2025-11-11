@@ -30,9 +30,22 @@ interface InteractiveMapProps {
 function MapController({ selectedNode, onAnimationComplete }: { selectedNode: NodeData | null, onAnimationComplete?: () => void }) {
   const map = useMap()
   const previousNodeId = useRef<number | null>(null)
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (selectedNode && selectedNode.latitud != null && selectedNode.longitud != null) {
+    // Limpiar cualquier animación en curso
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current)
+      animationTimeoutRef.current = null
+    }
+
+    // Si no hay nodo seleccionado, resetear el ref para que la próxima selección sea tratada como primera carga
+    if (!selectedNode) {
+      previousNodeId.current = null
+      return
+    }
+
+    if (selectedNode.latitud != null && selectedNode.longitud != null) {
       const lat = selectedNode.latitud
       const lng = selectedNode.longitud
       
@@ -44,45 +57,92 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
         if (previousNodeId.current !== null && previousNodeId.current !== currentNodeId) {
           // Obtener posición actual del mapa
           const currentCenter = map.getCenter()
+          const currentZoom = map.getZoom()
           
-          // Paso 1: Alejar el zoom en la posición actual (zoom 10)
-          map.flyTo([currentCenter.lat, currentCenter.lng], 10, {
-            duration: 1.2,
-            easeLinearity: 0.25
-          })
-          
-          // Paso 2: Volar al nuevo nodo manteniendo el zoom alejado (después del paso 1)
-          setTimeout(() => {
-            map.flyTo([lat, lng], 10, {
-              duration: 1.5,
-              easeLinearity: 0.25
+          // Solo hacer animación de 3 pasos si el zoom actual es alto (más cercano)
+          // Si el zoom ya está alejado, solo centrar y acercar
+          if (currentZoom > 12) {
+            // Paso 1: Alejar el zoom en la posición actual (zoom 10)
+            map.flyTo([currentCenter.lat, currentCenter.lng], 10, {
+              duration: 1.0,
+              easeLinearity: 0.3
             })
             
-            // Paso 3: Acercar el zoom al nuevo nodo (después del paso 2)
-            setTimeout(() => {
-              map.flyTo([lat, lng], 16, {
+            // Paso 2: Volar al nuevo nodo manteniendo el zoom alejado (después del paso 1)
+            const timeout1 = setTimeout(() => {
+              map.flyTo([lat, lng], 10, {
                 duration: 1.2,
-                easeLinearity: 0.25
+                easeLinearity: 0.3
               })
               
-              // Esperar a que termine la animación y luego abrir el popup
-              setTimeout(() => {
+              // Paso 3: Acercar el zoom al nuevo nodo (después del paso 2)
+              const timeout2 = setTimeout(() => {
+                map.flyTo([lat, lng], 14, {
+                  duration: 1.0,
+                  easeLinearity: 0.3
+                })
+                
+                // Esperar a que termine completamente la animación y luego abrir el popup
+                animationTimeoutRef.current = setTimeout(() => {
+                  if (onAnimationComplete) {
+                    onAnimationComplete()
+                  }
+                  animationTimeoutRef.current = null
+                }, 1100) // 1000ms de duración + 100ms de margen
+              }, 1300) // 1200ms de duración + 100ms de margen
+              
+              animationTimeoutRef.current = timeout2 as any
+            }, 1100) // 1000ms de duración + 100ms de margen
+            
+            animationTimeoutRef.current = timeout1 as any
+          } else {
+            // Zoom ya está alejado: solo centrar y acercar (2 pasos)
+            map.flyTo([lat, lng], 10, {
+              duration: 0.8,
+              easeLinearity: 0.3
+            })
+            
+            const timeout1 = setTimeout(() => {
+              map.flyTo([lat, lng], 14, {
+                duration: 1.0,
+                easeLinearity: 0.3
+              })
+              
+              animationTimeoutRef.current = setTimeout(() => {
                 if (onAnimationComplete) {
                   onAnimationComplete()
                 }
-              }, 1300) // 1200ms de duración + 100ms de margen
-            }, 1600) // 1500ms de duración + 100ms de margen
-          }, 1300) // 1200ms de duración + 100ms de margen
+                animationTimeoutRef.current = null
+              }, 1100)
+            }, 900)
+            
+            animationTimeoutRef.current = timeout1 as any
+          }
         } else {
           // Primera carga o mismo nodo: ir directamente
-          map.flyTo([lat, lng], 16, {
-            duration: 1.5,
-            easeLinearity: 0.25
+          map.flyTo([lat, lng], 14, {
+            duration: 1.2,
+            easeLinearity: 0.3
           })
+          
+          animationTimeoutRef.current = setTimeout(() => {
+            if (onAnimationComplete) {
+              onAnimationComplete()
+            }
+            animationTimeoutRef.current = null
+          }, 1300)
         }
         
         // Actualizar el ref del nodo anterior
         previousNodeId.current = currentNodeId
+      }
+    }
+
+    // Cleanup: limpiar timeout al desmontar o cambiar de nodo
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current)
+        animationTimeoutRef.current = null
       }
     }
   }, [selectedNode?.nodoid, selectedNode?.latitud, selectedNode?.longitud, map, onAnimationComplete]) // Usar nodoid específicamente para detectar cambios
@@ -278,7 +338,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       
       <MapContainer
         center={mapCenter}
-        zoom={13}
+        zoom={10}
         style={{ height: '100%', width: '100%', borderRadius: '8px' }}
         className="z-0"
       >

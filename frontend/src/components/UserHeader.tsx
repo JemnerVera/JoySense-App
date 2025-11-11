@@ -110,8 +110,8 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       );
     }
 
-    // Mostrar controles del dashboard SOLO para la subpestaña "Dashboard"
-    if (activeTab === 'reportes-dashboard') {
+    // Mostrar controles del dashboard para "Dashboard" y "Mapeo de Nodos"
+    if (activeTab === 'reportes-dashboard' || activeTab === 'reportes-dashboard-mapeo') {
       return (
         <DashboardFilters
           onFiltersChange={(filters) => {

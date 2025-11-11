@@ -768,6 +768,16 @@ return hasFormDataChanges || hasMultipleDataChanges;
                           if (activeTab === 'reportes') {
                             return t('tabs.reports');
                           }
+                          // Manejar sub-tabs de dashboard (mapeo, metrica, umbrales)
+                          if (activeTab.startsWith('reportes-dashboard-')) {
+                            const subTab = activeTab.replace('reportes-dashboard-', '');
+                            const subTabNames: { [key: string]: string } = {
+                              'mapeo': 'MAPEO',
+                              'metrica': 'MÉTRICA POR LOTE',
+                              'umbrales': 'UMBRALES POR LOTE'
+                            };
+                            return `${t('tabs.reports')} / ${t('subtabs.dashboard')} / ${subTabNames[subTab] || subTab.toUpperCase()}`;
+                          }
                           const reporteTab = activeTab.replace('reportes-', '');
                           const reporteNames: { [key: string]: string } = {
                             'dashboard': t('subtabs.dashboard'),
@@ -783,8 +793,8 @@ return hasFormDataChanges || hasMultipleDataChanges;
                   </span>
                 </div>
                 
-                {/* Dashboard Filters - Solo mostrar en Dashboard */}
-                {(activeTab === 'dashboard' || activeTab === 'reportes-dashboard') && (
+                {/* Dashboard Filters - Solo mostrar en Dashboard y Mapeo de Nodos */}
+                {(activeTab === 'dashboard' || activeTab === 'reportes-dashboard' || activeTab === 'reportes-dashboard-mapeo') && (
                   <div className="flex items-center gap-4 ml-8">
                     <UserHeader 
                       activeTab={activeTab}
