@@ -461,44 +461,44 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
               <p className="text-gray-600 dark:text-gray-400 font-mono">Cargando datos...</p>
             </div>
           </div>
-        ) : (() => {
-          // Obtener tipos únicos de todos los lotes (una sola vez)
-          const tiposEnTabla = new Set<number>();
-          lotesData.forEach(lote => {
-            Object.keys(lote.valoresPorTipo).forEach(tipoid => {
-              tiposEnTabla.add(Number(tipoid));
-            });
-          });
-          const tiposOrdenados = Array.from(tiposEnTabla).sort();
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200 dark:bg-neutral-700">
+                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
+                    LOTE
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
+                    VALOR DE MÉTRICA
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
+                    MEDICIONES
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lotesData.length > 0 ? (
+                  lotesData.map((lote) => {
+                    // Calcular promedio de todos los valores por tipo
+                    const valores = Object.values(lote.valoresPorTipo).map(v => v.valor);
+                    const promedio = valores.length > 0 
+                      ? valores.reduce((sum, val) => sum + val, 0) / valores.length 
+                      : null;
 
-          return (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-200 dark:bg-neutral-700">
-                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                      LOTE
-                    </th>
-                    {tiposOrdenados.map(tipoid => {
-                      const tipo = tipos.find(t => t.tipoid === tipoid);
-                      const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
-                      return (
-                        <th 
-                          key={tipoid}
-                          className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600"
-                        >
-                          {tipoNombre.toUpperCase()}
-                        </th>
-                      );
-                    })}
-                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                      MEDICIONES
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lotesData.length > 0 ? (
-                    lotesData.map((lote) => (
+                    // Preparar detalle por tipo para el tooltip
+                    const detallePorTipo = Object.entries(lote.valoresPorTipo)
+                      .map(([tipoid, data]) => {
+                        const tipo = tipos.find(t => t.tipoid === Number(tipoid));
+                        return {
+                          tipoNombre: tipo?.tipo || `Tipo ${tipoid}`,
+                          valor: data.valor,
+                          fecha: data.fecha
+                        };
+                      })
+                      .sort((a, b) => a.tipoNombre.localeCompare(b.tipoNombre));
+
+                    return (
                       <tr
                         key={lote.ubicacionid}
                         onClick={() => handleRowClick(lote)}
@@ -507,37 +507,57 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
                           {lote.ubicacion}
                         </td>
-                        {tiposOrdenados.map(tipoid => {
-                          const valorData = lote.valoresPorTipo[tipoid];
-                          return (
-                            <td 
-                              key={tipoid}
-                              className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold"
-                            >
-                              {valorData ? valorData.valor.toFixed(2) : '-'}
-                            </td>
-                          );
-                        })}
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold relative group">
+                          {promedio !== null ? (
+                            <>
+                              <span className="cursor-help">{promedio.toFixed(2)}</span>
+                              {/* Tooltip */}
+                              <div className="absolute left-0 top-full mt-2 w-64 bg-gray-900 dark:bg-neutral-800 text-white text-xs rounded-lg shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none p-3">
+                                <div className="font-bold mb-2 text-green-400 font-mono border-b border-gray-700 pb-1">
+                                  DETALLE POR TIPO DE SENSOR
+                                </div>
+                                <div className="space-y-1">
+                                  {detallePorTipo.map((detalle, idx) => (
+                                    <div key={idx} className="flex justify-between items-center font-mono">
+                                      <span className="text-gray-300">{detalle.tipoNombre}:</span>
+                                      <span className="font-bold text-white ml-2">{detalle.valor.toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {detallePorTipo.length === 0 && (
+                                  <div className="text-gray-400 font-mono text-center py-1">
+                                    Sin datos
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 font-mono">
                           {lote.medicionCount}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr className="border-b border-gray-200 dark:border-neutral-600">
-                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
-                        -
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center" colSpan={tiposOrdenados.length + 1}>
-                        -
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          );
-        })()}
+                    );
+                  })
+                ) : (
+                  <tr className="border-b border-gray-200 dark:border-neutral-600">
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
+                      -
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
+                      -
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
+                      -
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal con gráfico */}
