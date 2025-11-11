@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import { JoySenseService } from './services/backend-api';
@@ -556,16 +556,16 @@ return hasFormDataChanges || hasMultipleDataChanges;
             );
           case 'metrica':
             return (
-              <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 font-mono tracking-wider">
-                    MÉTRICA POR LOTE
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 font-mono">
-                    Esta funcionalidad estará disponible próximamente.
-                  </p>
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Métrica por Lote...</p>
+                  </div>
                 </div>
-              </div>
+              }>
+                <MetricaPorLoteLazy />
+              </Suspense>
             );
           default:
             // Si solo es 'dashboard' sin subTab, redirigir a 'mapeo' por defecto
