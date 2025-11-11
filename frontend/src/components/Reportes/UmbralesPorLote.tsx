@@ -28,6 +28,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   const [isFundoDropdownOpen, setIsFundoDropdownOpen] = useState(false);
   const [isMetricaDropdownOpen, setIsMetricaDropdownOpen] = useState(false);
   const [selectedLote, setSelectedLote] = useState<LoteUmbralData | null>(null);
+  const [selectedLotes, setSelectedLotes] = useState<number[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [detalleExpanded, setDetalleExpanded] = useState(false);
 
@@ -193,9 +194,49 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
     }
   };
 
-  // Manejar click en fila de tabla
+  // Manejar selección de lote (checkbox)
+  const handleLoteToggle = (ubicacionId: number, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSelectedLotes(prev => {
+      if (prev.includes(ubicacionId)) {
+        return prev.filter(id => id !== ubicacionId);
+      } else {
+        return [...prev, ubicacionId];
+      }
+    });
+  };
+
+  // Manejar click en fila de tabla (abrir modal)
   const handleRowClick = (lote: LoteUmbralData) => {
-    setSelectedLote(lote);
+    if (selectedLotes.length === 0) {
+      // Si no hay selección, seleccionar este lote y abrir modal
+      setSelectedLotes([lote.ubicacionid]);
+      setSelectedLote(lote);
+      setShowModal(true);
+    } else {
+      // Si hay selección, abrir modal con todos los seleccionados
+      const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+      if (lotesSeleccionados.length === 1) {
+        setSelectedLote(lotesSeleccionados[0]);
+      } else {
+        setSelectedLote(null);
+      }
+      setShowModal(true);
+    }
+  };
+
+  // Abrir modal de comparación
+  const handleOpenComparison = () => {
+    if (selectedLotes.length === 0) return;
+    const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+    if (lotesSeleccionados.length === 1) {
+      setSelectedLote(lotesSeleccionados[0]);
+    } else {
+      setSelectedLote(null);
+    }
     setShowModal(true);
   };
 
@@ -355,6 +396,20 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
           </div>
         )}
 
+        {/* Botón de comparación */}
+        {selectedLotes.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={handleOpenComparison}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-mono text-sm transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Comparar ({selectedLotes.length} {selectedLotes.length === 1 ? 'lote' : 'lotes'})
+            </button>
+          </div>
+        )}
 
         {/* Tabla de Resultados */}
         {loading ? (
@@ -369,6 +424,9 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-200 dark:bg-neutral-700">
+                  <th className="px-2 py-3 text-center text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600 w-12">
+                    {/* Checkbox header */}
+                  </th>
                   <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
                     LOTE
                   </th>
@@ -414,6 +472,35 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                         onClick={() => handleRowClick(lote)}
                         className="cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors border-b border-gray-200 dark:border-neutral-600"
                       >
+                        <td 
+                          className="px-2 py-3 text-center" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedLotes.includes(lote.ubicacionid)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const isChecked = e.target.checked;
+                              setSelectedLotes(prev => {
+                                if (isChecked) {
+                                  return prev.includes(lote.ubicacionid) ? prev : [...prev, lote.ubicacionid];
+                                } else {
+                                  return prev.filter(id => id !== lote.ubicacionid);
+                                }
+                              });
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="w-4 h-4 text-green-500 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
+                          />
+                        </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
                           {lote.ubicacion}
                         </td>
@@ -481,6 +568,9 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                   })
                 ) : (
                   <tr className="border-b border-gray-200 dark:border-neutral-600">
+                    <td className="px-2 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
+                      -
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
                       -
                     </td>
@@ -502,21 +592,30 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
       </div>
 
       {/* Modal con gráfico de intervalos */}
-      {showModal && selectedLote && (() => {
-        // Preparar datos del gráfico: un intervalo por cada tipo de sensor
-        const chartData = Object.entries(selectedLote.umbralesPorTipo)
-          .map(([tipoid, data]) => {
-            const tipo = tipos.find(t => t.tipoid === Number(tipoid));
-            return {
-              tipo: tipo?.tipo || `Tipo ${tipoid}`,
-              min: data.minimo,
-              max: data.maximo,
-              rango: data.maximo - data.minimo
-            };
-          })
-          .sort((a, b) => a.tipo.localeCompare(b.tipo));
+      {showModal && (selectedLote || selectedLotes.length > 0) && (() => {
+        // Obtener lotes seleccionados
+        const lotesSeleccionados = selectedLote 
+          ? [selectedLote]
+          : lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+        
+        const isComparacion = lotesSeleccionados.length > 1;
 
-        // Preparar detalle por tipo para mostrar en el modal
+        // Si es un solo lote, usar la lógica original
+        if (!isComparacion && selectedLote) {
+          // Preparar datos del gráfico: un intervalo por cada tipo de sensor
+          const chartData = Object.entries(selectedLote.umbralesPorTipo)
+            .map(([tipoid, data]) => {
+              const tipo = tipos.find(t => t.tipoid === Number(tipoid));
+              return {
+                tipo: tipo?.tipo || `Tipo ${tipoid}`,
+                min: data.minimo,
+                max: data.maximo,
+                rango: data.maximo - data.minimo
+              };
+            })
+            .sort((a, b) => a.tipo.localeCompare(b.tipo));
+
+          // Preparar detalle por tipo para mostrar en el modal
         const detallePorTipo = Object.entries(selectedLote.umbralesPorTipo)
           .map(([tipoid, data]) => {
             const tipo = tipos.find(t => t.tipoid === Number(tipoid));
@@ -717,6 +816,214 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+        }
+
+        // Lógica para comparación de múltiples lotes
+        // Obtener todos los tipos únicos de todos los lotes
+        const todosLosTipos = new Set<number>();
+        lotesSeleccionados.forEach(lote => {
+          Object.keys(lote.umbralesPorTipo).forEach(tipoid => {
+            todosLosTipos.add(Number(tipoid));
+          });
+        });
+
+        // Preparar datos del gráfico agrupados por tipo, con cada lote como una entrada
+        const chartDataComparacion: Array<{
+          tipo: string;
+          [loteNombre: string]: string | number | null;
+        }> = Array.from(todosLosTipos)
+          .map(tipoid => {
+            const tipo = tipos.find(t => t.tipoid === tipoid);
+            const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
+            const entry: any = { tipo: tipoNombre };
+            
+            lotesSeleccionados.forEach(lote => {
+              const umbralData = lote.umbralesPorTipo[tipoid];
+              if (umbralData) {
+                entry[`${lote.ubicacion}_min`] = umbralData.minimo;
+                entry[`${lote.ubicacion}_max`] = umbralData.maximo;
+                entry[`${lote.ubicacion}_rango`] = umbralData.maximo - umbralData.minimo;
+              } else {
+                entry[`${lote.ubicacion}_min`] = null;
+                entry[`${lote.ubicacion}_max`] = null;
+                entry[`${lote.ubicacion}_rango`] = null;
+              }
+            });
+            
+            return entry;
+          })
+          .sort((a, b) => a.tipo.localeCompare(b.tipo));
+
+        // Colores para diferentes lotes
+        const loteColors = [
+          '#10B981', // verde
+          '#3B82F6', // azul
+          '#F59E0B', // amarillo
+          '#EF4444', // rojo
+          '#8B5CF6', // púrpura
+          '#EC4899', // rosa
+          '#06B6D4', // cyan
+          '#84CC16', // lime
+        ];
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-neutral-900 dark:bg-neutral-900 rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-600 dark:border-gray-600">
+                <div>
+                  <h2 className="text-xl font-bold text-white dark:text-white font-mono tracking-wider">
+                    COMPARACIÓN DE UMBRALES - {lotesSeleccionados.length} {lotesSeleccionados.length === 1 ? 'LOTE' : 'LOTES'}
+                  </h2>
+                  <p className="text-sm text-gray-400 dark:text-gray-400 font-mono mt-1">
+                    Comparación de rangos de umbrales por tipo de sensor
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenido */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {/* Gráfico de comparación */}
+                {chartDataComparacion.length > 0 && (
+                  <div className="mb-6">
+                    <div className="h-96 w-full bg-neutral-800 rounded-lg p-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={chartDataComparacion}
+                          layout="vertical"
+                          margin={{ top: 10, right: 30, left: 150, bottom: 10 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
+                          <XAxis 
+                            type="number" 
+                            domain={['auto', 'auto']}
+                            stroke="#9CA3AF"
+                            style={{ fontSize: '11px' }}
+                            tick={{ fill: '#9CA3AF' }}
+                          />
+                          <YAxis 
+                            type="category" 
+                            dataKey="tipo" 
+                            stroke="#9CA3AF"
+                            style={{ fontSize: '11px' }}
+                            tick={{ fill: '#9CA3AF' }}
+                            width={140}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#1F2937',
+                              border: '1px solid #374151',
+                              borderRadius: '8px',
+                              color: '#F3F4F6',
+                              padding: '8px 12px'
+                            }}
+                            cursor={{ 
+                              fill: 'rgba(255, 255, 255, 0.1)',
+                              stroke: 'rgba(16, 185, 129, 0.3)',
+                              strokeWidth: 1
+                            }}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length > 0) {
+                                const data = payload[0].payload;
+                                // Filtrar solo las barras de rango (no las de min que son transparentes)
+                                const rangos = payload.filter((p: any) => p.dataKey && p.dataKey.includes('_rango'));
+                                const loteInfo = rangos.map((p: any) => {
+                                  const loteName = p.dataKey.replace('_rango', '');
+                                  const min = data[`${loteName}_min`];
+                                  const max = data[`${loteName}_max`];
+                                  if (min !== null && max !== null && !isNaN(min) && !isNaN(max)) {
+                                    // Encontrar el índice del lote para obtener su color
+                                    const loteIndex = lotesSeleccionados.findIndex(l => l.ubicacion === loteName);
+                                    const loteColor = loteIndex >= 0 ? loteColors[loteIndex % loteColors.length] : '#10B981';
+                                    return {
+                                      name: loteName,
+                                      min,
+                                      max,
+                                      color: loteColor
+                                    };
+                                  }
+                                  return null;
+                                }).filter(Boolean);
+                                
+                                if (loteInfo.length === 0) return null;
+                                
+                                return (
+                                  <div className="font-mono text-sm space-y-1">
+                                    {loteInfo.map((info: any, idx: number) => (
+                                      <div key={idx} style={{ color: info.color }}>
+                                        {info.name}: [{info.min.toFixed(2)} - {info.max.toFixed(2)}]
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          {lotesSeleccionados.map((lote, loteIndex) => {
+                            const loteColor = loteColors[loteIndex % loteColors.length];
+                            // Primero agregar la barra base (min) transparente para posicionar correctamente
+                            return (
+                              <React.Fragment key={lote.ubicacionid}>
+                                <Bar
+                                  dataKey={`${lote.ubicacion}_min`}
+                                  stackId={`stack_${lote.ubicacionid}`}
+                                  fill="transparent"
+                                />
+                                <Bar
+                                  dataKey={`${lote.ubicacion}_rango`}
+                                  stackId={`stack_${lote.ubicacionid}`}
+                                  fill={loteColor}
+                                  fillOpacity={0.7}
+                                  radius={[0, 4, 4, 0]}
+                                >
+                                  {chartDataComparacion.map((entry, index) => {
+                                    const hasData = entry[`${lote.ubicacion}_rango`] !== null;
+                                    return (
+                                      <Cell 
+                                        key={`cell-${lote.ubicacionid}-${index}`} 
+                                        fill={hasData ? loteColor : 'transparent'} 
+                                      />
+                                    );
+                                  })}
+                                </Bar>
+                              </React.Fragment>
+                            );
+                          })}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Leyenda con colores por lote */}
+                    <div className="mt-4">
+                      <div className="text-xs text-gray-400 dark:text-gray-400 font-mono mb-2 text-center">
+                        Lotes comparados:
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-300 dark:text-gray-300 font-mono">
+                        {lotesSeleccionados.map((lote, index) => (
+                          <div key={lote.ubicacionid} className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded" 
+                              style={{ backgroundColor: loteColors[index % loteColors.length], opacity: 0.7 }}
+                            ></div>
+                            <span>{lote.ubicacion}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
