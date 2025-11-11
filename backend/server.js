@@ -3096,9 +3096,88 @@ app.post('/api/sense/metricasensor', async (req, res) => {
 // Endpoint para obtener mediciones con filtros
 app.get('/api/sense/mediciones', async (req, res) => {
   try {
-    const { ubicacionId, startDate, endDate, limit, countOnly, getAll } = req.query;
-    console.log('🔍 Backend: Obteniendo mediciones del schema sense...', { ubicacionId, startDate, endDate, limit, countOnly, getAll });
+    const { ubicacionId, metricaId, startDate, endDate, limit, countOnly, getAll } = req.query;
+    console.log('🔍 Backend: Obteniendo mediciones del schema sense...', { ubicacionId, metricaId, startDate, endDate, limit, countOnly, getAll });
     
+    // Si solo necesitamos el conteo
+    if (countOnly === 'true') {
+      let countQuery = supabase
+        .from('medicion')
+        .select('*', { count: 'exact', head: true });
+      
+      if (ubicacionId) {
+        countQuery = countQuery.eq('ubicacionid', ubicacionId);
+      }
+      if (metricaId) {
+        countQuery = countQuery.eq('metricaid', parseInt(metricaId));
+      }
+      if (startDate) {
+        countQuery = countQuery.gte('fecha', startDate);
+      }
+      if (endDate) {
+        countQuery = countQuery.lte('fecha', endDate);
+      }
+      
+      const { count, error } = await countQuery;
+      if (error) {
+        console.error('❌ Error backend:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      console.log(`✅ Backend: Conteo de mediciones: ${count}`);
+      return res.json({ count: count || 0 });
+    }
+    
+    // Si getAll es true, usar paginación para obtener todos los registros
+    if (getAll === 'true') {
+      console.log('📚 Modo getAll: Cargando todas las mediciones con paginación');
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        let batchQuery = supabase
+          .from('medicion')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .range(from, from + batchSize - 1);
+        
+        // Aplicar filtros
+        if (ubicacionId) {
+          batchQuery = batchQuery.eq('ubicacionid', ubicacionId);
+        }
+        if (metricaId) {
+          batchQuery = batchQuery.eq('metricaid', parseInt(metricaId));
+        }
+        if (startDate) {
+          batchQuery = batchQuery.gte('fecha', startDate);
+        }
+        if (endDate) {
+          batchQuery = batchQuery.lte('fecha', endDate);
+        }
+        
+        const { data: batchData, error } = await batchQuery;
+        
+        if (error) {
+          console.error('❌ Error en batch:', error);
+          throw error;
+        }
+        
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          hasMore = batchData.length === batchSize;
+          console.log(`📦 Batch: ${batchData.length} registros, Total acumulado: ${allData.length}`);
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`✅ Backend: Mediciones obtenidas (getAll): ${allData.length}`);
+      return res.json(allData);
+    }
+    
+    // Modo normal con límite
     let query = supabase
       .from('medicion')
       .select('*');
@@ -3107,21 +3186,19 @@ app.get('/api/sense/mediciones', async (req, res) => {
     if (ubicacionId) {
       query = query.eq('ubicacionid', ubicacionId);
     }
-    
+    if (metricaId) {
+      query = query.eq('metricaid', parseInt(metricaId));
+    }
     if (startDate) {
       query = query.gte('fecha', startDate);
     }
-    
     if (endDate) {
       query = query.lte('fecha', endDate);
     }
     
-    // Si solo necesitamos el conteo
-    if (countOnly === 'true') {
-      query = query.select('*', { count: 'exact', head: true });
-    } else if (limit) {
+    if (limit) {
       query = query.limit(parseInt(limit));
-    } else if (getAll !== 'true') {
+    } else {
       // Límite por defecto si no se especifica
       query = query.limit(1000);
     }
@@ -3129,22 +3206,118 @@ app.get('/api/sense/mediciones', async (req, res) => {
     // Ordenar por fecha descendente (más recientes primero)
     query = query.order('fecha', { ascending: false });
     
-    const { data, error, count } = await query;
+    const { data, error } = await query;
     
     if (error) {
       console.error('❌ Error backend:', error);
       return res.status(500).json({ error: error.message });
     }
     
-    if (countOnly === 'true') {
-      console.log(`✅ Backend: Conteo de mediciones: ${count}`);
-      res.json({ count: count || 0 });
-    } else {
-      console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
-      res.json(data || []);
-    }
+    console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
+    res.json(data || []);
   } catch (error) {
     console.error('❌ Error in /api/sense/mediciones:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint optimizado para obtener últimas mediciones por lote (último valor por ubicación/tipo/métrica)
+app.get('/api/sense/ultimas-mediciones-por-lote', async (req, res) => {
+  try {
+    const { fundoIds, metricaId, startDate, endDate } = req.query;
+    console.log('🔍 Backend: Obteniendo últimas mediciones por lote...', { fundoIds, metricaId, startDate, endDate });
+    
+    if (!fundoIds || !metricaId) {
+      return res.status(400).json({ error: 'fundoIds y metricaId son requeridos' });
+    }
+
+    // Parsear fundoIds (puede ser un array o string separado por comas)
+    const fundoIdsArray = Array.isArray(fundoIds) 
+      ? fundoIds.map(id => parseInt(id))
+      : fundoIds.split(',').map(id => parseInt(id.trim()));
+
+    // Obtener ubicaciones de los fundos
+    const { data: ubicacionesData, error: ubicError } = await supabase
+      .from('ubicacion')
+      .select('ubicacionid')
+      .in('fundoid', fundoIdsArray);
+
+    if (ubicError) {
+      console.error('❌ Error obteniendo ubicaciones:', ubicError);
+      return res.status(500).json({ error: ubicError.message });
+    }
+
+    if (!ubicacionesData || ubicacionesData.length === 0) {
+      return res.json([]);
+    }
+
+    const ubicacionIds = ubicacionesData.map(u => u.ubicacionid);
+
+    // Obtener últimas mediciones usando una consulta optimizada
+    // Limitar a las últimas 50,000 mediciones para procesamiento más rápido
+    // Luego agruparemos por ubicación/tipo para obtener solo la más reciente
+    const { data: medicionesData, error: medError } = await supabase
+      .from('medicion')
+      .select('ubicacionid, tipoid, medicion, fecha, medicionid')
+      .in('ubicacionid', ubicacionIds)
+      .eq('metricaid', parseInt(metricaId))
+      .not('tipoid', 'is', null)
+      .order('fecha', { ascending: false })
+      .limit(50000); // Limitar a 50,000 para procesamiento más rápido
+
+    if (medError) {
+      console.error('❌ Error obteniendo mediciones:', medError);
+      return res.status(500).json({ error: medError.message });
+    }
+
+    // Si hay filtros de fecha, aplicarlos
+    let medicionesFiltradas = medicionesData || [];
+    if (startDate || endDate) {
+      medicionesFiltradas = medicionesFiltradas.filter(m => {
+        const fecha = new Date(m.fecha);
+        if (startDate && fecha < new Date(startDate)) return false;
+        if (endDate && fecha > new Date(endDate + ' 23:59:59')) return false;
+        return true;
+      });
+    }
+
+    // Agrupar por ubicación y tipo, guardando solo la más reciente
+    const resultadoMap = new Map();
+    const countMap = new Map();
+
+    medicionesFiltradas.forEach(med => {
+      const key = `${med.ubicacionid}_${med.tipoid}`;
+      
+      // Contar mediciones
+      if (!countMap.has(med.ubicacionid)) {
+        countMap.set(med.ubicacionid, 0);
+      }
+      countMap.set(med.ubicacionid, countMap.get(med.ubicacionid) + 1);
+
+      // Guardar solo la más reciente
+      if (!resultadoMap.has(key)) {
+        resultadoMap.set(key, med);
+      } else {
+        const existente = resultadoMap.get(key);
+        if (new Date(med.fecha) > new Date(existente.fecha)) {
+          resultadoMap.set(key, med);
+        }
+      }
+    });
+
+    // Convertir a formato de respuesta
+    const resultado = Array.from(resultadoMap.values()).map(med => ({
+      ubicacionid: med.ubicacionid,
+      tipoid: med.tipoid,
+      valor: med.medicion,
+      fecha: med.fecha,
+      medicionCount: countMap.get(med.ubicacionid) || 0
+    }));
+
+    console.log(`✅ Backend: Últimas mediciones por lote obtenidas: ${resultado.length}`);
+    res.json(resultado);
+  } catch (error) {
+    console.error('❌ Error in /api/sense/ultimas-mediciones-por-lote:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -3155,48 +3328,9 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
     const { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll } = req.query;
     console.log('🔍 Backend: Obteniendo mediciones con entidad del schema sense...', { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll });
     
-    // Query simple primero - solo mediciones
-    let query = supabase
-      .from('medicion')
-      .select('*');
-    
-    // Aplicar filtros básicos
-    if (ubicacionId) {
-      query = query.eq('ubicacionid', ubicacionId);
-    }
-    
-    if (startDate) {
-      query = query.gte('fecha', startDate);
-  }
-    
-    if (endDate) {
-      query = query.lte('fecha', endDate);
-    }
-    
-    // Si solo necesitamos el conteo
-    if (countOnly === 'true') {
-      query = query.select('*', { count: 'exact', head: true });
-    } else if (limit) {
-      query = query.limit(parseInt(limit));
-    } else if (getAll !== 'true') {
-      // Límite por defecto si no se especifica
-      query = query.limit(1000);
-    }
-    
-    // Ordenar por fecha descendente (más recientes primero)
-    query = query.order('fecha', { ascending: false });
-    
-    const { data, error, count } = await query;
-    
-    if (error) {
-      console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
-    }
-    
-    // Si hay entidadId, filtrar después de obtener los datos
-    let filteredData = data || [];
-    if (entidadId && data) {
-      // Obtener localizaciones que pertenecen a la entidad
+    // Si hay entidadId, obtener ubicaciones primero para filtrar
+    let ubicacionIdsFiltradas = null;
+    if (entidadId) {
       const { data: localizaciones, error: locError } = await supabase
         .from('localizacion')
         .select('ubicacionid')
@@ -3204,30 +3338,131 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       
       if (locError) {
         console.error('❌ Error obteniendo localizaciones por entidad:', locError);
-        // En lugar de retornar error 500, devolver array vacío
         console.warn('⚠️ Continuando con array vacío debido a error en localizaciones');
-        filteredData = [];
+        return res.json([]);
+      }
+      
+      if (localizaciones && localizaciones.length > 0) {
+        ubicacionIdsFiltradas = [...new Set(localizaciones.map(l => l.ubicacionid))];
       } else {
-        // Filtrar mediciones por entidad usando ubicaciones de localizaciones
-        if (localizaciones && localizaciones.length > 0) {
-          const ubicacionIds = [...new Set(localizaciones.map(l => l.ubicacionid))];
-          filteredData = data.filter(medicion => 
-            ubicacionIds.includes(medicion.ubicacionid)
-          );
-        } else {
-          // No hay localizaciones para esta entidad, retornar array vacío
-          filteredData = [];
-        }
+        // No hay localizaciones para esta entidad, retornar array vacío
+        return res.json([]);
       }
     }
     
+    // Si solo necesitamos el conteo
     if (countOnly === 'true') {
-      console.log(`✅ Backend: Conteo de mediciones con entidad: ${filteredData.length}`);
-      res.json({ count: filteredData.length });
-    } else {
-      console.log(`✅ Backend: Mediciones con entidad obtenidas: ${filteredData.length}`);
-      res.json(filteredData);
+      let countQuery = supabase
+        .from('medicion')
+        .select('*', { count: 'exact', head: true });
+      
+      if (ubicacionId) {
+        countQuery = countQuery.eq('ubicacionid', ubicacionId);
+      } else if (ubicacionIdsFiltradas) {
+        countQuery = countQuery.in('ubicacionid', ubicacionIdsFiltradas);
+      }
+      if (startDate) {
+        countQuery = countQuery.gte('fecha', startDate);
+      }
+      if (endDate) {
+        countQuery = countQuery.lte('fecha', endDate);
+      }
+      
+      const { count, error } = await countQuery;
+      if (error) {
+        console.error('❌ Error backend:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      console.log(`✅ Backend: Conteo de mediciones con entidad: ${count}`);
+      return res.json({ count: count || 0 });
     }
+    
+    // Si getAll es true, usar paginación para obtener todos los registros
+    if (getAll === 'true') {
+      console.log('📚 Modo getAll: Cargando todas las mediciones con paginación');
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        let batchQuery = supabase
+          .from('medicion')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .range(from, from + batchSize - 1);
+        
+        // Aplicar filtros
+        if (ubicacionId) {
+          batchQuery = batchQuery.eq('ubicacionid', ubicacionId);
+        } else if (ubicacionIdsFiltradas) {
+          batchQuery = batchQuery.in('ubicacionid', ubicacionIdsFiltradas);
+        }
+        if (startDate) {
+          batchQuery = batchQuery.gte('fecha', startDate);
+        }
+        if (endDate) {
+          batchQuery = batchQuery.lte('fecha', endDate);
+        }
+        
+        const { data: batchData, error } = await batchQuery;
+        
+        if (error) {
+          console.error('❌ Error en batch:', error);
+          throw error;
+        }
+        
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          hasMore = batchData.length === batchSize;
+          console.log(`📦 Batch: ${batchData.length} registros, Total acumulado: ${allData.length}`);
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`✅ Backend: Mediciones con entidad obtenidas (getAll): ${allData.length}`);
+      return res.json(allData);
+    }
+    
+    // Modo normal con límite
+    let query = supabase
+      .from('medicion')
+      .select('*');
+    
+    // Aplicar filtros
+    if (ubicacionId) {
+      query = query.eq('ubicacionid', ubicacionId);
+    } else if (ubicacionIdsFiltradas) {
+      query = query.in('ubicacionid', ubicacionIdsFiltradas);
+    }
+    if (startDate) {
+      query = query.gte('fecha', startDate);
+    }
+    if (endDate) {
+      query = query.lte('fecha', endDate);
+    }
+    
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    } else {
+      // Límite por defecto si no se especifica
+      query = query.limit(1000);
+    }
+    
+    // Ordenar por fecha descendente (más recientes primero)
+    query = query.order('fecha', { ascending: false });
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('❌ Error backend:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log(`✅ Backend: Mediciones con entidad obtenidas: ${data?.length || 0}`);
+    res.json(data || []);
   } catch (error) {
     console.error('❌ Error in /api/sense/mediciones-con-entidad:', error);
     res.status(500).json({ error: error.message });

@@ -41,6 +41,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const lastProcessedUbicacionId = useRef<number | null>(null)
   const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; fundoid: number } | null>(null)
+  const nodeMedicionesLoadedRef = useRef<boolean>(false)
 
   // Hook para acceder a los filtros globales del sidebar y header
   const { 
@@ -55,7 +56,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Cargar nodos con localizaciones
   useEffect(() => {
     loadNodes()
-    loadNodeMediciones()
   }, [])
 
 
@@ -92,21 +92,26 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setFilteredNodes(filtered)
   }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm])
 
-  // Cargar conteo de mediciones por nodo
-  const loadNodeMediciones = async () => {
-    try {
-      const data = await JoySenseService.getMediciones({ getAll: true })
-      if (Array.isArray(data)) {
-        const medicionesPorNodo: { [nodeId: number]: number } = {}
-        data.forEach(medicion => {
-          medicionesPorNodo[medicion.nodoid] = (medicionesPorNodo[medicion.nodoid] || 0) + 1
-        })
-        setNodeMediciones(medicionesPorNodo)
+  // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
+  useEffect(() => {
+    // Evitar cargar múltiples veces
+    if (nodeMedicionesLoadedRef.current) return
+    
+    const loadNodeMediciones = async () => {
+      try {
+        nodeMedicionesLoadedRef.current = true
+        // No cargar todas las mediciones - esto es muy costoso
+        // Si necesitas el conteo por nodo, usa un endpoint optimizado o countOnly
+        // Por ahora, simplemente no cargar para evitar el problema de rendimiento
+        setNodeMediciones({})
+      } catch (err) {
+        console.error('Error loading node mediciones:', err)
+        nodeMedicionesLoadedRef.current = false
       }
-    } catch (err) {
-      console.error('Error loading node mediciones:', err)
     }
-  }
+
+    loadNodeMediciones()
+  }, [])
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {

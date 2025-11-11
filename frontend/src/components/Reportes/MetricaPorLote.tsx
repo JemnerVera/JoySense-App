@@ -8,7 +8,7 @@ interface MetricaPorLoteProps {}
 interface LoteMetricaData {
   ubicacionid: number;
   ubicacion: string;
-  valorMetrica: number;
+  valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
   medicionCount: number;
 }
 
@@ -18,6 +18,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const [fundos, setFundos] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [localizaciones, setLocalizaciones] = useState<any[]>([]);
+  const [tipos, setTipos] = useState<any[]>([]);
   const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string>('');
@@ -37,15 +38,17 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [metricasData, fundosData, localizacionesData] = await Promise.all([
+        const [metricasData, fundosData, localizacionesData, tiposData] = await Promise.all([
           JoySenseService.getMetricas(),
           JoySenseService.getFundos(),
-          JoySenseService.getTableData('localizacion', 1000)
+          JoySenseService.getTableData('localizacion', 1000),
+          JoySenseService.getTipos()
         ]);
         
         setMetricas(metricasData || []);
         setFundos(fundosData || []);
         setLocalizaciones(localizacionesData || []);
+        setTipos(tiposData || []);
         
         // Establecer fecha por defecto (últimos 30 días)
         const today = new Date();
@@ -112,67 +115,75 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         return;
       }
 
-      // Obtener todas las mediciones para las ubicaciones del fundo en el rango de fechas
-      const medicionesPromises = ubicacionIds.map(ubicacionId =>
-        JoySenseService.getMediciones({
-          ubicacionId,
-          startDate: `${startDate} 00:00:00`,
-          endDate: `${endDate} 23:59:59`,
-          getAll: true
-        })
-      );
+      // Usar endpoint optimizado para obtener solo las últimas mediciones por lote
+      const ultimasMediciones = await JoySenseService.getUltimasMedicionesPorLote({
+        fundoIds: selectedFundos,
+        metricaId: selectedMetrica,
+        startDate: `${startDate} 00:00:00`,
+        endDate: `${endDate} 23:59:59`
+      });
 
-      const medicionesArrays = await Promise.all(medicionesPromises);
-      const todasMediciones = medicionesArrays.flat();
+      // Obtener tipos únicos en los datos
+      const tiposUnicos = Array.from(new Set(ultimasMediciones.map((m: any) => m.tipoid).filter(Boolean)));
 
-      // Filtrar mediciones por métrica seleccionada
-      const medicionesFiltradas = Array.isArray(todasMediciones)
-        ? todasMediciones.filter((m: any) => m.metricaid === selectedMetrica)
-        : [];
+      // Agrupar por ubicación
+      const loteMap = new Map<number, { 
+        ubicacion: string; 
+        valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
+        medicionCount: number;
+      }>();
 
-      // Agrupar por ubicación y calcular promedio
-      const loteMap = new Map<number, { valores: number[]; ubicacion: string }>();
-
-      medicionesFiltradas.forEach((medicion: any) => {
+      ultimasMediciones.forEach((medicion: any) => {
         const ubicacionId = medicion.ubicacionid;
-        const valor = medicion.medicion;
+        const tipoid = medicion.tipoid;
+        const valor = medicion.valor;
+        const fecha = medicion.fecha;
+        const medicionCount = medicion.medicionCount || 0;
+
+        if (!ubicacionId || !tipoid || valor == null || isNaN(valor) || !fecha) {
+          return;
+        }
 
         if (!loteMap.has(ubicacionId)) {
           const ubicacion = ubicaciones.find(u => u.ubicacionid === ubicacionId);
           loteMap.set(ubicacionId, {
-            valores: [],
-            ubicacion: ubicacion?.ubicacion || `Ubicación ${ubicacionId}`
+            ubicacion: ubicacion?.ubicacion || `Ubicación ${ubicacionId}`,
+            valoresPorTipo: {},
+            medicionCount: 0
           });
         }
 
-        const lote = loteMap.get(ubicacionId);
-        if (lote && valor != null && !isNaN(valor)) {
-          lote.valores.push(valor);
-        }
-      });
-
-      // Calcular promedio por lote y crear array de datos
-      const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([ubicacionid, data]) => {
-        const promedio = data.valores.length > 0
-          ? data.valores.reduce((sum, val) => sum + val, 0) / data.valores.length
-          : 0;
-
-        return {
-          ubicacionid,
-          ubicacion: data.ubicacion,
-          valorMetrica: promedio,
-          medicionCount: data.valores.length
+        const lote = loteMap.get(ubicacionId)!;
+        lote.medicionCount = Math.max(lote.medicionCount, medicionCount);
+        lote.valoresPorTipo[tipoid] = {
+          valor: parseFloat(valor),
+          fecha: fecha
         };
       });
 
-      // Ordenar según el orden seleccionado
-      lotesArray.sort((a, b) => {
-        if (orden === 'desc') {
-          return b.valorMetrica - a.valorMetrica;
-        } else {
-          return a.valorMetrica - b.valorMetrica;
-        }
+      // Crear array de datos con valores por tipo
+      const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([ubicacionid, data]) => {
+        return {
+          ubicacionid,
+          ubicacion: data.ubicacion,
+          valoresPorTipo: data.valoresPorTipo,
+          medicionCount: data.medicionCount
+        };
       });
+
+      // Ordenar según el orden seleccionado (usar el primer tipo disponible para ordenar)
+      if (tiposUnicos.length > 0) {
+        const primerTipo = tiposUnicos[0];
+        lotesArray.sort((a, b) => {
+          const valorA = a.valoresPorTipo[primerTipo]?.valor || 0;
+          const valorB = b.valoresPorTipo[primerTipo]?.valor || 0;
+          if (orden === 'desc') {
+            return valorB - valorA;
+          } else {
+            return valorA - valorB;
+          }
+        });
+      }
 
       setLotesData(lotesArray);
     } catch (err: any) {
@@ -450,58 +461,83 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
               <p className="text-gray-600 dark:text-gray-400 font-mono">Cargando datos...</p>
             </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-200 dark:bg-neutral-700">
-                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                    LOTE
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                    VALOR DE MÉTRICA
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                    MEDICIONES
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {lotesData.length > 0 ? (
-                  lotesData.map((lote) => (
-                    <tr
-                      key={lote.ubicacionid}
-                      onClick={() => handleRowClick(lote)}
-                      className="cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors border-b border-gray-200 dark:border-neutral-600"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
-                        {lote.ubicacion}
+        ) : (() => {
+          // Obtener tipos únicos de todos los lotes (una sola vez)
+          const tiposEnTabla = new Set<number>();
+          lotesData.forEach(lote => {
+            Object.keys(lote.valoresPorTipo).forEach(tipoid => {
+              tiposEnTabla.add(Number(tipoid));
+            });
+          });
+          const tiposOrdenados = Array.from(tiposEnTabla).sort();
+
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-200 dark:bg-neutral-700">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
+                      LOTE
+                    </th>
+                    {tiposOrdenados.map(tipoid => {
+                      const tipo = tipos.find(t => t.tipoid === tipoid);
+                      const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
+                      return (
+                        <th 
+                          key={tipoid}
+                          className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600"
+                        >
+                          {tipoNombre.toUpperCase()}
+                        </th>
+                      );
+                    })}
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
+                      MEDICIONES
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lotesData.length > 0 ? (
+                    lotesData.map((lote) => (
+                      <tr
+                        key={lote.ubicacionid}
+                        onClick={() => handleRowClick(lote)}
+                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors border-b border-gray-200 dark:border-neutral-600"
+                      >
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
+                          {lote.ubicacion}
+                        </td>
+                        {tiposOrdenados.map(tipoid => {
+                          const valorData = lote.valoresPorTipo[tipoid];
+                          return (
+                            <td 
+                              key={tipoid}
+                              className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold"
+                            >
+                              {valorData ? valorData.valor.toFixed(2) : '-'}
+                            </td>
+                          );
+                        })}
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                          {lote.medicionCount}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b border-gray-200 dark:border-neutral-600">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
+                        -
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold">
-                        {lote.valorMetrica.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 font-mono">
-                        {lote.medicionCount}
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center" colSpan={tiposOrdenados.length + 1}>
+                        -
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr className="border-b border-gray-200 dark:border-neutral-600">
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
-                      -
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
-                      -
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-500 font-mono text-center">
-                      -
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  )}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Modal con gráfico */}

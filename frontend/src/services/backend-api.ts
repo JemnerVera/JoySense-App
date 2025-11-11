@@ -384,6 +384,7 @@ export class JoySenseService {
     empresaId?: number;
     fundoId?: number;
     ubicacionId?: number;
+    metricaId?: number;
     startDate?: string;
     endDate?: string;
     limit?: number;
@@ -399,6 +400,7 @@ export class JoySenseService {
         // Construir query string para el backend
         const params = new URLSearchParams();
         if (filters.ubicacionId) params.append('ubicacionId', filters.ubicacionId.toString());
+        if (filters.metricaId) params.append('metricaId', filters.metricaId.toString());
         if (filters.startDate) params.append('startDate', filters.startDate);
         if (filters.endDate) params.append('endDate', filters.endDate);
         if (filters.limit) params.append('limit', filters.limit.toString());
@@ -429,6 +431,28 @@ export class JoySenseService {
       }
     } catch (error) {
       console.error('Error in getMediciones:', error);
+      throw error;
+    }
+  }
+
+  // Obtener últimas mediciones por lote (optimizado)
+  static async getUltimasMedicionesPorLote(params: {
+    fundoIds: number[];
+    metricaId: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('fundoIds', params.fundoIds.join(','));
+      queryParams.append('metricaId', params.metricaId.toString());
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
+
+      const data = await backendAPI.get(`/sense/ultimas-mediciones-por-lote?${queryParams.toString()}`);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getUltimasMedicionesPorLote:', error);
       throw error;
     }
   }
