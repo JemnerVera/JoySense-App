@@ -16,8 +16,8 @@ interface AuxiliarySidebarProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
-  dashboardSubTab?: 'mapeo' | 'metrica';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica') => void;
+  dashboardSubTab?: 'mapeo' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;

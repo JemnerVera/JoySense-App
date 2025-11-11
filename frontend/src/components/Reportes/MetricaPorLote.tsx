@@ -511,8 +511,8 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                           {promedio !== null ? (
                             <>
                               <span className="cursor-help">{promedio.toFixed(2)}</span>
-                              {/* Tooltip */}
-                              <div className="absolute left-0 top-full mt-2 w-64 bg-gray-900 dark:bg-neutral-800 text-white text-xs rounded-lg shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none p-3">
+                              {/* Tooltip - Posicionado al costado derecho */}
+                              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-64 bg-gray-900 dark:bg-neutral-800 text-white text-xs rounded-lg shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none p-3">
                                 <div className="font-bold mb-2 text-green-400 font-mono border-b border-gray-700 pb-1">
                                   DETALLE POR TIPO DE SENSOR
                                 </div>

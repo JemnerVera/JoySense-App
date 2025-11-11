@@ -3322,6 +3322,105 @@ app.get('/api/sense/ultimas-mediciones-por-lote', async (req, res) => {
   }
 });
 
+// Endpoint para obtener umbrales por lote
+app.get('/api/sense/umbrales-por-lote', async (req, res) => {
+  try {
+    const { fundoIds, metricaId } = req.query;
+    console.log('🔍 Backend: Obteniendo umbrales por lote...', { fundoIds, metricaId });
+    
+    if (!fundoIds) {
+      return res.status(400).json({ error: 'fundoIds es requerido' });
+    }
+
+    // Parsear fundoIds (puede ser un array o string separado por comas)
+    const fundoIdsArray = Array.isArray(fundoIds) 
+      ? fundoIds.map(id => parseInt(id))
+      : fundoIds.split(',').map(id => parseInt(id.trim()));
+
+    // Obtener ubicaciones de los fundos
+    const { data: ubicacionesData, error: ubicError } = await supabase
+      .from('ubicacion')
+      .select('ubicacionid')
+      .in('fundoid', fundoIdsArray);
+
+    if (ubicError) {
+      console.error('❌ Error obteniendo ubicaciones:', ubicError);
+      return res.status(500).json({ error: ubicError.message });
+    }
+
+    if (!ubicacionesData || ubicacionesData.length === 0) {
+      return res.json([]);
+    }
+
+    const ubicacionIds = ubicacionesData.map(u => u.ubicacionid);
+
+    // Obtener umbrales para las ubicaciones
+    let query = supabase
+      .from('umbral')
+      .select('umbralid, ubicacionid, tipoid, metricaid, minimo, maximo, umbral, criticidadid, nodoid, datecreated, datemodified')
+      .in('ubicacionid', ubicacionIds)
+      .eq('statusid', 1); // Solo umbrales activos
+
+    if (metricaId) {
+      query = query.eq('metricaid', parseInt(metricaId));
+    }
+
+    const { data: umbralesData, error: umbError } = await query;
+
+    if (umbError) {
+      console.error('❌ Error obteniendo umbrales:', umbError);
+      return res.status(500).json({ error: umbError.message });
+    }
+
+    // Agrupar por ubicación y tipo, guardando el umbral más reciente
+    const resultadoMap = new Map();
+    const countMap = new Map();
+
+    (umbralesData || []).forEach(umb => {
+      const key = `${umb.ubicacionid}_${umb.tipoid}_${umb.metricaid}`;
+      
+      // Contar umbrales por ubicación
+      if (!countMap.has(umb.ubicacionid)) {
+        countMap.set(umb.ubicacionid, 0);
+      }
+      countMap.set(umb.ubicacionid, countMap.get(umb.ubicacionid) + 1);
+
+      // Guardar solo el más reciente (por datemodified o datecreated)
+      if (!resultadoMap.has(key)) {
+        resultadoMap.set(key, umb);
+      } else {
+        const existente = resultadoMap.get(key);
+        const fechaExistente = new Date(existente.datemodified || existente.datecreated || 0);
+        const fechaNueva = new Date(umb.datemodified || umb.datecreated || 0);
+        if (fechaNueva > fechaExistente) {
+          resultadoMap.set(key, umb);
+        }
+      }
+    });
+
+    // Convertir a formato de respuesta
+    const resultado = Array.from(resultadoMap.values()).map(umb => ({
+      ubicacionid: umb.ubicacionid,
+      tipoid: umb.tipoid,
+      metricaid: umb.metricaid,
+      minimo: umb.minimo,
+      maximo: umb.maximo,
+      umbral: umb.umbral,
+      criticidadid: umb.criticidadid,
+      nodoid: umb.nodoid,
+      umbralCount: countMap.get(umb.ubicacionid) || 0,
+      datecreated: umb.datecreated,
+      datemodified: umb.datemodified
+    }));
+
+    console.log(`✅ Backend: Umbrales por lote obtenidos: ${resultado.length}`);
+    res.json(resultado);
+  } catch (error) {
+    console.error('❌ Error in /api/sense/umbrales-por-lote:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint para obtener mediciones con entidad (con JOIN)
 app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
   try {

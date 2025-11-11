@@ -457,6 +457,24 @@ export class JoySenseService {
     }
   }
 
+  // Obtener umbrales por lote
+  static async getUmbralesPorLote(params: {
+    fundoIds: number[];
+    metricaId?: number;
+  }): Promise<any[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('fundoIds', params.fundoIds.join(','));
+      if (params.metricaId) queryParams.append('metricaId', params.metricaId.toString());
+
+      const data = await backendAPI.get(`/sense/umbrales-por-lote?${queryParams.toString()}`);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getUmbralesPorLote:', error);
+      throw error;
+    }
+  }
+
   // Obtener estadísticas del dashboard
   static async getDashboardStats(): Promise<{
     totalMediciones: number;

@@ -74,6 +74,13 @@ const MetricaPorLoteLazy = lazy(() =>
   })
 );
 
+const UmbralesPorLoteLazy = lazy(() => 
+  import('../Reportes/UmbralesPorLote').then(module => {
+    console.log('📦 UmbralesPorLote cargado dinámicamente');
+    return { default: module.default };
+  })
+);
+
 // Placeholder components for missing modules
 const ReportsLazy = lazy(() => 
   Promise.resolve({
@@ -302,6 +309,7 @@ export {
   MultipleMetricaSensorFormLazy,
   DashboardHierarchyLazy,
   MetricaPorLoteLazy,
+  UmbralesPorLoteLazy,
   ReportsLazy,
   SettingsLazy,
   UsersLazy,

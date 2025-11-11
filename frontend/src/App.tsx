@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import { JoySenseService } from './services/backend-api';
@@ -130,7 +130,7 @@ const AppContentInternal: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>('status');
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica'>('mapeo');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica' | 'umbrales'>('mapeo');
 
   // Función para convertir nombre de tabla a español
   const getTableNameInSpanish = (tableName: string): string => {
@@ -172,8 +172,8 @@ const AppContentInternal: React.FC = () => {
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'metrica';
-      if (subTab === 'mapeo' || subTab === 'metrica') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'metrica' | 'umbrales';
+      if (subTab === 'mapeo' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     } else if (activeTab === 'reportes-dashboard') {
@@ -420,7 +420,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'metrica') => {
+  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'metrica' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -565,6 +565,19 @@ return hasFormDataChanges || hasMultipleDataChanges;
                 </div>
               }>
                 <MetricaPorLoteLazy />
+              </Suspense>
+            );
+          case 'umbrales':
+            return (
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Umbrales por Lote...</p>
+                  </div>
+                </div>
+              }>
+                <UmbralesPorLoteLazy />
               </Suspense>
             );
           default:
