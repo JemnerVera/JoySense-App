@@ -125,18 +125,94 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     loadMediciones()
   }, [filters, selectedNode])
 
+  // Función para cargar mediciones para el análisis detallado con rango de fechas específico
+  const loadMedicionesForDetailedAnalysis = async (startDateStr: string, endDateStr: string) => {
+    if (!filters.entidadId || !filters.ubicacionId || !selectedNode) {
+      return
+    }
+
+    try {
+      const formatDate = (dateStr: string, isEnd: boolean = false) => {
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        if (isEnd) {
+          return `${year}-${month}-${day} 23:59:59`
+        }
+        return `${year}-${month}-${day} 00:00:00`
+      }
+
+      const startDateFormatted = formatDate(startDateStr, false)
+      const endDateFormatted = formatDate(endDateStr, true)
+
+      console.log('📊 Cargando datos para análisis detallado:', {
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        nodoId: selectedNode.nodoid
+      })
+
+      // Usar getAll: true para obtener todos los registros del rango (con paginación en backend)
+      const allData = await JoySenseService.getMediciones({
+        entidadId: filters.entidadId,
+        ubicacionId: filters.ubicacionId,
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        getAll: true // Esto activará la paginación en el backend
+      })
+
+      // Verificar que allData sea un array
+      if (!Array.isArray(allData)) {
+        console.warn('⚠️ Datos no válidos recibidos del backend')
+        return
+      }
+
+      // Filtrar por nodo seleccionado
+      const filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
+
+      console.log(`✅ Datos cargados para análisis detallado: ${filteredData.length} mediciones`)
+
+      // Actualizar mediciones con los nuevos datos
+      // Combinar con datos existentes para no perder información de otras métricas
+      setMediciones(prevMediciones => {
+        // Filtrar mediciones existentes que no estén en el rango de fechas del modal
+        const medicionesFueraDelRango = prevMediciones.filter(m => {
+          const medicionDate = new Date(m.fecha)
+          const startDate = new Date(startDateStr + 'T00:00:00')
+          const endDate = new Date(endDateStr + 'T23:59:59')
+          return medicionDate < startDate || medicionDate > endDate
+        })
+        
+        // Combinar mediciones fuera del rango con las nuevas mediciones del rango
+        const combinedMediciones = [...medicionesFueraDelRango, ...filteredData]
+        
+        // Eliminar duplicados basándose en medicionid
+        const uniqueMediciones = combinedMediciones.filter((medicion, index, self) =>
+          index === self.findIndex(m => m.medicionid === medicion.medicionid)
+        )
+        
+        return uniqueMediciones
+      })
+    } catch (err: any) {
+      console.error('❌ Error cargando datos para análisis detallado:', err)
+      // No mostrar error al usuario, solo loguear
+    }
+  }
+
   // Recargar datos cuando cambien las fechas del análisis detallado
   useEffect(() => {
-    if (showDetailedAnalysis && detailedStartDate && detailedEndDate) {
-      console.log('🔄 Fechas del modal cambiaron, recargando gráfico...', {
+    if (showDetailedAnalysis && detailedStartDate && detailedEndDate && selectedNode) {
+      console.log('🔄 Fechas del modal cambiaron, recargando datos del backend...', {
         detailedStartDate,
         detailedEndDate,
-        selectedDetailedMetric
+        selectedDetailedMetric,
+        nodoId: selectedNode.nodoid
       })
-      // El gráfico se actualizará automáticamente por el estado
-      // No necesitamos hacer nada más, el componente se re-renderizará
+      
+      // Recargar datos del backend con el nuevo rango de fechas
+      loadMedicionesForDetailedAnalysis(detailedStartDate, detailedEndDate)
     }
-  }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis])
+  }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode])
 
   // Cargar entidades, ubicaciones, métricas y tipos
   useEffect(() => {
@@ -665,8 +741,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                            interval="preserveStartEnd"
+                            tick={{ fontSize: 10, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+                            interval={(() => {
+                              const chartData = processChartData(metric.dataKey)
+                              // Mostrar máximo 4-5 etiquetas en gráficos pequeños
+                              if (chartData.length <= 5) return 0
+                              if (chartData.length <= 10) return 1
+                              return Math.floor(chartData.length / 4)
+                            })()}
                           />
                           <YAxis hide />
                           {(() => {
@@ -865,6 +947,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+                            interval={(() => {
+                              const chartData = processChartData(selectedDetailedMetric, true)
+                              // Mostrar máximo 6-8 etiquetas en gráfico detallado
+                              if (chartData.length <= 8) return 0
+                              if (chartData.length <= 20) return 1
+                              return Math.floor(chartData.length / 6)
+                            })()}
                           />
                           <YAxis 
                             axisLine={false}
