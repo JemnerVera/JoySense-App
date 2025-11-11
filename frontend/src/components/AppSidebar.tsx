@@ -3,6 +3,7 @@ import { useFilterData } from '../hooks/useFilterData';
 import { useCascadingFilters } from '../hooks/useCascadingFilters';
 import CollapsibleGlobalFilters from './CollapsibleGlobalFilters';
 import ParametersSidebar from './sidebar/ParametersSidebar';
+import ReportesDashboardSidebar from './sidebar/ReportesDashboardSidebar';
 
 interface AppSidebarProps {
   activeTab: string;
@@ -12,6 +13,8 @@ interface AppSidebarProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  dashboardSubTab?: 'mapeo' | 'metrica';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica') => void;
   isExpanded: boolean;
   auxiliarySidebarVisible: boolean;
   onMainSidebarMouseEnter: () => void;
@@ -31,6 +34,8 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   onTableSelect,
   activeSubTab,
   onSubTabChange,
+  dashboardSubTab,
+  onDashboardSubTabChange,
   isExpanded,
   auxiliarySidebarVisible,
   onMainSidebarMouseEnter,
@@ -356,6 +361,17 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           formData={formData}
           multipleData={multipleData}
           massiveFormData={massiveFormData}
+        />
+      )}
+
+      {/* Sidebar auxiliar para Dashboard (Reportes) */}
+      {(activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
+        <ReportesDashboardSidebar
+          activeSubTab={dashboardSubTab || 'mapeo'}
+          onSubTabChange={onDashboardSubTabChange || (() => {})}
+          isExpanded={auxiliarySidebarVisible}
+          onMouseEnter={onAuxiliarySidebarMouseEnter}
+          onMouseLeave={onAuxiliarySidebarMouseLeave}
         />
       )}
     </div>

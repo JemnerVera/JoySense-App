@@ -12,6 +12,8 @@ interface SidebarContainerProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  dashboardSubTab?: 'mapeo' | 'metrica';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
@@ -26,6 +28,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   onTableSelect,
   activeSubTab,
   onSubTabChange,
+  dashboardSubTab,
+  onDashboardSubTabChange,
   formData = {},
   multipleData = [],
   massiveFormData = {}
@@ -72,6 +76,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
             multipleData={multipleData}
             massiveFormData={massiveFormData}
@@ -92,10 +98,35 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
             multipleData={multipleData}
             massiveFormData={massiveFormData}
             showThirdLevel={true}
+          />
+        </div>
+      )}
+
+      {/* Tercer sidebar para dashboards (solo cuando está en reportes-dashboard) */}
+      {hasAuxiliarySidebar && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
+        <div className="flex-shrink-0 z-30">
+          <AuxiliarySidebar
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showDashboardThirdLevel={true}
           />
         </div>
       )}

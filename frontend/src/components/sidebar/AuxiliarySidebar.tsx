@@ -3,6 +3,7 @@ import ParametersSidebar from './ParametersSidebar';
 import ParametersOperationsSidebar from './ParametersOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
+import ReportesDashboardSidebar from './ReportesDashboardSidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AuxiliarySidebarProps {
@@ -15,10 +16,13 @@ interface AuxiliarySidebarProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  dashboardSubTab?: 'mapeo' | 'metrica';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
   showThirdLevel?: boolean;
+  showDashboardThirdLevel?: boolean;
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -31,10 +35,13 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   onTableSelect,
   activeSubTab,
   onSubTabChange,
+  dashboardSubTab,
+  onDashboardSubTabChange,
   formData = {},
   multipleData = [],
   massiveFormData = {},
-  showThirdLevel = false
+  showThirdLevel = false,
+  showDashboardThirdLevel = false
 }) => {
   const { t } = useLanguage();
   
@@ -71,7 +78,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
 
   // Determinar qué sidebar auxiliar mostrar
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
-  const isReportes = activeTab === 'reportes' || activeTab.startsWith('reportes-');
+  const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
+  const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
 
   if (isParameters) {
     // Si showThirdLevel es true, solo renderizar el tercer sidebar
@@ -108,6 +116,73 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     );
   }
 
+  // Lógica para dashboards
+  if (isDashboard) {
+    // Si showDashboardThirdLevel es true, renderizar el tercer sidebar de dashboards
+    if (showDashboardThirdLevel) {
+      return (
+        <ReportesDashboardSidebar
+          activeSubTab={dashboardSubTab || 'mapeo'}
+          onSubTabChange={onDashboardSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        />
+      );
+    }
+
+    // Si no es showDashboardThirdLevel, renderizar el segundo sidebar de reportes
+    const reportesIcon = (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    );
+
+    return (
+      <BaseAuxiliarySidebar
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        title={t('tabs.reports')}
+        icon={reportesIcon}
+        color="green"
+      >
+        {/* Subpestañas de reportes */}
+        <div className="py-4">
+          {reportesSubTabs.map((subTab) => {
+            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
+            const isActive = subTab.id === 'dashboard' 
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : activeTab === `reportes-${subTab.id}`;
+            return (
+              <button
+                key={subTab.id}
+                onClick={() => onTabChange(`reportes-${subTab.id}`)}
+                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                  isActive
+                    ? "bg-green-600 text-white"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                }`}
+              >
+                <div className="flex-shrink-0">
+                  {subTab.icon}
+                </div>
+                {isExpanded && (
+                  <span className="text-sm font-medium tracking-wider">{subTab.label.toUpperCase()}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Filtros para Alertas */}
+        {activeTab === 'reportes-alertas' && (
+          <AlertasFilters isExpanded={isExpanded} />
+        )}
+      </BaseAuxiliarySidebar>
+    );
+  }
+
   if (isReportes) {
     const reportesIcon = (
       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +202,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         {/* Subpestañas de reportes */}
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
-            const isActive = activeTab === `reportes-${subTab.id}`;
+            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
+            const isActive = subTab.id === 'dashboard' 
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : activeTab === `reportes-${subTab.id}`;
             return (
               <button
                 key={subTab.id}

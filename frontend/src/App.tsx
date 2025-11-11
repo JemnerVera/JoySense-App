@@ -128,6 +128,9 @@ const AppContentInternal: React.FC = () => {
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>('status');
+  
+  // Estados para Dashboard (Reportes)
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica'>('mapeo');
 
   // Función para convertir nombre de tabla a español
   const getTableNameInSpanish = (tableName: string): string => {
@@ -165,6 +168,19 @@ const AppContentInternal: React.FC = () => {
   // Estados para la aplicación
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [showWelcomeIntegrated, setShowWelcomeIntegrated] = useState<boolean>(true);
+
+  // Sincronizar dashboardSubTab con activeTab
+  useEffect(() => {
+    if (activeTab.startsWith('reportes-dashboard-')) {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'metrica';
+      if (subTab === 'mapeo' || subTab === 'metrica') {
+        setDashboardSubTab(subTab);
+      }
+    } else if (activeTab === 'reportes-dashboard') {
+      // Si solo es 'reportes-dashboard' sin subTab, establecer 'mapeo' por defecto
+      setDashboardSubTab('mapeo');
+    }
+  }, [activeTab]);
 
   // Hook para el layout del sidebar
   const {
@@ -403,6 +419,14 @@ return hasFormDataChanges || hasMultipleDataChanges;
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
   };
 
+  // Handler para cambiar el subTab del Dashboard
+  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'metrica') => {
+    setDashboardSubTab(subTab);
+    startTransition(() => {
+      setActiveTab(`reportes-dashboard-${subTab}`);
+    });
+  };
+
   // Handlers para el dashboard
   const handleDashboardFundoChange = (fundo: any) => {
     setDashboardSelectedFundo(fundo);
@@ -499,33 +523,68 @@ return hasFormDataChanges || hasMultipleDataChanges;
     // Manejar sub-rutas de reportes
     if (activeTab.startsWith('reportes-')) {
       const reporteTab = activeTab.replace('reportes-', '');
-      switch (reporteTab) {
-        case 'dashboard':
-          return (
-            <Suspense fallback={
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                  <p className="text-gray-400">Cargando Dashboard...</p>
+      
+      // Manejar sub-tabs del Dashboard
+      if (reporteTab.startsWith('dashboard-')) {
+        const dashboardSubTab = reporteTab.replace('dashboard-', '');
+        switch (dashboardSubTab) {
+          case 'mapeo':
+            return (
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Mapeo de Nodos...</p>
+                  </div>
+                </div>
+              }>
+                <DashboardLazy
+                  selectedPais={null}
+                  selectedEmpresa={null}
+                  selectedFundo={dashboardSelectedFundo}
+                  selectedEntidad={dashboardSelectedEntidad}
+                  selectedUbicacion={dashboardSelectedUbicacion}
+                  startDate={dashboardStartDate}
+                  endDate={dashboardEndDate}
+                  onFundoChange={handleDashboardFundoChange}
+                  onEntidadChange={handleDashboardEntidadChange}
+                  onUbicacionChange={handleDashboardUbicacionChange}
+                  onDateFilter={handleDashboardDateFilter}
+                  onResetFilters={handleDashboardReset}
+                />
+              </Suspense>
+            );
+          case 'metrica':
+            return (
+              <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 font-mono tracking-wider">
+                    MÉTRICA POR LOTE
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 font-mono">
+                    Esta funcionalidad estará disponible próximamente.
+                  </p>
                 </div>
               </div>
-            }>
-              <DashboardLazy
-                selectedPais={null}
-                selectedEmpresa={null}
-                selectedFundo={dashboardSelectedFundo}
-                selectedEntidad={dashboardSelectedEntidad}
-                selectedUbicacion={dashboardSelectedUbicacion}
-                startDate={dashboardStartDate}
-                endDate={dashboardEndDate}
-                onFundoChange={handleDashboardFundoChange}
-                onEntidadChange={handleDashboardEntidadChange}
-                onUbicacionChange={handleDashboardUbicacionChange}
-                onDateFilter={handleDashboardDateFilter}
-                onResetFilters={handleDashboardReset}
-              />
-            </Suspense>
-          );
+            );
+          default:
+            // Si solo es 'dashboard' sin subTab, redirigir a 'mapeo' por defecto
+            if (reporteTab === 'dashboard') {
+              startTransition(() => {
+                setActiveTab('reportes-dashboard-mapeo');
+              });
+              return null;
+            }
+        }
+      }
+      
+      switch (reporteTab) {
+        case 'dashboard':
+          // Redirigir a mapeo por defecto
+          startTransition(() => {
+            setActiveTab('reportes-dashboard-mapeo');
+          });
+          return null;
         case 'alertas':
           return <AlertasMain />;
         case 'mensajes':
@@ -645,6 +704,8 @@ return hasFormDataChanges || hasMultipleDataChanges;
               onTableSelect={handleTableSelect}
           activeSubTab={activeSubTab}
           onSubTabChange={handleSubTabChange}
+          dashboardSubTab={dashboardSubTab}
+          onDashboardSubTabChange={handleDashboardSubTabChange}
           formData={currentFormData}
           multipleData={currentMultipleData}
           massiveFormData={currentMassiveFormData}
