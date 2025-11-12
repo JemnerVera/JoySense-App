@@ -4086,7 +4086,7 @@ return [];
 
           const sensoresDeNodos = sensorsData.filter(sensor => 
 
-            sensor.nodoid && nodoIds.includes(sensor.nodoid)
+            sensor.nodoid && nodoIds.includes(sensor.nodoid) && sensor.statusid === 1 // Solo sensores activos
 
           );
 
@@ -4130,7 +4130,7 @@ console.log('🏷️ Tipos filtrados por nodos para umbral masivo:', {
 
             const sensoresDeNodos = sensorsData.filter(sensor => 
 
-              sensor.nodoid && nodoIds.includes(sensor.nodoid)
+              sensor.nodoid && nodoIds.includes(sensor.nodoid) && sensor.statusid === 1 // Solo sensores activos
 
             );
 
@@ -4148,9 +4148,9 @@ filteredTipos = filteredTipos.filter(tipo =>
             // Filtrar tipos por nodo específico individual (para metrica sensor)
             const nodoId = parseInt(filterParams.nodoid);
             
-            // Obtener sensores que pertenecen a este nodo específico
+            // Obtener sensores que pertenecen a este nodo específico (solo activos)
             const sensoresDelNodo = sensorsData.filter(sensor => 
-              sensor.nodoid && sensor.nodoid === nodoId
+              sensor.nodoid && sensor.nodoid === nodoId && sensor.statusid === 1 // Solo sensores activos
             );
             
             const tiposDelNodo = sensoresDelNodo.map(sensor => sensor.tipoid);
