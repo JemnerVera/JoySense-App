@@ -53,6 +53,13 @@ const MassiveUmbralFormLazy = lazy(() =>
   })
 );
 
+const MassivePerfilUmbralFormLazy = lazy(() => 
+  import('../MassivePerfilUmbralForm').then(module => {
+    console.log('📦 MassivePerfilUmbralForm cargado dinámicamente');
+    return { default: module.MassivePerfilUmbralForm };
+  })
+);
+
 const MultipleMetricaSensorFormLazy = lazy(() => 
   import('../MultipleMetricaSensorForm').then(module => {
     console.log('📦 MultipleMetricaSensorForm cargado dinámicamente');
@@ -282,6 +289,14 @@ export const MassiveUmbralFormLazyWithBoundary: React.FC<any> = (props) => (
   </LazyComponentErrorBoundary>
 );
 
+export const MassivePerfilUmbralFormLazyWithBoundary: React.FC<any> = (props) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <MassivePerfilUmbralFormLazy {...props} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
 export const MultipleMetricaSensorFormLazyWithBoundary: React.FC<any> = (props) => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
@@ -306,6 +321,7 @@ export {
   DashboardLazy,
   NormalInsertFormLazy,
   MassiveUmbralFormLazy,
+  MassivePerfilUmbralFormLazy,
   MultipleMetricaSensorFormLazy,
   DashboardHierarchyLazy,
   MetricaPorLoteLazy,

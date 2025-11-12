@@ -94,7 +94,7 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
     } else if (selectedTable === 'correo') {
       // Solo Estado y Actualizar para CORREO (sin Crear ni Masivo)
       return allOperations.filter(op => op.id === 'status' || op.id === 'update');
-    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'umbral') {
+    } else if (selectedTable === 'sensor' || selectedTable === 'metricasensor' || selectedTable === 'umbral' || selectedTable === 'perfilumbral') {
       // Para tablas de multiple insert: Estado, Crear, Actualizar y Masivo
       return allOperations;
     } else {

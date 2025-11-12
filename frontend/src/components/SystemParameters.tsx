@@ -63,6 +63,7 @@ import { AdvancedSensorUpdateForm } from './AdvancedSensorUpdateForm';
 // Components - Lazy
 import { MultipleMetricaSensorFormLazyWithBoundary } from './LazyComponents';
 import { MassiveUmbralFormLazyWithBoundary } from './LazyComponents';
+import { MassivePerfilUmbralFormLazyWithBoundary } from './LazyComponents';
 import { NormalInsertFormLazyWithBoundary } from './LazyComponents';
 
 // Components - Other
@@ -256,13 +257,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
 
-      console.log('🔄 SystemParameters: Syncing with propSelectedTable:', { 
-
-        propSelectedTable, 
-
-        currentSelectedTable: selectedTable 
-
-      });
 
       setSelectedTable(propSelectedTable);
 
@@ -285,22 +279,7 @@ useEffect(() => {
 // Función para manejar el cambio de pestaña y limpiar mensajes
 
   const handleTabChange = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
-
-    console.log('🔄 handleTabChange called:', { 
-
-      currentTab: activeSubTab, 
-
-      targetTab: tab, 
-
-      selectedTable,
-
-      formData,
-
-      multipleData: getMultipleData()
-
-    });
-
-// Verificar si hay cambios sin guardar
+    // Verificar si hay cambios sin guardar
 
     const hasChanges = hasSignificantChanges(formData, selectedTable, activeSubTab, getMultipleData());
 
@@ -971,17 +950,6 @@ const handleReplicateNodoForMetricaSensor = (nodo: any) => {
 
     const metricasDelNodo = tableData.filter(metrica => metrica.nodoid === nodo.nodoid);
 
-console.log('🔍 Replicando nodo para métricas sensor:', {
-
-      nodo: nodo.nodo,
-
-      nodoid: nodo.nodoid,
-
-      metricasEncontradas: metricasDelNodo.length,
-
-      metricas: metricasDelNodo
-
-    });
 
 if (metricasDelNodo.length > 0) {
 
@@ -1943,17 +1911,6 @@ window.addEventListener('beforeunload', handleBeforeUnload);
   // Función específica para obtener opciones únicas para usuarioperfil
   const getUniqueOptionsForUsuarioPerfilField = (columnName: string, filterParams?: { usuarioid?: string; perfilid?: string }) => {
 
-    console.log('🔍 getUniqueOptionsForUsuarioPerfilField Debug:', {
-
-      columnName,
-
-      filterParams,
-
-      userDataLength: userData.length,
-
-      perfilesDataLength: perfilesData.length
-
-    });
 
 switch (columnName) {
 
@@ -3073,20 +3030,6 @@ if (idMapping[selectedTable]) {
 
     }
 
-console.log('🔍 Debug - handleSelectRowForUpdate:', {
-
-      row,
-
-      selectedTable,
-
-      newFormData,
-
-      rowId,
-
-      rowKeys: Object.keys(row)
-
-    });
-
 setUpdateFormData(newFormData);
 
   };
@@ -3596,21 +3539,6 @@ return [];
 
         if (selectedTable === 'umbral') {
 
-          console.log('🔍 Debug umbral masivo - Datos disponibles:', {
-
-            sensorsDataLength: sensorsData.length,
-
-            tiposDataLength: tiposData.length,
-
-            metricasensorDataLength: metricasensorData.length,
-
-            umbralesDataLength: umbralesData.length,
-
-            nodosDataLength: nodosData.length,
-
-            filterParams
-
-          });
 
 // Obtener nodos que tienen sensor (desde la tabla sensor)
 
@@ -3620,15 +3548,6 @@ return [];
 
             .map((s: any) => s.nodoid);
 
-console.log('🔍 Nodos con sensores (todos):', {
-
-            nodosConSensor: nodosConSensor.length,
-
-            primeros5: nodosConSensor.slice(0, 5),
-
-            todosLosNodosConSensor: nodosConSensor
-
-          });
 
 // Si se proporciona entidadid, filtrar por entidad
 
@@ -3644,15 +3563,6 @@ console.log('🔍 Nodos con sensores (todos):', {
 
             const tiposIds = tiposConEntidad.map((t: any) => t.tipoid);
 
-console.log('🔍 Tipos con entidad:', {
-
-              entidadid: filterParams.entidadid,
-
-              tiposConEntidad: tiposConEntidad.length,
-
-              tiposIds: tiposIds.slice(0, 5)
-
-            });
 
 const sensoresConEntidad = sensorsData.filter((s: any) => 
 
@@ -3666,15 +3576,6 @@ const sensoresConEntidad = sensorsData.filter((s: any) =>
 
               .map((s: any) => s.nodoid);
 
-console.log('🔍 Sensores con entidad:', {
-
-              sensoresConEntidad: sensoresConEntidad.length,
-
-              nodosConSensor: nodosConSensor.length,
-
-              primeros5: nodosConSensor.slice(0, 5)
-
-            });
 
           }
 
@@ -6829,6 +6730,86 @@ setMessage({
 
   };
 
+  // Función para manejar la creación masiva de perfilumbral
+  const handleMassivePerfilUmbralCreation = async (dataToApply: any[]) => {
+    if (!selectedTable || !user || selectedTable !== 'perfilumbral') return;
+
+    try {
+      setLoading(true);
+
+      const usuarioid = getCurrentUserId();
+      const currentTimestamp = new Date().toISOString();
+
+      // Preparar datos con campos de auditoría
+      const preparedData = dataToApply.map(item => ({
+        ...item,
+        usercreatedid: usuarioid,
+        usermodifiedid: usuarioid,
+        datecreated: currentTimestamp,
+        datemodified: currentTimestamp
+      }));
+
+      // Crear perfilumbral para cada combinación de perfil + umbral
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const perfilUmbralData of preparedData) {
+        try {
+          // Verificar si ya existe
+          const existing = perfilumbralData?.find((pu: any) => 
+            pu.perfilid === perfilUmbralData.perfilid && 
+            pu.umbralid === perfilUmbralData.umbralid
+          );
+
+          if (existing) {
+            // Actualizar existente usando clave compuesta
+            await JoySenseService.updateTableRowByCompositeKey('perfilumbral', {
+              perfilid: perfilUmbralData.perfilid,
+              umbralid: perfilUmbralData.umbralid
+            }, {
+              statusid: perfilUmbralData.statusid,
+              usermodifiedid: perfilUmbralData.usermodifiedid,
+              datemodified: perfilUmbralData.datemodified
+            });
+            successCount++;
+          } else {
+            // Crear nuevo
+            await JoySenseService.insertTableRow('perfilumbral', perfilUmbralData);
+            successCount++;
+          }
+        } catch (error: any) {
+          console.error('Error procesando perfilumbral:', error);
+          errorCount++;
+        }
+      }
+
+      // Recargar datos
+      loadTableDataWrapper();
+      loadTableInfo();
+      loadUpdateData();
+      loadCopyData();
+      loadRelatedTablesData();
+
+      if (errorCount > 0) {
+        setMessage({ 
+          type: 'warning', 
+          text: `Se procesaron ${successCount} perfilumbrales exitosamente, ${errorCount} fallaron` 
+        });
+      } else {
+        setMessage({ 
+          type: 'success', 
+          text: `Se procesaron ${successCount} perfilumbrales exitosamente` 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error en creación masiva de perfilumbral:', error);
+      const errorResponse = handleMultipleInsertError(error, 'perfilumbrales');
+      setMessage({ type: errorResponse.type, text: errorResponse.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 // Función para manejar la creación masiva de umbrales (LEGACY - COMPLEJA) - COMENTADA
   /*
   const handleMassiveUmbralCreation = async (dataToApply: any[]) => {
@@ -9948,6 +9929,42 @@ return getDisplayValueLocal(row, col.columnName);
                       getFundoName={getFundoName}
 
                       localizacionesData={localizacionesData}
+
+                    />
+
+                  ) : selectedTable === 'perfilumbral' ? (
+
+                    <MassivePerfilUmbralFormLazyWithBoundary
+
+                      getUniqueOptionsForField={getUniqueOptionsForField}
+
+                      onApply={handleMassivePerfilUmbralCreation}
+
+                      onCancel={() => {
+
+                        setCancelAction(() => () => {
+
+                          setMessage(null);
+
+                        });
+
+                        setShowCancelModal(true);
+
+                      }}
+
+                      loading={loading}
+
+                      paisSeleccionado={paisSeleccionado}
+
+                      empresaSeleccionada={empresaSeleccionada}
+
+                      fundoSeleccionado={fundoSeleccionado}
+
+                      getPaisName={getPaisName}
+
+                      getEmpresaName={getEmpresaName}
+
+                      getFundoName={getFundoName}
 
                     />
 
