@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { useLanguage } from '../contexts/LanguageContext';
+import { JoySenseService } from '../services/backend-api';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -46,12 +47,12 @@ interface MetricaData {
   selected: boolean;
   expanded: boolean;
   umbralesPorTipo: {
-    [tipoid: number]: {
+    [tipoid: number]: Array<{
       minimo: string;
       maximo: string;
       criticidadid: number | null;
       umbral: string;
-    }
+    }>;
   };
 }
 
@@ -59,6 +60,18 @@ interface FormData {
   fundoid: number | null;
   entidadid: number | null;
   metricasData: MetricaData[];
+}
+
+interface UmbralDataToApply {
+  ubicacionid: number;
+  nodoid: number;
+  tipoid: number;
+  metricaid: number;
+  criticidadid: number;
+  umbral: string;
+  minimo: number;
+  maximo: number;
+  statusid: number;
 }
 
 // ============================================================================
@@ -95,6 +108,17 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   const [allNodesSelected, setAllNodesSelected] = useState(false);
   const [assignedSensorTypes, setAssignedSensorTypes] = useState<SelectedTipo[]>([]);
   const [nodeSensorTypes, setNodeSensorTypes] = useState<{[nodoid: number]: SelectedTipo[]}>({});
+  
+  // Estados para replicación
+  const [replicateMode, setReplicateMode] = useState(false);
+  const [sourceNodeId, setSourceNodeId] = useState<number | null>(null);
+  const [sourceUmbrales, setSourceUmbrales] = useState<any[]>([]);
+  const [loadingSourceUmbrales, setLoadingSourceUmbrales] = useState(false);
+  const [selectedUmbralesToReplicate, setSelectedUmbralesToReplicate] = useState<Map<string, number[]>>(new Map()); // key: "metricaid-tipoid", value: umbralid[]
+  const [showReplicationModal, setShowReplicationModal] = useState(false);
+  const [criticidadesData, setCriticidadesData] = useState<any[]>([]);
+  const modalClosedManuallyRef = React.useRef(false);
+  const previousSourceNodeIdRef = React.useRef<number | null>(null);
 
   // Obtener opciones para los dropdowns
   const fundosOptions = useMemo(() => 
@@ -315,19 +339,78 @@ setAssignedSensorTypes(assignedTypes);
     }));
   };
 
-  // Manejar cambio de umbral por tipo
-  const handleUmbralChange = (metricaid: number, tipoid: number, field: string, value: string) => {
+  // Manejar cambio de umbral por tipo (ahora con arrays)
+  const handleUmbralChange = (metricaid: number, tipoid: number, umbralIndex: number, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       metricasData: prev.metricasData.map(metrica => {
         if (metrica.metricaid === metricaid) {
-          const updatedUmbralesPorTipo = {
-            ...metrica.umbralesPorTipo,
-            [tipoid]: {
-              ...metrica.umbralesPorTipo[tipoid],
-              [field]: field === 'criticidadid' ? (value ? parseInt(value) : null) : value
-            }
+          const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
+          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
+          
+          // Asegurar que el array tenga al menos un elemento en el índice especificado
+          while (umbralesDelTipo.length <= umbralIndex) {
+            umbralesDelTipo.push({
+              minimo: '',
+              maximo: '',
+              criticidadid: null,
+              umbral: ''
+            });
+          }
+          
+          // Actualizar el umbral específico
+          umbralesDelTipo[umbralIndex] = {
+            ...umbralesDelTipo[umbralIndex],
+            [field]: field === 'criticidadid' ? (value ? parseInt(value) : null) : value
           };
+          
+          updatedUmbralesPorTipo[tipoid] = umbralesDelTipo;
+          return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
+        }
+        return metrica;
+      })
+    }));
+  };
+
+  // Agregar un nuevo umbral para un tipo específico
+  const handleAddUmbral = (metricaid: number, tipoid: number) => {
+    setFormData(prev => ({
+      ...prev,
+      metricasData: prev.metricasData.map(metrica => {
+        if (metrica.metricaid === metricaid) {
+          const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
+          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
+          
+          updatedUmbralesPorTipo[tipoid] = [
+            ...umbralesDelTipo,
+            {
+              minimo: '',
+              maximo: '',
+              criticidadid: null,
+              umbral: ''
+            }
+          ];
+          
+          return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
+        }
+        return metrica;
+      })
+    }));
+  };
+
+  // Eliminar un umbral específico
+  const handleRemoveUmbral = (metricaid: number, tipoid: number, umbralIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      metricasData: prev.metricasData.map(metrica => {
+        if (metrica.metricaid === metricaid) {
+          const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
+          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
+          
+          if (umbralesDelTipo.length > umbralIndex) {
+            updatedUmbralesPorTipo[tipoid] = umbralesDelTipo.filter((_, index) => index !== umbralIndex);
+          }
+          
           return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
         }
         return metrica;
@@ -349,8 +432,10 @@ setAssignedSensorTypes(assignedTypes);
                  formData.metricasData.some(m => m.selected) || 
                  selectedNodes.some(node => node.selected) ||
                  formData.metricasData.some(m => 
-                   m.selected && Object.values(m.umbralesPorTipo).some(u => 
-                     u.minimo && u.maximo && u.criticidadid && u.umbral
+                   m.selected && Object.values(m.umbralesPorTipo).some(umbrales => 
+                     Array.isArray(umbrales) && umbrales.some(u => 
+                       u.minimo && u.maximo && u.criticidadid && u.umbral
+                     )
                    )
                  )
       };
@@ -369,9 +454,12 @@ setAssignedSensorTypes(assignedTypes);
     const hasAssignedTipos = assignedSensorTypes.length > 0;
     const hasMetricas = formData.metricasData.some(metrica => {
       if (!metrica.selected) return false;
-      return Object.values(metrica.umbralesPorTipo).some(umbral => 
-        umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
-      );
+      return Object.values(metrica.umbralesPorTipo).some(umbrales => {
+        if (!Array.isArray(umbrales)) return false;
+        return umbrales.some(umbral => 
+          umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
+        );
+      });
     });
     const hasValidNodeTypes = validationResult.isValid;
     
@@ -388,7 +476,7 @@ setAssignedSensorTypes(assignedTypes);
     if (!isFormValid()) return;
 
     const selectedNodesData = getSelectedNodes();
-    const dataToApply = [];
+    const dataToApply: UmbralDataToApply[] = [];
 
     // Crear datos para cada combinación de nodo-tipo-métrica
     // Solo procesar tipos que están realmente asignados a cada nodo específico
@@ -420,36 +508,39 @@ for (const tipoOption of tiposDelNodo) {
                 continue;
               }
               
-              const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid];
+              const umbralesDelTipo = metrica.umbralesPorTipo[tipo.tipoid];
+              const umbralesArray = Array.isArray(umbralesDelTipo) ? umbralesDelTipo : (umbralesDelTipo ? [umbralesDelTipo] : []);
               
-              // Solo incluir si el umbral para este tipo tiene todos los campos requeridos
-              if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
-                // Obtener ubicacionid desde la tabla localizacion
-                const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
-                if (!localizacion || !localizacion.ubicacionid) {
-                  console.error('❌ Nodo sin localización o ubicacionid:', { 
-                    nodo: node.nodo, 
-                    nodoid: node.nodoid, 
-                    localizacion: localizacion 
-                  });
-                  continue; // Saltar este nodo si no tiene localización
+              // Procesar cada umbral válido
+              umbralesArray.forEach(umbralTipo => {
+                // Solo incluir si el umbral tiene todos los campos requeridos
+                if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
+                  // Obtener ubicacionid desde la tabla localizacion
+                  const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
+                  if (!localizacion || !localizacion.ubicacionid) {
+                    console.error('❌ Nodo sin localización o ubicacionid:', { 
+                      nodo: node.nodo, 
+                      nodoid: node.nodoid, 
+                      localizacion: localizacion 
+                    });
+                    return; // Saltar este umbral si no tiene localización
+                  }
+                  
+                  const umbralData = {
+                    ubicacionid: localizacion.ubicacionid,
+                    nodoid: node.nodoid,
+                    tipoid: tipo.tipoid,
+                    metricaid: metrica.metricaid,
+                    criticidadid: umbralTipo.criticidadid,
+                    umbral: umbralTipo.umbral,
+                    minimo: parseFloat(umbralTipo.minimo),
+                    maximo: parseFloat(umbralTipo.maximo),
+                    statusid: 1 // Activo por defecto
+                  };
+                  
+                  dataToApply.push(umbralData);
                 }
-                
-                const umbralData = {
-                  ubicacionid: localizacion.ubicacionid,
-                  nodoid: node.nodoid,
-                  tipoid: tipo.tipoid,
-                  metricaid: metrica.metricaid,
-                  criticidadid: umbralTipo.criticidadid,
-                  umbral: umbralTipo.umbral,
-                  minimo: parseFloat(umbralTipo.minimo),
-                  maximo: parseFloat(umbralTipo.maximo),
-                  statusid: 1 // Activo por defecto
-                };
-                
-                dataToApply.push(umbralData);
-              } else {
-              }
+              });
             }
           }
         }
@@ -458,6 +549,500 @@ for (const tipoOption of tiposDelNodo) {
 
     onApply(dataToApply);
   };
+
+  // Cargar criticidades
+  useEffect(() => {
+    const loadCriticidades = async () => {
+      try {
+        const criticidades = await JoySenseService.getTableData('criticidad', 1000);
+        setCriticidadesData(criticidades || []);
+      } catch (error) {
+        console.error('Error cargando criticidades:', error);
+        setCriticidadesData([]);
+      }
+    };
+    loadCriticidades();
+  }, []);
+
+  // Mapa de criticidad ID a nombre
+  const criticidadMap = useMemo(() => {
+    const map = new Map<number, string>();
+    criticidadesData.forEach((c: any) => {
+      if (c.criticidadid && c.criticidad) {
+        map.set(c.criticidadid, c.criticidad);
+      }
+    });
+    return map;
+  }, [criticidadesData]);
+
+  // Mapa de criticidad ID a grado (para ordenamiento)
+  const criticidadGradoMap = useMemo(() => {
+    const map = new Map<number, number>();
+    criticidadesData.forEach((c: any) => {
+      if (c.criticidadid && c.grado !== undefined) {
+        map.set(c.criticidadid, c.grado || 999); // Si no tiene grado, usar 999 para ponerlo al final
+      }
+    });
+    return map;
+  }, [criticidadesData]);
+
+  // Organizar umbrales por métrica y tipo para mostrar en la UI
+  const umbralesOrganizados = useMemo(() => {
+    if (!sourceUmbrales.length) return {};
+
+    const metricasOptions = getUniqueOptionsForField('metricaid');
+    const tiposOptions = formData.entidadid 
+      ? getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid.toString() })
+      : [];
+
+    const organizados: { [metricaid: number]: { metrica: string; tipos: { [tipoid: number]: { tipo: string; umbrales: any[] } } } } = {};
+
+    sourceUmbrales.forEach((umbral: any) => {
+      const metricaOption = metricasOptions.find((m: any) => parseInt(m.value.toString()) === umbral.metricaid);
+      const tipoOption = tiposOptions.find((t: any) => parseInt(t.value.toString()) === umbral.tipoid);
+
+      if (!metricaOption || !tipoOption) return;
+
+      const metricaid = umbral.metricaid;
+      const tipoid = umbral.tipoid;
+
+      if (!organizados[metricaid]) {
+        organizados[metricaid] = {
+          metrica: metricaOption.label || `Métrica ${metricaid}`,
+          tipos: {}
+        };
+      }
+
+      if (!organizados[metricaid].tipos[tipoid]) {
+        organizados[metricaid].tipos[tipoid] = {
+          tipo: tipoOption.label || `Tipo ${tipoid}`,
+          umbrales: []
+        };
+      }
+
+      organizados[metricaid].tipos[tipoid].umbrales.push(umbral);
+    });
+
+    // Ordenar umbrales por grado de criticidad (ascendente: grado 1 primero, grado 4 último)
+    Object.keys(organizados).forEach(metricaid => {
+      Object.keys(organizados[parseInt(metricaid)].tipos).forEach(tipoid => {
+        organizados[parseInt(metricaid)].tipos[parseInt(tipoid)].umbrales.sort((a: any, b: any) => {
+          const gradoA = criticidadGradoMap.get(a.criticidadid) || 999;
+          const gradoB = criticidadGradoMap.get(b.criticidadid) || 999;
+          return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
+        });
+      });
+    });
+
+    return organizados;
+  }, [sourceUmbrales, formData.entidadid, getUniqueOptionsForField, criticidadGradoMap]);
+
+  // Función para manejar la selección de umbrales (múltiples por métrica-tipo)
+  const handleUmbralToggle = (metricaid: number, tipoid: number, umbralid: number) => {
+    setSelectedUmbralesToReplicate(prev => {
+      const newMap = new Map(prev);
+      const key = `${metricaid}-${tipoid}`;
+      const currentSelection = newMap.get(key) || [];
+      
+      if (currentSelection.includes(umbralid)) {
+        // Deseleccionar: remover de la lista
+        const updated = currentSelection.filter(id => id !== umbralid);
+        if (updated.length === 0) {
+          newMap.delete(key);
+        } else {
+          newMap.set(key, updated);
+        }
+      } else {
+        // Seleccionar: agregar a la lista
+        newMap.set(key, [...currentSelection, umbralid]);
+      }
+      
+      return newMap;
+    });
+  };
+
+  // Función para seleccionar todos los umbrales
+  const handleSelectAllUmbrales = () => {
+    const allSelected = new Map<string, number[]>();
+    
+    Object.entries(umbralesOrganizados).forEach(([metricaid, data]) => {
+      Object.entries(data.tipos).forEach(([tipoid, tipoData]) => {
+        const key = `${metricaid}-${tipoid}`;
+        const umbralids = tipoData.umbrales.map((u: any) => u.umbralid);
+        allSelected.set(key, umbralids);
+      });
+    });
+    
+    setSelectedUmbralesToReplicate(allSelected);
+  };
+
+  // Función para aplicar los umbrales seleccionados al formulario
+  const handleApplySelectedUmbrales = () => {
+    const totalSelected = Array.from(selectedUmbralesToReplicate.values()).flat().length;
+    if (totalSelected === 0) return;
+
+    // Obtener todos los umbralids seleccionados
+    const allUmbralids = Array.from(selectedUmbralesToReplicate.values()).flat();
+    const umbralesSeleccionados = sourceUmbrales.filter((u: any) => 
+      allUmbralids.includes(u.umbralid)
+    );
+
+    // Agrupar umbrales por métrica y tipo (ahora como arrays)
+    const umbralesPorMetrica: { [metricaid: number]: { [tipoid: number]: any[] } } = {};
+    
+    umbralesSeleccionados.forEach((umbral: any) => {
+      if (!umbralesPorMetrica[umbral.metricaid]) {
+        umbralesPorMetrica[umbral.metricaid] = {};
+      }
+      if (!umbralesPorMetrica[umbral.metricaid][umbral.tipoid]) {
+        umbralesPorMetrica[umbral.metricaid][umbral.tipoid] = [];
+      }
+      umbralesPorMetrica[umbral.metricaid][umbral.tipoid].push({
+        minimo: umbral.minimo?.toString() || '',
+        maximo: umbral.maximo?.toString() || '',
+        criticidadid: umbral.criticidadid || null,
+        umbral: umbral.umbral || ''
+      });
+    });
+
+    // Actualizar el formulario con los umbrales seleccionados
+    setFormData(prev => ({
+      ...prev,
+      metricasData: prev.metricasData.map(metrica => {
+        const umbralesReplicados = umbralesPorMetrica[metrica.metricaid] || {};
+        const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
+        
+        // Aplicar umbrales replicados solo para tipos que existen en assignedSensorTypes
+        assignedSensorTypes.forEach(tipo => {
+          if (umbralesReplicados[tipo.tipoid]) {
+            // Si ya hay umbrales, agregar a la lista. Si no, crear nueva lista.
+            const existingUmbrales = updatedUmbralesPorTipo[tipo.tipoid] || [];
+            const newUmbrales = umbralesReplicados[tipo.tipoid];
+            
+            // Combinar y ordenar por grado de criticidad
+            const combinedUmbrales = [...existingUmbrales, ...newUmbrales];
+            combinedUmbrales.sort((a, b) => {
+              const gradoA = criticidadGradoMap.get(a.criticidadid || 0) || 999;
+              const gradoB = criticidadGradoMap.get(b.criticidadid || 0) || 999;
+              return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
+            });
+            
+            updatedUmbralesPorTipo[tipo.tipoid] = combinedUmbrales;
+          }
+        });
+
+        return {
+          ...metrica,
+          selected: Object.keys(umbralesReplicados).length > 0 ? true : metrica.selected,
+          umbralesPorTipo: updatedUmbralesPorTipo
+        };
+      })
+    }));
+
+    // Limpiar selección y cerrar modal
+    setSelectedUmbralesToReplicate(new Map());
+    setShowReplicationModal(false);
+    modalClosedManuallyRef.current = true;
+  };
+
+  // Cargar umbrales cuando se selecciona un nodo fuente (sin aplicar automáticamente)
+  useEffect(() => {
+    const loadUmbralesFromSource = async () => {
+      if (!sourceNodeId) {
+        setSourceUmbrales([]);
+        previousSourceNodeIdRef.current = null;
+        modalClosedManuallyRef.current = false;
+        return;
+      }
+
+      // Solo abrir modal si el sourceNodeId cambió (nuevo nodo seleccionado)
+      const isNewNodeSelection = previousSourceNodeIdRef.current !== sourceNodeId;
+      
+      // Si es una nueva selección de nodo, resetear el flag de cierre manual
+      if (isNewNodeSelection) {
+        modalClosedManuallyRef.current = false;
+      }
+      
+      previousSourceNodeIdRef.current = sourceNodeId;
+
+      try {
+        setLoadingSourceUmbrales(true);
+        // Obtener umbrales del nodo fuente usando getTableData con filtro
+        const allUmbrales = await JoySenseService.getTableData('umbral', 1000);
+        const umbralesDelNodo = allUmbrales.filter((u: any) => 
+          u.nodoid === sourceNodeId && u.statusid === 1 // Solo umbrales activos
+        );
+        setSourceUmbrales(umbralesDelNodo);
+
+        // Filtrar umbrales compatibles con el nodo destino (solo cargar, no aplicar)
+        if (umbralesDelNodo.length > 0) {
+          // Obtener tipos y métricas de los nodos destino seleccionados
+          const selectedNodesData = selectedNodes.filter(node => node.selected);
+          if (selectedNodesData.length > 0) {
+            const [allSensors, allMetricaSensors] = await Promise.all([
+              JoySenseService.getTableData('sensor', 1000),
+              JoySenseService.getTableData('metricasensor', 1000)
+            ]);
+
+            const targetNodeIds = selectedNodesData.map(n => n.nodoid);
+            const targetSensors = allSensors.filter((s: any) => targetNodeIds.includes(s.nodoid));
+            const targetMetricaSensors = allMetricaSensors.filter((ms: any) => targetNodeIds.includes(ms.nodoid));
+
+            // Obtener tipos y métricas del nodo destino
+            const targetTipos = new Set(targetSensors.map((s: any) => s.tipoid));
+            const targetMetricas = new Set(targetMetricaSensors.map((ms: any) => ms.metricaid));
+
+            // Filtrar umbrales: solo los que coincidan con tipos Y métricas del nodo destino
+            const umbralesCompatibles = umbralesDelNodo.filter((umbral: any) => 
+              targetTipos.has(umbral.tipoid) && targetMetricas.has(umbral.metricaid)
+            );
+
+            // Actualizar sourceUmbrales para mostrar solo los compatibles
+            setSourceUmbrales(umbralesCompatibles);
+            // Limpiar selección previa
+            setSelectedUmbralesToReplicate(new Map());
+            // Solo abrir modal si es una nueva selección de nodo y hay umbrales disponibles
+            if (umbralesCompatibles.length > 0 && isNewNodeSelection && !modalClosedManuallyRef.current) {
+              setShowReplicationModal(true);
+              modalClosedManuallyRef.current = false; // Resetear el flag
+            }
+          } else {
+            setSourceUmbrales(umbralesDelNodo);
+            setSelectedUmbralesToReplicate(new Map());
+            // Solo abrir modal si es una nueva selección de nodo y hay umbrales disponibles
+            if (umbralesDelNodo.length > 0 && isNewNodeSelection && !modalClosedManuallyRef.current) {
+              setShowReplicationModal(true);
+              modalClosedManuallyRef.current = false; // Resetear el flag
+            }
+          }
+        } else {
+          setSourceUmbrales([]);
+          setSelectedUmbralesToReplicate(new Map());
+        }
+      } catch (error) {
+        console.error('Error cargando umbrales del nodo fuente:', error);
+        setSourceUmbrales([]);
+      } finally {
+        setLoadingSourceUmbrales(false);
+      }
+    };
+
+    loadUmbralesFromSource();
+  }, [sourceNodeId, selectedNodes, assignedSensorTypes]);
+
+  // Resetear el flag cuando se cierra el modal manualmente
+  const handleCloseModal = () => {
+    setShowReplicationModal(false);
+    setSelectedUmbralesToReplicate(new Map());
+    modalClosedManuallyRef.current = true;
+  };
+
+  // Estado para almacenar nodos fuente compatibles
+  const [compatibleSourceNodes, setCompatibleSourceNodes] = useState<any[]>([]);
+  const [loadingCompatibleNodes, setLoadingCompatibleNodes] = useState(false);
+
+  // Cargar nodos fuente compatibles basados en los nodos destino seleccionados
+  useEffect(() => {
+    const loadCompatibleSourceNodes = async () => {
+      const selectedNodesData = selectedNodes.filter(node => node.selected);
+      
+      if (selectedNodesData.length === 0 || !formData.fundoid || !formData.entidadid) {
+        setCompatibleSourceNodes([]);
+        return;
+      }
+
+      try {
+        setLoadingCompatibleNodes(true);
+        
+        // Obtener sensores y metricasensores de los nodos destino seleccionados
+        const [allSensors, allMetricaSensors, allUmbrales] = await Promise.all([
+          JoySenseService.getTableData('sensor', 1000),
+          JoySenseService.getTableData('metricasensor', 1000),
+          JoySenseService.getTableData('umbral', 1000)
+        ]);
+
+        // Obtener tipos de sensores y métricas de los nodos destino
+        const targetNodeIds = selectedNodesData.map(n => n.nodoid);
+        
+        // Crear perfiles de configuración para cada nodo destino
+        // Un perfil es la combinación de tipos y métricas de un nodo
+        const targetNodeProfiles = targetNodeIds.map(nodoid => {
+          const nodeSensors = allSensors.filter((s: any) => s.nodoid === nodoid);
+          const nodeMetricaSensors = allMetricaSensors.filter((ms: any) => ms.nodoid === nodoid);
+          
+          const tipos = Array.from(new Set(nodeSensors.map((s: any) => s.tipoid))).sort((a, b) => a - b);
+          const metricas = Array.from(new Set(nodeMetricaSensors.map((ms: any) => ms.metricaid))).sort((a, b) => a - b);
+          
+          return {
+            nodoid,
+            tipos,
+            metricas,
+            tiposKey: JSON.stringify(tipos),
+            metricasKey: JSON.stringify(metricas)
+          };
+        });
+
+        // Obtener TODOS los nodos del fundo y entidad (no filtrar por umbrales)
+        // Necesitamos obtener nodos directamente, no usar getUniqueOptionsForField que filtra nodos sin umbrales
+        // Primero obtener todos los nodos disponibles
+        const allNodosData = await JoySenseService.getTableData('nodo', 1000);
+        
+        // Obtener localizaciones para filtrar por fundo
+        const allLocalizaciones = await JoySenseService.getTableData('localizacion', 1000);
+        const allUbicaciones = await JoySenseService.getTableData('ubicacion', 1000);
+        
+        // Filtrar ubicaciones por fundo
+        const ubicacionesDelFundo = allUbicaciones.filter((u: any) => u.fundoid === formData.fundoid);
+        const ubicacionIds = new Set(ubicacionesDelFundo.map((u: any) => u.ubicacionid));
+        
+        // Obtener nodos que están en localizaciones del fundo
+        const localizacionesDelFundo = allLocalizaciones.filter((l: any) => 
+          ubicacionIds.has(l.ubicacionid)
+        );
+        const nodoIdsDelFundo = new Set(localizacionesDelFundo.map((l: any) => l.nodoid));
+        
+        // Filtrar nodos por fundo y entidad
+        // Para entidad, necesitamos verificar a través de sensores
+        const nodosDelFundo = allNodosData.filter((n: any) => nodoIdsDelFundo.has(n.nodoid));
+        
+        // Filtrar por entidad: obtener sensores de la entidad y luego sus nodos
+        const sensoresDeEntidad = allSensors.filter((s: any) => {
+          // Necesitamos obtener el tipoid del sensor y verificar su entidadid
+          // Por ahora, asumimos que si el nodo tiene sensores, podemos verificar
+          return true; // Temporal, necesitamos verificar entidad
+        });
+        
+        // Obtener tipos de la entidad
+        const allTipos = await JoySenseService.getTableData('tipo', 1000);
+        const tiposDeEntidad = allTipos.filter((t: any) => t.entidadid === formData.entidadid);
+        const tipoIdsDeEntidad = new Set(tiposDeEntidad.map((t: any) => t.tipoid));
+        
+        // Filtrar sensores por tipos de la entidad
+        const sensoresConTiposDeEntidad = allSensors.filter((s: any) => 
+          tipoIdsDeEntidad.has(s.tipoid)
+        );
+        const nodoIdsConEntidad = new Set(sensoresConTiposDeEntidad.map((s: any) => s.nodoid));
+        
+        // Filtrar nodos que están en el fundo Y tienen sensores de la entidad
+        const allNodes = nodosDelFundo
+          .filter((n: any) => nodoIdsConEntidad.has(n.nodoid))
+          .map((n: any) => ({
+            value: n.nodoid,
+            label: n.nodo || `Nodo ${n.nodoid}`
+          }));
+
+        // Obtener nodos que tienen umbrales activos
+        const umbralesActivos = allUmbrales.filter((u: any) => u.statusid === 1);
+        const nodoidsConUmbrales = new Set(umbralesActivos.map((u: any) => u.nodoid));
+
+        // Filtrar nodos fuente que:
+        // 1. No estén en los nodos destino seleccionados
+        // 2. Tengan los mismos tipos de sensores (sense.sensor) que AL MENOS UN nodo destino
+        // 3. Tengan las mismas métricas (sense.metricasensor) que AL MENOS UN nodo destino
+        // 4. Tengan umbrales configurados
+        const compatibleNodes = allNodes
+          .filter(option => {
+            const nodoid = parseInt(option.value.toString());
+            
+            // Excluir nodos destino seleccionados
+            if (targetNodeIds.includes(nodoid)) return false;
+            
+            // Debe tener umbrales
+            if (!nodoidsConUmbrales.has(nodoid)) return false;
+
+            // Obtener configuración del nodo fuente
+            const nodeSensors = allSensors.filter((s: any) => s.nodoid === nodoid);
+            const nodeMetricaSensors = allMetricaSensors.filter((ms: any) => ms.nodoid === nodoid);
+            
+            const nodeTipos = Array.from(new Set(nodeSensors.map((s: any) => s.tipoid))).sort((a, b) => a - b);
+            const nodeMetricas = Array.from(new Set(nodeMetricaSensors.map((ms: any) => ms.metricaid))).sort((a, b) => a - b);
+            
+            const nodeTiposKey = JSON.stringify(nodeTipos);
+            const nodeMetricasKey = JSON.stringify(nodeMetricas);
+
+            // Verificar si este nodo fuente es compatible con AL MENOS UN nodo destino
+            // Es compatible si tiene TODOS los tipos O TODAS las métricas del nodo destino
+            // (puede tener más, pero debe tener todos los del destino en al menos una categoría)
+            const isCompatible = targetNodeProfiles.some(profile => {
+              // Verificar que el nodo fuente tenga todos los tipos del destino
+              const hasAllTipos = profile.tipos.every(tipo => nodeTipos.includes(tipo));
+              
+              // Verificar que el nodo fuente tenga todas las métricas del destino
+              const hasAllMetricas = profile.metricas.every(metrica => nodeMetricas.includes(metrica));
+              
+              // Compatible si tiene todos los tipos O todas las métricas
+              return hasAllTipos || hasAllMetricas;
+            });
+
+
+            return isCompatible;
+          })
+          .map(option => ({
+            value: parseInt(option.value.toString()),
+            label: option.label
+          }));
+
+        // Log detallado de nodos evaluados
+        const nodesEvaluated = allNodes.map(option => {
+          const nodoid = parseInt(option.value.toString());
+          const nodeSensors = allSensors.filter((s: any) => s.nodoid === nodoid);
+          const nodeMetricaSensors = allMetricaSensors.filter((ms: any) => ms.nodoid === nodoid);
+          const nodeTipos = Array.from(new Set(nodeSensors.map((s: any) => s.tipoid))).sort((a, b) => a - b);
+          const nodeMetricas = Array.from(new Set(nodeMetricaSensors.map((ms: any) => ms.metricaid))).sort((a, b) => a - b);
+          const hasUmbrales = nodoidsConUmbrales.has(nodoid);
+          const isTarget = targetNodeIds.includes(nodoid);
+          
+          return {
+            nodoid,
+            label: option.label,
+            hasUmbrales,
+            isTarget,
+            tipos: nodeTipos,
+            metricas: nodeMetricas
+          };
+        });
+
+        // Log resumido
+        console.log('🔍 Debug - Nodos fuente compatibles:', {
+          targetNodeIds,
+          targetNodeProfile: targetNodeProfiles[0] ? {
+            nodoid: targetNodeProfiles[0].nodoid,
+            tipos: targetNodeProfiles[0].tipos,
+            metricas: targetNodeProfiles[0].metricas
+          } : null,
+          totalNodes: allNodes.length,
+          nodesWithUmbrales: nodoidsConUmbrales.size,
+          compatibleNodes: compatibleNodes.length,
+          compatibleNodeIds: compatibleNodes.map(n => n.value)
+        });
+
+        setCompatibleSourceNodes(compatibleNodes);
+      } catch (error) {
+        console.error('Error cargando nodos fuente compatibles:', error);
+        setCompatibleSourceNodes([]);
+      } finally {
+        setLoadingCompatibleNodes(false);
+      }
+    };
+
+    loadCompatibleSourceNodes();
+  }, [selectedNodes, formData.fundoid, formData.entidadid, getUniqueOptionsForField]);
+
+  // Obtener nodos fuente compatibles
+  const sourceNodesOptions = useMemo(() => {
+    return compatibleSourceNodes;
+  }, [compatibleSourceNodes]);
+
+  // Obtener todas las métricas y tipos para mostrar nombres
+  const allMetricasOptions = useMemo(() => 
+    getUniqueOptionsForField('metricaid'), [getUniqueOptionsForField]
+  );
+  
+  const allTiposOptions = useMemo(() => {
+    if (!formData.entidadid) return [];
+    return getUniqueOptionsForField('tipoid', { entidadid: formData.entidadid.toString() });
+  }, [formData.entidadid, getUniqueOptionsForField]);
+
 
   // Limpiar formulario
   const handleCancel = () => {
@@ -469,12 +1054,20 @@ for (const tipoOption of tiposDelNodo) {
     setSelectedNodes([]);
     setAllNodesSelected(false);
     setAssignedSensorTypes([]);
+    setReplicateMode(false);
+    setSourceNodeId(null);
+    setSourceUmbrales([]);
     onCancel();
   };
 
   const selectedNodesCount = getSelectedNodes().length;
   const assignedTiposCount = assignedSensorTypes.length; // Todos los tipos asignados se procesan
-  const validMetricasCount = formData.metricasData.filter(m => m.selected && Object.values(m.umbralesPorTipo).some(u => u.minimo && u.maximo && u.criticidadid && u.umbral)).length;
+  const validMetricasCount = formData.metricasData.filter(m => 
+    m.selected && Object.values(m.umbralesPorTipo).some(umbrales => {
+      if (!Array.isArray(umbrales)) return false;
+      return umbrales.some(u => u.minimo && u.maximo && u.criticidadid && u.umbral);
+    })
+  ).length;
   const totalCombinations = selectedNodesCount * assignedTiposCount * validMetricasCount;
 
   // Validación mejorada para mostrar qué falta
@@ -786,13 +1379,29 @@ for (const tipoOption of tiposDelNodo) {
             <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4 max-h-96 overflow-y-auto custom-scrollbar">
               <div className="space-y-2">
                 {assignedSensorTypes.map((tipo) => (
-                  <div key={tipo.tipoid} className="flex items-center px-3 py-2 bg-gray-100 dark:bg-neutral-800 rounded">
-                    <div className="w-4 h-4 bg-orange-500 rounded mr-3 flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                  <div key={tipo.tipoid} className="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-neutral-800 rounded">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-orange-500 rounded mr-3 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                      <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
+                        {tipo.tipo.toUpperCase()}
+                      </span>
                     </div>
-                    <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
-                      {tipo.tipo.toUpperCase()}
-                    </span>
+                    <svg 
+                      className="w-5 h-5 text-gray-400 dark:text-neutral-500" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      aria-label="Solo lectura"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" 
+                      />
+                    </svg>
                   </div>
                 ))}
               </div>
@@ -800,6 +1409,89 @@ for (const tipoOption of tiposDelNodo) {
           </div>
         )}
       </div>
+
+      {/* Fila 3.5: Modo Replicación (después de Nodos, antes de Métricas) */}
+      {formData.fundoid && formData.entidadid && selectedNodes.filter(n => n.selected).length > 0 && (
+        <div className="bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={replicateMode}
+                  onChange={(e) => {
+                    setReplicateMode(e.target.checked);
+                    if (!e.target.checked) {
+                      setSourceNodeId(null);
+                      setSourceUmbrales([]);
+                      setSelectedUmbralesToReplicate(new Map());
+                      setShowReplicationModal(false);
+                      modalClosedManuallyRef.current = false;
+                      previousSourceNodeIdRef.current = null;
+                    }
+                  }}
+                  className="w-5 h-5 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                />
+                <span className="text-lg font-bold text-orange-500 font-mono tracking-wider">
+                  REPLICAR UMBRALES DE NODO EXISTENTE
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {replicateMode && (
+            <div className="space-y-4">
+              {/* Selector de nodo fuente */}
+              <div>
+                {loadingCompatibleNodes ? (
+                  <div className="text-center py-4 text-gray-500 dark:text-neutral-400 font-mono text-sm">
+                    Buscando nodos compatibles...
+                  </div>
+                ) : sourceNodesOptions.length === 0 ? (
+                  <div className="bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg p-3">
+                    <div className="text-yellow-300 font-mono text-sm">
+                      ⚠️ No se encontraron nodos fuente compatibles. Los nodos fuente deben tener los mismos tipos de sensores y métricas que los nodos destino seleccionados, y además deben tener umbrales configurados.
+                    </div>
+                  </div>
+                ) : (
+                  <SelectWithPlaceholder
+                    options={sourceNodesOptions}
+                    value={sourceNodeId}
+                    onChange={(value) => setSourceNodeId(value ? parseInt(value.toString()) : null)}
+                    placeholder={`Seleccionar nodo fuente (${sourceNodesOptions.length} disponible${sourceNodesOptions.length !== 1 ? 's' : ''})...`}
+                    disabled={loading || loadingSourceUmbrales || loadingCompatibleNodes}
+                  />
+                )}
+              </div>
+
+              {/* Indicador de carga */}
+              {loadingSourceUmbrales && (
+                <div className="text-center py-4 text-gray-500 dark:text-neutral-400 font-mono text-sm">
+                  Cargando umbrales...
+                </div>
+              )}
+
+              {/* Mensaje cuando no hay umbrales */}
+              {!loadingSourceUmbrales && sourceNodeId && sourceUmbrales.length === 0 && (
+                <div className="bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg p-3">
+                  <div className="text-yellow-300 font-mono text-sm">
+                    ⚠️ El nodo seleccionado no tiene umbrales activos compatibles con los nodos destino.
+                  </div>
+                </div>
+              )}
+
+              {/* Mensaje cuando hay umbrales disponibles */}
+              {!loadingSourceUmbrales && sourceNodeId && sourceUmbrales.length > 0 && (
+                <div className="bg-blue-900 bg-opacity-20 border border-blue-500 rounded-lg p-3">
+                  <div className="text-blue-300 font-mono text-sm">
+                    ℹ️ {sourceUmbrales.length} umbral(es) disponible(s). Selecciona los umbrales en el modal.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Métricas */}
       {assignedSensorTypes.length > 0 && (
@@ -844,73 +1536,114 @@ for (const tipoOption of tiposDelNodo) {
                     <div className="px-3 pb-3 border-t border-gray-300 dark:border-neutral-600">
                       <div className="space-y-4 mt-3">
                         {assignedSensorTypes.map((tipo) => {
-                          const umbralTipo = metrica.umbralesPorTipo[tipo.tipoid] || {
+                          const umbralesDelTipo = metrica.umbralesPorTipo[tipo.tipoid] || [];
+                          const umbralesArray = Array.isArray(umbralesDelTipo) ? umbralesDelTipo : (umbralesDelTipo ? [umbralesDelTipo] : []);
+                          
+                          // Asegurar que haya al menos un umbral vacío
+                          let umbralesToShow = umbralesArray.length > 0 ? umbralesArray : [{
                             minimo: '',
                             maximo: '',
                             criticidadid: null,
                             umbral: ''
-                          };
+                          }];
+                          
+                          // Ordenar por grado de criticidad (ascendente: grado 1 primero, grado 4 último)
+                          umbralesToShow = [...umbralesToShow].sort((a, b) => {
+                            const gradoA = criticidadGradoMap.get(a.criticidadid || 0) || 999;
+                            const gradoB = criticidadGradoMap.get(b.criticidadid || 0) || 999;
+                            return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
+                          });
                           
                           return (
                             <div key={tipo.tipoid} className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4">
-                              <h6 className="text-orange-300 font-mono tracking-wider font-bold mb-3">
-                                {tipo.tipo.toUpperCase()}
-                              </h6>
+                              <div className="flex items-center justify-between mb-3">
+                                <h6 className="text-orange-300 font-mono tracking-wider font-bold">
+                                  {tipo.tipo.toUpperCase()}
+                                </h6>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddUmbral(metrica.metricaid, tipo.tipoid)}
+                                  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors font-mono"
+                                >
+                                  + AGREGAR UMBRAL
+                                </button>
+                              </div>
                               
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                    VALOR MÍNIMO
-                                  </label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={umbralTipo.minimo || ''}
-                                    onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'minimo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    placeholder="0.00"
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                    VALOR MÁXIMO
-                                  </label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={umbralTipo.maximo || ''}
-                                    onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'maximo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    placeholder="100.00"
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                    CRITICIDAD
-                                  </label>
-                                  <SelectWithPlaceholder
-                                    options={criticidadesOptions}
-                                    value={umbralTipo.criticidadid || null}
-                                    onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'criticidadid', value ? value.toString() : '')}
-                                    placeholder="SELECCIONAR"
-                                    disabled={loading}
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                    NOMBRE UMBRAL
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={umbralTipo.umbral || ''}
-                                    onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'umbral', e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
-                                    placeholder="Nombre del umbral"
-                                  />
-                                </div>
+                              <div className="space-y-4">
+                                {umbralesToShow.map((umbralTipo, umbralIndex) => (
+                                  <div key={umbralIndex} className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-600">
+                                    {umbralesToShow.length > 1 && (
+                                      <div className="flex justify-between items-center mb-3">
+                                        <span className="text-xs text-gray-500 dark:text-neutral-400 font-mono">
+                                          Umbral {umbralIndex + 1}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveUmbral(metrica.metricaid, tipo.tipoid, umbralIndex)}
+                                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-mono"
+                                        >
+                                          ELIMINAR
+                                        </button>
+                                      </div>
+                                    )}
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                          VALOR MÍNIMO
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={umbralTipo.minimo || ''}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'minimo', e.target.value)}
+                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          placeholder="0.00"
+                                        />
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                          VALOR MÁXIMO
+                                        </label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={umbralTipo.maximo || ''}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'maximo', e.target.value)}
+                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          placeholder="100.00"
+                                        />
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                          CRITICIDAD
+                                        </label>
+                                        <SelectWithPlaceholder
+                                          options={criticidadesOptions}
+                                          value={umbralTipo.criticidadid || null}
+                                          onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'criticidadid', value ? value.toString() : '')}
+                                          placeholder="SELECCIONAR"
+                                          disabled={loading}
+                                        />
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                          NOMBRE UMBRAL
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={umbralTipo.umbral || ''}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'umbral', e.target.value)}
+                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
+                                          placeholder="Nombre del umbral"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           );
@@ -982,6 +1715,117 @@ for (const tipoOption of tiposDelNodo) {
           <span>CANCELAR</span>
         </button>
       </div>
+
+      {/* Modal de selección de umbrales para replicación */}
+      {showReplicationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-neutral-900 border border-orange-500 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-orange-500 font-mono tracking-wider">
+                SELECCIONAR UMBRALES PARA REPLICAR
+              </h3>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleSelectAllUmbrales}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-mono font-bold text-sm rounded-lg transition-colors"
+                >
+                  SELECCIONAR TODO
+                </button>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-500 dark:text-neutral-400 hover:text-gray-700 dark:hover:text-neutral-200 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar mb-4">
+              {loadingSourceUmbrales ? (
+                <div className="text-center py-8 text-gray-500 dark:text-neutral-400 font-mono text-sm">
+                  Cargando umbrales...
+                </div>
+              ) : sourceUmbrales.length === 0 ? (
+                <div className="bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg p-4">
+                  <div className="text-yellow-300 font-mono text-sm">
+                    ⚠️ El nodo seleccionado no tiene umbrales activos compatibles con los nodos destino.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(umbralesOrganizados).map(([metricaid, data]) => (
+                    <div key={metricaid} className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-3">
+                      <h5 className="text-base font-bold text-orange-500 font-mono tracking-wider mb-3">
+                        {data.metrica.toUpperCase()}
+                      </h5>
+                      <div className="space-y-3 ml-4">
+                        {Object.entries(data.tipos).map(([tipoid, tipoData]) => (
+                          <div key={tipoid} className="bg-white dark:bg-neutral-900 rounded-lg p-3 border border-gray-200 dark:border-neutral-700">
+                            <h6 className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">
+                              {tipoData.tipo}
+                            </h6>
+                            <div className="space-y-2">
+                              {tipoData.umbrales.map((umbral: any) => {
+                                const key = `${umbral.metricaid}-${umbral.tipoid}`;
+                                const selectedUmbralids = selectedUmbralesToReplicate.get(key) || [];
+                                const isSelected = selectedUmbralids.includes(umbral.umbralid);
+                                const criticidadNombre = umbral.criticidadid 
+                                  ? (criticidadMap.get(umbral.criticidadid) || `ID: ${umbral.criticidadid}`)
+                                  : 'N/A';
+                                
+                                return (
+                                  <label
+                                    key={umbral.umbralid}
+                                    className="flex items-start cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800 p-2 rounded"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => handleUmbralToggle(umbral.metricaid, umbral.tipoid, umbral.umbralid)}
+                                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3 mt-1"
+                                    />
+                                    <div className="flex-1 text-xs font-mono text-gray-600 dark:text-neutral-400">
+                                      <div>
+                                        <span className="font-semibold">Mín:</span> {umbral.minimo ?? 'N/A'} | 
+                                        <span className="font-semibold"> Máx:</span> {umbral.maximo ?? 'N/A'} | 
+                                        <span className="font-semibold"> Umbral:</span> {umbral.umbral ?? 'N/A'} | 
+                                        <span className="font-semibold"> Criticidad:</span> {criticidadNombre}
+                                      </div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer del modal con botones */}
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-300 dark:border-neutral-700">
+              <button
+                onClick={handleCloseModal}
+                className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold rounded-lg transition-colors"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleApplySelectedUmbrales}
+                disabled={Array.from(selectedUmbralesToReplicate.values()).flat().length === 0}
+                className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-mono font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                APLICAR {Array.from(selectedUmbralesToReplicate.values()).flat().length} UMBRAL(ES) SELECCIONADO(S)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
