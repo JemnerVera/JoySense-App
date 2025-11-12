@@ -3126,8 +3126,8 @@ app.post('/api/sense/metricasensor', async (req, res) => {
 // Endpoint para obtener mediciones con filtros
 app.get('/api/sense/mediciones', async (req, res) => {
   try {
-    const { ubicacionId, metricaId, startDate, endDate, limit, countOnly, getAll } = req.query;
-    console.log('🔍 Backend: Obteniendo mediciones del schema sense...', { ubicacionId, metricaId, startDate, endDate, limit, countOnly, getAll });
+    const { ubicacionId, metricaId, nodoid, startDate, endDate, limit, countOnly, getAll } = req.query;
+    console.log('🔍 Backend: Obteniendo mediciones del schema sense...', { ubicacionId, metricaId, nodoid, startDate, endDate, limit, countOnly, getAll });
     
     // Si solo necesitamos el conteo
     if (countOnly === 'true') {
@@ -3137,6 +3137,9 @@ app.get('/api/sense/mediciones', async (req, res) => {
       
       if (ubicacionId) {
         countQuery = countQuery.eq('ubicacionid', ubicacionId);
+      }
+      if (nodoid) {
+        countQuery = countQuery.eq('nodoid', parseInt(nodoid));
       }
       if (metricaId) {
         countQuery = countQuery.eq('metricaid', parseInt(metricaId));
@@ -3164,16 +3167,28 @@ app.get('/api/sense/mediciones', async (req, res) => {
       let from = 0;
       const batchSize = 1000;
       let hasMore = true;
+      const maxBatches = 100; // Límite de seguridad: máximo 100,000 registros
+      let batchCount = 0;
+      const startTime = Date.now();
+      const maxTime = 30000; // Timeout de 30 segundos
       
-      while (hasMore) {
+      while (hasMore && batchCount < maxBatches) {
+        // Verificar timeout
+        if (Date.now() - startTime > maxTime) {
+          console.warn(`⚠️ Timeout alcanzado después de ${maxTime}ms. Se cargaron ${allData.length} registros.`);
+          break;
+        }
+        
+        // CRÍTICO: Aplicar filtros ANTES de ordenar para mejor rendimiento
         let batchQuery = supabase
           .from('medicion')
-          .select('*')
-          .order('fecha', { ascending: false })
-          .range(from, from + batchSize - 1);
+          .select('*');
         
-        // Aplicar filtros
-        if (ubicacionId) {
+        // Aplicar filtros - CRÍTICO: filtrar por nodoid primero para reducir datos significativamente
+        if (nodoid) {
+          batchQuery = batchQuery.eq('nodoid', parseInt(nodoid));
+          // Si hay nodoid, no necesitamos filtrar por ubicacionId (redundante y más lento)
+        } else if (ubicacionId) {
           batchQuery = batchQuery.eq('ubicacionid', ubicacionId);
         }
         if (metricaId) {
@@ -3186,10 +3201,21 @@ app.get('/api/sense/mediciones', async (req, res) => {
           batchQuery = batchQuery.lte('fecha', endDate);
         }
         
+        // Ordenar DESPUÉS de aplicar filtros (mucho más eficiente)
+        batchQuery = batchQuery.order('fecha', { ascending: false });
+        
+        // Aplicar paginación al final
+        batchQuery = batchQuery.range(from, from + batchSize - 1);
+        
         const { data: batchData, error } = await batchQuery;
         
         if (error) {
           console.error('❌ Error en batch:', error);
+          // Si es un timeout, retornar lo que tenemos
+          if (error.code === '57014' || error.message?.includes('timeout')) {
+            console.warn(`⚠️ Timeout en batch. Retornando ${allData.length} registros cargados.`);
+            break;
+          }
           throw error;
         }
         
@@ -3197,10 +3223,15 @@ app.get('/api/sense/mediciones', async (req, res) => {
           allData = allData.concat(batchData);
           from += batchSize;
           hasMore = batchData.length === batchSize;
+          batchCount++;
           console.log(`📦 Batch: ${batchData.length} registros, Total acumulado: ${allData.length}`);
         } else {
           hasMore = false;
         }
+      }
+      
+      if (batchCount >= maxBatches) {
+        console.warn(`⚠️ Límite de batches alcanzado (${maxBatches}). Se cargaron ${allData.length} registros.`);
       }
       
       console.log(`✅ Backend: Mediciones obtenidas (getAll): ${allData.length}`);
@@ -3212,7 +3243,10 @@ app.get('/api/sense/mediciones', async (req, res) => {
       .from('medicion')
       .select('*');
     
-    // Aplicar filtros
+    // Aplicar filtros - CRÍTICO: filtrar por nodoid primero
+    if (nodoid) {
+      query = query.eq('nodoid', parseInt(nodoid));
+    }
     if (ubicacionId) {
       query = query.eq('ubicacionid', ubicacionId);
     }
@@ -3226,25 +3260,64 @@ app.get('/api/sense/mediciones', async (req, res) => {
       query = query.lte('fecha', endDate);
     }
     
-    if (limit) {
-      query = query.limit(parseInt(limit));
-    } else {
-      // Límite por defecto si no se especifica
-      query = query.limit(1000);
-    }
-    
-    // Ordenar por fecha descendente (más recientes primero)
+    // Ordenar por fecha descendente (más recientes primero) ANTES del límite
     query = query.order('fecha', { ascending: false });
     
-    const { data, error } = await query;
+    // Supabase tiene un límite de 1000 registros por consulta
+    // Si el límite solicitado es mayor, usar paginación automática
+    const requestedLimit = limit ? parseInt(limit) : 1000;
     
-    if (error) {
-      console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
+    if (requestedLimit > 1000) {
+      // Usar paginación para obtener más de 1000 registros
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      const maxBatches = Math.ceil(requestedLimit / batchSize);
+      
+      for (let i = 0; i < maxBatches; i++) {
+        const batchQuery = query.range(from, from + batchSize - 1);
+        const { data: batchData, error } = await batchQuery;
+        
+        if (error) {
+          console.error('❌ Error en batch:', error);
+          // Si hay error, retornar lo que tenemos hasta ahora
+          if (allData.length > 0) {
+            console.log(`✅ Backend: Mediciones obtenidas (parcial): ${allData.length}`);
+            return res.json(allData);
+          }
+          return res.status(500).json({ error: error.message });
+        }
+        
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          
+          // Si obtuvimos menos de batchSize, no hay más datos
+          if (batchData.length < batchSize || allData.length >= requestedLimit) {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+      
+      // Limitar al límite solicitado
+      const finalData = allData.slice(0, requestedLimit);
+      console.log(`✅ Backend: Mediciones obtenidas: ${finalData.length} (solicitado: ${requestedLimit})`);
+      return res.json(finalData);
+    } else {
+      // Límite <= 1000, usar consulta simple
+      query = query.limit(requestedLimit);
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('❌ Error backend:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      
+      console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
+      return res.json(data || []);
     }
-    
-    console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
-    res.json(data || []);
   } catch (error) {
     console.error('❌ Error in /api/sense/mediciones:', error);
     res.status(500).json({ error: error.message });
@@ -3454,8 +3527,8 @@ app.get('/api/sense/umbrales-por-lote', async (req, res) => {
 // Endpoint para obtener mediciones con entidad (con JOIN)
 app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
   try {
-    const { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll } = req.query;
-    console.log('🔍 Backend: Obteniendo mediciones con entidad del schema sense...', { ubicacionId, startDate, endDate, limit, entidadId, countOnly, getAll });
+    const { ubicacionId, nodoid, startDate, endDate, limit, entidadId, countOnly, getAll } = req.query;
+    console.log('🔍 Backend: Obteniendo mediciones con entidad del schema sense...', { ubicacionId, nodoid, startDate, endDate, limit, entidadId, countOnly, getAll });
     
     // Si hay entidadId, obtener ubicaciones primero para filtrar
     let ubicacionIdsFiltradas = null;
@@ -3490,6 +3563,9 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       } else if (ubicacionIdsFiltradas) {
         countQuery = countQuery.in('ubicacionid', ubicacionIdsFiltradas);
       }
+      if (nodoid) {
+        countQuery = countQuery.eq('nodoid', parseInt(nodoid));
+      }
       if (startDate) {
         countQuery = countQuery.gte('fecha', startDate);
       }
@@ -3513,16 +3589,28 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       let from = 0;
       const batchSize = 1000;
       let hasMore = true;
+      const maxBatches = 100; // Límite de seguridad: máximo 100,000 registros
+      let batchCount = 0;
+      const startTime = Date.now();
+      const maxTime = 30000; // Timeout de 30 segundos
       
-      while (hasMore) {
+      while (hasMore && batchCount < maxBatches) {
+        // Verificar timeout
+        if (Date.now() - startTime > maxTime) {
+          console.warn(`⚠️ Timeout alcanzado después de ${maxTime}ms. Se cargaron ${allData.length} registros.`);
+          break;
+        }
+        
+        // CRÍTICO: Aplicar filtros ANTES de ordenar para mejor rendimiento
         let batchQuery = supabase
           .from('medicion')
-          .select('*')
-          .order('fecha', { ascending: false })
-          .range(from, from + batchSize - 1);
+          .select('*');
         
-        // Aplicar filtros
-        if (ubicacionId) {
+        // Aplicar filtros - CRÍTICO: filtrar por nodoid primero para reducir datos significativamente
+        if (nodoid) {
+          batchQuery = batchQuery.eq('nodoid', parseInt(nodoid));
+          // Si hay nodoid, no necesitamos filtrar por ubicacionId (redundante y más lento)
+        } else if (ubicacionId) {
           batchQuery = batchQuery.eq('ubicacionid', ubicacionId);
         } else if (ubicacionIdsFiltradas) {
           batchQuery = batchQuery.in('ubicacionid', ubicacionIdsFiltradas);
@@ -3534,10 +3622,21 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
           batchQuery = batchQuery.lte('fecha', endDate);
         }
         
+        // Ordenar DESPUÉS de aplicar filtros (mucho más eficiente)
+        batchQuery = batchQuery.order('fecha', { ascending: false });
+        
+        // Aplicar paginación al final
+        batchQuery = batchQuery.range(from, from + batchSize - 1);
+        
         const { data: batchData, error } = await batchQuery;
         
         if (error) {
           console.error('❌ Error en batch:', error);
+          // Si es un timeout, retornar lo que tenemos
+          if (error.code === '57014' || error.message?.includes('timeout')) {
+            console.warn(`⚠️ Timeout en batch. Retornando ${allData.length} registros cargados.`);
+            break;
+          }
           throw error;
         }
         
@@ -3545,10 +3644,15 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
           allData = allData.concat(batchData);
           from += batchSize;
           hasMore = batchData.length === batchSize;
+          batchCount++;
           console.log(`📦 Batch: ${batchData.length} registros, Total acumulado: ${allData.length}`);
         } else {
           hasMore = false;
         }
+      }
+      
+      if (batchCount >= maxBatches) {
+        console.warn(`⚠️ Límite de batches alcanzado (${maxBatches}). Se cargaron ${allData.length} registros.`);
       }
       
       console.log(`✅ Backend: Mediciones con entidad obtenidas (getAll): ${allData.length}`);
@@ -3560,7 +3664,10 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       .from('medicion')
       .select('*');
     
-    // Aplicar filtros
+    // Aplicar filtros - CRÍTICO: filtrar por nodoid primero
+    if (nodoid) {
+      query = query.eq('nodoid', parseInt(nodoid));
+    }
     if (ubicacionId) {
       query = query.eq('ubicacionid', ubicacionId);
     } else if (ubicacionIdsFiltradas) {
@@ -3573,25 +3680,64 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       query = query.lte('fecha', endDate);
     }
     
-    if (limit) {
-      query = query.limit(parseInt(limit));
-    } else {
-      // Límite por defecto si no se especifica
-      query = query.limit(1000);
-    }
-    
-    // Ordenar por fecha descendente (más recientes primero)
+    // Ordenar por fecha descendente (más recientes primero) ANTES del límite
     query = query.order('fecha', { ascending: false });
     
-    const { data, error } = await query;
+    // Supabase tiene un límite de 1000 registros por consulta
+    // Si el límite solicitado es mayor, usar paginación automática
+    const requestedLimit = limit ? parseInt(limit) : 1000;
     
-    if (error) {
-      console.error('❌ Error backend:', error);
-      return res.status(500).json({ error: error.message });
+    if (requestedLimit > 1000) {
+      // Usar paginación para obtener más de 1000 registros
+      let allData = [];
+      let from = 0;
+      const batchSize = 1000;
+      const maxBatches = Math.ceil(requestedLimit / batchSize);
+      
+      for (let i = 0; i < maxBatches; i++) {
+        const batchQuery = query.range(from, from + batchSize - 1);
+        const { data: batchData, error } = await batchQuery;
+        
+        if (error) {
+          console.error('❌ Error en batch:', error);
+          // Si hay error, retornar lo que tenemos hasta ahora
+          if (allData.length > 0) {
+            console.log(`✅ Backend: Mediciones con entidad obtenidas (parcial): ${allData.length}`);
+            return res.json(allData);
+          }
+          return res.status(500).json({ error: error.message });
+        }
+        
+        if (batchData && batchData.length > 0) {
+          allData = allData.concat(batchData);
+          from += batchSize;
+          
+          // Si obtuvimos menos de batchSize, no hay más datos
+          if (batchData.length < batchSize || allData.length >= requestedLimit) {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+      
+      // Limitar al límite solicitado
+      const finalData = allData.slice(0, requestedLimit);
+      console.log(`✅ Backend: Mediciones con entidad obtenidas: ${finalData.length} (solicitado: ${requestedLimit})`);
+      return res.json(finalData);
+    } else {
+      // Límite <= 1000, usar consulta simple
+      query = query.limit(requestedLimit);
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('❌ Error backend:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      
+      console.log(`✅ Backend: Mediciones con entidad obtenidas: ${data?.length || 0}`);
+      return res.json(data || []);
     }
-    
-    console.log(`✅ Backend: Mediciones con entidad obtenidas: ${data?.length || 0}`);
-    res.json(data || []);
   } catch (error) {
     console.error('❌ Error in /api/sense/mediciones-con-entidad:', error);
     res.status(500).json({ error: error.message });

@@ -385,6 +385,7 @@ export class JoySenseService {
     fundoId?: number;
     ubicacionId?: number;
     metricaId?: number;
+    nodoid?: number;
     startDate?: string;
     endDate?: string;
     limit?: number;
@@ -400,6 +401,7 @@ export class JoySenseService {
         // Construir query string para el backend
         const params = new URLSearchParams();
         if (filters.ubicacionId) params.append('ubicacionId', filters.ubicacionId.toString());
+        if (filters.nodoid) params.append('nodoid', filters.nodoid.toString());
         if (filters.metricaId) params.append('metricaId', filters.metricaId.toString());
         if (filters.startDate) params.append('startDate', filters.startDate);
         if (filters.endDate) params.append('endDate', filters.endDate);

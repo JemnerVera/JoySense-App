@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
@@ -119,99 +119,26 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [detailedStartDate, setDetailedStartDate] = useState<string>('')
   const [detailedEndDate, setDetailedEndDate] = useState<string>('')
   const [selectedNode, setSelectedNode] = useState<any>(null)
+  const [loadingDetailedData, setLoadingDetailedData] = useState(false)
 
-  // Cargar datos de mediciones
-  useEffect(() => {
-    loadMediciones()
-  }, [filters, selectedNode])
+  // Refs para cancelar requests y debouncing
+  const loadMedicionesAbortControllerRef = useRef<AbortController | null>(null)
+  const loadMedicionesTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const loadDetailedAnalysisAbortControllerRef = useRef<AbortController | null>(null)
+  const loadDetailedAnalysisTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Función para cargar mediciones para el análisis detallado con rango de fechas específico
-  const loadMedicionesForDetailedAnalysis = async (startDateStr: string, endDateStr: string) => {
-    if (!filters.entidadId || !filters.ubicacionId || !selectedNode) {
-      return
-    }
-
-    try {
-      const formatDate = (dateStr: string, isEnd: boolean = false) => {
-        const date = new Date(dateStr)
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        if (isEnd) {
-          return `${year}-${month}-${day} 23:59:59`
-        }
-        return `${year}-${month}-${day} 00:00:00`
-      }
-
-      const startDateFormatted = formatDate(startDateStr, false)
-      const endDateFormatted = formatDate(endDateStr, true)
-
-      // Usar getAll: true para obtener todos los registros del rango (con paginación en backend)
-      const allData = await JoySenseService.getMediciones({
-        entidadId: filters.entidadId,
-        ubicacionId: filters.ubicacionId,
-        startDate: startDateFormatted,
-        endDate: endDateFormatted,
-        getAll: true // Esto activará la paginación en el backend
-      })
-
-      // Verificar que allData sea un array
-      if (!Array.isArray(allData)) {
-        console.warn('⚠️ Datos no válidos recibidos del backend')
-        return
-      }
-
-      // Filtrar por nodo seleccionado
-      const filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
-
-      // Actualizar mediciones con los nuevos datos
-      // Combinar con datos existentes para no perder información de otras métricas
-      setMediciones(prevMediciones => {
-        // Filtrar mediciones existentes que no estén en el rango de fechas del modal
-        const medicionesFueraDelRango = prevMediciones.filter(m => {
-          const medicionDate = new Date(m.fecha)
-          const startDate = new Date(startDateStr + 'T00:00:00')
-          const endDate = new Date(endDateStr + 'T23:59:59')
-          return medicionDate < startDate || medicionDate > endDate
-        })
-        
-        // Combinar mediciones fuera del rango con las nuevas mediciones del rango
-        const combinedMediciones = [...medicionesFueraDelRango, ...filteredData]
-        
-        // Eliminar duplicados basándose en medicionid
-        const uniqueMediciones = combinedMediciones.filter((medicion, index, self) =>
-          index === self.findIndex(m => m.medicionid === medicion.medicionid)
-        )
-        
-        return uniqueMediciones
-      })
-    } catch (err: any) {
-      console.error('❌ Error cargando datos para análisis detallado:', err)
-      // No mostrar error al usuario, solo loguear
-    }
-  }
-
-  // Recargar datos cuando cambien las fechas del análisis detallado
-  useEffect(() => {
-    if (showDetailedAnalysis && detailedStartDate && detailedEndDate && selectedNode) {
-      // Recargar datos del backend con el nuevo rango de fechas
-      loadMedicionesForDetailedAnalysis(detailedStartDate, detailedEndDate)
-    }
-  }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode])
-
-  // Cargar entidades, ubicaciones, métricas y tipos
-  useEffect(() => {
-    loadEntidades()
-    loadUbicaciones()
-    loadMetricas()
-    loadTipos()
-  }, [])
-
-  const loadMediciones = async () => {
+  // Función para cargar mediciones (declarada antes del useEffect que la usa)
+  const loadMediciones = useCallback(async (signal?: AbortSignal) => {
     if (!filters.entidadId || !filters.ubicacionId) {
       setMediciones([])
       return
     }
+    
+    // Si el request fue cancelado, no continuar
+    if (signal?.aborted) {
+      return
+    }
+    
     setLoading(true)
     setError(null)
 
@@ -221,8 +148,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       let allData
       
       if (selectedNode) {
-        // Cuando hay nodo seleccionado, obtener más datos para asegurar que haya información
-        // Limitar a las últimas 30 días para tener datos suficientes pero no sobrecargar
+        // Cuando hay nodo seleccionado, usar getAll: true para obtener TODOS los datos del nodo
+        // Los sensores LoRaWAN emiten cada 15 minutos, así que necesitamos todos los datos
+        // Filtrar por nodoid directamente en el backend para mayor eficiencia
         const endDate = new Date()
         const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
         
@@ -242,9 +170,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         allData = await JoySenseService.getMediciones({
           entidadId: filters.entidadId,
           ubicacionId: filters.ubicacionId,
+          nodoid: selectedNode.nodoid, // Filtrar por nodo en el backend
           startDate: startDateStr,
           endDate: endDateStr,
-          limit: 10000 // Más registros para tener historial del nodo
+          getAll: true // Obtener TODOS los datos con paginación
         })
       } else {
         // Sin nodo seleccionado, usar las últimas 6 horas
@@ -280,25 +209,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return
       }
 
-      // Filtrar por nodo seleccionado si existe
+      // Si ya se filtró por nodoid en el backend, no necesitamos filtrar de nuevo
       let filteredData = allData
-      if (selectedNode) {
-        filteredData = allData.filter(m => m.nodoid === selectedNode.nodoid)
-        
-        // Si después de filtrar no hay datos, intentar sin límite de tiempo
-        if (filteredData.length === 0) {
-          // Buscar todas las mediciones del nodo sin límite de tiempo (pero con límite de registros)
-          const allDataNoLimit = await JoySenseService.getMediciones({
-            entidadId: filters.entidadId,
-            ubicacionId: filters.ubicacionId,
-            limit: 10000
-          })
-          
-          if (Array.isArray(allDataNoLimit)) {
-            filteredData = allDataNoLimit.filter(m => m.nodoid === selectedNode.nodoid)
-          }
-        }
-      }
       
       if (filteredData.length === 0) {
         setMediciones([])
@@ -313,6 +225,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       setMediciones(filteredData)
       setError(null) // Limpiar cualquier error previo
     } catch (err: any) {
+      // Ignorar errores de cancelación
+      if (err.name === 'AbortError' || signal?.aborted) {
+        return
+      }
+      
       // Solo mostrar errores críticos, no errores temporales o de "no hay datos"
       const errorMessage = err?.message || String(err)
       const isNetworkError = errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')
@@ -331,9 +248,191 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setError("Error al cargar las mediciones")
       }
     } finally {
-      setLoading(false)
+      // Solo actualizar loading si no fue cancelado
+      if (!signal?.aborted) {
+        setLoading(false)
+      }
     }
-  }
+  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid])
+
+  // Cargar datos de mediciones con debouncing y cancelación
+  useEffect(() => {
+    // Cancelar request anterior si existe
+    if (loadMedicionesAbortControllerRef.current) {
+      loadMedicionesAbortControllerRef.current.abort()
+    }
+    
+    // Limpiar timeout anterior
+    if (loadMedicionesTimeoutRef.current) {
+      clearTimeout(loadMedicionesTimeoutRef.current)
+    }
+    
+    // Crear nuevo AbortController
+    const abortController = new AbortController()
+    loadMedicionesAbortControllerRef.current = abortController
+    
+    // Debounce: esperar 300ms antes de cargar
+    loadMedicionesTimeoutRef.current = setTimeout(() => {
+      loadMediciones(abortController.signal)
+    }, 300)
+    
+    // Cleanup
+    return () => {
+      if (loadMedicionesTimeoutRef.current) {
+        clearTimeout(loadMedicionesTimeoutRef.current)
+      }
+      if (abortController) {
+        abortController.abort()
+      }
+    }
+  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid, loadMediciones])
+
+  // Función para cargar mediciones para el análisis detallado con rango de fechas específico
+  const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
+    if (!filters.entidadId || !filters.ubicacionId || !selectedNode) {
+      return
+    }
+
+    // Si el request fue cancelado, no continuar
+    if (signal?.aborted) {
+      return
+    }
+
+    setLoadingDetailedData(true)
+    try {
+      const formatDate = (dateStr: string, isEnd: boolean = false) => {
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        if (isEnd) {
+          return `${year}-${month}-${day} 23:59:59`
+        }
+        return `${year}-${month}-${day} 00:00:00`
+      }
+
+      const startDateFormatted = formatDate(startDateStr, false)
+      const endDateFormatted = formatDate(endDateStr, true)
+
+      const startDate = new Date(startDateStr + 'T00:00:00')
+      const endDate = new Date(endDateStr + 'T23:59:59')
+      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
+      
+      // Para el gráfico detallado, balancear entre suficientes datos y rendimiento
+      // Sensores LoRaWAN emiten cada 15 min = 4 mediciones/hora por tipo/métrica
+      // Estrategia: cargar suficientes datos pero con límites razonables
+      let maxLimit = 20000 // Límite base balanceado
+      let useGetAll = false
+      
+      if (daysDiff > 60) {
+        // Rangos muy grandes: usar getAll con timeout (backend maneja el límite)
+        useGetAll = true
+      } else if (daysDiff > 30) {
+        maxLimit = 30000
+      } else if (daysDiff > 14) {
+        maxLimit = 25000
+      } else if (daysDiff > 7) {
+        maxLimit = 20000
+      } else {
+        maxLimit = 15000 // Rangos pequeños: menos datos necesarios
+      }
+      
+      // Filtrar por nodoid directamente en el backend para mayor eficiencia
+      const filteredData = await JoySenseService.getMediciones({
+        entidadId: filters.entidadId,
+        ubicacionId: filters.ubicacionId,
+        nodoid: selectedNode.nodoid, // Filtrar por nodo en el backend
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        getAll: useGetAll, // Solo usar getAll para rangos muy grandes
+        limit: !useGetAll ? maxLimit : undefined // Limitar para rangos pequeños/medianos
+      })
+
+      // Verificar que filteredData sea un array
+      if (!Array.isArray(filteredData)) {
+        console.warn('⚠️ Datos no válidos recibidos del backend')
+        return
+      }
+
+      // Actualizar mediciones con los nuevos datos
+      // Combinar con datos existentes para no perder información de otras métricas
+      setMediciones(prevMediciones => {
+        // Filtrar mediciones existentes que no estén en el rango de fechas del modal
+        const medicionesFueraDelRango = prevMediciones.filter(m => {
+          const medicionDate = new Date(m.fecha)
+          const startDate = new Date(startDateStr + 'T00:00:00')
+          const endDate = new Date(endDateStr + 'T23:59:59')
+          return medicionDate < startDate || medicionDate > endDate
+        })
+        
+        // Combinar mediciones fuera del rango con las nuevas mediciones del rango
+        const combinedMediciones = [...medicionesFueraDelRango, ...filteredData]
+        
+        // Eliminar duplicados basándose en medicionid
+        const uniqueMediciones = combinedMediciones.filter((medicion, index, self) =>
+          index === self.findIndex(m => m.medicionid === medicion.medicionid)
+        )
+        
+        return uniqueMediciones
+      })
+    } catch (err: any) {
+      // Ignorar errores de cancelación
+      if (err.name === 'AbortError' || signal?.aborted) {
+        return
+      }
+      console.error('❌ Error cargando datos para análisis detallado:', err)
+      // No mostrar error al usuario, solo loguear
+    } finally {
+      // Solo actualizar loading si no fue cancelado
+      if (!signal?.aborted) {
+        setLoadingDetailedData(false)
+      }
+    }
+  }, [filters.entidadId, filters.ubicacionId, selectedNode])
+
+  // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
+  useEffect(() => {
+    if (!showDetailedAnalysis || !detailedStartDate || !detailedEndDate || !selectedNode) {
+      return
+    }
+    
+    // Cancelar request anterior si existe
+    if (loadDetailedAnalysisAbortControllerRef.current) {
+      loadDetailedAnalysisAbortControllerRef.current.abort()
+    }
+    
+    // Limpiar timeout anterior
+    if (loadDetailedAnalysisTimeoutRef.current) {
+      clearTimeout(loadDetailedAnalysisTimeoutRef.current)
+    }
+    
+    // Crear nuevo AbortController
+    const abortController = new AbortController()
+    loadDetailedAnalysisAbortControllerRef.current = abortController
+    
+    // Debounce: esperar 1000ms antes de cargar (más tiempo para análisis detallado y evitar lag)
+    loadDetailedAnalysisTimeoutRef.current = setTimeout(() => {
+      loadMedicionesForDetailedAnalysis(detailedStartDate, detailedEndDate, abortController.signal)
+    }, 1000)
+    
+    // Cleanup
+    return () => {
+      if (loadDetailedAnalysisTimeoutRef.current) {
+        clearTimeout(loadDetailedAnalysisTimeoutRef.current)
+      }
+      if (abortController) {
+        abortController.abort()
+      }
+    }
+  }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode?.nodoid, loadMedicionesForDetailedAnalysis])
+
+  // Cargar entidades, ubicaciones, métricas y tipos
+  useEffect(() => {
+    loadEntidades()
+    loadUbicaciones()
+    loadMetricas()
+    loadTipos()
+  }, [])
 
   const loadEntidades = async () => {
     try {
@@ -393,6 +492,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     let filteredMediciones = sortedMediciones
     let isDateRange = false
+    let timeSpan = 3 * 60 * 60 * 1000 // 3 horas por defecto
 
     if (useCustomRange && detailedStartDate && detailedEndDate) {
       // Usar rango personalizado de fechas del modal de detalle
@@ -405,8 +505,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       
       // Determinar si es un rango de días (más de 1 día)
-      const timeDiff = endDate.getTime() - startDate.getTime()
-      const daysDiff = timeDiff / (1000 * 3600 * 24)
+      timeSpan = endDate.getTime() - startDate.getTime()
+      const daysDiff = timeSpan / (1000 * 3600 * 24)
       isDateRange = daysDiff > 1
       
     } else {
@@ -416,25 +516,60 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
       
-      // Si no hay datos en las últimas 3 horas, mostrar las últimas entradas disponibles
-      // (máximo 20 mediciones o las últimas 24 horas, lo que sea más relevante)
-      if (filteredMediciones.length === 0 && sortedMediciones.length > 0) {
-        // Obtener las últimas 20 mediciones o las últimas 24 horas, lo que sea menor
-        const oneDayAgo = new Date(latestDate.getTime() - 24 * 60 * 60 * 1000)
-        const lastDayMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= oneDayAgo)
+      // Si no hay suficientes datos en las últimas 3 horas, expandir el rango
+      // Para sensores LoRaWAN que emiten cada 15 minutos, en 3 horas debería haber ~12 mediciones por tipo/métrica
+      // Si hay menos de 10 puntos, expandir a 6 horas o más
+      if (filteredMediciones.length < 10 && sortedMediciones.length > 0) {
+        // Expandir a 6 horas
+        const sixHoursAgo = new Date(latestDate.getTime() - 6 * 60 * 60 * 1000)
+        const lastSixHours = sortedMediciones.filter(m => new Date(m.fecha) >= sixHoursAgo)
         
-        if (lastDayMediciones.length > 0) {
-          // Si hay datos del último día, usar esos (máximo 20)
-          filteredMediciones = lastDayMediciones.slice(-20)
+        if (lastSixHours.length >= 10) {
+          filteredMediciones = lastSixHours
         } else {
-          // Si no hay datos del último día, usar las últimas 20 mediciones disponibles
-          filteredMediciones = sortedMediciones.slice(-20)
+          // Si aún no hay suficientes, expandir a 12 horas
+          const twelveHoursAgo = new Date(latestDate.getTime() - 12 * 60 * 60 * 1000)
+          const lastTwelveHours = sortedMediciones.filter(m => new Date(m.fecha) >= twelveHoursAgo)
+          
+          if (lastTwelveHours.length >= 10) {
+            filteredMediciones = lastTwelveHours
+          } else {
+            // Si aún no hay suficientes, usar las últimas 24 horas
+            const oneDayAgo = new Date(latestDate.getTime() - 24 * 60 * 60 * 1000)
+            const lastDayMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= oneDayAgo)
+            
+            if (lastDayMediciones.length > 0) {
+              filteredMediciones = lastDayMediciones
+            } else {
+              // Último recurso: usar todas las mediciones disponibles (máximo 100 para no sobrecargar)
+              filteredMediciones = sortedMediciones.slice(-100)
+            }
+          }
         }
       }
     }
     
-    // Agrupar por tipo de sensor y luego por tiempo
-    const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)))
+    // Determinar granularidad de agrupación basada en cantidad de datos y rango
+    const totalMediciones = filteredMediciones.length
+    const hoursSpan = timeSpan / (1000 * 60 * 60)
+    const daysSpan = hoursSpan / 24
+    
+    // Para el gráfico detallado, hacer muestreo inteligente si hay demasiados datos
+    // El agrupamiento por tiempo reduce los puntos, pero si hay > 30k puntos, muestrear primero
+    let medicionesParaProcesar = filteredMediciones
+    if (useCustomRange && totalMediciones > 30000) {
+      // Muestreo inteligente: mantener distribución temporal uniforme
+      // Calcular puntos necesarios: ~4 puntos por hora × número de horas
+      const estimatedHours = Math.ceil(hoursSpan)
+      const minPointsNeeded = estimatedHours * 4 // Al menos 4 puntos por hora (cada 15 min)
+      const maxPoints = Math.min(Math.max(minPointsNeeded, 15000), 25000) // Entre 15k-25k puntos
+      const step = Math.ceil(totalMediciones / maxPoints)
+      medicionesParaProcesar = filteredMediciones.filter((_, index) => index % step === 0)
+      console.log(`📊 Muestreo aplicado: ${totalMediciones} -> ${medicionesParaProcesar.length} puntos`)
+    }
+    
+    // Agrupar por tipo de sensor y luego por tiempo (usar datos muestreados)
+    const tiposEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.tipoid)))
     const datosPorTipo: { [tipoid: number]: any[] } = {}
     
     // Inicializar datos para cada tipo
@@ -442,20 +577,35 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       datosPorTipo[tipoid] = []
     })
     
-    // Agrupar mediciones por tipo y tiempo
-    filteredMediciones.forEach(medicion => {
+    // Decidir granularidad: si hay pocos datos o rango pequeño, usar minutos; si hay muchos datos, usar horas/días
+    // Para sensores LoRaWAN que emiten cada 15 minutos, necesitamos más granularidad
+    // Para el gráfico detallado, usar granularidad más fina para mantener curvas suaves
+    // Solo agrupar por días si el rango es muy grande (> 7 días)
+    const useMinutes = !isDateRange && (medicionesParaProcesar.length < 500 || hoursSpan < 48)
+    const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
+    const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
+    
+    // Agrupar mediciones por tipo y tiempo (usar datos muestreados si aplica)
+    medicionesParaProcesar.forEach(medicion => {
       const date = new Date(medicion.fecha)
       let timeKey: string
       
-      if (isDateRange) {
+      if (useDays) {
         // Agrupar por fecha (DD/MM) para rangos de días
         const day = String(date.getDate()).padStart(2, '0')
         const month = String(date.getMonth() + 1).padStart(2, '0')
         timeKey = `${day}/${month}`
-      } else {
-        // Agrupar por hora (HH:MM) para rangos de horas
+      } else if (useHours) {
+        // Agrupar por hora (HH:00) para rangos de horas
         const hour = String(date.getHours()).padStart(2, '0')
-        const minute = String(date.getMinutes()).padStart(2, '0')
+        timeKey = `${hour}:00`
+      } else {
+        // Agrupar por 15 minutos (HH:MM) para rangos pequeños o pocos datos
+        // Redondear a múltiplos de 15 minutos para agrupar mediciones cercanas
+        const minutes = date.getMinutes()
+        const roundedMinutes = Math.floor(minutes / 15) * 15
+        const hour = String(date.getHours()).padStart(2, '0')
+        const minute = String(roundedMinutes).padStart(2, '0')
         timeKey = `${hour}:${minute}`
       }
       
@@ -469,6 +619,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
         existingPoint.value = newValue
         existingPoint.count = currentCount + 1
+        // Actualizar timestamp si esta medición es más reciente
+        if (date.getTime() > existingPoint.timestamp) {
+          existingPoint.timestamp = date.getTime()
+        }
       } else {
         // Crear nuevo punto
         datosPorTipo[medicion.tipoid].push({
@@ -482,24 +636,54 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     })
     
-    // Obtener todos los tiempos únicos y ordenarlos
-    const allTimes = Array.from(new Set(filteredMediciones.map(m => {
-      const date = new Date(m.fecha)
-      if (isDateRange) {
-        const day = String(date.getDate()).padStart(2, '0')
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        return `${day}/${month}`
-      } else {
-        const hour = String(date.getHours()).padStart(2, '0')
-        const minute = String(date.getMinutes()).padStart(2, '0')
-        return `${hour}:${minute}`
+    // Ordenar los datos de cada tipo por timestamp antes de crear la estructura final
+    tiposEnMediciones.forEach(tipoid => {
+      if (datosPorTipo[tipoid]) {
+        datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
       }
-    }))).sort((a, b) => {
-      // Ordenar por timestamp
-      const aTime = datosPorTipo[tiposEnMediciones[0]]?.find(p => p.time === a)?.timestamp || 0
-      const bTime = datosPorTipo[tiposEnMediciones[0]]?.find(p => p.time === b)?.timestamp || 0
-      return aTime - bTime
     })
+    
+    // Obtener todos los tiempos únicos ordenados por timestamp
+    const allTimeStamps = new Set<number>()
+    tiposEnMediciones.forEach(tipoid => {
+      datosPorTipo[tipoid].forEach(point => {
+        // Obtener el timestamp del inicio del período según la granularidad
+        const date = new Date(point.timestamp)
+        let periodStart: Date
+        if (useDays) {
+          // Inicio del día
+          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        } else if (useHours) {
+          // Inicio de la hora
+          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours())
+        } else {
+          // Inicio del período de 15 minutos
+          const minutes = date.getMinutes()
+          const roundedMinutes = Math.floor(minutes / 15) * 15
+          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes)
+        }
+        allTimeStamps.add(periodStart.getTime())
+      })
+    })
+    
+    // Convertir timestamps a timeKeys y ordenar
+    const allTimes = Array.from(allTimeStamps)
+      .sort((a, b) => a - b)
+      .map(timestamp => {
+        const date = new Date(timestamp)
+        if (useDays) {
+          const day = String(date.getDate()).padStart(2, '0')
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          return `${day}/${month}`
+        } else if (useHours) {
+          const hour = String(date.getHours()).padStart(2, '0')
+          return `${hour}:00`
+        } else {
+          const hour = String(date.getHours()).padStart(2, '0')
+          const minute = String(date.getMinutes()).padStart(2, '0')
+          return `${hour}:${minute}`
+        }
+      })
     
     // Crear estructura de datos con todas las líneas
     const result: any[] = []
@@ -641,13 +825,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-          </div>
-        )}
-
         {/* Node Selector Console */}
         <NodeSelector
           selectedEntidadId={filters.entidadId}
@@ -667,7 +844,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           onUbicacionChange={onUbicacionChange}
         />
 
-{/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado */}
+        {/* Loading State - Mostrar después del mapa, donde van los gráficos */}
+        {loading && selectedNode && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+          </div>
+        )}
+
+{/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {availableMetrics.map((metric) => {
@@ -837,11 +1021,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <button
                         key={metric.id}
                         onClick={() => setSelectedDetailedMetric(metric.dataKey)}
+                        disabled={loadingDetailedData}
                         className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm ${
                           selectedDetailedMetric === metric.dataKey
                             ? 'bg-green-500 text-white'
                             : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
-                        }`}
+                        } ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {metric.title}
                       </button>
@@ -873,7 +1058,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedStartDate}
                         onChange={(e) => setDetailedStartDate(e.target.value)}
-                        className="px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                        disabled={loadingDetailedData}
+                        className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
                     </div>
                     <div className="flex flex-col">
@@ -882,18 +1068,39 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         type="date"
                         value={detailedEndDate}
                         onChange={(e) => setDetailedEndDate(e.target.value)}
-                        className="px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                        disabled={loadingDetailedData}
+                        className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
                     </div>
                   </div>
 
                   {/* Gráfico detallado */}
                   <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 font-mono tracking-wider">
-                      {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
+                        {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
+                      </h3>
+                      {loadingDetailedData && (
+                        <div className="flex items-center space-x-2 text-green-500">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500"></div>
+                          <span className="text-sm font-mono">Cargando...</span>
+                        </div>
+                      )}
+                    </div>
                     {(() => {
                       const chartData = processChartData(selectedDetailedMetric, true);
+                      if (loadingDetailedData && chartData.length === 0) {
+                        return (
+                          <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
+                            <div className="text-center">
+                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                              <div className="text-gray-600 dark:text-neutral-400 text-lg font-mono">
+                                Cargando datos...
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
                       if (chartData.length === 0) {
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
@@ -909,19 +1116,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           </div>
                         );
                       }
-                      return null;
-                    })()}
-                    {processChartData(selectedDetailedMetric, true).length > 0 && (
-                      <div className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={processChartData(selectedDetailedMetric, true)}>
+                      
+                      // Renderizar el gráfico con los datos procesados
+                      return (
+                        <div className="h-96">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData}>
                           <XAxis
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                             interval={(() => {
-                              const chartData = processChartData(selectedDetailedMetric, true)
+                              // Usar chartData ya calculado arriba
                               // Mostrar máximo 6-8 etiquetas en gráfico detallado
                               if (chartData.length <= 8) return 0
                               if (chartData.length <= 20) return 1
@@ -934,7 +1141,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                           />
                           {(() => {
-                            const chartData = processChartData(selectedDetailedMetric, true)
+                            // Usar chartData ya calculado arriba
                             if (chartData.length === 0) return null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
@@ -951,6 +1158,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 dot={{ r: 4, fill: colors[index % colors.length] }}
                                 activeDot={{ r: 6, fill: colors[index % colors.length] }}
                                 connectNulls={false}
+                                isAnimationActive={true}
+                                animationDuration={300}
                               />
                             ))
                           })()}
@@ -977,7 +1186,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
