@@ -1602,6 +1602,36 @@ app.post('/api/sense/:tableName', async (req, res) => {
       delete insertData.password; // Eliminar contraseña en texto plano
     }
 
+    // Eliminar campos de ID auto-generados para tablas conocidas
+    // Estos campos deben ser generados automáticamente por PostgreSQL
+    const idFieldsToRemove = {
+      'nodo': ['nodoid'],
+      'fundo': ['fundoid'],
+      'entidad': ['entidadid'],
+      'tipo': ['tipoid'],
+      'metrica': ['metricaid'],
+      'usuario': ['usuarioid'],
+      'perfil': ['perfilid'],
+      'ubicacion': ['ubicacionid'],
+      'localizacion': ['localizacionid'],
+      'contacto': ['contactoid'],
+      'correo': ['correoid'],
+      'celular': ['celularid'],
+      'umbral': ['umbralid'],
+      'metricasensor': ['metricasensorid'],
+      'perfilumbral': ['perfilumbralid']
+    };
+
+    // Si la tabla tiene campos de ID auto-generados, eliminarlos
+    if (idFieldsToRemove[tableName]) {
+      const fieldsToRemove = idFieldsToRemove[tableName];
+      fieldsToRemove.forEach(field => {
+        if (insertData.hasOwnProperty(field)) {
+          delete insertData[field];
+        }
+      });
+    }
+
     const { data, error } = await supabase
       .from(tableName)
       .insert([insertData])
