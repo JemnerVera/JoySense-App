@@ -1,6 +1,6 @@
 /* Estilos estandarizados para dropdowns y scrollbars */
 
-/* Scrollbar personalizado para todos los elementos - Estilo Táctico */
+/* Scrollbar personalizado para todos los elementos - Adaptativo según tema */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -14,23 +14,62 @@
   background: #404040; /* neutral-700 para modo oscuro */
 }
 
+/* Scrollbar Verde (Reportes/Dashboard) - Por defecto */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #f97316; /* orange-500 */
+  background: #22c55e; /* green-500 */
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #16a34a; /* green-600 */
+}
+
+/* Scrollbar Naranja (Parámetros) */
+.theme-orange .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #f97316; /* orange-500 */
+  border-radius: 3px;
+}
+
+.theme-orange .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #ea580c; /* orange-600 */
 }
 
-/* Para Firefox */
+/* Scrollbar Azul (Configuración) */
+.theme-blue .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3b82f6; /* blue-500 */
+  border-radius: 3px;
+}
+
+.theme-blue .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2563eb; /* blue-600 */
+}
+
+/* Para Firefox - Verde (por defecto) */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #f97316 #d1d5db; /* orange-500 gray-300 */
+  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
 }
 
 .dark .custom-scrollbar {
+  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
+}
+
+/* Para Firefox - Naranja (Parámetros) */
+.theme-orange .custom-scrollbar {
+  scrollbar-color: #f97316 #d1d5db; /* orange-500 gray-300 */
+}
+
+.dark .theme-orange .custom-scrollbar {
   scrollbar-color: #f97316 #404040; /* orange-500 neutral-700 */
+}
+
+/* Para Firefox - Azul (Configuración) */
+.theme-blue .custom-scrollbar {
+  scrollbar-color: #3b82f6 #d1d5db; /* blue-500 gray-300 */
+}
+
+.dark .theme-blue .custom-scrollbar {
+  scrollbar-color: #3b82f6 #404040; /* blue-500 neutral-700 */
 }
 
 /* Ocultar scrollbar cuando está colapsado */

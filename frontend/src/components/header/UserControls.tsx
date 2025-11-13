@@ -3,13 +3,52 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export const UserControls: React.FC = () => {
+interface UserControlsProps {
+  activeTab?: string;
+}
+
+export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
   const { user, signOut } = useAuth();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
   
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Determinar colores según la pestaña activa
+  const getThemeColors = () => {
+    if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
+      return {
+        gradient: 'from-orange-500 to-orange-600',
+        hoverGradient: 'hover:from-orange-600 hover:to-orange-700',
+        border: 'border-orange-400',
+        text: 'text-orange-500',
+        focusRing: 'focus:ring-orange-500',
+        focusBorder: 'focus:border-orange-500'
+      };
+    } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
+      return {
+        gradient: 'from-blue-500 to-blue-600',
+        hoverGradient: 'hover:from-blue-600 hover:to-blue-700',
+        border: 'border-blue-400',
+        text: 'text-blue-500',
+        focusRing: 'focus:ring-blue-500',
+        focusBorder: 'focus:border-blue-500'
+      };
+    } else {
+      // Reportes/Dashboard - verde por defecto
+      return {
+        gradient: 'from-green-500 to-green-600',
+        hoverGradient: 'hover:from-green-600 hover:to-green-700',
+        border: 'border-green-400',
+        text: 'text-green-500',
+        focusRing: 'focus:ring-green-500',
+        focusBorder: 'focus:border-green-500'
+      };
+    }
+  };
+
+  const colors = getThemeColors();
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
@@ -68,7 +107,7 @@ export const UserControls: React.FC = () => {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={toggleDropdown}
-          className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-full flex items-center justify-center transition-all duration-200 border border-orange-400 shadow-lg hover:shadow-xl hover:scale-105"
+          className={`w-10 h-10 bg-gradient-to-br ${colors.gradient} ${colors.hoverGradient} rounded-full flex items-center justify-center transition-all duration-200 border ${colors.border} shadow-lg hover:shadow-xl hover:scale-105`}
           aria-label="Menú de usuario"
         >
           <span className="text-white text-sm font-bold">
@@ -81,21 +120,21 @@ export const UserControls: React.FC = () => {
           <div className="absolute right-0 mt-2 w-64 bg-neutral-900 border border-neutral-700 rounded-lg shadow-2xl z-50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-200">
             <div className="p-4 border-b border-neutral-700">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                <div className={`w-8 h-8 bg-gradient-to-br ${colors.gradient} rounded-full flex items-center justify-center`}>
                   <span className="text-white text-sm font-bold font-mono">
                     {user?.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
                   <p className="text-white text-sm font-medium truncate font-mono">{user?.email}</p>
-                  <p className="text-neutral-400 text-xs mt-1 font-mono tracking-wider">SESIÓN ACTIVA</p>
+                  <p className={`${colors.text} text-xs mt-1 font-mono tracking-wider font-semibold`}>SESIÓN ACTIVA</p>
                 </div>
               </div>
             </div>
             <div className="p-2">
               <button
                 onClick={handleSignOut}
-                className="w-full p-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center justify-center space-x-2 hover:shadow-lg font-mono tracking-wider"
+                className={`w-full p-3 bg-gradient-to-r ${colors.gradient} ${colors.hoverGradient} text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center justify-center space-x-2 hover:shadow-lg font-mono tracking-wider`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

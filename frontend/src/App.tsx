@@ -373,7 +373,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
 
   // Mostrar login si no hay usuario autenticado
   if (!user) {
-    return <LoginForm />;
+    return <LoginForm activeTab={activeTab} />;
   }
 
   // Función para obtener datos del formulario actual (si estamos en parámetros)
@@ -700,8 +700,20 @@ return hasFormDataChanges || hasMultipleDataChanges;
     );
   };
 
+  // Determinar el tema según la pestaña activa
+  const getThemeClass = () => {
+    if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
+      return 'theme-orange';
+    } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
+      return 'theme-blue';
+    } else {
+      // Reportes/Dashboard - verde por defecto
+      return 'theme-green';
+    }
+  };
+
   const layoutContent = (
-    <div className="h-screen bg-gray-50 dark:bg-black overflow-hidden">
+    <div className={`h-screen bg-gray-50 dark:bg-black overflow-hidden ${getThemeClass()}`}>
       {/* Skip Link para accesibilidad */}
       {/* <SkipLink targetId="main-content">Saltar al contenido principal</SkipLink> */}
       
@@ -833,7 +845,7 @@ return hasFormDataChanges || hasMultipleDataChanges;
                 </div>
                 
                 {/* User Controls - Siempre visibles */}
-                <UserControls />
+                <UserControls activeTab={activeTab} />
               </div>
             </div>
             </div>

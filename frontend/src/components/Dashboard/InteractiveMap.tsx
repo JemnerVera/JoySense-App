@@ -191,6 +191,26 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }
 
+  // Función para cerrar el popup del nodo seleccionado
+  const closeSelectedNodePopup = () => {
+    if (selectedNode) {
+      const marker = markerRefs.current.get(selectedNode.nodoid)
+      if (marker) {
+        marker.closePopup()
+      }
+    }
+  }
+
+  // Cerrar popup cuando se deselecciona el nodo
+  useEffect(() => {
+    if (!selectedNode) {
+      // Cerrar todos los popups cuando no hay nodo seleccionado
+      markerRefs.current.forEach((marker) => {
+        marker.closePopup()
+      })
+    }
+  }, [selectedNode])
+
   // Calcular centro del mapa basado en el nodo seleccionado o en los nodos disponibles
   useEffect(() => {
     // Si hay un nodo seleccionado con coordenadas válidas, usar ese como centro

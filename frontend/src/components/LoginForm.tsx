@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/supabase-auth';
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  activeTab?: string;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ activeTab }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +17,35 @@ const LoginForm: React.FC = () => {
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
   const { signIn } = useAuth();
+
+  // Determinar colores según la pestaña activa (naranja por defecto para login)
+  const getThemeColors = () => {
+    if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
+      return {
+        text: 'text-orange-500',
+        focusRing: 'focus:ring-orange-500',
+        focusBorder: 'focus:border-orange-500',
+        button: 'bg-orange-500 hover:bg-orange-600 focus:ring-orange-500'
+      };
+    } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
+      return {
+        text: 'text-blue-500',
+        focusRing: 'focus:ring-blue-500',
+        focusBorder: 'focus:border-blue-500',
+        button: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500'
+      };
+    } else {
+      // Reportes/Dashboard - verde por defecto, pero naranja para login
+      return {
+        text: 'text-orange-500',
+        focusRing: 'focus:ring-orange-500',
+        focusBorder: 'focus:border-orange-500',
+        button: 'bg-orange-500 hover:bg-orange-600 focus:ring-orange-500'
+      };
+    }
+  };
+
+  const colors = getThemeColors();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +117,7 @@ const LoginForm: React.FC = () => {
             />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-orange-500 font-mono tracking-wider">
+        <h2 className={`mt-6 text-center text-3xl font-extrabold ${colors.text} font-mono tracking-wider`}>
           JOYSENSE APP
         </h2>
       </div>
@@ -108,7 +141,7 @@ const LoginForm: React.FC = () => {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-orange-500 font-mono tracking-wider">
+              <label htmlFor="email" className={`block text-sm font-medium ${colors.text} font-mono tracking-wider`}>
                 CORREO ELECTRÓNICO
               </label>
               <div className="mt-1">
@@ -120,14 +153,14 @@ const LoginForm: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
+                  className={`appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none ${colors.focusRing} ${colors.focusBorder} sm:text-sm font-mono`}
                   placeholder="usuario@ejemplo.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-orange-500 font-mono tracking-wider">
+              <label htmlFor="password" className={`block text-sm font-medium ${colors.text} font-mono tracking-wider`}>
                 CONTRASEÑA
               </label>
               <div className="mt-1">
@@ -139,7 +172,7 @@ const LoginForm: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm font-mono"
+                  className={`appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md placeholder-gray-500 dark:placeholder-neutral-400 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white focus:outline-none ${colors.focusRing} ${colors.focusBorder} sm:text-sm font-mono`}
                   placeholder="••••••••"
                 />
               </div>
@@ -149,7 +182,7 @@ const LoginForm: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors duration-200 font-mono tracking-wider"
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${colors.button} focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors duration-200 font-mono tracking-wider`}
               >
                 {isLoading ? (
                   <div className="flex items-center">
