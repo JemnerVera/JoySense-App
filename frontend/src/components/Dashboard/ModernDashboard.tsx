@@ -129,7 +129,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [comparisonNode, setComparisonNode] = useState<any>(null) // Nodo para comparación
   const [comparisonMediciones, setComparisonMediciones] = useState<MedicionData[]>([]) // Mediciones del nodo de comparación
   const [loadingComparisonData, setLoadingComparisonData] = useState(false) // Loading para datos de comparación
-  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } | null>(null) // Recomendaciones de umbrales
+  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null) // Recomendaciones de umbrales por nodo
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
 
@@ -556,66 +556,89 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     const startDate = new Date(detailedStartDate + 'T00:00:00')
     const endDate = new Date(detailedEndDate + 'T23:59:59')
-    
-    // Filtrar mediciones en el rango de fechas y para la métrica seleccionada
     const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
-    const filteredMediciones = mediciones.filter(m => {
-      const medicionDate = new Date(m.fecha)
-      return medicionDate >= startDate && medicionDate <= endDate && m.metricaid === metricId
-    })
+    
+    // Función auxiliar para calcular recomendaciones de un conjunto de mediciones
+    const calculateRecommendations = (medicionesData: any[]): { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } => {
+      const filteredMediciones = medicionesData.filter(m => {
+        const medicionDate = new Date(m.fecha)
+        return medicionDate >= startDate && medicionDate <= endDate && m.metricaid === metricId
+      })
 
-    if (filteredMediciones.length === 0) {
-      alert('No hay datos suficientes para analizar la fluctuación')
+      if (filteredMediciones.length === 0) {
+        return {}
+      }
+
+      // Agrupar por tipo de sensor
+      const medicionesPorTipo: { [tipoid: number]: number[] } = {}
+      
+      filteredMediciones.forEach(m => {
+        if (!medicionesPorTipo[m.tipoid]) {
+          medicionesPorTipo[m.tipoid] = []
+        }
+        if (m.medicion != null && !isNaN(m.medicion)) {
+          medicionesPorTipo[m.tipoid].push(m.medicion)
+        }
+      })
+
+      // Calcular estadísticas y recomendar umbrales para cada tipo
+      const recommendations: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } = {}
+      
+      Object.keys(medicionesPorTipo).forEach(tipoidStr => {
+        const tipoid = parseInt(tipoidStr)
+        const valores = medicionesPorTipo[tipoid]
+        
+        if (valores.length === 0) return
+        
+        // Calcular estadísticas
+        const avg = valores.reduce((sum, v) => sum + v, 0) / valores.length
+        const variance = valores.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / valores.length
+        const stdDev = Math.sqrt(variance)
+        
+        // Recomendar umbrales basados en percentiles (5% y 95%) con un margen de seguridad
+        const sorted = [...valores].sort((a, b) => a - b)
+        const p5 = sorted[Math.floor(sorted.length * 0.05)]
+        const p95 = sorted[Math.ceil(sorted.length * 0.95)]
+        
+        // Usar percentiles con un margen adicional basado en desviación estándar
+        const margin = stdDev * 0.5 // Margen del 50% de la desviación estándar
+        const recommendedMin = Math.max(0, p5 - margin) // No permitir valores negativos
+        const recommendedMax = p95 + margin
+        
+        recommendations[tipoid] = {
+          min: Math.round(recommendedMin * 100) / 100,
+          max: Math.round(recommendedMax * 100) / 100,
+          avg: Math.round(avg * 100) / 100,
+          stdDev: Math.round(stdDev * 100) / 100
+        }
+      })
+
+      return recommendations
+    }
+
+    // Calcular recomendaciones para el nodo principal
+    const mainNodeRecommendations = calculateRecommendations(mediciones)
+    
+    if (Object.keys(mainNodeRecommendations).length === 0) {
+      alert('No hay datos suficientes para analizar la fluctuación del nodo principal')
       return
     }
 
-    // Agrupar por tipo de sensor
-    const medicionesPorTipo: { [tipoid: number]: number[] } = {}
-    
-    filteredMediciones.forEach(m => {
-      if (!medicionesPorTipo[m.tipoid]) {
-        medicionesPorTipo[m.tipoid] = []
-      }
-      if (m.medicion != null && !isNaN(m.medicion)) {
-        medicionesPorTipo[m.tipoid].push(m.medicion)
-      }
-    })
+    const allRecommendations: { [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } = {
+      [`node_${selectedNode?.nodoid || 'main'}`]: mainNodeRecommendations
+    }
 
-    // Calcular estadísticas y recomendar umbrales para cada tipo
-    const recommendations: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } = {}
-    
-    Object.keys(medicionesPorTipo).forEach(tipoidStr => {
-      const tipoid = parseInt(tipoidStr)
-      const valores = medicionesPorTipo[tipoid]
-      
-      if (valores.length === 0) return
-      
-      // Calcular estadísticas
-      const avg = valores.reduce((sum, v) => sum + v, 0) / valores.length
-      const variance = valores.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / valores.length
-      const stdDev = Math.sqrt(variance)
-      
-      // Recomendar umbrales basados en percentiles (5% y 95%) con un margen de seguridad
-      const sorted = [...valores].sort((a, b) => a - b)
-      const p5 = sorted[Math.floor(sorted.length * 0.05)]
-      const p95 = sorted[Math.ceil(sorted.length * 0.95)]
-      
-      // Usar percentiles con un margen adicional basado en desviación estándar
-      const margin = stdDev * 0.5 // Margen del 50% de la desviación estándar
-      const recommendedMin = Math.max(0, p5 - margin) // No permitir valores negativos
-      const recommendedMax = p95 + margin
-      
-      recommendations[tipoid] = {
-        min: Math.round(recommendedMin * 100) / 100,
-        max: Math.round(recommendedMax * 100) / 100,
-        avg: Math.round(avg * 100) / 100,
-        stdDev: Math.round(stdDev * 100) / 100
+    // Si hay nodo de comparación, calcular también sus recomendaciones
+    if (comparisonNode && comparisonMediciones.length > 0) {
+      const comparisonRecommendations = calculateRecommendations(comparisonMediciones)
+      if (Object.keys(comparisonRecommendations).length > 0) {
+        allRecommendations[`node_${comparisonNode.nodoid}`] = comparisonRecommendations
       }
-    })
+    }
 
-    setThresholdRecommendations(recommendations)
+    setThresholdRecommendations(allRecommendations)
     setShowThresholdModal(true)
-  }, [mediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric])
+  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode])
 
   // Función auxiliar para obtener metricId desde dataKey
   const getMetricIdFromDataKey = (dataKey: string): number => {
@@ -1560,7 +1583,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
                       {/* Selector de nodo para comparación */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Comparar con Nodo:</label>
+                        <label className="text-sm font-bold text-green-500 dark:text-green-400 font-mono mb-2 tracking-wider">Comparar con Nodo:</label>
                         <div className="flex items-center gap-2">
                           <select
                             value={comparisonNode?.nodoid || ''}
@@ -1581,7 +1604,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             disabled={loadingComparisonData}
-                            className="h-8 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono min-w-[200px] disabled:opacity-50"
+                            className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
+                            style={{
+                              scrollbarWidth: 'thin',
+                              scrollbarColor: '#22c55e #d1d5db'
+                            }}
                           >
                             <option value="">Ninguno</option>
                             {availableNodes
@@ -2134,48 +2161,63 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  {Object.keys(thresholdRecommendations).map(tipoidStr => {
-                    const tipoid = parseInt(tipoidStr)
-                    const tipo = tipos.find(t => t.tipoid === tipoid)
-                    const rec = thresholdRecommendations[tipoid]
-                    
-                    if (!tipo || !rec) return null
+                <div className="space-y-6">
+                  {Object.keys(thresholdRecommendations).map(nodeId => {
+                    const nodeRecommendations = thresholdRecommendations[nodeId]
+                    const isMainNode = nodeId.startsWith(`node_${selectedNode?.nodoid || 'main'}`)
+                    const nodeName = isMainNode 
+                      ? (selectedNode?.nodo || 'Nodo Principal')
+                      : (comparisonNode?.nodo || 'Nodo de Comparación')
                     
                     return (
-                      <div
-                        key={tipoid}
-                        className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
-                      >
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
-                          {tipo.tipo}
+                      <div key={nodeId} className="space-y-4">
+                        <h3 className="text-xl font-bold text-green-600 dark:text-green-400 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
+                          {nodeName}
                         </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Mínimo Recomendado</label>
-                            <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono">
-                              {rec.min.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                        {Object.keys(nodeRecommendations).map(tipoidStr => {
+                          const tipoid = parseInt(tipoidStr)
+                          const tipo = tipos.find(t => t.tipoid === tipoid)
+                          const rec = nodeRecommendations[tipoid]
+                          
+                          if (!tipo || !rec) return null
+                          
+                          return (
+                            <div
+                              key={`${nodeId}_${tipoid}`}
+                              className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
+                            >
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
+                                {tipo.tipo}
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                  <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Mínimo Recomendado</label>
+                                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono">
+                                    {rec.min.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Máximo Recomendado</label>
+                                  <div className="text-lg font-bold text-red-600 dark:text-red-400 font-mono">
+                                    {rec.max.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Promedio</label>
+                                  <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
+                                    {rec.avg.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Desviación Estándar</label>
+                                  <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
+                                    {rec.stdDev.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Máximo Recomendado</label>
-                            <div className="text-lg font-bold text-red-600 dark:text-red-400 font-mono">
-                              {rec.max.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Promedio</label>
-                            <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
-                              {rec.avg.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Desviación Estándar</label>
-                            <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
-                              {rec.stdDev.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                            </div>
-                          </div>
-                        </div>
+                          )
+                        })}
                       </div>
                     )
                   })}

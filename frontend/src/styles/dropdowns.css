@@ -107,3 +107,36 @@
 .dark .dashboard-scrollbar {
   scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
 }
+
+/* Estilos específicos para select elements con dashboard-scrollbar */
+select.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+}
+
+.dark select.dashboard-scrollbar {
+  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
+}
+
+/* Para WebKit (Chrome, Safari, Edge) - select elements */
+select.dashboard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+select.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: #d1d5db; /* gray-300 para modo claro */
+  border-radius: 3px;
+}
+
+.dark select.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: #404040; /* neutral-700 para modo oscuro */
+}
+
+select.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: #22c55e; /* green-500 */
+  border-radius: 3px;
+}
+
+select.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #16a34a; /* green-600 */
+}
