@@ -512,6 +512,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   if (!isOpen) return null;
 
   // Procesar datos de comparación si están disponibles
+  // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
   const processComparisonData = (comparisonData: MedicionData[], dataKey: string): ChartDataPoint[] => {
     if (!comparisonData.length || !tipos.length) {
       return [];
@@ -524,19 +525,19 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return [];
     }
     
-    const sortedMediciones = metricMediciones
-      .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
-      .sort((a, b) => a.fechaParsed - b.fechaParsed)
-      .map(({ fechaParsed, ...m }) => m);
-    
     if (!detailedStartDate || !detailedEndDate) {
       return [];
     }
     
     const startDate = new Date(detailedStartDate + 'T00:00:00');
     const endDate = new Date(detailedEndDate + 'T23:59:59');
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
     
-    const filteredMediciones = sortedMediciones.filter(m => {
+    // USAR EXACTAMENTE LA MISMA LÓGICA DE GRANULARIDAD QUE processChartData
+    const useHours = daysDiff <= 7;
+    const useDays = daysDiff > 30;
+    
+    const filteredMediciones = metricMediciones.filter(m => {
       const medicionDate = new Date(m.fecha);
       return medicionDate >= startDate && medicionDate <= endDate;
     });
@@ -545,126 +546,94 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return [];
     }
     
-    const timeSpan = endDate.getTime() - startDate.getTime();
-    const daysDiff = timeSpan / (1000 * 3600 * 24);
-    const hoursSpan = timeSpan / (1000 * 3600);
-    const isDateRange = daysDiff > 1;
+    // Obtener tipos únicos en los datos de comparación
+    const tiposUnicos = Array.from(new Set(filteredMediciones.map(m => m.tipoid).filter(Boolean)));
     
-    const useMinutes = !isDateRange && (filteredMediciones.length < 500 || hoursSpan < 48);
-    const useHours = !isDateRange && !useMinutes && hoursSpan < 168;
-    const useDays = isDateRange && daysDiff > 7;
+    // Agrupar por fecha y tipo con granularidad adaptativa (MISMA LÓGICA QUE processChartData)
+    const dataByTimeAndTipo = new Map<string, { [tipoid: number]: { sum: number; count: number; timestamp: number } }>();
     
-    const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)));
-    
-    const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {};
-    tiposEnMediciones.forEach(tipoid => {
-      datosPorTipo[tipoid] = [];
-    });
-    
-    filteredMediciones.forEach(medicion => {
+    filteredMediciones.forEach((medicion) => {
       if (medicion.medicion == null || isNaN(medicion.medicion)) return;
       
-      const date = new Date(medicion.fecha);
+      const fechaObj = new Date(medicion.fecha);
       let timeKey: string;
       
       if (useDays) {
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
         timeKey = `${day}/${month}`;
       } else if (useHours) {
-        const hour = String(date.getHours()).padStart(2, '0');
-        timeKey = `${hour}:00`;
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const hour = String(fechaObj.getHours()).padStart(2, '0');
+        timeKey = `${day}/${month} ${hour}:00`;
       } else {
-        const minutes = date.getMinutes();
-        const roundedMinutes = Math.floor(minutes / 15) * 15;
-        const hour = String(date.getHours()).padStart(2, '0');
-        const minute = String(roundedMinutes).padStart(2, '0');
-        timeKey = `${hour}:${minute}`;
+        // Intervalos de 4 horas (misma lógica que processChartData)
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const hour = Math.floor(fechaObj.getHours() / 4) * 4;
+        timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`;
       }
       
-      const existingPoint = datosPorTipo[medicion.tipoid].find(p => p.time === timeKey);
+      if (!dataByTimeAndTipo.has(timeKey)) {
+        dataByTimeAndTipo.set(timeKey, {});
+      }
       
-      if (existingPoint) {
-        const currentValue = existingPoint.value;
-        const currentCount = existingPoint.count;
-        const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1);
-        existingPoint.value = newValue;
-        existingPoint.count = currentCount + 1;
-        if (date.getTime() > existingPoint.timestamp) {
-          existingPoint.timestamp = date.getTime();
-        }
-      } else {
-        datosPorTipo[medicion.tipoid].push({
-          timestamp: date.getTime(),
-          time: timeKey,
-          value: medicion.medicion,
-          count: 1,
-          tipoid: medicion.tipoid,
-          tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
-        });
+      const timeData = dataByTimeAndTipo.get(timeKey)!;
+      const timestamp = fechaObj.getTime();
+      
+      if (!timeData[medicion.tipoid]) {
+        timeData[medicion.tipoid] = { sum: 0, count: 0, timestamp };
+      }
+      
+      timeData[medicion.tipoid].sum += parseFloat(medicion.medicion.toString());
+      timeData[medicion.tipoid].count += 1;
+      if (timestamp > timeData[medicion.tipoid].timestamp) {
+        timeData[medicion.tipoid].timestamp = timestamp;
       }
     });
     
-    tiposEnMediciones.forEach(tipoid => {
-      if (datosPorTipo[tipoid]) {
-        datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp);
-      }
-    });
+    // Convertir a array de puntos de datos (MISMA LÓGICA QUE processChartData)
+    const allTimeStamps = Array.from(dataByTimeAndTipo.entries())
+      .map(([timeKey, tiposData]) => {
+        const timestamps = Object.values(tiposData).map(t => t.timestamp);
+        const maxTimestamp = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+        return { timeKey, timestamp: maxTimestamp };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
     
-    const allTimeStamps = new Set<number>();
-    tiposEnMediciones.forEach(tipoid => {
-      if (datosPorTipo[tipoid]) {
-        datosPorTipo[tipoid].forEach(point => {
-          const periodStart = new Date(point.timestamp);
-          if (useDays) {
-            periodStart.setHours(0, 0, 0, 0);
-          } else if (useHours) {
-            periodStart.setMinutes(0, 0, 0);
-          } else {
-            const roundedMinutes = Math.floor(periodStart.getMinutes() / 15) * 15;
-            periodStart.setMinutes(roundedMinutes, 0, 0);
-          }
-          allTimeStamps.add(periodStart.getTime());
-        });
-      }
-    });
-    
-    const allTimes = Array.from(allTimeStamps)
-      .sort((a, b) => a - b)
-      .map(ts => {
-        const date = new Date(ts);
-        if (useDays) {
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          return `${day}/${month}`;
-        } else if (useHours) {
-          const hour = String(date.getHours()).padStart(2, '0');
-          return `${hour}:00`;
-        } else {
-          const minutes = date.getMinutes();
-          const roundedMinutes = Math.floor(minutes / 15) * 15;
-          const hour = String(date.getHours()).padStart(2, '0');
-          const minute = String(roundedMinutes).padStart(2, '0');
-          return `${hour}:${minute}`;
-        }
-      });
-    
-    return allTimes.map(time => {
-      const point: any = { time };
-      tiposEnMediciones.forEach(tipoid => {
+    const dataPoints: ChartDataPoint[] = allTimeStamps.map(({ timeKey }) => {
+      const timeDataByTipo = dataByTimeAndTipo.get(timeKey)!;
+      const fechaFormatted = timeKey;
+      
+      const point: ChartDataPoint = {
+        fecha: timeKey,
+        fechaFormatted,
+        time: timeKey // Agregar 'time' para compatibilidad con combineChartData
+      };
+      
+      tiposUnicos.forEach(tipoid => {
         const tipo = tipos.find(t => t.tipoid === tipoid);
-        if (tipo && datosPorTipo[tipoid]) {
-          const tipoPoint = datosPorTipo[tipoid].find(p => p.time === time);
-          if (tipoPoint) {
-            point[tipo.tipo] = tipoPoint.value;
-          }
+        const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
+        const tipoDataForTipo = timeDataByTipo[tipoid];
+        
+        if (tipoDataForTipo && tipoDataForTipo.count > 0) {
+          const promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+          point[tipoNombre] = promedio;
+        } else {
+          point[tipoNombre] = null;
         }
       });
+      
       return point;
     });
+    
+    return dataPoints;
   };
 
   // Combinar datos principales con datos de comparación
+  // CRÍTICO: Incluir TODOS los timeKeys de ambos datasets para que las líneas se rendericen
+  // CRÍTICO: PRESERVAR SIEMPRE los datos del lote principal
   const finalChartData = (() => {
     if (!comparisonLote || comparisonMediciones.length === 0) {
       return chartData;
@@ -672,25 +641,44 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
     const comparisonChartData = processComparisonData(comparisonMediciones, selectedMetric);
     
-    // Combinar datos
+    if (comparisonChartData.length === 0) {
+      return chartData;
+    }
+    
+    // Crear un mapa de tiempo para combinar eficientemente
     const timeMap = new Map<string, any>();
+    
+    // PRIMERO: Agregar TODOS los puntos del lote principal (CRÍTICO: esto debe preservarse)
     chartData.forEach(point => {
-      timeMap.set(point.fecha, { ...point });
+      const timeKey = point.fecha || point.fechaFormatted;
+      if (timeKey) {
+        timeMap.set(timeKey, { ...point });
+      }
     });
     
+    // SEGUNDO: Agregar/actualizar con datos de comparación
     comparisonChartData.forEach(point => {
-      const timeKey = String(point.time || '');
+      const timeKeyRaw = point.fecha || point.fechaFormatted || point.time;
+      if (!timeKeyRaw) return;
+      
+      // Asegurar que timeKey sea siempre string
+      const timeKey = String(timeKeyRaw);
       if (!timeKey) return;
       
+      // Si no existe un punto para este timeKey, crear uno nuevo
       const existing = timeMap.get(timeKey) || { fecha: timeKey, fechaFormatted: timeKey };
+      
+      // Agregar todas las propiedades de comparación con prefijo 'comp_'
       Object.keys(point).forEach(key => {
-        if (key !== 'time') {
+        if (key !== 'fecha' && key !== 'fechaFormatted' && key !== 'time') {
           existing[`comp_${key}`] = point[key];
         }
       });
+      
       timeMap.set(timeKey, existing);
     });
     
+    // Convertir a array y ordenar
     return Array.from(timeMap.values()).sort((a, b) => {
       const timeA = a.fecha || a.fechaFormatted;
       const timeB = b.fecha || b.fechaFormatted;
