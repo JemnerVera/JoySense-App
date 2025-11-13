@@ -418,16 +418,33 @@ export class JoySenseService {
           params.append('getAll', 'true');
         }
 
-        // Si hay filtro de entidad, usar el endpoint específico
+        // Si hay nodoid, usar el endpoint normal (más eficiente y directo)
+        // El endpoint mediciones-con-entidad puede filtrar incorrectamente cuando hay nodoid
         let endpoint;
-        if (filters.entidadId) {
+        if (filters.nodoid) {
+          // Cuando hay nodoid, usar el endpoint normal que filtra directamente por nodoid
+          endpoint = `/sense/mediciones?${params.toString()}`;
+        } else if (filters.entidadId) {
+          // Solo usar mediciones-con-entidad si NO hay nodoid
           endpoint = `/sense/mediciones-con-entidad?${params.toString()}`;
         } else {
           endpoint = `/sense/mediciones?${params.toString()}`;
         }
         
         const data = await backendAPI.get(endpoint);
-        return data || (filters.countOnly ? { count: 0 } : []);
+        
+        // Asegurar que siempre devolvemos un array (excepto para countOnly)
+        if (filters.countOnly) {
+          return data || { count: 0 };
+        }
+        
+        // Si data no es un array, convertirlo o retornar array vacío
+        if (!Array.isArray(data)) {
+          console.warn('⚠️ [getMediciones] Backend devolvió datos que no son un array:', typeof data, data);
+          return Array.isArray(data?.data) ? data.data : (data ? [data] : []);
+        }
+        
+        return data;
       } else {
         return filters.countOnly ? { count: 0 } : [];
       }
