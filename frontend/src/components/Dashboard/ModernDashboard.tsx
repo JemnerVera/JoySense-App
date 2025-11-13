@@ -666,7 +666,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .map(({ fechaParsed, ...m }) => m)
       
       // Actualizar mediciones con los nuevos datos
-      // Combinar con datos existentes para no perder información de otras métricas
+      // IMPORTANTE: Para el análisis detallado, reemplazar completamente las mediciones del rango
+      // Esto asegura que siempre tengamos los datos correctos para el intervalo seleccionado
       setMediciones(prevMediciones => {
         // Filtrar mediciones existentes que no estén en el rango de fechas del modal
         const medicionesFueraDelRango = prevMediciones.filter(m => {
@@ -720,14 +721,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
     if (!comparisonNode || !detailedStartDate || !detailedEndDate) {
+      console.warn('⚠️ loadComparisonMediciones: Faltan datos requeridos', { comparisonNode, detailedStartDate, detailedEndDate })
       return
     }
 
-    // Obtener entidadId y ubicacionId del nodo de comparación directamente
-    const comparisonEntidadId = comparisonNode.entidad?.entidadid
-    const comparisonUbicacionId = comparisonNode.ubicacionid
-
-    if (!comparisonEntidadId || !comparisonUbicacionId) {
+    // Si hay nodoid, usarlo directamente (más eficiente y directo)
+    // Similar a cómo se hace para el nodo principal
+    if (!comparisonNode.nodoid) {
+      console.warn('⚠️ loadComparisonMediciones: El nodo de comparación no tiene nodoid')
       return
     }
 
@@ -751,24 +752,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(detailedEndDate + 'T23:59:59')
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
-      let maxLimit = 20000
+      // OPTIMIZACIÓN: Usar límites más pequeños para comparación (no necesita tanta precisión)
+      // Para comparación, podemos usar menos datos y más agregación
+      let maxLimit = 10000
       let useGetAll = false
       
       if (daysDiff > 60) {
+        // Para rangos grandes, usar getAll pero con límite más pequeño
+        maxLimit = 15000
         useGetAll = true
       } else if (daysDiff > 30) {
-        maxLimit = 30000
+        maxLimit = 12000
       } else if (daysDiff > 14) {
-        maxLimit = 25000
+        maxLimit = 10000
       } else if (daysDiff > 7) {
-        maxLimit = 20000
+        maxLimit = 8000
       } else {
-        maxLimit = 15000
+        maxLimit = 5000
       }
       
+      // Usar nodoid directamente (más eficiente que filtrar por entidadId y ubicacionId)
       const comparisonData = await JoySenseService.getMediciones({
-        entidadId: comparisonEntidadId,
-        ubicacionId: comparisonUbicacionId,
         nodoid: comparisonNode.nodoid,
         startDate: startDateFormatted,
         endDate: endDateFormatted,
@@ -926,9 +930,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     loadDetailedAnalysisAbortControllerRef.current = abortController
     
     // Debounce: esperar 1000ms antes de cargar (más tiempo para análisis detallado y evitar lag)
+    // PERO: si no hay datos para el rango seleccionado, cargar inmediatamente
+    // Verificar si hay datos para el rango actual
+    const hasDataForRange = mediciones.some(m => {
+      const medicionDate = new Date(m.fecha)
+      const startDate = new Date(detailedStartDate + 'T00:00:00')
+      const endDate = new Date(detailedEndDate + 'T23:59:59')
+      return medicionDate >= startDate && medicionDate <= endDate && m.nodoid === selectedNode?.nodoid
+    })
+    
+    const delay = (!mediciones.length || !hasDataForRange) ? 100 : 1000 // Carga inmediata si no hay datos, debounce si hay datos
+    
     loadDetailedAnalysisTimeoutRef.current = setTimeout(() => {
       loadMedicionesForDetailedAnalysis(detailedStartDate, detailedEndDate, abortController.signal)
-    }, 1000)
+    }, delay)
     
     // Cleanup
     return () => {
@@ -940,6 +955,32 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     }
   }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode?.nodoid, loadMedicionesForDetailedAnalysis])
+
+  // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
+  useEffect(() => {
+    if (!showDetailedAnalysis || !comparisonNode || !detailedStartDate || !detailedEndDate) {
+      // Si no hay nodo de comparación, limpiar datos de comparación
+      if (!comparisonNode) {
+        setComparisonMediciones([])
+      }
+      return
+    }
+    
+    // Validar que la fecha inicial no sea mayor que la final
+    if (new Date(detailedStartDate) > new Date(detailedEndDate)) {
+      return
+    }
+    
+    // OPTIMIZACIÓN: Debouncing para evitar recargas innecesarias
+    // Esperar 500ms después del último cambio antes de cargar
+    const timeoutId = setTimeout(() => {
+      loadComparisonMediciones(comparisonNode)
+    }, 500)
+    
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, [detailedStartDate, detailedEndDate, comparisonNode?.nodoid, showDetailedAnalysis, loadComparisonMediciones])
 
   // Cargar entidades, ubicaciones, métricas y tipos
   useEffect(() => {
@@ -1216,10 +1257,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             const currTime = datosPorTipo[tipoid][i].timestamp
             const timeDiff = currTime - prevTime
             // Si hay un gap mayor a 6 horas, es significativo
-            if (timeDiff > 6 * 60 * 60 * 1000) {
-              console.warn(`⚠️ Gap significativo detectado en tipo ${tipoid}: ${Math.round(timeDiff / (60 * 60 * 1000))} horas`)
-              break
-            }
+            // Comentado para evitar spam en consola - solo activar si es necesario para debugging
+            // if (timeDiff > 6 * 60 * 60 * 1000) {
+            //   console.warn(`⚠️ Gap significativo detectado en tipo ${tipoid}: ${Math.round(timeDiff / (60 * 60 * 1000))} horas`)
+            //   break
+            // }
           }
         }
       }
@@ -1458,6 +1500,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setSelectedMetricForAnalysis(metric)
     setSelectedDetailedMetric(metric.dataKey)
     
+    // Limpiar nodo de comparación al abrir el modal
+    setComparisonNode(null)
+    setComparisonMediciones([])
+    setLoadingComparisonData(false)
+    
     // Establecer intervalo inicial de 1 día hacia atrás desde hoy
     const endDate = new Date()
     const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
@@ -1465,13 +1512,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = endDate.toISOString().split('T')[0]
     
-    setDetailedStartDate(startDateStr)
-    setDetailedEndDate(endDateStr)
     // Limpiar estados temporales al abrir el modal
     setTempStartDate('')
     setTempEndDate('')
     
-    setShowDetailedAnalysis(true)
+    // IMPORTANTE: Establecer fechas ANTES de abrir el modal para que el useEffect se dispare correctamente
+    setDetailedStartDate(startDateStr)
+    setDetailedEndDate(endDateStr)
+    
+    // Abrir el modal - el useEffect se encargará de cargar los datos
+    // Usar setTimeout para asegurar que las fechas se establezcan antes de que el useEffect se ejecute
+    setTimeout(() => {
+      setShowDetailedAnalysis(true)
+    }, 0)
   }
 
   // chartData se calcula por métrica individualmente
@@ -1755,8 +1808,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                 </div>
                 <button
                   onClick={() => {
+                    // Limpiar estado al cerrar el modal
                     setShowDetailedAnalysis(false)
                     setSelectedMetricForAnalysis(null)
+                    setComparisonNode(null)
+                    setComparisonMediciones([])
+                    setLoadingComparisonData(false)
                   }}
                   className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
                 >
@@ -2036,10 +2093,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       }
                       
                       // Procesar datos principales
+                      // CRÍTICO: Siempre procesar datos del nodo principal primero
                       const chartData = processChartData(selectedDetailedMetric, true);
                       
+                      // Verificar que hay datos del nodo principal
+                      if (chartData.length === 0) {
+                        console.warn('⚠️ No hay datos del nodo principal para el rango seleccionado')
+                      }
+                      
                       // Procesar datos de comparación si están disponibles
-                      // Usar la misma lógica que processChartData para asegurar que las claves de tiempo coincidan
+                      // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
+                      // para asegurar que las claves de tiempo coincidan perfectamente
                       const processComparisonData = (comparisonData: MedicionData[], dataKey: string): any[] => {
                         if (!comparisonData.length || !tipos.length) {
                           return []
@@ -2074,16 +2138,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           return []
                         }
                         
-                        // Calcular el rango de tiempo para determinar la granularidad (igual que processChartData)
+                        // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
+                        // Calcular el rango de tiempo para determinar la granularidad
                         const timeSpan = endDate.getTime() - startDate.getTime()
-                        const daysDiff = timeSpan / (1000 * 3600 * 24)
-                        const hoursSpan = timeSpan / (1000 * 3600)
-                        const isDateRange = daysDiff > 1
+                        const daysSpan = timeSpan / (1000 * 3600 * 24)
+                        const hoursSpan = timeSpan / (1000 * 60 * 60)
+                        const isDateRange = daysSpan > 1
                         
-                        // Determinar granularidad (igual que processChartData)
+                        // USAR LA MISMA LÓGICA QUE processChartData (líneas 1194-1196)
                         const useMinutes = !isDateRange && (filteredMediciones.length < 500 || hoursSpan < 48)
                         const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
-                        const useDays = isDateRange && daysDiff > 7
+                        const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
                         
                         // Obtener tipos únicos en las mediciones de comparación
                         const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)))
@@ -2207,24 +2272,89 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       let comparisonChartData: any[] = []
                       if (comparisonMediciones.length > 0 && comparisonNode) {
                         comparisonChartData = processComparisonData(comparisonMediciones, selectedDetailedMetric)
+                        // Debug: verificar que se procesaron datos
+                        if (comparisonChartData.length === 0 && comparisonMediciones.length > 0) {
+                          console.warn('⚠️ processComparisonData no generó datos aunque hay mediciones de comparación', {
+                            comparisonMedicionesCount: comparisonMediciones.length,
+                            selectedMetric: selectedDetailedMetric
+                          })
+                        }
                       }
                       
                       // Combinar datos de comparación con datos principales
+                      // CRÍTICO: Incluir TODOS los timeKeys de ambos datasets para que las líneas se rendericen
+                      // CRÍTICO: PRESERVAR SIEMPRE los datos del nodo principal
                       // Crear un mapa de tiempo para combinar eficientemente
                       const timeMap = new Map<string, any>()
+                      
+                      // PRIMERO: Agregar TODOS los puntos del nodo principal (CRÍTICO: esto debe preservarse)
                       chartData.forEach(point => {
-                        timeMap.set(point.time, { ...point })
+                        // Crear una copia profunda para no modificar el original
+                        const pointCopy: any = { ...point }
+                        timeMap.set(point.time, pointCopy)
                       })
                       
+                      // SEGUNDO: Agregar/combinar puntos del nodo de comparación SIN sobrescribir datos principales
+                      // IMPORTANTE: Si un timeKey no existe en el nodo principal, crear un punto nuevo
+                      // IMPORTANTE: Si existe, SOLO agregar las claves comp_ sin tocar las claves originales
                       comparisonChartData.forEach(point => {
-                        const existing = timeMap.get(point.time) || { time: point.time }
-                        Object.keys(point).forEach(key => {
-                          if (key !== 'time') {
-                            existing[`comp_${key}`] = point[key]
-                          }
-                        })
-                        timeMap.set(point.time, existing)
+                        const existing = timeMap.get(point.time)
+                        if (existing) {
+                          // Si el timeKey ya existe, SOLO agregar las claves de comparación
+                          // NO modificar ni eliminar las claves originales del nodo principal
+                          Object.keys(point).forEach(key => {
+                            if (key !== 'time') {
+                              existing[`comp_${key}`] = point[key]
+                            }
+                          })
+                        } else {
+                          // Si el timeKey NO existe, crear un nuevo punto solo con datos de comparación
+                          // Esto permite mostrar datos de comparación en momentos donde el nodo principal no tiene datos
+                          const newPoint: any = { time: point.time }
+                          Object.keys(point).forEach(key => {
+                            if (key !== 'time') {
+                              newPoint[`comp_${key}`] = point[key]
+                            }
+                          })
+                          timeMap.set(point.time, newPoint)
+                        }
                       })
+                      
+                      // Verificar que los datos del nodo principal se preservaron
+                      const preservedMainData = Array.from(timeMap.values()).filter(p => {
+                        // Un punto tiene datos principales si tiene alguna clave que NO empiece con 'comp_' y NO sea 'time'
+                        return Object.keys(p).some(k => k !== 'time' && !k.startsWith('comp_'))
+                      })
+                      
+                      if (chartData.length > 0 && preservedMainData.length === 0) {
+                        console.error('❌ ERROR CRÍTICO: Los datos del nodo principal se perdieron durante la combinación!', {
+                          chartDataLength: chartData.length,
+                          timeMapSize: timeMap.size,
+                          sampleChartData: chartData[0],
+                          sampleTimeMap: Array.from(timeMap.values())[0]
+                        })
+                      }
+                      
+                      // Debug: verificar datos combinados
+                      if (comparisonChartData.length > 0) {
+                        const pointsWithComparison = Array.from(timeMap.values()).filter(p => 
+                          Object.keys(p).some(k => k.startsWith('comp_'))
+                        )
+                        if (pointsWithComparison.length > 0) {
+                          console.log('✅ Datos combinados correctamente:', {
+                            totalPuntos: timeMap.size,
+                            puntosConComparacion: pointsWithComparison.length,
+                            muestra: pointsWithComparison[0]
+                          })
+                        } else {
+                          console.warn('⚠️ No se encontraron claves comp_ en los datos combinados', {
+                            chartDataLength: chartData.length,
+                            comparisonChartDataLength: comparisonChartData.length,
+                            chartDataSample: chartData[0],
+                            comparisonSample: comparisonChartData[0]
+                          })
+                        }
+                      }
                       
                       const finalChartData = Array.from(timeMap.values()).sort((a, b) => {
                         // Ordenar por tiempo, manejando diferentes formatos
@@ -2264,7 +2394,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       }
                       
                       // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
-                      const tipoKeys = Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                      // CRÍTICO: Obtener tipoKeys del nodo principal (chartData), NO de finalChartData
+                      // Esto asegura que siempre se muestren las líneas del nodo principal
+                      const tipoKeys = chartData.length > 0 
+                        ? Object.keys(chartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                        : (finalChartData.length > 0 
+                          ? Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                          : [])
                       const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                       const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                       
@@ -2306,7 +2442,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
                             // tipoKeys, colors y comparisonColors ya están definidos arriba
-                            const comparisonKeys = Object.keys(finalChartData[0] || {}).filter(key => key.startsWith('comp_'))
+                            // Buscar claves comp_ en TODOS los puntos, no solo en el primero
+                            const allComparisonKeys = new Set<string>()
+                            finalChartData.forEach(point => {
+                              Object.keys(point).forEach(key => {
+                                if (key.startsWith('comp_')) {
+                                  allComparisonKeys.add(key)
+                                }
+                              })
+                            })
+                            const comparisonKeys = Array.from(allComparisonKeys)
+                            
+                            // Debug: verificar claves de comparación encontradas
+                            if (comparisonNode && comparisonKeys.length === 0 && comparisonChartData.length > 0) {
+                              console.warn('⚠️ No se encontraron claves comp_ en finalChartData aunque hay datos de comparación', {
+                                comparisonChartDataLength: comparisonChartData.length,
+                                finalChartDataLength: finalChartData.length,
+                                samplePoint: finalChartData[0],
+                                comparisonSamplePoint: comparisonChartData[0],
+                                allKeysInSample: Object.keys(finalChartData[0] || {})
+                              })
+                            }
                             
                             return (
                               <>
@@ -2326,31 +2482,33 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   />
                                 ))}
                                 {/* Líneas del nodo de comparación (con estilo punteado) */}
-                                {comparisonKeys.map((compKey, index) => {
-                                  const originalKey = compKey.replace('comp_', '')
-                                  // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
-                                  let tipoIndex = tipoKeys.indexOf(originalKey)
-                                  if (tipoIndex === -1) {
-                                    // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
-                                    tipoIndex = index
-                                  }
-                                  const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
-                                  return (
-                                    <Line
-                                      key={compKey}
-                                      type="monotone"
-                                      dataKey={compKey}
-                                      stroke={strokeColor}
-                                      strokeWidth={2}
-                                      strokeDasharray="5 5"
-                                      dot={{ r: 3, fill: strokeColor }}
-                                      activeDot={{ r: 5, fill: strokeColor }}
-                                      connectNulls={true}
-                                      isAnimationActive={true}
-                                      animationDuration={300}
-                                    />
-                                  )
-                                })}
+                                {comparisonKeys.length > 0 ? (
+                                  comparisonKeys.map((compKey, index) => {
+                                    const originalKey = compKey.replace('comp_', '')
+                                    // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
+                                    let tipoIndex = tipoKeys.indexOf(originalKey)
+                                    if (tipoIndex === -1) {
+                                      // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
+                                      tipoIndex = index
+                                    }
+                                    const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
+                                    return (
+                                      <Line
+                                        key={compKey}
+                                        type="monotone"
+                                        dataKey={compKey}
+                                        stroke={strokeColor}
+                                        strokeWidth={2}
+                                        strokeDasharray="5 5"
+                                        dot={{ r: 3, fill: strokeColor }}
+                                        activeDot={{ r: 5, fill: strokeColor }}
+                                        connectNulls={true}
+                                        isAnimationActive={true}
+                                        animationDuration={300}
+                                      />
+                                    )
+                                  })
+                                ) : null}
                               </>
                             )
                           })()}
@@ -2447,23 +2605,51 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                     {comparisonNode.nodo}
                                   </div>
                                   <div className="flex flex-wrap gap-3">
-                                    {tipoKeys.map((tipoKey, index) => {
-                                      const compKey = `comp_${tipoKey}`
-                                      const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
-                                      if (!hasComparisonData) return null
+                                    {(() => {
+                                      // CRÍTICO: Solo verificar datos de comparación DESPUÉS de que se hayan cargado
+                                      // No mostrar mensaje mientras se está cargando
+                                      if (loadingComparisonData) {
+                                        return (
+                                          <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
+                                            Cargando datos de comparación...
+                                          </div>
+                                        )
+                                      }
                                       
-                                      return (
-                                        <div key={compKey} className="flex items-center gap-2">
-                                          <div 
-                                            className="w-4 h-0.5 border-dashed border-t-2" 
-                                            style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
-                                          />
-                                          <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
-                                            {tipoKey}
-                                          </span>
-                                        </div>
-                                      )
-                                    })}
+                                      // Verificar si hay algún dato de comparación
+                                      const hasAnyComparisonData = tipoKeys.some((tipoKey) => {
+                                        const compKey = `comp_${tipoKey}`
+                                        return finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
+                                      })
+                                      
+                                      // Si no hay datos de comparación DESPUÉS de cargar, mostrar mensaje
+                                      if (!hasAnyComparisonData) {
+                                        return (
+                                          <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
+                                            El nodo no tiene datos en este intervalo
+                                          </div>
+                                        )
+                                      }
+                                      
+                                      // Si hay datos, mostrar las líneas de comparación
+                                      return tipoKeys.map((tipoKey, index) => {
+                                        const compKey = `comp_${tipoKey}`
+                                        const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
+                                        if (!hasComparisonData) return null
+                                        
+                                        return (
+                                          <div key={compKey} className="flex items-center gap-2">
+                                            <div 
+                                              className="w-4 h-0.5 border-dashed border-t-2" 
+                                              style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
+                                            />
+                                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                              {tipoKey}
+                                            </span>
+                                          </div>
+                                        )
+                                      })
+                                    })()}
                                   </div>
                                 </div>
                               </div>
