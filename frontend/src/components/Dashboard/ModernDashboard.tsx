@@ -1523,7 +1523,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Abrir el modal - el useEffect se encargará de cargar los datos
     // Usar setTimeout para asegurar que las fechas se establezcan antes de que el useEffect se ejecute
     setTimeout(() => {
-      setShowDetailedAnalysis(true)
+    setShowDetailedAnalysis(true)
     }, 0)
   }
 
@@ -1782,30 +1782,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {showDetailedAnalysis && selectedMetricForAnalysis && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
-              {/* Header con botones de métricas */}
+              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
-                <div className="flex items-center space-x-4">
                   <h2 className="text-xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
                     {t('dashboard.detailed_analysis')}
                   </h2>
-                  {/* Botones de métricas en el header */}
-                  <div className="flex space-x-2">
-                    {getTranslatedMetrics.map((metric) => (
-                      <button
-                        key={metric.id}
-                        onClick={() => setSelectedDetailedMetric(metric.dataKey)}
-                        disabled={loadingDetailedData}
-                        className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm ${
-                          selectedDetailedMetric === metric.dataKey
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
-                        } ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                      >
-                        {metric.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 <button
                   onClick={() => {
                     // Limpiar estado al cerrar el modal
@@ -1823,7 +1804,79 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                 </button>
               </div>
               
-              {/* Contenido */}
+              {/* Contenido con sidebar de pestañas */}
+              <div className="flex-1 flex overflow-hidden">
+                {/* Sidebar izquierdo con pestañas de métricas (estilo separadores de libros) */}
+                <div className="w-48 border-r border-gray-300 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 flex flex-col py-4">
+                  <div className="flex flex-col space-y-2 px-2">
+                    {getTranslatedMetrics.map((metric) => (
+                      <button
+                        key={metric.id}
+                        onClick={() => setSelectedDetailedMetric(metric.dataKey)}
+                        disabled={loadingDetailedData}
+                        className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-sm text-left ${
+                          selectedDetailedMetric === metric.dataKey
+                            ? 'bg-green-500 text-white shadow-md'
+                            : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
+                        } ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        style={{
+                          clipPath: selectedDetailedMetric === metric.dataKey 
+                            ? 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)'
+                            : 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
+                          borderTopRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
+                          borderBottomRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
+                          marginRight: selectedDetailedMetric === metric.dataKey ? '-1px' : '0',
+                          zIndex: selectedDetailedMetric === metric.dataKey ? '10' : '1'
+                        }}
+                      >
+                        <span className="truncate block">{metric.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Información del nodo debajo de las pestañas */}
+                  {selectedNode && (
+                    <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+                      <div className="text-xs font-mono space-y-1.5 text-gray-700 dark:text-neutral-300">
+                        {selectedNode.deveui && (
+                          <div className="truncate pl-2" title={`DevEUI: ${selectedNode.deveui}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">DevEUI:</span> {selectedNode.deveui}
+                          </div>
+                        )}
+                        {selectedNode.ubicacion && (
+                          <div className="truncate pl-2" title={`Ubicación: ${selectedNode.ubicacion.ubicacion}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}
+                          </div>
+                        )}
+                        {selectedNode.ubicacion?.fundo && (
+                          <div className="truncate pl-2" title={`Fundo: ${selectedNode.ubicacion.fundo.fundo}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.fundo.fundo}
+                          </div>
+                        )}
+                        {selectedNode.ubicacion?.fundo?.empresa && (
+                          <div className="truncate pl-2" title={`Empresa: ${selectedNode.ubicacion.fundo.empresa.empresa}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.fundo.empresa.empresa}
+                          </div>
+                        )}
+                        {selectedNode.ubicacion?.fundo?.empresa?.pais && (
+                          <div className="truncate pl-2" title={`País: ${selectedNode.ubicacion.fundo.empresa.pais.pais}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">País:</span> {selectedNode.ubicacion.fundo.empresa.pais.pais}
+                          </div>
+                        )}
+                        {selectedNode.latitud && selectedNode.longitud && (
+                          <div className="truncate pl-2" title={`Coordenadas: ${selectedNode.latitud}, ${selectedNode.longitud}`}>
+                            <span className="text-gray-500 dark:text-neutral-500">Coordenadas:</span>
+                            <div className="pl-4 text-xs">
+                              {selectedNode.latitud}, {selectedNode.longitud}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Contenido principal */}
               <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
                 <div className="p-6">
 
@@ -1837,16 +1890,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     </div>
                   )}
 
-                  {/* Controles en una sola fila con separadores - Layout compacto de 2 filas por sección */}
+                  {/* Controles en una sola fila con separadores - Layout compacto horizontal */}
                   <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 mb-6">
-                    <div className="flex flex-wrap items-start gap-4">
+                    <div className="flex flex-nowrap items-center gap-4 overflow-x-auto">
                       {/* Intervalo de Fechas */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Intervalo Fechas:</label>
+                    <div className="flex flex-col flex-shrink-0">
                         <div className="flex items-center gap-2">
                           <div className="flex flex-col">
-                      <input
-                        type="date"
+                            <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Inicio:</label>
+                            <input
+                              type="date"
                               value={tempStartDate || detailedStartDate}
                               onChange={(e) => {
                                 const newStartDate = e.target.value
@@ -1883,11 +1936,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               disabled={loadingDetailedData}
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
-                            <label className="text-xs text-gray-600 dark:text-neutral-400 mt-1 font-mono">{t('dashboard.date_start')}</label>
-                    </div>
-                    <div className="flex flex-col">
-                      <input
-                        type="date"
+                          </div>
+                          <div className="flex flex-col">
+                            <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Fin:</label>
+                            <input
+                              type="date"
                               value={tempEndDate || detailedEndDate}
                               onChange={(e) => {
                                 const newEndDate = e.target.value
@@ -1929,7 +1982,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               disabled={loadingDetailedData}
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
-                            <label className="text-xs text-gray-600 dark:text-neutral-400 mt-1 font-mono">{t('dashboard.date_end')}</label>
                           </div>
                         </div>
                       </div>
@@ -1938,9 +1990,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
                       {/* Ajuste del eje Y */}
-                      <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Ajuste Eje Y:</label>
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col flex-shrink-0">
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Ajuste Eje Y:</label>
+                        <div className="flex items-center gap-2 h-8">
                           <input
                             type="number"
                             step="0.1"
@@ -1995,27 +2047,29 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
                       {/* Botón de análisis de fluctuación */}
-                      <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Analizar Fluctuación:</label>
-                        <button
-                          onClick={analyzeFluctuationAndRecommendThresholds}
-                          disabled={loadingDetailedData || !mediciones.length}
-                          className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                          </svg>
-                          Umbrales
-                        </button>
+                      <div className="flex flex-col flex-shrink-0">
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Analizar Fluctuación:</label>
+                        <div className="h-8 flex items-center">
+                          <button
+                            onClick={analyzeFluctuationAndRecommendThresholds}
+                            disabled={loadingDetailedData || !mediciones.length}
+                            className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Umbrales
+                          </button>
+                        </div>
                       </div>
 
                       {/* Separador visual */}
-                      <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+                      <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
                       {/* Selector de nodo para comparación */}
-                      <div className="flex flex-col">
-                        <label className="text-sm font-bold text-green-500 dark:text-green-400 font-mono mb-2 tracking-wider">Comparar con Nodo:</label>
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col flex-shrink-0">
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Comparar con Nodo:</label>
+                        <div className="flex items-center gap-2 h-8">
                           <select
                             value={comparisonNode?.nodoid || ''}
                             onChange={(e) => {
@@ -2035,7 +2089,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             disabled={loadingComparisonData}
-                            className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
+                            className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-xs w-28 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
                             style={{
                               scrollbarWidth: 'thin',
                               scrollbarColor: '#22c55e #d1d5db'
@@ -2045,8 +2099,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             {availableNodes
                               .filter(n => n.nodoid !== selectedNode?.nodoid)
                               .map(node => (
-                                <option key={node.nodoid} value={node.nodoid}>
-                                  {node.nodo} - {node.ubicacion.ubicacion}
+                                <option key={node.nodoid} value={node.nodoid} title={`${node.nodo} - ${node.ubicacion?.ubicacion || ''}`}>
+                                  {node.nodo.length > 12 ? `${node.nodo.substring(0, 12)}...` : node.nodo}
                                 </option>
                               ))}
                           </select>
@@ -2659,6 +2713,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       );
                     })()}
                   </div>
+                </div>
                 </div>
               </div>
             </div>
