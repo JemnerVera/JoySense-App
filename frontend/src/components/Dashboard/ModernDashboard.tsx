@@ -4,6 +4,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
+import { useToast } from "../../contexts/ToastContext"
 
 interface ModernDashboardProps {
   filters: {
@@ -73,11 +74,22 @@ const baseMetrics: MetricConfig[] = [
   }
 ]
 
+// Función pura: obtener metricId desde dataKey (extraída fuera del componente)
+function getMetricIdFromDataKey(dataKey: string): number {
+  const metricMap: { [key: string]: number } = {
+    'temperatura': 1,
+    'humedad': 2,
+    'conductividad': 3
+  }
+  return metricMap[dataKey] || 1
+}
+
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
-  const { t } = useLanguage();
+  const { t } = useLanguage()
+  const { showWarning, showError } = useToast()
   
-  // Función para obtener métricas con traducciones dinámicas
-  const getTranslatedMetrics = (): MetricConfig[] => [
+  // Memoizar métricas traducidas para evitar recrearlas en cada render
+  const getTranslatedMetrics = useMemo((): MetricConfig[] => [
     {
       id: "temperatura",
       title: t('dashboard.metrics.temperature'),
@@ -105,7 +117,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       description: "Conductividad eléctrica del sustrato",
       ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
     }
-  ];
+  ], [t])
+  
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -197,13 +210,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
         }
         
-        // ESTRATEGIA: Intentar rangos recientes primero, luego buscar últimas mediciones sin filtro de fecha
-        const ranges = [7, 14, 30]
+        // ESTRATEGIA: Intentar primero rangos pequeños (más rápidos) y luego expandir
+        // Esto evita timeouts en nodos con muchos datos
+        // Orden: 24 horas -> 7 días -> 14 días -> 30 días
+        const ranges = [
+          { days: 1, limit: 1000, label: '24 horas' },
+          { days: 7, limit: 5000, label: '7 días' },
+          { days: 14, limit: 10000, label: '14 días' },
+          { days: 30, limit: 20000, label: '30 días' }
+        ]
         let foundDataInRange = false
         
-        // Primero intentar con rangos recientes
-        for (const days of ranges) {
-          const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000)
+        // Intentar con rangos recientes (de menor a mayor)
+        for (const range of ranges) {
+          const startDate = new Date(endDate.getTime() - range.days * 24 * 60 * 60 * 1000)
           const startDateStr = formatDate(startDate)
           const endDateStr = formatDate(endDate)
           
@@ -212,7 +232,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               nodoid: selectedNode.nodoid,
               startDate: startDateStr,
               endDate: endDateStr,
-              limit: days === 7 ? 5000 : days === 14 ? 10000 : 20000
+              limit: range.limit
             })
             
             // Asegurar que data es un array
@@ -224,21 +244,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               break
             }
           } catch (error: any) {
-            // Si es timeout, no intentar más rangos grandes
-            if (error.message?.includes('timeout') || error.code === '57014' || error.message?.includes('500')) {
-              break // Salir del loop de rangos
+            // Si es timeout o error 500, continuar con el siguiente rango
+            // Los errores 500 pueden ser timeouts del backend, así que intentamos rangos más pequeños
+            const isTimeoutOr500 = error.message?.includes('timeout') || 
+                                   error.code === '57014' || 
+                                   error.message?.includes('500') ||
+                                   error.message?.includes('HTTP error! status: 500')
+            
+            if (isTimeoutOr500) {
+              // Continuar con el siguiente rango más pequeño
+              // Si es 30 días y falla, ya intentamos rangos más pequeños antes
+              continue
             }
-            // Si no es timeout, continuar con siguiente rango
+            
+            // Si no es timeout/500, puede ser un error de red u otro error crítico
+            // Continuar de todas formas para intentar otros rangos
+            continue
           }
         }
         
-        // Si no encontramos datos en rangos recientes, NO intentar buscar sin filtro de fecha
-        // Los nodos sin datos recientes mostrarán "NODO OBSERVADO" en los mini-gráficos
-        // El usuario puede abrir el modal de análisis detallado para ajustar el rango manualmente
-        if (!foundDataInRange && allData.length === 0) {
-          // Dejar allData como array vacío - esto activará el mensaje "NODO OBSERVADO" en los mini-gráficos
-          // NO intentar buscar sin filtros de fecha para evitar timeouts
-        }
+        // Si no encontramos datos en ningún rango, el nodo no tiene datos recientes
+        // Se mostrará "NODO OBSERVADO"
         
       } else {
         // Sin nodo seleccionado, usar las últimas 6 horas
@@ -283,8 +309,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       if (!Array.isArray(allData)) {
         // Solo actualizar si esta petición sigue siendo la actual
         if (currentRequestKeyRef.current === thisRequestKey) {
-          setMediciones([])
-          setLoading(false)
+        setMediciones([])
+        setLoading(false)
         }
         return
       }
@@ -295,10 +321,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       let filteredData = allData
       
       if (filteredData.length === 0) {
-        // Solo actualizar si esta petición sigue siendo la actual
+        // Si no hay datos después de todos los intentos, verificar si hay datos anteriores
+        // que puedan ser recientes antes de limpiar completamente
         if (currentRequestKeyRef.current === thisRequestKey) {
-          setMediciones([])
-          setLoading(false)
+          // Si hay mediciones anteriores del mismo nodo, verificar si son recientes
+          const previousMediciones = mediciones.filter(m => m.nodoid === selectedNode?.nodoid)
+          if (previousMediciones.length > 0) {
+            // Verificar si las mediciones anteriores son recientes (últimos 30 días)
+            // Esto coincide con los rangos que se cargan (1, 7, 14, 30 días)
+            const now = new Date()
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            const hasRecentPreviousData = previousMediciones.some(m => 
+              new Date(m.fecha) >= thirtyDaysAgo
+            )
+            
+            if (hasRecentPreviousData) {
+              // Hay datos recientes anteriores, mantenerlos
+              setLoading(false)
+              return
+            }
+          }
+          
+          // No hay datos recientes, limpiar mediciones
+        setMediciones([])
+        setLoading(false)
         }
         return
       }
@@ -663,7 +709,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         try {
           const nodes = await JoySenseService.getNodosConLocalizacion()
           setAvailableNodes(nodes || [])
-        } catch (err) {
+    } catch (err) {
           console.error('Error cargando nodos disponibles:', err)
         }
       }
@@ -820,7 +866,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const mainNodeRecommendations = calculateRecommendations(mediciones)
     
     if (Object.keys(mainNodeRecommendations).length === 0) {
-      alert('No hay datos suficientes para analizar la fluctuación del nodo principal')
+      showWarning(
+        'Datos insuficientes',
+        'No hay datos suficientes para analizar la fluctuación del nodo principal'
+      )
       return
     }
 
@@ -838,17 +887,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     setThresholdRecommendations(allRecommendations)
     setShowThresholdModal(true)
-  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode])
+  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode, showWarning])
 
-  // Función auxiliar para obtener metricId desde dataKey
-  const getMetricIdFromDataKey = (dataKey: string): number => {
-    const metricMap: { [key: string]: number } = {
-      'temperatura': 1,
-      'humedad': 2,
-      'conductividad': 3
-    }
-    return metricMap[dataKey] || 1
-  }
 
   // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
   useEffect(() => {
@@ -1293,18 +1333,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       .map(timestamp => {
         const date = new Date(timestamp)
         if (useDays) {
-          const day = String(date.getDate()).padStart(2, '0')
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          return `${day}/${month}`
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        return `${day}/${month}`
         } else if (useHours) {
           const hour = String(date.getHours()).padStart(2, '0')
           return `${hour}:00`
-        } else {
-          const hour = String(date.getHours()).padStart(2, '0')
-          const minute = String(date.getMinutes()).padStart(2, '0')
-          return `${hour}:${minute}`
-        }
-      })
+      } else {
+        const hour = String(date.getHours()).padStart(2, '0')
+        const minute = String(date.getMinutes()).padStart(2, '0')
+        return `${hour}:${minute}`
+      }
+    })
     
     // Crear estructura de datos con todas las líneas
     const result: any[] = []
@@ -1360,7 +1400,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Solo incluir tiempos que tengan al menos un valor no-null
       // Esto evita líneas incompletas al inicio del gráfico
       if (hasAnyValue) {
-        result.push(timeData)
+      result.push(timeData)
       }
     })
     
@@ -1398,19 +1438,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     return "normal"
   }
 
-  const getStatusColor = (status: string) => {
+  // Memoizar funciones de utilidad para evitar recrearlas
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "normal": return "bg-green-900 text-green-300 border-green-700"
       default: return "bg-gray-900 text-gray-300 border-gray-700"
     }
-  }
+  }, [])
 
-  const getStatusText = (status: string) => {
+  const getStatusText = useCallback((status: string) => {
     switch (status) {
       case "normal": return "Normal"
       default: return "Sin datos"
     }
-  }
+  }, [])
 
   // Función para abrir análisis detallado de una métrica específica
   const openDetailedAnalysis = (metric: MetricConfig) => {
@@ -1435,24 +1476,46 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // chartData se calcula por métrica individualmente
 
-  // Obtener métricas disponibles (solo las 3 principales)
-  const getAvailableMetrics = () => {
-    // Solo mostrar las 3 métricas principales: Temperatura, Humedad, Electroconductividad
-    return getTranslatedMetrics()
-  }
+  // Memoizar métricas disponibles (solo las 3 principales)
+  const availableMetrics = getTranslatedMetrics
 
-  // Verificar si una métrica tiene datos
-  const hasMetricData = (dataKey: string) => {
+  // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
+  // Los datos se cargan en rangos de 1, 7, 14, 30 días, así que consideramos "recientes" los últimos 30 días
+  const hasMetricData = useCallback((dataKey: string) => {
     if (!mediciones.length) {
       return false
     }
     
     const metricId = getMetricIdFromDataKey(dataKey)
-    const hasData = mediciones.some(m => m.metricaid === metricId)
-    return hasData
-  }
-
-  const availableMetrics = getAvailableMetrics()
+    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    
+    if (!metricMediciones.length) {
+      return false
+    }
+    
+    // Verificar si hay datos recientes (últimos 30 días)
+    // Esto coincide con los rangos que se cargan (1, 7, 14, 30 días)
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    
+    // Ordenar por fecha descendente (más recientes primero)
+    const sortedMediciones = [...metricMediciones].sort((a, b) => 
+      new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+    )
+    
+    // Verificar si la medición más reciente está dentro de los últimos 30 días
+    const mostRecentDate = new Date(sortedMediciones[0].fecha)
+    const hasRecentData = mostRecentDate >= thirtyDaysAgo
+    
+    // Si hay datos recientes (últimos 30 días), considerarlos válidos
+    // Esto permite mostrar gráficos incluso si los datos no son de las últimas 24 horas exactas
+    if (hasRecentData) {
+      return true
+    }
+    
+    // Si no hay datos en los últimos 30 días, el nodo no tiene datos recientes
+    return false
+  }, [mediciones])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar">
@@ -1579,9 +1642,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               // Detectar si el label es una fecha (contiene "/") o una hora
                               const isDate = label && typeof label === 'string' && label.includes('/')
                               return (
-                                <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
+                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
                                   {isDate ? label : `${t('dashboard.tooltip.hour')} ${label}`}
-                                </span>
+                              </span>
                               )
                             }}
                             formatter={(value: number, name: string) => [
@@ -1640,21 +1703,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   })()}
 
                   {/* Botón de lupa para análisis detallado - Siempre visible para permitir ajuste manual */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => openDetailedAnalysis(metric)}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => openDetailedAnalysis(metric)}
                       className={`p-2 rounded-lg transition-all duration-200 ${
                         hasData 
                           ? 'text-neutral-400 group-hover:text-green-500 group-hover:bg-green-500/10 group-hover:scale-110'
                           : 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
                       }`}
                       title={hasData ? "Ver análisis detallado" : "Ajustar rango de fechas para buscar datos antiguos"}
-                    >
-                      <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </button>
-                  </div>
+                      >
+                        <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </button>
+                    </div>
 
                 </div>
               )
@@ -1674,7 +1737,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   </h2>
                   {/* Botones de métricas en el header */}
                   <div className="flex space-x-2">
-                    {getTranslatedMetrics().map((metric) => (
+                    {getTranslatedMetrics.map((metric) => (
                       <button
                         key={metric.id}
                         onClick={() => setSelectedDetailedMetric(metric.dataKey)}
@@ -1721,12 +1784,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 mb-6">
                     <div className="flex flex-wrap items-start gap-4">
                       {/* Intervalo de Fechas */}
-                      <div className="flex flex-col">
+                    <div className="flex flex-col">
                         <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Intervalo Fechas:</label>
                         <div className="flex items-center gap-2">
                           <div className="flex flex-col">
-                            <input
-                              type="date"
+                      <input
+                        type="date"
                               value={tempStartDate || detailedStartDate}
                               onChange={(e) => {
                                 const newStartDate = e.target.value
@@ -1764,10 +1827,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
                             <label className="text-xs text-gray-600 dark:text-neutral-400 mt-1 font-mono">{t('dashboard.date_start')}</label>
-                          </div>
-                          <div className="flex flex-col">
-                            <input
-                              type="date"
+                    </div>
+                    <div className="flex flex-col">
+                      <input
+                        type="date"
                               value={tempEndDate || detailedEndDate}
                               onChange={(e) => {
                                 const newEndDate = e.target.value
@@ -1775,7 +1838,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 
                                 if (newEndDate && newEndDate.length === 10 && newEndDate !== detailedEndDate) {
                                   if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                                    alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                                    showWarning(
+                                      'Fecha inválida',
+                                      'La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.'
+                                    )
                                     setTempEndDate('')
                                     return
                                   }
@@ -1791,7 +1857,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 const newEndDate = e.target.value
                                 if (newEndDate && newEndDate === tempEndDate && newEndDate !== detailedEndDate) {
                                   if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                                    alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                                    showWarning(
+                                      'Fecha inválida',
+                                      'La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.'
+                                    )
                                     setTempEndDate('')
                                     return
                                   }
@@ -1949,7 +2018,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                         {selectedNode?.nodo || 'Nodo'}
                         {comparisonNode && ` vs ${comparisonNode.nodo}`}
-                      </h3>
+                    </h3>
                     </div>
                     {(() => {
                       // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
@@ -2201,8 +2270,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       
                       return (
                         <>
-                          <div className="h-96">
-                            <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={finalChartData}>
                           <XAxis
                             dataKey="time"
@@ -2243,14 +2312,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               <>
                                 {/* Líneas del nodo principal */}
                                 {tipoKeys.map((tipoKey, index) => (
-                                  <Line
-                                    key={tipoKey}
-                                    type="monotone"
-                                    dataKey={tipoKey}
-                                    stroke={colors[index % colors.length]}
-                                    strokeWidth={3}
-                                    dot={{ r: 4, fill: colors[index % colors.length] }}
-                                    activeDot={{ r: 6, fill: colors[index % colors.length] }}
+                              <Line
+                                key={tipoKey}
+                                type="monotone"
+                                dataKey={tipoKey}
+                                stroke={colors[index % colors.length]}
+                                strokeWidth={3}
+                                dot={{ r: 4, fill: colors[index % colors.length] }}
+                                activeDot={{ r: 6, fill: colors[index % colors.length] }}
                                     connectNulls={true}
                                     isAnimationActive={true}
                                     animationDuration={300}
@@ -2310,9 +2379,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               } else {
                                 // Si es una hora, mostrar "Hora: HH:MM"
                                 return (
-                                  <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                    {t('dashboard.tooltip.hour')} {label}
-                                  </span>
+                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
+                                {t('dashboard.tooltip.hour')} {label}
+                              </span>
                                 )
                               }
                             }}
@@ -2328,9 +2397,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   : name
                               }
                               return [
-                                <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                  {displayName}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                                </span>
+                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
+                                  {displayName}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                              </span>
                               ]
                             }}
                             contentStyle={{
@@ -2342,8 +2411,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               padding: "8px 12px"
                             }}
                           />
-                              </LineChart>
-                            </ResponsiveContainer>
+                        </LineChart>
+                      </ResponsiveContainer>
                           </div>
                           {/* Leyenda de colores por nodo cuando hay comparación */}
                           {comparisonNode && (
@@ -2398,8 +2467,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                    </div>
+                    )}
                         </>
                       );
                     })()}
@@ -2475,25 +2544,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 <div>
                                   <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Mínimo Recomendado</label>
                                   <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono">
-                                    {rec.min.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                    {rec.min.toFixed(2)} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
                                   </div>
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Máximo Recomendado</label>
                                   <div className="text-lg font-bold text-red-600 dark:text-red-400 font-mono">
-                                    {rec.max.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                    {rec.max.toFixed(2)} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
                                   </div>
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Promedio</label>
                                   <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
-                                    {rec.avg.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                    {rec.avg.toFixed(2)} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
                                   </div>
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Desviación Estándar</label>
                                   <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
-                                    {rec.stdDev.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                    {rec.stdDev.toFixed(2)} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
                                   </div>
                                 </div>
                               </div>
