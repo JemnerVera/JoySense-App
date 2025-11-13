@@ -123,6 +123,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
+  
+  // Estados para nuevas funcionalidades del análisis detallado
+  const [yAxisDomain, setYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null }) // Ajuste del eje Y
+  const [comparisonNode, setComparisonNode] = useState<any>(null) // Nodo para comparación
+  const [comparisonMediciones, setComparisonMediciones] = useState<MedicionData[]>([]) // Mediciones del nodo de comparación
+  const [loadingComparisonData, setLoadingComparisonData] = useState(false) // Loading para datos de comparación
+  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } | null>(null) // Recomendaciones de umbrales
+  const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
+  const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
 
   // Refs para cancelar requests y debouncing
   const loadMedicionesAbortControllerRef = useRef<AbortController | null>(null)
@@ -443,6 +452,180 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     }
   }, [filters.entidadId, filters.ubicacionId, selectedNode])
+
+  // Cargar nodos disponibles cuando se abre el modal de análisis detallado
+  useEffect(() => {
+    if (showDetailedAnalysis) {
+      const loadAvailableNodes = async () => {
+        try {
+          const nodes = await JoySenseService.getNodosConLocalizacion()
+          setAvailableNodes(nodes || [])
+        } catch (err) {
+          console.error('Error cargando nodos disponibles:', err)
+        }
+      }
+      loadAvailableNodes()
+    }
+  }, [showDetailedAnalysis])
+
+  // Función para cargar mediciones del nodo de comparación
+  const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
+    if (!comparisonNode || !detailedStartDate || !detailedEndDate) {
+      console.warn('⚠️ No se puede cargar comparación: faltan datos del nodo o fechas')
+      return
+    }
+
+    // Obtener entidadId y ubicacionId del nodo de comparación directamente
+    const comparisonEntidadId = comparisonNode.entidad?.entidadid
+    const comparisonUbicacionId = comparisonNode.ubicacionid
+
+    if (!comparisonEntidadId || !comparisonUbicacionId) {
+      console.warn('⚠️ No se puede cargar comparación: el nodo no tiene entidadId o ubicacionId')
+      return
+    }
+
+    setLoadingComparisonData(true)
+    try {
+      const formatDate = (dateStr: string, isEnd: boolean = false) => {
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        if (isEnd) {
+          return `${year}-${month}-${day} 23:59:59`
+        }
+        return `${year}-${month}-${day} 00:00:00`
+      }
+
+      const startDateFormatted = formatDate(detailedStartDate, false)
+      const endDateFormatted = formatDate(detailedEndDate, true)
+
+      const startDate = new Date(detailedStartDate + 'T00:00:00')
+      const endDate = new Date(detailedEndDate + 'T23:59:59')
+      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
+      
+      let maxLimit = 20000
+      let useGetAll = false
+      
+      if (daysDiff > 60) {
+        useGetAll = true
+      } else if (daysDiff > 30) {
+        maxLimit = 30000
+      } else if (daysDiff > 14) {
+        maxLimit = 25000
+      } else if (daysDiff > 7) {
+        maxLimit = 20000
+      } else {
+        maxLimit = 15000
+      }
+      
+      const comparisonData = await JoySenseService.getMediciones({
+        entidadId: comparisonEntidadId,
+        ubicacionId: comparisonUbicacionId,
+        nodoid: comparisonNode.nodoid,
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        getAll: useGetAll,
+        limit: !useGetAll ? maxLimit : undefined
+      })
+
+      if (!Array.isArray(comparisonData)) {
+        console.warn('⚠️ Datos de comparación no válidos')
+        return
+      }
+
+      const sortedComparisonData = comparisonData
+        .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+        .sort((a, b) => a.fechaParsed - b.fechaParsed)
+        .map(({ fechaParsed, ...m }) => m)
+      
+      setComparisonMediciones(sortedComparisonData)
+      console.log(`✅ Datos de comparación cargados: ${sortedComparisonData.length} registros para nodo ${comparisonNode.nodo}`)
+    } catch (err: any) {
+      console.error('❌ Error cargando datos de comparación:', err)
+    } finally {
+      setLoadingComparisonData(false)
+    }
+  }, [detailedStartDate, detailedEndDate])
+
+  // Función para analizar fluctuación y recomendar umbrales
+  const analyzeFluctuationAndRecommendThresholds = useCallback(() => {
+    if (!mediciones.length || !tipos.length || !detailedStartDate || !detailedEndDate) {
+      return
+    }
+
+    const startDate = new Date(detailedStartDate + 'T00:00:00')
+    const endDate = new Date(detailedEndDate + 'T23:59:59')
+    
+    // Filtrar mediciones en el rango de fechas y para la métrica seleccionada
+    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+    const filteredMediciones = mediciones.filter(m => {
+      const medicionDate = new Date(m.fecha)
+      return medicionDate >= startDate && medicionDate <= endDate && m.metricaid === metricId
+    })
+
+    if (filteredMediciones.length === 0) {
+      alert('No hay datos suficientes para analizar la fluctuación')
+      return
+    }
+
+    // Agrupar por tipo de sensor
+    const medicionesPorTipo: { [tipoid: number]: number[] } = {}
+    
+    filteredMediciones.forEach(m => {
+      if (!medicionesPorTipo[m.tipoid]) {
+        medicionesPorTipo[m.tipoid] = []
+      }
+      if (m.medicion != null && !isNaN(m.medicion)) {
+        medicionesPorTipo[m.tipoid].push(m.medicion)
+      }
+    })
+
+    // Calcular estadísticas y recomendar umbrales para cada tipo
+    const recommendations: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } = {}
+    
+    Object.keys(medicionesPorTipo).forEach(tipoidStr => {
+      const tipoid = parseInt(tipoidStr)
+      const valores = medicionesPorTipo[tipoid]
+      
+      if (valores.length === 0) return
+      
+      // Calcular estadísticas
+      const avg = valores.reduce((sum, v) => sum + v, 0) / valores.length
+      const variance = valores.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / valores.length
+      const stdDev = Math.sqrt(variance)
+      
+      // Recomendar umbrales basados en percentiles (5% y 95%) con un margen de seguridad
+      const sorted = [...valores].sort((a, b) => a - b)
+      const p5 = sorted[Math.floor(sorted.length * 0.05)]
+      const p95 = sorted[Math.ceil(sorted.length * 0.95)]
+      
+      // Usar percentiles con un margen adicional basado en desviación estándar
+      const margin = stdDev * 0.5 // Margen del 50% de la desviación estándar
+      const recommendedMin = Math.max(0, p5 - margin) // No permitir valores negativos
+      const recommendedMax = p95 + margin
+      
+      recommendations[tipoid] = {
+        min: Math.round(recommendedMin * 100) / 100,
+        max: Math.round(recommendedMax * 100) / 100,
+        avg: Math.round(avg * 100) / 100,
+        stdDev: Math.round(stdDev * 100) / 100
+      }
+    })
+
+    setThresholdRecommendations(recommendations)
+    setShowThresholdModal(true)
+  }, [mediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric])
+
+  // Función auxiliar para obtener metricId desde dataKey
+  const getMetricIdFromDataKey = (dataKey: string): number => {
+    const metricMap: { [key: string]: number } = {
+      'temperatura': 1,
+      'humedad': 2,
+      'conductividad': 3
+    }
+    return metricMap[dataKey] || 1
+  }
 
   // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
   useEffect(() => {
@@ -950,15 +1133,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     return hasData
   }
 
-  const getMetricIdFromDataKey = (dataKey: string): number => {
-    const metricMap: { [key: string]: number } = {
-      "temperatura": 1,
-      "humedad": 2,
-      "conductividad": 3
-    }
-    return metricMap[dataKey] || 0
-  }
-
   const availableMetrics = getAvailableMetrics()
 
   return (
@@ -1205,106 +1379,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
                 <div className="p-6">
 
-                  {/* Filtro de fechas */}
-                  <div className="flex space-x-4 mb-6">
-                    <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_start')}</label>
-                      <input
-                        type="date"
-                        value={tempStartDate || detailedStartDate}
-                        onChange={(e) => {
-                          const newStartDate = e.target.value
-                          setTempStartDate(newStartDate)
-                          
-                          // Si se selecciona una fecha válida y completa (formato YYYY-MM-DD), activar loading inmediatamente
-                          // Esto detecta cuando el usuario selecciona una fecha, no solo cuando navega por el calendario
-                          if (newStartDate && newStartDate.length === 10 && newStartDate !== detailedStartDate) {
-            // Usar flushSync para forzar render inmediato de la pantalla de carga Y actualizar la fecha
-            flushSync(() => {
-              setLoadingDetailedData(true)
-              // Validar que la fecha inicial no sea mayor que la final
-              if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
-                // Si la fecha inicial es mayor, ajustar la fecha final automáticamente
-                setDetailedStartDate(newStartDate)
-                setDetailedEndDate(newStartDate)
-                setTempEndDate(newStartDate)
-              } else {
-                setDetailedStartDate(newStartDate)
-              }
-              setTempStartDate('') // Limpiar estado temporal
-            })
-                            // El useEffect detectará el cambio y continuará con la carga
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Solo actualizar si no se actualizó ya en onChange
-                          const newStartDate = e.target.value
-                          if (newStartDate && newStartDate === tempStartDate && newStartDate !== detailedStartDate) {
-                            // Validar que la fecha inicial no sea mayor que la final
-                            if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
-                              setDetailedStartDate(newStartDate)
-                              setDetailedEndDate(newStartDate)
-                              setTempEndDate(newStartDate)
-                            } else {
-                              setDetailedStartDate(newStartDate)
-                            }
-                            setTempStartDate('')
-                          }
-                        }}
-                        max={detailedEndDate || undefined} // Limitar fecha máxima a la fecha final
-                        disabled={loadingDetailedData}
-                        className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_end')}</label>
-                      <input
-                        type="date"
-                        value={tempEndDate || detailedEndDate}
-                        onChange={(e) => {
-                          const newEndDate = e.target.value
-                          setTempEndDate(newEndDate)
-                          
-                          // Si se selecciona una fecha válida y completa (formato YYYY-MM-DD), activar loading inmediatamente
-                          // Esto detecta cuando el usuario selecciona una fecha, no solo cuando navega por el calendario
-                          if (newEndDate && newEndDate.length === 10 && newEndDate !== detailedEndDate) {
-                            // Validar que la fecha final no sea menor que la inicial
-                            if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                              // Mostrar alerta y no permitir el cambio
-                              alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
-                              setTempEndDate('') // Limpiar estado temporal
-                              return
-                            }
-                            
-            // Usar flushSync para forzar render inmediato de la pantalla de carga Y actualizar la fecha
-            flushSync(() => {
-              setLoadingDetailedData(true)
-              setDetailedEndDate(newEndDate)
-              setTempEndDate('') // Limpiar estado temporal
-            })
-                            // El useEffect detectará el cambio y continuará con la carga
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Solo actualizar si no se actualizó ya en onChange
-                          const newEndDate = e.target.value
-                          if (newEndDate && newEndDate === tempEndDate && newEndDate !== detailedEndDate) {
-                            // Validar que la fecha final no sea menor que la inicial
-                            if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                              alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
-                              setTempEndDate('')
-                              return
-                            }
-                            setDetailedEndDate(newEndDate)
-                            setTempEndDate('')
-                          }
-                        }}
-                        min={detailedStartDate || undefined} // Limitar fecha mínima a la fecha inicial
-                        disabled={loadingDetailedData}
-                        className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      />
-                    </div>
-                  </div>
                   {/* Mensaje de validación de fechas */}
                   {detailedStartDate && detailedEndDate && new Date(detailedStartDate) > new Date(detailedEndDate) && (
                     <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
@@ -1315,11 +1389,234 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     </div>
                   )}
 
+                  {/* Controles en una sola fila con separadores - Layout compacto de 2 filas por sección */}
+                  <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 mb-6">
+                    <div className="flex flex-wrap items-start gap-4">
+                      {/* Intervalo de Fechas */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Intervalo Fechas:</label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col">
+                            <label className="text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">{t('dashboard.date_start')}</label>
+                            <input
+                              type="date"
+                              value={tempStartDate || detailedStartDate}
+                              onChange={(e) => {
+                                const newStartDate = e.target.value
+                                setTempStartDate(newStartDate)
+                                
+                                if (newStartDate && newStartDate.length === 10 && newStartDate !== detailedStartDate) {
+                                  flushSync(() => {
+                                    setLoadingDetailedData(true)
+                                    if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
+                                      setDetailedStartDate(newStartDate)
+                                      setDetailedEndDate(newStartDate)
+                                      setTempEndDate(newStartDate)
+                                    } else {
+                                      setDetailedStartDate(newStartDate)
+                                    }
+                                    setTempStartDate('')
+                                  })
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const newStartDate = e.target.value
+                                if (newStartDate && newStartDate === tempStartDate && newStartDate !== detailedStartDate) {
+                                  if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
+                                    setDetailedStartDate(newStartDate)
+                                    setDetailedEndDate(newStartDate)
+                                    setTempEndDate(newStartDate)
+                                  } else {
+                                    setDetailedStartDate(newStartDate)
+                                  }
+                                  setTempStartDate('')
+                                }
+                              }}
+                              max={detailedEndDate || undefined}
+                              disabled={loadingDetailedData}
+                              className={`px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <label className="text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">{t('dashboard.date_end')}</label>
+                            <input
+                              type="date"
+                              value={tempEndDate || detailedEndDate}
+                              onChange={(e) => {
+                                const newEndDate = e.target.value
+                                setTempEndDate(newEndDate)
+                                
+                                if (newEndDate && newEndDate.length === 10 && newEndDate !== detailedEndDate) {
+                                  if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
+                                    alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                                    setTempEndDate('')
+                                    return
+                                  }
+                                  
+                                  flushSync(() => {
+                                    setLoadingDetailedData(true)
+                                    setDetailedEndDate(newEndDate)
+                                    setTempEndDate('')
+                                  })
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const newEndDate = e.target.value
+                                if (newEndDate && newEndDate === tempEndDate && newEndDate !== detailedEndDate) {
+                                  if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
+                                    alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                                    setTempEndDate('')
+                                    return
+                                  }
+                                  setDetailedEndDate(newEndDate)
+                                  setTempEndDate('')
+                                }
+                              }}
+                              min={detailedStartDate || undefined}
+                              disabled={loadingDetailedData}
+                              className={`px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Separador visual */}
+                      <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+                      {/* Ajuste del eje Y */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Ajuste Eje Y:</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="-999999"
+                            max="999999"
+                            value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                            onChange={(e) => {
+                              const inputValue = e.target.value
+                              if (inputValue === '') {
+                                setYAxisDomain(prev => ({ ...prev, min: null }))
+                                return
+                              }
+                              const numValue = Number(inputValue)
+                              if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                                setYAxisDomain(prev => ({ ...prev, min: numValue }))
+                              }
+                            }}
+                            placeholder="Min"
+                            className="w-16 px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                          />
+                          <span className="text-gray-600 dark:text-neutral-400">-</span>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="-999999"
+                            max="999999"
+                            value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                            onChange={(e) => {
+                              const inputValue = e.target.value
+                              if (inputValue === '') {
+                                setYAxisDomain(prev => ({ ...prev, max: null }))
+                                return
+                              }
+                              const numValue = Number(inputValue)
+                              if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                                setYAxisDomain(prev => ({ ...prev, max: numValue }))
+                              }
+                            }}
+                            placeholder="Max"
+                            className="w-16 px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                          />
+                          <button
+                            onClick={() => setYAxisDomain({ min: null, max: null })}
+                            className="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Separador visual */}
+                      <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+                      {/* Botón de análisis de fluctuación */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Analizar Fluctuación:</label>
+                        <button
+                          onClick={analyzeFluctuationAndRecommendThresholds}
+                          disabled={loadingDetailedData || !mediciones.length}
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          Umbrales
+                        </button>
+                      </div>
+
+                      {/* Separador visual */}
+                      <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+                      {/* Selector de nodo para comparación */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Comparar con Nodo:</label>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={comparisonNode?.nodoid || ''}
+                            onChange={(e) => {
+                              const nodeId = parseInt(e.target.value)
+                              if (nodeId && nodeId !== selectedNode?.nodoid) {
+                                const node = availableNodes.find(n => n.nodoid === nodeId)
+                                if (node) {
+                                  setComparisonNode(node)
+                                  loadComparisonMediciones(node)
+                                } else {
+                                  setComparisonNode(null)
+                                  setComparisonMediciones([])
+                                }
+                              } else {
+                                setComparisonNode(null)
+                                setComparisonMediciones([])
+                              }
+                            }}
+                            disabled={loadingComparisonData}
+                            className="px-3 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono min-w-[200px] disabled:opacity-50"
+                          >
+                            <option value="">Ninguno</option>
+                            {availableNodes
+                              .filter(n => n.nodoid !== selectedNode?.nodoid)
+                              .map(node => (
+                                <option key={node.nodoid} value={node.nodoid}>
+                                  {node.nodo} - {node.ubicacion.ubicacion}
+                                </option>
+                              ))}
+                          </select>
+                          {comparisonNode && (
+                            <button
+                              onClick={() => {
+                                setComparisonNode(null)
+                                setComparisonMediciones([])
+                              }}
+                              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-mono"
+                            >
+                              ✕
+                            </button>
+                          )}
+                          {loadingComparisonData && (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Gráfico detallado */}
                   <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                         {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
+                        {comparisonNode && ` vs ${comparisonNode.nodo}`}
                       </h3>
                     </div>
                     {(() => {
@@ -1337,10 +1634,236 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         );
                       }
                       
+                      // Procesar datos principales
                       const chartData = processChartData(selectedDetailedMetric, true);
                       
+                      // Procesar datos de comparación si están disponibles
+                      // Usar la misma lógica que processChartData para asegurar que las claves de tiempo coincidan
+                      const processComparisonData = (comparisonData: MedicionData[], dataKey: string): any[] => {
+                        if (!comparisonData.length || !tipos.length) {
+                          return []
+                        }
+                        
+                        const metricId = getMetricIdFromDataKey(dataKey)
+                        const metricMediciones = comparisonData.filter(m => m.metricaid === metricId)
+                        
+                        if (!metricMediciones.length) {
+                          return []
+                        }
+                        
+                        // Ordenar por fecha (ascendente)
+                        const sortedMediciones = metricMediciones
+                          .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+                          .sort((a, b) => a.fechaParsed - b.fechaParsed)
+                          .map(({ fechaParsed, ...m }) => m)
+                        
+                        if (!detailedStartDate || !detailedEndDate) {
+                          return []
+                        }
+                        
+                        const startDate = new Date(detailedStartDate + 'T00:00:00')
+                        const endDate = new Date(detailedEndDate + 'T23:59:59')
+                        
+                        const filteredMediciones = sortedMediciones.filter(m => {
+                          const medicionDate = new Date(m.fecha)
+                          return medicionDate >= startDate && medicionDate <= endDate
+                        })
+                        
+                        if (filteredMediciones.length === 0) {
+                          return []
+                        }
+                        
+                        // Calcular el rango de tiempo para determinar la granularidad (igual que processChartData)
+                        const timeSpan = endDate.getTime() - startDate.getTime()
+                        const daysDiff = timeSpan / (1000 * 3600 * 24)
+                        const hoursSpan = timeSpan / (1000 * 3600)
+                        const isDateRange = daysDiff > 1
+                        
+                        // Determinar granularidad (igual que processChartData)
+                        const useMinutes = !isDateRange && (filteredMediciones.length < 500 || hoursSpan < 48)
+                        const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
+                        const useDays = isDateRange && daysDiff > 7
+                        
+                        // Obtener tipos únicos en las mediciones de comparación
+                        const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)))
+                        
+                        // Inicializar estructura de datos por tipo
+                        const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
+                        tiposEnMediciones.forEach(tipoid => {
+                          datosPorTipo[tipoid] = []
+                        })
+                        
+                        // Agrupar mediciones por tipo y tiempo (igual que processChartData)
+                        filteredMediciones.forEach(medicion => {
+                          if (medicion.medicion == null || isNaN(medicion.medicion)) return
+                          
+                          const date = new Date(medicion.fecha)
+                          let timeKey: string
+                          
+                          if (useDays) {
+                            const day = String(date.getDate()).padStart(2, '0')
+                            const month = String(date.getMonth() + 1).padStart(2, '0')
+                            timeKey = `${day}/${month}`
+                          } else if (useHours) {
+                            const hour = String(date.getHours()).padStart(2, '0')
+                            timeKey = `${hour}:00`
+                          } else {
+                            const minutes = date.getMinutes()
+                            const roundedMinutes = Math.floor(minutes / 15) * 15
+                            const hour = String(date.getHours()).padStart(2, '0')
+                            const minute = String(roundedMinutes).padStart(2, '0')
+                            timeKey = `${hour}:${minute}`
+                          }
+                          
+                          // Buscar si ya existe un punto para este tipo y tiempo
+                          const existingPoint = datosPorTipo[medicion.tipoid].find(p => p.time === timeKey)
+                          
+                          if (existingPoint) {
+                            const currentValue = existingPoint.value
+                            const currentCount = existingPoint.count
+                            const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
+                            existingPoint.value = newValue
+                            existingPoint.count = currentCount + 1
+                            if (date.getTime() > existingPoint.timestamp) {
+                              existingPoint.timestamp = date.getTime()
+                            }
+                          } else {
+                            datosPorTipo[medicion.tipoid].push({
+                              timestamp: date.getTime(),
+                              time: timeKey,
+                              value: medicion.medicion,
+                              count: 1,
+                              tipoid: medicion.tipoid,
+                              tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
+                            })
+                          }
+                        })
+                        
+                        // Ordenar los datos de cada tipo por timestamp
+                        tiposEnMediciones.forEach(tipoid => {
+                          if (datosPorTipo[tipoid]) {
+                            datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
+                          }
+                        })
+                        
+                        // Obtener todos los tiempos únicos ordenados por timestamp (igual que processChartData)
+                        const allTimeStamps = new Set<number>()
+                        tiposEnMediciones.forEach(tipoid => {
+                          if (datosPorTipo[tipoid]) {
+                            datosPorTipo[tipoid].forEach(point => {
+                              // Calcular el inicio del período para el timeKey
+                              const periodStart = new Date(point.timestamp)
+                              if (useDays) {
+                                periodStart.setHours(0, 0, 0, 0)
+                              } else if (useHours) {
+                                periodStart.setMinutes(0, 0, 0)
+                              } else {
+                                const roundedMinutes = Math.floor(periodStart.getMinutes() / 15) * 15
+                                periodStart.setMinutes(roundedMinutes, 0, 0)
+                              }
+                              allTimeStamps.add(periodStart.getTime())
+                            })
+                          }
+                        })
+                        
+                        // Convertir timestamps a timeKeys y ordenar
+                        const allTimes = Array.from(allTimeStamps)
+                          .sort((a, b) => a - b)
+                          .map(ts => {
+                            const date = new Date(ts)
+                            if (useDays) {
+                              const day = String(date.getDate()).padStart(2, '0')
+                              const month = String(date.getMonth() + 1).padStart(2, '0')
+                              return `${day}/${month}`
+                            } else if (useHours) {
+                              const hour = String(date.getHours()).padStart(2, '0')
+                              return `${hour}:00`
+                            } else {
+                              const minutes = date.getMinutes()
+                              const roundedMinutes = Math.floor(minutes / 15) * 15
+                              const hour = String(date.getHours()).padStart(2, '0')
+                              const minute = String(roundedMinutes).padStart(2, '0')
+                              return `${hour}:${minute}`
+                            }
+                          })
+                        
+                        // Crear estructura de datos para el gráfico
+                        return allTimes.map(time => {
+                          const point: any = { time }
+                          tiposEnMediciones.forEach(tipoid => {
+                            const tipo = tipos.find(t => t.tipoid === tipoid)
+                            if (tipo && datosPorTipo[tipoid]) {
+                              const tipoPoint = datosPorTipo[tipoid].find(p => p.time === time)
+                              if (tipoPoint) {
+                                point[tipo.tipo] = tipoPoint.value
+                              }
+                            }
+                          })
+                          return point
+                        })
+                      }
+                      
+                      let comparisonChartData: any[] = []
+                      if (comparisonMediciones.length > 0 && comparisonNode) {
+                        comparisonChartData = processComparisonData(comparisonMediciones, selectedDetailedMetric)
+                        console.log(`📊 DEBUG Comparación: ${comparisonChartData.length} puntos procesados para nodo ${comparisonNode.nodo}`)
+                        if (comparisonChartData.length > 0) {
+                          console.log(`📊 DEBUG Comparación - Primer punto:`, comparisonChartData[0])
+                          console.log(`📊 DEBUG Comparación - Último punto:`, comparisonChartData[comparisonChartData.length - 1])
+                        }
+                      }
+                      
+                      // Combinar datos de comparación con datos principales
+                      // Crear un mapa de tiempo para combinar eficientemente
+                      const timeMap = new Map<string, any>()
+                      chartData.forEach(point => {
+                        timeMap.set(point.time, { ...point })
+                      })
+                      
+                      comparisonChartData.forEach(point => {
+                        const existing = timeMap.get(point.time) || { time: point.time }
+                        Object.keys(point).forEach(key => {
+                          if (key !== 'time') {
+                            existing[`comp_${key}`] = point[key]
+                          }
+                        })
+                        timeMap.set(point.time, existing)
+                      })
+                      
+                      const finalChartData = Array.from(timeMap.values()).sort((a, b) => {
+                        // Ordenar por tiempo, manejando diferentes formatos
+                        const timeA = a.time
+                        const timeB = b.time
+                        
+                        // Si son fechas (DD/MM), convertir a timestamp
+                        if (timeA.includes('/') && timeB.includes('/')) {
+                          const [dayA, monthA] = timeA.split('/').map(Number)
+                          const [dayB, monthB] = timeB.split('/').map(Number)
+                          const year = new Date(detailedStartDate).getFullYear()
+                          const dateA = new Date(year, monthA - 1, dayA).getTime()
+                          const dateB = new Date(year, monthB - 1, dayB).getTime()
+                          return dateA - dateB
+                        }
+                        
+                        // Si son horas (HH:MM), comparar directamente como string
+                        return timeA.localeCompare(timeB)
+                      })
+                      
+                      // Debug: verificar que los datos de comparación estén presentes
+                      if (comparisonChartData.length > 0 && finalChartData.length > 0) {
+                        const samplePoint = finalChartData.find(p => {
+                          const compKeys = Object.keys(p).filter(k => k.startsWith('comp_'))
+                          return compKeys.length > 0
+                        })
+                        if (samplePoint) {
+                          console.log(`✅ DEBUG: Datos de comparación combinados correctamente. Punto de ejemplo:`, samplePoint)
+                        } else {
+                          console.warn(`⚠️ DEBUG: No se encontraron datos de comparación en finalChartData. comparisonChartData tiene ${comparisonChartData.length} puntos, finalChartData tiene ${finalChartData.length} puntos`)
+                        }
+                      }
+                      
                       // Solo mostrar "No hay datos" si NO está cargando y no hay datos
-                      if (chartData.length === 0) {
+                      if (finalChartData.length === 0) {
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                             <div className="text-center">
@@ -1356,51 +1879,99 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         );
                       }
                       
-                      // Renderizar el gráfico con los datos procesados
+                      // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
                       return (
                         <div className="h-96">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
+                            <LineChart data={finalChartData}>
                           <XAxis
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                             interval={(() => {
-                              // Usar chartData ya calculado arriba
+                              // Usar finalChartData ya calculado arriba
                               // Mostrar máximo 6-8 etiquetas en gráfico detallado
-                              if (chartData.length <= 8) return 0
-                              if (chartData.length <= 20) return 1
-                              return Math.floor(chartData.length / 6)
+                              if (finalChartData.length <= 8) return 0
+                              if (finalChartData.length <= 20) return 1
+                              return Math.floor(finalChartData.length / 6)
                             })()}
                           />
                           <YAxis 
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+                            domain={yAxisDomain.min !== null || yAxisDomain.max !== null ? [yAxisDomain.min ?? 'auto', yAxisDomain.max ?? 'auto'] : ['auto', 'auto']}
+                            tickFormatter={(value) => {
+                              // Redondear a entero si el valor es mayor a 1, o mostrar 1 decimal si es menor
+                              if (Math.abs(value) >= 1) {
+                                return Math.round(value).toString()
+                              } else {
+                                return value.toFixed(1)
+                              }
+                            }}
                           />
                           {(() => {
-                            // Usar chartData ya calculado arriba
-                            if (chartData.length === 0) return null
+                            // Usar finalChartData ya calculado arriba
+                            if (finalChartData.length === 0) return null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
-                            const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
+                            const tipoKeys = Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                            const comparisonKeys = Object.keys(finalChartData[0] || {}).filter(key => key.startsWith('comp_'))
                             const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                            const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                             
-                            return tipoKeys.map((tipoKey, index) => (
-                              <Line
-                                key={tipoKey}
-                                type="monotone"
-                                dataKey={tipoKey}
-                                stroke={colors[index % colors.length]}
-                                strokeWidth={3}
-                                dot={{ r: 4, fill: colors[index % colors.length] }}
-                                activeDot={{ r: 6, fill: colors[index % colors.length] }}
-                                connectNulls={true}
-                                isAnimationActive={true}
-                                animationDuration={300}
-                              />
-                            ))
+                            // Debug: verificar que las claves estén presentes
+                            if (comparisonKeys.length > 0) {
+                              console.log(`🔍 DEBUG Renderizado: ${comparisonKeys.length} líneas de comparación a renderizar:`, comparisonKeys)
+                            }
+                            
+                            return (
+                              <>
+                                {/* Líneas del nodo principal */}
+                                {tipoKeys.map((tipoKey, index) => (
+                                  <Line
+                                    key={tipoKey}
+                                    type="monotone"
+                                    dataKey={tipoKey}
+                                    stroke={colors[index % colors.length]}
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: colors[index % colors.length] }}
+                                    activeDot={{ r: 6, fill: colors[index % colors.length] }}
+                                    connectNulls={true}
+                                    isAnimationActive={true}
+                                    animationDuration={300}
+                                  />
+                                ))}
+                                {/* Líneas del nodo de comparación (con estilo punteado) */}
+                                {comparisonKeys.map((compKey, index) => {
+                                  const originalKey = compKey.replace('comp_', '')
+                                  // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
+                                  let tipoIndex = tipoKeys.indexOf(originalKey)
+                                  if (tipoIndex === -1) {
+                                    // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
+                                    tipoIndex = index
+                                  }
+                                  const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
+                                  console.log(`🎨 DEBUG Renderizando línea de comparación: ${compKey} (originalKey: ${originalKey}, tipoIndex: ${tipoIndex}, color: ${strokeColor})`)
+                                  return (
+                                    <Line
+                                      key={compKey}
+                                      type="monotone"
+                                      dataKey={compKey}
+                                      stroke={strokeColor}
+                                      strokeWidth={2}
+                                      strokeDasharray="5 5"
+                                      dot={{ r: 3, fill: strokeColor }}
+                                      activeDot={{ r: 5, fill: strokeColor }}
+                                      connectNulls={true}
+                                      isAnimationActive={true}
+                                      animationDuration={300}
+                                    />
+                                  )
+                                })}
+                              </>
+                            )
                           })()}
                           <Tooltip
                             labelFormatter={(label) => {
@@ -1433,11 +2004,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 )
                               }
                             }}
-                            formatter={(value: number, name: string) => [
-                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                {name}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                              </span>
-                            ]}
+                            formatter={(value: number, name: string) => {
+                              const isComparison = name.startsWith('comp_')
+                              const displayName = isComparison 
+                                ? `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comparación'})`
+                                : name
+                              return [
+                                <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
+                                  {displayName}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                                </span>
+                              ]
+                            }}
                             contentStyle={{
                               backgroundColor: "#1f2937",
                               border: "1px solid #374151",
@@ -1453,6 +2030,90 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       );
                     })()}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Recomendaciones de Umbrales */}
+        {showThresholdModal && thresholdRecommendations && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
+                  Recomendaciones de Umbrales
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowThresholdModal(false)
+                    setThresholdRecommendations(null)
+                  }}
+                  className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenido */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="mb-4 text-sm text-gray-600 dark:text-neutral-400 font-mono">
+                  <p className="mb-2">
+                    Basado en el análisis de fluctuación de los datos en el intervalo seleccionado, se recomiendan los siguientes umbrales para cada tipo de sensor:
+                  </p>
+                  <p className="text-xs">
+                    Los umbrales se calculan usando percentiles (5% y 95%) con un margen de seguridad basado en la desviación estándar.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {Object.keys(thresholdRecommendations).map(tipoidStr => {
+                    const tipoid = parseInt(tipoidStr)
+                    const tipo = tipos.find(t => t.tipoid === tipoid)
+                    const rec = thresholdRecommendations[tipoid]
+                    
+                    if (!tipo || !rec) return null
+                    
+                    return (
+                      <div
+                        key={tipoid}
+                        className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
+                          {tipo.tipo}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Mínimo Recomendado</label>
+                            <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono">
+                              {rec.min.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Umbral Máximo Recomendado</label>
+                            <div className="text-lg font-bold text-red-600 dark:text-red-400 font-mono">
+                              {rec.max.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Promedio</label>
+                            <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
+                              {rec.avg.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-neutral-400 font-mono">Desviación Estándar</label>
+                            <div className="text-lg font-semibold text-gray-700 dark:text-neutral-300 font-mono">
+                              {rec.stdDev.toFixed(2)} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
