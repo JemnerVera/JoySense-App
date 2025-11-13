@@ -151,8 +151,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // Cuando hay nodo seleccionado, usar getAll: true para obtener TODOS los datos del nodo
         // Los sensores LoRaWAN emiten cada 15 minutos, así que necesitamos todos los datos
         // Filtrar por nodoid directamente en el backend para mayor eficiencia
+        // IMPORTANTE: Usar los últimos 14 días para balancear entre datos recientes y evitar timeouts
         const endDate = new Date()
-        const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
+        const startDate = new Date(endDate.getTime() - 14 * 24 * 60 * 60 * 1000) // Últimos 14 días
         
         const formatDate = (date: Date) => {
           const year = date.getFullYear()
@@ -166,6 +167,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         
         const startDateStr = formatDate(startDate)
         const endDateStr = formatDate(endDate)
+        
+        console.log(`📊 DEBUG loadMediciones: Solicitando datos para nodo ${selectedNode.nodoid}`)
+        console.log(`📅 DEBUG Rango solicitado: ${startDateStr} a ${endDateStr}`)
 
         allData = await JoySenseService.getMediciones({
           entidadId: filters.entidadId,
@@ -175,6 +179,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           endDate: endDateStr,
           getAll: true // Obtener TODOS los datos con paginación
         })
+        
+        console.log(`📊 DEBUG loadMediciones: Datos recibidos del backend: ${Array.isArray(allData) ? allData.length : 'no es array'} registros`)
       } else {
         // Sin nodo seleccionado, usar las últimas 6 horas
         const endDate = new Date()
@@ -210,6 +216,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
 
       // Si ya se filtró por nodoid en el backend, no necesitamos filtrar de nuevo
+      // El backend devuelve datos ordenados descendente (más recientes primero)
+      // Ordenarlos ascendente para el procesamiento correcto
       let filteredData = allData
       
       if (filteredData.length === 0) {
@@ -218,11 +226,41 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return
       }
 
+      // Ordenar datos ascendente (más antiguos primero) para procesamiento correcto
+      // Esto asegura que los datos más recientes estén al final y no se pierdan
+      const sortedData = filteredData
+        .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+        .sort((a, b) => a.fechaParsed - b.fechaParsed)
+        .map(({ fechaParsed, ...m }) => m)
+
+      // Logs de debug para verificar datos cargados
+      if (sortedData.length > 0) {
+        const firstDate = new Date(sortedData[0].fecha)
+        const lastDate = new Date(sortedData[sortedData.length - 1].fecha)
+        console.log(`📊 DEBUG loadMediciones: Total registros: ${sortedData.length}`)
+        console.log(`📅 DEBUG Fecha más antigua: ${firstDate.toISOString()} (${firstDate.toLocaleDateString('es-ES')})`)
+        console.log(`📅 DEBUG Fecha más reciente: ${lastDate.toISOString()} (${lastDate.toLocaleDateString('es-ES')})`)
+        console.log(`📅 DEBUG Fecha actual: ${new Date().toISOString()} (${new Date().toLocaleDateString('es-ES')})`)
+        
+        // Verificar si hay datos recientes
+        const now = new Date()
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+        const recentData = sortedData.filter(m => new Date(m.fecha) >= oneDayAgo)
+        console.log(`📊 DEBUG Datos de últimas 24h: ${recentData.length} registros`)
+        
+        if (recentData.length === 0) {
+          console.warn(`⚠️ DEBUG: No hay datos de las últimas 24 horas! Última fecha disponible: ${lastDate.toLocaleDateString('es-ES')}`)
+        }
+      } else {
+        console.warn(`⚠️ DEBUG loadMediciones: No se cargaron datos!`)
+        console.warn(`⚠️ DEBUG: Nodo seleccionado: ${selectedNode?.nodoid}, UbicacionId: ${filters.ubicacionId}, EntidadId: ${filters.entidadId}`)
+      }
+
       // Mostrar métricas disponibles en los datos filtrados
-      const metricasPresentes = Array.from(new Set(filteredData.map(m => m.metricaid))).sort()
+      const metricasPresentes = Array.from(new Set(sortedData.map(m => m.metricaid))).sort()
       
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
-      setMediciones(filteredData)
+      setMediciones(sortedData)
       setError(null) // Limpiar cualquier error previo
     } catch (err: any) {
       // Ignorar errores de cancelación
@@ -354,6 +392,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return
       }
 
+      // El backend devuelve datos ordenados descendente (más recientes primero)
+      // Necesitamos ordenarlos ascendente para el procesamiento correcto
+      const sortedFilteredData = filteredData
+        .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+        .sort((a, b) => a.fechaParsed - b.fechaParsed)
+        .map(({ fechaParsed, ...m }) => m)
+      
+      // Logs de debug para análisis detallado
+      if (sortedFilteredData.length > 0) {
+        const firstDate = new Date(sortedFilteredData[0].fecha)
+        const lastDate = new Date(sortedFilteredData[sortedFilteredData.length - 1].fecha)
+        console.log(`📊 DEBUG loadMedicionesForDetailedAnalysis: Total registros: ${sortedFilteredData.length}`)
+        console.log(`📅 DEBUG Rango solicitado: ${startDateStr} a ${endDateStr}`)
+        console.log(`📅 DEBUG Fecha más antigua en datos: ${firstDate.toISOString()} (${firstDate.toLocaleDateString('es-ES')})`)
+        console.log(`📅 DEBUG Fecha más reciente en datos: ${lastDate.toISOString()} (${lastDate.toLocaleDateString('es-ES')})`)
+        
+        // Verificar si los datos cubren el rango solicitado
+        const requestedStart = new Date(startDateStr + 'T00:00:00')
+        const requestedEnd = new Date(endDateStr + 'T23:59:59')
+        if (lastDate < requestedEnd) {
+          console.warn(`⚠️ DEBUG: Los datos no llegan hasta la fecha final solicitada! Última fecha: ${lastDate.toLocaleDateString('es-ES')}, Solicitada: ${requestedEnd.toLocaleDateString('es-ES')}`)
+        }
+      }
+      
       // Actualizar mediciones con los nuevos datos
       // Combinar con datos existentes para no perder información de otras métricas
       setMediciones(prevMediciones => {
@@ -365,8 +427,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           return medicionDate < startDate || medicionDate > endDate
         })
         
-        // Combinar mediciones fuera del rango con las nuevas mediciones del rango
-        const combinedMediciones = [...medicionesFueraDelRango, ...filteredData]
+        // Combinar mediciones fuera del rango con las nuevas mediciones del rango (ya ordenadas)
+        const combinedMediciones = [...medicionesFueraDelRango, ...sortedFilteredData]
         
         // Eliminar duplicados basándose en medicionid
         const uniqueMediciones = combinedMediciones.filter((medicion, index, self) =>
@@ -392,7 +454,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
   useEffect(() => {
+    // Validar que las fechas sean válidas antes de cargar
     if (!showDetailedAnalysis || !detailedStartDate || !detailedEndDate || !selectedNode) {
+      return
+    }
+    
+    // Validar que la fecha inicial no sea mayor que la final
+    if (new Date(detailedStartDate) > new Date(detailedEndDate)) {
+      console.warn('⚠️ Fechas inválidas: fecha inicial mayor que fecha final')
       return
     }
     
@@ -487,8 +556,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return []
     }
 
-    // Ordenar por fecha
-    const sortedMediciones = metricMediciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+    // Ordenar por fecha (ascendente: más antiguas primero)
+    // Esto asegura que los datos más recientes estén al final
+    const sortedMediciones = metricMediciones
+      .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+      .sort((a, b) => a.fechaParsed - b.fechaParsed)
+      .map(({ fechaParsed, ...m }) => m)
     
     let filteredMediciones = sortedMediciones
     let isDateRange = false
@@ -514,7 +587,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const latestDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
       const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
       
+      console.log(`📊 DEBUG processChartData (${dataKey}): Total mediciones: ${sortedMediciones.length}`)
+      console.log(`📅 DEBUG Fecha más antigua: ${new Date(sortedMediciones[0].fecha).toLocaleDateString('es-ES')} ${new Date(sortedMediciones[0].fecha).toLocaleTimeString('es-ES')}`)
+      console.log(`📅 DEBUG Fecha más reciente: ${latestDate.toLocaleDateString('es-ES')} ${latestDate.toLocaleTimeString('es-ES')}`)
+      console.log(`📅 DEBUG Filtro 3 horas desde: ${threeHoursAgo.toLocaleDateString('es-ES')} ${threeHoursAgo.toLocaleTimeString('es-ES')}`)
+      
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
+      
+      console.log(`📊 DEBUG Mediciones después de filtrar 3h: ${filteredMediciones.length}`)
       
       // Si no hay suficientes datos en las últimas 3 horas, expandir el rango
       // Para sensores LoRaWAN que emiten cada 15 minutos, en 3 horas debería haber ~12 mediciones por tipo/métrica
@@ -640,6 +720,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     tiposEnMediciones.forEach(tipoid => {
       if (datosPorTipo[tipoid]) {
         datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
+        console.log(`📊 DEBUG Tipo ${tipoid}: ${datosPorTipo[tipoid].length} puntos después de agrupar`)
+        if (datosPorTipo[tipoid].length > 0) {
+          const firstPoint = datosPorTipo[tipoid][0]
+          const lastPoint = datosPorTipo[tipoid][datosPorTipo[tipoid].length - 1]
+          console.log(`  📅 Primer punto: ${firstPoint.time} (${new Date(firstPoint.timestamp).toLocaleString('es-ES')})`)
+          console.log(`  📅 Último punto: ${lastPoint.time} (${new Date(lastPoint.timestamp).toLocaleString('es-ES')})`)
+          
+          // Verificar si hay gaps en los datos
+          if (datosPorTipo[tipoid].length > 1) {
+            const gaps: string[] = []
+            for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
+              const prevTime = datosPorTipo[tipoid][i - 1].timestamp
+              const currTime = datosPorTipo[tipoid][i].timestamp
+              const timeDiff = currTime - prevTime
+              // Si hay un gap mayor a 1 hora, es sospechoso
+              if (timeDiff > 60 * 60 * 1000) {
+                gaps.push(`${new Date(prevTime).toLocaleString('es-ES')} -> ${new Date(currTime).toLocaleString('es-ES')} (${Math.round(timeDiff / (60 * 60 * 1000))}h)`)
+              }
+            }
+            if (gaps.length > 0) {
+              console.warn(`  ⚠️ DEBUG: Gaps detectados en tipo ${tipoid}:`, gaps)
+            }
+          }
+        }
       }
     })
     
@@ -692,6 +796,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const timeData: any = { time }
       
       tiposEnMediciones.forEach(tipoid => {
+        // Buscar el punto más cercano para este tiempo y tipo
+        // Si no hay punto exacto, buscar el más cercano dentro de un rango razonable
         const tipoData = datosPorTipo[tipoid].find(p => p.time === time)
         const tipo = tipos.find(t => t.tipoid === tipoid)
         const tipoName = tipo?.tipo || `Tipo ${tipoid}`
@@ -756,26 +862,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setSelectedMetricForAnalysis(metric)
     setSelectedDetailedMetric(metric.dataKey)
     
-    // Obtener fechas reales de los datos disponibles para esta métrica
-    const metricId = getMetricIdFromDataKey(metric.dataKey)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Establecer intervalo inicial de 1 día hacia atrás desde hoy
+    const endDate = new Date()
+    const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
     
-    if (metricMediciones.length > 0) {
-      // Ordenar por fecha para obtener la primera y última fecha
-      const sortedMediciones = metricMediciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-      const firstDate = new Date(sortedMediciones[0].fecha)
-      const lastDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
-      
-      // Establecer fechas basadas en los datos reales
-      setDetailedStartDate(firstDate.toISOString().split('T')[0])
-      setDetailedEndDate(lastDate.toISOString().split('T')[0])
-    } else {
-      // Fallback: usar fechas por defecto si no hay datos
-      const endDate = new Date()
-      const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
-      setDetailedStartDate(startDate.toISOString().split('T')[0])
-      setDetailedEndDate(endDate.toISOString().split('T')[0])
-    }
+    setDetailedStartDate(startDate.toISOString().split('T')[0])
+    setDetailedEndDate(endDate.toISOString().split('T')[0])
     
     setShowDetailedAnalysis(true)
   }
@@ -926,7 +1018,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 dot={false}
                                 activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
                                 strokeOpacity={0.8}
-                                connectNulls={false}
+                                connectNulls={true}
                               />
                             ))
                           })()}
@@ -1057,7 +1149,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <input
                         type="date"
                         value={detailedStartDate}
-                        onChange={(e) => setDetailedStartDate(e.target.value)}
+                        onChange={(e) => {
+                          const newStartDate = e.target.value
+                          // Validar que la fecha inicial no sea mayor que la final
+                          if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
+                            // Si la fecha inicial es mayor, ajustar la fecha final automáticamente
+                            setDetailedStartDate(newStartDate)
+                            setDetailedEndDate(newStartDate)
+                          } else {
+                            setDetailedStartDate(newStartDate)
+                          }
+                        }}
+                        max={detailedEndDate || undefined} // Limitar fecha máxima a la fecha final
                         disabled={loadingDetailedData}
                         className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
@@ -1067,12 +1170,31 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <input
                         type="date"
                         value={detailedEndDate}
-                        onChange={(e) => setDetailedEndDate(e.target.value)}
+                        onChange={(e) => {
+                          const newEndDate = e.target.value
+                          // Validar que la fecha final no sea menor que la inicial
+                          if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
+                            // Mostrar alerta y no permitir el cambio
+                            alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                            return
+                          }
+                          setDetailedEndDate(newEndDate)
+                        }}
+                        min={detailedStartDate || undefined} // Limitar fecha mínima a la fecha inicial
                         disabled={loadingDetailedData}
                         className={`px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
                     </div>
                   </div>
+                  {/* Mensaje de validación de fechas */}
+                  {detailedStartDate && detailedEndDate && new Date(detailedStartDate) > new Date(detailedEndDate) && (
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
+                      <div className="flex items-center space-x-2 text-red-700 dark:text-red-300">
+                        <span>⚠️</span>
+                        <span className="text-sm font-mono">La fecha inicial no puede ser mayor que la fecha final. Por favor, ajuste las fechas.</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Gráfico detallado */}
                   <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
@@ -1157,7 +1279,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 strokeWidth={3}
                                 dot={{ r: 4, fill: colors[index % colors.length] }}
                                 activeDot={{ r: 6, fill: colors[index % colors.length] }}
-                                connectNulls={false}
+                                connectNulls={true}
                                 isAnimationActive={true}
                                 animationDuration={300}
                               />

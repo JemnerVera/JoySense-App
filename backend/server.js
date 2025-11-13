@@ -3170,7 +3170,7 @@ app.get('/api/sense/mediciones', async (req, res) => {
       const maxBatches = 100; // Límite de seguridad: máximo 100,000 registros
       let batchCount = 0;
       const startTime = Date.now();
-      const maxTime = 30000; // Timeout de 30 segundos
+      const maxTime = 60000; // Timeout de 60 segundos (aumentado para cargar más datos)
       
       while (hasMore && batchCount < maxBatches) {
         // Verificar timeout
@@ -3592,7 +3592,7 @@ app.get('/api/sense/mediciones-con-entidad', async (req, res) => {
       const maxBatches = 100; // Límite de seguridad: máximo 100,000 registros
       let batchCount = 0;
       const startTime = Date.now();
-      const maxTime = 30000; // Timeout de 30 segundos
+      const maxTime = 60000; // Timeout de 60 segundos (aumentado para cargar más datos)
       
       while (hasMore && batchCount < maxBatches) {
         // Verificar timeout
