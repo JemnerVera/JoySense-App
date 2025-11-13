@@ -251,12 +251,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         }
         
         // Si no encontramos datos en rangos recientes, NO intentar buscar sin filtro de fecha
-        // Los nodos sin datos recientes mostrarán un mensaje especial en los mini-gráficos
+        // Los nodos sin datos recientes mostrarán "NODO OBSERVADO" en los mini-gráficos
         // El usuario puede abrir el modal de análisis detallado para ajustar el rango manualmente
         if (!foundDataInRange && allData.length === 0) {
           console.log(`⚠️ [loadMediciones] No hay datos recientes para nodo ${selectedNode.nodoid}`)
-          console.log(`💡 [loadMediciones] El usuario puede abrir el análisis detallado para ajustar el rango de fechas manualmente`)
-          // Dejar allData como array vacío - esto activará el mensaje especial en los mini-gráficos
+          console.log(`💡 [loadMediciones] Mostrando "NODO OBSERVADO" - El usuario puede abrir el análisis detallado para ajustar el rango de fechas manualmente`)
+          // Dejar allData como array vacío - esto activará el mensaje "NODO OBSERVADO" en los mini-gráficos
+          // NO intentar buscar sin filtros de fecha para evitar timeouts
         }
         
         console.log(`🟢 [loadMediciones] Resultado final: ${Array.isArray(allData) ? allData.length : 'NO ES ARRAY'} registros`)
@@ -560,10 +561,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     // Si el request fue cancelado, no continuar
     if (signal?.aborted) {
+      setLoadingDetailedData(false)
       return
     }
 
     setLoadingDetailedData(true)
+    
+    console.log(`🔵 [loadMedicionesForDetailedAnalysis] INICIO - nodoid: ${selectedNode.nodoid}, rango: ${startDateStr} a ${endDateStr}`)
+    
     try {
       const formatDate = (dateStr: string, isEnd: boolean = false) => {
         const date = new Date(dateStr)
@@ -583,49 +588,181 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(endDateStr + 'T23:59:59')
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
-      // Para el gráfico detallado, balancear entre suficientes datos y rendimiento
-      // Sensores LoRaWAN emiten cada 15 min = 4 mediciones/hora por tipo/métrica
-      // Estrategia: cargar suficientes datos pero con límites razonables
-      let maxLimit = 20000 // Límite base balanceado
-      let useGetAll = false
+      console.log(`📅 [loadMedicionesForDetailedAnalysis] Diferencia de días: ${daysDiff.toFixed(1)}`)
       
-      if (daysDiff > 60) {
-        // Rangos muy grandes: usar getAll con timeout (backend maneja el límite)
-        useGetAll = true
-      } else if (daysDiff > 30) {
-        maxLimit = 30000
-      } else if (daysDiff > 14) {
-        maxLimit = 25000
-      } else if (daysDiff > 7) {
-        maxLimit = 20000
+      // ESTRATEGIA DESHABILITADA: No usar estrategia sin filtro de fecha para evitar timeouts
+      // Los nodos con muchos datos requieren filtros de fecha obligatorios
+      // Si el usuario necesita ver datos antiguos, debe usar el análisis detallado con un rango específico
+      const USE_STRATEGY_WITHOUT_DATE_FILTER = false // DESHABILITADO: Siempre requerir filtros de fecha
+      
+      let filteredData: any[] = []
+      
+      if (USE_STRATEGY_WITHOUT_DATE_FILTER) {
+        // ESTRATEGIA 1: Para rangos grandes, buscar últimas mediciones sin filtro de fecha
+        // Esto es mucho más rápido porque el backend solo necesita ordenar por fecha descendente
+        console.log(`🔄 [loadMedicionesForDetailedAnalysis] Usando estrategia sin filtro de fecha (rango grande: ${daysDiff.toFixed(1)} días)`)
+        
+        // Para nodos con muchos datos, usar límites MUY conservadores
+        // Empezar con 5000 y aumentar progresivamente solo si es necesario
+        const initialLimit = 5000 // Límite inicial muy conservador
+        const fallbackLimits = [3000, 2000, 1000, 500] // Límites de fallback progresivos
+        
+        console.log(`🔍 [loadMedicionesForDetailedAnalysis] Buscando últimas mediciones del nodo (sin filtro de fecha, límite inicial: ${initialLimit})`)
+        
+        let success = false
+        
+        // Intentar primero con el límite inicial
+        try {
+          const response = await JoySenseService.getMediciones({
+            entidadId: filters.entidadId,
+            nodoid: selectedNode.nodoid,
+            limit: initialLimit
+            // NO pasar startDate ni endDate - esto hace que el backend solo ordene por fecha descendente
+          })
+          
+          filteredData = Array.isArray(response) ? response : []
+          console.log(`✅ [loadMedicionesForDetailedAnalysis] Backend devolvió ${filteredData.length} registros (sin filtro de fecha)`)
+          success = true
+        } catch (error: any) {
+          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con límite inicial ${initialLimit}:`, error.message)
+          
+          // Si el error indica que se requiere filtro de fecha, no intentar más
+          if (error.code === 'TIMEOUT' || error.message?.includes('filtros de fecha') || error.message?.includes('demasiados datos')) {
+            console.error(`❌ [loadMedicionesForDetailedAnalysis] El nodo requiere filtros de fecha. Error: ${error.message}`)
+            console.log(`💡 [loadMedicionesForDetailedAnalysis] Sugerencia: Use un rango de fechas más pequeño o ejecute el script SQL para crear índices optimizados.`)
+            filteredData = []
+            success = false
+            // Mostrar mensaje al usuario (se manejará en el código que verifica filteredData.length === 0)
+            return // Salir temprano, no intentar más
+          }
+          
+          // Si falla por otro motivo, intentar con límites progresivamente más pequeños
+          for (const fallbackLimit of fallbackLimits) {
+            if (signal?.aborted) {
+              console.log(`⏭️ [loadMedicionesForDetailedAnalysis] Request cancelado durante fallback`)
+              setLoadingDetailedData(false)
+              return
+            }
+            
+            try {
+              console.log(`🟡 [loadMedicionesForDetailedAnalysis] Intentando con límite reducido (${fallbackLimit})...`)
+              const response2 = await JoySenseService.getMediciones({
+                entidadId: filters.entidadId,
+                nodoid: selectedNode.nodoid,
+                limit: fallbackLimit
+              })
+              
+              filteredData = Array.isArray(response2) ? response2 : []
+              
+              if (filteredData.length > 0) {
+                console.log(`✅ [loadMedicionesForDetailedAnalysis] Con límite ${fallbackLimit}: ${filteredData.length} registros`)
+                success = true
+                break
+              }
+            } catch (e2: any) {
+              // Si el error indica que se requiere filtro de fecha, no continuar
+              if (e2.code === 'TIMEOUT' || e2.message?.includes('filtros de fecha') || e2.message?.includes('demasiados datos')) {
+                console.error(`❌ [loadMedicionesForDetailedAnalysis] El nodo requiere filtros de fecha incluso con límite ${fallbackLimit}`)
+                filteredData = []
+                success = false
+                break
+              }
+              console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con límite ${fallbackLimit}:`, e2.message)
+              continue
+            }
+          }
+          
+          if (!success) {
+            console.error(`❌ [loadMedicionesForDetailedAnalysis] Todos los intentos fallaron. El nodo tiene demasiados datos o está inactivo.`)
+            filteredData = []
+          }
+        }
+        
+        // Si obtuvimos datos, filtrar por rango de fechas en el frontend
+        if (success && filteredData.length > 0) {
+          const startTimestamp = startDate.getTime()
+          const endTimestamp = endDate.getTime()
+          
+          const beforeFilter = filteredData.length
+          const dataBeforeFilter = [...filteredData] // Guardar copia antes de filtrar
+          
+          filteredData = filteredData.filter(m => {
+            const medicionDate = new Date(m.fecha).getTime()
+            return medicionDate >= startTimestamp && medicionDate <= endTimestamp
+          })
+          
+          console.log(`✅ [loadMedicionesForDetailedAnalysis] Después de filtrar por rango (${beforeFilter} -> ${filteredData.length} registros)`)
+          
+          // Si después de filtrar no hay datos, puede ser que el rango solicitado esté fuera del rango de datos obtenidos
+          if (filteredData.length === 0 && dataBeforeFilter.length > 0) {
+            // Ordenar por fecha para obtener el rango real
+            const sorted = dataBeforeFilter.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+            const oldestDate = new Date(sorted[0]?.fecha || 0)
+            const newestDate = new Date(sorted[sorted.length - 1]?.fecha || 0)
+            console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] No hay datos en el rango solicitado (${startDateStr} a ${endDateStr}). Datos disponibles: ${oldestDate.toLocaleDateString()} a ${newestDate.toLocaleDateString()}`)
+          }
+        }
       } else {
-        maxLimit = 15000 // Rangos pequeños: menos datos necesarios
+        // ESTRATEGIA 2: Para rangos pequeños, usar filtro de fecha normal
+        console.log(`🔍 [loadMedicionesForDetailedAnalysis] Usando estrategia con filtro de fecha (rango pequeño: ${daysDiff.toFixed(1)} días)`)
+        
+        let maxLimit = 10000 // Límite conservador para evitar timeouts
+        
+        if (daysDiff > 14) {
+          maxLimit = 15000
+        } else if (daysDiff > 7) {
+          maxLimit = 12000
+        }
+        
+        try {
+          const response = await JoySenseService.getMediciones({
+            entidadId: filters.entidadId,
+            nodoid: selectedNode.nodoid,
+            startDate: startDateFormatted,
+            endDate: endDateFormatted,
+            limit: maxLimit
+          })
+          
+          filteredData = Array.isArray(response) ? response : []
+          console.log(`✅ [loadMedicionesForDetailedAnalysis] Backend devolvió ${filteredData.length} registros`)
+        } catch (error: any) {
+          // Si hay un error (como timeout 500), NO intentar estrategia sin filtro de fecha
+          // Mostrar error descriptivo y sugerir usar un rango más pequeño
+          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con filtro de fecha:`, error.message)
+          
+          if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
+            console.error(`❌ [loadMedicionesForDetailedAnalysis] Timeout al obtener datos. El nodo tiene demasiados datos para este rango.`)
+            console.log(`💡 [loadMedicionesForDetailedAnalysis] Sugerencia: Use un rango de fechas más pequeño o ejecute el script SQL para crear índices optimizados.`)
+            filteredData = []
+            // No intentar estrategia sin filtro de fecha - esto causaría más timeouts
+          } else {
+            throw error // Re-lanzar el error para que se maneje en el catch principal
+          }
+        }
       }
-      
-      // Filtrar por nodoid directamente en el backend para mayor eficiencia
-      // Cuando hay nodoid, no es necesario pasar ubicacionId (el backend filtra directamente por nodoid)
-      const filteredData = await JoySenseService.getMediciones({
-        entidadId: filters.entidadId,
-        nodoid: selectedNode.nodoid, // Filtrar por nodo en el backend (más eficiente y directo)
-        startDate: startDateFormatted,
-        endDate: endDateFormatted,
-        getAll: useGetAll, // Solo usar getAll para rangos muy grandes
-        limit: !useGetAll ? maxLimit : undefined // Limitar para rangos pequeños/medianos
-      })
 
       // Verificar que filteredData sea un array
       if (!Array.isArray(filteredData)) {
-        console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Datos no válidos recibidos del backend')
+        console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Datos no válidos recibidos del backend:', typeof filteredData)
         setLoadingDetailedData(false)
         return
       }
       
-      // Si no hay datos, también detener el loading
+      // Si no hay datos, también detener el loading pero mostrar mensaje informativo
       if (filteredData.length === 0) {
-        console.log('ℹ️ [loadMedicionesForDetailedAnalysis] No se encontraron datos para el rango seleccionado')
+        console.log(`ℹ️ [loadMedicionesForDetailedAnalysis] No se encontraron datos para el rango ${startDateStr} a ${endDateStr} (nodoid: ${selectedNode.nodoid})`)
+        
+        // Si el rango es grande (>30 días) y no hay datos, puede ser que el nodo tenga demasiados datos
+        // y requiera un rango más pequeño o índices optimizados
+        if (daysDiff > 30) {
+          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Rango grande sin datos. El nodo puede tener demasiados datos. Considere usar un rango más pequeño o ejecutar el script SQL para crear índices.`)
+        }
+        
         setLoadingDetailedData(false)
         return
       }
+      
+      console.log(`✅ [loadMedicionesForDetailedAnalysis] Datos obtenidos: ${filteredData.length} registros`)
 
       // El backend devuelve datos ordenados descendente (más recientes primero)
       // Necesitamos ordenarlos ascendente para el procesamiento correcto
@@ -1556,8 +1693,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       </div>
                     </div>
                     {!hasData && (
-                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 font-mono tracking-wider">
-                        SIN DATOS RECIENTES
+                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 font-mono tracking-wider">
+                        NODO OBSERVADO
                       </span>
                     )}
                   </div>
@@ -1636,11 +1773,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
-                        <div className="text-center text-yellow-700 dark:text-yellow-400 mb-3">
-                          <div className="text-3xl mb-2">⚠️</div>
-                          <div className="text-sm font-mono tracking-wider font-bold mb-1">SIN DATOS RECIENTES</div>
-                          <div className="text-xs font-mono opacity-75">No hay mediciones en los últimos 30 días</div>
+                      <div className="flex flex-col items-center justify-center h-full bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                        <div className="text-center text-blue-700 dark:text-blue-400 mb-3">
+                          <div className="text-3xl mb-2">👁️</div>
+                          <div className="text-sm font-mono tracking-wider font-bold mb-1">NODO OBSERVADO</div>
+                          <div className="text-xs font-mono opacity-75">No disponible por el momento</div>
                         </div>
                         <button
                           onClick={() => openDetailedAnalysis(metric)}

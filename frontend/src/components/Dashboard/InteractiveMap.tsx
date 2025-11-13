@@ -86,7 +86,7 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
                 animationTimeoutRef.current = setTimeout(() => {
                   if (onAnimationComplete) {
                     onAnimationComplete()
-                  }
+    }
                   animationTimeoutRef.current = null
                 }, 1100) // 1000ms de duración + 100ms de margen
               }, 1300) // 1200ms de duración + 100ms de margen
@@ -233,7 +233,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       if (nodesWithValidCoords.length > 0) {
         const avgLat = nodesWithValidCoords.reduce((sum, node) => sum + node.latitud, 0) / nodesWithValidCoords.length
         const avgLng = nodesWithValidCoords.reduce((sum, node) => sum + node.longitud, 0) / nodesWithValidCoords.length
-        setMapCenter([avgLat, avgLng])
+      setMapCenter([avgLat, avgLng])
       }
     }
   }, [selectedNode?.nodoid, nodes])
@@ -375,8 +375,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             return hasValidCoords
           })
           .map((node) => (
-            <Marker
-              key={node.nodoid}
+          <Marker
+            key={node.nodoid}
               ref={(ref) => {
                 if (ref) {
                   markerRefs.current.set(node.nodoid, ref)
@@ -384,41 +384,41 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   markerRefs.current.delete(node.nodoid)
                 }
               }}
-              position={[node.latitud, node.longitud]}
-              icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
-              eventHandlers={{
-                click: () => onNodeSelect(node)
-              }}
-            >
-              <Popup>
-                <div className="text-sm">
-                  <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
-                  <div className="space-y-1">
-                    <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
-                    <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
-                    <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
-                    <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
-                    <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
-                    <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
-                    <div className="mt-2 pt-2 border-t border-neutral-600">
-                      <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
-                      <div className="text-xs text-neutral-400">
-                        {node.latitud}, {node.longitud}
+            position={[node.latitud, node.longitud]}
+            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
+            eventHandlers={{
+              click: () => onNodeSelect(node)
+            }}
+          >
+            <Popup>
+              <div className="text-sm">
+                <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
+                <div className="space-y-1">
+                  <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
+                  <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
+                  <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
+                  <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
+                  <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
+                  <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
+                  <div className="mt-2 pt-2 border-t border-neutral-600">
+                    <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
+                    <div className="text-xs text-neutral-400">
+                      {node.latitud}, {node.longitud}
+                    </div>
+                  </div>
+                  {/* Indicador de datos */}
+                  {nodeMediciones[node.nodoid] === 0 && (
+                    <div className="mt-2 pt-2 border-t border-red-600">
+                      <div className="text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded font-mono">
+                        Sin data
                       </div>
                     </div>
-                    {/* Indicador de datos */}
-                    {nodeMediciones[node.nodoid] === 0 && (
-                      <div className="mt-2 pt-2 border-t border-red-600">
-                        <div className="text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded font-mono">
-                          Sin data
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              </Popup>
-            </Marker>
-          ))}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   )

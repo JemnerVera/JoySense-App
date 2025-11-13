@@ -3295,63 +3295,201 @@ app.get('/api/sense/mediciones', async (req, res) => {
       query = query.lte('fecha', endDate);
     }
     
+    // OPTIMIZACIÓN CRÍTICA: Si solo hay nodoid sin filtros de fecha, usar estrategia especial
+    // El problema es que ordenar millones de registros por fecha causa timeouts incluso con límites pequeños
+    const hasOnlyNodoid = nodoid && !startDate && !endDate;
+    const requestedLimit = limit ? parseInt(limit) : 1000;
+    
+    // SOLUCIÓN: Para consultas sin filtros de fecha, usar un límite MUY pequeño y ordenar por ID
+    // Si el ID es secuencial, esto es mucho más rápido que ordenar por fecha
+    if (hasOnlyNodoid) {
+      // Limitar a máximo 1000 registros y usar ordenamiento por ID (más rápido)
+      const effectiveLimit = Math.min(requestedLimit, 1000);
+      console.warn(`⚠️ Backend: Consulta sin filtros de fecha para nodo ${nodoid}. Limitando a ${effectiveLimit} registros y usando ordenamiento optimizado.`);
+      
+      // Intentar primero con ordenamiento por ID (si es secuencial, es mucho más rápido)
+      // Si falla, intentar con fecha pero con límite muy pequeño
+      try {
+        let queryById = supabase
+          .from('medicion')
+          .select('*')
+          .eq('nodoid', parseInt(nodoid))
+          .order('medicionid', { ascending: false }) // Ordenar por ID descendente (más rápido)
+          .limit(effectiveLimit);
+        
+        const { data: dataById, error: errorById } = await queryById;
+        
+        if (!errorById && dataById && dataById.length > 0) {
+          // Ordenar por fecha en memoria (solo los registros obtenidos)
+          const sortedByDate = dataById.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+          console.log(`✅ Backend: Mediciones obtenidas por ID y ordenadas por fecha: ${sortedByDate.length}`);
+          return res.json(sortedByDate);
+        }
+      } catch (idError) {
+        console.warn(`⚠️ Backend: Error con ordenamiento por ID, intentando con fecha...`);
+      }
+      
+      // Si falla ordenamiento por ID, intentar con fecha pero con límite muy pequeño
+      const effectiveLimitByDate = Math.min(effectiveLimit, 500); // Máximo 500 para evitar timeout
+      query = query.order('fecha', { ascending: false }).limit(effectiveLimitByDate);
+      
+      try {
+        const { data, error } = await query;
+        if (error) {
+          // Si aún falla, retornar error descriptivo
+          if (error.code === '57014' || error.message?.includes('timeout')) {
+            return res.status(500).json({ 
+              error: 'El nodo tiene demasiados datos para consultar sin filtros de fecha.',
+              code: 'TIMEOUT',
+              suggestion: 'Por favor, use filtros de fecha (startDate y endDate) para reducir el rango de búsqueda.',
+              nodeId: nodoid
+            });
+          }
+          throw error;
+        }
+        console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0} (limitado a ${effectiveLimitByDate} para evitar timeout)`);
+        return res.json(data || []);
+      } catch (queryError) {
+        console.error('❌ Error en consulta optimizada:', queryError);
+        return res.status(500).json({ 
+          error: 'No se pueden obtener mediciones sin filtros de fecha para este nodo.',
+          code: 'QUERY_ERROR',
+          suggestion: 'Por favor, use filtros de fecha (startDate y endDate) para reducir el rango de búsqueda.',
+          nodeId: nodoid
+        });
+      }
+    }
+    
+    const effectiveLimit = requestedLimit;
+    
     // Ordenar por fecha descendente (más recientes primero) ANTES del límite
     query = query.order('fecha', { ascending: false });
     
-    // Supabase tiene un límite de 1000 registros por consulta
-    // Si el límite solicitado es mayor, usar paginación automática
-    const requestedLimit = limit ? parseInt(limit) : 1000;
-    
-    if (requestedLimit > 1000) {
+    if (effectiveLimit > 1000) {
       // Usar paginación para obtener más de 1000 registros
       let allData = [];
       let from = 0;
       const batchSize = 1000;
-      const maxBatches = Math.ceil(requestedLimit / batchSize);
+      const maxBatches = Math.ceil(effectiveLimit / batchSize);
+      const maxBatchesLimit = hasOnlyNodoid ? Math.min(maxBatches, 5) : maxBatches; // Máximo 5 batches (5000 registros) si solo hay nodoid
       
-      for (let i = 0; i < maxBatches; i++) {
-        const batchQuery = query.range(from, from + batchSize - 1);
-        const { data: batchData, error } = await batchQuery;
-        
-        if (error) {
-          console.error('❌ Error en batch:', error);
-          // Si hay error, retornar lo que tenemos hasta ahora
-          if (allData.length > 0) {
-            console.log(`✅ Backend: Mediciones obtenidas (parcial): ${allData.length}`);
-            return res.json(allData);
-          }
-          return res.status(500).json({ error: error.message });
-        }
-        
-        if (batchData && batchData.length > 0) {
-          allData = allData.concat(batchData);
-          from += batchSize;
+      for (let i = 0; i < maxBatchesLimit; i++) {
+        try {
+          const batchQuery = query.range(from, from + batchSize - 1);
+          const { data: batchData, error } = await batchQuery;
           
-          // Si obtuvimos menos de batchSize, no hay más datos
-          if (batchData.length < batchSize || allData.length >= requestedLimit) {
+          if (error) {
+            // Si es timeout, intentar con límite más pequeño
+            if (error.code === '57014' || error.message?.includes('timeout')) {
+              console.warn(`⚠️ Timeout en batch ${i + 1}. Retornando ${allData.length} registros obtenidos hasta ahora.`);
+              if (allData.length > 0) {
+                console.log(`✅ Backend: Mediciones obtenidas (parcial por timeout): ${allData.length}`);
+                return res.json(allData);
+              }
+              // Si no hay datos y es timeout, intentar con límite más pequeño
+              if (hasOnlyNodoid && effectiveLimit > 1000) {
+                console.log(`🔄 Backend: Intentando con límite reducido (1000) debido a timeout...`);
+                const retryQuery = supabase
+                  .from('medicion')
+                  .select('*')
+                  .eq('nodoid', parseInt(nodoid))
+                  .order('fecha', { ascending: false })
+                  .limit(1000);
+                const { data: retryData, error: retryError } = await retryQuery;
+                if (retryError) {
+                  console.error('❌ Error incluso con límite reducido:', retryError);
+                  return res.status(500).json({ 
+                    error: 'Timeout al obtener mediciones. El nodo tiene demasiados datos.',
+                    code: 'TIMEOUT',
+                    suggestion: 'Intente usar filtros de fecha para reducir el rango de búsqueda.'
+                  });
+                }
+                console.log(`✅ Backend: Mediciones obtenidas con límite reducido: ${retryData?.length || 0}`);
+                return res.json(retryData || []);
+              }
+              return res.status(500).json({ 
+                error: 'Timeout al obtener mediciones',
+                code: 'TIMEOUT',
+                suggestion: 'Intente usar filtros de fecha para reducir el rango de búsqueda.'
+              });
+            }
+            console.error('❌ Error en batch:', error);
+            // Si hay error, retornar lo que tenemos hasta ahora
+            if (allData.length > 0) {
+              console.log(`✅ Backend: Mediciones obtenidas (parcial): ${allData.length}`);
+              return res.json(allData);
+            }
+            return res.status(500).json({ error: error.message });
+          }
+          
+          if (batchData && batchData.length > 0) {
+            allData = allData.concat(batchData);
+            from += batchSize;
+            
+            // Si obtuvimos menos de batchSize, no hay más datos
+            if (batchData.length < batchSize || allData.length >= effectiveLimit) {
+              break;
+            }
+          } else {
             break;
           }
-        } else {
-          break;
+        } catch (batchError) {
+          console.error('❌ Error inesperado en batch:', batchError);
+          if (allData.length > 0) {
+            console.log(`✅ Backend: Mediciones obtenidas (parcial por error): ${allData.length}`);
+            return res.json(allData);
+          }
+          throw batchError;
         }
       }
       
-      // Limitar al límite solicitado
-      const finalData = allData.slice(0, requestedLimit);
-      console.log(`✅ Backend: Mediciones obtenidas: ${finalData.length} (solicitado: ${requestedLimit})`);
+      // Limitar al límite efectivo
+      const finalData = allData.slice(0, effectiveLimit);
+      console.log(`✅ Backend: Mediciones obtenidas: ${finalData.length} (solicitado: ${requestedLimit}, efectivo: ${effectiveLimit})`);
       return res.json(finalData);
     } else {
       // Límite <= 1000, usar consulta simple
-      query = query.limit(requestedLimit);
-      const { data, error } = await query;
+      query = query.limit(effectiveLimit);
       
-      if (error) {
-        console.error('❌ Error backend:', error);
-        return res.status(500).json({ error: error.message });
+      try {
+        const { data, error } = await query;
+        
+        if (error) {
+          // Si es timeout, intentar con límite más pequeño
+          if (error.code === '57014' || error.message?.includes('timeout')) {
+            console.warn(`⚠️ Timeout con límite ${effectiveLimit}. Intentando con límite reducido...`);
+            if (effectiveLimit > 500 && nodoid) {
+              const retryQuery = supabase
+                .from('medicion')
+                .select('*')
+                .eq('nodoid', parseInt(nodoid))
+                .order('fecha', { ascending: false })
+                .limit(500);
+              const { data: retryData, error: retryError } = await retryQuery;
+              if (!retryError && retryData) {
+                console.log(`✅ Backend: Mediciones obtenidas con límite reducido: ${retryData.length}`);
+                return res.json(retryData);
+              }
+            }
+            return res.status(500).json({ 
+              error: 'Timeout al obtener mediciones. El nodo tiene demasiados datos.',
+              code: 'TIMEOUT',
+              suggestion: 'Intente usar filtros de fecha para reducir el rango de búsqueda.'
+            });
+          }
+          console.error('❌ Error backend:', error);
+          return res.status(500).json({ error: error.message });
+        }
+        
+        console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
+        return res.json(data || []);
+      } catch (queryError) {
+        console.error('❌ Error inesperado en consulta:', queryError);
+        return res.status(500).json({ 
+          error: queryError.message || 'Error al obtener mediciones',
+          code: 'QUERY_ERROR'
+        });
       }
-      
-      console.log(`✅ Backend: Mediciones obtenidas: ${data?.length || 0}`);
-      return res.json(data || []);
     }
   } catch (error) {
     console.error('❌ Error in /api/sense/mediciones:', error);
