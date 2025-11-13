@@ -250,47 +250,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           }
         }
         
-        // Si no encontramos datos en rangos recientes, buscar últimas mediciones sin filtro de fecha
+        // Si no encontramos datos en rangos recientes, NO intentar buscar sin filtro de fecha
+        // Los nodos sin datos recientes mostrarán un mensaje especial en los mini-gráficos
+        // El usuario puede abrir el modal de análisis detallado para ajustar el rango manualmente
         if (!foundDataInRange && allData.length === 0) {
-          console.log(`🟡 [loadMediciones] No hay datos en rangos recientes, buscando últimas mediciones sin filtro de fecha...`)
-          try {
-            // Buscar últimas 5000 mediciones del nodo sin filtro de fecha
-            // El backend ordenará por fecha descendente y devolverá las más recientes
-            const dataNoDate = await JoySenseService.getMediciones({
-              nodoid: selectedNode.nodoid,
-              limit: 5000 // Límite razonable para evitar timeout
-            })
-            
-            // Asegurar que dataNoDate es un array
-            const dataNoDateArray = Array.isArray(dataNoDate) ? dataNoDate : (dataNoDate ? [dataNoDate] : [])
-            
-            if (dataNoDateArray.length > 0) {
-              console.log(`✅ [loadMediciones] Encontradas ${dataNoDateArray.length} mediciones (sin filtro de fecha)`)
-              allData = dataNoDateArray
-            } else {
-              console.warn(`⚠️ [loadMediciones] No se encontraron mediciones para nodo ${selectedNode.nodoid}`)
-            }
-          } catch (error: any) {
-            console.error(`❌ [loadMediciones] Error al buscar sin filtro de fecha:`, error)
-            // Si incluso esto falla, intentar con límite más pequeño
-            try {
-              console.log(`🟡 [loadMediciones] Intentando con límite más pequeño (2000)...`)
-              const dataSmall = await JoySenseService.getMediciones({
-                nodoid: selectedNode.nodoid,
-                limit: 2000
-              })
-              
-              // Asegurar que dataSmall es un array
-              const dataSmallArray = Array.isArray(dataSmall) ? dataSmall : (dataSmall ? [dataSmall] : [])
-              
-              if (dataSmallArray.length > 0) {
-                allData = dataSmallArray
-                console.log(`✅ [loadMediciones] Encontradas ${dataSmallArray.length} mediciones con límite reducido`)
-              }
-            } catch (e) {
-              console.error(`❌ [loadMediciones] Error incluso con límite reducido:`, e)
-            }
-          }
+          console.log(`⚠️ [loadMediciones] No hay datos recientes para nodo ${selectedNode.nodoid}`)
+          console.log(`💡 [loadMediciones] El usuario puede abrir el análisis detallado para ajustar el rango de fechas manualmente`)
+          // Dejar allData como array vacío - esto activará el mensaje especial en los mini-gráficos
         }
         
         console.log(`🟢 [loadMediciones] Resultado final: ${Array.isArray(allData) ? allData.length : 'NO ES ARRAY'} registros`)
@@ -466,6 +432,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid])
 
   // Crear array de dependencias estable para evitar warnings de React
+  // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
+  // para evitar doble renderizado cuando ubicacionId cambia después de seleccionar el nodo
   const useEffectDependencies = useMemo(() => {
     const deps = [
       filters.entidadId, 
@@ -473,11 +441,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       loadMediciones
     ]
     // Solo incluir ubicacionId si NO hay nodo seleccionado
+    // Cuando hay nodo, el nodoid es suficiente y ubicacionId puede cambiar sin afectar la carga
     if (!selectedNode && filters.ubicacionId) {
       deps.push(filters.ubicacionId)
     }
     return deps
-  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid, loadMediciones, selectedNode])
+  }, [filters.entidadId, selectedNode?.nodoid, loadMediciones, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
@@ -581,7 +550,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones para el análisis detallado con rango de fechas específico
   const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
-    if (!filters.entidadId || !filters.ubicacionId || !selectedNode) {
+    // Cuando hay un nodo seleccionado, no requerir ubicacionId (el nodoid es suficiente)
+    // El backend puede filtrar directamente por nodoid sin necesidad de ubicacionId
+    if (!filters.entidadId || !selectedNode) {
+      console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Faltan filtros requeridos:', { entidadId: filters.entidadId, selectedNode: selectedNode?.nodoid })
+      setLoadingDetailedData(false)
       return
     }
 
@@ -630,10 +603,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
       
       // Filtrar por nodoid directamente en el backend para mayor eficiencia
+      // Cuando hay nodoid, no es necesario pasar ubicacionId (el backend filtra directamente por nodoid)
       const filteredData = await JoySenseService.getMediciones({
         entidadId: filters.entidadId,
-        ubicacionId: filters.ubicacionId,
-        nodoid: selectedNode.nodoid, // Filtrar por nodo en el backend
+        nodoid: selectedNode.nodoid, // Filtrar por nodo en el backend (más eficiente y directo)
         startDate: startDateFormatted,
         endDate: endDateFormatted,
         getAll: useGetAll, // Solo usar getAll para rangos muy grandes
@@ -642,7 +615,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar que filteredData sea un array
       if (!Array.isArray(filteredData)) {
-        console.warn('⚠️ Datos no válidos recibidos del backend')
+        console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Datos no válidos recibidos del backend')
+        setLoadingDetailedData(false)
+        return
+      }
+      
+      // Si no hay datos, también detener el loading
+      if (filteredData.length === 0) {
+        console.log('ℹ️ [loadMedicionesForDetailedAnalysis] No se encontraron datos para el rango seleccionado')
+        setLoadingDetailedData(false)
         return
       }
 
@@ -694,17 +675,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     } catch (err: any) {
       // Ignorar errores de cancelación
       if (err.name === 'AbortError' || signal?.aborted) {
+        setLoadingDetailedData(false)
         return
       }
-      console.error('❌ Error cargando datos para análisis detallado:', err)
-      // No mostrar error al usuario, solo loguear
+      console.error('❌ [loadMedicionesForDetailedAnalysis] Error cargando datos para análisis detallado:', err)
+      // Siempre detener el loading en caso de error
+      setLoadingDetailedData(false)
     } finally {
-      // Solo actualizar loading si no fue cancelado
-      if (!signal?.aborted) {
-        setLoadingDetailedData(false)
-      }
+      // SIEMPRE actualizar loading a false, incluso si fue cancelado
+      // Esto asegura que el modal no quede en estado de carga infinito
+      setLoadingDetailedData(false)
     }
-  }, [filters.entidadId, filters.ubicacionId, selectedNode])
+  }, [filters.entidadId, selectedNode])
 
   // Cargar nodos disponibles cuando se abre el modal de análisis detallado
   useEffect(() => {
@@ -907,12 +889,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   useEffect(() => {
     // Validar que las fechas sean válidas antes de cargar
     if (!showDetailedAnalysis || !detailedStartDate || !detailedEndDate || !selectedNode) {
+      // Si el modal está abierto pero faltan datos, detener el loading
+      if (showDetailedAnalysis && loadingDetailedData) {
+        setLoadingDetailedData(false)
+      }
       return
     }
     
     // Validar que la fecha inicial no sea mayor que la final
     if (new Date(detailedStartDate) > new Date(detailedEndDate)) {
       console.warn('⚠️ Fechas inválidas: fecha inicial mayor que fecha final')
+      setLoadingDetailedData(false)
       return
     }
     
@@ -1569,8 +1556,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       </div>
                     </div>
                     {!hasData && (
-                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-gray-200 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 font-mono tracking-wider">
-                        {t('dashboard.no_data')}
+                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 font-mono tracking-wider">
+                        SIN DATOS RECIENTES
                       </span>
                     )}
                   </div>
@@ -1649,11 +1636,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </LineChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-full bg-gray-200 dark:bg-neutral-700/30 rounded-lg">
-                        <div className="text-center text-gray-600 dark:text-neutral-500">
-                          <div className="text-2xl mb-2">📊</div>
-                          <div className="text-sm font-mono tracking-wider">{t('dashboard.no_data_available')}</div>
+                      <div className="flex flex-col items-center justify-center h-full bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
+                        <div className="text-center text-yellow-700 dark:text-yellow-400 mb-3">
+                          <div className="text-3xl mb-2">⚠️</div>
+                          <div className="text-sm font-mono tracking-wider font-bold mb-1">SIN DATOS RECIENTES</div>
+                          <div className="text-xs font-mono opacity-75">No hay mediciones en los últimos 30 días</div>
                         </div>
+                        <button
+                          onClick={() => openDetailedAnalysis(metric)}
+                          className="px-3 py-1.5 text-xs font-mono tracking-wider bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200"
+                        >
+                          Ajustar Rango Manualmente
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1680,20 +1674,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     return null
                   })()}
 
-                  {/* Botón de lupa para análisis detallado */}
-                  {hasData && (
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => openDetailedAnalysis(metric)}
-                        className="p-2 text-neutral-400 group-hover:text-green-500 group-hover:bg-green-500/10 rounded-lg transition-all duration-200 group-hover:scale-110"
-                        title="Ver análisis detallado"
-                      >
-                        <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+                  {/* Botón de lupa para análisis detallado - Siempre visible para permitir ajuste manual */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => openDetailedAnalysis(metric)}
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        hasData 
+                          ? 'text-neutral-400 group-hover:text-green-500 group-hover:bg-green-500/10 group-hover:scale-110'
+                          : 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
+                      }`}
+                      title={hasData ? "Ver análisis detallado" : "Ajustar rango de fechas para buscar datos antiguos"}
+                    >
+                      <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
 
                 </div>
               )
