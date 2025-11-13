@@ -144,16 +144,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
-    console.log(`🔵 [loadMediciones] INICIO - requestKey: ${requestKey}, expectedNodeId: ${expectedNodeId}`)
-    console.log(`🔵 [loadMediciones] Estado actual - entidadId: ${filters.entidadId}, ubicacionId: ${filters.ubicacionId}, selectedNode: ${selectedNode?.nodoid || 'null'}`)
-    
     // Si hay un nodo seleccionado, no requerir ubicacionId (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
     const hasRequiredFilters = filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true)
     
     if (!hasRequiredFilters) {
-      console.log(`🔴 [loadMediciones] CANCELADO: Faltan filtros (entidadId: ${filters.entidadId}, ubicacionId: ${filters.ubicacionId}, requiresUbicacionId: ${requiresUbicacionId})`)
       setMediciones([])
       setLoading(false)
       return
@@ -163,29 +159,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const thisRequestKey = requestKey || `${filters.entidadId}-${filters.ubicacionId}-${selectedNode?.nodoid || 'none'}-${Date.now()}`
     const thisNodeId = expectedNodeId !== undefined ? expectedNodeId : selectedNode?.nodoid || null
     
-    console.log(`🔵 [loadMediciones] thisRequestKey: ${thisRequestKey}, thisNodeId: ${thisNodeId}`)
-    console.log(`🔵 [loadMediciones] currentRequestKeyRef.current: ${currentRequestKeyRef.current}`)
-    
     // Verificar si esta petición ya fue invalidada por una nueva selección
     if (currentRequestKeyRef.current !== null && currentRequestKeyRef.current !== thisRequestKey) {
-      console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nueva petición en curso (${currentRequestKeyRef.current})`)
       return
     }
     
     // Verificar si el nodo cambió mientras se estaba cargando
     if (thisNodeId !== null && selectedNode?.nodoid !== thisNodeId) {
-      console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nodo cambió de ${thisNodeId} a ${selectedNode?.nodoid}`)
       return
     }
     
-    console.log(`🟢 [loadMediciones] Petición ${thisRequestKey} VÁLIDA - Iniciando carga...`)
     setLoading(true)
     setError(null)
     
     // Marcar esta petición como la actual
     currentRequestKeyRef.current = thisRequestKey
     currentRequestNodeIdRef.current = thisNodeId
-    console.log(`🟢 [loadMediciones] Petición ${thisRequestKey} marcada como actual`)
 
     try {
       // Si hay un nodo seleccionado, buscar todas las mediciones disponibles para ese nodo
@@ -218,8 +207,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const startDateStr = formatDate(startDate)
           const endDateStr = formatDate(endDate)
           
-          console.log(`🟢 [loadMediciones] Intentando rango de ${days} días - nodoid: ${selectedNode.nodoid}, startDate: ${startDateStr}, endDate: ${endDateStr}`)
-          
           try {
             const data = await JoySenseService.getMediciones({
               nodoid: selectedNode.nodoid,
@@ -232,18 +219,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
             
             if (dataArray.length > 0) {
-              console.log(`✅ [loadMediciones] Encontrados ${dataArray.length} registros en rango de ${days} días`)
               allData = dataArray
               foundDataInRange = true
               break
-            } else {
-              console.log(`⚠️ [loadMediciones] No hay datos en rango de ${days} días`)
             }
           } catch (error: any) {
-            console.warn(`⚠️ [loadMediciones] Error en rango de ${days} días:`, error.message)
             // Si es timeout, no intentar más rangos grandes
             if (error.message?.includes('timeout') || error.code === '57014' || error.message?.includes('500')) {
-              console.warn(`⚠️ [loadMediciones] Timeout/Error en rango de ${days} días, saltando a búsqueda sin filtro de fecha`)
               break // Salir del loop de rangos
             }
             // Si no es timeout, continuar con siguiente rango
@@ -254,15 +236,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // Los nodos sin datos recientes mostrarán "NODO OBSERVADO" en los mini-gráficos
         // El usuario puede abrir el modal de análisis detallado para ajustar el rango manualmente
         if (!foundDataInRange && allData.length === 0) {
-          console.log(`⚠️ [loadMediciones] No hay datos recientes para nodo ${selectedNode.nodoid}`)
-          console.log(`💡 [loadMediciones] Mostrando "NODO OBSERVADO" - El usuario puede abrir el análisis detallado para ajustar el rango de fechas manualmente`)
           // Dejar allData como array vacío - esto activará el mensaje "NODO OBSERVADO" en los mini-gráficos
           // NO intentar buscar sin filtros de fecha para evitar timeouts
-        }
-        
-        console.log(`🟢 [loadMediciones] Resultado final: ${Array.isArray(allData) ? allData.length : 'NO ES ARRAY'} registros`)
-        if (Array.isArray(allData) && allData.length === 0) {
-          console.warn(`⚠️ [loadMediciones] No se encontraron datos para nodo ${selectedNode.nodoid} después de todos los intentos`)
         }
         
       } else {
@@ -295,27 +270,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         allData = Array.isArray(dataSinNodo) ? dataSinNodo : (dataSinNodo ? [dataSinNodo] : [])
       }
 
-      console.log(`🟢 [loadMediciones] Datos obtenidos: ${Array.isArray(allData) ? allData.length : 'NO ES ARRAY'} registros`)
-      
       // Verificar nuevamente si la petición sigue siendo válida después de la llamada async
       if (currentRequestKeyRef.current !== thisRequestKey) {
-        console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nueva petición iniciada durante la carga (${currentRequestKeyRef.current})`)
         return
       }
       
       if (thisNodeId !== null && selectedNode?.nodoid !== thisNodeId) {
-        console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nodo cambió durante la carga (${thisNodeId} -> ${selectedNode?.nodoid})`)
         return
       }
 
-      console.log(`🟢 [loadMediciones] Petición ${thisRequestKey} sigue siendo VÁLIDA después de obtener datos`)
-
       // Verificar que allData sea un array
       if (!Array.isArray(allData)) {
-        console.log(`🔴 [loadMediciones] allData NO ES ARRAY:`, typeof allData, allData)
         // Solo actualizar si esta petición sigue siendo la actual
         if (currentRequestKeyRef.current === thisRequestKey) {
-          console.log(`🔴 [loadMediciones] Actualizando estado: mediciones = []`)
           setMediciones([])
           setLoading(false)
         }
@@ -327,13 +294,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Ordenarlos ascendente para el procesamiento correcto
       let filteredData = allData
       
-      console.log(`🟢 [loadMediciones] filteredData.length: ${filteredData.length}`)
-      
       if (filteredData.length === 0) {
-        console.log(`🔴 [loadMediciones] NO HAY DATOS después de filtrar`)
         // Solo actualizar si esta petición sigue siendo la actual
         if (currentRequestKeyRef.current === thisRequestKey) {
-          console.log(`🔴 [loadMediciones] Actualizando estado: mediciones = [] (sin datos)`)
           setMediciones([])
           setLoading(false)
         }
@@ -347,49 +310,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
 
-      // Verificar si hay datos recientes
-      if (sortedData.length > 0) {
-        const lastDate = new Date(sortedData[sortedData.length - 1].fecha)
-        const now = new Date()
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-        const recentData = sortedData.filter(m => new Date(m.fecha) >= oneDayAgo)
-        
-        if (recentData.length === 0) {
-          console.warn(`⚠️ No hay datos de las últimas 24 horas. Última fecha disponible: ${lastDate.toLocaleDateString('es-ES')}`)
-        }
-      } else {
-        console.warn(`⚠️ No se cargaron datos para el nodo ${selectedNode?.nodoid}`)
-      }
-
-      console.log(`🟢 [loadMediciones] Datos procesados: ${sortedData.length} registros ordenados`)
-      
       // Verificar una última vez antes de actualizar el estado
       if (currentRequestKeyRef.current !== thisRequestKey) {
-        console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nueva petición iniciada antes de actualizar estado (${currentRequestKeyRef.current})`)
         return
       }
       
       if (thisNodeId !== null && selectedNode?.nodoid !== thisNodeId) {
-        console.log(`⏭️ [loadMediciones] Petición ${thisRequestKey} CANCELADA: nodo cambió antes de actualizar estado (${thisNodeId} -> ${selectedNode?.nodoid})`)
         return
       }
 
-      console.log(`🟢 [loadMediciones] Petición ${thisRequestKey} VÁLIDA - Actualizando estado con ${sortedData.length} mediciones`)
-
-      // Mostrar métricas disponibles en los datos filtrados
-      const metricasPresentes = Array.from(new Set(sortedData.map(m => m.metricaid))).sort()
-      console.log(`🟢 [loadMediciones] Métricas presentes:`, metricasPresentes)
-      
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       setMediciones(sortedData)
       setError(null) // Limpiar cualquier error previo
-      console.log(`✅ [loadMediciones] Estado actualizado exitosamente con ${sortedData.length} mediciones`)
     } catch (err: any) {
-      console.log(`🔴 [loadMediciones] ERROR capturado en petición ${thisRequestKey}:`, err)
-      
       // Verificar si esta petición sigue siendo válida antes de manejar el error
       if (currentRequestKeyRef.current !== thisRequestKey) {
-        console.log(`⏭️ [loadMediciones] Error en petición ${thisRequestKey} IGNORADO: nueva petición en curso (${currentRequestKeyRef.current})`)
         return
       }
       
@@ -399,35 +334,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const isServerError = errorMessage.includes('status: 500') || errorMessage.includes('HTTP error')
       const isTimeoutError = errorMessage.includes('timeout') || errorMessage.includes('Timeout')
       
-      console.log(`🔴 [loadMediciones] Tipo de error - Network: ${isNetworkError}, Server: ${isServerError}, Timeout: ${isTimeoutError}`)
-      
-      // Si es un error de servidor, red o timeout temporal, reintentar después de un delay
+      // Si es un error de servidor, red o timeout temporal, mantener datos anteriores
       if (isServerError || isNetworkError || isTimeoutError) {
-        console.warn(`⚠️ [loadMediciones] Error temporal al cargar mediciones (${errorMessage}):`, err)
-        
-        // Solo actualizar si esta petición sigue siendo la actual
-        if (currentRequestKeyRef.current === thisRequestKey) {
-          console.log(`🟡 [loadMediciones] Manteniendo datos anteriores, no limpiando mediciones`)
-          // No limpiar mediciones inmediatamente - mantener las anteriores si existen
-          // Esto evita mostrar "Sin Datos" cuando hay un error temporal de red
-          setError(null) // No mostrar error al usuario, solo reintentar
-        }
+        // No limpiar mediciones inmediatamente - mantener las anteriores si existen
+        // Esto evita mostrar "Sin Datos" cuando hay un error temporal de red
+        setError(null) // No mostrar error al usuario
       } else {
         // Error crítico no relacionado con datos, mostrar al usuario
-        console.error(`❌ [loadMediciones] Error crítico cargando mediciones:`, err)
+        console.error(`❌ Error cargando mediciones:`, err)
         if (currentRequestKeyRef.current === thisRequestKey) {
-          console.log(`🔴 [loadMediciones] Mostrando error al usuario`)
           setError("Error al cargar las mediciones")
         }
       }
     } finally {
-      console.log(`🔵 [loadMediciones] FINALLY - currentRequestKeyRef: ${currentRequestKeyRef.current}, thisRequestKey: ${thisRequestKey}`)
       // Solo actualizar loading si esta petición sigue siendo la actual
       if (currentRequestKeyRef.current === thisRequestKey) {
-        console.log(`🟢 [loadMediciones] Actualizando loading = false`)
         setLoading(false)
-      } else {
-        console.log(`⏭️ [loadMediciones] NO actualizando loading: petición ya no es la actual`)
       }
     }
   }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid])
@@ -451,15 +373,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
-    console.log(`🔵 [useEffect] INICIO - entidadId: ${filters.entidadId}, ubicacionId: ${filters.ubicacionId}, selectedNode: ${selectedNode?.nodoid || 'null'}`)
-    
     // Si hay un nodo seleccionado, no requerir ubicacionId (lo obtenemos del nodo)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
     const hasRequiredFilters = filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true)
     
     if (!hasRequiredFilters) {
-      console.log(`🟡 [useEffect] Esperando filtros requeridos (entidadId: ${filters.entidadId}, ubicacionId: ${filters.ubicacionId}, requiresUbicacionId: ${requiresUbicacionId})`)
       // Si no hay filtros y hay un nodo seleccionado, limpiar mediciones para evitar mostrar datos del nodo anterior
       if (selectedNode) {
         setMediciones([])
@@ -472,14 +391,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const previousNodeId = currentRequestNodeIdRef.current
     const currentNodeId = selectedNode?.nodoid || null
     if (previousNodeId !== null && previousNodeId !== currentNodeId) {
-      console.log(`🟡 [useEffect] Nodo cambió de ${previousNodeId} a ${currentNodeId} - Limpiando mediciones anteriores`)
       setMediciones([])
       setLoading(true)
     }
     
     // Limpiar timeout anterior
     if (loadMedicionesTimeoutRef.current) {
-      console.log(`🟡 [useEffect] Limpiando timeout anterior`)
       clearTimeout(loadMedicionesTimeoutRef.current)
     }
     
@@ -487,14 +404,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const requestKey = `${filters.entidadId}-${selectedNode?.nodoid || 'none'}-${Date.now()}`
     const expectedNodeId = selectedNode?.nodoid || null
     
-    console.log(`🔵 [useEffect] Nueva requestKey: ${requestKey}, expectedNodeId: ${expectedNodeId}`)
-    console.log(`🔵 [useEffect] currentRequestKeyRef antes: ${currentRequestKeyRef.current}`)
-    
     // Invalidar peticiones anteriores solo si el nodo cambió
     if (previousNodeId !== currentNodeId) {
-      const previousRequestKey = currentRequestKeyRef.current
       currentRequestKeyRef.current = null // Invalidar temporalmente
-      console.log(`🟡 [useEffect] Invalidando petición anterior por cambio de nodo: ${previousRequestKey}`)
     }
     
     // Debounce reducido cuando hay un nodo seleccionado (más rápido)
@@ -502,12 +414,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Debounce: esperar antes de cargar
     loadMedicionesTimeoutRef.current = setTimeout(() => {
-      console.log(`🟢 [useEffect] Timeout ejecutado - requestKey: ${requestKey}`)
-      console.log(`🔵 [useEffect] Estado actual - expectedNodeId: ${expectedNodeId}, selectedNode: ${selectedNode?.nodoid || 'null'}`)
-      
       // Verificar que el nodo no haya cambiado durante el debounce
       if (expectedNodeId !== (selectedNode?.nodoid || null)) {
-        console.log(`⏭️ [useEffect] Petición ${requestKey} CANCELADA: nodo cambió durante debounce (${expectedNodeId} -> ${selectedNode?.nodoid || 'null'})`)
         return
       }
       
@@ -516,32 +424,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const stillHasRequiredFilters = filters.entidadId && (stillRequiresUbicacionId ? filters.ubicacionId : true)
       
       if (!stillHasRequiredFilters) {
-        console.log(`⏭️ [useEffect] Petición ${requestKey} CANCELADA: filtros requeridos ya no están disponibles`)
         return
       }
       
       // Marcar esta como la petición actual
       currentRequestKeyRef.current = requestKey
       currentRequestNodeIdRef.current = expectedNodeId
-      console.log(`🟢 [useEffect] Petición ${requestKey} marcada como actual, llamando loadMediciones...`)
       
       // Cargar datos
       loadMediciones(requestKey, expectedNodeId)
     }, debounceTime)
     
-    console.log(`🟢 [useEffect] Timeout configurado para ejecutarse en ${debounceTime}ms`)
-    
     // Cleanup
     return () => {
-      console.log(`🔴 [useEffect] CLEANUP - requestKey: ${requestKey}`)
       if (loadMedicionesTimeoutRef.current) {
-        console.log(`🔴 [useEffect] Limpiando timeout en cleanup`)
         clearTimeout(loadMedicionesTimeoutRef.current)
       }
       // Solo invalidar si el nodo realmente cambió (no solo por cambio de ubicacionId)
       const cleanupNodeId = selectedNode?.nodoid || null
       if (currentRequestKeyRef.current === requestKey && currentRequestNodeIdRef.current !== cleanupNodeId) {
-        console.log(`🔴 [useEffect] Invalidando petición ${requestKey} en cleanup por cambio de nodo`)
         currentRequestKeyRef.current = null
         currentRequestNodeIdRef.current = null
       }
@@ -554,7 +455,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Cuando hay un nodo seleccionado, no requerir ubicacionId (el nodoid es suficiente)
     // El backend puede filtrar directamente por nodoid sin necesidad de ubicacionId
     if (!filters.entidadId || !selectedNode) {
-      console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Faltan filtros requeridos:', { entidadId: filters.entidadId, selectedNode: selectedNode?.nodoid })
       setLoadingDetailedData(false)
       return
     }
@@ -566,8 +466,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     setLoadingDetailedData(true)
-    
-    console.log(`🔵 [loadMedicionesForDetailedAnalysis] INICIO - nodoid: ${selectedNode.nodoid}, rango: ${startDateStr} a ${endDateStr}`)
     
     try {
       const formatDate = (dateStr: string, isEnd: boolean = false) => {
@@ -588,8 +486,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(endDateStr + 'T23:59:59')
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
-      console.log(`📅 [loadMedicionesForDetailedAnalysis] Diferencia de días: ${daysDiff.toFixed(1)}`)
-      
       // ESTRATEGIA DESHABILITADA: No usar estrategia sin filtro de fecha para evitar timeouts
       // Los nodos con muchos datos requieren filtros de fecha obligatorios
       // Si el usuario necesita ver datos antiguos, debe usar el análisis detallado con un rango específico
@@ -600,14 +496,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       if (USE_STRATEGY_WITHOUT_DATE_FILTER) {
         // ESTRATEGIA 1: Para rangos grandes, buscar últimas mediciones sin filtro de fecha
         // Esto es mucho más rápido porque el backend solo necesita ordenar por fecha descendente
-        console.log(`🔄 [loadMedicionesForDetailedAnalysis] Usando estrategia sin filtro de fecha (rango grande: ${daysDiff.toFixed(1)} días)`)
-        
         // Para nodos con muchos datos, usar límites MUY conservadores
         // Empezar con 5000 y aumentar progresivamente solo si es necesario
         const initialLimit = 5000 // Límite inicial muy conservador
         const fallbackLimits = [3000, 2000, 1000, 500] // Límites de fallback progresivos
-        
-        console.log(`🔍 [loadMedicionesForDetailedAnalysis] Buscando últimas mediciones del nodo (sin filtro de fecha, límite inicial: ${initialLimit})`)
         
         let success = false
         
@@ -621,15 +513,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           })
           
           filteredData = Array.isArray(response) ? response : []
-          console.log(`✅ [loadMedicionesForDetailedAnalysis] Backend devolvió ${filteredData.length} registros (sin filtro de fecha)`)
           success = true
         } catch (error: any) {
-          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con límite inicial ${initialLimit}:`, error.message)
-          
           // Si el error indica que se requiere filtro de fecha, no intentar más
           if (error.code === 'TIMEOUT' || error.message?.includes('filtros de fecha') || error.message?.includes('demasiados datos')) {
-            console.error(`❌ [loadMedicionesForDetailedAnalysis] El nodo requiere filtros de fecha. Error: ${error.message}`)
-            console.log(`💡 [loadMedicionesForDetailedAnalysis] Sugerencia: Use un rango de fechas más pequeño o ejecute el script SQL para crear índices optimizados.`)
             filteredData = []
             success = false
             // Mostrar mensaje al usuario (se manejará en el código que verifica filteredData.length === 0)
@@ -639,13 +526,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           // Si falla por otro motivo, intentar con límites progresivamente más pequeños
           for (const fallbackLimit of fallbackLimits) {
             if (signal?.aborted) {
-              console.log(`⏭️ [loadMedicionesForDetailedAnalysis] Request cancelado durante fallback`)
               setLoadingDetailedData(false)
               return
             }
             
             try {
-              console.log(`🟡 [loadMedicionesForDetailedAnalysis] Intentando con límite reducido (${fallbackLimit})...`)
               const response2 = await JoySenseService.getMediciones({
                 entidadId: filters.entidadId,
                 nodoid: selectedNode.nodoid,
@@ -655,25 +540,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               filteredData = Array.isArray(response2) ? response2 : []
               
               if (filteredData.length > 0) {
-                console.log(`✅ [loadMedicionesForDetailedAnalysis] Con límite ${fallbackLimit}: ${filteredData.length} registros`)
                 success = true
                 break
               }
             } catch (e2: any) {
               // Si el error indica que se requiere filtro de fecha, no continuar
               if (e2.code === 'TIMEOUT' || e2.message?.includes('filtros de fecha') || e2.message?.includes('demasiados datos')) {
-                console.error(`❌ [loadMedicionesForDetailedAnalysis] El nodo requiere filtros de fecha incluso con límite ${fallbackLimit}`)
                 filteredData = []
                 success = false
                 break
               }
-              console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con límite ${fallbackLimit}:`, e2.message)
               continue
             }
           }
           
           if (!success) {
-            console.error(`❌ [loadMedicionesForDetailedAnalysis] Todos los intentos fallaron. El nodo tiene demasiados datos o está inactivo.`)
             filteredData = []
           }
         }
@@ -683,29 +564,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const startTimestamp = startDate.getTime()
           const endTimestamp = endDate.getTime()
           
-          const beforeFilter = filteredData.length
-          const dataBeforeFilter = [...filteredData] // Guardar copia antes de filtrar
-          
           filteredData = filteredData.filter(m => {
             const medicionDate = new Date(m.fecha).getTime()
             return medicionDate >= startTimestamp && medicionDate <= endTimestamp
           })
-          
-          console.log(`✅ [loadMedicionesForDetailedAnalysis] Después de filtrar por rango (${beforeFilter} -> ${filteredData.length} registros)`)
-          
-          // Si después de filtrar no hay datos, puede ser que el rango solicitado esté fuera del rango de datos obtenidos
-          if (filteredData.length === 0 && dataBeforeFilter.length > 0) {
-            // Ordenar por fecha para obtener el rango real
-            const sorted = dataBeforeFilter.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-            const oldestDate = new Date(sorted[0]?.fecha || 0)
-            const newestDate = new Date(sorted[sorted.length - 1]?.fecha || 0)
-            console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] No hay datos en el rango solicitado (${startDateStr} a ${endDateStr}). Datos disponibles: ${oldestDate.toLocaleDateString()} a ${newestDate.toLocaleDateString()}`)
-          }
         }
       } else {
         // ESTRATEGIA 2: Para rangos pequeños, usar filtro de fecha normal
-        console.log(`🔍 [loadMedicionesForDetailedAnalysis] Usando estrategia con filtro de fecha (rango pequeño: ${daysDiff.toFixed(1)} días)`)
-        
         let maxLimit = 10000 // Límite conservador para evitar timeouts
         
         if (daysDiff > 14) {
@@ -724,15 +589,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           })
           
           filteredData = Array.isArray(response) ? response : []
-          console.log(`✅ [loadMedicionesForDetailedAnalysis] Backend devolvió ${filteredData.length} registros`)
         } catch (error: any) {
           // Si hay un error (como timeout 500), NO intentar estrategia sin filtro de fecha
-          // Mostrar error descriptivo y sugerir usar un rango más pequeño
-          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Error con filtro de fecha:`, error.message)
-          
           if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
-            console.error(`❌ [loadMedicionesForDetailedAnalysis] Timeout al obtener datos. El nodo tiene demasiados datos para este rango.`)
-            console.log(`💡 [loadMedicionesForDetailedAnalysis] Sugerencia: Use un rango de fechas más pequeño o ejecute el script SQL para crear índices optimizados.`)
             filteredData = []
             // No intentar estrategia sin filtro de fecha - esto causaría más timeouts
           } else {
@@ -743,26 +602,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar que filteredData sea un array
       if (!Array.isArray(filteredData)) {
-        console.warn('⚠️ [loadMedicionesForDetailedAnalysis] Datos no válidos recibidos del backend:', typeof filteredData)
         setLoadingDetailedData(false)
         return
       }
       
-      // Si no hay datos, también detener el loading pero mostrar mensaje informativo
+      // Si no hay datos, también detener el loading
       if (filteredData.length === 0) {
-        console.log(`ℹ️ [loadMedicionesForDetailedAnalysis] No se encontraron datos para el rango ${startDateStr} a ${endDateStr} (nodoid: ${selectedNode.nodoid})`)
-        
-        // Si el rango es grande (>30 días) y no hay datos, puede ser que el nodo tenga demasiados datos
-        // y requiera un rango más pequeño o índices optimizados
-        if (daysDiff > 30) {
-          console.warn(`⚠️ [loadMedicionesForDetailedAnalysis] Rango grande sin datos. El nodo puede tener demasiados datos. Considere usar un rango más pequeño o ejecutar el script SQL para crear índices.`)
-        }
-        
         setLoadingDetailedData(false)
         return
       }
-      
-      console.log(`✅ [loadMedicionesForDetailedAnalysis] Datos obtenidos: ${filteredData.length} registros`)
 
       // El backend devuelve datos ordenados descendente (más recientes primero)
       // Necesitamos ordenarlos ascendente para el procesamiento correcto
@@ -770,23 +618,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
-      
-      // Logs de debug para análisis detallado
-      if (sortedFilteredData.length > 0) {
-        const firstDate = new Date(sortedFilteredData[0].fecha)
-        const lastDate = new Date(sortedFilteredData[sortedFilteredData.length - 1].fecha)
-        console.log(`📊 DEBUG loadMedicionesForDetailedAnalysis: Total registros: ${sortedFilteredData.length}`)
-        console.log(`📅 DEBUG Rango solicitado: ${startDateStr} a ${endDateStr}`)
-        console.log(`📅 DEBUG Fecha más antigua en datos: ${firstDate.toISOString()} (${firstDate.toLocaleDateString('es-ES')})`)
-        console.log(`📅 DEBUG Fecha más reciente en datos: ${lastDate.toISOString()} (${lastDate.toLocaleDateString('es-ES')})`)
-        
-        // Verificar si los datos cubren el rango solicitado
-        const requestedStart = new Date(startDateStr + 'T00:00:00')
-        const requestedEnd = new Date(endDateStr + 'T23:59:59')
-        if (lastDate < requestedEnd) {
-          console.warn(`⚠️ DEBUG: Los datos no llegan hasta la fecha final solicitada! Última fecha: ${lastDate.toLocaleDateString('es-ES')}, Solicitada: ${requestedEnd.toLocaleDateString('es-ES')}`)
-        }
-      }
       
       // Actualizar mediciones con los nuevos datos
       // Combinar con datos existentes para no perder información de otras métricas
@@ -815,7 +646,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setLoadingDetailedData(false)
         return
       }
-      console.error('❌ [loadMedicionesForDetailedAnalysis] Error cargando datos para análisis detallado:', err)
+      console.error('Error cargando datos para análisis detallado:', err)
       // Siempre detener el loading en caso de error
       setLoadingDetailedData(false)
     } finally {
@@ -843,7 +674,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
     if (!comparisonNode || !detailedStartDate || !detailedEndDate) {
-      console.warn('⚠️ No se puede cargar comparación: faltan datos del nodo o fechas')
       return
     }
 
@@ -852,7 +682,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const comparisonUbicacionId = comparisonNode.ubicacionid
 
     if (!comparisonEntidadId || !comparisonUbicacionId) {
-      console.warn('⚠️ No se puede cargar comparación: el nodo no tiene entidadId o ubicacionId')
       return
     }
 
@@ -912,7 +741,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .map(({ fechaParsed, ...m }) => m)
       
       setComparisonMediciones(sortedComparisonData)
-      console.log(`✅ Datos de comparación cargados: ${sortedComparisonData.length} registros para nodo ${comparisonNode.nodo}`)
     } catch (err: any) {
       console.error('❌ Error cargando datos de comparación:', err)
     } finally {
@@ -2310,11 +2138,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       let comparisonChartData: any[] = []
                       if (comparisonMediciones.length > 0 && comparisonNode) {
                         comparisonChartData = processComparisonData(comparisonMediciones, selectedDetailedMetric)
-                        console.log(`📊 DEBUG Comparación: ${comparisonChartData.length} puntos procesados para nodo ${comparisonNode.nodo}`)
-                        if (comparisonChartData.length > 0) {
-                          console.log(`📊 DEBUG Comparación - Primer punto:`, comparisonChartData[0])
-                          console.log(`📊 DEBUG Comparación - Último punto:`, comparisonChartData[comparisonChartData.length - 1])
-                        }
                       }
                       
                       // Combinar datos de comparación con datos principales
@@ -2353,18 +2176,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         return timeA.localeCompare(timeB)
                       })
                       
-                      // Debug: verificar que los datos de comparación estén presentes
-                      if (comparisonChartData.length > 0 && finalChartData.length > 0) {
-                        const samplePoint = finalChartData.find(p => {
-                          const compKeys = Object.keys(p).filter(k => k.startsWith('comp_'))
-                          return compKeys.length > 0
-                        })
-                        if (samplePoint) {
-                          console.log(`✅ DEBUG: Datos de comparación combinados correctamente. Punto de ejemplo:`, samplePoint)
-                        } else {
-                          console.warn(`⚠️ DEBUG: No se encontraron datos de comparación en finalChartData. comparisonChartData tiene ${comparisonChartData.length} puntos, finalChartData tiene ${finalChartData.length} puntos`)
-                        }
-                      }
                       
                       // Solo mostrar "No hay datos" si NO está cargando y no hay datos
                       if (finalChartData.length === 0) {
@@ -2428,11 +2239,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             // tipoKeys, colors y comparisonColors ya están definidos arriba
                             const comparisonKeys = Object.keys(finalChartData[0] || {}).filter(key => key.startsWith('comp_'))
                             
-                            // Debug: verificar que las claves estén presentes
-                            if (comparisonKeys.length > 0) {
-                              console.log(`🔍 DEBUG Renderizado: ${comparisonKeys.length} líneas de comparación a renderizar:`, comparisonKeys)
-                            }
-                            
                             return (
                               <>
                                 {/* Líneas del nodo principal */}
@@ -2460,7 +2266,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                     tipoIndex = index
                                   }
                                   const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
-                                  console.log(`🎨 DEBUG Renderizando línea de comparación: ${compKey} (originalKey: ${originalKey}, tipoIndex: ${tipoIndex}, color: ${strokeColor})`)
                                   return (
                                     <Line
                                       key={compKey}
