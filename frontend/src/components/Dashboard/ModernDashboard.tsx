@@ -1782,7 +1782,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {/* Modal de Análisis Detallado */}
         {showDetailedAnalysis && selectedMetricForAnalysis && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-6xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`}>
+            <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`}>
               {/* Contenido con sidebar de pestañas */}
               <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar izquierdo con pestañas de métricas (estilo separadores de libros) */}
@@ -1820,7 +1820,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         {selectedNode.deveui && (
                           <div className="truncate pl-2" title={`DevEUI: ${selectedNode.deveui}`}>
                             <span className="text-gray-500 dark:text-neutral-500">DevEUI:</span> {selectedNode.deveui}
-                          </div>
+                </div>
                         )}
                         {selectedNode.ubicacion && (
                           <div className="truncate pl-2" title={`Ubicación: ${selectedNode.ubicacion.ubicacion}`}>
@@ -1853,8 +1853,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       </div>
                     </div>
                   )}
-                </div>
-                
+              </div>
+              
                 {/* Contenido principal */}
               <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800 relative">
                 <div className="p-6">
@@ -1870,16 +1870,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   )}
 
                   {/* Controles en una sola fila con separadores - Layout compacto horizontal */}
-                  <div className={`flex items-start gap-4 mb-6 ${isModalExpanded ? 'justify-center' : ''}`}>
+                  <div className="flex items-start gap-4 mb-6 justify-center">
                     <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 flex-shrink-0">
-                    <div className="flex flex-nowrap items-center gap-4 overflow-x-auto">
+                    <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden">
                       {/* Intervalo de Fechas */}
                     <div className="flex flex-col flex-shrink-0">
                         <div className="flex items-center gap-2">
-                          <div className="flex flex-col">
+                    <div className="flex flex-col">
                             <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Inicio:</label>
-                            <input
-                              type="date"
+                      <input
+                        type="date"
                               value={tempStartDate || detailedStartDate}
                               onChange={(e) => {
                                 const newStartDate = e.target.value
@@ -1915,12 +1915,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               max={detailedEndDate || undefined}
                               disabled={loadingDetailedData}
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            />
-                          </div>
-                          <div className="flex flex-col">
+                      />
+                    </div>
+                    <div className="flex flex-col">
                             <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Fin:</label>
-                            <input
-                              type="date"
+                      <input
+                        type="date"
                               value={tempEndDate || detailedEndDate}
                               onChange={(e) => {
                                 const newEndDate = e.target.value
@@ -2731,7 +2731,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       );
                     })()}
                   </div>
-                </div>
+                  </div>
                 </div>
               </div>
             </div>
