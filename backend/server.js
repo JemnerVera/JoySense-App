@@ -3186,18 +3186,23 @@ app.get('/api/sense/mediciones', async (req, res) => {
         
         // Aplicar filtros - CRÍTICO: filtrar por nodoid primero para reducir datos significativamente
         if (nodoid) {
-          batchQuery = batchQuery.eq('nodoid', parseInt(nodoid));
+          const nodoidInt = parseInt(nodoid);
+          console.log(`🔍 Backend: Aplicando filtro nodoid: ${nodoidInt}`);
+          batchQuery = batchQuery.eq('nodoid', nodoidInt);
           // Si hay nodoid, no necesitamos filtrar por ubicacionId (redundante y más lento)
         } else if (ubicacionId) {
+          console.log(`🔍 Backend: Aplicando filtro ubicacionId: ${ubicacionId}`);
           batchQuery = batchQuery.eq('ubicacionid', ubicacionId);
         }
         if (metricaId) {
           batchQuery = batchQuery.eq('metricaid', parseInt(metricaId));
         }
         if (startDate) {
+          console.log(`🔍 Backend: Aplicando filtro startDate: ${startDate}`);
           batchQuery = batchQuery.gte('fecha', startDate);
         }
         if (endDate) {
+          console.log(`🔍 Backend: Aplicando filtro endDate: ${endDate}`);
           batchQuery = batchQuery.lte('fecha', endDate);
         }
         
@@ -3225,8 +3230,38 @@ app.get('/api/sense/mediciones', async (req, res) => {
           hasMore = batchData.length === batchSize;
           batchCount++;
           console.log(`📦 Batch: ${batchData.length} registros, Total acumulado: ${allData.length}`);
+          
+          // Log de las fechas en el primer batch para diagnóstico
+          if (batchCount === 1 && batchData.length > 0) {
+            const firstDate = new Date(batchData[0].fecha);
+            const lastDate = new Date(batchData[batchData.length - 1].fecha);
+            console.log(`📅 DEBUG Primer batch - Primera fecha: ${firstDate.toISOString()}, Última fecha: ${lastDate.toISOString()}`);
+          }
         } else {
           hasMore = false;
+          // Si el primer batch no tiene datos, loguear para diagnóstico
+          if (batchCount === 0) {
+            console.warn(`⚠️ DEBUG: Primer batch no devolvió datos. Verificar filtros: nodoid=${nodoid}, startDate=${startDate}, endDate=${endDate}`);
+            // Intentar una consulta sin filtros de fecha para verificar si hay datos del nodo
+            if (nodoid) {
+              const testQuery = supabase
+                .from('medicion')
+                .select('fecha, nodoid', { count: 'exact', head: false })
+                .eq('nodoid', parseInt(nodoid))
+                .order('fecha', { ascending: false })
+                .limit(5);
+              const { data: testData, error: testError } = await testQuery;
+              if (testError) {
+                console.error(`❌ DEBUG: Error en consulta de prueba:`, testError);
+              } else if (testData && testData.length > 0) {
+                const latestDate = new Date(testData[0].fecha);
+                console.log(`📅 DEBUG: Nodo ${nodoid} tiene ${testData.length} mediciones recientes. Última fecha: ${latestDate.toISOString()}`);
+                console.log(`📅 DEBUG: Rango solicitado: ${startDate} a ${endDate}`);
+              } else {
+                console.warn(`⚠️ DEBUG: Nodo ${nodoid} NO tiene mediciones en la base de datos`);
+              }
+            }
+          }
         }
       }
       

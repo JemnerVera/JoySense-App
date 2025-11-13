@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react"
+import { flushSync } from "react-dom"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
@@ -118,6 +119,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
   const [detailedStartDate, setDetailedStartDate] = useState<string>('')
   const [detailedEndDate, setDetailedEndDate] = useState<string>('')
+  const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
+  const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
 
@@ -152,7 +155,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // Los sensores LoRaWAN emiten cada 15 minutos, así que necesitamos todos los datos
         // Filtrar por nodoid directamente en el backend para mayor eficiencia
         // IMPORTANTE: Usar los últimos 14 días para balancear entre datos recientes y evitar timeouts
-        const endDate = new Date()
+        // Asegurar que endDate incluya el final del día actual para obtener todos los datos de hoy
+        const now = new Date()
+        const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59) // Final del día actual
         const startDate = new Date(endDate.getTime() - 14 * 24 * 60 * 60 * 1000) // Últimos 14 días
         
         const formatDate = (date: Date) => {
@@ -168,9 +173,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const startDateStr = formatDate(startDate)
         const endDateStr = formatDate(endDate)
         
-        console.log(`📊 DEBUG loadMediciones: Solicitando datos para nodo ${selectedNode.nodoid}`)
-        console.log(`📅 DEBUG Rango solicitado: ${startDateStr} a ${endDateStr}`)
-
         allData = await JoySenseService.getMediciones({
           entidadId: filters.entidadId,
           ubicacionId: filters.ubicacionId,
@@ -180,7 +182,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           getAll: true // Obtener TODOS los datos con paginación
         })
         
-        console.log(`📊 DEBUG loadMediciones: Datos recibidos del backend: ${Array.isArray(allData) ? allData.length : 'no es array'} registros`)
       } else {
         // Sin nodo seleccionado, usar las últimas 6 horas
         const endDate = new Date()
@@ -233,27 +234,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
 
-      // Logs de debug para verificar datos cargados
+      // Verificar si hay datos recientes
       if (sortedData.length > 0) {
-        const firstDate = new Date(sortedData[0].fecha)
         const lastDate = new Date(sortedData[sortedData.length - 1].fecha)
-        console.log(`📊 DEBUG loadMediciones: Total registros: ${sortedData.length}`)
-        console.log(`📅 DEBUG Fecha más antigua: ${firstDate.toISOString()} (${firstDate.toLocaleDateString('es-ES')})`)
-        console.log(`📅 DEBUG Fecha más reciente: ${lastDate.toISOString()} (${lastDate.toLocaleDateString('es-ES')})`)
-        console.log(`📅 DEBUG Fecha actual: ${new Date().toISOString()} (${new Date().toLocaleDateString('es-ES')})`)
-        
-        // Verificar si hay datos recientes
         const now = new Date()
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
         const recentData = sortedData.filter(m => new Date(m.fecha) >= oneDayAgo)
-        console.log(`📊 DEBUG Datos de últimas 24h: ${recentData.length} registros`)
         
         if (recentData.length === 0) {
-          console.warn(`⚠️ DEBUG: No hay datos de las últimas 24 horas! Última fecha disponible: ${lastDate.toLocaleDateString('es-ES')}`)
+          console.warn(`⚠️ No hay datos de las últimas 24 horas. Última fecha disponible: ${lastDate.toLocaleDateString('es-ES')}`)
         }
       } else {
-        console.warn(`⚠️ DEBUG loadMediciones: No se cargaron datos!`)
-        console.warn(`⚠️ DEBUG: Nodo seleccionado: ${selectedNode?.nodoid}, UbicacionId: ${filters.ubicacionId}, EntidadId: ${filters.entidadId}`)
+        console.warn(`⚠️ No se cargaron datos para el nodo ${selectedNode?.nodoid}`)
       }
 
       // Mostrar métricas disponibles en los datos filtrados
@@ -465,6 +457,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return
     }
     
+    // Mostrar pantalla de carga INMEDIATAMENTE cuando cambian las fechas
+    setLoadingDetailedData(true)
+    
     // Cancelar request anterior si existe
     if (loadDetailedAnalysisAbortControllerRef.current) {
       loadDetailedAnalysisAbortControllerRef.current.abort()
@@ -584,48 +579,67 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
     } else {
       // Usar lógica de 3 horas (comportamiento por defecto)
+      // IMPORTANTE: Usar la fecha más reciente disponible en los datos, no la fecha actual
+      // Esto asegura que siempre mostremos los datos más recientes disponibles
       const latestDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
+      const now = new Date()
       const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
       
-      console.log(`📊 DEBUG processChartData (${dataKey}): Total mediciones: ${sortedMediciones.length}`)
-      console.log(`📅 DEBUG Fecha más antigua: ${new Date(sortedMediciones[0].fecha).toLocaleDateString('es-ES')} ${new Date(sortedMediciones[0].fecha).toLocaleTimeString('es-ES')}`)
-      console.log(`📅 DEBUG Fecha más reciente: ${latestDate.toLocaleDateString('es-ES')} ${latestDate.toLocaleTimeString('es-ES')}`)
-      console.log(`📅 DEBUG Filtro 3 horas desde: ${threeHoursAgo.toLocaleDateString('es-ES')} ${threeHoursAgo.toLocaleTimeString('es-ES')}`)
-      
-      filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= threeHoursAgo)
-      
-      console.log(`📊 DEBUG Mediciones después de filtrar 3h: ${filteredMediciones.length}`)
-      
-      // Si no hay suficientes datos en las últimas 3 horas, expandir el rango
-      // Para sensores LoRaWAN que emiten cada 15 minutos, en 3 horas debería haber ~12 mediciones por tipo/métrica
-      // Si hay menos de 10 puntos, expandir a 6 horas o más
-      if (filteredMediciones.length < 10 && sortedMediciones.length > 0) {
-        // Expandir a 6 horas
-        const sixHoursAgo = new Date(latestDate.getTime() - 6 * 60 * 60 * 1000)
-        const lastSixHours = sortedMediciones.filter(m => new Date(m.fecha) >= sixHoursAgo)
+      // NUEVA ESTRATEGIA: Detectar el último segmento continuo de datos
+      // Esto evita incluir datos antiguos con gaps grandes
+      const findLastContinuousSegment = (mediciones: any[], maxGapHours: number = 2): any[] => {
+        if (mediciones.length === 0) return []
         
-        if (lastSixHours.length >= 10) {
-          filteredMediciones = lastSixHours
-        } else {
-          // Si aún no hay suficientes, expandir a 12 horas
-          const twelveHoursAgo = new Date(latestDate.getTime() - 12 * 60 * 60 * 1000)
-          const lastTwelveHours = sortedMediciones.filter(m => new Date(m.fecha) >= twelveHoursAgo)
+        // Ordenar por fecha ascendente (más antiguas primero)
+        const sorted = [...mediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+        
+        // Empezar desde la medición más reciente
+        const result: any[] = []
+        const maxGapMs = maxGapHours * 60 * 60 * 1000
+        
+        // Agregar la medición más reciente
+        result.push(sorted[sorted.length - 1])
+        
+        // Ir hacia atrás, agregando mediciones consecutivas
+        for (let i = sorted.length - 2; i >= 0; i--) {
+          const currentDate = new Date(sorted[i].fecha).getTime()
+          const nextDate = new Date(result[0].fecha).getTime()
+          const gap = nextDate - currentDate
           
-          if (lastTwelveHours.length >= 10) {
-            filteredMediciones = lastTwelveHours
+          // Si el gap es menor al máximo permitido, es parte del segmento continuo
+          if (gap <= maxGapMs) {
+            result.unshift(sorted[i]) // Agregar al inicio para mantener orden cronológico
           } else {
-            // Si aún no hay suficientes, usar las últimas 24 horas
-            const oneDayAgo = new Date(latestDate.getTime() - 24 * 60 * 60 * 1000)
-            const lastDayMediciones = sortedMediciones.filter(m => new Date(m.fecha) >= oneDayAgo)
-            
-            if (lastDayMediciones.length > 0) {
-              filteredMediciones = lastDayMediciones
-            } else {
-              // Último recurso: usar todas las mediciones disponibles (máximo 100 para no sobrecargar)
-              filteredMediciones = sortedMediciones.slice(-100)
-            }
+            // Gap grande detectado - este es el límite del segmento continuo
+            break
           }
         }
+        
+        return result
+      }
+      
+      // Detectar el último segmento continuo (sin gaps mayores a 2 horas)
+      const continuousSegment = findLastContinuousSegment(sortedMediciones, 2)
+      
+      // Usar el segmento continuo como base
+      filteredMediciones = continuousSegment
+      
+      // Si el segmento continuo tiene menos de 10 mediciones, expandir hacia atrás
+      // pero sin cruzar gaps grandes (máximo 4 horas de gap)
+      if (filteredMediciones.length < 10 && sortedMediciones.length > filteredMediciones.length) {
+        // Expandir hacia atrás permitiendo gaps de hasta 4 horas
+        const expandedSegment = findLastContinuousSegment(sortedMediciones, 4)
+        
+        if (expandedSegment.length > filteredMediciones.length) {
+          filteredMediciones = expandedSegment
+        }
+      }
+      
+      // Si no hay segmento continuo, usar las últimas mediciones disponibles
+      if (filteredMediciones.length === 0 && sortedMediciones.length > 0) {
+        // Usar las últimas 50 mediciones como fallback
+        const last50 = sortedMediciones.slice(-50)
+        filteredMediciones = last50
       }
     }
     
@@ -645,7 +659,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const maxPoints = Math.min(Math.max(minPointsNeeded, 15000), 25000) // Entre 15k-25k puntos
       const step = Math.ceil(totalMediciones / maxPoints)
       medicionesParaProcesar = filteredMediciones.filter((_, index) => index % step === 0)
-      console.log(`📊 Muestreo aplicado: ${totalMediciones} -> ${medicionesParaProcesar.length} puntos`)
     }
     
     // Agrupar por tipo de sensor y luego por tiempo (usar datos muestreados)
@@ -720,32 +733,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     tiposEnMediciones.forEach(tipoid => {
       if (datosPorTipo[tipoid]) {
         datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
-        console.log(`📊 DEBUG Tipo ${tipoid}: ${datosPorTipo[tipoid].length} puntos después de agrupar`)
-        if (datosPorTipo[tipoid].length > 0) {
-          const firstPoint = datosPorTipo[tipoid][0]
-          const lastPoint = datosPorTipo[tipoid][datosPorTipo[tipoid].length - 1]
-          console.log(`  📅 Primer punto: ${firstPoint.time} (${new Date(firstPoint.timestamp).toLocaleString('es-ES')})`)
-          console.log(`  📅 Último punto: ${lastPoint.time} (${new Date(lastPoint.timestamp).toLocaleString('es-ES')})`)
-          
-          // Verificar si hay gaps en los datos
-          if (datosPorTipo[tipoid].length > 1) {
-            const gaps: string[] = []
-            for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
-              const prevTime = datosPorTipo[tipoid][i - 1].timestamp
-              const currTime = datosPorTipo[tipoid][i].timestamp
-              const timeDiff = currTime - prevTime
-              // Si hay un gap mayor a 1 hora, es sospechoso
-              if (timeDiff > 60 * 60 * 1000) {
-                gaps.push(`${new Date(prevTime).toLocaleString('es-ES')} -> ${new Date(currTime).toLocaleString('es-ES')} (${Math.round(timeDiff / (60 * 60 * 1000))}h)`)
-              }
-            }
-            if (gaps.length > 0) {
-              console.warn(`  ⚠️ DEBUG: Gaps detectados en tipo ${tipoid}:`, gaps)
+        // Verificar si hay gaps significativos en los datos
+        if (datosPorTipo[tipoid].length > 1) {
+          for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
+            const prevTime = datosPorTipo[tipoid][i - 1].timestamp
+            const currTime = datosPorTipo[tipoid][i].timestamp
+            const timeDiff = currTime - prevTime
+            // Si hay un gap mayor a 6 horas, es significativo
+            if (timeDiff > 6 * 60 * 60 * 1000) {
+              console.warn(`⚠️ Gap significativo detectado en tipo ${tipoid}: ${Math.round(timeDiff / (60 * 60 * 1000))} horas`)
+              break
             }
           }
         }
       }
     })
+    
+    // Verificar si después de agrupar tenemos muy pocos puntos por tipo
+    // Esto es solo para logging - ya expandimos el rango antes de agrupar
+    if (!useCustomRange && filteredMediciones.length > 0) {
+      const tiposConPocosPuntos = tiposEnMediciones.filter(tipoid => 
+        datosPorTipo[tipoid] && datosPorTipo[tipoid].length <= 2
+      )
+      
+      if (tiposConPocosPuntos.length === tiposEnMediciones.length && tiposEnMediciones.length > 0) {
+        // Todos los tipos tienen 2 o menos puntos - esto indica que el nodo tiene datos muy escasos
+        console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. El nodo tiene datos muy escasos.`)
+      }
+    }
     
     // Obtener todos los tiempos únicos ordenados por timestamp
     const allTimeStamps = new Set<number>()
@@ -792,8 +807,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Crear estructura de datos con todas las líneas
     const result: any[] = []
     
+    // Para suavizar líneas incompletas, encontrar el primer valor no-null para cada tipo
+    const firstValueByType: { [tipoName: string]: number | null } = {}
+    tiposEnMediciones.forEach(tipoid => {
+      const tipo = tipos.find(t => t.tipoid === tipoid)
+      const tipoName = tipo?.tipo || `Tipo ${tipoid}`
+      const firstDataPoint = datosPorTipo[tipoid]?.find(p => p.value !== null && p.value !== undefined)
+      firstValueByType[tipoName] = firstDataPoint ? firstDataPoint.value : null
+    })
+    
     allTimes.forEach(time => {
       const timeData: any = { time }
+      let hasAnyValue = false
       
       tiposEnMediciones.forEach(tipoid => {
         // Buscar el punto más cercano para este tiempo y tipo
@@ -803,10 +828,38 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const tipoName = tipo?.tipo || `Tipo ${tipoid}`
         
         // Usar el nombre del tipo como key para la línea
-        timeData[tipoName] = tipoData ? tipoData.value : null
+        let value = tipoData ? tipoData.value : null
+        
+        // Si no hay valor y estamos al inicio del gráfico (primeros tiempos),
+        // usar el primer valor disponible del tipo para suavizar la línea
+        // Solo aplicar esto si no estamos en modo detallado (useCustomRange)
+        if (value === null && !useCustomRange && firstValueByType[tipoName] !== null) {
+          // Verificar si este tiempo está antes del primer punto de datos de este tipo
+          const firstPoint = datosPorTipo[tipoid]?.[0]
+          if (firstPoint) {
+            const currentTimeIndex = allTimes.indexOf(time)
+            const firstTimeIndex = allTimes.indexOf(firstPoint.time)
+            // Si estamos antes del primer punto (o muy cerca, hasta 2 posiciones antes),
+            // usar el primer valor para suavizar la línea
+            if (currentTimeIndex >= 0 && firstTimeIndex >= 0 && currentTimeIndex < firstTimeIndex + 2) {
+              value = firstValueByType[tipoName]
+            }
+          }
+        }
+        
+        timeData[tipoName] = value
+        
+        // Verificar si hay al menos un valor no-null
+        if (value !== null && value !== undefined) {
+          hasAnyValue = true
+        }
       })
       
-      result.push(timeData)
+      // Solo incluir tiempos que tengan al menos un valor no-null
+      // Esto evita líneas incompletas al inicio del gráfico
+      if (hasAnyValue) {
+        result.push(timeData)
+      }
     })
     
     return result
@@ -866,8 +919,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const endDate = new Date()
     const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
     
-    setDetailedStartDate(startDate.toISOString().split('T')[0])
-    setDetailedEndDate(endDate.toISOString().split('T')[0])
+    const startDateStr = startDate.toISOString().split('T')[0]
+    const endDateStr = endDate.toISOString().split('T')[0]
+    
+    setDetailedStartDate(startDateStr)
+    setDetailedEndDate(endDateStr)
+    // Limpiar estados temporales al abrir el modal
+    setTempStartDate('')
+    setTempEndDate('')
     
     setShowDetailedAnalysis(true)
   }
@@ -1023,11 +1082,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             ))
                           })()}
                           <Tooltip
-                            labelFormatter={(label) => (
-                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                {t('dashboard.tooltip.hour')} {label}
-                              </span>
-                            )}
+                            labelFormatter={(label) => {
+                              // Detectar si el label es una fecha (contiene "/") o una hora
+                              const isDate = label && typeof label === 'string' && label.includes('/')
+                              return (
+                                <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
+                                  {isDate ? label : `${t('dashboard.tooltip.hour')} ${label}`}
+                                </span>
+                              )
+                            }}
                             formatter={(value: number, name: string) => [
                               <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
                                 {name}: {value ? value.toFixed(1) : '--'} {metric.unit}
@@ -1148,16 +1211,44 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_start')}</label>
                       <input
                         type="date"
-                        value={detailedStartDate}
+                        value={tempStartDate || detailedStartDate}
                         onChange={(e) => {
                           const newStartDate = e.target.value
-                          // Validar que la fecha inicial no sea mayor que la final
-                          if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
-                            // Si la fecha inicial es mayor, ajustar la fecha final automáticamente
-                            setDetailedStartDate(newStartDate)
-                            setDetailedEndDate(newStartDate)
-                          } else {
-                            setDetailedStartDate(newStartDate)
+                          setTempStartDate(newStartDate)
+                          
+                          // Si se selecciona una fecha válida y completa (formato YYYY-MM-DD), activar loading inmediatamente
+                          // Esto detecta cuando el usuario selecciona una fecha, no solo cuando navega por el calendario
+                          if (newStartDate && newStartDate.length === 10 && newStartDate !== detailedStartDate) {
+            // Usar flushSync para forzar render inmediato de la pantalla de carga Y actualizar la fecha
+            flushSync(() => {
+              setLoadingDetailedData(true)
+              // Validar que la fecha inicial no sea mayor que la final
+              if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
+                // Si la fecha inicial es mayor, ajustar la fecha final automáticamente
+                setDetailedStartDate(newStartDate)
+                setDetailedEndDate(newStartDate)
+                setTempEndDate(newStartDate)
+              } else {
+                setDetailedStartDate(newStartDate)
+              }
+              setTempStartDate('') // Limpiar estado temporal
+            })
+                            // El useEffect detectará el cambio y continuará con la carga
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Solo actualizar si no se actualizó ya en onChange
+                          const newStartDate = e.target.value
+                          if (newStartDate && newStartDate === tempStartDate && newStartDate !== detailedStartDate) {
+                            // Validar que la fecha inicial no sea mayor que la final
+                            if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
+                              setDetailedStartDate(newStartDate)
+                              setDetailedEndDate(newStartDate)
+                              setTempEndDate(newStartDate)
+                            } else {
+                              setDetailedStartDate(newStartDate)
+                            }
+                            setTempStartDate('')
                           }
                         }}
                         max={detailedEndDate || undefined} // Limitar fecha máxima a la fecha final
@@ -1169,16 +1260,44 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <label className="text-sm text-neutral-400 mb-2 font-mono tracking-wider">{t('dashboard.date_end')}</label>
                       <input
                         type="date"
-                        value={detailedEndDate}
+                        value={tempEndDate || detailedEndDate}
                         onChange={(e) => {
                           const newEndDate = e.target.value
-                          // Validar que la fecha final no sea menor que la inicial
-                          if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                            // Mostrar alerta y no permitir el cambio
-                            alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
-                            return
+                          setTempEndDate(newEndDate)
+                          
+                          // Si se selecciona una fecha válida y completa (formato YYYY-MM-DD), activar loading inmediatamente
+                          // Esto detecta cuando el usuario selecciona una fecha, no solo cuando navega por el calendario
+                          if (newEndDate && newEndDate.length === 10 && newEndDate !== detailedEndDate) {
+                            // Validar que la fecha final no sea menor que la inicial
+                            if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
+                              // Mostrar alerta y no permitir el cambio
+                              alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                              setTempEndDate('') // Limpiar estado temporal
+                              return
+                            }
+                            
+            // Usar flushSync para forzar render inmediato de la pantalla de carga Y actualizar la fecha
+            flushSync(() => {
+              setLoadingDetailedData(true)
+              setDetailedEndDate(newEndDate)
+              setTempEndDate('') // Limpiar estado temporal
+            })
+                            // El useEffect detectará el cambio y continuará con la carga
                           }
-                          setDetailedEndDate(newEndDate)
+                        }}
+                        onBlur={(e) => {
+                          // Solo actualizar si no se actualizó ya en onChange
+                          const newEndDate = e.target.value
+                          if (newEndDate && newEndDate === tempEndDate && newEndDate !== detailedEndDate) {
+                            // Validar que la fecha final no sea menor que la inicial
+                            if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
+                              alert('La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.')
+                              setTempEndDate('')
+                              return
+                            }
+                            setDetailedEndDate(newEndDate)
+                            setTempEndDate('')
+                          }
                         }}
                         min={detailedStartDate || undefined} // Limitar fecha mínima a la fecha inicial
                         disabled={loadingDetailedData}
@@ -1202,16 +1321,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                         {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
                       </h3>
-                      {loadingDetailedData && (
-                        <div className="flex items-center space-x-2 text-green-500">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500"></div>
-                          <span className="text-sm font-mono">Cargando...</span>
-                        </div>
-                      )}
                     </div>
                     {(() => {
-                      const chartData = processChartData(selectedDetailedMetric, true);
-                      if (loadingDetailedData && chartData.length === 0) {
+                      // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
+                      if (loadingDetailedData) {
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                             <div className="text-center">
@@ -1223,6 +1336,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           </div>
                         );
                       }
+                      
+                      const chartData = processChartData(selectedDetailedMetric, true);
+                      
+                      // Solo mostrar "No hay datos" si NO está cargando y no hay datos
                       if (chartData.length === 0) {
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
@@ -1286,11 +1403,36 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             ))
                           })()}
                           <Tooltip
-                            labelFormatter={(label) => (
-                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                {t('dashboard.tooltip.hour')} {label}
-                              </span>
-                            )}
+                            labelFormatter={(label) => {
+                              // Detectar si el label es una fecha (contiene "/") o una hora
+                              const isDate = label && typeof label === 'string' && label.includes('/')
+                              
+                              if (isDate) {
+                                // Si es una fecha (formato DD/MM), buscar el año correspondiente
+                                // Intentar obtener el año de las fechas seleccionadas o usar el año actual
+                                let year = new Date().getFullYear()
+                                
+                                // Si tenemos fechas seleccionadas, usar el año de la fecha inicial
+                                if (detailedStartDate) {
+                                  const startDateObj = new Date(detailedStartDate)
+                                  year = startDateObj.getFullYear()
+                                }
+                                
+                                // Formatear como "Fecha: DD/MM/YYYY"
+                                return (
+                                  <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
+                                    Fecha: {label}/{year}
+                                  </span>
+                                )
+                              } else {
+                                // Si es una hora, mostrar "Hora: HH:MM"
+                                return (
+                                  <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
+                                    {t('dashboard.tooltip.hour')} {label}
+                                  </span>
+                                )
+                              }
+                            }}
                             formatter={(value: number, name: string) => [
                               <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
                                 {name}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}

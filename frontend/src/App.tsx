@@ -529,31 +529,31 @@ return hasFormDataChanges || hasMultipleDataChanges;
         const dashboardSubTab = reporteTab.replace('dashboard-', '');
         switch (dashboardSubTab) {
           case 'mapeo':
-            return (
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          return (
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
                     <p className="text-gray-400">Cargando Mapeo de Nodos...</p>
-                  </div>
                 </div>
-              }>
-                <DashboardLazy
-                  selectedPais={null}
-                  selectedEmpresa={null}
-                  selectedFundo={dashboardSelectedFundo}
-                  selectedEntidad={dashboardSelectedEntidad}
-                  selectedUbicacion={dashboardSelectedUbicacion}
-                  startDate={dashboardStartDate}
-                  endDate={dashboardEndDate}
-                  onFundoChange={handleDashboardFundoChange}
-                  onEntidadChange={handleDashboardEntidadChange}
-                  onUbicacionChange={handleDashboardUbicacionChange}
-                  onDateFilter={handleDashboardDateFilter}
-                  onResetFilters={handleDashboardReset}
-                />
-              </Suspense>
-            );
+              </div>
+            }>
+              <DashboardLazy
+                selectedPais={null}
+                selectedEmpresa={null}
+                selectedFundo={dashboardSelectedFundo}
+                selectedEntidad={dashboardSelectedEntidad}
+                selectedUbicacion={dashboardSelectedUbicacion}
+                startDate={dashboardStartDate}
+                endDate={dashboardEndDate}
+                onFundoChange={handleDashboardFundoChange}
+                onEntidadChange={handleDashboardEntidadChange}
+                onUbicacionChange={handleDashboardUbicacionChange}
+                onDateFilter={handleDashboardDateFilter}
+                onResetFilters={handleDashboardReset}
+              />
+            </Suspense>
+          );
           case 'metrica':
             return (
               <Suspense fallback={
