@@ -1394,10 +1394,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     <div className="flex flex-wrap items-start gap-4">
                       {/* Intervalo de Fechas */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Intervalo Fechas:</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Intervalo Fechas:</label>
                         <div className="flex items-center gap-2">
                           <div className="flex flex-col">
-                            <label className="text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">{t('dashboard.date_start')}</label>
                             <input
                               type="date"
                               value={tempStartDate || detailedStartDate}
@@ -1434,11 +1433,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               max={detailedEndDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
+                            <label className="text-xs text-gray-600 dark:text-neutral-400 mt-1 font-mono">{t('dashboard.date_start')}</label>
                           </div>
                           <div className="flex flex-col">
-                            <label className="text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">{t('dashboard.date_end')}</label>
                             <input
                               type="date"
                               value={tempEndDate || detailedEndDate}
@@ -1474,8 +1473,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               min={detailedStartDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
+                            <label className="text-xs text-gray-600 dark:text-neutral-400 mt-1 font-mono">{t('dashboard.date_end')}</label>
                           </div>
                         </div>
                       </div>
@@ -1485,7 +1485,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
                       {/* Ajuste del eje Y */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Ajuste Eje Y:</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Ajuste Eje Y:</label>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
@@ -1505,7 +1505,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             placeholder="Min"
-                            className="w-16 px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                            className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
                           />
                           <span className="text-gray-600 dark:text-neutral-400">-</span>
                           <input
@@ -1526,11 +1526,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             placeholder="Max"
-                            className="w-16 px-2 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                            className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
                           />
                           <button
                             onClick={() => setYAxisDomain({ min: null, max: null })}
-                            className="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                            className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
                           >
                             Reset
                           </button>
@@ -1542,11 +1542,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
                       {/* Botón de análisis de fluctuación */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Analizar Fluctuación:</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Analizar Fluctuación:</label>
                         <button
                           onClick={analyzeFluctuationAndRecommendThresholds}
                           disabled={loadingDetailedData || !mediciones.length}
-                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                          className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -1560,7 +1560,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
                       {/* Selector de nodo para comparación */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-neutral-300 font-mono mb-2">Comparar con Nodo:</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Comparar con Nodo:</label>
                         <div className="flex items-center gap-2">
                           <select
                             value={comparisonNode?.nodoid || ''}
@@ -1581,7 +1581,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             disabled={loadingComparisonData}
-                            className="px-3 py-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono min-w-[200px] disabled:opacity-50"
+                            className="h-8 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono min-w-[200px] disabled:opacity-50"
                           >
                             <option value="">Ninguno</option>
                             {availableNodes
@@ -1598,7 +1598,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 setComparisonNode(null)
                                 setComparisonMediciones([])
                               }}
-                              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-mono"
+                              className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-mono"
                             >
                               ✕
                             </button>
@@ -1615,7 +1615,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
-                        {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.title}
+                        {selectedNode?.nodo || 'Nodo'}
                         {comparisonNode && ` vs ${comparisonNode.nodo}`}
                       </h3>
                     </div>
@@ -1880,10 +1880,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       }
                       
                       // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
+                      const tipoKeys = Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                      const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                      const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                      
                       return (
-                        <div className="h-96">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={finalChartData}>
+                        <>
+                          <div className="h-96">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={finalChartData}>
                           <XAxis
                             dataKey="time"
                             axisLine={false}
@@ -1916,10 +1921,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             if (finalChartData.length === 0) return null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
-                            const tipoKeys = Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
+                            // tipoKeys, colors y comparisonColors ya están definidos arriba
                             const comparisonKeys = Object.keys(finalChartData[0] || {}).filter(key => key.startsWith('comp_'))
-                            const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
-                            const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                             
                             // Debug: verificar que las claves estén presentes
                             if (comparisonKeys.length > 0) {
@@ -2006,9 +2009,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             }}
                             formatter={(value: number, name: string) => {
                               const isComparison = name.startsWith('comp_')
-                              const displayName = isComparison 
-                                ? `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comparación'})`
-                                : name
+                              let displayName: string
+                              if (isComparison) {
+                                displayName = `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comparación'})`
+                              } else {
+                                // Cuando hay comparación, también mostrar el nombre del nodo original
+                                displayName = comparisonNode 
+                                  ? `${name} (${selectedNode?.nodo || 'Nodo Original'})`
+                                  : name
+                              }
                               return [
                                 <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
                                   {displayName}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics().find(m => m.dataKey === selectedDetailedMetric)?.unit}
@@ -2024,9 +2033,65 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               padding: "8px 12px"
                             }}
                           />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                          {/* Leyenda de colores por nodo cuando hay comparación */}
+                          {comparisonNode && (
+                            <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+                              <div className="flex flex-wrap items-center gap-6 justify-center">
+                                {/* Leyenda del nodo original */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
+                                    {selectedNode?.nodo || 'Nodo Original'}
+                                  </div>
+                                  <div className="flex flex-wrap gap-3">
+                                    {tipoKeys.map((tipoKey, index) => (
+                                      <div key={tipoKey} className="flex items-center gap-2">
+                                        <div 
+                                          className="w-4 h-0.5" 
+                                          style={{ backgroundColor: colors[index % colors.length] }}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                          {tipoKey}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                {/* Separador */}
+                                <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>
+                                
+                                {/* Leyenda del nodo de comparación */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
+                                    {comparisonNode.nodo}
+                                  </div>
+                                  <div className="flex flex-wrap gap-3">
+                                    {tipoKeys.map((tipoKey, index) => {
+                                      const compKey = `comp_${tipoKey}`
+                                      const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
+                                      if (!hasComparisonData) return null
+                                      
+                                      return (
+                                        <div key={compKey} className="flex items-center gap-2">
+                                          <div 
+                                            className="w-4 h-0.5 border-dashed border-t-2" 
+                                            style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
+                                          />
+                                          <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                            {tipoKey}
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       );
                     })()}
                   </div>
