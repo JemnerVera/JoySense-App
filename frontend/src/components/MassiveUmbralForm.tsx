@@ -108,6 +108,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   const [allNodesSelected, setAllNodesSelected] = useState(false);
   const [assignedSensorTypes, setAssignedSensorTypes] = useState<SelectedTipo[]>([]);
   const [nodeSensorTypes, setNodeSensorTypes] = useState<{[nodoid: number]: SelectedTipo[]}>({});
+  const [hasShownInconsistencyWarning, setHasShownInconsistencyWarning] = useState(false);
   
   // Estados para replicación
   const [replicateMode, setReplicateMode] = useState(false);
@@ -172,20 +173,71 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   }, [formData.fundoid, formData.entidadid, getUniqueOptionsForField]);
 
   // Inicializar métricas cuando se cargan las opciones o cambian los nodos seleccionados
+  // Solo inicializar si no hay métricas existentes o si hay nuevas métricas que no están en el estado
   useEffect(() => {
     if (metricasOptions.length > 0) {
-      const initialMetricasData: MetricaData[] = metricasOptions.map(option => ({
-        metricaid: parseInt(option.value.toString()),
-        metrica: option.label,
-        unidad: option.unidad || '',
-        selected: true, // ✅ Seleccionadas por defecto
-        expanded: false,
-        umbralesPorTipo: {}
-      }));
-      setFormData(prev => ({ ...prev, metricasData: initialMetricasData }));
+      setFormData(prev => {
+        // Si ya hay métricas en el estado, preservar los datos existentes
+        if (prev.metricasData.length > 0) {
+          // Crear un mapa de métricas existentes por metricaid para preservar los umbrales
+          const existingMetricasMap = new Map(
+            prev.metricasData.map(m => [m.metricaid, m])
+          );
+          
+          // Crear nuevas métricas solo para las que no existen
+          const newMetricasData: MetricaData[] = metricasOptions.map(option => {
+            const metricaid = parseInt(option.value.toString());
+            const existing = existingMetricasMap.get(metricaid);
+            
+            // Si existe, preservar todos sus datos (umbrales, selección, expansión)
+            if (existing) {
+              return existing;
+            }
+            
+            // Si no existe, crear nueva métrica
+            return {
+              metricaid,
+              metrica: option.label,
+              unidad: option.unidad || '',
+              selected: true, // ✅ Seleccionadas por defecto
+              expanded: false,
+              umbralesPorTipo: {}
+            };
+          });
+          
+          return { ...prev, metricasData: newMetricasData };
+        } else {
+          // Si no hay métricas existentes, inicializar todas
+          const initialMetricasData: MetricaData[] = metricasOptions.map(option => ({
+            metricaid: parseInt(option.value.toString()),
+            metrica: option.label,
+            unidad: option.unidad || '',
+            selected: true, // ✅ Seleccionadas por defecto
+            expanded: false,
+            umbralesPorTipo: {}
+          }));
+          return { ...prev, metricasData: initialMetricasData };
+        }
+      });
     } else {
-      // Si no hay métricas disponibles, limpiar las métricas
-      setFormData(prev => ({ ...prev, metricasData: [] }));
+      // Solo limpiar si realmente no hay métricas disponibles Y no hay datos importantes
+      setFormData(prev => {
+        // Solo limpiar si no hay umbrales configurados
+        const hasUmbrales = prev.metricasData.some(m => 
+          Object.values(m.umbralesPorTipo).some(umbrales => 
+            Array.isArray(umbrales) && umbrales.some(u => 
+              u.minimo || u.maximo || u.criticidadid || u.umbral
+            )
+          )
+        );
+        
+        // Si hay umbrales configurados, no limpiar (preservar el trabajo del usuario)
+        if (hasUmbrales) {
+          return prev;
+        }
+        
+        return { ...prev, metricasData: [] };
+      });
     }
   }, [metricasOptions]);
 
@@ -261,6 +313,11 @@ setAssignedSensorTypes(assignedTypes);
     } else {
       setAssignedSensorTypes([]);
       setNodeSensorTypes({});
+      // Resetear el flag cuando no hay nodos seleccionados
+      const selectedNodesData = selectedNodes.filter(node => node.selected);
+      if (selectedNodesData.length === 0) {
+        setHasShownInconsistencyWarning(false);
+      }
     }
   }, [selectedNodes, formData.entidadid, getUniqueOptionsForField]);
 
@@ -314,6 +371,18 @@ setAssignedSensorTypes(assignedTypes);
   };
 
   const validationResult = useMemo(() => validateNodeSensorTypes(), [selectedNodes, nodeSensorTypes]);
+  
+  // Actualizar el flag cuando se detectan inconsistencias
+  useEffect(() => {
+    const selectedNodesData = selectedNodes.filter(node => node.selected);
+    if (selectedNodesData.length > 1 && !validationResult.isValid && validationResult.groupedNodes && Object.keys(validationResult.groupedNodes).length > 0) {
+      setHasShownInconsistencyWarning(true);
+    } else if (selectedNodesData.length <= 1 || validationResult.isValid) {
+      // Solo resetear si todos los nodos son consistentes o hay 1 o menos nodos
+      setHasShownInconsistencyWarning(false);
+    }
+    // No resetear el flag si hay múltiples nodos pero nodeSensorTypes está vacío temporalmente
+  }, [selectedNodes, validationResult]);
 
   // Manejar toggle de métrica (expandir/contraer)
   const handleMetricaToggle = (metricaid: number) => {
@@ -346,7 +415,8 @@ setAssignedSensorTypes(assignedTypes);
       metricasData: prev.metricasData.map(metrica => {
         if (metrica.metricaid === metricaid) {
           const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
-          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
+          // Crear una copia del array para evitar mutaciones del estado anterior
+          const umbralesDelTipo = [...(updatedUmbralesPorTipo[tipoid] || [])];
           
           // Asegurar que el array tenga al menos un elemento en el índice especificado
           while (umbralesDelTipo.length <= umbralIndex) {
@@ -358,7 +428,7 @@ setAssignedSensorTypes(assignedTypes);
             });
           }
           
-          // Actualizar el umbral específico
+          // Actualizar el umbral específico creando un nuevo objeto
           umbralesDelTipo[umbralIndex] = {
             ...umbralesDelTipo[umbralIndex],
             [field]: field === 'criticidadid' ? (value ? parseInt(value) : null) : value
@@ -1228,7 +1298,15 @@ for (const tipoOption of tiposDelNodo) {
           </h4>
           
           {/* Mensaje de validación de similitud de nodos (compacto e interactivo) */}
-          {!validationResult.isValid && validationResult.groupedNodes && Object.keys(validationResult.groupedNodes).length > 0 && (
+          {/* Mostrar el container si hay nodos seleccionados con configuraciones diferentes */}
+          {(() => {
+            const selectedNodesData = selectedNodes.filter(node => node.selected);
+            const hasMultipleNodes = selectedNodesData.length > 1;
+            const hasValidationData = validationResult.groupedNodes && Object.keys(validationResult.groupedNodes).length > 0;
+            // Mostrar si: hay múltiples nodos Y (la validación indica inconsistencias O ya se mostró el warning antes)
+            const shouldShow = hasMultipleNodes && (hasValidationData || hasShownInconsistencyWarning);
+            return shouldShow;
+          })() && (
             <div className="mb-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg">
               <div className="flex items-start">
                 <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
@@ -1239,9 +1317,15 @@ for (const tipoOption of tiposDelNodo) {
                     TIPOS DE SENSORES INCONSISTENTES
                   </h5>
                   
-                  {/* Resumen compacto de grupos con selección interactiva */}
-                  <div className="space-y-2">
-                    {Object.values(validationResult.groupedNodes).map((group, groupIndex) => (
+                  {/* Mostrar mensaje de carga si aún no hay datos de validación */}
+                  {(!validationResult.groupedNodes || Object.keys(validationResult.groupedNodes).length === 0) ? (
+                    <div className="text-yellow-300 font-mono text-xs">
+                      Cargando información de tipos de sensores...
+                    </div>
+                  ) : (
+                    /* Resumen compacto de grupos con selección interactiva */
+                    <div className="space-y-2">
+                      {Object.values(validationResult.groupedNodes).map((group, groupIndex) => (
                       <div 
                         key={groupIndex} 
                         className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
@@ -1314,7 +1398,8 @@ for (const tipoOption of tiposDelNodo) {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1547,10 +1632,16 @@ for (const tipoOption of tiposDelNodo) {
                             umbral: ''
                           }];
                           
+                          // Crear un array con índices originales antes de ordenar
+                          const umbralesWithOriginalIndex = umbralesToShow.map((umbral, originalIndex) => ({
+                            umbral,
+                            originalIndex
+                          }));
+                          
                           // Ordenar por grado de criticidad (ascendente: grado 1 primero, grado 4 último)
-                          umbralesToShow = [...umbralesToShow].sort((a, b) => {
-                            const gradoA = criticidadGradoMap.get(a.criticidadid || 0) || 999;
-                            const gradoB = criticidadGradoMap.get(b.criticidadid || 0) || 999;
+                          const sortedUmbralesWithIndex = [...umbralesWithOriginalIndex].sort((a, b) => {
+                            const gradoA = criticidadGradoMap.get(a.umbral.criticidadid || 0) || 999;
+                            const gradoB = criticidadGradoMap.get(b.umbral.criticidadid || 0) || 999;
                             return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
                           });
                           
@@ -1570,16 +1661,16 @@ for (const tipoOption of tiposDelNodo) {
                               </div>
                               
                               <div className="space-y-4">
-                                {umbralesToShow.map((umbralTipo, umbralIndex) => (
-                                  <div key={umbralIndex} className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-600">
-                                    {umbralesToShow.length > 1 && (
+                                {sortedUmbralesWithIndex.map(({ umbral: umbralTipo, originalIndex }, displayIndex) => (
+                                  <div key={`${tipo.tipoid}-${originalIndex}`} className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-600">
+                                    {sortedUmbralesWithIndex.length > 1 && (
                                       <div className="flex justify-between items-center mb-3">
                                         <span className="text-xs text-gray-500 dark:text-neutral-400 font-mono">
-                                          Umbral {umbralIndex + 1}
+                                          Umbral {displayIndex + 1}
                                         </span>
                                         <button
                                           type="button"
-                                          onClick={() => handleRemoveUmbral(metrica.metricaid, tipo.tipoid, umbralIndex)}
+                                          onClick={() => handleRemoveUmbral(metrica.metricaid, tipo.tipoid, originalIndex)}
                                           className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-mono"
                                         >
                                           ELIMINAR
@@ -1596,7 +1687,7 @@ for (const tipoOption of tiposDelNodo) {
                                           type="number"
                                           step="0.01"
                                           value={umbralTipo.minimo || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'minimo', e.target.value)}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'minimo', e.target.value)}
                                           className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                           placeholder="0.00"
                                         />
@@ -1610,7 +1701,7 @@ for (const tipoOption of tiposDelNodo) {
                                           type="number"
                                           step="0.01"
                                           value={umbralTipo.maximo || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'maximo', e.target.value)}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'maximo', e.target.value)}
                                           className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                           placeholder="100.00"
                                         />
@@ -1623,7 +1714,7 @@ for (const tipoOption of tiposDelNodo) {
                                         <SelectWithPlaceholder
                                           options={criticidadesOptions}
                                           value={umbralTipo.criticidadid || null}
-                                          onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'criticidadid', value ? value.toString() : '')}
+                                          onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'criticidadid', value ? value.toString() : '')}
                                           placeholder="SELECCIONAR"
                                           disabled={loading}
                                         />
@@ -1636,7 +1727,7 @@ for (const tipoOption of tiposDelNodo) {
                                         <input
                                           type="text"
                                           value={umbralTipo.umbral || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, umbralIndex, 'umbral', e.target.value)}
+                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'umbral', e.target.value)}
                                           className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
                                           placeholder="Nombre del umbral"
                                         />
