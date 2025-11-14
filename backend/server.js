@@ -1608,6 +1608,8 @@ app.post('/api/sense/:tableName', async (req, res) => {
       'nodo': ['nodoid'],
       'fundo': ['fundoid'],
       'entidad': ['entidadid'],
+      'empresa': ['empresaid'],
+      'pais': ['paisid'],
       'tipo': ['tipoid'],
       'metrica': ['metricaid'],
       'usuario': ['usuarioid'],
@@ -1627,6 +1629,74 @@ app.post('/api/sense/:tableName', async (req, res) => {
       const fieldsToRemove = idFieldsToRemove[tableName];
       fieldsToRemove.forEach(field => {
         if (insertData.hasOwnProperty(field)) {
+          delete insertData[field];
+        }
+      });
+    }
+
+    // Eliminar campos que no pertenecen a esta tabla (campos de otras tablas relacionadas)
+    // Esto previene errores cuando el frontend envía campos de otras tablas por error
+    // Basado en el schema real de la base de datos
+    const invalidFieldsByTable = {
+      // pais: solo tiene paisid, pais, paisabrev, statusid + auditoría
+      'pais': ['fundoid', 'empresaid', 'entidadid', 'ubicacionid', 'nodoid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // empresa: tiene empresaid, empresa, empresabrev, paisid, statusid + auditoría
+      'empresa': ['fundoid', 'entidadid', 'ubicacionid', 'nodoid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // fundo: tiene fundoid, fundo, fundoabrev (o farmabrev), empresaid, statusid + auditoría
+      // NO tiene paisid (se obtiene a través de empresa.paisid)
+      'fundo': ['paisid', 'entidadid', 'ubicacionid', 'nodoid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // ubicacion: tiene ubicacionid, ubicacion, ubicacionabrev, fundoid, statusid + auditoría
+      // NO tiene empresaid ni paisid directamente
+      'ubicacion': ['paisid', 'empresaid', 'entidadid', 'nodoid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // localizacion: tiene localizacionid, ubicacionid, nodoid, entidadid, latitud, longitud, referencia, statusid + auditoría
+      'localizacion': ['paisid', 'empresaid', 'fundoid', 'tipoid', 'metricaid'],
+      
+      // entidad: tiene entidadid, entidad, statusid + auditoría
+      'entidad': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // nodo: tiene nodoid, nodo, deveui, appeui, appkey, atpin, statusid + auditoría
+      'nodo': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'localizacionid', 'tipoid', 'metricaid'],
+      
+      // tipo: tiene tipoid, tipo, entidadid, statusid + auditoría
+      'tipo': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'metricaid'],
+      
+      // metrica: tiene metricaid, metrica, unidad, statusid + auditoría
+      'metrica': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid'],
+      
+      // sensor: tiene nodoid, tipoid, statusid + auditoría (clave compuesta)
+      'sensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'localizacionid', 'entidadid', 'metricaid', 'sensorid'],
+      
+      // metricasensor: tiene nodoid, metricaid, tipoid, statusid + auditoría (clave compuesta)
+      'metricasensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'localizacionid', 'entidadid', 'metricasensorid'],
+      
+      // umbral: tiene umbralid, ubicacionid, criticidadid, nodoid, metricaid, tipoid, umbral, maximo, minimo, statusid + auditoría
+      'umbral': ['paisid', 'empresaid', 'fundoid', 'localizacionid', 'entidadid'],
+      
+      // perfilumbral: tiene perfilumbralid, perfilid, umbralid, criticidadid, statusid + auditoría
+      'perfilumbral': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid', 'metricaid'],
+      
+      // usuario: tiene usuarioid, firstname, lastname, login, statusid, auth_user_id + auditoría
+      'usuario': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid', 'metricaid'],
+      
+      // perfil: tiene perfilid, perfil, nivel, statusid + auditoría
+      'perfil': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid', 'metricaid'],
+      
+      // contacto: tiene contactoid, usuarioid, medioid, celular, correo, statusid + auditoría
+      'contacto': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid', 'metricaid'],
+      
+      // criticidad: tiene criticidadid, criticidad, criticidadbrev, statusid + auditoría
+      'criticidad': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid', 'entidadid', 'tipoid', 'metricaid']
+    };
+    
+    if (invalidFieldsByTable[tableName]) {
+      const fieldsToRemove = invalidFieldsByTable[tableName];
+      fieldsToRemove.forEach(field => {
+        if (insertData.hasOwnProperty(field)) {
+          console.log(`⚠️ Eliminando campo inválido '${field}' de la inserción en tabla '${tableName}'`);
           delete insertData[field];
         }
       });
