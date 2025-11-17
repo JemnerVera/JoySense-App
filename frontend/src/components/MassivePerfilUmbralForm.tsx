@@ -44,7 +44,7 @@ interface UmbralData {
 interface FormData {
   fundoid: number | null;
   entidadid: number | null;
-  nodoid: number | null;
+  nodoid: number[]; // Cambiar a array para múltiples nodos
 }
 
 interface PerfilUmbralDataToApply {
@@ -79,7 +79,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
   const [formData, setFormData] = useState<FormData>({
     fundoid: null,
     entidadid: null,
-    nodoid: null
+    nodoid: [] // Array para múltiples nodos
   });
 
   const [umbralesDelNodo, setUmbralesDelNodo] = useState<UmbralData[]>([]);
@@ -87,9 +87,12 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
   const [perfilUmbralesAsignados, setPerfilUmbralesAsignados] = useState<Map<number, number[]>>(new Map()); // umbralid -> perfilid[]
   const [perfilDropdownOpen, setPerfilDropdownOpen] = useState<Map<number, boolean>>(new Map()); // umbralid -> isOpen
   const [perfilSearchTerms, setPerfilSearchTerms] = useState<Map<number, string>>(new Map()); // umbralid -> searchTerm
-  const [perfilPorTipo, setPerfilPorTipo] = useState<Map<number, number | null>>(new Map()); // tipoid -> perfilid | null
+  const [perfilPorTipo, setPerfilPorTipo] = useState<Map<number, number | null>>(new Map()); // tipoid -> perfilid | null (deprecated, usar perfilesGlobales)
   const [tipoDropdownOpen, setTipoDropdownOpen] = useState<Map<number, boolean>>(new Map()); // tipoid -> isOpen
   const [tipoSearchTerms, setTipoSearchTerms] = useState<Map<number, string>>(new Map()); // tipoid -> searchTerm
+  const [perfilesGlobales, setPerfilesGlobales] = useState<number[]>([]); // Perfiles seleccionados globalmente
+  const [globalPerfilDropdownOpen, setGlobalPerfilDropdownOpen] = useState(false);
+  const [globalPerfilSearchTerm, setGlobalPerfilSearchTerm] = useState('');
 
   // Obtener opciones para los dropdowns
   const fundosOptions = useMemo(() => 
@@ -112,10 +115,10 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     getUniqueOptionsForField('perfilid'), [getUniqueOptionsForField]
   );
 
-  // Cargar umbrales cuando se selecciona un nodo
+  // Cargar umbrales cuando se seleccionan nodos
   useEffect(() => {
     const loadUmbralesDelNodo = async () => {
-      if (!formData.nodoid) {
+      if (!formData.nodoid || formData.nodoid.length === 0) {
         setUmbralesDelNodo([]);
         setPerfilUmbralesAsignados(new Map());
         return;
@@ -125,7 +128,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
         setLoadingUmbrales(true);
         const allUmbrales = await JoySenseService.getTableData('umbral', 1000);
         const umbralesFiltrados = allUmbrales.filter((u: any) => 
-          u.nodoid === formData.nodoid && u.statusid === 1 // Solo umbrales activos
+          formData.nodoid.includes(u.nodoid) && u.statusid === 1 // Solo umbrales activos de los nodos seleccionados
         );
 
         // Obtener perfiles ya asignados
@@ -155,13 +158,39 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     loadUmbralesDelNodo();
   }, [formData.nodoid]);
 
+  // Aplicar perfiles globales a todos los umbrales cuando cambian
+  useEffect(() => {
+    if (umbralesDelNodo.length > 0) {
+      setPerfilUmbralesAsignados(prev => {
+        const newMap = new Map(prev);
+        umbralesDelNodo.forEach(umbral => {
+          const perfilesActuales = newMap.get(umbral.umbralid) || [];
+          // Mantener perfiles que no son globales (seleccionados individualmente)
+          // y agregar/quitar perfiles globales según corresponda
+          const perfilesNoGlobales = perfilesActuales.filter(p => !perfilesGlobales.includes(p));
+          // Agregar perfiles globales
+          const nuevosPerfiles = Array.from(new Set([...perfilesNoGlobales, ...perfilesGlobales]));
+          if (nuevosPerfiles.length > 0) {
+            newMap.set(umbral.umbralid, nuevosPerfiles);
+          } else {
+            newMap.delete(umbral.umbralid);
+          }
+        });
+        return newMap;
+      });
+    }
+  }, [perfilesGlobales, umbralesDelNodo]);
+
   // Cerrar dropdowns cuando se hace clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.perfil-dropdown-container') && !target.closest('.tipo-perfil-dropdown-container')) {
+      if (!target.closest('.perfil-dropdown-container') && 
+          !target.closest('.tipo-perfil-dropdown-container') &&
+          !target.closest('.global-perfil-dropdown-container')) {
         setPerfilDropdownOpen(new Map());
         setTipoDropdownOpen(new Map());
+        setGlobalPerfilDropdownOpen(false);
       }
     };
 
@@ -201,21 +230,29 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
 
   // Manejar toggle de perfil para un umbral específico
   const handlePerfilToggle = (umbralid: number, perfilid: number) => {
+    // Si el perfil está en perfilesGlobales, no permitir quitarlo individualmente
+    if (perfilesGlobales.includes(perfilid)) {
+      return; // Los perfiles globales no se pueden quitar individualmente
+    }
+    
     setPerfilUmbralesAsignados(prev => {
       const newMap = new Map(prev);
       const perfilesActuales = newMap.get(umbralid) || [];
       
       if (perfilesActuales.includes(perfilid)) {
-        // Remover perfil
+        // Remover perfil (solo si no es global)
         const nuevosPerfiles = perfilesActuales.filter(p => p !== perfilid);
-        if (nuevosPerfiles.length > 0) {
-          newMap.set(umbralid, nuevosPerfiles);
+        // Siempre mantener perfiles globales
+        const perfilesFinales = Array.from(new Set([...nuevosPerfiles, ...perfilesGlobales]));
+        if (perfilesFinales.length > 0) {
+          newMap.set(umbralid, perfilesFinales);
         } else {
           newMap.delete(umbralid);
         }
       } else {
         // Agregar perfil
-        newMap.set(umbralid, [...perfilesActuales, perfilid]);
+        const perfilesFinales = Array.from(new Set([...perfilesActuales, perfilid]));
+        newMap.set(umbralid, perfilesFinales);
       }
       return newMap;
     });
@@ -310,11 +347,22 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     });
   };
 
+  // Manejar toggle de perfil global
+  const handleGlobalPerfilToggle = (perfilid: number) => {
+    setPerfilesGlobales(prev => {
+      if (prev.includes(perfilid)) {
+        return prev.filter(p => p !== perfilid);
+      } else {
+        return [...prev, perfilid];
+      }
+    });
+  };
+
   // Validar formulario
   const isFormValid = () => {
     return formData.fundoid && 
            formData.entidadid && 
-           formData.nodoid && 
+           formData.nodoid.length > 0 && 
            perfilUmbralesAsignados.size > 0;
   };
 
@@ -342,7 +390,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     setFormData({
       fundoid: null,
       entidadid: null,
-      nodoid: null
+      nodoid: []
     });
     setUmbralesDelNodo([]);
     setPerfilUmbralesAsignados(new Map());
@@ -351,6 +399,9 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     setPerfilPorTipo(new Map());
     setTipoDropdownOpen(new Map());
     setTipoSearchTerms(new Map());
+    setPerfilesGlobales([]);
+    setGlobalPerfilDropdownOpen(false);
+    setGlobalPerfilSearchTerm('');
     onCancel();
   };
 
@@ -359,7 +410,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
     if (onFormDataChange) {
       const hasData = formData.fundoid !== null || 
                      formData.entidadid !== null || 
-                     formData.nodoid !== null ||
+                     formData.nodoid.length > 0 ||
                      perfilUmbralesAsignados.size > 0;
       
       onFormDataChange({
@@ -436,7 +487,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
                   ...prev,
                   fundoid: value ? parseInt(value.toString()) : null,
                   entidadid: null,
-                  nodoid: null
+                  nodoid: []
                 }));
               }}
               placeholder={t('umbral.select_fund')}
@@ -461,7 +512,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
                 setFormData(prev => ({
                   ...prev,
                   entidadid: value ? parseInt(value.toString()) : null,
-                  nodoid: null
+                  nodoid: [] // Limpiar nodos cuando cambia la entidad
                 }));
               }}
               placeholder={t('umbral.select_entity')}
@@ -471,31 +522,140 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
         </div>
       </div>
 
-      {/* Fila 3: Nodo */}
+      {/* Fila 3: Nodo (múltiple selección) */}
       <div>
         <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider mb-2">
           NODO
         </label>
-        <SelectWithPlaceholder
-          options={nodosOptions}
-          value={formData.nodoid}
-          onChange={(value) => {
-            setFormData(prev => ({
-              ...prev,
-              nodoid: value ? parseInt(value.toString()) : null
-            }));
-          }}
-          placeholder="SELECCIONAR NODO"
-          disabled={loading || !formData.entidadid}
-        />
+        <div className="bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
+          {nodosOptions.length === 0 ? (
+            <div className="text-gray-500 dark:text-neutral-400 text-sm font-mono text-center py-4">
+              {!formData.entidadid ? 'Seleccione una entidad primero' : 'No hay nodos disponibles'}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {nodosOptions.map((option) => {
+                const nodoId = parseInt(option.value.toString());
+                const isSelected = formData.nodoid.includes(nodoId);
+                return (
+                  <label
+                    key={option.value}
+                    className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer transition-colors rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            nodoid: [...prev.nodoid, nodoId]
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            nodoid: prev.nodoid.filter(id => id !== nodoId)
+                          }));
+                        }
+                      }}
+                      disabled={loading || !formData.entidadid}
+                      className="w-4 h-4 text-orange-500 bg-gray-100 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 mr-3"
+                    />
+                    <span className="text-gray-900 dark:text-white text-sm font-mono tracking-wider">
+                      {option.label.toUpperCase()}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {formData.nodoid.length > 0 && (
+          <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400 font-mono">
+            {formData.nodoid.length} nodo{formData.nodoid.length > 1 ? 's' : ''} seleccionado{formData.nodoid.length > 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Lista de umbrales del nodo */}
-      {formData.nodoid && (
+      {formData.nodoid.length > 0 && (
         <div>
-          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-            UMBRALES DEL NODO
-          </h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
+              UMBRALES DEL NODO
+            </h4>
+            {/* Dropdown global de perfiles - Compacto, al extremo derecho */}
+            {umbralesDelNodo.length > 0 && (
+              <div className="relative global-perfil-dropdown-container">
+                <div
+                  onClick={() => !loading && setGlobalPerfilDropdownOpen(!globalPerfilDropdownOpen)}
+                  className="px-3 py-1.5 bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 rounded-lg cursor-pointer flex items-center gap-2"
+                >
+                  <span className="text-xs font-mono text-gray-800 dark:text-white whitespace-nowrap">
+                    {perfilesGlobales.length > 0 
+                      ? `${perfilesGlobales.length} perfil${perfilesGlobales.length > 1 ? 'es' : ''}`
+                      : 'APLICAR PERFIL'
+                    }
+                  </span>
+                  <span className="text-gray-500 dark:text-neutral-400 text-xs">▼</span>
+                </div>
+            
+                {globalPerfilDropdownOpen && !loading && (
+                  <div className="absolute z-50 right-0 mt-1 w-64 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden">
+                    {/* Barra de búsqueda */}
+                    <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
+                      <input
+                        type="text"
+                        placeholder="Buscar..."
+                        value={globalPerfilSearchTerm}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setGlobalPerfilSearchTerm(e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      />
+                    </div>
+                    
+                    {/* Lista de opciones con checkboxes */}
+                    <div className="max-h-32 overflow-y-auto custom-scrollbar">
+                      {perfilesOptions
+                        .filter(p => p.label.toLowerCase().includes(globalPerfilSearchTerm.toLowerCase()))
+                        .length > 0 ? (
+                        perfilesOptions
+                          .filter(p => p.label.toLowerCase().includes(globalPerfilSearchTerm.toLowerCase()))
+                          .map((perfil) => {
+                            const perfilId = parseInt(perfil.value.toString());
+                            const isSelected = perfilesGlobales.includes(perfilId);
+                            return (
+                              <label
+                                key={perfil.value}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors hover:bg-gray-100 dark:hover:bg-neutral-800"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleGlobalPerfilToggle(perfilId)}
+                                  className="mr-3 text-orange-500 focus:ring-orange-500"
+                                />
+                                <span className={isSelected ? 'font-semibold' : ''}>
+                                  {perfil.label.toUpperCase()}
+                                </span>
+                              </label>
+                            );
+                          })
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
+                          NO SE ENCONTRARON RESULTADOS
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {loadingUmbrales ? (
             <div className="text-center py-8 text-gray-500 dark:text-neutral-400 font-mono text-sm">
@@ -521,95 +681,10 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
                   
                   return (
                   <div key={tipoid} className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="mb-3">
                       <h5 className="text-base font-bold text-orange-500 font-mono tracking-wider">
                         {getTipoName(tipoIdNum).toUpperCase()}
                       </h5>
-                      <div className="w-64 relative tipo-perfil-dropdown-container">
-                        <div
-                          onClick={() => !loading && handleTipoDropdownToggle(tipoIdNum)}
-                          className="w-full px-3 py-2 bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 rounded-lg cursor-pointer flex justify-between items-center"
-                        >
-                          <span className="text-xs font-mono text-gray-800 dark:text-white">
-                            {perfilTipoSeleccionado 
-                              ? perfilesOptions.find(p => parseInt(p.value.toString()) === perfilTipoSeleccionado)?.label.toUpperCase() || 'PERFIL SELECCIONADO'
-                              : 'APLICAR PERFIL A TODO EL TIPO'
-                            }
-                          </span>
-                          <span className="text-gray-500 dark:text-neutral-400">▼</span>
-                        </div>
-                        
-                        {isTipoDropdownOpen && !loading && (
-                          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden right-0">
-                            {/* Barra de búsqueda */}
-                            <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
-                              <input
-                                type="text"
-                                placeholder="Buscar..."
-                                value={tipoSearchTerm}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleTipoSearchTermChange(tipoIdNum, e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                              />
-                            </div>
-                            
-                            {/* Opción para limpiar */}
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePerfilPorTipoChange(tipoIdNum, null);
-                                setTipoDropdownOpen(prev => {
-                                  const newMap = new Map(prev);
-                                  newMap.set(tipoIdNum, false);
-                                  return newMap;
-                                });
-                              }}
-                              className="px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors hover:bg-gray-100 dark:hover:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700"
-                            >
-                              <span className="text-xs">LIMPIAR SELECCIÓN</span>
-                            </div>
-                            
-                            {/* Lista de opciones */}
-                            <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                              {filteredPerfilesTipo.length > 0 ? (
-                                filteredPerfilesTipo.map((perfil) => {
-                                  const isSelected = perfilTipoSeleccionado === parseInt(perfil.value.toString());
-                                  return (
-                                    <div
-                                      key={perfil.value}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePerfilPorTipoChange(tipoIdNum, parseInt(perfil.value.toString()));
-                                        setTipoDropdownOpen(prev => {
-                                          const newMap = new Map(prev);
-                                          newMap.set(tipoIdNum, false);
-                                          return newMap;
-                                        });
-                                      }}
-                                      className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
-                                        isSelected 
-                                          ? 'bg-orange-500 text-white' 
-                                          : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
-                                      }`}
-                                    >
-                                      <span className={isSelected ? 'font-semibold' : ''}>
-                                        {perfil.label.toUpperCase()}
-                                      </span>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="px-3 py-2 text-gray-500 dark:text-neutral-400 text-sm font-mono">
-                                  NO SE ENCONTRARON RESULTADOS
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
                     <div className="space-y-3 ml-4">
                       {Object.entries(metricasData).map(([metricaid, umbrales]) => (
@@ -668,21 +743,33 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
                                         <div className="max-h-32 overflow-y-auto custom-scrollbar">
                                           {filteredPerfiles.length > 0 ? (
                                             filteredPerfiles.map((perfil) => {
-                                              const isSelected = perfilesAsignados.includes(parseInt(perfil.value.toString()));
+                                              const perfilId = parseInt(perfil.value.toString());
+                                              const isSelected = perfilesAsignados.includes(perfilId);
+                                              const isGlobal = perfilesGlobales.includes(perfilId);
                                               return (
                                                 <label
                                                   key={perfil.value}
                                                   onClick={(e) => e.stopPropagation()}
-                                                  className="flex items-center px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                  className={`flex items-center px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
+                                                    isGlobal 
+                                                      ? 'bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30' 
+                                                      : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
+                                                  }`}
                                                 >
                                                   <input
                                                     type="checkbox"
                                                     checked={isSelected}
-                                                    onChange={() => handlePerfilToggle(umbral.umbralid, parseInt(perfil.value.toString()))}
-                                                    className="mr-3 text-orange-500 focus:ring-orange-500"
+                                                    disabled={isGlobal}
+                                                    onChange={() => handlePerfilToggle(umbral.umbralid, perfilId)}
+                                                    className={`mr-3 text-orange-500 focus:ring-orange-500 ${
+                                                      isGlobal ? 'opacity-50 cursor-not-allowed' : ''
+                                                    }`}
                                                   />
                                                   <span className={isSelected ? 'font-semibold' : ''}>
                                                     {perfil.label.toUpperCase()}
+                                                    {isGlobal && (
+                                                      <span className="ml-2 text-xs text-orange-500">(Global)</span>
+                                                    )}
                                                   </span>
                                                 </label>
                                               );
