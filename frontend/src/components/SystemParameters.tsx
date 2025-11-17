@@ -155,6 +155,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     searchField,
     statusSearchTerm,
     statusFilteredData,
+    statusHasSearched,
     setSearchTerm,
     setHasSearched,
     setStatusSearchTerm,
@@ -378,17 +379,32 @@ const [pendingTableChange, setPendingTableChange] = useState<string>('');
 
   });
 
-// Actualizar statusFilteredData cuando cambien los filtros globales
+// Actualizar statusFilteredData cuando cambien los filtros globales (solo si no hay búsqueda activa)
 
   useEffect(() => {
 
-    setStatusFilteredData(filteredTableData);
+    // Solo actualizar si no hay búsqueda activa
+    if (!statusHasSearched) {
+      setStatusFilteredData(filteredTableData);
+      setStatusTotalPages(Math.ceil(filteredTableData.length / itemsPerPage));
+      setStatusCurrentPage(1);
+    }
 
-    setStatusTotalPages(Math.ceil(filteredTableData.length / itemsPerPage));
+  }, [filteredTableData, itemsPerPage, statusHasSearched, setStatusCurrentPage, setStatusFilteredData, setStatusTotalPages]);
 
-    setStatusCurrentPage(1);
-
-  }, [filteredTableData, itemsPerPage, setStatusCurrentPage, setStatusFilteredData, setStatusTotalPages]);
+  // Recalcular paginación cuando cambien los datos filtrados por búsqueda
+  useEffect(() => {
+    // Calcular totalPages basándose en statusFilteredData (que incluye resultados de búsqueda)
+    const calculatedTotalPages = Math.ceil(statusFilteredData.length / itemsPerPage);
+    setStatusTotalPages(calculatedTotalPages);
+    
+    // Si la página actual es mayor que el total de páginas, resetear a la última página disponible
+    if (statusCurrentPage > calculatedTotalPages && calculatedTotalPages > 0) {
+      setStatusCurrentPage(calculatedTotalPages);
+    } else if (calculatedTotalPages === 0) {
+      setStatusCurrentPage(1);
+    }
+  }, [statusFilteredData, itemsPerPage, statusCurrentPage, setStatusCurrentPage, setStatusTotalPages]);
 
 const [formData, setFormData] = useState<Record<string, any>>({});
 

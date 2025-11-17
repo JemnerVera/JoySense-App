@@ -277,10 +277,10 @@ export const useTableDataManagement = () => {
 
       const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
 
-      // Ordenar por fecha de modificación (más recientes primero)
+      // Ordenar por fecha de creación (más recientes primero)
       const sortedData = data.sort((a: any, b: any) => {
-        const dateA = new Date(a.datemodified || a.datecreated || 0);
-        const dateB = new Date(b.datemodified || b.datecreated || 0);
+        const dateA = new Date(a.datecreated || a.datemodified || 0);
+        const dateB = new Date(b.datecreated || b.datemodified || 0);
         return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
       });
 
