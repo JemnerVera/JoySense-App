@@ -81,9 +81,9 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'fundo': ['fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'localizacionid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'ubicacion': ['ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'localizacionid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'localizacion': ['localizacionid', 'entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
-      'entidad': ['entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
-      'nodo': ['nodoid', 'tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
-      'tipo': ['tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
+      'entidad': ['entidadid', 'paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
+      'nodo': ['nodoid', 'paisid', 'empresaid', 'fundoid', 'ubicacionid', 'tipoid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
+      'tipo': ['tipoid', 'paisid', 'empresaid', 'fundoid', 'ubicacionid', 'sensorid', 'metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'sensor': ['sensorid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'metrica': ['metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'metricasensor': ['metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
@@ -104,10 +104,20 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
   const getImportantFields = (fields: Record<string, any>): Record<string, any> => {
     const excludeFields = getExcludedFieldsForTable(tableName);
     
+    // Para nodo, siempre incluir deveui, appeui, appkey, atpin incluso si están vacíos
+    const alwaysIncludeFields = tableName === 'nodo' ? ['deveui', 'appeui', 'appkey', 'atpin'] : [];
+    
     const importantFields: Record<string, any> = {};
     Object.entries(fields).forEach(([key, value]) => {
-      if (!excludeFields.includes(key.toLowerCase()) && value !== null && value !== undefined && value !== '') {
-        importantFields[key] = value;
+      const keyLower = key.toLowerCase();
+      if (!excludeFields.includes(keyLower)) {
+        // Incluir si tiene valor O si es un campo que siempre debe incluirse
+        if (value !== null && value !== undefined && value !== '') {
+          importantFields[key] = value;
+        } else if (alwaysIncludeFields.includes(keyLower)) {
+          // Incluir campos que siempre deben aparecer, incluso si están vacíos
+          importantFields[key] = null;
+        }
       }
     });
     
@@ -126,11 +136,19 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'fundoabrev': 'Abreviatura',
       'ubicacion': 'Ubicación',
       'localizacion': 'Localización',
+      'latitud': 'Latitud',
+      'longitud': 'Longitud',
+      'referencia': 'Referencia',
       'entidad': 'Entidad',
       'tipo': 'Tipo',
       'nodo': 'Nodo',
+      'deveui': 'DEVEUI',
+      'appeui': 'APPEUI',
+      'appkey': 'APPKEY',
+      'atpin': 'ATPIN',
       'sensor': 'Sensor',
       'metrica': 'Métrica',
+      'unidad': 'Unidad',
       'umbral': 'Umbral',
       'maximo': 'Máximo',
       'minimo': 'Mínimo',
@@ -167,12 +185,25 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'criticidadid': 'Criticidad'
     };
     
-    return fieldNames[fieldName.toLowerCase()] || fieldName;
+    // Si el campo está en el mapeo, devolver el nombre formateado
+    const mappedName = fieldNames[fieldName.toLowerCase()];
+    if (mappedName) {
+      return mappedName;
+    }
+    
+    // Si no está mapeado, convertir a camel case (primera letra mayúscula)
+    const lowerFieldName = fieldName.toLowerCase();
+    return lowerFieldName.charAt(0).toUpperCase() + lowerFieldName.slice(1);
   };
 
   // Función para formatear el valor del campo
   const formatFieldValue = (value: any, fieldKey: string): string => {
-    if (value === null || value === undefined || value === '') {
+    // Para campos de nodo (deveui, appeui, appkey, atpin), mostrar "-" si está vacío
+    if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
+      if (value === null || value === undefined || value === '') {
+        return '-';
+      }
+    } else if (value === null || value === undefined || value === '') {
       return '';
     }
     
@@ -288,11 +319,11 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'fundo': ['paisid', 'empresaid', 'fundo', 'fundoabrev', 'statusid'],
       'ubicacion': ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid'],
       'localizacion': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'localizacion', 'statusid'],
-      'entidad': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidad', 'statusid'],
-      'nodo': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'nodo', 'statusid'],
-      'tipo': ['tipo', 'statusid'],
+      'entidad': ['entidad', 'statusid'],
+      'nodo': ['nodo', 'deveui', 'appeui', 'appkey', 'atpin', 'statusid'],
+      'tipo': ['entidadid', 'tipo', 'statusid'],
       'sensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensor', 'statusid'],
-      'metrica': ['metrica', 'statusid'],
+      'metrica': ['metrica', 'unidad', 'statusid'],
       'metricasensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'statusid'],
       'umbral': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'metricaid', 'umbral', 'minimo', 'maximo', 'criticidadid', 'statusid'],
       'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
@@ -327,7 +358,32 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
 
   // Obtener los campos importantes del primer registro para crear los headers
   const firstRecordFields = getImportantFields(insertedRecords[0]?.fields || {});
-  const fieldKeys = getOrderedFieldKeys(firstRecordFields, tableName);
+  let fieldKeys = getOrderedFieldKeys(firstRecordFields, tableName);
+
+  // Para la tabla "tipo", combinar entidadid y tipo en una sola columna
+  if (tableName === 'tipo') {
+    const hasEntidadId = fieldKeys.includes('entidadid');
+    const hasTipo = fieldKeys.includes('tipo');
+    
+    if (hasEntidadId && hasTipo) {
+      // Remover entidadid y tipo de fieldKeys y agregar una columna combinada
+      fieldKeys = fieldKeys.filter(key => key !== 'entidadid' && key !== 'tipo');
+      // Insertar 'entidad_tipo' al inicio (antes de statusid)
+      const statusIndex = fieldKeys.indexOf('statusid');
+      if (statusIndex >= 0) {
+        fieldKeys.splice(statusIndex, 0, 'entidad_tipo');
+      } else {
+        fieldKeys.unshift('entidad_tipo');
+      }
+    }
+  }
+
+  // Función para obtener el valor combinado de Entidad Tipo
+  const getCombinedEntidadTipo = (record: InsertedRecord): string => {
+    const entidadValue = formatFieldValue(record.fields.entidadid, 'entidadid');
+    const tipoValue = formatFieldValue(record.fields.tipo, 'tipo');
+    return `${entidadValue} ${tipoValue}`;
+  };
 
   return (
     <div className="bg-blue-900 bg-opacity-30 border border-blue-600 border-opacity-50 rounded-lg p-4 mb-4">
@@ -347,7 +403,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
             <tr className="border-b border-blue-500 border-opacity-40">
               {fieldKeys.map(fieldKey => (
                 <th key={fieldKey} className="text-left py-2 px-3 text-blue-200 text-opacity-70 font-medium">
-                  {formatFieldName(fieldKey)}
+                  {fieldKey === 'entidad_tipo' ? 'Entidad Tipo' : formatFieldName(fieldKey)}
                 </th>
               ))}
             </tr>
@@ -357,7 +413,9 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
               <tr key={record.id} className="border-b border-blue-600 border-opacity-30 last:border-b-0">
                 {fieldKeys.map(fieldKey => (
                   <td key={fieldKey} className="py-2 px-3 text-blue-200 text-opacity-70">
-                    {formatFieldValue(record.fields[fieldKey], fieldKey)}
+                    {fieldKey === 'entidad_tipo' 
+                      ? getCombinedEntidadTipo(record)
+                      : formatFieldValue(record.fields[fieldKey], fieldKey)}
                   </td>
                 ))}
               </tr>
