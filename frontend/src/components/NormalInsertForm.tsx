@@ -548,6 +548,39 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     }
   }, [paisOptions, formData.paisid, setFormData]);
 
+  // Función para renderizar campos de País con layout específico
+  const renderPaisFields = (): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    
+    // Primera fila: País
+    const paisField = visibleColumns.find(c => c.columnName === 'pais');
+    if (paisField) {
+      result.push(
+        <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {renderField(paisField)}
+          <div></div> {/* Espacio vacío */}
+          <div></div> {/* Espacio vacío */}
+        </div>
+      );
+    }
+    
+    // Segunda fila: Abreviatura y Status en la misma fila
+    const abreviaturaField = visibleColumns.find(c => c.columnName === 'paisabrev');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    
+    if (abreviaturaField || statusField) {
+      result.push(
+        <div key="abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {abreviaturaField && renderField(abreviaturaField)}
+          {statusField && renderField(statusField)}
+          <div></div> {/* Espacio vacío */}
+        </div>
+      );
+    }
+    
+    return result;
+  };
+
   // Función para renderizar campos de Empresa con layout específico
   const renderEmpresaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
@@ -583,14 +616,14 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       }
     }
     
-    // Segunda fila: Empresa, Abreviatura, Status
+    // Segunda fila: Empresa, Abreviatura y Status en la misma fila
     const empresaField = visibleColumns.find(c => c.columnName === 'empresa');
     const abreviaturaField = visibleColumns.find(c => c.columnName === 'empresabrev');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
     if (empresaField || abreviaturaField || statusField) {
       result.push(
-        <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div key="empresa-abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {empresaField && renderField(empresaField)}
           {abreviaturaField && renderField(abreviaturaField)}
           {statusField && renderField(statusField)}
@@ -619,36 +652,70 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   const renderFundoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila contextual: País, Empresa (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
-    
-    // Primera fila: Empresa (si NO hay filtro global), Fundo, Abreviatura (máximo 3 campos)
+    // Fila 1: País y Empresa (siempre mostrar País)
+    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
     const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
+    
+    // Renderizar campo País (siempre visible)
+    const renderPaisField = () => {
+      if (paisSeleccionado && paisOptions.length > 0) {
+        // Mostrar como texto cuando hay filtro global
+        const selectedPais = paisOptions.find(p => p.value === paisSeleccionado);
+        return (
+          <div>
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              {t('create.country')}*
+            </label>
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+              {selectedPais ? selectedPais.label : getPaisName(paisSeleccionado)}
+            </div>
+          </div>
+        );
+      } else if (paisField) {
+        // Mostrar dropdown cuando NO hay filtro global y el campo existe
+        return renderField(paisField);
+      } else {
+        // Si no existe el campo en visibleColumns, crearlo manualmente
+        const paisOptionsManual = getUniqueOptionsForField('paisid');
+        const paisValue = formData.paisid || '';
+        return (
+          <div>
+            <label className="block text-lg font-bold text-orange-500 mb-2 font-mono tracking-wider">
+              {t('create.country')}*
+            </label>
+            <SelectWithPlaceholder
+              value={paisValue}
+              onChange={(newValue) => setFormData({
+                ...formData,
+                paisid: newValue ? parseInt(newValue.toString()) : null
+              })}
+              options={paisOptionsManual}
+              placeholder={`${t('buttons.select')} ${t('fields.country')}`}
+            />
+          </div>
+        );
+      }
+    };
+    
+    result.push(
+      <div key="pais-empresa-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {renderPaisField()}
+        {empresaField && renderField(empresaField)}
+        <div></div> {/* Espacio vacío */}
+      </div>
+    );
+    
+    // Fila 2: Fundo, Abreviatura y Status en la misma fila
     const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
     const abreviaturaField = visibleColumns.find(c => c.columnName === 'fundoabrev');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    // Solo mostrar campo Empresa si NO hay filtro global de empresa
-    const shouldShowEmpresaField = empresaField && !empresaSeleccionada;
-    
-    if (shouldShowEmpresaField || fundoField || abreviaturaField) {
+    if (fundoField || abreviaturaField || statusField) {
       result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {shouldShowEmpresaField && renderField(empresaField)}
+        <div key="fundo-abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {fundoField && renderField(fundoField)}
           {abreviaturaField && renderField(abreviaturaField)}
-        </div>
-      );
-    }
-    
-    // Segunda fila: Status (si existe)
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    if (statusField) {
-      result.push(
-        <div key="status-row" className="grid grid-cols-1 gap-6 mb-6">
-          {renderField(statusField)}
+          {statusField && renderField(statusField)}
         </div>
       );
     }
@@ -1873,6 +1940,8 @@ return filteredNodos;
       <div>
         {selectedTable === 'usuario' ? (
           renderUsuarioForm()
+        ) : selectedTable === 'pais' ? (
+          renderPaisFields()
         ) : selectedTable === 'empresa' ? (
           renderEmpresaFields()
         ) : ['fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
