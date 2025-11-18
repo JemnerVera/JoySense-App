@@ -47,12 +47,12 @@ interface MetricaData {
   selected: boolean;
   expanded: boolean;
   umbralesPorTipo: {
-    [tipoid: number]: Array<{
+    [tipoid: number]: {
       minimo: string;
       maximo: string;
       criticidadid: number | null;
       umbral: string;
-    }>;
+    } | undefined;
   };
 }
 
@@ -224,10 +224,8 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
       setFormData(prev => {
         // Solo limpiar si no hay umbrales configurados
         const hasUmbrales = prev.metricasData.some(m => 
-          Object.values(m.umbralesPorTipo).some(umbrales => 
-            Array.isArray(umbrales) && umbrales.some(u => 
-              u.minimo || u.maximo || u.criticidadid || u.umbral
-            )
+          Object.values(m.umbralesPorTipo).some(umbral => 
+            umbral && (umbral.minimo || umbral.maximo || umbral.criticidadid || umbral.umbral)
           )
         );
         
@@ -408,78 +406,26 @@ setAssignedSensorTypes(assignedTypes);
     }));
   };
 
-  // Manejar cambio de umbral por tipo (ahora con arrays)
-  const handleUmbralChange = (metricaid: number, tipoid: number, umbralIndex: number, field: string, value: string) => {
+  // Manejar cambio de umbral por tipo (un solo umbral por tipo)
+  const handleUmbralChange = (metricaid: number, tipoid: number, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       metricasData: prev.metricasData.map(metrica => {
         if (metrica.metricaid === metricaid) {
           const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
-          // Crear una copia del array para evitar mutaciones del estado anterior
-          const umbralesDelTipo = [...(updatedUmbralesPorTipo[tipoid] || [])];
-          
-          // Asegurar que el array tenga al menos un elemento en el índice especificado
-          while (umbralesDelTipo.length <= umbralIndex) {
-            umbralesDelTipo.push({
-              minimo: '',
-              maximo: '',
-              criticidadid: null,
-              umbral: ''
-            });
-          }
-          
-          // Actualizar el umbral específico creando un nuevo objeto
-          umbralesDelTipo[umbralIndex] = {
-            ...umbralesDelTipo[umbralIndex],
-            [field]: field === 'criticidadid' ? (value ? parseInt(value) : null) : value
+          // Obtener el umbral actual o crear uno nuevo
+          const umbralActual = updatedUmbralesPorTipo[tipoid] || {
+            minimo: '',
+            maximo: '',
+            criticidadid: null,
+            umbral: ''
           };
           
-          updatedUmbralesPorTipo[tipoid] = umbralesDelTipo;
-          return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
-        }
-        return metrica;
-      })
-    }));
-  };
-
-  // Agregar un nuevo umbral para un tipo específico
-  const handleAddUmbral = (metricaid: number, tipoid: number) => {
-    setFormData(prev => ({
-      ...prev,
-      metricasData: prev.metricasData.map(metrica => {
-        if (metrica.metricaid === metricaid) {
-          const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
-          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
-          
-          updatedUmbralesPorTipo[tipoid] = [
-            ...umbralesDelTipo,
-            {
-              minimo: '',
-              maximo: '',
-              criticidadid: null,
-              umbral: ''
-            }
-          ];
-          
-          return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
-        }
-        return metrica;
-      })
-    }));
-  };
-
-  // Eliminar un umbral específico
-  const handleRemoveUmbral = (metricaid: number, tipoid: number, umbralIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      metricasData: prev.metricasData.map(metrica => {
-        if (metrica.metricaid === metricaid) {
-          const updatedUmbralesPorTipo = { ...metrica.umbralesPorTipo };
-          const umbralesDelTipo = updatedUmbralesPorTipo[tipoid] || [];
-          
-          if (umbralesDelTipo.length > umbralIndex) {
-            updatedUmbralesPorTipo[tipoid] = umbralesDelTipo.filter((_, index) => index !== umbralIndex);
-          }
+          // Actualizar el campo específico
+          updatedUmbralesPorTipo[tipoid] = {
+            ...umbralActual,
+            [field]: field === 'criticidadid' ? (value ? parseInt(value) : null) : value
+          };
           
           return { ...metrica, umbralesPorTipo: updatedUmbralesPorTipo };
         }
@@ -502,10 +448,8 @@ setAssignedSensorTypes(assignedTypes);
                  formData.metricasData.some(m => m.selected) || 
                  selectedNodes.some(node => node.selected) ||
                  formData.metricasData.some(m => 
-                   m.selected && Object.values(m.umbralesPorTipo).some(umbrales => 
-                     Array.isArray(umbrales) && umbrales.some(u => 
-                       u.minimo && u.maximo && u.criticidadid && u.umbral
-                     )
+                   m.selected && Object.values(m.umbralesPorTipo).some(umbral => 
+                     umbral && umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
                    )
                  )
       };
@@ -524,12 +468,9 @@ setAssignedSensorTypes(assignedTypes);
     const hasAssignedTipos = assignedSensorTypes.length > 0;
     const hasMetricas = formData.metricasData.some(metrica => {
       if (!metrica.selected) return false;
-      return Object.values(metrica.umbralesPorTipo).some(umbrales => {
-        if (!Array.isArray(umbrales)) return false;
-        return umbrales.some(umbral => 
-          umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
-        );
-      });
+      return Object.values(metrica.umbralesPorTipo).some(umbral => 
+        umbral && umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
+      );
     });
     const hasValidNodeTypes = validationResult.isValid;
     
@@ -578,39 +519,35 @@ for (const tipoOption of tiposDelNodo) {
                 continue;
               }
               
-              const umbralesDelTipo = metrica.umbralesPorTipo[tipo.tipoid];
-              const umbralesArray = Array.isArray(umbralesDelTipo) ? umbralesDelTipo : (umbralesDelTipo ? [umbralesDelTipo] : []);
+              const umbralDelTipo = metrica.umbralesPorTipo[tipo.tipoid];
               
-              // Procesar cada umbral válido
-              umbralesArray.forEach(umbralTipo => {
-                // Solo incluir si el umbral tiene todos los campos requeridos
-                if (umbralTipo && umbralTipo.minimo && umbralTipo.maximo && umbralTipo.criticidadid && umbralTipo.umbral) {
-                  // Obtener ubicacionid desde la tabla localizacion
-                  const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
-                  if (!localizacion || !localizacion.ubicacionid) {
-                    console.error('❌ Nodo sin localización o ubicacionid:', { 
-                      nodo: node.nodo, 
-                      nodoid: node.nodoid, 
-                      localizacion: localizacion 
-                    });
-                    return; // Saltar este umbral si no tiene localización
-                  }
-                  
-                  const umbralData = {
-                    ubicacionid: localizacion.ubicacionid,
-                    nodoid: node.nodoid,
-                    tipoid: tipo.tipoid,
-                    metricaid: metrica.metricaid,
-                    criticidadid: umbralTipo.criticidadid,
-                    umbral: umbralTipo.umbral,
-                    minimo: parseFloat(umbralTipo.minimo),
-                    maximo: parseFloat(umbralTipo.maximo),
-                    statusid: 1 // Activo por defecto
-                  };
-                  
-                  dataToApply.push(umbralData);
+              // Solo incluir si el umbral tiene todos los campos requeridos
+              if (umbralDelTipo && umbralDelTipo.minimo && umbralDelTipo.maximo && umbralDelTipo.criticidadid && umbralDelTipo.umbral) {
+                // Obtener ubicacionid desde la tabla localizacion
+                const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
+                if (!localizacion || !localizacion.ubicacionid) {
+                  console.error('❌ Nodo sin localización o ubicacionid:', { 
+                    nodo: node.nodo, 
+                    nodoid: node.nodoid, 
+                    localizacion: localizacion 
+                  });
+                  continue; // Saltar este umbral si no tiene localización
                 }
-              });
+                
+                const umbralData = {
+                  ubicacionid: localizacion.ubicacionid,
+                  nodoid: node.nodoid,
+                  tipoid: tipo.tipoid,
+                  metricaid: metrica.metricaid,
+                  criticidadid: umbralDelTipo.criticidadid,
+                  umbral: umbralDelTipo.umbral,
+                  minimo: parseFloat(umbralDelTipo.minimo),
+                  maximo: parseFloat(umbralDelTipo.maximo),
+                  statusid: 1 // Activo por defecto
+                };
+                
+                dataToApply.push(umbralData);
+              }
             }
           }
         }
@@ -707,7 +644,7 @@ for (const tipoOption of tiposDelNodo) {
     return organizados;
   }, [sourceUmbrales, formData.entidadid, getUniqueOptionsForField, criticidadGradoMap]);
 
-  // Función para manejar la selección de umbrales (múltiples por métrica-tipo)
+  // Función para manejar la selección de umbrales (un solo umbral por métrica-tipo)
   const handleUmbralToggle = (metricaid: number, tipoid: number, umbralid: number) => {
     setSelectedUmbralesToReplicate(prev => {
       const newMap = new Map(prev);
@@ -716,30 +653,27 @@ for (const tipoOption of tiposDelNodo) {
       
       if (currentSelection.includes(umbralid)) {
         // Deseleccionar: remover de la lista
-        const updated = currentSelection.filter(id => id !== umbralid);
-        if (updated.length === 0) {
-          newMap.delete(key);
-        } else {
-          newMap.set(key, updated);
-        }
+        newMap.delete(key);
       } else {
-        // Seleccionar: agregar a la lista
-        newMap.set(key, [...currentSelection, umbralid]);
+        // Seleccionar: reemplazar cualquier selección anterior (solo un umbral por tipo)
+        newMap.set(key, [umbralid]);
       }
       
       return newMap;
     });
   };
 
-  // Función para seleccionar todos los umbrales
+  // Función para seleccionar todos los umbrales (el primero de cada tipo)
   const handleSelectAllUmbrales = () => {
     const allSelected = new Map<string, number[]>();
     
     Object.entries(umbralesOrganizados).forEach(([metricaid, data]) => {
       Object.entries(data.tipos).forEach(([tipoid, tipoData]) => {
         const key = `${metricaid}-${tipoid}`;
-        const umbralids = tipoData.umbrales.map((u: any) => u.umbralid);
-        allSelected.set(key, umbralids);
+        // Seleccionar solo el primer umbral de cada tipo
+        if (tipoData.umbrales && tipoData.umbrales.length > 0) {
+          allSelected.set(key, [tipoData.umbrales[0].umbralid]);
+        }
       });
     });
     
@@ -757,22 +691,23 @@ for (const tipoOption of tiposDelNodo) {
       allUmbralids.includes(u.umbralid)
     );
 
-    // Agrupar umbrales por métrica y tipo (ahora como arrays)
-    const umbralesPorMetrica: { [metricaid: number]: { [tipoid: number]: any[] } } = {};
+    // Agrupar umbrales por métrica y tipo (un solo umbral por tipo)
+    // Si hay múltiples umbrales para el mismo tipo, tomar el primero (o el más reciente)
+    const umbralesPorMetrica: { [metricaid: number]: { [tipoid: number]: any } } = {};
     
     umbralesSeleccionados.forEach((umbral: any) => {
       if (!umbralesPorMetrica[umbral.metricaid]) {
         umbralesPorMetrica[umbral.metricaid] = {};
       }
+      // Si ya existe un umbral para este tipo, mantener el primero (no sobrescribir)
       if (!umbralesPorMetrica[umbral.metricaid][umbral.tipoid]) {
-        umbralesPorMetrica[umbral.metricaid][umbral.tipoid] = [];
+        umbralesPorMetrica[umbral.metricaid][umbral.tipoid] = {
+          minimo: umbral.minimo?.toString() || '',
+          maximo: umbral.maximo?.toString() || '',
+          criticidadid: umbral.criticidadid || null,
+          umbral: umbral.umbral || ''
+        };
       }
-      umbralesPorMetrica[umbral.metricaid][umbral.tipoid].push({
-        minimo: umbral.minimo?.toString() || '',
-        maximo: umbral.maximo?.toString() || '',
-        criticidadid: umbral.criticidadid || null,
-        umbral: umbral.umbral || ''
-      });
     });
 
     // Actualizar el formulario con los umbrales seleccionados
@@ -785,19 +720,8 @@ for (const tipoOption of tiposDelNodo) {
         // Aplicar umbrales replicados solo para tipos que existen en assignedSensorTypes
         assignedSensorTypes.forEach(tipo => {
           if (umbralesReplicados[tipo.tipoid]) {
-            // Si ya hay umbrales, agregar a la lista. Si no, crear nueva lista.
-            const existingUmbrales = updatedUmbralesPorTipo[tipo.tipoid] || [];
-            const newUmbrales = umbralesReplicados[tipo.tipoid];
-            
-            // Combinar y ordenar por grado de criticidad
-            const combinedUmbrales = [...existingUmbrales, ...newUmbrales];
-            combinedUmbrales.sort((a, b) => {
-              const gradoA = criticidadGradoMap.get(a.criticidadid || 0) || 999;
-              const gradoB = criticidadGradoMap.get(b.criticidadid || 0) || 999;
-              return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
-            });
-            
-            updatedUmbralesPorTipo[tipo.tipoid] = combinedUmbrales;
+            // Reemplazar el umbral existente (solo un umbral por tipo)
+            updatedUmbralesPorTipo[tipo.tipoid] = umbralesReplicados[tipo.tipoid];
           }
         });
 
@@ -1133,10 +1057,9 @@ for (const tipoOption of tiposDelNodo) {
   const selectedNodesCount = getSelectedNodes().length;
   const assignedTiposCount = assignedSensorTypes.length; // Todos los tipos asignados se procesan
   const validMetricasCount = formData.metricasData.filter(m => 
-    m.selected && Object.values(m.umbralesPorTipo).some(umbrales => {
-      if (!Array.isArray(umbrales)) return false;
-      return umbrales.some(u => u.minimo && u.maximo && u.criticidadid && u.umbral);
-    })
+    m.selected && Object.values(m.umbralesPorTipo).some(umbral => 
+      umbral && umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
+    )
   ).length;
   const totalCombinations = selectedNodesCount * assignedTiposCount * validMetricasCount;
 
@@ -1621,120 +1544,77 @@ for (const tipoOption of tiposDelNodo) {
                     <div className="px-3 pb-3 border-t border-gray-300 dark:border-neutral-600">
                       <div className="space-y-4 mt-3">
                         {assignedSensorTypes.map((tipo) => {
-                          const umbralesDelTipo = metrica.umbralesPorTipo[tipo.tipoid] || [];
-                          const umbralesArray = Array.isArray(umbralesDelTipo) ? umbralesDelTipo : (umbralesDelTipo ? [umbralesDelTipo] : []);
-                          
-                          // Asegurar que haya al menos un umbral vacío
-                          let umbralesToShow = umbralesArray.length > 0 ? umbralesArray : [{
+                          const umbralDelTipo = metrica.umbralesPorTipo[tipo.tipoid] || {
                             minimo: '',
                             maximo: '',
                             criticidadid: null,
                             umbral: ''
-                          }];
-                          
-                          // Crear un array con índices originales antes de ordenar
-                          const umbralesWithOriginalIndex = umbralesToShow.map((umbral, originalIndex) => ({
-                            umbral,
-                            originalIndex
-                          }));
-                          
-                          // Ordenar por grado de criticidad (ascendente: grado 1 primero, grado 4 último)
-                          const sortedUmbralesWithIndex = [...umbralesWithOriginalIndex].sort((a, b) => {
-                            const gradoA = criticidadGradoMap.get(a.umbral.criticidadid || 0) || 999;
-                            const gradoB = criticidadGradoMap.get(b.umbral.criticidadid || 0) || 999;
-                            return gradoA - gradoB; // Orden ascendente: 1, 2, 3, 4
-                          });
+                          };
                           
                           return (
                             <div key={tipo.tipoid} className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-3">
+                              <div className="mb-3">
                                 <h6 className="text-orange-300 font-mono tracking-wider font-bold">
                                   {tipo.tipo.toUpperCase()}
                                 </h6>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddUmbral(metrica.metricaid, tipo.tipoid)}
-                                  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors font-mono"
-                                >
-                                  + AGREGAR UMBRAL
-                                </button>
                               </div>
                               
-                              <div className="space-y-4">
-                                {sortedUmbralesWithIndex.map(({ umbral: umbralTipo, originalIndex }, displayIndex) => (
-                                  <div key={`${tipo.tipoid}-${originalIndex}`} className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-600">
-                                    {sortedUmbralesWithIndex.length > 1 && (
-                                      <div className="flex justify-between items-center mb-3">
-                                        <span className="text-xs text-gray-500 dark:text-neutral-400 font-mono">
-                                          Umbral {displayIndex + 1}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveUmbral(metrica.metricaid, tipo.tipoid, originalIndex)}
-                                          className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors font-mono"
-                                        >
-                                          ELIMINAR
-                                        </button>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div>
-                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                          VALOR MÍNIMO
-                                        </label>
-                                        <input
-                                          type="number"
-                                          step="0.01"
-                                          value={umbralTipo.minimo || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'minimo', e.target.value)}
-                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                          placeholder="0.00"
-                                        />
-                                      </div>
-                                      
-                                      <div>
-                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                          VALOR MÁXIMO
-                                        </label>
-                                        <input
-                                          type="number"
-                                          step="0.01"
-                                          value={umbralTipo.maximo || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'maximo', e.target.value)}
-                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                          placeholder="100.00"
-                                        />
-                                      </div>
-                                      
-                                      <div>
-                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                          CRITICIDAD
-                                        </label>
-                                        <SelectWithPlaceholder
-                                          options={criticidadesOptions}
-                                          value={umbralTipo.criticidadid || null}
-                                          onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'criticidadid', value ? value.toString() : '')}
-                                          placeholder="SELECCIONAR"
-                                          disabled={loading}
-                                        />
-                                      </div>
-                                      
-                                      <div>
-                                        <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
-                                          NOMBRE UMBRAL
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={umbralTipo.umbral || ''}
-                                          onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, originalIndex, 'umbral', e.target.value)}
-                                          className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
-                                          placeholder="Nombre del umbral"
-                                        />
-                                      </div>
-                                    </div>
+                              <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-600">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                      VALOR MÍNIMO
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={umbralDelTipo.minimo || ''}
+                                      onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'minimo', e.target.value)}
+                                      className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      placeholder="0.00"
+                                    />
                                   </div>
-                                ))}
+                                  
+                                  <div>
+                                    <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                      VALOR MÁXIMO
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={umbralDelTipo.maximo || ''}
+                                      onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'maximo', e.target.value)}
+                                      className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      placeholder="100.00"
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                      CRITICIDAD
+                                    </label>
+                                    <SelectWithPlaceholder
+                                      options={criticidadesOptions}
+                                      value={umbralDelTipo.criticidadid || null}
+                                      onChange={(value) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'criticidadid', value ? value.toString() : '')}
+                                      placeholder="SELECCIONAR"
+                                      disabled={loading}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-xs text-gray-600 dark:text-neutral-300 mb-1 font-mono">
+                                      NOMBRE UMBRAL
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={umbralDelTipo.umbral || ''}
+                                      onChange={(e) => handleUmbralChange(metrica.metricaid, tipo.tipoid, 'umbral', e.target.value)}
+                                      className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono focus:ring-orange-500 focus:border-orange-500"
+                                      placeholder="Nombre del umbral"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           );

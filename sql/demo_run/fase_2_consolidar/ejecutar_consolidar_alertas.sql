@@ -62,3 +62,4 @@ JOIN sense.perfil p ON up.perfilid = p.perfilid
 WHERE m.fecha >= NOW() - INTERVAL '1 hour'
 ORDER BY m.fecha DESC, p.nivel ASC;
 
+

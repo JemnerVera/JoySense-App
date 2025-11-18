@@ -74,9 +74,16 @@ Thumbs.db
 .azure
 
 # ============================================================================
+# CARPETAS DE DOCUMENTACIÓN Y SCRIPTS SQL
+# ============================================================================
+# Ignorar carpetas completas de documentación y scripts SQL
+docs/
+sql/
+
+# ============================================================================
 # ARCHIVOS CON DATOS SENSIBLES (NO PUBLICAR)
 # ============================================================================
-# Datos de usuarios y contactos
+# Datos de usuarios y contactos (backup - ya están cubiertos por sql/)
 sql/*_data.sql
 sql/*_sensitive.sql
 sql/*_personal.sql
@@ -84,7 +91,7 @@ sql/*_users.sql
 sql/*_contacts.sql
 sql/*_emails.sql
 
-# Documentación con datos sensibles
+# Documentación con datos sensibles (backup - ya está cubierto por docs/)
 docs/*_sensitive.md
 docs/*_personal.md
 docs/*_users.md

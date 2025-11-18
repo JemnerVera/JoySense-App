@@ -129,3 +129,4 @@ Antes de ejecutar la demo, asegúrate de tener:
 - `../explicacion_umbrales.md` - Explicación de umbrales y alertas
 - `../explicacion_multiple_umbrales.md` - Explicación de múltiples umbrales
 
+

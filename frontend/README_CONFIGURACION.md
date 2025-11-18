@@ -19,14 +19,7 @@ REACT_APP_SUPABASE_PUBLISHABLE_KEY=tu-anon-o-publishable-key
 REACT_APP_BACKEND_URL=http://localhost:3001/api
 ```
 
-### **3. Copiar archivos de servicio (si no existen)**
-
-```bash
-cd src/services
-copy supabase-auth.example.ts supabase-auth.ts
-```
-
-### **4. Reiniciar el frontend**
+### **3. Reiniciar el frontend**
 
 ```bash
 npm start
@@ -62,8 +55,8 @@ const url = process.env.REACT_APP_SUPABASE_URL
 | Archivo | Propósito | ¿Se commitea? |
 |---------|-----------|---------------|
 | `frontend/.env` | Credenciales locales | ❌ NO (en .gitignore) |
-| `supabase-auth.ts` | Servicio con fallbacks | ❌ NO (en .gitignore) |
-| `supabase-auth.example.ts` | Template sin keys | ✅ SÍ |
+| `supabase-auth.ts` | Servicio sin credenciales | ✅ SÍ (no contiene keys) |
+| `supabase-auth.example.ts` | Template de referencia | ✅ SÍ |
 | `env.example` | Template del .env | ✅ SÍ |
 
 ---
@@ -113,15 +106,15 @@ Azure inyecta estas variables en tiempo de compilación.
 
 ### ✅ Qué está protegido:
 
-- `.env` está en `.gitignore`
-- `supabase-auth.ts` está en `.gitignore`
+- `.env` está en `.gitignore` (nunca se commitea)
 - Solo se usan keys públicas (Publishable/Anon)
-- Templates sin credenciales se commitean
+- El código valida que NO se use Service Role Key
+- `supabase-auth.ts` NO contiene credenciales (se commitea de forma segura)
 
 ### ❌ Qué NO hacer:
 
 - ❌ Commitear `.env` con credenciales reales
-- ❌ Commitear servicios con keys en los fallbacks
+- ❌ Agregar credenciales directamente en el código
 - ❌ Usar Service Role Key en el frontend
 - ❌ Compartir credenciales en mensajes públicos
 
@@ -135,5 +128,5 @@ Azure inyecta estas variables en tiempo de compilación.
 
 ---
 
-**Última actualización:** 2025-01-23
+**Última actualización:** 2025-11-17
 
