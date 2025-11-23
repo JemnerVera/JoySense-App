@@ -1785,7 +1785,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     )}
                   </div>
 
-                  <div className="flex items-baseline space-x-2 mb-4">
+                  <div className="flex items-baseline justify-end space-x-2 mb-4">
                     <span className="text-3xl font-bold text-green-500 font-mono">
                       {hasData && typeof currentValue === "number" ? currentValue.toFixed(1) : "--"}
                     </span>
@@ -2055,8 +2055,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         {selectedNode.latitud && selectedNode.longitud && (
                           <div className="truncate pl-2" title={`Coordenadas: ${selectedNode.latitud}, ${selectedNode.longitud}`}>
                             <span className="text-gray-500 dark:text-neutral-500">Coordenadas:</span>
-                            <div className="pl-4 text-xs">
-                              {selectedNode.latitud}, {selectedNode.longitud}
+                            <div className="pl-4 text-xs space-y-0.5">
+                              <div>Lat.: {selectedNode.latitud}</div>
+                              <div>Lon.: {selectedNode.longitud}</div>
                             </div>
                           </div>
                         )}
