@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { flushSync } from "react-dom"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, ReferenceArea } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -147,6 +147,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
   const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()) // Tipos de sensores visibles en el gráfico
+  const [umbrales, setUmbrales] = useState<{ [key: string]: { minimo: number; maximo: number } }>({}) // Umbrales por nodo-métrica
 
   // Refs para cancelar requests y debouncing
   const loadMedicionesAbortControllerRef = useRef<AbortController | null>(null)
@@ -1086,6 +1087,47 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
   }
 
+  // Cargar umbrales para el nodo seleccionado
+  const loadUmbrales = useCallback(async () => {
+    if (!selectedNode?.nodoid) {
+      setUmbrales({})
+      return
+    }
+
+    try {
+      const allUmbrales = await JoySenseService.getTableData('umbral', 1000)
+      const umbralesDelNodo = allUmbrales.filter((u: any) => 
+        u.nodoid === selectedNode.nodoid && u.statusid === 1 // Solo umbrales activos
+      )
+
+      // Agrupar umbrales por métrica (temperatura=1, humedad=2, conductividad=3)
+      const umbralesPorMetrica: { [key: string]: { minimo: number; maximo: number } } = {}
+      
+      umbralesDelNodo.forEach((umbral: any) => {
+        const metricaKey = umbral.metricaid.toString()
+        // Si ya existe un umbral para esta métrica, usar el más reciente (por datemodified o datecreated)
+        if (!umbralesPorMetrica[metricaKey]) {
+          umbralesPorMetrica[metricaKey] = { minimo: umbral.minimo, maximo: umbral.maximo }
+        } else {
+          const existente = umbralesPorMetrica[metricaKey]
+          const fechaExistente = new Date(umbral.datemodified || umbral.datecreated || 0)
+          // Si este umbral es más reciente, actualizar (pero por ahora solo guardamos el primero encontrado)
+          // En el futuro se puede mejorar para usar el más reciente
+        }
+      })
+
+      setUmbrales(umbralesPorMetrica)
+    } catch (err) {
+      console.error("Error loading umbrales:", err)
+      setUmbrales({})
+    }
+  }, [selectedNode?.nodoid])
+
+  // Cargar umbrales cuando cambia el nodo seleccionado
+  useEffect(() => {
+    loadUmbrales()
+  }, [loadUmbrales])
+
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
     if (!mediciones.length || !tipos.length) {
@@ -1769,26 +1811,82 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           />
                           <YAxis hide />
                           {(() => {
+                            // Obtener umbrales para esta métrica
+                            const metricId = getMetricIdFromDataKey(metric.dataKey)
+                            const umbralMetrica = umbrales[metricId.toString()]
+                            
+                            // Agregar áreas sombreadas para regiones fuera del umbral
+                            const referenceAreas = []
+                            if (umbralMetrica) {
+                              // Calcular el rango de valores en el gráfico para determinar los límites del área
+                              const chartData = processChartData(metric.dataKey)
+                              if (chartData.length > 0) {
+                                // Obtener todos los valores del gráfico para calcular min/max
+                                const allValues: number[] = []
+                                chartData.forEach(point => {
+                                  Object.keys(point).forEach(key => {
+                                    if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                                      allValues.push(point[key])
+                                    }
+                                  })
+                                })
+                                
+                                const minValue = allValues.length > 0 ? Math.min(...allValues) : umbralMetrica.minimo - 10
+                                const maxValue = allValues.length > 0 ? Math.max(...allValues) : umbralMetrica.maximo + 10
+                                
+                                // Área roja por debajo del mínimo (si hay valores por debajo)
+                                if (minValue < umbralMetrica.minimo) {
+                                  referenceAreas.push(
+                                    <ReferenceArea 
+                                      key="area-below-min" 
+                                      y1={minValue - (maxValue - minValue) * 0.1} 
+                                      y2={umbralMetrica.minimo} 
+                                      fill="#ef4444" 
+                                      fillOpacity={0.2}
+                                      stroke="none"
+                                    />
+                                  )
+                                }
+                                
+                                // Área roja por encima del máximo (si hay valores por encima)
+                                if (maxValue > umbralMetrica.maximo) {
+                                  referenceAreas.push(
+                                    <ReferenceArea 
+                                      key="area-above-max" 
+                                      y1={umbralMetrica.maximo} 
+                                      y2={maxValue + (maxValue - minValue) * 0.1} 
+                                      fill="#ef4444" 
+                                      fillOpacity={0.2}
+                                      stroke="none"
+                                    />
+                                  )
+                                }
+                              }
+                            }
+                            
                             const chartData = processChartData(metric.dataKey)
-                            if (chartData.length === 0) return null
+                            if (chartData.length === 0) return referenceAreas.length > 0 ? referenceAreas : null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
                             const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
                             const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                             
-                            return tipoKeys.map((tipoKey, index) => (
-                              <Line
-                                key={tipoKey}
-                                type="monotone"
-                                dataKey={tipoKey}
-                                stroke={colors[index % colors.length]}
-                                strokeWidth={2}
-                                dot={false}
-                                activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
-                                strokeOpacity={0.8}
-                                connectNulls={true}
-                              />
-                            ))
+                            return [
+                              ...referenceAreas,
+                              ...tipoKeys.map((tipoKey, index) => (
+                                <Line
+                                  key={tipoKey}
+                                  type="monotone"
+                                  dataKey={tipoKey}
+                                  stroke={colors[index % colors.length]}
+                                  strokeWidth={2}
+                                  dot={false}
+                                  activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
+                                  strokeOpacity={0.8}
+                                  connectNulls={true}
+                                />
+                              ))
+                            ]
                           })()}
                           <Tooltip
                             labelFormatter={(label) => {
@@ -2087,6 +2185,39 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             )
                           })}
                         </div>
+                        
+                        {/* Leyenda de umbrales */}
+                        {(() => {
+                          const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+                          const umbralMetrica = umbrales[metricId.toString()]
+                          
+                          if (!umbralMetrica) return null
+                          
+                          return (
+                            <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-8 h-0.5 border-t-2 border-dashed"
+                                    style={{ borderColor: '#ef4444' }}
+                                  />
+                                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-300">
+                                    Umbral máximo: {umbralMetrica.maximo}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-8 h-0.5 border-t-2 border-dashed"
+                                    style={{ borderColor: '#ef4444' }}
+                                  />
+                                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-300">
+                                    Umbral mínimo: {umbralMetrica.minimo}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     )
                   })()}
@@ -2761,8 +2892,35 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             }}
                           />
                           {(() => {
+                            // Obtener umbrales para la métrica seleccionada
+                            const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+                            const umbralMetrica = umbrales[metricId.toString()]
+                            
+                            // Agregar líneas de referencia para umbrales
+                            const referenceLines = []
+                            if (umbralMetrica) {
+                              referenceLines.push(
+                                <ReferenceLine 
+                                  key="umbral-min" 
+                                  y={umbralMetrica.minimo} 
+                                  stroke="#ef4444" 
+                                  strokeDasharray="3 3" 
+                                  strokeWidth={2}
+                                  label={{ value: `Min: ${umbralMetrica.minimo}`, position: "insideTopLeft", fill: "#ef4444", fontSize: 11, fontWeight: "bold" }}
+                                />,
+                                <ReferenceLine 
+                                  key="umbral-max" 
+                                  y={umbralMetrica.maximo} 
+                                  stroke="#ef4444" 
+                                  strokeDasharray="3 3" 
+                                  strokeWidth={2}
+                                  label={{ value: `Max: ${umbralMetrica.maximo}`, position: "insideTopRight", fill: "#ef4444", fontSize: 11, fontWeight: "bold" }}
+                                />
+                              )
+                            }
+                            
                             // Usar finalChartData ya calculado arriba
-                            if (finalChartData.length === 0) return null
+                            if (finalChartData.length === 0) return referenceLines.length > 0 ? referenceLines : null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
                             // tipoKeys, colors y comparisonColors ya están definidos arriba
@@ -2790,6 +2948,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             return (
                               <>
+                                {/* Líneas de referencia para umbrales */}
+                                {referenceLines}
                                 {/* Líneas del nodo principal */}
                                 {tipoKeys
                                   .filter(tipoKey => visibleTipos.has(tipoKey))
