@@ -2120,36 +2120,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               value={tempStartDate || detailedStartDate}
                               onChange={(e) => {
                                 const newStartDate = e.target.value
+                                // Solo actualizar tempStartDate, NO cargar datos automáticamente
                                 setTempStartDate(newStartDate)
-                                
-                                if (newStartDate && newStartDate.length === 10 && newStartDate !== detailedStartDate) {
-                                  flushSync(() => {
-                                    setLoadingDetailedData(true)
-                                    if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
-                                      setDetailedStartDate(newStartDate)
-                                      setDetailedEndDate(newStartDate)
-                                      setTempEndDate(newStartDate)
-                                    } else {
-                                      setDetailedStartDate(newStartDate)
-                                    }
-                                    setTempStartDate('')
-                                  })
-                                }
                               }}
-                              onBlur={(e) => {
-                                const newStartDate = e.target.value
-                                if (newStartDate && newStartDate === tempStartDate && newStartDate !== detailedStartDate) {
-                                  if (newStartDate && detailedEndDate && new Date(newStartDate) > new Date(detailedEndDate)) {
-                                    setDetailedStartDate(newStartDate)
-                                    setDetailedEndDate(newStartDate)
-                                    setTempEndDate(newStartDate)
-                                  } else {
-                                    setDetailedStartDate(newStartDate)
-                                  }
-                                  setTempStartDate('')
-                                }
-                              }}
-                              max={detailedEndDate || undefined}
+                              max={tempEndDate || detailedEndDate || undefined}
                               disabled={loadingDetailedData}
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
@@ -2161,45 +2135,59 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               value={tempEndDate || detailedEndDate}
                               onChange={(e) => {
                                 const newEndDate = e.target.value
+                                // Solo actualizar tempEndDate, NO cargar datos automáticamente
                                 setTempEndDate(newEndDate)
-                                
-                                if (newEndDate && newEndDate.length === 10 && newEndDate !== detailedEndDate) {
-                                  if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                                    showWarning(
-                                      'Fecha inválida',
-                                      'La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.'
-                                    )
-                                    setTempEndDate('')
-                                    return
-                                  }
-                                  
-                                  flushSync(() => {
-                                    setLoadingDetailedData(true)
-                                    setDetailedEndDate(newEndDate)
-                                    setTempEndDate('')
-                                  })
-                                }
                               }}
-                              onBlur={(e) => {
-                                const newEndDate = e.target.value
-                                if (newEndDate && newEndDate === tempEndDate && newEndDate !== detailedEndDate) {
-                                  if (newEndDate && detailedStartDate && new Date(newEndDate) < new Date(detailedStartDate)) {
-                                    showWarning(
-                                      'Fecha inválida',
-                                      'La fecha final no puede ser menor que la fecha inicial. Por favor, seleccione una fecha válida.'
-                                    )
-                                    setTempEndDate('')
-                                    return
-                                  }
-                                  setDetailedEndDate(newEndDate)
-                                  setTempEndDate('')
-                                }
-                              }}
-                              min={detailedStartDate || undefined}
+                              min={tempStartDate || detailedStartDate || undefined}
                               disabled={loadingDetailedData}
                               className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                             />
                           </div>
+                          {/* Botón Aplicar - aparece cuando hay fechas temporales diferentes */}
+                          {(tempStartDate && tempStartDate !== detailedStartDate) || (tempEndDate && tempEndDate !== detailedEndDate) ? (
+                            <div className="flex flex-col">
+                              <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
+                              <button
+                                onClick={() => {
+                                  // Validar fechas antes de aplicar
+                                  const startDateToApply = tempStartDate || detailedStartDate
+                                  const endDateToApply = tempEndDate || detailedEndDate
+                                  
+                                  if (startDateToApply && endDateToApply && new Date(startDateToApply) > new Date(endDateToApply)) {
+                                    showWarning(
+                                      'Fecha inválida',
+                                      'La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.'
+                                    )
+                                    return
+                                  }
+                                  
+                                  // Aplicar cambios y cargar datos
+                                  flushSync(() => {
+                                    setLoadingDetailedData(true)
+                                    if (tempStartDate) {
+                                      setDetailedStartDate(tempStartDate)
+                                      setTempStartDate('')
+                                    }
+                                    if (tempEndDate) {
+                                      setDetailedEndDate(tempEndDate)
+                                      setTempEndDate('')
+                                    }
+                                    // Si la fecha inicio cambió y es mayor que la fecha fin, ajustar ambas
+                                    if (tempStartDate && tempEndDate && new Date(tempStartDate) > new Date(tempEndDate)) {
+                                      setDetailedStartDate(tempStartDate)
+                                      setDetailedEndDate(tempStartDate)
+                                      setTempStartDate('')
+                                      setTempEndDate('')
+                                    }
+                                  })
+                                }}
+                                disabled={loadingDetailedData}
+                                className="h-8 px-3 ml-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                              >
+                                Aplicar
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
