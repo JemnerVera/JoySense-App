@@ -1506,9 +1506,39 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setComparisonMediciones([])
     setLoadingComparisonData(false)
     
-    // Establecer intervalo inicial de 1 día hacia atrás desde hoy
-    const endDate = new Date()
-    const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
+    // Obtener la última fecha disponible de los datos para esta métrica
+    const metricId = getMetricIdFromDataKey(metric.dataKey)
+    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    
+    let endDate: Date
+    let startDate: Date
+    
+    if (metricMediciones.length > 0) {
+      // Encontrar la última fecha disponible
+      const sortedMediciones = [...metricMediciones].sort((a, b) => 
+        new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+      )
+      const lastAvailableDate = new Date(sortedMediciones[0].fecha)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0) // Normalizar a inicio del día
+      lastAvailableDate.setHours(0, 0, 0, 0) // Normalizar a inicio del día
+      
+      // Si la última fecha disponible es anterior a hoy, usar esa fecha como punto de partida
+      if (lastAvailableDate < today) {
+        // Usar la última fecha disponible como fecha final
+        endDate = new Date(lastAvailableDate)
+        // Un día antes de la última fecha disponible
+        startDate = new Date(lastAvailableDate.getTime() - 24 * 60 * 60 * 1000)
+      } else {
+        // Si hay datos de hoy o más recientes, usar el comportamiento normal
+        endDate = new Date()
+        startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
+      }
+    } else {
+      // Si no hay datos, usar el comportamiento por defecto (hoy - 1 día)
+      endDate = new Date()
+      startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
+    }
     
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = endDate.toISOString().split('T')[0]
