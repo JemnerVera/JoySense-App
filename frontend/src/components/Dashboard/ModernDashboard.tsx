@@ -146,6 +146,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null) // Recomendaciones de umbrales por nodo
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
+  const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()) // Tipos de sensores visibles en el gráfico
 
   // Refs para cancelar requests y debouncing
   const loadMedicionesAbortControllerRef = useRef<AbortController | null>(null)
@@ -706,18 +707,32 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar nodos disponibles cuando se abre el modal de análisis detallado
   useEffect(() => {
-    if (showDetailedAnalysis) {
+    if (showDetailedAnalysis && selectedNode) {
       const loadAvailableNodes = async () => {
         try {
           const nodes = await JoySenseService.getNodosConLocalizacion()
-          setAvailableNodes(nodes || [])
+          // Filtrar nodos para que solo muestre los de la misma entidad que el nodo seleccionado
+          const filteredNodes = (nodes || []).filter((node: any) => {
+            // Excluir el nodo actual
+            if (node.nodoid === selectedNode.nodoid) {
+              return false
+            }
+            // Solo incluir nodos de la misma entidad
+            if (selectedNode.entidad?.entidadid && node.entidad?.entidadid) {
+              return node.entidad.entidadid === selectedNode.entidad.entidadid
+            }
+            return false
+          })
+          setAvailableNodes(filteredNodes)
     } catch (err) {
           console.error('Error cargando nodos disponibles:', err)
         }
       }
       loadAvailableNodes()
+    } else {
+      setAvailableNodes([])
     }
-  }, [showDetailedAnalysis])
+  }, [showDetailedAnalysis, selectedNode?.nodoid, selectedNode?.entidad?.entidadid])
 
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
@@ -956,6 +971,47 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     }
   }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode?.nodoid, loadMedicionesForDetailedAnalysis])
+
+  // Resetear ajuste del eje Y cuando cambia el nodo seleccionado
+  useEffect(() => {
+    setYAxisDomain({ min: null, max: null })
+  }, [selectedNode?.nodoid])
+
+  // Inicializar tipos visibles cuando se abre el modal o cambia la métrica/nodo
+  useEffect(() => {
+    if (!showDetailedAnalysis || !selectedDetailedMetric) {
+      setVisibleTipos(new Set())
+      return
+    }
+    
+    // Obtener tipos disponibles de las mediciones
+    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    const tiposDisponibles = new Set<string>()
+    
+    metricMediciones.forEach(m => {
+      const tipo = tipos.find(t => t.tipoid === m.tipoid)
+      if (tipo) {
+        tiposDisponibles.add(tipo.tipo)
+      }
+    })
+    
+    // Si hay nodo de comparación, agregar también sus tipos
+    if (comparisonNode && comparisonMediciones.length > 0) {
+      const comparisonMetricMediciones = comparisonMediciones.filter(m => m.metricaid === metricId)
+      comparisonMetricMediciones.forEach(m => {
+        const tipo = tipos.find(t => t.tipoid === m.tipoid)
+        if (tipo) {
+          tiposDisponibles.add(tipo.tipo)
+        }
+      })
+    }
+    
+    // Si visibleTipos está vacío o no contiene todos los tipos actuales, inicializar
+    if (visibleTipos.size === 0 || !Array.from(tiposDisponibles).every(tipo => visibleTipos.has(tipo))) {
+      setVisibleTipos(new Set(tiposDisponibles))
+    }
+  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, comparisonMediciones, tipos])
 
   // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
   useEffect(() => {
@@ -1432,6 +1488,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           }
         }
         
+        // Filtrar valores fuera del rango del eje Y si está configurado
+        if (value !== null && value !== undefined && useCustomRange) {
+          const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
+          const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
+          
+          if (hasMinLimit && value < yAxisDomain.min!) {
+            value = null // Ocultar valor si está por debajo del mínimo
+          }
+          if (hasMaxLimit && value > yAxisDomain.max!) {
+            value = null // Ocultar valor si está por encima del máximo
+          }
+        }
+        
         timeData[tipoName] = value
         
         // Verificar si hay al menos un valor no-null
@@ -1847,6 +1916,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   {selectedNode && (
                     <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
                       <div className="text-xs font-mono space-y-1.5 text-gray-700 dark:text-neutral-300">
+                        {/* Entidad primero, en negrita */}
+                        {selectedNode.entidad && (
+                          <div className="truncate pl-2 mb-2">
+                            <span className="font-bold text-gray-800 dark:text-white">Entidad: {selectedNode.entidad.entidad}</span>
+                          </div>
+                        )}
+                        
+                        {/* Separador */}
+                        {selectedNode.entidad && (
+                          <div className="border-t border-gray-300 dark:border-neutral-600 my-2"></div>
+                        )}
+                        
+                        {/* Resto de la información */}
                         {selectedNode.deveui && (
                           <div className="truncate pl-2" title={`DevEUI: ${selectedNode.deveui}`}>
                             <span className="text-gray-500 dark:text-neutral-500">DevEUI:</span> {selectedNode.deveui}
@@ -1883,6 +1965,131 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       </div>
                     </div>
                   )}
+                  
+                  {/* Leyenda de tipos de sensores */}
+                  {showDetailedAnalysis && selectedDetailedMetric && tipos.length > 0 && (() => {
+                    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+                    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+                    const tiposDisponibles = new Set<string>()
+                    
+                    // Obtener tipos del nodo principal
+                    metricMediciones.forEach(m => {
+                      const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                      if (tipo) {
+                        tiposDisponibles.add(tipo.tipo)
+                      }
+                    })
+                    
+                    // Obtener tipos del nodo de comparación si existe
+                    if (comparisonNode && comparisonMediciones.length > 0) {
+                      const comparisonMetricMediciones = comparisonMediciones.filter(m => m.metricaid === metricId)
+                      comparisonMetricMediciones.forEach(m => {
+                        const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                        if (tipo) {
+                          tiposDisponibles.add(tipo.tipo)
+                        }
+                      })
+                    }
+                    
+                    const tiposArray = Array.from(tiposDisponibles).sort()
+                    const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                    const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                    
+                    if (tiposArray.length === 0) {
+                      return null
+                    }
+                    
+                    return (
+                      <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+                        <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-2 font-mono">
+                          Leyenda:
+                        </div>
+                        <div className="space-y-3">
+                          {tiposArray.map((tipoNombre, index) => {
+                            const isVisible = visibleTipos.has(tipoNombre)
+                            const color = colors[index % colors.length]
+                            const compColor = comparisonColors[index % comparisonColors.length]
+                            
+                            // Obtener nodos que tienen este tipo
+                            const nodosConEsteTipo: Array<{ nodo: string; color: string; isComparison: boolean }> = []
+                            
+                            // Verificar si este tipo existe en el nodo principal
+                            const existsInMain = metricMediciones.some(m => {
+                              const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                              return tipo && tipo.tipo === tipoNombre
+                            })
+                            
+                            if (existsInMain && selectedNode) {
+                              nodosConEsteTipo.push({
+                                nodo: selectedNode.nodo || 'Nodo Principal',
+                                color: color,
+                                isComparison: false
+                              })
+                            }
+                            
+                            // Verificar si este tipo existe en el nodo de comparación
+                            const existsInComparison = comparisonNode && comparisonMediciones.length > 0 && comparisonMediciones.some(m => {
+                              const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                              return tipo && tipo.tipo === tipoNombre && m.metricaid === metricId
+                            })
+                            
+                            if (existsInComparison && comparisonNode) {
+                              nodosConEsteTipo.push({
+                                nodo: comparisonNode.nodo,
+                                color: compColor,
+                                isComparison: true
+                              })
+                            }
+                            
+                            if (nodosConEsteTipo.length === 0) {
+                              return null
+                            }
+                            
+                            return (
+                              <div key={tipoNombre} className="space-y-1">
+                                {/* Checkbox y nombre del tipo de sensor */}
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={(e) => {
+                                      const newVisibleTipos = new Set(visibleTipos)
+                                      if (e.target.checked) {
+                                        newVisibleTipos.add(tipoNombre)
+                                      } else {
+                                        newVisibleTipos.delete(tipoNombre)
+                                      }
+                                      setVisibleTipos(newVisibleTipos)
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                  />
+                                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 font-semibold">
+                                    {tipoNombre}
+                                  </span>
+                                </div>
+                                
+                                {/* Nodos con este tipo, indentados */}
+                                {nodosConEsteTipo.map((nodoInfo, nodoIndex) => (
+                                  <div key={`${tipoNombre}-${nodoIndex}`} className="flex items-center space-x-2 pl-6">
+                                    <div 
+                                      className={`w-3 h-3 rounded-full flex-shrink-0 ${nodoInfo.isComparison ? 'border-2 border-dashed' : ''}`}
+                                      style={{ 
+                                        backgroundColor: nodoInfo.isComparison ? 'transparent' : nodoInfo.color,
+                                        borderColor: nodoInfo.isComparison ? nodoInfo.color : undefined
+                                      }}
+                                    />
+                                    <span className={`text-xs font-mono truncate ${nodoInfo.isComparison ? 'text-gray-500 dark:text-neutral-400' : 'text-gray-700 dark:text-neutral-300'}`}>
+                                      {nodoInfo.nodo}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
               </div>
               
                 {/* Contenido principal */}
@@ -2144,6 +2351,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           setComparisonMediciones([])
                           setLoadingComparisonData(false)
                           setIsModalExpanded(false) // Resetear expansión al cerrar
+                          setYAxisDomain({ min: null, max: null }) // Resetear ajuste del eje Y
+                          setVisibleTipos(new Set()) // Resetear tipos visibles
                         }}
                         className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
                         title="Cerrar"
@@ -2363,7 +2572,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             if (tipo && datosPorTipo[tipoid]) {
                               const tipoPoint = datosPorTipo[tipoid].find(p => p.time === time)
                               if (tipoPoint) {
-                                point[tipo.tipo] = tipoPoint.value
+                                let value: number | null = tipoPoint.value
+                                
+                                // Filtrar valores fuera del rango del eje Y si está configurado
+                                if (value !== null && value !== undefined) {
+                                  const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
+                                  const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
+                                  
+                                  if (hasMinLimit && value < yAxisDomain.min!) {
+                                    value = null // Ocultar valor si está por debajo del mínimo
+                                  } else if (hasMaxLimit && value > yAxisDomain.max!) {
+                                    value = null // Ocultar valor si está por encima del máximo
+                                  }
+                                }
+                                
+                                point[tipo.tipo] = value
                               }
                             }
                           })
@@ -2569,47 +2792,58 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             return (
                               <>
                                 {/* Líneas del nodo principal */}
-                                {tipoKeys.map((tipoKey, index) => (
-                              <Line
-                                key={tipoKey}
-                                type="monotone"
-                                dataKey={tipoKey}
-                                stroke={colors[index % colors.length]}
-                                strokeWidth={3}
-                                dot={{ r: 4, fill: colors[index % colors.length] }}
-                                activeDot={{ r: 6, fill: colors[index % colors.length] }}
-                                    connectNulls={true}
-                                    isAnimationActive={true}
-                                    animationDuration={300}
-                                  />
-                                ))}
-                                {/* Líneas del nodo de comparación (con estilo punteado) */}
-                                {comparisonKeys.length > 0 ? (
-                                  comparisonKeys.map((compKey, index) => {
-                                    const originalKey = compKey.replace('comp_', '')
-                                    // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
-                                    let tipoIndex = tipoKeys.indexOf(originalKey)
-                                    if (tipoIndex === -1) {
-                                      // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
-                                      tipoIndex = index
-                                    }
-                                    const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
+                                {tipoKeys
+                                  .filter(tipoKey => visibleTipos.has(tipoKey))
+                                  .map((tipoKey, index) => {
+                                    // Recalcular el índice basado en la posición original en tipoKeys
+                                    const originalIndex = tipoKeys.indexOf(tipoKey)
                                     return (
                                       <Line
-                                        key={compKey}
+                                        key={tipoKey}
                                         type="monotone"
-                                        dataKey={compKey}
-                                        stroke={strokeColor}
-                                        strokeWidth={2}
-                                        strokeDasharray="5 5"
-                                        dot={{ r: 3, fill: strokeColor }}
-                                        activeDot={{ r: 5, fill: strokeColor }}
+                                        dataKey={tipoKey}
+                                        stroke={colors[originalIndex % colors.length]}
+                                        strokeWidth={3}
+                                        dot={{ r: 4, fill: colors[originalIndex % colors.length] }}
+                                        activeDot={{ r: 6, fill: colors[originalIndex % colors.length] }}
                                         connectNulls={true}
                                         isAnimationActive={true}
                                         animationDuration={300}
                                       />
                                     )
-                                  })
+                                  })}
+                                {/* Líneas del nodo de comparación (con estilo punteado) */}
+                                {comparisonKeys.length > 0 ? (
+                                  comparisonKeys
+                                    .filter(compKey => {
+                                      const originalKey = compKey.replace('comp_', '')
+                                      return visibleTipos.has(originalKey)
+                                    })
+                                    .map((compKey, index) => {
+                                      const originalKey = compKey.replace('comp_', '')
+                                      // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
+                                      let tipoIndex = tipoKeys.indexOf(originalKey)
+                                      if (tipoIndex === -1) {
+                                        // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
+                                        tipoIndex = comparisonKeys.indexOf(compKey)
+                                      }
+                                      const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
+                                      return (
+                                        <Line
+                                          key={compKey}
+                                          type="monotone"
+                                          dataKey={compKey}
+                                          stroke={strokeColor}
+                                          strokeWidth={2}
+                                          strokeDasharray="5 5"
+                                          dot={{ r: 3, fill: strokeColor }}
+                                          activeDot={{ r: 5, fill: strokeColor }}
+                                          connectNulls={true}
+                                          isAnimationActive={true}
+                                          animationDuration={300}
+                                        />
+                                      )
+                                    })
                                 ) : null}
                               </>
                             )
