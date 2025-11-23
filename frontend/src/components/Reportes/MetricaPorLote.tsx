@@ -400,12 +400,14 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                       className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white rounded-lg border border-gray-300 dark:border-neutral-600 focus:border-green-500 focus:outline-none text-sm font-mono"
                     />
                   </div>
-                  <button
-                    onClick={() => setIsDateRangeOpen(false)}
-                    className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-mono tracking-wider transition-colors"
-                  >
-                    APLICAR
-                  </button>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setIsDateRangeOpen(false)}
+                      className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded font-mono text-xs tracking-wider transition-colors"
+                    >
+                      APLICAR
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
