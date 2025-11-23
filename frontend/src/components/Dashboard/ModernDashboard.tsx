@@ -2125,7 +2125,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               max={tempEndDate || detailedEndDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              style={{
+                                colorScheme: 'dark',
+                                WebkitAppearance: 'none'
+                              }}
                       />
                     </div>
                     <div className="flex flex-col">
@@ -2140,7 +2144,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               min={tempStartDate || detailedStartDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              style={{
+                                colorScheme: 'dark',
+                                WebkitAppearance: 'none'
+                              }}
                             />
                           </div>
                           {/* Botón Aplicar - aparece cuando hay fechas temporales diferentes */}
@@ -2300,7 +2308,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               scrollbarColor: '#22c55e #d1d5db'
                             }}
                           >
-                            <option value="">Ninguno</option>
+                            <option value="" disabled hidden>Ninguno</option>
                             {availableNodes
                               .filter(n => n.nodoid !== selectedNode?.nodoid)
                               .map(node => (
@@ -2315,9 +2323,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 setComparisonNode(null)
                                 setComparisonMediciones([])
                               }}
-                              className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-mono"
+                              className="h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center"
+                              title="Cancelar comparación"
                             >
-                              ✕
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                             </button>
                           )}
                           {loadingComparisonData && (
