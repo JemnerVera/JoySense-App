@@ -158,7 +158,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={() => onTabChange(`reportes-${subTab.id}`)}
-                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                className={`w-full flex items-center p-3 rounded transition-colors ${
+                  isExpanded ? 'gap-3' : 'justify-center'
+                } ${
                   isActive
                     ? "bg-green-600 text-white"
                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
@@ -210,7 +212,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={() => onTabChange(`reportes-${subTab.id}`)}
-                className={`w-full flex items-center gap-3 p-3 rounded transition-colors ${
+                className={`w-full flex items-center p-3 rounded transition-colors ${
+                  isExpanded ? 'gap-3' : 'justify-center'
+                } ${
                   isActive
                     ? "bg-green-600 text-white"
                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
