@@ -83,6 +83,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [availableLotes, setAvailableLotes] = useState<any[]>([]);
   const [isModalExpanded, setIsModalExpanded] = useState(false);
+  const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()); // Tipos de sensores visibles en el gráfico
   
   // Refs para cancelar requests
   const loadChartDataAbortControllerRef = useRef<AbortController | null>(null);
@@ -103,7 +104,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     medicionesFiltradas: MedicionData[],
     tiposUnicos: number[],
     daysDiff: number,
-    tiposData: any[]
+    tiposData: any[],
+    yAxisDomainFilter?: { min: number | null; max: number | null }
   ): ChartDataPoint[] => {
     // Determinar granularidad
     const useHours = daysDiff <= 7;
@@ -174,7 +176,20 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         const tipoDataForTipo = timeDataByTipo[tipoid];
         
         if (tipoDataForTipo && tipoDataForTipo.count > 0) {
-          const promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+          let promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+          
+          // Filtrar valores fuera del rango del eje Y si está configurado
+          if (yAxisDomainFilter) {
+            const hasMinLimit = yAxisDomainFilter.min !== null && !isNaN(yAxisDomainFilter.min);
+            const hasMaxLimit = yAxisDomainFilter.max !== null && !isNaN(yAxisDomainFilter.max);
+            
+            if (hasMinLimit && promedio < yAxisDomainFilter.min!) {
+              promedio = null as any; // Ocultar valor si está por debajo del mínimo
+            } else if (hasMaxLimit && promedio > yAxisDomainFilter.max!) {
+              promedio = null as any; // Ocultar valor si está por encima del máximo
+            }
+          }
+          
           point[tipoNombre] = promedio;
         } else {
           point[tipoNombre] = null;
@@ -185,7 +200,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     });
 
     return dataPoints;
-  }, []);
+  }, [yAxisDomain]);
 
   // Cargar tipos de sensores y ubicaciones disponibles
   useEffect(() => {
@@ -292,7 +307,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       setTiposEnDatos(tiposUnicos);
 
       // Procesar datos para el gráfico
-      const processedData = processChartData(medicionesFiltradas, tiposUnicos, daysDiff, tipos);
+      const processedData = processChartData(medicionesFiltradas, tiposUnicos, daysDiff, tipos, yAxisDomain);
       setChartData(processedData);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
@@ -508,14 +523,69 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       setChartData([]);
       setMediciones([]);
       setIsModalExpanded(false); // Resetear expansión al cerrar
+      setVisibleTipos(new Set()); // Resetear tipos visibles
     }
   }, [isOpen, initialMetricaId, initialStartDate, initialEndDate]);
+
+  // Resetear ajuste del eje Y cuando cambia el lote seleccionado
+  useEffect(() => {
+    setYAxisDomain({ min: null, max: null });
+  }, [ubicacionId]);
+
+  // Reprocesar datos cuando cambia el ajuste del eje Y
+  useEffect(() => {
+    if (!mediciones.length || !tiposEnDatos.length || !detailedStartDate || !detailedEndDate) {
+      return;
+    }
+
+    const startDateObj = new Date(detailedStartDate + 'T00:00:00');
+    const endDateObj = new Date(detailedEndDate + 'T23:59:59');
+    const daysDiff = (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24);
+
+    const processedData = processChartData(mediciones, tiposEnDatos, daysDiff, tipos, yAxisDomain);
+    setChartData(processedData);
+  }, [yAxisDomain, mediciones, tiposEnDatos, detailedStartDate, detailedEndDate, tipos, processChartData]);
+
+  // Inicializar tipos visibles cuando se cargan los datos o cambia la métrica
+  useEffect(() => {
+    if (!isOpen || !chartData.length) {
+      if (!isOpen) {
+        setVisibleTipos(new Set());
+      }
+      return;
+    }
+
+    // Obtener tipos disponibles de los datos del gráfico
+    const tiposDisponibles = new Set<string>();
+    
+    // Agregar tipos del lote principal
+    if (chartData.length > 0) {
+      Object.keys(chartData[0]).forEach(key => {
+        if (key !== 'fecha' && key !== 'fechaFormatted' && key !== 'time' && !key.startsWith('comp_')) {
+          tiposDisponibles.add(key);
+        }
+      });
+    }
+
+    // Agregar tipos del lote de comparación si existe
+    // Los tipos de comparación se agregan cuando se procesan los datos de comparación
+    // y se combinan en finalChartData, pero aquí solo necesitamos los tipos del lote principal
+    // ya que los tipos de comparación son los mismos que los del lote principal
+
+    // Si visibleTipos está vacío o no contiene todos los tipos actuales, inicializar
+    setVisibleTipos(prev => {
+      if (prev.size === 0 || !Array.from(tiposDisponibles).every(tipo => prev.has(tipo))) {
+        return new Set(tiposDisponibles);
+      }
+      return prev;
+    });
+  }, [isOpen, chartData, selectedMetric, ubicacionId]);
 
   if (!isOpen) return null;
 
   // Procesar datos de comparación si están disponibles
   // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
-  const processComparisonData = (comparisonData: MedicionData[], dataKey: string): ChartDataPoint[] => {
+  const processComparisonData = (comparisonData: MedicionData[], dataKey: string, yAxisDomainFilter?: { min: number | null; max: number | null }): ChartDataPoint[] => {
     if (!comparisonData.length || !tipos.length) {
       return [];
     }
@@ -620,7 +690,20 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         const tipoDataForTipo = timeDataByTipo[tipoid];
         
         if (tipoDataForTipo && tipoDataForTipo.count > 0) {
-          const promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+          let promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+          
+          // Filtrar valores fuera del rango del eje Y si está configurado
+          if (yAxisDomain) {
+            const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min);
+            const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max);
+            
+            if (hasMinLimit && promedio < yAxisDomain.min!) {
+              promedio = null as any; // Ocultar valor si está por debajo del mínimo
+            } else if (hasMaxLimit && promedio > yAxisDomain.max!) {
+              promedio = null as any; // Ocultar valor si está por encima del máximo
+            }
+          }
+          
           point[tipoNombre] = promedio;
         } else {
           point[tipoNombre] = null;
@@ -641,7 +724,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return chartData;
     }
 
-    const comparisonChartData = processComparisonData(comparisonMediciones, selectedMetric);
+    const comparisonChartData = processComparisonData(comparisonMediciones, selectedMetric, yAxisDomain);
     
     if (comparisonChartData.length === 0) {
       return chartData;
@@ -1102,65 +1185,167 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                                 padding: "8px 12px"
                               }}
                             />
-                            {!comparisonLote && (
-                              <Legend
-                                wrapperStyle={{ color: '#9ca3af', fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                              />
-                            )}
                             {/* Líneas del lote principal */}
-                            {tipoKeys.map((tipoKey, index) => (
-                              <Line
-                                key={tipoKey}
-                                type="monotone"
-                                dataKey={tipoKey}
-                                stroke={colors[index % colors.length]}
-                                strokeWidth={3}
-                                dot={{ r: 4, fill: colors[index % colors.length] }}
-                                activeDot={{ r: 6, fill: colors[index % colors.length] }}
-                                connectNulls={true}
-                                isAnimationActive={true}
-                                animationDuration={300}
-                              />
-                            ))}
+                            {tipoKeys
+                              .filter(tipoKey => visibleTipos.has(tipoKey))
+                              .map((tipoKey, index) => {
+                                // Recalcular el índice basado en la posición original en tipoKeys
+                                const originalIndex = tipoKeys.indexOf(tipoKey);
+                                return (
+                                  <Line
+                                    key={tipoKey}
+                                    type="monotone"
+                                    dataKey={tipoKey}
+                                    stroke={colors[originalIndex % colors.length]}
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: colors[originalIndex % colors.length] }}
+                                    activeDot={{ r: 6, fill: colors[originalIndex % colors.length] }}
+                                    connectNulls={true}
+                                    isAnimationActive={true}
+                                    animationDuration={300}
+                                  />
+                                );
+                              })}
                             {/* Líneas del lote de comparación */}
-                            {comparisonKeys.map((compKey, index) => {
-                              const originalKey = compKey.replace('comp_', '');
-                              let tipoIndex = tipoKeys.indexOf(originalKey);
-                              if (tipoIndex === -1) {
-                                tipoIndex = index;
-                              }
-                              const strokeColor = comparisonColors[tipoIndex % comparisonColors.length];
-                              return (
-                                <Line
-                                  key={compKey}
-                                  type="monotone"
-                                  dataKey={compKey}
-                                  stroke={strokeColor}
-                                  strokeWidth={2}
-                                  strokeDasharray="5 5"
-                                  dot={{ r: 3, fill: strokeColor }}
-                                  activeDot={{ r: 5, fill: strokeColor }}
-                                  connectNulls={true}
-                                  isAnimationActive={true}
-                                  animationDuration={300}
-                                />
-                              );
-                            })}
+                            {comparisonKeys
+                              .filter(compKey => {
+                                const originalKey = compKey.replace('comp_', '');
+                                return visibleTipos.has(originalKey);
+                              })
+                              .map((compKey, index) => {
+                                const originalKey = compKey.replace('comp_', '');
+                                let tipoIndex = tipoKeys.indexOf(originalKey);
+                                if (tipoIndex === -1) {
+                                  tipoIndex = index;
+                                }
+                                const strokeColor = comparisonColors[tipoIndex % comparisonColors.length];
+                                return (
+                                  <Line
+                                    key={compKey}
+                                    type="monotone"
+                                    dataKey={compKey}
+                                    stroke={strokeColor}
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    dot={{ r: 3, fill: strokeColor }}
+                                    activeDot={{ r: 5, fill: strokeColor }}
+                                    connectNulls={true}
+                                    isAnimationActive={true}
+                                    animationDuration={300}
+                                  />
+                                );
+                              })}
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
-                      {/* Leyenda de colores por lote cuando hay comparación */}
-                      {comparisonLote && (
+                      {/* Leyenda con checkboxes - siempre visible cuando hay datos */}
+                      {finalChartData.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
-                          <div className="flex flex-wrap items-center gap-6 justify-center">
-                            {/* Leyenda del lote principal */}
-                            <div className="flex flex-col gap-2">
-                              <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
-                                {ubicacionNombre}
+                          {comparisonLote ? (
+                            // Leyenda cuando hay comparación
+                            <div className="flex flex-wrap items-center gap-6 justify-center">
+                              {/* Leyenda del lote principal */}
+                              <div className="flex flex-col gap-2">
+                                <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
+                                  {ubicacionNombre}
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                  {tipoKeys.map((tipoKey, index) => {
+                                    const isVisible = visibleTipos.has(tipoKey);
+                                    return (
+                                      <div key={tipoKey} className="flex items-center gap-2">
+                                        <input
+                                          type="checkbox"
+                                          checked={isVisible}
+                                          onChange={(e) => {
+                                            const newVisibleTipos = new Set(visibleTipos);
+                                            if (e.target.checked) {
+                                              newVisibleTipos.add(tipoKey);
+                                            } else {
+                                              newVisibleTipos.delete(tipoKey);
+                                            }
+                                            setVisibleTipos(newVisibleTipos);
+                                          }}
+                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                        />
+                                        <div 
+                                          className="w-4 h-0.5" 
+                                          style={{ backgroundColor: colors[index % colors.length] }}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                          {tipoKey}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                              <div className="flex flex-wrap gap-3">
-                                {tipoKeys.map((tipoKey, index) => (
+                              
+                              {/* Separador */}
+                              <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>
+                              
+                              {/* Leyenda del lote de comparación */}
+                              <div className="flex flex-col gap-2">
+                                <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
+                                  {comparisonLote.ubicacion}
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                  {tipoKeys.map((tipoKey, index) => {
+                                    const compKey = `comp_${tipoKey}`;
+                                    const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null);
+                                    if (!hasComparisonData) return null;
+                                    
+                                    const isVisible = visibleTipos.has(tipoKey);
+                                    return (
+                                      <div key={compKey} className="flex items-center gap-2">
+                                        <input
+                                          type="checkbox"
+                                          checked={isVisible}
+                                          onChange={(e) => {
+                                            const newVisibleTipos = new Set(visibleTipos);
+                                            if (e.target.checked) {
+                                              newVisibleTipos.add(tipoKey);
+                                            } else {
+                                              newVisibleTipos.delete(tipoKey);
+                                            }
+                                            setVisibleTipos(newVisibleTipos);
+                                          }}
+                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                        />
+                                        <div 
+                                          className="w-4 h-0.5 border-dashed border-t-2" 
+                                          style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                          {tipoKey}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            // Leyenda cuando solo hay un lote
+                            <div className="flex flex-wrap items-center gap-3 justify-center">
+                              {tipoKeys.map((tipoKey, index) => {
+                                const isVisible = visibleTipos.has(tipoKey);
+                                return (
                                   <div key={tipoKey} className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={isVisible}
+                                      onChange={(e) => {
+                                        const newVisibleTipos = new Set(visibleTipos);
+                                        if (e.target.checked) {
+                                          newVisibleTipos.add(tipoKey);
+                                        } else {
+                                          newVisibleTipos.delete(tipoKey);
+                                        }
+                                        setVisibleTipos(newVisibleTipos);
+                                      }}
+                                      className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                    />
                                     <div 
                                       className="w-4 h-0.5" 
                                       style={{ backgroundColor: colors[index % colors.length] }}
@@ -1169,39 +1354,10 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                                       {tipoKey}
                                     </span>
                                   </div>
-                                ))}
-                              </div>
+                                );
+                              })}
                             </div>
-                            
-                            {/* Separador */}
-                            <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>
-                            
-                            {/* Leyenda del lote de comparación */}
-                            <div className="flex flex-col gap-2">
-                              <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
-                                {comparisonLote.ubicacion}
-                              </div>
-                              <div className="flex flex-wrap gap-3">
-                                {tipoKeys.map((tipoKey, index) => {
-                                  const compKey = `comp_${tipoKey}`;
-                                  const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null);
-                                  if (!hasComparisonData) return null;
-                                  
-                                  return (
-                                    <div key={compKey} className="flex items-center gap-2">
-                                      <div 
-                                        className="w-4 h-0.5 border-dashed border-t-2" 
-                                        style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
-                                      />
-                                      <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
-                                        {tipoKey}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </>
