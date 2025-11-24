@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { flushSync } from "react-dom"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -147,6 +147,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
   const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()) // Tipos de sensores visibles en el gráfico
+  const [umbralNodoSeleccionado, setUmbralNodoSeleccionado] = useState<number | null>(null) // Nodo seleccionado para visualizar umbral
+  const [umbralTipoSeleccionado, setUmbralTipoSeleccionado] = useState<number | null>(null) // Tipo de sensor seleccionado para visualizar umbral (legacy, para compatibilidad)
+  const [umbralTiposSeleccionados, setUmbralTiposSeleccionados] = useState<number[]>([]) // Tipos de sensor seleccionados para visualizar umbral (múltiples)
+  const [umbralData, setUmbralData] = useState<{ minimo: number; maximo: number } | null>(null) // Datos del umbral seleccionado
+  const [umbralesDisponibles, setUmbralesDisponibles] = useState<{ [tipoid: number]: { minimo: number; maximo: number } }>({}) // Todos los umbrales disponibles para el nodo
+  const [tiposDisponibles, setTiposDisponibles] = useState<any[]>([]) // Tipos de sensores disponibles
+  const [umbralAplicado, setUmbralAplicado] = useState(false) // Controla si los umbrales están aplicados y visibles
+  const [tipoSensorDropdownOpen, setTipoSensorDropdownOpen] = useState(false) // Controla si el dropdown de tipos está abierto
 
   // Refs para cancelar requests y debouncing
   const loadMedicionesAbortControllerRef = useRef<AbortController | null>(null)
@@ -1081,10 +1089,163 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     try {
       const data = await JoySenseService.getTipos()
       setTipos(Array.isArray(data) ? data : [])
+      setTiposDisponibles(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error("Error loading tipos:", err)
     }
   }
+
+  // Cargar todos los umbrales del nodo para detectar cuáles tienen el mismo rango
+  const loadUmbralesDelNodo = useCallback(async () => {
+    if (!umbralNodoSeleccionado || !selectedDetailedMetric) {
+      setUmbralesDisponibles({})
+      setUmbralData(null)
+      return
+    }
+
+    try {
+      const allUmbrales = await JoySenseService.getTableData('umbral', 1000)
+      const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+      
+      // Obtener todos los umbrales del nodo para esta métrica
+      const umbralesDelNodo = allUmbrales.filter((u: any) => 
+        u.nodoid === umbralNodoSeleccionado && 
+        u.metricaid === metricId &&
+        u.statusid === 1 // Solo umbrales activos
+      )
+
+      // Agrupar por tipoid
+      const umbralesPorTipo: { [tipoid: number]: { minimo: number; maximo: number } } = {}
+      umbralesDelNodo.forEach((u: any) => {
+        umbralesPorTipo[u.tipoid] = {
+          minimo: u.minimo,
+          maximo: u.maximo
+        }
+      })
+
+      setUmbralesDisponibles(umbralesPorTipo)
+
+      // Si hay un tipo seleccionado, establecer umbralData
+      if (umbralTipoSeleccionado && umbralesPorTipo[umbralTipoSeleccionado]) {
+        setUmbralData(umbralesPorTipo[umbralTipoSeleccionado])
+      } else if (umbralTiposSeleccionados.length > 0) {
+        // Si hay múltiples tipos seleccionados, verificar que todos tengan el mismo umbral
+        const primerUmbral = umbralesPorTipo[umbralTiposSeleccionados[0]]
+        if (primerUmbral) {
+          const todosIguales = umbralTiposSeleccionados.every(tipoid => {
+            const umbral = umbralesPorTipo[tipoid]
+            return umbral && umbral.minimo === primerUmbral.minimo && umbral.maximo === primerUmbral.maximo
+          })
+          if (todosIguales) {
+            setUmbralData(primerUmbral)
+          } else {
+            setUmbralData(null)
+          }
+        }
+      } else {
+        setUmbralData(null)
+      }
+    } catch (err) {
+      console.error("Error loading umbrales:", err)
+      setUmbralesDisponibles({})
+      setUmbralData(null)
+    }
+  }, [umbralNodoSeleccionado, umbralTipoSeleccionado, umbralTiposSeleccionados, selectedDetailedMetric])
+
+  // Cargar umbral cuando cambian las selecciones (legacy, mantener para compatibilidad)
+  const loadUmbral = useCallback(async () => {
+    await loadUmbralesDelNodo()
+  }, [loadUmbralesDelNodo])
+
+  // Cargar umbrales cuando cambian las selecciones
+  useEffect(() => {
+    loadUmbralesDelNodo()
+  }, [loadUmbralesDelNodo])
+
+  // Función para calcular y ajustar el eje Y basado en datos y umbrales
+  const ajustarEjeYParaUmbrales = useCallback(() => {
+    if (!umbralData || !selectedDetailedMetric) {
+      return
+    }
+
+    // Obtener tipos seleccionados (múltiples o único)
+    const tiposValidos = umbralTiposSeleccionados.length > 0 
+      ? umbralTiposSeleccionados 
+      : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
+    
+    if (tiposValidos.length === 0) {
+      return
+    }
+
+    try {
+      const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+
+      // Obtener valores de las mediciones del nodo seleccionado para todos los tipos seleccionados y métrica
+      const valores: number[] = []
+      
+      // Filtrar mediciones del nodo seleccionado para todos los tipos
+      const medicionesDelNodo = umbralNodoSeleccionado === selectedNode?.nodoid
+        ? mediciones.filter(m => m.metricaid === metricId && tiposValidos.includes(m.tipoid))
+        : (comparisonNode && umbralNodoSeleccionado === comparisonNode.nodoid
+          ? comparisonMediciones.filter(m => m.metricaid === metricId && tiposValidos.includes(m.tipoid))
+          : [])
+      
+      // Extraer valores
+      medicionesDelNodo.forEach(m => {
+        if (m.medicion !== null && m.medicion !== undefined && !isNaN(m.medicion)) {
+          valores.push(m.medicion)
+        }
+      })
+
+      // Calcular min y max de los datos
+      const dataMin = valores.length > 0 ? Math.min(...valores) : umbralData.minimo
+      const dataMax = valores.length > 0 ? Math.max(...valores) : umbralData.maximo
+
+      // Considerar también los umbrales
+      const minGlobal = Math.min(dataMin, umbralData.minimo)
+      const maxGlobal = Math.max(dataMax, umbralData.maximo)
+
+      // Agregar un margen del 10% arriba y abajo
+      const rango = maxGlobal - minGlobal
+      const margen = Math.max(rango * 0.1, (maxGlobal - minGlobal) * 0.05) // Mínimo 5% del rango
+      const nuevoMin = Math.max(0, minGlobal - margen) // No permitir valores negativos si el mínimo es positivo
+      const nuevoMax = maxGlobal + margen
+
+      // Actualizar el eje Y
+      setYAxisDomain({
+        min: nuevoMin,
+        max: nuevoMax
+      })
+    } catch (err) {
+      console.error("Error ajustando eje Y para umbrales:", err)
+    }
+  }, [umbralData, umbralTipoSeleccionado, umbralTiposSeleccionados, umbralNodoSeleccionado, selectedDetailedMetric, tipos, mediciones, comparisonMediciones, comparisonNode, selectedNode])
+
+  // Inicializar nodo seleccionado por defecto cuando se abre el análisis detallado
+  useEffect(() => {
+    if (showDetailedAnalysis && selectedNode && !umbralNodoSeleccionado) {
+      setUmbralNodoSeleccionado(selectedNode.nodoid)
+    }
+    // Resetear estados de umbral cuando se cierra el modal
+    if (!showDetailedAnalysis) {
+      setUmbralNodoSeleccionado(null)
+      setUmbralTipoSeleccionado(null)
+      setUmbralData(null)
+      setUmbralAplicado(false)
+    }
+  }, [showDetailedAnalysis, selectedNode])
+
+  // Actualizar visibleTipos cuando se seleccionan nodo y tipo para umbral y se aplica
+  useEffect(() => {
+    if (umbralAplicado && umbralNodoSeleccionado && umbralTipoSeleccionado) {
+      const tipoSeleccionado = tipos.find(t => t.tipoid === umbralTipoSeleccionado)
+      if (tipoSeleccionado) {
+        setVisibleTipos(new Set([tipoSeleccionado.tipo]))
+      }
+    }
+    // Nota: No restauramos automáticamente todos los tipos cuando se limpia la selección
+    // para permitir que el usuario mantenga su selección manual de tipos visibles
+  }, [umbralAplicado, umbralNodoSeleccionado, umbralTipoSeleccionado, tipos])
 
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
@@ -1496,8 +1657,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           
           if (hasMinLimit && value < yAxisDomain.min!) {
             value = null // Ocultar valor si está por debajo del mínimo
-          }
-          if (hasMaxLimit && value > yAxisDomain.max!) {
+          } else if (hasMaxLimit && value > yAxisDomain.max!) {
             value = null // Ocultar valor si está por encima del máximo
           }
         }
@@ -1512,8 +1672,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       // Solo incluir tiempos que tengan al menos un valor no-null
       // Esto evita líneas incompletas al inicio del gráfico
+      // IMPORTANTE: Si todos los valores fueron filtrados (null), no incluir el punto
       if (hasAnyValue) {
-      result.push(timeData)
+        result.push(timeData)
       }
     })
     
@@ -1974,13 +2135,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   {showDetailedAnalysis && selectedDetailedMetric && tipos.length > 0 && (() => {
                     const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
                     const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
-                    const tiposDisponibles = new Set<string>()
+                    const tiposDisponiblesSet = new Set<string>()
                     
                     // Obtener tipos del nodo principal
                     metricMediciones.forEach(m => {
                       const tipo = tipos.find(t => t.tipoid === m.tipoid)
                       if (tipo) {
-                        tiposDisponibles.add(tipo.tipo)
+                        tiposDisponiblesSet.add(tipo.tipo)
                       }
                     })
                     
@@ -1990,12 +2151,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       comparisonMetricMediciones.forEach(m => {
                         const tipo = tipos.find(t => t.tipoid === m.tipoid)
                         if (tipo) {
-                          tiposDisponibles.add(tipo.tipo)
+                          tiposDisponiblesSet.add(tipo.tipo)
                         }
                       })
                     }
                     
-                    const tiposArray = Array.from(tiposDisponibles).sort()
+                    const tiposArray = Array.from(tiposDisponiblesSet).sort()
                     const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                     const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                     
@@ -2090,6 +2251,288 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               </div>
                             )
                           })}
+                        </div>
+                        
+                        {/* Visualizar umbral */}
+                        <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+                          <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 font-mono">
+                            Visualizar umbral:
+                          </div>
+                          <div className="space-y-3">
+                            {/* Combobox Nodo */}
+                            <div>
+                              <label className="block text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">
+                                Nodo:
+                              </label>
+                              <select
+                                value={umbralNodoSeleccionado || ''}
+                                onChange={(e) => {
+                                  const nodoId = e.target.value ? parseInt(e.target.value) : null
+                                  setUmbralNodoSeleccionado(nodoId)
+                                  setUmbralTipoSeleccionado(null) // Reset tipo cuando cambia el nodo
+                                  setUmbralTiposSeleccionados([]) // Reset tipos múltiples cuando cambia el nodo
+                                  setUmbralData(null)
+                                  setUmbralAplicado(false) // Reset aplicación cuando cambia el nodo
+                                }}
+                                className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                              >
+                                <option value="" disabled hidden>Seleccionar nodo...</option>
+                                {(() => {
+                                  // Si hay nodo de comparación, mostrar solo ambos nodos
+                                  if (comparisonNode) {
+                                    const nodosParaMostrar = []
+                                    if (selectedNode) {
+                                      nodosParaMostrar.push(selectedNode)
+                                    }
+                                    if (comparisonNode) {
+                                      nodosParaMostrar.push(comparisonNode)
+                                    }
+                                    return nodosParaMostrar.map((nodo) => (
+                                      <option key={nodo.nodoid} value={nodo.nodoid}>
+                                        {nodo.nodo}
+                                      </option>
+                                    ))
+                                  } else {
+                                    // Si no hay comparación, mostrar solo el nodo seleccionado
+                                    if (selectedNode) {
+                                      return (
+                                        <option value={selectedNode.nodoid}>
+                                          {selectedNode.nodo}
+                                        </option>
+                                      )
+                                    }
+                                    return null
+                                  }
+                                })()}
+                              </select>
+                            </div>
+                            
+                            {/* Selector Tipo Sensor */}
+                            <div>
+                              <label className="block text-xs text-gray-600 dark:text-neutral-400 mb-1 font-mono">
+                                Tipo Sensor:
+                              </label>
+                              {(() => {
+                                if (!umbralNodoSeleccionado) {
+                                  return (
+                                    <select
+                                      disabled={true}
+                                      className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      <option value="" disabled hidden>Seleccionar tipo...</option>
+                                    </select>
+                                  )
+                                }
+                                
+                                // Obtener tipos de sensor para el nodo seleccionado
+                                const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+                                const nodoSeleccionado = umbralNodoSeleccionado === selectedNode?.nodoid 
+                                  ? selectedNode 
+                                  : (comparisonNode && umbralNodoSeleccionado === comparisonNode.nodoid ? comparisonNode : null)
+                                
+                                if (!nodoSeleccionado) return null
+                                
+                                // Obtener mediciones del nodo seleccionado
+                                const medicionesDelNodo = umbralNodoSeleccionado === selectedNode?.nodoid
+                                  ? mediciones.filter(m => m.metricaid === metricId)
+                                  : (comparisonMediciones.filter(m => m.metricaid === metricId))
+                                
+                                // Obtener tipos únicos de las mediciones
+                                const tiposDelNodo = new Set<number>()
+                                medicionesDelNodo.forEach(m => {
+                                  tiposDelNodo.add(m.tipoid)
+                                })
+                                
+                                // Filtrar tipos disponibles que tienen umbrales
+                                const tiposConUmbral = tipos
+                                  .filter(t => tiposDelNodo.has(t.tipoid) && umbralesDisponibles[t.tipoid])
+                                
+                                // Detectar grupos de tipos con el mismo umbral
+                                const gruposPorUmbral: { [key: string]: number[] } = {}
+                                tiposConUmbral.forEach(tipo => {
+                                  const umbral = umbralesDisponibles[tipo.tipoid]
+                                  if (umbral) {
+                                    const key = `${umbral.minimo}-${umbral.maximo}`
+                                    if (!gruposPorUmbral[key]) {
+                                      gruposPorUmbral[key] = []
+                                    }
+                                    gruposPorUmbral[key].push(tipo.tipoid)
+                                  }
+                                })
+                                
+                                // Verificar si hay grupos con más de un tipo (umbrales iguales)
+                                const gruposConMultiplesTipos = Object.values(gruposPorUmbral).filter(grupo => grupo.length > 1)
+                                const hayUmbralesIguales = gruposConMultiplesTipos.length > 0
+                                
+                                // Obtener el texto del mensaje basado en cuántos tipos tienen el mismo umbral
+                                const gruposConMultiples = Object.entries(gruposPorUmbral)
+                                  .filter(([_, grupo]) => grupo.length > 1)
+                                  .map(([_, grupo]) => grupo.length)
+                                const maxTipos = gruposConMultiples.length > 0 ? Math.max(...gruposConMultiples) : 2
+                                const mensajeTooltip = maxTipos > 2 
+                                  ? `${maxTipos} tipos de sensor tienen el mismo rango de umbral`
+                                  : "Ambos tipos de sensor tienen el mismo rango de umbral"
+                                
+                                // Texto a mostrar en el botón
+                                const tiposSeleccionadosNombres = tiposConUmbral
+                                  .filter(t => umbralTiposSeleccionados.includes(t.tipoid))
+                                  .map(t => t.tipo)
+                                const textoBoton = tiposSeleccionadosNombres.length > 0
+                                  ? tiposSeleccionadosNombres.join(', ')
+                                  : (umbralTipoSeleccionado 
+                                    ? tiposConUmbral.find(t => t.tipoid === umbralTipoSeleccionado)?.tipo || "Seleccionar tipo..."
+                                    : "Seleccionar tipo...")
+                                
+                                return (
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => setTipoSensorDropdownOpen(!tipoSensorDropdownOpen)}
+                                      disabled={!umbralNodoSeleccionado}
+                                      className={`w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-left flex items-center justify-between ${
+                                        hayUmbralesIguales ? 'pr-6' : ''
+                                      }`}
+                                    >
+                                      <span className="truncate">{textoBoton}</span>
+                                      {hayUmbralesIguales && (
+                                        <div className="relative group">
+                                          <span className="ml-2 text-green-500 cursor-help">
+                                            ⓘ
+                                          </span>
+                                          <div className="absolute bottom-full left-full ml-2 mb-0 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs font-mono rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-30">
+                                            {mensajeTooltip}
+                                            <div className="absolute top-2 -left-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      <span className="ml-2 text-gray-500">▼</span>
+                                    </button>
+                                    
+                                    {tipoSensorDropdownOpen && (
+                                      <>
+                                        <div 
+                                          className="fixed inset-0 z-10" 
+                                          onClick={() => setTipoSensorDropdownOpen(false)}
+                                        />
+                                        <div className="absolute z-20 w-full bottom-full mb-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded shadow-lg max-h-48 overflow-y-auto">
+                                          {tiposConUmbral.map((tipo) => {
+                                            const isSelected = umbralTiposSeleccionados.includes(tipo.tipoid) || umbralTipoSeleccionado === tipo.tipoid
+                                            return (
+                                              <label 
+                                                key={tipo.tipoid} 
+                                                className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isSelected}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      const nuevosTipos = hayUmbralesIguales 
+                                                        ? [...umbralTiposSeleccionados, tipo.tipoid]
+                                                        : [tipo.tipoid]
+                                                      setUmbralTiposSeleccionados(nuevosTipos)
+                                                      setUmbralTipoSeleccionado(tipo.tipoid) // Mantener para compatibilidad
+                                                      // Actualizar umbralData si todos los tipos seleccionados tienen el mismo umbral
+                                                      if (nuevosTipos.length > 0 && umbralesDisponibles[tipo.tipoid]) {
+                                                        const primerUmbral = umbralesDisponibles[nuevosTipos[0]]
+                                                        if (primerUmbral) {
+                                                          const todosIguales = nuevosTipos.every(tipoid => {
+                                                            const umbral = umbralesDisponibles[tipoid]
+                                                            return umbral && umbral.minimo === primerUmbral.minimo && umbral.maximo === primerUmbral.maximo
+                                                          })
+                                                          if (todosIguales) {
+                                                            setUmbralData(primerUmbral)
+                                                          } else {
+                                                            setUmbralData(null)
+                                                          }
+                                                        }
+                                                      }
+                                                    } else {
+                                                      const nuevosTipos = umbralTiposSeleccionados.filter(id => id !== tipo.tipoid)
+                                                      setUmbralTiposSeleccionados(nuevosTipos)
+                                                      if (nuevosTipos.length === 0) {
+                                                        setUmbralTipoSeleccionado(null)
+                                                        setUmbralData(null)
+                                                      } else if (nuevosTipos.length === 1) {
+                                                        setUmbralTipoSeleccionado(nuevosTipos[0])
+                                                        if (umbralesDisponibles[nuevosTipos[0]]) {
+                                                          setUmbralData(umbralesDisponibles[nuevosTipos[0]])
+                                                        }
+                                                      } else {
+                                                        // Verificar si todos los tipos restantes tienen el mismo umbral
+                                                        const primerUmbral = umbralesDisponibles[nuevosTipos[0]]
+                                                        if (primerUmbral) {
+                                                          const todosIguales = nuevosTipos.every(tipoid => {
+                                                            const umbral = umbralesDisponibles[tipoid]
+                                                            return umbral && umbral.minimo === primerUmbral.minimo && umbral.maximo === primerUmbral.maximo
+                                                          })
+                                                          if (todosIguales) {
+                                                            setUmbralData(primerUmbral)
+                                                          } else {
+                                                            setUmbralData(null)
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                    setUmbralAplicado(false)
+                                                    if (!hayUmbralesIguales) {
+                                                      setTipoSensorDropdownOpen(false)
+                                                    }
+                                                  }}
+                                                  className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                                />
+                                                <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 flex-1">
+                                                  {tipo.tipo}
+                                                </span>
+                                              </label>
+                                            )
+                                          })}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                )
+                              })()}
+                            </div>
+                            
+                            {/* Botones Aplicar y Quitar */}
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  // Verificar si hay tipos seleccionados (múltiples o único)
+                                  const tiposValidos = umbralTiposSeleccionados.length > 0 
+                                    ? umbralTiposSeleccionados 
+                                    : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
+                                  
+                                  if (umbralNodoSeleccionado && tiposValidos.length > 0 && umbralData) {
+                                    // Ajustar el eje Y antes de aplicar
+                                    ajustarEjeYParaUmbrales()
+                                    setUmbralAplicado(true)
+                                  }
+                                }}
+                                disabled={!umbralNodoSeleccionado || (umbralTiposSeleccionados.length === 0 && !umbralTipoSeleccionado) || !umbralData || umbralAplicado}
+                                className="flex-1 h-8 px-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-xs font-mono transition-colors"
+                              >
+                                Aplicar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUmbralAplicado(false)
+                                  // Resetear eje Y a valores por defecto
+                                  setYAxisDomain({ min: null, max: null })
+                                  // Restaurar tipos visibles cuando se quita el umbral
+                                  if (tipos.length > 0) {
+                                    const allTipos = tipos.map(t => t.tipo)
+                                    setVisibleTipos(new Set(allTipos))
+                                  }
+                                }}
+                                disabled={!umbralAplicado}
+                                className="flex-1 h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-xs font-mono transition-colors"
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         
                       </div>
@@ -2571,6 +3014,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         // Crear estructura de datos para el gráfico
                         return allTimes.map(time => {
                           const point: any = { time }
+                          let hasAnyValue = false
+                          
                           tiposEnMediciones.forEach(tipoid => {
                             const tipo = tipos.find(t => t.tipoid === tipoid)
                             if (tipo && datosPorTipo[tipoid]) {
@@ -2588,14 +3033,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   } else if (hasMaxLimit && value > yAxisDomain.max!) {
                                     value = null // Ocultar valor si está por encima del máximo
                                   }
+                                  
+                                  if (value !== null && value !== undefined) {
+                                    hasAnyValue = true
+                                  }
                                 }
                                 
                                 point[tipo.tipo] = value
                               }
                             }
                           })
-                          return point
-                        })
+                          
+                          // Solo retornar puntos que tengan al menos un valor válido
+                          return hasAnyValue ? point : null
+                        }).filter((p): p is any => p !== null)
                       }
                       
                       let comparisonChartData: any[] = []
@@ -2649,8 +3100,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         }
                       })
                       
+                      // Filtrar puntos que no tienen ningún valor válido después del filtrado del eje Y
+                      const finalChartDataFiltered = Array.from(timeMap.values()).filter(p => {
+                        // Verificar si el punto tiene al menos un valor no-null
+                        let hasAnyValue = false
+                        Object.keys(p).forEach(key => {
+                          if (key !== 'time' && p[key] !== null && p[key] !== undefined && !isNaN(p[key])) {
+                            hasAnyValue = true
+                          }
+                        })
+                        return hasAnyValue
+                      })
+                      
                       // Verificar que los datos del nodo principal se preservaron
-                      const preservedMainData = Array.from(timeMap.values()).filter(p => {
+                      const preservedMainData = finalChartDataFiltered.filter(p => {
                         // Un punto tiene datos principales si tiene alguna clave que NO empiece con 'comp_' y NO sea 'time'
                         return Object.keys(p).some(k => k !== 'time' && !k.startsWith('comp_'))
                       })
@@ -2685,7 +3148,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         }
                       }
                       
-                      const finalChartData = Array.from(timeMap.values()).sort((a, b) => {
+                      const finalChartData = finalChartDataFiltered.sort((a, b) => {
                         // Ordenar por tiempo, manejando diferentes formatos
                         const timeA = a.time
                         const timeB = b.time
@@ -2725,11 +3188,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
                       // CRÍTICO: Obtener tipoKeys del nodo principal (chartData), NO de finalChartData
                       // Esto asegura que siempre se muestren las líneas del nodo principal
-                      const tipoKeys = chartData.length > 0 
+                      let tipoKeys = chartData.length > 0 
                         ? Object.keys(chartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
                         : (finalChartData.length > 0 
                           ? Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
                           : [])
+                      
+                      // Si se aplicaron umbrales, filtrar solo los tipos seleccionados
+                      if (umbralAplicado && umbralNodoSeleccionado) {
+                        const tiposValidos = umbralTiposSeleccionados.length > 0 
+                          ? umbralTiposSeleccionados 
+                          : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
+                        
+                        if (tiposValidos.length > 0) {
+                          const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
+                          const nombresTipos = tiposSeleccionados.map(t => t.tipo)
+                          tipoKeys = tipoKeys.filter(key => nombresTipos.includes(key))
+                        }
+                      }
+                      
                       const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                       const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                       
@@ -2755,15 +3232,43 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                            domain={([dataMin, dataMax]) => {
-                              if (yAxisDomain.min !== null || yAxisDomain.max !== null) {
-                                const min = yAxisDomain.min !== null ? yAxisDomain.min : dataMin;
-                                const max = yAxisDomain.max !== null ? yAxisDomain.max : dataMax;
-                                return [min, max];
+                            domain={(() => {
+                              // Si hay valores min/max definidos, usarlos estrictamente como array fijo
+                              if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                                return [yAxisDomain.min, yAxisDomain.max]
                               }
-                              return [dataMin, dataMax];
-                            }}
+                              if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
+                                // Si solo hay min, calcular max desde los datos
+                                const allValues: number[] = []
+                                finalChartData.forEach(point => {
+                                  Object.keys(point).forEach(key => {
+                                    if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                                      allValues.push(point[key])
+                                    }
+                                  })
+                                })
+                                const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10
+                                return [yAxisDomain.min, dataMax]
+                              }
+                              if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                                // Si solo hay max, calcular min desde los datos
+                                const allValues: number[] = []
+                                finalChartData.forEach(point => {
+                                  Object.keys(point).forEach(key => {
+                                    if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                                      allValues.push(point[key])
+                                    }
+                                  })
+                                })
+                                const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10
+                                return [dataMin, yAxisDomain.max]
+                              }
+                              // Si no hay límites, usar función para calcular desde datos
+                              return ([dataMin, dataMax]: [number, number]) => [dataMin, dataMax]
+                            })()}
                             allowDataOverflow={false}
+                            allowDecimals={true}
+                            type="number"
                             tickFormatter={(value) => {
                               // Redondear a entero si el valor es mayor a 1, o mostrar 1 decimal si es menor
                               if (Math.abs(value) >= 1) {
@@ -2803,22 +3308,79 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             return (
                               <>
+                                {/* Líneas de referencia para umbrales - solo cuando está aplicado */}
+                                {umbralAplicado && umbralData && umbralNodoSeleccionado && (
+                                  (umbralTiposSeleccionados.length > 0 || umbralTipoSeleccionado) && (
+                                    <>
+                                      <ReferenceLine 
+                                        y={umbralData.minimo} 
+                                        stroke="#ef4444" 
+                                        strokeDasharray="3 3" 
+                                        strokeWidth={2}
+                                        label={{ value: `Min: ${umbralData.minimo}`, position: "insideTopLeft", fill: "#ef4444", fontSize: 11, fontWeight: "bold" }}
+                                      />
+                                      <ReferenceLine 
+                                        y={umbralData.maximo} 
+                                        stroke="#ef4444" 
+                                        strokeDasharray="3 3" 
+                                        strokeWidth={2}
+                                        label={{ value: `Max: ${umbralData.maximo}`, position: "insideTopRight", fill: "#ef4444", fontSize: 11, fontWeight: "bold" }}
+                                      />
+                                    </>
+                                  )
+                                )}
                                 {/* Líneas del nodo principal */}
                                 {tipoKeys
-                                  .filter(tipoKey => visibleTipos.has(tipoKey))
+                                  .filter(tipoKey => {
+                                    // Si se aplicaron umbrales, mostrar solo los tipos seleccionados
+                                    if (umbralAplicado && umbralNodoSeleccionado) {
+                                      const tiposValidos = umbralTiposSeleccionados.length > 0 
+                                        ? umbralTiposSeleccionados 
+                                        : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
+                                      
+                                      if (tiposValidos.length > 0) {
+                                        const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
+                                        const nombresTipos = tiposSeleccionados.map(t => t.tipo)
+                                        return nombresTipos.includes(tipoKey)
+                                      }
+                                    }
+                                    return visibleTipos.has(tipoKey)
+                                  })
                                   .map((tipoKey, index) => {
                                     // Recalcular el índice basado en la posición original en tipoKeys
                                     const originalIndex = tipoKeys.indexOf(tipoKey)
+                                    const strokeColor = colors[originalIndex % colors.length]
+                                    
+                                    // Función para determinar el color del punto basado en umbrales
+                                    const getDotColor = (value: number | null) => {
+                                      if (value === null || value === undefined || isNaN(value)) return strokeColor
+                                      // Solo pintar de rojo si los umbrales están aplicados
+                                      if (umbralAplicado && umbralData && umbralNodoSeleccionado && (umbralTiposSeleccionados.length > 0 || umbralTipoSeleccionado)) {
+                                        if (value < umbralData.minimo || value > umbralData.maximo) {
+                                          return '#ef4444' // Rojo si está fuera del umbral
+                                        }
+                                      }
+                                      return strokeColor
+                                    }
+                                    
                                     return (
                                       <Line
                                         key={tipoKey}
                                         type="monotone"
                                         dataKey={tipoKey}
-                                        stroke={colors[originalIndex % colors.length]}
+                                        stroke={strokeColor}
                                         strokeWidth={3}
-                                        dot={{ r: 4, fill: colors[originalIndex % colors.length] }}
-                                        activeDot={{ r: 6, fill: colors[originalIndex % colors.length] }}
-                                        connectNulls={true}
+                                        dot={(props: any) => {
+                                          const value = props.payload?.[tipoKey]
+                                          // No mostrar punto si el valor es null
+                                          if (value === null || value === undefined || isNaN(value)) {
+                                            return <g /> // Retornar grupo vacío en lugar de null
+                                          }
+                                          const fillColor = getDotColor(value)
+                                          return <circle cx={props.cx} cy={props.cy} r={4} fill={fillColor} />
+                                        }}
+                                        activeDot={{ r: 6, fill: strokeColor }}
+                                        connectNulls={false}
                                         isAnimationActive={true}
                                         animationDuration={300}
                                       />
@@ -2848,9 +3410,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                           stroke={strokeColor}
                                           strokeWidth={2}
                                           strokeDasharray="5 5"
-                                          dot={{ r: 3, fill: strokeColor }}
+                                          dot={(props: any) => {
+                                            const value = props.payload?.[compKey]
+                                            // No mostrar punto si el valor es null
+                                            if (value === null || value === undefined || isNaN(value)) {
+                                              return <g /> // Retornar grupo vacío en lugar de null
+                                            }
+                                            return <circle cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
+                                          }}
                                           activeDot={{ r: 5, fill: strokeColor }}
-                                          connectNulls={true}
+                                          connectNulls={false}
                                           isAnimationActive={true}
                                           animationDuration={300}
                                         />
