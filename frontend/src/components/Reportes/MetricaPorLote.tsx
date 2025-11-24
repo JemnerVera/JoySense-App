@@ -23,6 +23,8 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
   const [orden, setOrden] = useState<'asc' | 'desc'>('desc');
   const [lotesData, setLotesData] = useState<LoteMetricaData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,13 +52,40 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         setLocalizaciones(localizacionesData || []);
         setTipos(tiposData || []);
         
-        // Establecer fecha por defecto (últimos 30 días)
-        const today = new Date();
-        const thirtyDaysAgo = new Date(today);
-        thirtyDaysAgo.setDate(today.getDate() - 30);
-        
-        setEndDate(today.toISOString().split('T')[0]);
-        setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
+        // Obtener la última fecha con datos disponible
+        try {
+          // Obtener la última medición disponible (usar cualquier métrica)
+          const ultimasMediciones = await JoySenseService.getMediciones({
+            limit: 1,
+            getAll: false
+          });
+          
+          // Verificar que sea un array y tenga elementos
+          if (Array.isArray(ultimasMediciones) && ultimasMediciones.length > 0 && ultimasMediciones[0]?.fecha) {
+            const ultimaFecha = new Date(ultimasMediciones[0].fecha);
+            const fechaAnterior = new Date(ultimaFecha);
+            fechaAnterior.setDate(ultimaFecha.getDate() - 1);
+            
+            setEndDate(ultimaFecha.toISOString().split('T')[0]);
+            setStartDate(fechaAnterior.toISOString().split('T')[0]);
+          } else {
+            // Fallback: usar hoy y ayer
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            
+            setEndDate(today.toISOString().split('T')[0]);
+            setStartDate(yesterday.toISOString().split('T')[0]);
+          }
+        } catch (err) {
+          // Fallback: usar hoy y ayer si hay error
+          const today = new Date();
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          
+          setEndDate(today.toISOString().split('T')[0]);
+          setStartDate(yesterday.toISOString().split('T')[0]);
+        }
       } catch (err: any) {
         console.error('Error cargando datos iniciales:', err);
         setError('Error al cargar métricas y fundos');
@@ -364,6 +393,11 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
             <button
               type="button"
               onClick={() => {
+                // Inicializar valores temporales con los valores actuales al abrir
+                if (!isDateRangeOpen) {
+                  setTempStartDate(startDate);
+                  setTempEndDate(endDate);
+                }
                 setIsDateRangeOpen(!isDateRangeOpen);
                 setIsFundoDropdownOpen(false);
                 setIsMetricaDropdownOpen(false);
@@ -384,8 +418,19 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                     </label>
                     <input
                       type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      value={tempStartDate || startDate}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        setTempStartDate(newStartDate);
+                        // Si la fecha inicio es mayor que la fecha fin, ajustar fecha fin
+                        if (newStartDate && (tempEndDate || endDate)) {
+                          const currentEndDate = tempEndDate || endDate;
+                          if (new Date(newStartDate) > new Date(currentEndDate)) {
+                            setTempEndDate(newStartDate);
+                          }
+                        }
+                      }}
+                      max={tempEndDate || endDate || undefined}
                       className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white rounded-lg border border-gray-300 dark:border-neutral-600 focus:border-green-500 focus:outline-none text-sm font-mono"
                     />
                   </div>
@@ -395,14 +440,45 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                     </label>
                     <input
                       type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                      value={tempEndDate || endDate}
+                      onChange={(e) => {
+                        const newEndDate = e.target.value;
+                        setTempEndDate(newEndDate);
+                        // Si la fecha fin es menor que la fecha inicio, ajustar fecha inicio
+                        if (newEndDate && (tempStartDate || startDate)) {
+                          const currentStartDate = tempStartDate || startDate;
+                          if (new Date(newEndDate) < new Date(currentStartDate)) {
+                            setTempStartDate(newEndDate);
+                          }
+                        }
+                      }}
+                      min={tempStartDate || startDate || undefined}
                       className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white rounded-lg border border-gray-300 dark:border-neutral-600 focus:border-green-500 focus:outline-none text-sm font-mono"
                     />
                   </div>
                   <div className="flex justify-center">
                     <button
-                      onClick={() => setIsDateRangeOpen(false)}
+                      onClick={() => {
+                        // Validar fechas antes de aplicar
+                        const startDateToApply = tempStartDate || startDate;
+                        const endDateToApply = tempEndDate || endDate;
+                        
+                        if (!startDateToApply || !endDateToApply) {
+                          return;
+                        }
+                        
+                        if (new Date(startDateToApply) > new Date(endDateToApply)) {
+                          alert('La fecha de inicio no puede ser mayor que la fecha de fin');
+                          return;
+                        }
+                        
+                        // Aplicar cambios
+                        setStartDate(startDateToApply);
+                        setEndDate(endDateToApply);
+                        setTempStartDate('');
+                        setTempEndDate('');
+                        setIsDateRangeOpen(false);
+                      }}
                       className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded font-mono text-xs tracking-wider transition-colors"
                     >
                       APLICAR

@@ -1138,7 +1138,15 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                               axisLine={false}
                               tickLine={false}
                               tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                              domain={yAxisDomain.min !== null || yAxisDomain.max !== null ? [yAxisDomain.min ?? 'auto', yAxisDomain.max ?? 'auto'] : ['auto', 'auto']}
+                              domain={([dataMin, dataMax]) => {
+                                if (yAxisDomain.min !== null || yAxisDomain.max !== null) {
+                                  const min = yAxisDomain.min !== null ? yAxisDomain.min : dataMin;
+                                  const max = yAxisDomain.max !== null ? yAxisDomain.max : dataMax;
+                                  return [min, max];
+                                }
+                                return [dataMin, dataMax];
+                              }}
+                              allowDataOverflow={false}
                               tickFormatter={(value) => {
                                 if (Math.abs(value) >= 1) {
                                   return Math.round(value).toString();

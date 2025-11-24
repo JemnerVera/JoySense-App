@@ -2882,7 +2882,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                            domain={yAxisDomain.min !== null || yAxisDomain.max !== null ? [yAxisDomain.min ?? 'auto', yAxisDomain.max ?? 'auto'] : ['auto', 'auto']}
+                            domain={([dataMin, dataMax]) => {
+                              if (yAxisDomain.min !== null || yAxisDomain.max !== null) {
+                                const min = yAxisDomain.min !== null ? yAxisDomain.min : dataMin;
+                                const max = yAxisDomain.max !== null ? yAxisDomain.max : dataMax;
+                                return [min, max];
+                              }
+                              return [dataMin, dataMax];
+                            }}
+                            allowDataOverflow={false}
                             tickFormatter={(value) => {
                               // Redondear a entero si el valor es mayor a 1, o mostrar 1 decimal si es menor
                               if (Math.abs(value) >= 1) {
