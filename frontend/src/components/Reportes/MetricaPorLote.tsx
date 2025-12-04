@@ -153,7 +153,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       });
 
       // Obtener tipos únicos en los datos
-      const tiposUnicos = Array.from(new Set(ultimasMediciones.map((m: any) => m.tipoid).filter(Boolean)));
+      const tiposUnicos: number[] = Array.from(new Set(ultimasMediciones.map((m: any) => m.tipoid).filter(Boolean))) as number[];
 
       // Agrupar por ubicación
       const loteMap = new Map<number, { 

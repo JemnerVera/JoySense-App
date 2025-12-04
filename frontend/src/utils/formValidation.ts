@@ -1816,9 +1816,9 @@ const validateUbicacionUpdate = async (
 // Función para verificar dependencias de Ubicación
 const checkUbicacionDependencies = async (ubicacionid: number): Promise<boolean> => {
   try {
-    // Verificar en tabla localizacion
-    const localizaciones = await JoySenseService.getLocalizaciones();
-    return localizaciones.some(localizacion => localizacion.ubicacionid === ubicacionid);
+    // En el nuevo modelo, ubicacion se relaciona con nodo (nodo.ubicacionid)
+    const nodos = await JoySenseService.getNodos();
+    return nodos.some((nodo: any) => nodo.ubicacionid === ubicacionid);
   } catch (error) {
     console.error('Error checking ubicacion dependencies:', error);
     return false; // En caso de error, permitir la operación
@@ -1981,17 +1981,10 @@ const validateEntidadUpdate = async (
 // Función para verificar dependencias de Entidad
 const checkEntidadDependencies = async (entidadid: number): Promise<boolean> => {
   try {
-    // Verificar en tabla tipo
-    const tipos = await JoySenseService.getTipos();
-    const hasTipos = tipos.some(tipo => tipo.entidadid === entidadid);
-    
-    if (hasTipos) return true;
-    
-    // Verificar en tabla localizacion
-    const localizaciones = await JoySenseService.getLocalizaciones();
-    const hasLocalizaciones = localizaciones.some(localizacion => localizacion.entidadid === entidadid);
-    
-    return hasLocalizaciones;
+    // En el nuevo modelo, entidad se relaciona con localizacion via entidad_localizacion
+    // Por ahora verificamos si hay datos en la tabla de entidad_localizacion
+    const entidadLocalizaciones = await JoySenseService.getTableData('entidad_localizacion');
+    return entidadLocalizaciones.some((el: any) => el.entidadid === entidadid);
   } catch (error) {
     console.error('Error checking entidad dependencies:', error);
     return false; // En caso de error, permitir la operación

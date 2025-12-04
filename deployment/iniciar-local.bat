@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo    JoySense Dashboard - Vista Dinamica
+echo    JoySense Dashboard - Schema joysense
 echo ========================================
 echo.
 
@@ -76,15 +76,16 @@ start "JoySense Frontend" cmd /k "cd /d "%~dp0..\frontend" && echo Iniciando apl
 
 echo.
 echo 🔍 Verificando que los servicios estén funcionando...
-powershell -Command "try { $response = Invoke-RestMethod -Uri 'http://localhost:3001/api/sense/pais' -TimeoutSec 5; Write-Host '✅ Backend funcionando correctamente' } catch { Write-Host '❌ Backend no está respondiendo - revisa la ventana del backend' }"
+powershell -Command "try { $response = Invoke-RestMethod -Uri 'http://localhost:3001/health' -TimeoutSec 5; Write-Host '✅ Backend funcionando correctamente (Schema: joysense)' } catch { Write-Host '❌ Backend no está respondiendo - revisa la ventana del backend' }"
 
 echo.
 echo ✅ Servicios iniciados correctamente
 echo.
 echo 📋 Información:
 echo    - Backend: http://localhost:3001
+echo    - API Base: http://localhost:3001/api/joysense
 echo    - Frontend: http://localhost:3000
-echo    - Vista Dinámica: Activada por defecto
+echo    - Schema: joysense
 echo.
 echo 🔄 Para detener los servicios, cierra las ventanas de CMD
 echo.
