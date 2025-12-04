@@ -1,11 +1,11 @@
 /**
  * Rutas de Mediciones: medicion, sensor_valor
- * NUEVO MODELO: medicion solo tiene localizacionid
+ * Versión PostgreSQL Directo
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
+const { db, dbSchema, pool } = require('../config/database');
 const { paginateAndFilter } = require('../utils/pagination');
 const logger = require('../utils/logger');
 
@@ -24,50 +24,78 @@ router.get('/medicion', async (req, res) => {
       countOnly 
     } = req.query;
     
-    let query = supabase
-      .from('medicion')
-      .select(`
-        *,
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          latitud,
-          longitud,
-          nodo:nodoid(nodoid, nodo, ubicacionid),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `, { count: countOnly ? 'exact' : undefined });
-    
-    // Filtros
-    if (localizacionId) {
-      query = query.eq('localizacionid', localizacionId);
-    }
-    
-    if (startDate) {
-      query = query.gte('fecha', startDate);
-    }
-    
-    if (endDate) {
-      query = query.lte('fecha', endDate);
-    }
-    
-    // Ordenar
-    query = query.order('fecha', { ascending: false });
-    
-    // Limitar
-    if (!getAll && !countOnly) {
-      query = query.limit(parseInt(limit));
-    }
-    
-    const { data, error, count } = await query;
-    
-    if (error) throw error;
-    
     if (countOnly) {
-      return res.json({ count: count || 0 });
+      let countSql = `SELECT COUNT(*) as count FROM ${dbSchema}.medicion`;
+      const params = [];
+      const conditions = [];
+      
+      if (localizacionId) {
+        conditions.push(`localizacionid = $${params.length + 1}`);
+        params.push(localizacionId);
+      }
+      if (startDate) {
+        conditions.push(`fecha >= $${params.length + 1}`);
+        params.push(startDate);
+      }
+      if (endDate) {
+        conditions.push(`fecha <= $${params.length + 1}`);
+        params.push(endDate);
+      }
+      
+      if (conditions.length > 0) {
+        countSql += ` WHERE ${conditions.join(' AND ')}`;
+      }
+      
+      const result = await pool.query(countSql, params);
+      return res.json({ count: parseInt(result.rows[0].count) });
     }
     
-    res.json(data || []);
+    let sql = `
+      SELECT m.*,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'latitud', l.latitud,
+               'longitud', l.longitud,
+               'nodoid', l.nodoid,
+               'metricaid', l.metricaid,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo, 'ubicacionid', n.ubicacionid),
+               'metrica', json_build_object('metricaid', me.metricaid, 'metrica', me.metrica, 'unidad', me.unidad)
+             ) as localizacion
+      FROM ${dbSchema}.medicion m
+      LEFT JOIN ${dbSchema}.localizacion l ON m.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica me ON l.metricaid = me.metricaid
+    `;
+    
+    const params = [];
+    const conditions = [];
+    
+    if (localizacionId) {
+      conditions.push(`m.localizacionid = $${params.length + 1}`);
+      params.push(localizacionId);
+    }
+    if (startDate) {
+      conditions.push(`m.fecha >= $${params.length + 1}`);
+      params.push(startDate);
+    }
+    if (endDate) {
+      conditions.push(`m.fecha <= $${params.length + 1}`);
+      params.push(endDate);
+    }
+    
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    sql += ` ORDER BY m.fecha DESC`;
+    
+    if (!getAll) {
+      sql += ` LIMIT ${parseInt(limit)}`;
+    }
+    
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /medicion:', error);
     res.status(500).json({ error: error.message });
@@ -80,111 +108,82 @@ router.get('/mediciones', async (req, res) => {
     const { 
       localizacionId,
       nodoid,
-      metricaId,
-      ubicacionId,
       startDate, 
       endDate, 
       limit = 1000,
-      getAll,
-      countOnly 
+      getAll
     } = req.query;
     
-    // Si hay nodoid, necesitamos filtrar por localizaciones de ese nodo
+    let locIds = [];
+    
+    // Si hay nodoid, obtener localizaciones de ese nodo
     if (nodoid) {
-      // Primero obtenemos las localizaciones del nodo
-      const { data: localizaciones, error: locError } = await supabase
-        .from('localizacion')
-        .select('localizacionid')
-        .eq('nodoid', nodoid)
-        .eq('statusid', 1);
-      
-      if (locError) throw locError;
-      
-      const locIds = localizaciones.map(l => l.localizacionid);
+      const locResult = await pool.query(
+        `SELECT localizacionid FROM ${dbSchema}.localizacion WHERE nodoid = $1 AND statusid = 1`,
+        [nodoid]
+      );
+      locIds = locResult.rows.map(l => l.localizacionid);
       
       if (locIds.length === 0) {
         return res.json([]);
       }
-      
-      let query = supabase
-        .from('medicion')
-        .select(`
-          *,
-          localizacion:localizacionid(
-            localizacionid,
-            localizacion,
-            nodoid,
-            metricaid,
-            nodo:nodoid(nodoid, nodo),
-            metrica:metricaid(metricaid, metrica, unidad)
-          )
-        `)
-        .in('localizacionid', locIds);
-      
-      if (startDate) query = query.gte('fecha', startDate);
-      if (endDate) query = query.lte('fecha', endDate);
-      
-      query = query.order('fecha', { ascending: false });
-      
-      if (!getAll) {
-        query = query.limit(parseInt(limit));
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return res.json(data || []);
     }
     
-    // Query normal
-    let query = supabase
-      .from('medicion')
-      .select(`
-        *,
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodoid,
-          metricaid,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `, { count: countOnly ? 'exact' : undefined });
+    let sql = `
+      SELECT m.*,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'nodoid', l.nodoid,
+               'metricaid', l.metricaid,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+               'metrica', json_build_object('metricaid', me.metricaid, 'metrica', me.metrica, 'unidad', me.unidad)
+             ) as localizacion
+      FROM ${dbSchema}.medicion m
+      LEFT JOIN ${dbSchema}.localizacion l ON m.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica me ON l.metricaid = me.metricaid
+    `;
     
-    if (localizacionId) {
-      query = query.eq('localizacionid', localizacionId);
+    const params = [];
+    const conditions = [];
+    
+    if (nodoid && locIds.length > 0) {
+      conditions.push(`m.localizacionid = ANY($${params.length + 1})`);
+      params.push(locIds);
+    } else if (localizacionId) {
+      conditions.push(`m.localizacionid = $${params.length + 1}`);
+      params.push(localizacionId);
     }
     
     if (startDate) {
-      query = query.gte('fecha', startDate);
+      conditions.push(`m.fecha >= $${params.length + 1}`);
+      params.push(startDate);
     }
-    
     if (endDate) {
-      query = query.lte('fecha', endDate);
+      conditions.push(`m.fecha <= $${params.length + 1}`);
+      params.push(endDate);
     }
     
-    query = query.order('fecha', { ascending: false });
-    
-    if (!getAll && !countOnly) {
-      query = query.limit(parseInt(limit));
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
     }
     
-    const { data, error, count } = await query;
+    sql += ` ORDER BY m.fecha DESC`;
     
-    if (error) throw error;
-    
-    if (countOnly) {
-      return res.json({ count: count || 0 });
+    if (!getAll) {
+      sql += ` LIMIT ${parseInt(limit)}`;
     }
     
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /mediciones:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Mediciones con entidad (filtra por entidad_localizacion)
+// Mediciones con entidad
 router.get('/mediciones-con-entidad', async (req, res) => {
   try {
     const { entidadId, startDate, endDate, limit = 1000 } = req.query;
@@ -194,42 +193,47 @@ router.get('/mediciones-con-entidad', async (req, res) => {
     }
     
     // Obtener localizaciones de la entidad
-    const { data: entidadLocs, error: elError } = await supabase
-      .from('entidad_localizacion')
-      .select('localizacionid')
-      .eq('entidadid', entidadId)
-      .eq('statusid', 1);
+    const locResult = await pool.query(
+      `SELECT localizacionid FROM ${dbSchema}.entidad_localizacion WHERE entidadid = $1 AND statusid = 1`,
+      [entidadId]
+    );
     
-    if (elError) throw elError;
-    
-    const locIds = entidadLocs.map(el => el.localizacionid);
+    const locIds = locResult.rows.map(el => el.localizacionid);
     
     if (locIds.length === 0) {
       return res.json([]);
     }
     
-    let query = supabase
-      .from('medicion')
-      .select(`
-        *,
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `)
-      .in('localizacionid', locIds);
+    let sql = `
+      SELECT m.*,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+               'metrica', json_build_object('metricaid', me.metricaid, 'metrica', me.metrica, 'unidad', me.unidad)
+             ) as localizacion
+      FROM ${dbSchema}.medicion m
+      LEFT JOIN ${dbSchema}.localizacion l ON m.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica me ON l.metricaid = me.metricaid
+      WHERE m.localizacionid = ANY($1)
+    `;
     
-    if (startDate) query = query.gte('fecha', startDate);
-    if (endDate) query = query.lte('fecha', endDate);
+    const params = [locIds];
     
-    query = query.order('fecha', { ascending: false }).limit(parseInt(limit));
+    if (startDate) {
+      sql += ` AND m.fecha >= $${params.length + 1}`;
+      params.push(startDate);
+    }
+    if (endDate) {
+      sql += ` AND m.fecha <= $${params.length + 1}`;
+      params.push(endDate);
+    }
     
-    const { data, error } = await query;
-    if (error) throw error;
+    sql += ` ORDER BY m.fecha DESC LIMIT ${parseInt(limit)}`;
     
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /mediciones-con-entidad:', error);
     res.status(500).json({ error: error.message });
@@ -244,21 +248,18 @@ router.get('/sensor_valor', async (req, res) => {
   try {
     const { id_device, limit = 100 } = req.query;
     
-    let query = supabase
-      .from('sensor_valor')
-      .select('*')
-      .order('fecha', { ascending: false });
+    let sql = `SELECT * FROM ${dbSchema}.sensor_valor`;
+    const params = [];
     
     if (id_device) {
-      query = query.eq('id_device', id_device);
+      sql += ` WHERE id_device = $1`;
+      params.push(id_device);
     }
     
-    query = query.limit(parseInt(limit));
+    sql += ` ORDER BY fecha DESC LIMIT ${parseInt(limit)}`;
     
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /sensor_valor:', error);
     res.status(500).json({ error: error.message });
@@ -267,13 +268,7 @@ router.get('/sensor_valor', async (req, res) => {
 
 router.post('/sensor_valor', async (req, res) => {
   try {
-    // Este endpoint es para insertar datos de sensores
-    // El trigger fn_insertar_medicion() procesará automáticamente
-    const { data, error } = await supabase
-      .from('sensor_valor')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('sensor_valor', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -290,14 +285,10 @@ router.get('/sensor_valor_error', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
     
-    const { data, error } = await supabase
-      .from('sensor_valor_error')
-      .select('*')
-      .order('fecha', { ascending: false })
-      .limit(parseInt(limit));
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(
+      `SELECT * FROM ${dbSchema}.sensor_valor_error ORDER BY fecha DESC LIMIT ${parseInt(limit)}`
+    );
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /sensor_valor_error:', error);
     res.status(500).json({ error: error.message });
@@ -318,80 +309,55 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
     
     const fundoIdArray = fundoIds.split(',').map(Number);
     
-    // Obtener ubicaciones de los fundos
-    const { data: ubicaciones, error: ubError } = await supabase
-      .from('ubicacion')
-      .select('ubicacionid')
-      .in('fundoid', fundoIdArray)
-      .eq('statusid', 1);
+    // Query complejo con CTEs
+    let sql = `
+      WITH ubicaciones AS (
+        SELECT ubicacionid FROM ${dbSchema}.ubicacion WHERE fundoid = ANY($1) AND statusid = 1
+      ),
+      nodos AS (
+        SELECT nodoid FROM ${dbSchema}.nodo WHERE ubicacionid IN (SELECT ubicacionid FROM ubicaciones) AND statusid = 1
+      ),
+      locs AS (
+        SELECT localizacionid FROM ${dbSchema}.localizacion 
+        WHERE nodoid IN (SELECT nodoid FROM nodos) AND statusid = 1
+        ${metricaId ? 'AND metricaid = $2' : ''}
+      )
+      SELECT m.*,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+               'metrica', json_build_object('metricaid', me.metricaid, 'metrica', me.metrica, 'unidad', me.unidad)
+             ) as localizacion
+      FROM ${dbSchema}.medicion m
+      JOIN ${dbSchema}.localizacion l ON m.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica me ON l.metricaid = me.metricaid
+      WHERE m.localizacionid IN (SELECT localizacionid FROM locs)
+    `;
     
-    if (ubError) throw ubError;
-    
-    const ubicacionIds = ubicaciones.map(u => u.ubicacionid);
-    
-    if (ubicacionIds.length === 0) {
-      return res.json([]);
-    }
-    
-    // Obtener nodos de esas ubicaciones
-    const { data: nodos, error: nodoError } = await supabase
-      .from('nodo')
-      .select('nodoid')
-      .in('ubicacionid', ubicacionIds)
-      .eq('statusid', 1);
-    
-    if (nodoError) throw nodoError;
-    
-    const nodoIds = nodos.map(n => n.nodoid);
-    
-    if (nodoIds.length === 0) {
-      return res.json([]);
-    }
-    
-    // Obtener localizaciones
-    let locQuery = supabase
-      .from('localizacion')
-      .select('localizacionid')
-      .in('nodoid', nodoIds)
-      .eq('statusid', 1);
+    const params = [fundoIdArray];
+    let paramIdx = 2;
     
     if (metricaId) {
-      locQuery = locQuery.eq('metricaid', metricaId);
+      params.push(metricaId);
+      paramIdx++;
     }
     
-    const { data: localizaciones, error: locError } = await locQuery;
-    
-    if (locError) throw locError;
-    
-    const locIds = localizaciones.map(l => l.localizacionid);
-    
-    if (locIds.length === 0) {
-      return res.json([]);
+    if (startDate) {
+      sql += ` AND m.fecha >= $${paramIdx}`;
+      params.push(startDate);
+      paramIdx++;
+    }
+    if (endDate) {
+      sql += ` AND m.fecha <= $${paramIdx}`;
+      params.push(endDate);
     }
     
-    // Obtener últimas mediciones
-    let medQuery = supabase
-      .from('medicion')
-      .select(`
-        *,
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `)
-      .in('localizacionid', locIds);
+    sql += ` ORDER BY m.fecha DESC LIMIT 1000`;
     
-    if (startDate) medQuery = medQuery.gte('fecha', startDate);
-    if (endDate) medQuery = medQuery.lte('fecha', endDate);
-    
-    medQuery = medQuery.order('fecha', { ascending: false }).limit(1000);
-    
-    const { data, error } = await medQuery;
-    if (error) throw error;
-    
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /ultimas-mediciones-por-lote:', error);
     res.status(500).json({ error: error.message });
@@ -399,4 +365,3 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
 });
 
 module.exports = router;
-

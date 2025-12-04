@@ -1,20 +1,33 @@
 # ============================================================================
-# JOYSENSE BACKEND - Variables de Entorno
+# Configuración de Base de Datos PostgreSQL
 # ============================================================================
-
-# Supabase Configuration
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Database Schema (CAMBIO: sense → joysense)
+# Conexión directa a PostgreSQL (Supabase o cualquier servidor)
+DB_HOST=db.xxxxxxxxxxxx.supabase.co
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=backend_user
+DB_PASSWORD=tu_password_segura
+DB_SSL=true
 DB_SCHEMA=joysense
 
-# Server Configuration
+# ============================================================================
+# Configuración de Supabase (para autenticación, si se usa)
+# ============================================================================
+SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ============================================================================
+# Configuración del Servidor
+# ============================================================================
 PORT=3001
 NODE_ENV=development
 
-# Logging
-LOG_LEVEL=info  # debug, info, warn, error
-
-# Default Limits
-DEFAULT_LIMIT=100
+# ============================================================================
+# Notas:
+# - DB_HOST: El host de tu base de datos PostgreSQL
+#   Para Supabase: db.[project-ref].supabase.co
+# - DB_USER: Usuario creado con privilegios
+# - DB_PASSWORD: Contraseña del usuario
+# - DB_SSL: true para conexiones remotas (Supabase requiere SSL)
+# - DB_SCHEMA: Schema de la aplicación (joysense)
+# ============================================================================

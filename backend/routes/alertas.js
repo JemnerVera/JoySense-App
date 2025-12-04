@@ -1,10 +1,11 @@
 /**
  * Rutas de Alertas: umbral, alerta, alertaconsolidado, criticidad, mensaje, perfilumbral
+ * Versión PostgreSQL Directo
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
+const { db, dbSchema, pool } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const logger = require('../utils/logger');
 
@@ -14,13 +15,8 @@ const logger = require('../utils/logger');
 
 router.get('/criticidad', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('criticidad')
-      .select('*')
-      .order('grado');
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(`SELECT * FROM ${dbSchema}.criticidad ORDER BY grado`);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /criticidad:', error);
     res.status(500).json({ error: error.message });
@@ -39,11 +35,7 @@ router.get('/criticidad/columns', async (req, res) => {
 
 router.post('/criticidad', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('criticidad')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('criticidad', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -54,12 +46,7 @@ router.post('/criticidad', async (req, res) => {
 
 router.put('/criticidad/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('criticidad')
-      .update(req.body)
-      .eq('criticidadid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('criticidad', req.body, { criticidadid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -69,35 +56,39 @@ router.put('/criticidad/:id', async (req, res) => {
 });
 
 // ============================================================================
-// UMBRAL (ahora solo usa localizacionid)
+// UMBRAL
 // ============================================================================
 
 router.get('/umbral', async (req, res) => {
   try {
     const { localizacionId } = req.query;
     
-    let query = supabase
-      .from('umbral')
-      .select(`
-        *,
-        criticidad:criticidadid(criticidadid, criticidad, grado),
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `)
-      .order('umbralid');
+    let sql = `
+      SELECT u.*,
+             json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad, 'grado', c.grado) as criticidad,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+               'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica, 'unidad', m.unidad)
+             ) as localizacion
+      FROM ${dbSchema}.umbral u
+      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
+      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
+    `;
     
+    const params = [];
     if (localizacionId) {
-      query = query.eq('localizacionid', localizacionId);
+      sql += ` WHERE u.localizacionid = $1`;
+      params.push(localizacionId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY u.umbralid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /umbral:', error);
     res.status(500).json({ error: error.message });
@@ -116,11 +107,7 @@ router.get('/umbral/columns', async (req, res) => {
 
 router.post('/umbral', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('umbral')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('umbral', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -131,12 +118,7 @@ router.post('/umbral', async (req, res) => {
 
 router.put('/umbral/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('umbral')
-      .update(req.body)
-      .eq('umbralid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('umbral', req.body, { umbralid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -145,7 +127,7 @@ router.put('/umbral/:id', async (req, res) => {
   }
 });
 
-// Umbrales por lote (para dashboard)
+// Umbrales por lote
 router.get('/umbrales-por-lote', async (req, res) => {
   try {
     const { fundoIds, metricaId } = req.query;
@@ -156,59 +138,41 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const fundoIdArray = fundoIds.split(',').map(Number);
     
-    // Obtener ubicaciones -> nodos -> localizaciones
-    const { data: ubicaciones } = await supabase
-      .from('ubicacion')
-      .select('ubicacionid')
-      .in('fundoid', fundoIdArray)
-      .eq('statusid', 1);
+    let sql = `
+      WITH ubicaciones AS (
+        SELECT ubicacionid FROM ${dbSchema}.ubicacion WHERE fundoid = ANY($1) AND statusid = 1
+      ),
+      nodos AS (
+        SELECT nodoid FROM ${dbSchema}.nodo WHERE ubicacionid IN (SELECT ubicacionid FROM ubicaciones) AND statusid = 1
+      ),
+      locs AS (
+        SELECT localizacionid FROM ${dbSchema}.localizacion 
+        WHERE nodoid IN (SELECT nodoid FROM nodos) AND statusid = 1
+        ${metricaId ? 'AND metricaid = $2' : ''}
+      )
+      SELECT u.*,
+             json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad) as criticidad,
+             json_build_object(
+               'localizacionid', l.localizacionid,
+               'localizacion', l.localizacion,
+               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+               'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica)
+             ) as localizacion
+      FROM ${dbSchema}.umbral u
+      JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
+      WHERE u.localizacionid IN (SELECT localizacionid FROM locs) AND u.statusid = 1
+    `;
     
-    const ubicacionIds = ubicaciones?.map(u => u.ubicacionid) || [];
-    
-    if (ubicacionIds.length === 0) return res.json([]);
-    
-    const { data: nodos } = await supabase
-      .from('nodo')
-      .select('nodoid')
-      .in('ubicacionid', ubicacionIds)
-      .eq('statusid', 1);
-    
-    const nodoIds = nodos?.map(n => n.nodoid) || [];
-    
-    if (nodoIds.length === 0) return res.json([]);
-    
-    let locQuery = supabase
-      .from('localizacion')
-      .select('localizacionid')
-      .in('nodoid', nodoIds)
-      .eq('statusid', 1);
-    
+    const params = [fundoIdArray];
     if (metricaId) {
-      locQuery = locQuery.eq('metricaid', metricaId);
+      params.push(metricaId);
     }
     
-    const { data: localizaciones } = await locQuery;
-    const locIds = localizaciones?.map(l => l.localizacionid) || [];
-    
-    if (locIds.length === 0) return res.json([]);
-    
-    const { data, error } = await supabase
-      .from('umbral')
-      .select(`
-        *,
-        criticidad:criticidadid(criticidadid, criticidad),
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica)
-        )
-      `)
-      .in('localizacionid', locIds)
-      .eq('statusid', 1);
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /umbrales-por-lote:', error);
     res.status(500).json({ error: error.message });
@@ -216,38 +180,53 @@ router.get('/umbrales-por-lote', async (req, res) => {
 });
 
 // ============================================================================
-// ALERTA (ahora usa UUID)
+// ALERTA
 // ============================================================================
 
 router.get('/alerta', async (req, res) => {
   try {
     const { umbralId, startDate, endDate, limit = 100 } = req.query;
     
-    let query = supabase
-      .from('alerta')
-      .select(`
-        *,
-        umbral:umbralid(
-          umbralid,
-          umbral,
-          minimo,
-          maximo,
-          localizacion:localizacionid(localizacionid, localizacion)
-        ),
-        medicion:medicionid(medicionid, medicion, fecha)
-      `)
-      .order('fecha', { ascending: false });
+    let sql = `
+      SELECT a.*,
+             json_build_object(
+               'umbralid', u.umbralid,
+               'umbral', u.umbral,
+               'minimo', u.minimo,
+               'maximo', u.maximo,
+               'localizacion', json_build_object('localizacionid', l.localizacionid, 'localizacion', l.localizacion)
+             ) as umbral,
+             json_build_object('medicionid', m.medicionid, 'medicion', m.medicion, 'fecha', m.fecha) as medicion
+      FROM ${dbSchema}.alerta a
+      LEFT JOIN ${dbSchema}.umbral u ON a.umbralid = u.umbralid
+      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.medicion m ON a.medicionid = m.medicionid
+    `;
     
-    if (umbralId) query = query.eq('umbralid', umbralId);
-    if (startDate) query = query.gte('fecha', startDate);
-    if (endDate) query = query.lte('fecha', endDate);
+    const params = [];
+    const conditions = [];
     
-    query = query.limit(parseInt(limit));
+    if (umbralId) {
+      conditions.push(`a.umbralid = $${params.length + 1}`);
+      params.push(umbralId);
+    }
+    if (startDate) {
+      conditions.push(`a.fecha >= $${params.length + 1}`);
+      params.push(startDate);
+    }
+    if (endDate) {
+      conditions.push(`a.fecha <= $${params.length + 1}`);
+      params.push(endDate);
+    }
     
-    const { data, error } = await query;
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
     
-    if (error) throw error;
-    res.json(data || []);
+    sql += ` ORDER BY a.fecha DESC LIMIT ${parseInt(limit)}`;
+    
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /alerta:', error);
     res.status(500).json({ error: error.message });
@@ -272,36 +251,34 @@ router.get('/alertaconsolidado', async (req, res) => {
   try {
     const { statusid = 1, limit = 100 } = req.query;
     
-    let query = supabase
-      .from('alertaconsolidado')
-      .select(`
-        *,
-        umbral:umbralid(
-          umbralid,
-          umbral,
-          minimo,
-          maximo,
-          criticidad:criticidadid(criticidadid, criticidad),
-          localizacion:localizacionid(
-            localizacionid,
-            localizacion,
-            nodo:nodoid(nodoid, nodo),
-            metrica:metricaid(metricaid, metrica)
-          )
-        )
-      `)
-      .order('fechaultimo', { ascending: false });
+    let sql = `
+      SELECT ac.*,
+             json_build_object(
+               'umbralid', u.umbralid,
+               'umbral', u.umbral,
+               'minimo', u.minimo,
+               'maximo', u.maximo,
+               'criticidad', json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad),
+               'localizacion', json_build_object(
+                 'localizacionid', l.localizacionid,
+                 'localizacion', l.localizacion,
+                 'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
+                 'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica)
+               )
+             ) as umbral
+      FROM ${dbSchema}.alertaconsolidado ac
+      LEFT JOIN ${dbSchema}.umbral u ON ac.umbralid = u.umbralid
+      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
+      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
+      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
+      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
+      WHERE ac.statusid = $1
+      ORDER BY ac.fechaultimo DESC
+      LIMIT ${parseInt(limit)}
+    `;
     
-    if (statusid !== undefined) {
-      query = query.eq('statusid', statusid);
-    }
-    
-    query = query.limit(parseInt(limit));
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, [statusid]);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /alertaconsolidado:', error);
     res.status(500).json({ error: error.message });
@@ -326,28 +303,28 @@ router.get('/mensaje', async (req, res) => {
   try {
     const { tipo_origen, limit = 100 } = req.query;
     
-    let query = supabase
-      .from('mensaje')
-      .select(`
-        *,
-        contacto:contactoid(
-          contactoid,
-          celular,
-          usuario:usuarioid(usuarioid, login, firstname, lastname)
-        )
-      `)
-      .order('fecha', { ascending: false });
+    let sql = `
+      SELECT msg.*,
+             json_build_object(
+               'contactoid', ct.contactoid,
+               'celular', ct.celular,
+               'usuario', json_build_object('usuarioid', u.usuarioid, 'login', u.login, 'firstname', u.firstname, 'lastname', u.lastname)
+             ) as contacto
+      FROM ${dbSchema}.mensaje msg
+      LEFT JOIN ${dbSchema}.contacto ct ON msg.contactoid = ct.contactoid
+      LEFT JOIN ${dbSchema}.usuario u ON ct.usuarioid = u.usuarioid
+    `;
     
+    const params = [];
     if (tipo_origen) {
-      query = query.eq('tipo_origen', tipo_origen);
+      sql += ` WHERE msg.tipo_origen = $1`;
+      params.push(tipo_origen);
     }
     
-    query = query.limit(parseInt(limit));
+    sql += ` ORDER BY msg.fecha DESC LIMIT ${parseInt(limit)}`;
     
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /mensaje:', error);
     res.status(500).json({ error: error.message });
@@ -372,22 +349,35 @@ router.get('/perfilumbral', async (req, res) => {
   try {
     const { perfilId, umbralId } = req.query;
     
-    let query = supabase
-      .from('perfilumbral')
-      .select(`
-        *,
-        perfil:perfilid(perfilid, perfil, nivel),
-        umbral:umbralid(umbralid, umbral)
-      `)
-      .order('perfilid');
+    let sql = `
+      SELECT pu.*,
+             json_build_object('perfilid', p.perfilid, 'perfil', p.perfil, 'nivel', p.nivel) as perfil,
+             json_build_object('umbralid', u.umbralid, 'umbral', u.umbral) as umbral
+      FROM ${dbSchema}.perfilumbral pu
+      LEFT JOIN ${dbSchema}.perfil p ON pu.perfilid = p.perfilid
+      LEFT JOIN ${dbSchema}.umbral u ON pu.umbralid = u.umbralid
+    `;
     
-    if (perfilId) query = query.eq('perfilid', perfilId);
-    if (umbralId) query = query.eq('umbralid', umbralId);
+    const params = [];
+    const conditions = [];
     
-    const { data, error } = await query;
+    if (perfilId) {
+      conditions.push(`pu.perfilid = $${params.length + 1}`);
+      params.push(perfilId);
+    }
+    if (umbralId) {
+      conditions.push(`pu.umbralid = $${params.length + 1}`);
+      params.push(umbralId);
+    }
     
-    if (error) throw error;
-    res.json(data || []);
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    sql += ` ORDER BY pu.perfilid`;
+    
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /perfilumbral:', error);
     res.status(500).json({ error: error.message });
@@ -406,11 +396,7 @@ router.get('/perfilumbral/columns', async (req, res) => {
 
 router.post('/perfilumbral', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfilumbral')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('perfilumbral', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -423,15 +409,14 @@ router.put('/perfilumbral/composite', async (req, res) => {
   try {
     const { perfilid, umbralid } = req.query;
     
-    const { data, error } = await supabase
-      .from('perfilumbral')
-      .update(req.body)
-      .eq('perfilid', perfilid)
-      .eq('umbralid', umbralid)
-      .select();
+    const result = await pool.query(
+      `UPDATE ${dbSchema}.perfilumbral SET ${Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`).join(', ')} 
+       WHERE perfilid = $${Object.keys(req.body).length + 1} AND umbralid = $${Object.keys(req.body).length + 2} 
+       RETURNING *`,
+      [...Object.values(req.body), perfilid, umbralid]
+    );
     
-    if (error) throw error;
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
     logger.error('Error en PUT /perfilumbral/composite:', error);
     res.status(500).json({ error: error.message });
@@ -446,24 +431,23 @@ router.get('/audit_log_umbral', async (req, res) => {
   try {
     const { umbralId, limit = 100 } = req.query;
     
-    let query = supabase
-      .from('audit_log_umbral')
-      .select(`
-        *,
-        umbral:umbralid(umbralid, umbral)
-      `)
-      .order('modified_at', { ascending: false });
+    let sql = `
+      SELECT al.*,
+             json_build_object('umbralid', u.umbralid, 'umbral', u.umbral) as umbral
+      FROM ${dbSchema}.audit_log_umbral al
+      LEFT JOIN ${dbSchema}.umbral u ON al.umbralid = u.umbralid
+    `;
     
+    const params = [];
     if (umbralId) {
-      query = query.eq('umbralid', umbralId);
+      sql += ` WHERE al.umbralid = $1`;
+      params.push(umbralId);
     }
     
-    query = query.limit(parseInt(limit));
+    sql += ` ORDER BY al.modified_at DESC LIMIT ${parseInt(limit)}`;
     
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /audit_log_umbral:', error);
     res.status(500).json({ error: error.message });
@@ -481,4 +465,3 @@ router.get('/audit_log_umbral/columns', async (req, res) => {
 });
 
 module.exports = router;
-

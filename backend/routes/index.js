@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const { supabase } = require('../config/database');
+const { db, dbSchema } = require('../config/database');
 const logger = require('../utils/logger');
 
 // ============================================================================
@@ -13,24 +13,37 @@ const logger = require('../utils/logger');
 // ============================================================================
 
 // Ruta de health check
-router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    schema: process.env.DB_SCHEMA || 'joysense',
-    timestamp: new Date().toISOString() 
-  });
+router.get('/health', async (req, res) => {
+  try {
+    // Verificar conexión a la base de datos
+    const { data, error } = await db.query('SELECT 1 as check');
+    
+    res.json({ 
+      status: error ? 'error' : 'ok',
+      schema: dbSchema,
+      database: 'PostgreSQL',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Endpoint de prueba para verificar permisos y RPC
 router.get('/test-db', async (req, res) => {
   const results = {
-    schema: process.env.DB_SCHEMA || 'joysense',
+    schema: dbSchema,
+    connection: 'PostgreSQL',
     tests: {}
   };
   
   // Test 1: Select directo
   try {
-    const { data, error } = await supabase.from('pais').select('*').limit(1);
+    const { data, error } = await db.select('pais', { limit: 1 });
     results.tests.select_pais = error ? { error: error.message } : { success: true, count: data?.length };
   } catch (e) {
     results.tests.select_pais = { error: e.message };
@@ -38,7 +51,7 @@ router.get('/test-db', async (req, res) => {
   
   // Test 2: Select usuario
   try {
-    const { data, error } = await supabase.from('usuario').select('*').limit(1);
+    const { data, error } = await db.select('usuario', { limit: 1 });
     results.tests.select_usuario = error ? { error: error.message } : { success: true, count: data?.length };
   } catch (e) {
     results.tests.select_usuario = { error: e.message };
@@ -46,18 +59,10 @@ router.get('/test-db', async (req, res) => {
   
   // Test 3: RPC fn_get_table_metadata
   try {
-    const { data, error } = await supabase.rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
+    const { data, error } = await db.rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
     results.tests.rpc_metadata = error ? { error: error.message } : { success: true, data };
   } catch (e) {
     results.tests.rpc_metadata = { error: e.message };
-  }
-  
-  // Test 4: RPC fn_consolidar_alertas
-  try {
-    const { data, error } = await supabase.rpc('fn_consolidar_alertas');
-    results.tests.rpc_alertas = error ? { error: error.message } : { success: true };
-  } catch (e) {
-    results.tests.rpc_alertas = { error: e.message };
   }
   
   res.json(results);
@@ -66,16 +71,13 @@ router.get('/test-db', async (req, res) => {
 // Ruta de detección de schema
 router.get('/detect', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pais')
-      .select('paisid')
-      .limit(1);
+    const { data, error } = await db.select('pais', { columns: 'paisid', limit: 1 });
     
     if (error) {
       return res.json({ available: false, error: error.message });
     }
     
-    res.json({ available: true, schema: process.env.DB_SCHEMA || 'joysense' });
+    res.json({ available: true, schema: dbSchema, connection: 'PostgreSQL' });
   } catch (error) {
     res.json({ available: false, error: error.message });
   }
@@ -90,12 +92,10 @@ router.post('/auth/login', async (req, res) => {
     const { email, password } = req.body;
     
     // Buscar usuario por login (email)
-    const { data: usuarios, error } = await supabase
-      .from('usuario')
-      .select('*')
-      .eq('login', email)
-      .eq('statusid', 1)
-      .limit(1);
+    const { data: usuarios, error } = await db.select('usuario', {
+      where: { login: email, statusid: 1 },
+      limit: 1
+    });
     
     if (error) throw error;
     
@@ -157,20 +157,17 @@ router.post('/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Insertar usuario directamente en la tabla
-    const { data, error } = await supabase
-      .from('usuario')
-      .insert({
-        login,
-        password_hash: hashedPassword,
-        firstname,
-        lastname,
-        statusid: 1,
-        usercreatedid: 1,
-        datecreated: new Date().toISOString(),
-        usermodifiedid: 1,
-        datemodified: new Date().toISOString()
-      })
-      .select();
+    const { data, error } = await db.insert('usuario', {
+      login,
+      password_hash: hashedPassword,
+      firstname,
+      lastname,
+      statusid: 1,
+      usercreatedid: 1,
+      datecreated: new Date().toISOString(),
+      usermodifiedid: 1,
+      datemodified: new Date().toISOString()
+    });
     
     if (error) throw error;
     
@@ -187,12 +184,11 @@ router.post('/auth/reset-password', async (req, res) => {
     const { login } = req.body;
     
     // Buscar usuario
-    const { data: usuarios, error } = await supabase
-      .from('usuario')
-      .select('usuarioid, login, firstname, lastname')
-      .eq('login', login)
-      .eq('statusid', 1)
-      .limit(1);
+    const { data: usuarios, error } = await db.select('usuario', {
+      columns: 'usuarioid, login, firstname, lastname',
+      where: { login, statusid: 1 },
+      limit: 1
+    });
     
     if (error) throw error;
     
@@ -205,10 +201,11 @@ router.post('/auth/reset-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     
     // Actualizar password
-    const { error: updateError } = await supabase
-      .from('usuario')
-      .update({ password_hash: hashedPassword })
-      .eq('usuarioid', usuarios[0].usuarioid);
+    const { error: updateError } = await db.update(
+      'usuario',
+      { password_hash: hashedPassword },
+      { usuarioid: usuarios[0].usuarioid }
+    );
     
     if (updateError) throw updateError;
     

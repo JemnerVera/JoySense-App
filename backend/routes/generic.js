@@ -1,11 +1,11 @@
 /**
  * Rutas Genéricas para operaciones CRUD dinámicas
- * Útil para tablas que no tienen endpoints específicos
+ * Versión PostgreSQL Directo
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
+const { db, dbSchema, pool } = require('../config/database');
 const { paginateAndFilter, getTableMetadata, clearMetadataCache } = require('../utils/pagination');
 const logger = require('../utils/logger');
 
@@ -48,214 +48,182 @@ const PK_MAPPING = {
   asociacion: 'asociacionid',
   perfil_geografia_permiso: 'permisoid',
   audit_log_umbral: 'auditid',
-  sensor_valor: null, // PK compuesta
-  sensor_valor_error: 'sensorvalorerrorid',
-  // Tablas con PK compuesta
-  metricasensor: null,
-  usuarioperfil: null,
-  perfilumbral: null,
-  entidad_localizacion: null
+  entidad_localizacion: null, // PK compuesta
+  metricasensor: null, // PK compuesta
+  usuarioperfil: null, // PK compuesta
+  perfilumbral: null, // PK compuesta
+  sensor_valor: 'id',
+  sensor_valor_error: 'id'
 };
 
-/**
- * Middleware para validar tabla
- */
-function validateTable(req, res, next) {
-  const tableName = req.params.table;
+// Validar tabla permitida
+function isTableAllowed(table) {
+  return ALLOWED_TABLES.includes(table.toLowerCase());
+}
+
+// ============================================================================
+// RUTA GENÉRICA GET /:table
+// ============================================================================
+
+router.get('/:table', async (req, res) => {
+  const { table } = req.params;
   
-  if (!ALLOWED_TABLES.includes(tableName)) {
+  if (!isTableAllowed(table)) {
     return res.status(400).json({ 
-      error: `Tabla '${tableName}' no permitida`,
+      error: `Tabla '${table}' no permitida`,
       allowedTables: ALLOWED_TABLES 
     });
   }
   
-  req.tableName = tableName;
-  next();
-}
-
-// ============================================================================
-// GET - Obtener datos de cualquier tabla
-// ============================================================================
-
-router.get('/:table', validateTable, async (req, res) => {
   try {
-    const result = await paginateAndFilter(req.tableName, req.query);
+    const result = await paginateAndFilter(table, req.query);
     res.json(result);
   } catch (error) {
-    logger.error(`Error en GET /${req.tableName}:`, error);
+    logger.error(`Error en GET /${table}:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================================================
-// GET - Obtener columnas de una tabla
+// RUTA GENÉRICA GET /:table/columns
 // ============================================================================
 
-router.get('/:table/columns', validateTable, async (req, res) => {
+router.get('/:table/columns', async (req, res) => {
+  const { table } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
+  }
+  
   try {
-    const metadata = await getTableMetadata(req.tableName);
-    res.json(metadata.columns || []);
+    const metadata = await getTableMetadata(table);
+    res.json(metadata.columns);
   } catch (error) {
-    logger.error(`Error en GET /${req.tableName}/columns:`, error);
+    logger.error(`Error en GET /${table}/columns:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================================================
-// GET - Obtener info de una tabla
+// RUTA GENÉRICA POST /:table
 // ============================================================================
 
-router.get('/:table/info', validateTable, async (req, res) => {
-  try {
-    const metadata = await getTableMetadata(req.tableName);
-    res.json(metadata.info || {});
-  } catch (error) {
-    logger.error(`Error en GET /${req.tableName}/info:`, error);
-    res.status(500).json({ error: error.message });
+router.post('/:table', async (req, res) => {
+  const { table } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
-});
-
-// ============================================================================
-// GET - Obtener constraints de una tabla
-// ============================================================================
-
-router.get('/:table/constraints', validateTable, async (req, res) => {
+  
   try {
-    const metadata = await getTableMetadata(req.tableName);
-    res.json(metadata.constraints || []);
-  } catch (error) {
-    logger.error(`Error en GET /${req.tableName}/constraints:`, error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ============================================================================
-// POST - Insertar en cualquier tabla
-// ============================================================================
-
-router.post('/:table', validateTable, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from(req.tableName)
-      .insert(req.body)
-      .select();
+    const { data, error } = await db.insert(table, req.body);
     
     if (error) throw error;
     
-    // Limpiar cache de metadatos si la inserción fue exitosa
-    clearMetadataCache(req.tableName);
+    // Limpiar cache de metadata
+    clearMetadataCache(table);
     
     res.status(201).json(data);
   } catch (error) {
-    logger.error(`Error en POST /${req.tableName}:`, error);
+    logger.error(`Error en POST /${table}:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================================================
-// PUT - Actualizar por ID simple
+// RUTA GENÉRICA PUT /:table/:id
 // ============================================================================
 
-router.put('/:table/:id', validateTable, async (req, res) => {
-  try {
-    const pkField = PK_MAPPING[req.tableName];
-    
-    if (!pkField) {
-      return res.status(400).json({ 
-        error: `La tabla '${req.tableName}' tiene PK compuesta, usa /composite` 
-      });
-    }
-    
-    const { data, error } = await supabase
-      .from(req.tableName)
-      .update(req.body)
-      .eq(pkField, req.params.id)
-      .select();
-    
-    if (error) throw error;
-    
-    clearMetadataCache(req.tableName);
-    
-    res.json(data);
-  } catch (error) {
-    logger.error(`Error en PUT /${req.tableName}/${req.params.id}:`, error);
-    res.status(500).json({ error: error.message });
+router.put('/:table/:id', async (req, res) => {
+  const { table, id } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
-});
-
-// ============================================================================
-// PUT - Actualizar por clave compuesta
-// ============================================================================
-
-router.put('/:table/composite', validateTable, async (req, res) => {
-  try {
-    // Los campos de la PK vienen en query params
-    const queryParams = { ...req.query };
-    delete queryParams.page;
-    delete queryParams.pageSize;
-    
-    let query = supabase.from(req.tableName).update(req.body);
-    
-    // Aplicar cada campo de la PK como filtro
-    Object.keys(queryParams).forEach(key => {
-      query = query.eq(key, queryParams[key]);
+  
+  const pk = PK_MAPPING[table.toLowerCase()];
+  
+  if (!pk) {
+    return res.status(400).json({ 
+      error: `Tabla '${table}' tiene PK compuesta. Use el endpoint específico.` 
     });
-    
-    const { data, error } = await query.select();
+  }
+  
+  try {
+    const { data, error } = await db.update(table, req.body, { [pk]: id });
     
     if (error) throw error;
     
-    clearMetadataCache(req.tableName);
+    // Limpiar cache de metadata
+    clearMetadataCache(table);
     
     res.json(data);
   } catch (error) {
-    logger.error(`Error en PUT /${req.tableName}/composite:`, error);
+    logger.error(`Error en PUT /${table}/${id}:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================================================
-// DELETE - Eliminar por ID (soft delete - cambia statusid a 0)
+// RUTA PARA ACTUALIZAR PK COMPUESTAS
 // ============================================================================
 
-router.delete('/:table/:id', validateTable, async (req, res) => {
+router.put('/:table/composite', async (req, res) => {
+  const { table } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
+  }
+  
   try {
-    const pkField = PK_MAPPING[req.tableName];
+    // Los parámetros de la PK vienen en el query string
+    const pkParams = { ...req.query };
+    delete pkParams.page;
+    delete pkParams.pageSize;
     
-    if (!pkField) {
+    if (Object.keys(pkParams).length === 0) {
       return res.status(400).json({ 
-        error: `La tabla '${req.tableName}' tiene PK compuesta` 
+        error: 'Se requieren parámetros de PK en el query string' 
       });
     }
     
-    // Soft delete: cambiar statusid a 0
-    const { data, error } = await supabase
-      .from(req.tableName)
-      .update({ statusid: 0 })
-      .eq(pkField, req.params.id)
-      .select();
+    // Construir query dinámico
+    const setClauses = Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`);
+    const whereClauses = Object.keys(pkParams).map((k, i) => `${k} = $${setClauses.length + i + 1}`);
     
-    if (error) throw error;
+    const sql = `UPDATE ${dbSchema}.${table} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')} RETURNING *`;
+    const params = [...Object.values(req.body), ...Object.values(pkParams)];
     
-    clearMetadataCache(req.tableName);
+    const result = await pool.query(sql, params);
     
-    res.json({ success: true, data });
+    clearMetadataCache(table);
+    
+    res.json(result.rows);
   } catch (error) {
-    logger.error(`Error en DELETE /${req.tableName}/${req.params.id}:`, error);
+    logger.error(`Error en PUT /${table}/composite:`, error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================================================
-// Limpiar cache
+// INFORMACIÓN DE TABLAS
 // ============================================================================
 
-router.post('/cache/clear', (req, res) => {
-  const { table } = req.body;
+router.get('/meta/tables', async (req, res) => {
+  res.json({
+    allowedTables: ALLOWED_TABLES,
+    pkMapping: PK_MAPPING,
+    schema: dbSchema
+  });
+});
+
+router.get('/meta/clear-cache', async (req, res) => {
+  const { table } = req.query;
   clearMetadataCache(table || null);
-  res.json({ success: true, message: table ? `Cache limpiado para ${table}` : 'Cache completo limpiado' });
+  res.json({ 
+    message: table ? `Cache limpiado para ${table}` : 'Cache completo limpiado',
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;
-
