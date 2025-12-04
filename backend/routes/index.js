@@ -236,12 +236,12 @@ const alertasRouter = require('./alertas');
 const usuariosRouter = require('./usuarios');
 const genericRouter = require('./generic');
 
-// Montar rutas por módulo
-router.use('/', geografiaRouter);      // pais, empresa, fundo, ubicacion
-router.use('/', dispositivosRouter);   // nodo, sensor, metrica, tipo, localizacion, metricasensor
-router.use('/', medicionesRouter);     // medicion, sensor_valor
-router.use('/', alertasRouter);        // umbral, alerta, alertaconsolidado, criticidad, mensaje
-router.use('/', usuariosRouter);       // usuario, perfil, contacto, correo, usuarioperfil
+// Montar rutas por módulo con prefijos
+router.use('/geografia', geografiaRouter);      // pais, empresa, fundo, ubicacion, entidad
+router.use('/dispositivos', dispositivosRouter);   // nodo, sensor, metrica, tipo, localizacion, metricasensor
+router.use('/mediciones', medicionesRouter);     // medicion, sensor_valor
+router.use('/alertas', alertasRouter);        // umbral, alerta, alertaconsolidado, criticidad, mensaje
+router.use('/usuarios', usuariosRouter);       // usuario, perfil, contacto, correo, usuarioperfil
 router.use('/', genericRouter);        // Operaciones genéricas CRUD (DEBE IR AL FINAL)
 
 module.exports = router;
