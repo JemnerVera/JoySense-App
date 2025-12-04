@@ -242,6 +242,6 @@ router.use('/dispositivos', dispositivosRouter);   // nodo, sensor, metrica, tip
 router.use('/mediciones', medicionesRouter);     // medicion, sensor_valor
 router.use('/alertas', alertasRouter);        // umbral, alerta, alertaconsolidado, criticidad, mensaje
 router.use('/usuarios', usuariosRouter);       // usuario, perfil, contacto, correo, usuarioperfil
-router.use('/', genericRouter);        // Operaciones genéricas CRUD (DEBE IR AL FINAL)
+router.use('/generic', genericRouter);  // Operaciones genéricas CRUD (DEBE IR AL FINAL)
 
 module.exports = router;

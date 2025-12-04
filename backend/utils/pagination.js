@@ -49,6 +49,7 @@ async function paginateAndFilter(tableName, params = {}) {
   const {
     page,
     pageSize = 100,
+    limit,  // Parámetro de límite simple (sin paginación completa)
     search = '',
     sortBy = 'datemodified',
     sortOrder = 'desc',
@@ -56,6 +57,7 @@ async function paginateAndFilter(tableName, params = {}) {
   } = params;
 
   const usePagination = page !== undefined && page !== null;
+  const simpleLimit = limit ? parseInt(limit) : null;
 
   try {
     const queryParams = [];
@@ -114,6 +116,9 @@ async function paginateAndFilter(tableName, params = {}) {
       
       dataSql += ` LIMIT ${pageSizeNum} OFFSET ${offset}`;
       logger.debug(`Paginación: Tabla=${tableName}, Página=${pageNum}, Total=${totalRecords}`);
+    } else if (simpleLimit) {
+      // Límite simple sin paginación
+      dataSql += ` LIMIT ${simpleLimit}`;
     }
 
     const dataResult = await pool.query(dataSql, queryParams.slice(0, paramIndex - 1));

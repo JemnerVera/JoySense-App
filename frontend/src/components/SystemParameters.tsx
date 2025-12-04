@@ -258,34 +258,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     </div>
   );
 
-  const renderSubTabs = () => {
-    if (!config) return null;
-
-    const tabs = [
-      { id: 'status', label: 'Ver Datos', show: true },
-      { id: 'insert', label: 'Insertar', show: config.allowInsert },
-      { id: 'update', label: 'Actualizar', show: config.allowUpdate && selectedRow },
-      { id: 'massive', label: 'Masivo', show: config.allowMassive }
-    ].filter(tab => tab.show);
-
-    return (
-      <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-neutral-700 pb-2">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => handleSubTabChange(tab.id as any)}
-            className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all ${
-              activeSubTab === tab.id
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    );
-  };
 
   const renderDataTable = () => {
     if (!config) return null;
@@ -381,10 +353,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-          {mode === 'insert' ? 'Nuevo Registro' : 'Actualizar Registro'}
-        </h3>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {editableFields.map(field => (
             <div key={field.name}>
@@ -498,45 +466,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   return (
     <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-orange-500 font-mono tracking-wider mb-2">
-          PARÁMETROS DEL SISTEMA
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Administración de tablas y datos del sistema JoySense
-        </p>
-      </div>
-
       {/* Selector de tabla */}
       {!selectedTable && renderTableSelector()}
 
       {/* Contenido de la tabla seleccionada */}
       {selectedTable && config && (
         <div>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 mb-4 text-sm">
-            <button
-              onClick={() => handleTableSelect('')}
-              className="text-orange-500 hover:text-orange-600"
-            >
-              Tablas
-            </button>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-700 dark:text-gray-300 font-medium">
-              {config.icon} {config.displayName}
-            </span>
-          </div>
-
           {/* Mensaje */}
           {message && (
             <MessageDisplay message={message} />
           )}
 
-          {/* Sub-tabs */}
-          {renderSubTabs()}
-
-          {/* Contenido según tab activa */}
+          {/* Contenido según tab activa (controlada por sidebar) */}
           <div className="bg-gray-50 dark:bg-neutral-800/50 rounded-lg p-6">
             {activeSubTab === 'status' && renderDataTable()}
             {activeSubTab === 'insert' && renderForm('insert')}
