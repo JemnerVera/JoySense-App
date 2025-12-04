@@ -1,18 +1,20 @@
-# Variables de entorno para el backend (NO publicar - contiene credenciales sensibles)
-# IMPORTANTE: Copia este archivo como .env y configura con tus valores reales
+# ============================================================================
+# JOYSENSE BACKEND - Variables de Entorno
+# ============================================================================
 
-# Supabase Configuration (Service Role Key - Solo para backend)
-SUPABASE_URL=https://your-new-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
+# Supabase Configuration
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Database Schema
-DB_SCHEMA=sense
+# Database Schema (CAMBIO: sense → joysense)
+DB_SCHEMA=joysense
 
 # Server Configuration
 PORT=3001
-LOG_LEVEL=info
+NODE_ENV=development
 
-# Importante:
-# 1. Obtén tu Service Role Key desde: https://supabase.com/dashboard/project/_/settings/api
-# 2. La Service Role Key tiene acceso total - NUNCA la uses en el frontend
-# 3. Configura RLS (Row Level Security) en Supabase para seguridad adicional
+# Logging
+LOG_LEVEL=info  # debug, info, warn, error
+
+# Default Limits
+DEFAULT_LIMIT=100

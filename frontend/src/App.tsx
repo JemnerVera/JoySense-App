@@ -132,30 +132,16 @@ const AppContentInternal: React.FC = () => {
   // Estados para Dashboard (Reportes)
   const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica' | 'umbrales'>('mapeo');
 
-  // Función para convertir nombre de tabla a español
+  // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
-    const tableNames: { [key: string]: string } = {
-      'pais': 'PAÍS',
-      'empresa': 'EMPRESA',
-      'fundo': 'FARM',
-      'ubicacion': 'UBICACIÓN',
-      'localizacion': 'LOCALIZACIÓN',
-      'entidad': 'ENTIDAD',
-      'tipo': 'TIPO',
-      'nodo': 'NODO',
-      'sensor': 'SENSOR',
-      'metricasensor': 'MÉTRICA SENSOR',
-      'metrica': 'MÉTRICA',
-      'umbral': 'UMBRAL',
-      'perfilumbral': 'PERFIL UMBRAL',
-      'audit_log_umbral': 'AUDIT LOG UMBRAL',
-      'criticidad': 'CRITICIDAD',
-      'contacto': 'CONTACTO',
-      'usuario': 'USUARIO',
-      'usuarioperfil': 'USUARIO PERFIL',
-      'perfil': 'PERFIL'
-    };
-    return tableNames[tableName] || tableName.toUpperCase();
+    // Importar dinámicamente desde config si disponible
+    try {
+      const { TABLES_CONFIG } = require('./config/tables.config');
+      const config = TABLES_CONFIG[tableName];
+      return config?.displayName?.toUpperCase() || tableName.toUpperCase();
+    } catch {
+      return tableName.toUpperCase();
+    }
   };
 
   // Estados para datos
@@ -205,144 +191,46 @@ const AppContentInternal: React.FC = () => {
     activeTab 
   });
 
-  // Cargar datos iniciales
+  // Cargar todos los datos iniciales en un solo useEffect
   useEffect(() => {
-    const loadInitialData = async () => {
+    const loadAllData = async () => {
       try {
-        const [paisesData, empresasData] = await Promise.all([
+        const [paisesData, empresasData, fundosData, ubicacionesData, entidadesData] = await Promise.all([
           JoySenseService.getPaises(),
-          JoySenseService.getEmpresas()
+          JoySenseService.getEmpresas(),
+          JoySenseService.getFundos(),
+          JoySenseService.getUbicaciones(),
+          JoySenseService.getEntidades()
         ]);
 
         if (paisesData) setPaises(paisesData);
         if (empresasData) setEmpresas(empresasData);
+        if (fundosData) setFundos(fundosData);
+        if (ubicacionesData) setUbicaciones(ubicacionesData);
+        if (entidadesData) setEntidades(entidadesData);
       } catch (error) {
         console.error('Error cargando datos iniciales:', error);
       }
     };
 
-    loadInitialData();
+    loadAllData();
   }, []);
 
-  // Cargar datos dependientes cuando cambian los filtros
-  useEffect(() => {
-    const loadDependentData = async () => {
-      // Implementar lógica de filtros dependientes si es necesario
-    };
-
-    loadDependentData();
-  }, []);
-
-  useEffect(() => {
-    const loadFundos = async () => {
-      try {
-        const fundosData = await JoySenseService.getFundos();
-        setFundos(fundosData || []);
-      } catch (error) {
-        console.error('Error cargando fundos:', error);
-      }
-    };
-
-    loadFundos();
-  }, []);
-
-  useEffect(() => {
-    const loadUbicaciones = async () => {
-      try {
-        const ubicacionesData = await JoySenseService.getUbicaciones();
-        setUbicaciones(ubicacionesData || []);
-      } catch (error) {
-        console.error('Error cargando ubicaciones:', error);
-      }
-    };
-
-    loadUbicaciones();
-  }, []);
-
-  useEffect(() => {
-    const loadEntidades = async () => {
-      try {
-        const entidadesData = await JoySenseService.getEntidades();
-        setEntidades(entidadesData || []);
-      } catch (error) {
-        console.error('Error cargando entidades:', error);
-      }
-    };
-
-    loadEntidades();
-  }, []);
-
-// Función para verificar si hay cambios significativos en el formulario actual
+  // Función para verificar si hay cambios significativos en el formulario actual
   const hasSignificantChanges = () => {
-    const currentTable = activeTab.startsWith('parameters-') ? activeTab.replace('parameters-', '') : '';
-    
     // Solo verificar cambios si estamos en parámetros
-    if (!currentTable || !activeTab.startsWith('parameters-')) {
-      return false;
-    }
+    if (!activeTab.startsWith('parameters-')) return false;
     
-    // Definir campos específicos para cada tabla que deben considerarse como "cambios"
-    const getSignificantFields = (table: string): string[] => {
-      switch (table) {
-        case 'pais':
-          return ['pais', 'paisabrev']; // Solo PAIS y ABREVIATURA
-        case 'empresa':
-          return ['empresa', 'empresaabrev'];
-        case 'fundo':
-          return ['fundo', 'fundoabrev'];
-        case 'ubicacion':
-          return ['ubicacion', 'ubicacionabrev'];
-        case 'localizacion':
-          return ['localizacion', 'localizacionabrev'];
-        case 'entidad':
-          return ['entidad', 'entidadabrev'];
-        case 'nodo':
-          return ['nodo', 'nodoabrev'];
-        case 'sensor':
-          return ['sensor', 'sensorabrev'];
-        case 'metrica':
-          return ['metrica', 'metricaabrev'];
-        case 'tipo':
-          return ['tipo', 'tipoabrev'];
-        case 'medicion':
-          return ['medicion', 'medicionabrev'];
-        case 'umbral':
-          return ['umbral', 'umbralabrev'];
-        case 'alerta':
-          return ['alerta', 'alertaabrev'];
-        case 'usuario':
-          return ['usuario', 'usuarioabrev'];
-        case 'medio':
-          return ['medio', 'medioabrev'];
-        case 'contacto':
-          return ['contacto', 'contactoabrev'];
-        case 'metricasensor':
-          return ['metricasensor', 'metricasensorabrev'];
-        case 'perfilumbral':
-          return ['perfilumbral', 'perfilumbralabrev'];
-        case 'auditlogumbral':
-          return ['auditlogumbral', 'auditlogumbralabrev'];
-        case 'criticidad':
-          return ['criticidad', 'criticidadabrev'];
-        case 'status':
-          return ['status', 'statusabrev'];
-        default:
-          return [];
-      }
-    };
+    // Verificar si hay datos en el formulario (excluyendo campos de sistema)
+    const systemFields = ['statusid', 'usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+    const hasFormDataChanges = Object.entries(currentFormData).some(([key, value]) => 
+      !systemFields.includes(key) && value !== null && value !== undefined && value !== ''
+    );
     
-    const significantFields = getSignificantFields(currentTable);
-    
-    // Verificar si hay cambios en los campos significativos
-    const hasFormDataChanges = significantFields.some(field => {
-      const value = currentFormData[field];
-      return value !== null && value !== undefined && value !== '';
-    });
-    
-    // Para formularios múltiples, verificar si hay datos
+    // Verificar si hay datos múltiples
     const hasMultipleDataChanges = currentMultipleData.length > 0;
 
-return hasFormDataChanges || hasMultipleDataChanges;
+    return hasFormDataChanges || hasMultipleDataChanges;
   };
 
   // Registrar la función de detección de cambios - DESACTIVADO TEMPORALMENTE
@@ -465,59 +353,22 @@ return hasFormDataChanges || hasMultipleDataChanges;
   };
 
   const renderContent = () => {
-    // Manejar sub-rutas de configuración - orden específico primero
+    // Manejar sub-rutas de configuración (parámetros del sistema)
     if (activeTab.startsWith('parameters-')) {
       const parameterTab = activeTab.replace('parameters-', '');
-      switch (parameterTab) {
-        case 'pais':
-        case 'empresa':
-        case 'fundo':
-        case 'ubicacion':
-        case 'entidad':
-        case 'nodo':
-        case 'sensor':
-        case 'metrica':
-        case 'tipo':
-        case 'medicion':
-        case 'umbral':
-        case 'alerta':
-        case 'usuario':
-        case 'medio':
-        case 'contacto':
-        case 'localizacion':
-        case 'metricasensor':
-        case 'perfilumbral':
-        case 'auditlogumbral':
-        case 'criticidad':
-        case 'status':
-          return (
-            <SystemParametersWithSuspense 
-              ref={systemParametersRef}
-              selectedTable={parameterTab}
-              onTableSelect={handleTableSelect}
-              activeSubTab={activeSubTab}
-              onSubTabChange={handleSubTabChange}
-              activeTab={activeTab}
-              onFormDataChange={handleFormDataChange}
-              onMassiveFormDataChange={handleMassiveFormDataChange}
-              clearFormData={clearFormData}
-            />
-          );
-        default:
-          return (
-            <SystemParametersWithSuspense 
-              ref={systemParametersRef}
-              selectedTable={parameterTab}
-              onTableSelect={handleTableSelect}
-              activeSubTab={activeSubTab}
-              onSubTabChange={handleSubTabChange}
-              activeTab={activeTab}
-              onFormDataChange={handleFormDataChange}
-              onMassiveFormDataChange={handleMassiveFormDataChange}
-              clearFormData={clearFormData}
-            />
-          );
-      }
+      return (
+        <SystemParametersWithSuspense 
+          ref={systemParametersRef}
+          selectedTable={parameterTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={activeSubTab}
+          onSubTabChange={handleSubTabChange}
+          activeTab={activeTab}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          clearFormData={clearFormData}
+        />
+      );
     }
 
     // Manejar sub-rutas de reportes

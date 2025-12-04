@@ -1,17 +1,20 @@
 import { 
-  Pais, Empresa, Fundo, Ubicacion
-  // Medicion, MetricaSensor, Sensor, Tipo, Metrica // Para uso futuro
+  Pais, Empresa, Fundo, Ubicacion, Localizacion, Medicion, Metrica,
+  Nodo, Sensor, Tipo, Umbral, Alerta, AlertaConsolidado, Usuario,
+  Contacto, Correo, Criticidad, CodigoTelefono, TableName, PaginatedResponse
 } from '../types';
 
 // Declaración para TypeScript
 declare const process: any;
 
 // ============================================================================
-// BACKEND API SERVICE
+// BACKEND API SERVICE - JOYSENSE
 // ============================================================================
 // Configuración mediante variables de entorno (12-Factor App)
 // Este archivo NO contiene URLs hardcodeadas → Se puede commitear de forma segura
 // ============================================================================
+
+const API_PREFIX = '/api/joysense';
 
 /**
  * Obtiene y valida la URL del backend
@@ -23,7 +26,7 @@ function getBackendUrl(): string {
   // En desarrollo, permitir fallback a localhost
   if (process.env.NODE_ENV === 'development' && !url) {
     console.warn('⚠️ REACT_APP_BACKEND_URL no configurada, usando localhost por defecto');
-    return 'http://localhost:3001/api';
+    return `http://localhost:3001${API_PREFIX}`;
   }
   
   // En producción, requerir configuración explícita
@@ -32,7 +35,7 @@ function getBackendUrl(): string {
     throw new Error('REACT_APP_BACKEND_URL is required in production');
   }
   
-  return url || 'http://localhost:3001/api';
+  return url ? `${url}${API_PREFIX}` : `http://localhost:3001${API_PREFIX}`;
 }
 
 const BACKEND_URL = getBackendUrl();
@@ -42,96 +45,73 @@ if (process.env.NODE_ENV === 'development') {
   console.log('🌐 Backend API - URL:', BACKEND_URL);
 }
 
-// Cliente para llamadas al backend
+// ============================================================================
+// HTTP CLIENT
+// ============================================================================
+
 export const backendAPI = {
   async get(endpoint: string, token?: string) {
     const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-      headers
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, { headers });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   },
 
   async post(endpoint: string, data: any, token?: string) {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data)
     });
+    
     if (!response.ok) {
-      // Intentar obtener el cuerpo de la respuesta del error
       let errorData;
       try {
         errorData = await response.json();
-      } catch (e) {
-        // Si no se puede parsear como JSON, usar el texto de la respuesta
+      } catch {
         try {
           const errorText = await response.text();
           errorData = { error: errorText };
-        } catch (e2) {
+        } catch {
           errorData = { error: `HTTP error! status: ${response.status}` };
         }
       }
-      
-      // Crear un error estructurado que incluya la información del servidor
       const error = new Error(`HTTP error! status: ${response.status}`) as any;
-      error.response = {
-        status: response.status,
-        data: errorData
-      };
+      error.response = { status: response.status, data: errorData };
       throw error;
     }
     return response.json();
   },
 
   async put(endpoint: string, data: any, token?: string) {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data)
     });
+    
     if (!response.ok) {
-      // Intentar obtener el cuerpo de la respuesta del error
       let errorData;
       try {
         errorData = await response.json();
-      } catch (e) {
-        // Si no se puede parsear como JSON, usar el texto de la respuesta
+      } catch {
         try {
           const errorText = await response.text();
           errorData = { error: errorText };
-        } catch (e2) {
+        } catch {
           errorData = { error: `HTTP error! status: ${response.status}` };
         }
       }
-      
-      // Crear un error estructurado que incluya la información del servidor
       const error = new Error(`HTTP error! status: ${response.status}`) as any;
-      error.response = {
-        status: response.status,
-        data: errorData
-      };
+      error.response = { status: response.status, data: errorData };
       throw error;
     }
     return response.json();
@@ -139,107 +119,384 @@ export const backendAPI = {
 
   async delete(endpoint: string, token?: string) {
     const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
       method: 'DELETE',
       headers
     });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 };
 
-// Variable global para el schema a usar
-let currentSchema = 'public';
-let schemaCache: string | null = null;
-let schemaDetectionPromise: Promise<string> | null = null;
+// ============================================================================
+// JOYSENSE SERVICE
+// ============================================================================
 
-// Servicios para JoySense Dashboard usando Backend API
 export class JoySenseService {
   
-  // Detectar schema disponible (via Backend API)
-  static async detectSchema(): Promise<string> {
-    // Retornar schema en caché si ya fue detectado
-    if (schemaCache) {
-      return schemaCache;
-    }
-
-    // Si ya hay una detección en progreso, esperar a que termine
-    if (schemaDetectionPromise) {
-      return schemaDetectionPromise;
-    }
-
-    // Crear la promesa de detección
-    schemaDetectionPromise = this.performSchemaDetection();
-    
+  // --------------------------------------------------------------------------
+  // HEALTH / STATUS
+  // --------------------------------------------------------------------------
+  
+  static async testConnection(): Promise<boolean> {
     try {
-      const result = await schemaDetectionPromise;
-      return result;
-    } finally {
-      schemaDetectionPromise = null;
-    }
-  }
-
-  private static async performSchemaDetection(): Promise<string> {
-    try {
-      
-      // Probar schema sense via Backend API
-      const senseResult = await backendAPI.get('/sense/detect');
-
-
-      if (senseResult.available) {
-        currentSchema = 'sense';
-        schemaCache = 'sense';
-        return 'sense';
-      }
-
-      console.error('Sense error:', senseResult.error);
-      
-      currentSchema = 'public';
-      schemaCache = 'public';
-      return 'public'; // Fallback
+      const data = await backendAPI.get('/health');
+      return data.status === 'ok';
     } catch (error) {
-      console.error('❌ Error detecting schema:', error);
-      currentSchema = 'public';
-      schemaCache = 'public';
-      return 'public'; // Fallback
+      console.error('Error testing connection:', error);
+      return false;
     }
   }
 
-  // Obtener el prefijo del schema actual
-  static getSchemaPrefix(): string {
-    return currentSchema === 'sense' ? 'sense.' : 'public.';
+  // --------------------------------------------------------------------------
+  // GEOGRAFÍA
+  // --------------------------------------------------------------------------
+
+  static async getPaises(): Promise<Pais[]> {
+    try {
+      const data = await backendAPI.get('/geografia/pais');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getPaises:', error);
+      throw error;
+    }
   }
 
-  // Autenticación básica con sense.usuario
-  static async authenticateUser(email: string, password: string): Promise<{ user: any | null; error: string | null }> {
+  static async getEmpresas(): Promise<Empresa[]> {
     try {
-      
-      // Buscar usuario en sense.usuario
-      const users = await this.getTableData('usuario');
-      
-      const user = users.find((u: any) => u.email === email);
-      
-      if (!user) {
-        return { user: null, error: 'Usuario no encontrado' };
-      }
+      const data = await backendAPI.get('/geografia/empresa');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getEmpresas:', error);
+      throw error;
+    }
+  }
 
+  static async getEmpresasByPais(paisId: number): Promise<Empresa[]> {
+    try {
+      const data = await backendAPI.get(`/geografia/empresa?paisid=${paisId}`);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getEmpresasByPais:', error);
+      throw error;
+    }
+  }
+
+  static async getFundos(): Promise<Fundo[]> {
+    try {
+      const data = await backendAPI.get('/geografia/fundo');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getFundos:', error);
+      throw error;
+    }
+  }
+
+  static async getFundosByEmpresa(empresaId: number): Promise<Fundo[]> {
+    try {
+      const data = await backendAPI.get(`/geografia/fundo?empresaid=${empresaId}`);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getFundosByEmpresa:', error);
+      throw error;
+    }
+  }
+
+  static async getUbicaciones(): Promise<Ubicacion[]> {
+    try {
+      const data = await backendAPI.get('/geografia/ubicacion');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUbicaciones:', error);
+      throw error;
+    }
+  }
+
+  static async getUbicacionesByFundo(fundoId: number): Promise<Ubicacion[]> {
+    try {
+      const data = await backendAPI.get(`/geografia/ubicacion?fundoid=${fundoId}`);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUbicacionesByFundo:', error);
+      throw error;
+    }
+  }
+
+  static async getEntidades(ubicacionId?: number): Promise<any[]> {
+    try {
+      let endpoint = '/geografia/entidad';
+      if (ubicacionId) endpoint += `?ubicacionid=${ubicacionId}`;
+      const data = await backendAPI.get(endpoint);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getEntidades:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // DISPOSITIVOS
+  // --------------------------------------------------------------------------
+
+  static async getTipos(): Promise<Tipo[]> {
+    try {
+      const data = await backendAPI.get('/dispositivos/tipo');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getTipos:', error);
+      throw error;
+    }
+  }
+
+  static async getMetricas(): Promise<Metrica[]> {
+    try {
+      const data = await backendAPI.get('/dispositivos/metrica');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getMetricas:', error);
+      throw error;
+    }
+  }
+
+  static async getNodos(): Promise<Nodo[]> {
+    try {
+      const data = await backendAPI.get('/dispositivos/nodo');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getNodos:', error);
+      throw error;
+    }
+  }
+
+  static async getSensores(): Promise<Sensor[]> {
+    try {
+      const data = await backendAPI.get('/dispositivos/sensor');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getSensores:', error);
+      throw error;
+    }
+  }
+
+  static async getLocalizaciones(): Promise<Localizacion[]> {
+    try {
+      const data = await backendAPI.get('/dispositivos/localizacion');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getLocalizaciones:', error);
+      throw error;
+    }
+  }
+
+  static async getLocalizacionesByUbicacion(ubicacionId: number): Promise<Localizacion[]> {
+    try {
+      // Localizacion se relaciona con nodo, que tiene ubicacionid
+      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionid=${ubicacionId}`);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getLocalizacionesByUbicacion:', error);
+      throw error;
+    }
+  }
+
+  static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
+    try {
+      const data = await backendAPI.get(`/dispositivos/nodo?withLocalizacion=true&limit=${limit}`);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getNodosConLocalizacion:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // MEDICIONES
+  // --------------------------------------------------------------------------
+
+  static async getMediciones(filters: {
+    paisId?: number;
+    empresaId?: number;
+    fundoId?: number;
+    ubicacionId?: number;
+    localizacionId?: number;
+    metricaId?: number;
+    nodoid?: number;
+    entidadId?: number;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    getAll?: boolean;
+    countOnly?: boolean;
+  }): Promise<Medicion[] | { count: number }> {
+    try {
+      const params = new URLSearchParams();
       
-      // Por el momento, aceptar cualquier contraseña
+      if (filters.localizacionId) params.append('localizacionid', filters.localizacionId.toString());
+      if (filters.ubicacionId) params.append('ubicacionid', filters.ubicacionId.toString());
+      if (filters.nodoid) params.append('nodoid', filters.nodoid.toString());
+      if (filters.metricaId) params.append('metricaId', filters.metricaId.toString());
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.countOnly) params.append('countOnly', 'true');
+      if (filters.getAll) params.append('getAll', 'true');
+
+      // Si hay entidadId, usar endpoint especial
+      let endpoint: string;
+      if (filters.entidadId && !filters.nodoid) {
+        params.append('entidadId', filters.entidadId.toString());
+        endpoint = `/mediciones/mediciones-con-entidad?${params.toString()}`;
+      } else {
+        endpoint = `/mediciones/mediciones?${params.toString()}`;
+      }
       
+      const data = await backendAPI.get(endpoint);
+
+      if (filters.countOnly) return data || { count: 0 };
+      
+      if (!Array.isArray(data)) {
+        console.warn('⚠️ [getMediciones] Backend devolvió datos que no son un array:', typeof data, data);
+        return Array.isArray(data?.data) ? data.data : (data ? [data] : []);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in getMediciones:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // ALERTAS
+  // --------------------------------------------------------------------------
+
+  static async getCriticidades(): Promise<Criticidad[]> {
+    try {
+      const data = await backendAPI.get('/alertas/criticidad');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getCriticidades:', error);
+      throw error;
+    }
+  }
+
+  static async getUmbrales(localizacionId?: number): Promise<Umbral[]> {
+    try {
+      let endpoint = '/alertas/umbral';
+      if (localizacionId) endpoint += `?localizacionid=${localizacionId}`;
+      const data = await backendAPI.get(endpoint);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUmbrales:', error);
+      throw error;
+    }
+  }
+
+  static async getAlertas(filters?: {
+    umbralId?: number;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  }): Promise<Alerta[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.umbralId) params.append('umbralid', filters.umbralId.toString());
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+      
+      const queryString = params.toString();
+      const endpoint = `/alertas/alerta${queryString ? '?' + queryString : ''}`;
+      const data = await backendAPI.get(endpoint);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getAlertas:', error);
+      throw error;
+    }
+  }
+
+  static async getAlertasConsolidadas(): Promise<AlertaConsolidado[]> {
+    try {
+      const data = await backendAPI.get('/alertas/alertaconsolidado');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getAlertasConsolidadas:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // USUARIOS
+  // --------------------------------------------------------------------------
+
+  static async getUsuarios(): Promise<Usuario[]> {
+    try {
+      const data = await backendAPI.get('/usuarios/usuario');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUsuarios:', error);
+      throw error;
+    }
+  }
+
+  static async getContactos(usuarioId?: number): Promise<Contacto[]> {
+    try {
+      let endpoint = '/usuarios/contacto';
+      if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
+      const data = await backendAPI.get(endpoint);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getContactos:', error);
+      throw error;
+    }
+  }
+
+  static async getCorreos(usuarioId?: number): Promise<Correo[]> {
+    try {
+      let endpoint = '/usuarios/correo';
+      if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
+      const data = await backendAPI.get(endpoint);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getCorreos:', error);
+      throw error;
+    }
+  }
+
+  static async getCodigosTelefonicos(): Promise<CodigoTelefono[]> {
+    try {
+      const data = await backendAPI.get('/usuarios/codigotelefono');
+      return data || [];
+    } catch (error) {
+      console.error('Error in getCodigosTelefonicos:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // AUTENTICACIÓN (básica con joysense.usuario)
+  // --------------------------------------------------------------------------
+
+  static async authenticateUser(login: string, password: string): Promise<{ user: any | null; error: string | null }> {
+    try {
+      const users = await this.getTableData('usuario');
+      const user = users.find((u: any) => u.login === login);
+      
+      if (!user) return { user: null, error: 'Usuario no encontrado' };
+      
+      // TODO: Implementar verificación de password_hash con bcrypt
       return { 
         user: {
-          id: user.usuarioid || user.id,
-          email: user.email,
+          id: user.usuarioid,
+          email: user.login,
           user_metadata: {
-            full_name: user.nombre || user.full_name || user.email,
-            rol: user.rol || 'user',
-            usuarioid: user.usuarioid || user.id
+            full_name: `${user.firstname} ${user.lastname}`,
+            login: user.login,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            usuarioid: user.usuarioid
           }
         }, 
         error: null 
@@ -250,211 +507,239 @@ export class JoySenseService {
     }
   }
 
-  // Obtener países disponibles del schema sense
-  static async getPaises(): Promise<Pais[]> {
+  // --------------------------------------------------------------------------
+  // ESTADÍSTICAS Y RESUMEN
+  // --------------------------------------------------------------------------
+
+  static async getDashboardStats(): Promise<{
+    totalMediciones: number;
+    promedioMedicion: number;
+    ultimaMedicion: string;
+    sensoresActivos: number;
+  }> {
     try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
+      const mediciones = await this.getMediciones({ getAll: true });
       
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/pais');
-        return data || [];
-      } else {
-        // Fallback para schema public
-        return [];
+      if (!Array.isArray(mediciones)) {
+        return { totalMediciones: 0, promedioMedicion: 0, ultimaMedicion: 'N/A', sensoresActivos: 0 };
       }
+      
+      const totalMediciones = mediciones.length;
+      const promedioMedicion = mediciones.length > 0 
+        ? mediciones.reduce((sum: number, item: any) => sum + (item.medicion || 0), 0) / mediciones.length 
+        : 0;
+      const ultimaMedicion = mediciones.length > 0 ? mediciones[0].fecha : 'N/A';
+      
+      // Sensores activos (últimas 24 horas)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const sensoresActivos = mediciones.filter((item: any) => 
+        new Date(item.fecha) >= yesterday
+      ).length;
+
+      return { totalMediciones, promedioMedicion, ultimaMedicion, sensoresActivos };
     } catch (error) {
-      console.error('Error in getPaises:', error);
+      console.error('Error in getDashboardStats:', error);
       throw error;
     }
   }
 
-  // Obtener empresas disponibles del schema sense
-  static async getEmpresas(): Promise<Empresa[]> {
+  static async getDataSummary(): Promise<{
+    medicion: number;
+    pais: number;
+    empresa: number;
+    fundo: number;
+    ubicacion: number;
+    metrica: number;
+    nodo: number;
+    tipo: number;
+    localizacion: number;
+    sensor: number;
+  }> {
     try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/empresa');
-        return data || [];
-      } else {
-        // Fallback para schema public
-        return [];
-      }
+      const [paises, empresas, fundos, ubicaciones, metricas, nodos, tipos, localizaciones, sensores, mediciones] = await Promise.all([
+        this.getPaises(),
+        this.getEmpresas(),
+        this.getFundos(),
+        this.getUbicaciones(),
+        this.getMetricas(),
+        this.getNodos(),
+        this.getTipos(),
+        this.getLocalizaciones(),
+        this.getSensores(),
+        this.getMediciones({ limit: 1 })
+      ]);
+
+      const medicionesCount = Array.isArray(mediciones) ? mediciones.length : 0;
+
+      return {
+        medicion: medicionesCount,
+        pais: paises.length,
+        empresa: empresas.length,
+        fundo: fundos.length,
+        ubicacion: ubicaciones.length,
+        metrica: metricas.length,
+        nodo: nodos.length,
+        tipo: tipos.length,
+        localizacion: localizaciones.length,
+        sensor: sensores.length
+      };
     } catch (error) {
-      console.error('Error in getEmpresas:', error);
+      console.error('Error in getDataSummary:', error);
       throw error;
     }
   }
 
-  // Obtener empresas por país del schema sense
-  static async getEmpresasByPais(paisId: number): Promise<Empresa[]> {
+  // --------------------------------------------------------------------------
+  // OPERACIONES CRUD GENÉRICAS
+  // --------------------------------------------------------------------------
+
+  static async getTableData(tableName: TableName | string, limit?: number): Promise<any[]> {
     try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/empresa?paisId=${paisId}`);
-        return data || [];
-      } else {
-        return [];
-      }
+      const endpoint = limit ? `/generic/${tableName}?limit=${limit}` : `/generic/${tableName}`;
+      const data = await backendAPI.get(endpoint);
+      return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
-      console.error('Error in getEmpresasByPais:', error);
+      console.error(`Error in getTableData for ${tableName}:`, error);
       throw error;
     }
   }
 
-  // Obtener fundos del schema sense
-  static async getFundos(): Promise<any[]> {
+  static async getTableDataPaginated(
+    tableName: TableName | string, 
+    options: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      [key: string]: any;
+    } = {}
+  ): Promise<{ data: any[]; pagination?: any }> {
     try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
+      const params = new URLSearchParams();
       
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/fundo');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getFundos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener fundos por empresa del schema sense
-  static async getFundosByEmpresa(empresaId: number): Promise<Fundo[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
+      if (options.page !== undefined) params.append('page', options.page.toString());
+      if (options.pageSize !== undefined) params.append('pageSize', options.pageSize.toString());
+      if (options.search) params.append('search', options.search);
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
       
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/fundo?empresaId=${empresaId}`);
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getFundosByEmpresa:', error);
-      throw error;
-    }
-  }
-
-  // Obtener ubicaciones del schema sense
-  static async getUbicaciones(): Promise<Ubicacion[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/ubicacion');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getUbicaciones:', error);
-      throw error;
-    }
-  }
-
-  // Obtener ubicaciones por fundo del schema sense
-  static async getUbicacionesByFundo(fundoId: number): Promise<Ubicacion[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/ubicacion?fundoId=${fundoId}`);
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getUbicacionesByFundo:', error);
-      throw error;
-    }
-  }
-
-  // Obtener datos de mediciones con filtros y nombres
-  static async getMediciones(filters: {
-    paisId?: number;
-    empresaId?: number;
-    fundoId?: number;
-    ubicacionId?: number;
-    metricaId?: number;
-    nodoid?: number;
-    startDate?: string;
-    endDate?: string;
-    limit?: number;
-    entidadId?: number;
-    getAll?: boolean;
-    countOnly?: boolean;
-  }): Promise<any[] | { count: number }> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        // Construir query string para el backend
-        const params = new URLSearchParams();
-        if (filters.ubicacionId) params.append('ubicacionId', filters.ubicacionId.toString());
-        if (filters.nodoid) params.append('nodoid', filters.nodoid.toString());
-        if (filters.metricaId) params.append('metricaId', filters.metricaId.toString());
-        if (filters.startDate) params.append('startDate', filters.startDate);
-        if (filters.endDate) params.append('endDate', filters.endDate);
-        if (filters.limit) params.append('limit', filters.limit.toString());
-        if (filters.entidadId) params.append('entidadId', filters.entidadId.toString());
-        
-        // Si solo necesitamos el conteo
-        if (filters.countOnly) {
-          params.append('countOnly', 'true');
+      // Filtros adicionales
+      Object.keys(options).forEach(key => {
+        if (!['page', 'pageSize', 'search', 'sortBy', 'sortOrder'].includes(key)) {
+          const value = options[key];
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString());
+          }
         }
-        
-        // Si getAll es true o limit es muy alto, usar paginación
-        if (filters.getAll || (filters.limit && filters.limit >= 1000000)) {
-          params.append('getAll', 'true');
-        }
-
-        // Si hay nodoid, usar el endpoint normal (más eficiente y directo)
-        // El endpoint mediciones-con-entidad puede filtrar incorrectamente cuando hay nodoid
-        let endpoint;
-        if (filters.nodoid) {
-          // Cuando hay nodoid, usar el endpoint normal que filtra directamente por nodoid
-          endpoint = `/sense/mediciones?${params.toString()}`;
-        } else if (filters.entidadId) {
-          // Solo usar mediciones-con-entidad si NO hay nodoid
-          endpoint = `/sense/mediciones-con-entidad?${params.toString()}`;
-        } else {
-          endpoint = `/sense/mediciones?${params.toString()}`;
-        }
-        
-        const data = await backendAPI.get(endpoint);
-        
-        // Asegurar que siempre devolvemos un array (excepto para countOnly)
-        if (filters.countOnly) {
-          return data || { count: 0 };
-        }
-        
-        // Si data no es un array, convertirlo o retornar array vacío
-        if (!Array.isArray(data)) {
-          console.warn('⚠️ [getMediciones] Backend devolvió datos que no son un array:', typeof data, data);
-          return Array.isArray(data?.data) ? data.data : (data ? [data] : []);
-        }
-        
-        return data;
-      } else {
-        return filters.countOnly ? { count: 0 } : [];
-      }
+      });
+      
+      const queryString = params.toString();
+      const endpoint = `/generic/${tableName}${queryString ? '?' + queryString : ''}`;
+      const response = await backendAPI.get(endpoint);
+      
+      if (response && response.pagination) return response;
+      
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      return { data };
     } catch (error) {
-      console.error('Error in getMediciones:', error);
+      console.error(`Error in getTableDataPaginated for ${tableName}:`, error);
       throw error;
     }
   }
 
-  // Obtener últimas mediciones por lote (optimizado)
+  static async getTableColumns(tableName: TableName | string): Promise<any[]> {
+    try {
+      const endpoint = `/generic/${tableName}/metadata`;
+      const data = await backendAPI.get(endpoint);
+      const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
+      
+      return rawColumns.map((col: any) => ({
+        columnName: col.column_name,
+        dataType: col.data_type,
+        isNullable: col.is_nullable === 'YES',
+        defaultValue: col.column_default,
+        isIdentity: col.column_default?.includes('nextval') || false,
+        isPrimaryKey: false
+      }));
+    } catch (error) {
+      console.error(`Error in getTableColumns for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async getTableInfoByName(tableName: TableName | string): Promise<any> {
+    try {
+      const endpoint = `/generic/${tableName}/metadata`;
+      const data = await backendAPI.get(endpoint);
+      return data || {};
+    } catch (error) {
+      console.error(`Error in getTableInfoByName for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async getTableConstraints(tableName: TableName | string): Promise<any[]> {
+    try {
+      const endpoint = `/generic/${tableName}/metadata`;
+      const data = await backendAPI.get(endpoint);
+      return data?.constraints || [];
+    } catch (error) {
+      console.error(`Error in getTableConstraints for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async insertTableRow(tableName: TableName | string, data: Record<string, any>): Promise<any> {
+    try {
+      const endpoint = `/generic/${tableName}`;
+      const result = await backendAPI.post(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in insertTableRow for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async updateTableRow(tableName: TableName | string, id: string, data: Record<string, any>): Promise<any> {
+    try {
+      const endpoint = `/generic/${tableName}/${id}`;
+      const result = await backendAPI.put(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in updateTableRow for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async updateTableRowByCompositeKey(tableName: TableName | string, compositeKey: Record<string, any>, data: Record<string, any>): Promise<any> {
+    try {
+      const keyParams = new URLSearchParams(compositeKey).toString();
+      const endpoint = `/generic/${tableName}/composite?${keyParams}`;
+      const result = await backendAPI.put(endpoint, data);
+      return result;
+    } catch (error) {
+      console.error(`Error in updateTableRowByCompositeKey for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  static async deleteTableRow(tableName: TableName | string, id: string): Promise<any> {
+    try {
+      const endpoint = `/generic/${tableName}/${id}`;
+      const result = await backendAPI.delete(endpoint);
+      return result;
+    } catch (error) {
+      console.error(`Error in deleteTableRow for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // MÉTODOS OPTIMIZADOS PARA DASHBOARD
+  // --------------------------------------------------------------------------
+
   static async getUltimasMedicionesPorLote(params: {
     fundoIds: number[];
     metricaId: number;
@@ -468,7 +753,7 @@ export class JoySenseService {
       if (params.startDate) queryParams.append('startDate', params.startDate);
       if (params.endDate) queryParams.append('endDate', params.endDate);
 
-      const data = await backendAPI.get(`/sense/ultimas-mediciones-por-lote?${queryParams.toString()}`);
+      const data = await backendAPI.get(`/mediciones/ultimas-mediciones-por-lote?${queryParams.toString()}`);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in getUltimasMedicionesPorLote:', error);
@@ -476,7 +761,6 @@ export class JoySenseService {
     }
   }
 
-  // Obtener umbrales por lote
   static async getUmbralesPorLote(params: {
     fundoIds: number[];
     metricaId?: number;
@@ -486,7 +770,7 @@ export class JoySenseService {
       queryParams.append('fundoIds', params.fundoIds.join(','));
       if (params.metricaId) queryParams.append('metricaId', params.metricaId.toString());
 
-      const data = await backendAPI.get(`/sense/umbrales-por-lote?${queryParams.toString()}`);
+      const data = await backendAPI.get(`/alertas/umbrales-por-lote?${queryParams.toString()}`);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in getUmbralesPorLote:', error);
@@ -494,166 +778,30 @@ export class JoySenseService {
     }
   }
 
-  // Obtener estadísticas del dashboard
-  static async getDashboardStats(): Promise<{
-    totalMediciones: number;
-    promedioMedicion: number;
-    ultimaMedicion: string;
-    sensoresActivos: number;
-  }> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        // Obtener datos básicos - sin límite para estadísticas reales
-        const mediciones = await this.getMediciones({ getAll: true });
-        
-        // Verificar que mediciones sea un array
-        if (!Array.isArray(mediciones)) {
-          return {
-            totalMediciones: 0,
-            promedioMedicion: 0,
-            ultimaMedicion: 'N/A',
-            sensoresActivos: 0
-          };
-        }
-        
-        const totalMediciones = mediciones.length;
-        const promedioMedicion = mediciones.length > 0 
-          ? mediciones.reduce((sum: number, item: any) => sum + (item.medicion || 0), 0) / mediciones.length 
-          : 0;
-        const ultimaMedicion = mediciones.length > 0 ? mediciones[0].fecha : 'N/A';
-        
-        // Contar sensores activos (últimas 24 horas)
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const sensoresActivos = mediciones.filter((item: any) => 
-          new Date(item.fecha) >= yesterday
-        ).length;
+  // --------------------------------------------------------------------------
+  // HELPERS PARA GRÁFICOS
+  // --------------------------------------------------------------------------
 
-        return {
-          totalMediciones,
-          promedioMedicion,
-          ultimaMedicion,
-          sensoresActivos
-        };
-      } else {
-        return {
-          totalMediciones: 0,
-          promedioMedicion: 0,
-          ultimaMedicion: 'N/A',
-          sensoresActivos: 0
-        };
-      }
-    } catch (error) {
-      console.error('Error in getDashboardStats:', error);
-      throw error;
-    }
-  }
-
-  // Probar conexión
-  static async testConnection(): Promise<boolean> {
-    try {
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/detect');
-        return data.available;
-      } else {
-        return false;
-      }
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      return false;
-    }
-  }
-
-  // Obtener resumen de datos disponibles
-  static async getDataSummary(): Promise<{
-    medicion: number;
-    pais: number;
-    empresa: number;
-    fundo: number;
-    ubicacion: number;
-    metrica: number;
-    nodo: number;
-    tipo: number;
-  }> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        // Obtener datos básicos para contar
-        const [paises, empresas, fundos, ubicaciones, metricas, nodos, tipos, mediciones] = await Promise.all([
-          this.getPaises(),
-          this.getEmpresas(),
-          this.getFundos(),
-          this.getUbicaciones(),
-          backendAPI.get('/sense/metricas'),
-          backendAPI.get('/sense/nodos'),
-          backendAPI.get('/sense/tipos'),
-          this.getMediciones({ limit: 1 })
-        ]);
-
-        // Verificar que mediciones sea un array
-        const medicionesCount = Array.isArray(mediciones) ? mediciones.length : 0;
-
-        return {
-          medicion: medicionesCount,
-          pais: paises.length,
-          empresa: empresas.length,
-          fundo: fundos.length,
-          ubicacion: ubicaciones.length,
-          metrica: metricas.length,
-          nodo: nodos.length,
-          tipo: tipos.length
-        };
-      } else {
-        return {
-          medicion: 0,
-          pais: 0,
-          empresa: 0,
-          fundo: 0,
-          ubicacion: 0,
-          metrica: 0,
-          nodo: 0,
-          tipo: 0
-        };
-      }
-    } catch (error) {
-      console.error('Error in getDataSummary:', error);
-      throw error;
-    }
-  }
-
-  // Obtener datos para gráficos con nombres
   static async getChartData(filters: {
     paisId?: number;
     empresaId?: number;
     fundoId?: number;
     ubicacionId?: number;
+    localizacionId?: number;
     startDate?: string;
     endDate?: string;
   }): Promise<Array<{ name: string; value: number; timestamp: string; metrica: string; unidad: string }>> {
     try {
-      const data = await this.getMediciones({
-        ...filters,
-        limit: 1000, // Obtener más datos para gráficos
-      });
+      const data = await this.getMediciones({ ...filters, limit: 1000 });
 
-      // Verificar que data sea un array
-      if (!Array.isArray(data)) {
-        return [];
-      }
+      if (!Array.isArray(data)) return [];
 
       return data.map((item: any) => ({
         name: new Date(item.fecha).toLocaleString(),
         value: item.medicion,
         timestamp: item.fecha,
-        metrica: item.metrica || 'N/A',
-        unidad: item.unidad || 'N/A',
+        metrica: item.localizacion?.metrica?.metrica || 'N/A',
+        unidad: item.localizacion?.metrica?.unidad || 'N/A',
       }));
     } catch (error) {
       console.error('Error in getChartData:', error);
@@ -661,438 +809,58 @@ export class JoySenseService {
     }
   }
 
-  // Listar todos los schemas disponibles
+  // --------------------------------------------------------------------------
+  // MÉTODOS LEGACY (para compatibilidad)
+  // --------------------------------------------------------------------------
+
+  /** @deprecated Use getTableData instead */
+  static async listTables(_schema: string): Promise<string[]> {
+    return [
+      'pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion',
+      'tipo', 'metrica', 'sensor', 'metricasensor', 'nodo', 'localizacion', 'asociacion',
+      'medicion', 'sensor_valor', 'sensor_valor_error',
+      'criticidad', 'umbral', 'alerta', 'alertaconsolidado', 'mensaje', 'perfilumbral', 'audit_log_umbral',
+      'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo', 'codigotelefono', 'perfil_geografia_permiso'
+    ];
+  }
+
+  /** @deprecated */
+  static async detectSchema(): Promise<string> {
+    return 'joysense';
+  }
+
+  /** @deprecated */
+  static getSchemaPrefix(): string {
+    return 'joysense.';
+  }
+
+  /** @deprecated Use getDataSummary instead */
+  static async getTableInfo(): Promise<any> {
+    const summary = await this.getDataSummary();
+    return {
+      medicionCount: summary.medicion,
+      paisCount: summary.pais,
+      empresaCount: summary.empresa,
+      fundoCount: summary.fundo,
+      ubicacionCount: summary.ubicacion,
+      metricaCount: summary.metrica,
+      nodoCount: summary.nodo,
+      tipoCount: summary.tipo
+    };
+  }
+
+  /** @deprecated */
   static async listSchemas(): Promise<string[]> {
-    try {
-      
-      const availableSchemas: string[] = [];
-      
-      // Probar schema sense via Backend API
-      try {
-        const senseResult = await backendAPI.get('/sense/detect');
-        
-        if (senseResult.available) {
-          availableSchemas.push('sense');
-        } else {
-        }
-      } catch (error) {
-      }
-      
-      // Siempre incluir public como fallback
-      availableSchemas.push('public');
-      
-      return availableSchemas;
-    } catch (error) {
-      console.error('❌ Error listando schemas:', error);
-      return ['public']; // Fallback
-    }
+    return ['joysense'];
   }
 
-  // Listar tablas disponibles en un schema
-  static async listTables(schema: string): Promise<string[]> {
-    try {
-      
-      if (schema === 'public') {
-        return ['sensor_value', 'fundo', 'device', 'tipo_sensor', 'unidad'];
-      } else if (schema === 'sense') {
-        return ['medicion', 'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'metrica', 'nodo', 'tipo', 'entidad'];
-      }
-      
-      return [];
-    } catch (error) {
-      console.error(`❌ Error listando tablas en schema "${schema}":`, error);
-      return [];
-    }
-  }
-
-  // Obtener métricas
-  static async getMetricas(): Promise<any[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/metricas');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getMetricas:', error);
-      throw error;
-    }
-  }
-
-  // Obtener códigos telefónicos
-  static async getCodigosTelefonicos(): Promise<any[]> {
-    try {
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/codigotelefono');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getCodigosTelefonicos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener correos
-  static async getCorreos(): Promise<any[]> {
-    try {
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/correo');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getCorreos:', error);
-      throw error;
-    }
-  }
-
-  // Insertar correo
-  static async insertCorreo(correoData: any): Promise<any> {
-    try {
-      const data = await backendAPI.post('/sense/correo', correoData);
-      return data;
-    } catch (error) {
-      console.error('Error in insertCorreo:', error);
-      throw error;
-    }
-  }
-
-  // Insertar contacto
+  /** @deprecated Use insertTableRow */
   static async insertContacto(contactoData: any): Promise<any> {
-    try {
-      const data = await backendAPI.post('/sense/contacto', contactoData);
-      return data;
-    } catch (error) {
-      console.error('Error in insertContacto:', error);
-      throw error;
-    }
+    return this.insertTableRow('contacto', contactoData);
   }
 
-  // Obtener nodos
-  static async getNodos(): Promise<any[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/nodos');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getNodos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener tipos
-  static async getTipos(): Promise<any[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/tipos');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getTipos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener entidades
-  static async getEntidades(ubicacionId?: number): Promise<any[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        let endpoint = '/sense/entidad';
-        if (ubicacionId) {
-          endpoint += `?ubicacionId=${ubicacionId}`;
-        }
-        const data = await backendAPI.get(endpoint);
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getEntidades:', error);
-      throw error;
-    }
-  }
-
-  // Obtener localizaciones
-  static async getLocalizaciones(): Promise<any[]> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get('/sense/localizaciones');
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getLocalizaciones:', error);
-      throw error;
-    }
-  }
-
-  // Obtener información de las tablas disponibles
-  static async getTableInfo(): Promise<{
-    medicionCount: number;
-    paisCount: number;
-    empresaCount: number;
-    fundoCount: number;
-    ubicacionCount: number;
-    metricaCount: number;
-    nodoCount: number;
-    tipoCount: number;
-  }> {
-    try {
-      // Siempre detectar el schema primero
-      const detectedSchema = await this.detectSchema();
-      
-      if (detectedSchema === 'sense') {
-        // Obtener datos básicos para contar
-        const [paises, empresas, fundos, ubicaciones, metricas, nodos, tipos, mediciones] = await Promise.all([
-          this.getPaises(),
-          this.getEmpresas(),
-          this.getFundos(),
-          this.getUbicaciones(),
-          backendAPI.get('/sense/metricas'),
-          backendAPI.get('/sense/nodos'),
-          backendAPI.get('/sense/tipos'),
-          this.getMediciones({ limit: 1 })
-        ]);
-
-        // Verificar que mediciones sea un array
-        const medicionesCount = Array.isArray(mediciones) ? mediciones.length : 0;
-
-        return {
-          medicionCount: medicionesCount,
-          paisCount: paises.length,
-          empresaCount: empresas.length,
-          fundoCount: fundos.length,
-          ubicacionCount: ubicaciones.length,
-          metricaCount: metricas.length,
-          nodoCount: nodos.length,
-          tipoCount: tipos.length
-        };
-      } else {
-        // Schema public - valores por defecto
-        return {
-          medicionCount: 0,
-          paisCount: 0,
-          empresaCount: 0,
-          fundoCount: 0,
-          ubicacionCount: 0,
-          metricaCount: 0,
-          nodoCount: 0,
-          tipoCount: 0
-        };
-      }
-    } catch (error) {
-      console.error('❌ Error in getTableInfo:', error);
-      throw error;
-    }
-  }
-
-  // Métodos para operaciones CRUD genéricas
-  static async getTableData(tableName: string, limit?: number): Promise<any[]> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = limit ? `/sense/${tableName}?limit=${limit}` : `/sense/${tableName}`;
-      const data = await backendAPI.get(endpoint);
-      return Array.isArray(data) ? data : (data?.data || []);
-    } catch (error) {
-      console.error(`Error in getTableData for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene datos de una tabla con soporte de paginación, búsqueda y filtros
-   * @param tableName - Nombre de la tabla
-   * @param options - Opciones de paginación, búsqueda y filtros
-   * @returns Respuesta con data y pagination (si se especificó page) o array simple (modo legacy)
-   */
-  static async getTableDataPaginated(
-    tableName: string, 
-    options: {
-      page?: number;
-      pageSize?: number;
-      search?: string;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-      [key: string]: any; // Otros filtros como nodoid, tipoid, etc.
-    } = {}
-  ): Promise<{ data: any[]; pagination?: any }> {
-    try {
-      // Construir query params
-      const params = new URLSearchParams();
-      
-      // Solo agregar parámetros si tienen valor
-      if (options.page !== undefined) params.append('page', options.page.toString());
-      if (options.pageSize !== undefined) params.append('pageSize', options.pageSize.toString());
-      if (options.search) params.append('search', options.search);
-      if (options.sortBy) params.append('sortBy', options.sortBy);
-      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
-      
-      // Agregar filtros adicionales
-      Object.keys(options).forEach(key => {
-        if (!['page', 'pageSize', 'search', 'sortBy', 'sortOrder'].includes(key)) {
-          const value = options[key];
-          if (value !== undefined && value !== null && value !== '') {
-            params.append(key, value.toString());
-          }
-        }
-      });
-      
-      const queryString = params.toString();
-      const endpoint = `/sense/${tableName}${queryString ? '?' + queryString : ''}`;
-      const response = await backendAPI.get(endpoint);
-      
-      // Si la respuesta tiene paginación, devolverla tal cual
-      if (response && response.pagination) {
-        return response;
-      }
-      
-      // Si no, devolver en formato estándar (modo legacy)
-      const data = Array.isArray(response) ? response : (response?.data || []);
-      return { data };
-    } catch (error) {
-      console.error(`Error in getTableDataPaginated for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-
-  static async getTableColumns(tableName: string): Promise<any[]> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}/columns`;
-      const data = await backendAPI.get(endpoint);
-      const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
-      
-      // Mapear las columnas del backend al formato esperado por el frontend
-      return rawColumns.map((col: any) => ({
-        columnName: col.column_name,
-        dataType: col.data_type,
-        isNullable: col.is_nullable === 'YES',
-        defaultValue: col.column_default,
-        isIdentity: col.column_default?.includes('nextval') || false,
-        isPrimaryKey: false // Se determinará por separado
-      }));
-    } catch (error) {
-      console.error(`Error in getTableColumns for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async getTableInfoByName(tableName: string): Promise<any> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}/info`;
-      const data = await backendAPI.get(endpoint);
-      return data || {};
-    } catch (error) {
-      console.error(`Error in getTableInfoByName for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async getTableConstraints(tableName: string): Promise<any[]> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}/constraints`;
-      const data = await backendAPI.get(endpoint);
-      return Array.isArray(data) ? data : (data?.constraints || []);
-    } catch (error) {
-      console.error(`Error in getTableConstraints for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async insertTableRow(tableName: string, data: Record<string, any>): Promise<any> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}`;
-      const result = await backendAPI.post(endpoint, data);
-      return result;
-    } catch (error) {
-      console.error(`Error in insertTableRow for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async updateTableRow(tableName: string, id: string, data: Record<string, any>): Promise<any> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}/${id}`;
-      const result = await backendAPI.put(endpoint, data);
-      return result;
-    } catch (error) {
-      console.error(`Error in updateTableRow for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async updateTableRowByCompositeKey(tableName: string, compositeKey: Record<string, any>, data: Record<string, any>): Promise<any> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const keyParams = new URLSearchParams(compositeKey).toString();
-      const endpoint = `/sense/${tableName}/composite?${keyParams}`;
-      const result = await backendAPI.put(endpoint, data);
-      return result;
-    } catch (error) {
-      console.error(`Error in updateTableRowByCompositeKey for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  static async deleteTableRow(tableName: string, id: string): Promise<any> {
-    try {
-      // const schemaPrefix = this.getSchemaPrefix(); // No utilizado actualmente
-      const endpoint = `/sense/${tableName}/${id}`;
-      const result = await backendAPI.delete(endpoint);
-      return result;
-    } catch (error) {
-      console.error(`Error in deleteTableRow for ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  // Obtener nodos con localizaciones completas (para mapa)
-  static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
-    try {
-      const detectedSchema = await this.detectSchema();
-      if (detectedSchema === 'sense') {
-        const data = await backendAPI.get(`/sense/nodos-con-localizacion?limit=${limit}`);
-        return data || [];
-      } else {
-        return [];
-      }
-    } catch (error) {
-      console.error('Error in getNodosConLocalizacion:', error);
-      throw error;
-    }
+  /** @deprecated Use insertTableRow */
+  static async insertCorreo(correoData: any): Promise<any> {
+    return this.insertTableRow('correo', correoData);
   }
 }

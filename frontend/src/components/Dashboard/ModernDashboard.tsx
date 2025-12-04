@@ -21,12 +21,39 @@ interface ModernDashboardProps {
 
 interface MedicionData {
   medicionid: number
-  metricaid: number
-  nodoid: number
+  localizacionid: number
   fecha: string
   medicion: number
+  usercreatedid?: number
+  datecreated?: string
+  // Datos expandidos desde localizacion
+  localizacion?: {
+    localizacionid: number
+    localizacion: string
+    nodoid: number
+    metricaid: number
+    latitud?: number
+    longitud?: number
+    nodo?: { nodoid: number; nodo: string }
+    metrica?: { metricaid: number; metrica: string; unidad: string }
+  }
+  // Campos legacy para compatibilidad - usados para indexación
+  metricaid: number
+  nodoid: number
   tipoid: number
   ubicacionid: number
+}
+
+// Helper para transformar datos del backend al formato MedicionData con campos legacy
+function transformMedicionData(data: any[]): MedicionData[] {
+  return data.map(m => ({
+    ...m,
+    // Extraer campos desde localizacion si existen
+    metricaid: m.metricaid ?? m.localizacion?.metricaid ?? 0,
+    nodoid: m.nodoid ?? m.localizacion?.nodoid ?? 0,
+    tipoid: m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0,
+    ubicacionid: m.ubicacionid ?? m.localizacion?.nodo?.ubicacionid ?? 0
+  }))
 }
 
 interface MetricConfig {
@@ -376,7 +403,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
 
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
-      setMediciones(sortedData)
+      // Transformar datos para agregar campos legacy
+      setMediciones(transformMedicionData(sortedData))
       setError(null) // Limpiar cualquier error previo
     } catch (err: any) {
       // Verificar si esta petición sigue siendo válida antes de manejar el error
@@ -814,7 +842,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
       
-      setComparisonMediciones(sortedComparisonData)
+      // Transformar datos para agregar campos legacy
+      setComparisonMediciones(transformMedicionData(sortedComparisonData))
     } catch (err: any) {
       console.error('❌ Error cargando datos de comparación:', err)
     } finally {

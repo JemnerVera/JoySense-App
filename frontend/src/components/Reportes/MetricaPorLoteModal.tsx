@@ -22,12 +22,36 @@ interface ChartDataPoint {
 
 interface MedicionData {
   medicionid: number;
+  localizacionid: number;
+  fecha: string;
+  medicion: number;
+  usercreatedid?: number;
+  datecreated?: string;
+  localizacion?: {
+    localizacionid: number;
+    localizacion: string;
+    nodoid: number;
+    metricaid: number;
+    nodo?: { nodoid: number; nodo: string };
+    metrica?: { metricaid: number; metrica: string; unidad: string };
+  };
+  // Campos legacy para compatibilidad - usados para indexación
   ubicacionid: number;
   nodoid: number;
   tipoid: number;
   metricaid: number;
-  medicion: number;
-  fecha: string;
+}
+
+// Helper para transformar datos del backend al formato MedicionData con campos legacy
+function transformMedicionData(data: any[]): MedicionData[] {
+  return data.map(m => ({
+    ...m,
+    // Extraer campos desde localizacion si existen
+    metricaid: m.metricaid ?? m.localizacion?.metricaid ?? 0,
+    nodoid: m.nodoid ?? m.localizacion?.nodoid ?? 0,
+    tipoid: m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0,
+    ubicacionid: m.ubicacionid ?? m.localizacion?.nodo?.ubicacionid ?? 0
+  }));
 }
 
 // Configuración de métricas
@@ -370,7 +394,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m);
       
-      setComparisonMediciones(sortedComparisonData);
+      // Transformar datos para agregar campos legacy
+      setComparisonMediciones(transformMedicionData(sortedComparisonData));
     } catch (err: any) {
       console.error('❌ Error cargando datos de comparación:', err);
     } finally {
