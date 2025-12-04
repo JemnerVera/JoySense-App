@@ -89,8 +89,10 @@ export const authService = {
   // Iniciar sesión usando el backend (modo desarrollo)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      // Backend URL desde process.env - usar /api/joysense
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api/joysense';
+      // Backend URL desde process.env - limpiar /api si está duplicado
+      let baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+      baseUrl = baseUrl.replace(/\/api\/?$/, ''); // Remover /api del final si existe
+      const backendUrl = `${baseUrl}/api/joysense`;
       const response = await fetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: {

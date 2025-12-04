@@ -7,36 +7,42 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 
-// Configuración de PostgreSQL
-const dbConfig = {
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'postgres',
-  user: process.env.DB_USER || 'backend_user',
-  password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 20, // máximo de conexiones en el pool
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-};
-
 const dbSchema = process.env.DB_SCHEMA || 'joysense';
 
-// Validar configuración
-if (!dbConfig.host || !dbConfig.password) {
-  console.error('❌ ERROR: DB_HOST y DB_PASSWORD son requeridos');
-  console.error('   Variables necesarias:');
-  console.error('   - DB_HOST (ej: db.xxxx.supabase.co)');
-  console.error('   - DB_PORT (default: 5432)');
-  console.error('   - DB_NAME (default: postgres)');
-  console.error('   - DB_USER (default: backend_user)');
-  console.error('   - DB_PASSWORD');
-  console.error('   - DB_SCHEMA (default: joysense)');
+// Configuración de PostgreSQL
+let pool;
+
+if (process.env.DATABASE_URL) {
+  // Usar DATABASE_URL si está disponible
+  console.log('📦 Usando DATABASE_URL para conexión');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  });
+} else if (process.env.DB_HOST && process.env.DB_PASSWORD) {
+  // Usar parámetros separados
+  console.log('📦 Usando parámetros individuales para conexión');
+  const dbConfig = {
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'postgres',
+    user: process.env.DB_USER || 'backend_user',
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  };
+  pool = new Pool(dbConfig);
+} else {
+  console.error('❌ ERROR: Se requiere DATABASE_URL o (DB_HOST + DB_PASSWORD)');
+  console.error('   Opción 1: DATABASE_URL=postgresql://user:pass@host:port/db');
+  console.error('   Opción 2: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD');
   process.exit(1);
 }
-
-// Crear pool de conexiones
-const pool = new Pool(dbConfig);
 
 // Establecer search_path al schema joysense por defecto
 pool.on('connect', (client) => {
@@ -48,8 +54,6 @@ pool.on('error', (err) => {
 });
 
 console.log(`✅ Pool PostgreSQL configurado para schema: ${dbSchema}`);
-console.log(`   Host: ${dbConfig.host}`);
-console.log(`   Usuario: ${dbConfig.user}`);
 
 // ============================================================================
 // HELPERS PARA QUERIES (compatibilidad con estilo Supabase)
