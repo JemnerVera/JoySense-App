@@ -1,10 +1,11 @@
 /**
  * Rutas de Geografía: pais, empresa, fundo, ubicacion
+ * Versión PostgreSQL Directo
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
+const { db, dbSchema, pool } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const logger = require('../utils/logger');
 
@@ -34,11 +35,7 @@ router.get('/pais/columns', async (req, res) => {
 
 router.post('/pais', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pais')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('pais', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -49,12 +46,7 @@ router.post('/pais', async (req, res) => {
 
 router.put('/pais/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pais')
-      .update(req.body)
-      .eq('paisid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('pais', req.body, { paisid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -69,24 +61,25 @@ router.put('/pais/:id', async (req, res) => {
 
 router.get('/empresa', async (req, res) => {
   try {
-    const { paisId, ...otherParams } = req.query;
-    const params = { ...otherParams, sortBy: 'empresaid' };
+    const { paisId } = req.query;
     
+    let sql = `
+      SELECT e.*, 
+             json_build_object('paisid', p.paisid, 'pais', p.pais, 'paisabrev', p.paisabrev) as pais
+      FROM ${dbSchema}.empresa e
+      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
+    `;
+    
+    const params = [];
     if (paisId) {
-      params.paisid = paisId;
+      sql += ` WHERE e.paisid = $1`;
+      params.push(paisId);
     }
     
-    // Query con relación a pais
-    const { data, error } = await supabase
-      .from('empresa')
-      .select(`
-        *,
-        pais:paisid(paisid, pais, paisabrev)
-      `)
-      .order('empresaid');
+    sql += ` ORDER BY e.empresaid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /empresa:', error);
     res.status(500).json({ error: error.message });
@@ -105,11 +98,7 @@ router.get('/empresa/columns', async (req, res) => {
 
 router.post('/empresa', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('empresa')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('empresa', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -120,12 +109,7 @@ router.post('/empresa', async (req, res) => {
 
 router.put('/empresa/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('empresa')
-      .update(req.body)
-      .eq('empresaid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('empresa', req.body, { empresaid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -142,28 +126,30 @@ router.get('/fundo', async (req, res) => {
   try {
     const { empresaId } = req.query;
     
-    let query = supabase
-      .from('fundo')
-      .select(`
-        *,
-        empresa:empresaid(
-          empresaid,
-          empresa,
-          empresabrev,
-          paisid,
-          pais:paisid(paisid, pais, paisabrev)
-        )
-      `)
-      .order('fundoid');
+    let sql = `
+      SELECT f.*,
+             json_build_object(
+               'empresaid', e.empresaid, 
+               'empresa', e.empresa, 
+               'empresabrev', e.empresabrev,
+               'paisid', e.paisid,
+               'pais', json_build_object('paisid', p.paisid, 'pais', p.pais, 'paisabrev', p.paisabrev)
+             ) as empresa
+      FROM ${dbSchema}.fundo f
+      LEFT JOIN ${dbSchema}.empresa e ON f.empresaid = e.empresaid
+      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
+    `;
     
+    const params = [];
     if (empresaId) {
-      query = query.eq('empresaid', empresaId);
+      sql += ` WHERE f.empresaid = $1`;
+      params.push(empresaId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY f.fundoid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /fundo:', error);
     res.status(500).json({ error: error.message });
@@ -182,11 +168,7 @@ router.get('/fundo/columns', async (req, res) => {
 
 router.post('/fundo', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('fundo')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('fundo', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -197,12 +179,7 @@ router.post('/fundo', async (req, res) => {
 
 router.put('/fundo/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('fundo')
-      .update(req.body)
-      .eq('fundoid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('fundo', req.body, { fundoid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -219,33 +196,36 @@ router.get('/ubicacion', async (req, res) => {
   try {
     const { fundoId } = req.query;
     
-    let query = supabase
-      .from('ubicacion')
-      .select(`
-        *,
-        fundo:fundoid(
-          fundoid,
-          fundo,
-          fundoabrev,
-          empresaid,
-          empresa:empresaid(
-            empresaid,
-            empresa,
-            paisid,
-            pais:paisid(paisid, pais)
-          )
-        )
-      `)
-      .order('ubicacionid');
+    let sql = `
+      SELECT u.*,
+             json_build_object(
+               'fundoid', f.fundoid,
+               'fundo', f.fundo,
+               'fundoabrev', f.fundoabrev,
+               'empresaid', f.empresaid,
+               'empresa', json_build_object(
+                 'empresaid', e.empresaid,
+                 'empresa', e.empresa,
+                 'paisid', e.paisid,
+                 'pais', json_build_object('paisid', p.paisid, 'pais', p.pais)
+               )
+             ) as fundo
+      FROM ${dbSchema}.ubicacion u
+      LEFT JOIN ${dbSchema}.fundo f ON u.fundoid = f.fundoid
+      LEFT JOIN ${dbSchema}.empresa e ON f.empresaid = e.empresaid
+      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
+    `;
     
+    const params = [];
     if (fundoId) {
-      query = query.eq('fundoid', fundoId);
+      sql += ` WHERE u.fundoid = $1`;
+      params.push(fundoId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY u.ubicacionid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /ubicacion:', error);
     res.status(500).json({ error: error.message });
@@ -264,11 +244,7 @@ router.get('/ubicacion/columns', async (req, res) => {
 
 router.post('/ubicacion', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('ubicacion')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('ubicacion', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -279,12 +255,7 @@ router.post('/ubicacion', async (req, res) => {
 
 router.put('/ubicacion/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('ubicacion')
-      .update(req.body)
-      .eq('ubicacionid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('ubicacion', req.body, { ubicacionid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -319,11 +290,7 @@ router.get('/entidad/columns', async (req, res) => {
 
 router.post('/entidad', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('entidad')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('entidad', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -334,12 +301,7 @@ router.post('/entidad', async (req, res) => {
 
 router.put('/entidad/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('entidad')
-      .update(req.body)
-      .eq('entidadid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('entidad', req.body, { entidadid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -354,17 +316,18 @@ router.put('/entidad/:id', async (req, res) => {
 
 router.get('/entidad_localizacion', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('entidad_localizacion')
-      .select(`
-        *,
-        entidad:entidadid(entidadid, entidad),
-        localizacion:localizacionid(localizacionid, localizacion)
-      `)
-      .order('entidadid');
+    const sql = `
+      SELECT el.*,
+             json_build_object('entidadid', e.entidadid, 'entidad', e.entidad) as entidad,
+             json_build_object('localizacionid', l.localizacionid, 'localizacion', l.localizacion) as localizacion
+      FROM ${dbSchema}.entidad_localizacion el
+      LEFT JOIN ${dbSchema}.entidad e ON el.entidadid = e.entidadid
+      LEFT JOIN ${dbSchema}.localizacion l ON el.localizacionid = l.localizacionid
+      ORDER BY el.entidadid
+    `;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /entidad_localizacion:', error);
     res.status(500).json({ error: error.message });
@@ -373,11 +336,7 @@ router.get('/entidad_localizacion', async (req, res) => {
 
 router.post('/entidad_localizacion', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('entidad_localizacion')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('entidad_localizacion', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -387,4 +346,3 @@ router.post('/entidad_localizacion', async (req, res) => {
 });
 
 module.exports = router;
-

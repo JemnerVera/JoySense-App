@@ -1,10 +1,11 @@
 /**
  * Rutas de Usuarios: usuario, perfil, contacto, correo, usuarioperfil, codigotelefono
+ * Versión PostgreSQL Directo
  */
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
+const { db, dbSchema, pool } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const { isValidEmail } = require('../utils/validation');
 const logger = require('../utils/logger');
@@ -16,13 +17,8 @@ const bcrypt = require('bcrypt');
 
 router.get('/usuario', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('usuario')
-      .select('*')
-      .order('usuarioid');
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(`SELECT * FROM ${dbSchema}.usuario ORDER BY usuarioid`);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /usuario:', error);
     res.status(500).json({ error: error.message });
@@ -43,19 +39,13 @@ router.post('/usuario', async (req, res) => {
   try {
     const { login, password, ...otherData } = req.body;
     
-    // Validar email
     if (!isValidEmail(login)) {
       return res.status(400).json({ error: 'El login debe ser un email válido' });
     }
     
-    // Hashear password
     const password_hash = await bcrypt.hash(password || 'temporal123', 10);
     
-    const { data, error } = await supabase
-      .from('usuario')
-      .insert({ login, password_hash, ...otherData })
-      .select();
-    
+    const { data, error } = await db.insert('usuario', { login, password_hash, ...otherData });
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -68,17 +58,11 @@ router.put('/usuario/:id', async (req, res) => {
   try {
     const { password, ...updateData } = req.body;
     
-    // Si hay password nuevo, hashearlo
     if (password) {
       updateData.password_hash = await bcrypt.hash(password, 10);
     }
     
-    const { data, error } = await supabase
-      .from('usuario')
-      .update(updateData)
-      .eq('usuarioid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('usuario', updateData, { usuarioid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -87,37 +71,27 @@ router.put('/usuario/:id', async (req, res) => {
   }
 });
 
-// Login de usuario
 router.post('/usuario/login', async (req, res) => {
   try {
     const { login, password } = req.body;
     
-    // Buscar usuario
-    const { data: usuarios, error } = await supabase
-      .from('usuario')
-      .select('*')
-      .eq('login', login)
-      .eq('statusid', 1)
-      .limit(1);
+    const result = await pool.query(
+      `SELECT * FROM ${dbSchema}.usuario WHERE login = $1 AND statusid = 1 LIMIT 1`,
+      [login]
+    );
     
-    if (error) throw error;
-    
-    if (!usuarios || usuarios.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
     
-    const usuario = usuarios[0];
-    
-    // Verificar password
+    const usuario = result.rows[0];
     const passwordValid = await bcrypt.compare(password, usuario.password_hash);
     
     if (!passwordValid) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
     
-    // No devolver el hash
     delete usuario.password_hash;
-    
     res.json({ user: usuario });
   } catch (error) {
     logger.error('Error en POST /usuario/login:', error);
@@ -131,16 +105,16 @@ router.post('/usuario/login', async (req, res) => {
 
 router.get('/perfil', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfil')
-      .select(`
-        *,
-        jefe:jefeid(perfilid, perfil, nivel)
-      `)
-      .order('nivel');
+    const sql = `
+      SELECT p.*,
+             json_build_object('perfilid', j.perfilid, 'perfil', j.perfil, 'nivel', j.nivel) as jefe
+      FROM ${dbSchema}.perfil p
+      LEFT JOIN ${dbSchema}.perfil j ON p.jefeid = j.perfilid
+      ORDER BY p.nivel
+    `;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /perfil:', error);
     res.status(500).json({ error: error.message });
@@ -159,11 +133,7 @@ router.get('/perfil/columns', async (req, res) => {
 
 router.post('/perfil', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfil')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('perfil', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -174,12 +144,7 @@ router.post('/perfil', async (req, res) => {
 
 router.put('/perfil/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfil')
-      .update(req.body)
-      .eq('perfilid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('perfil', req.body, { perfilid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -196,22 +161,35 @@ router.get('/usuarioperfil', async (req, res) => {
   try {
     const { usuarioId, perfilId } = req.query;
     
-    let query = supabase
-      .from('usuarioperfil')
-      .select(`
-        *,
-        usuario:usuarioid(usuarioid, login, firstname, lastname),
-        perfil:perfilid(perfilid, perfil, nivel)
-      `)
-      .order('usuarioid');
+    let sql = `
+      SELECT up.*,
+             json_build_object('usuarioid', u.usuarioid, 'login', u.login, 'firstname', u.firstname, 'lastname', u.lastname) as usuario,
+             json_build_object('perfilid', p.perfilid, 'perfil', p.perfil, 'nivel', p.nivel) as perfil
+      FROM ${dbSchema}.usuarioperfil up
+      LEFT JOIN ${dbSchema}.usuario u ON up.usuarioid = u.usuarioid
+      LEFT JOIN ${dbSchema}.perfil p ON up.perfilid = p.perfilid
+    `;
     
-    if (usuarioId) query = query.eq('usuarioid', usuarioId);
-    if (perfilId) query = query.eq('perfilid', perfilId);
+    const params = [];
+    const conditions = [];
     
-    const { data, error } = await query;
+    if (usuarioId) {
+      conditions.push(`up.usuarioid = $${params.length + 1}`);
+      params.push(usuarioId);
+    }
+    if (perfilId) {
+      conditions.push(`up.perfilid = $${params.length + 1}`);
+      params.push(perfilId);
+    }
     
-    if (error) throw error;
-    res.json(data || []);
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    sql += ` ORDER BY up.usuarioid`;
+    
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /usuarioperfil:', error);
     res.status(500).json({ error: error.message });
@@ -230,11 +208,7 @@ router.get('/usuarioperfil/columns', async (req, res) => {
 
 router.post('/usuarioperfil', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('usuarioperfil')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('usuarioperfil', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -247,15 +221,14 @@ router.put('/usuarioperfil/composite', async (req, res) => {
   try {
     const { usuarioid, perfilid } = req.query;
     
-    const { data, error } = await supabase
-      .from('usuarioperfil')
-      .update(req.body)
-      .eq('usuarioid', usuarioid)
-      .eq('perfilid', perfilid)
-      .select();
+    const result = await pool.query(
+      `UPDATE ${dbSchema}.usuarioperfil SET ${Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`).join(', ')} 
+       WHERE usuarioid = $${Object.keys(req.body).length + 1} AND perfilid = $${Object.keys(req.body).length + 2} 
+       RETURNING *`,
+      [...Object.values(req.body), usuarioid, perfilid]
+    );
     
-    if (error) throw error;
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
     logger.error('Error en PUT /usuarioperfil/composite:', error);
     res.status(500).json({ error: error.message });
@@ -268,13 +241,8 @@ router.put('/usuarioperfil/composite', async (req, res) => {
 
 router.get('/codigotelefono', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('codigotelefono')
-      .select('*')
-      .order('paistelefono');
-    
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(`SELECT * FROM ${dbSchema}.codigotelefono ORDER BY paistelefono`);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /codigotelefono:', error);
     res.status(500).json({ error: error.message });
@@ -293,11 +261,7 @@ router.get('/codigotelefono/columns', async (req, res) => {
 
 router.post('/codigotelefono', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('codigotelefono')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('codigotelefono', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -308,12 +272,7 @@ router.post('/codigotelefono', async (req, res) => {
 
 router.put('/codigotelefono/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('codigotelefono')
-      .update(req.body)
-      .eq('codigotelefonoid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('codigotelefono', req.body, { codigotelefonoid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -323,30 +282,32 @@ router.put('/codigotelefono/:id', async (req, res) => {
 });
 
 // ============================================================================
-// CONTACTO (ahora solo teléfonos)
+// CONTACTO
 // ============================================================================
 
 router.get('/contacto', async (req, res) => {
   try {
     const { usuarioId } = req.query;
     
-    let query = supabase
-      .from('contacto')
-      .select(`
-        *,
-        usuario:usuarioid(usuarioid, login, firstname, lastname),
-        codigotelefono:codigotelefonoid(codigotelefonoid, codigotelefono, paistelefono)
-      `)
-      .order('contactoid');
+    let sql = `
+      SELECT c.*,
+             json_build_object('usuarioid', u.usuarioid, 'login', u.login, 'firstname', u.firstname, 'lastname', u.lastname) as usuario,
+             json_build_object('codigotelefonoid', ct.codigotelefonoid, 'codigotelefono', ct.codigotelefono, 'paistelefono', ct.paistelefono) as codigotelefono
+      FROM ${dbSchema}.contacto c
+      LEFT JOIN ${dbSchema}.usuario u ON c.usuarioid = u.usuarioid
+      LEFT JOIN ${dbSchema}.codigotelefono ct ON c.codigotelefonoid = ct.codigotelefonoid
+    `;
     
+    const params = [];
     if (usuarioId) {
-      query = query.eq('usuarioid', usuarioId);
+      sql += ` WHERE c.usuarioid = $1`;
+      params.push(usuarioId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY c.contactoid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /contacto:', error);
     res.status(500).json({ error: error.message });
@@ -365,11 +326,7 @@ router.get('/contacto/columns', async (req, res) => {
 
 router.post('/contacto', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('contacto')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('contacto', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -380,12 +337,7 @@ router.post('/contacto', async (req, res) => {
 
 router.put('/contacto/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('contacto')
-      .update(req.body)
-      .eq('contactoid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('contacto', req.body, { contactoid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -395,29 +347,30 @@ router.put('/contacto/:id', async (req, res) => {
 });
 
 // ============================================================================
-// CORREO (nueva tabla separada)
+// CORREO
 // ============================================================================
 
 router.get('/correo', async (req, res) => {
   try {
     const { usuarioId } = req.query;
     
-    let query = supabase
-      .from('correo')
-      .select(`
-        *,
-        usuario:usuarioid(usuarioid, login, firstname, lastname)
-      `)
-      .order('correoid');
+    let sql = `
+      SELECT c.*,
+             json_build_object('usuarioid', u.usuarioid, 'login', u.login, 'firstname', u.firstname, 'lastname', u.lastname) as usuario
+      FROM ${dbSchema}.correo c
+      LEFT JOIN ${dbSchema}.usuario u ON c.usuarioid = u.usuarioid
+    `;
     
+    const params = [];
     if (usuarioId) {
-      query = query.eq('usuarioid', usuarioId);
+      sql += ` WHERE c.usuarioid = $1`;
+      params.push(usuarioId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY c.correoid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /correo:', error);
     res.status(500).json({ error: error.message });
@@ -438,16 +391,11 @@ router.post('/correo', async (req, res) => {
   try {
     const { correo } = req.body;
     
-    // Validar email
     if (!isValidEmail(correo)) {
       return res.status(400).json({ error: 'El correo debe ser un email válido' });
     }
     
-    const { data, error } = await supabase
-      .from('correo')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('correo', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -458,12 +406,7 @@ router.post('/correo', async (req, res) => {
 
 router.put('/correo/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('correo')
-      .update(req.body)
-      .eq('correoid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('correo', req.body, { correoid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -480,26 +423,31 @@ router.get('/perfil_geografia_permiso', async (req, res) => {
   try {
     const { perfilId } = req.query;
     
-    let query = supabase
-      .from('perfil_geografia_permiso')
-      .select(`
-        *,
-        perfil:perfilid(perfilid, perfil),
-        pais:paisid(paisid, pais),
-        empresa:empresaid(empresaid, empresa),
-        fundo:fundoid(fundoid, fundo),
-        ubicacion:ubicacionid(ubicacionid, ubicacion)
-      `)
-      .order('permisoid');
+    let sql = `
+      SELECT pgp.*,
+             json_build_object('perfilid', pf.perfilid, 'perfil', pf.perfil) as perfil,
+             json_build_object('paisid', ps.paisid, 'pais', ps.pais) as pais,
+             json_build_object('empresaid', e.empresaid, 'empresa', e.empresa) as empresa,
+             json_build_object('fundoid', f.fundoid, 'fundo', f.fundo) as fundo,
+             json_build_object('ubicacionid', u.ubicacionid, 'ubicacion', u.ubicacion) as ubicacion
+      FROM ${dbSchema}.perfil_geografia_permiso pgp
+      LEFT JOIN ${dbSchema}.perfil pf ON pgp.perfilid = pf.perfilid
+      LEFT JOIN ${dbSchema}.pais ps ON pgp.paisid = ps.paisid
+      LEFT JOIN ${dbSchema}.empresa e ON pgp.empresaid = e.empresaid
+      LEFT JOIN ${dbSchema}.fundo f ON pgp.fundoid = f.fundoid
+      LEFT JOIN ${dbSchema}.ubicacion u ON pgp.ubicacionid = u.ubicacionid
+    `;
     
+    const params = [];
     if (perfilId) {
-      query = query.eq('perfilid', perfilId);
+      sql += ` WHERE pgp.perfilid = $1`;
+      params.push(perfilId);
     }
     
-    const { data, error } = await query;
+    sql += ` ORDER BY pgp.permisoid`;
     
-    if (error) throw error;
-    res.json(data || []);
+    const result = await pool.query(sql, params);
+    res.json(result.rows || []);
   } catch (error) {
     logger.error('Error en GET /perfil_geografia_permiso:', error);
     res.status(500).json({ error: error.message });
@@ -518,11 +466,7 @@ router.get('/perfil_geografia_permiso/columns', async (req, res) => {
 
 router.post('/perfil_geografia_permiso', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfil_geografia_permiso')
-      .insert(req.body)
-      .select();
-    
+    const { data, error } = await db.insert('perfil_geografia_permiso', req.body);
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -533,12 +477,7 @@ router.post('/perfil_geografia_permiso', async (req, res) => {
 
 router.put('/perfil_geografia_permiso/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('perfil_geografia_permiso')
-      .update(req.body)
-      .eq('permisoid', req.params.id)
-      .select();
-    
+    const { data, error } = await db.update('perfil_geografia_permiso', req.body, { permisoid: req.params.id });
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -548,4 +487,3 @@ router.put('/perfil_geografia_permiso/:id', async (req, res) => {
 });
 
 module.exports = router;
-

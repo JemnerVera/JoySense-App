@@ -1,8 +1,9 @@
 /**
  * Utilidades de Paginación, Búsqueda y Filtros
+ * Versión PostgreSQL Directo
  */
 
-const { supabase } = require('../config/database');
+const { pool, dbSchema } = require('../config/database');
 const logger = require('./logger');
 
 /**
@@ -57,16 +58,23 @@ async function paginateAndFilter(tableName, params = {}) {
   const usePagination = page !== undefined && page !== null;
 
   try {
-    let query = supabase
-      .from(tableName)
-      .select('*', { count: 'exact' });
-
+    const queryParams = [];
+    let paramIndex = 1;
+    
+    // Base query
+    let countSql = `SELECT COUNT(*) as total FROM ${dbSchema}.${tableName}`;
+    let dataSql = `SELECT * FROM ${dbSchema}.${tableName}`;
+    
+    // WHERE clauses
+    const whereClauses = [];
+    
     // Aplicar filtros específicos
     Object.keys(filters).forEach(key => {
       const value = filters[key];
       if (value !== undefined && value !== null && value !== '') {
-        const numValue = Number(value);
-        query = query.eq(key, isNaN(numValue) ? value : numValue);
+        whereClauses.push(`${key} = $${paramIndex}`);
+        queryParams.push(value);
+        paramIndex++;
       }
     });
 
@@ -74,63 +82,46 @@ async function paginateAndFilter(tableName, params = {}) {
     if (search && search.trim() !== '') {
       const searchFields = SEARCHABLE_FIELDS[tableName] || [];
       if (searchFields.length > 0) {
-        const searchTerm = search.trim().toLowerCase();
-        const orFilters = searchFields.map(field => `${field}.ilike.%${searchTerm}%`).join(',');
-        query = query.or(orFilters);
+        const searchTerm = `%${search.trim().toLowerCase()}%`;
+        const searchClauses = searchFields.map(field => `LOWER(${field}::text) LIKE $${paramIndex}`);
+        whereClauses.push(`(${searchClauses.join(' OR ')})`);
+        queryParams.push(searchTerm);
+        paramIndex++;
       }
     }
 
+    // Agregar WHERE si hay condiciones
+    if (whereClauses.length > 0) {
+      const whereStr = ` WHERE ${whereClauses.join(' AND ')}`;
+      countSql += whereStr;
+      dataSql += whereStr;
+    }
+
     // Obtener total de registros
-    const { count: totalRecords } = await query;
+    const countResult = await pool.query(countSql, queryParams.slice(0, paramIndex - 1));
+    const totalRecords = parseInt(countResult.rows[0].total);
 
     // Aplicar ordenamiento
     if (sortBy) {
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      dataSql += ` ORDER BY ${sortBy} ${sortOrder === 'asc' ? 'ASC' : 'DESC'}`;
     }
 
     // Aplicar paginación si está habilitada
     if (usePagination) {
       const pageNum = parseInt(page);
       const pageSizeNum = parseInt(pageSize);
-      const from = (pageNum - 1) * pageSizeNum;
-      const to = from + pageSizeNum - 1;
+      const offset = (pageNum - 1) * pageSizeNum;
       
-      query = query.range(from, to);
+      dataSql += ` LIMIT ${pageSizeNum} OFFSET ${offset}`;
       logger.debug(`Paginación: Tabla=${tableName}, Página=${pageNum}, Total=${totalRecords}`);
-    } else {
-      // Modo legacy: obtener todos los registros en batches
-      logger.debug(`Modo legacy: Cargando todos los registros de ${tableName}`);
-      let allData = [];
-      let from = 0;
-      const batchSize = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data: batchData, error } = await supabase
-          .from(tableName)
-          .select('*')
-          .order(sortBy, { ascending: sortOrder === 'asc' })
-          .range(from, from + batchSize - 1);
-
-        if (error) throw error;
-
-        if (batchData && batchData.length > 0) {
-          allData = allData.concat(batchData);
-          from += batchSize;
-          hasMore = batchData.length === batchSize;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      return allData;
     }
 
-    const { data, error } = await query;
+    const dataResult = await pool.query(dataSql, queryParams.slice(0, paramIndex - 1));
+    const data = dataResult.rows;
 
-    if (error) {
-      logger.error(`Error en paginateAndFilter para ${tableName}:`, error);
-      throw error;
+    // Si no hay paginación, retornar solo los datos (modo legacy)
+    if (!usePagination) {
+      return data;
     }
 
     const totalPages = Math.ceil(totalRecords / parseInt(pageSize));
@@ -170,14 +161,12 @@ async function getTableMetadata(tableName) {
   try {
     logger.debug(`Obteniendo metadatos para: ${tableName}`);
     
-    const { data, error } = await supabase.rpc('fn_get_table_metadata', {
-      tbl_name: tableName
-    });
+    const result = await pool.query(
+      `SELECT ${dbSchema}.fn_get_table_metadata($1)`,
+      [tableName]
+    );
     
-    if (error) {
-      logger.error(`Error en stored procedure para ${tableName}:`, error);
-      throw new Error(`No se pudieron obtener metadatos para ${tableName}: ${error.message}`);
-    }
+    const data = result.rows[0]?.fn_get_table_metadata;
     
     if (!data || !data.columns || data.columns.length === 0) {
       logger.warn(`No hay columnas para ${tableName}`);
@@ -212,4 +201,3 @@ module.exports = {
   clearMetadataCache,
   metadataCache
 };
-
