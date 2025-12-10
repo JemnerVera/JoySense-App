@@ -58,7 +58,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     pageSize = 100,
     limit,  // Parámetro de límite simple (sin paginación completa)
     search = '',
-    sortBy = 'datecreated',
+    sortBy,
     sortOrder = 'desc',
     ...filters
   } = params;
@@ -118,8 +118,11 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     if (countError) {
       logger.error(`❌ Error obteniendo count para ${tableName}: ${countError.message}`);
       logger.error(`❌ [COUNT] Code: ${countError.code || 'N/A'}, Details: ${countError.details || 'N/A'}, Hint: ${countError.hint || 'N/A'}`);
+      logger.error(`❌ [COUNT] Params: ${JSON.stringify(params || {}, null, 2)}`);
       throw countError;
     }
+    
+    logger.info(`📊 [paginateAndFilter] ${tableName}: Count = ${totalRecords || 0}`);
     
     // Construir query de datos
     // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
@@ -138,27 +141,31 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     }
     
     // Aplicar ordenamiento
-    // Para perfil_geografia_permiso, usar permisoid en lugar de datecreated si no se especifica sortBy
-    if (tableName === 'perfil_geografia_permiso' && (!sortBy || sortBy === 'datecreated')) {
-      sortBy = 'permisoid';
+    // Determinar el campo de ordenamiento por defecto según la tabla
+    let finalSortBy = sortBy;
+    
+    if (!finalSortBy) {
+      // Para perfil_geografia_permiso, usar permisoid como default
+      // Para otras tablas, usar datecreated
+      finalSortBy = tableName === 'perfil_geografia_permiso' ? 'permisoid' : 'datecreated';
     }
     
-    // Si no hay sortBy, usar datecreated por defecto
-    if (!sortBy) {
-      sortBy = 'datecreated';
+    // Para perfil_geografia_permiso, si se intenta ordenar por datemodified (que no existe), usar permisoid
+    if (tableName === 'perfil_geografia_permiso' && finalSortBy === 'datemodified') {
+      finalSortBy = 'permisoid';
     }
     
     const ascending = sortOrder !== 'desc';
     
     // Ordenar por el campo especificado
-    if (sortBy === 'datecreated') {
+    if (finalSortBy === 'datecreated') {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
       // Solo agregar datemodified si la tabla lo tiene (perfil_geografia_permiso no lo tiene)
       if (tableName !== 'perfil_geografia_permiso') {
         dataQuery = dataQuery.order('datemodified', { ascending });
       }
-    } else if (sortBy === 'datemodified') {
+    } else if (finalSortBy === 'datemodified') {
       // Si ordenamos por datemodified, usar datecreated como desempate
       dataQuery = dataQuery.order('datemodified', { ascending });
       if (tableName !== 'perfil_geografia_permiso') {
@@ -166,7 +173,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       }
     } else {
       // Ordenar por el campo especificado
-      dataQuery = dataQuery.order(sortBy, { ascending });
+      dataQuery = dataQuery.order(finalSortBy, { ascending });
     }
 
     // Aplicar paginación
