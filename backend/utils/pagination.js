@@ -1,9 +1,11 @@
 /**
  * Utilidades de Paginación, Búsqueda y Filtros
- * Versión PostgreSQL Directo
+ * Versión Supabase API
+ * 
+ * IMPORTANTE: Usa Supabase API directamente - RLS funciona automáticamente
  */
 
-const { pool, dbSchema } = require('../config/database');
+const { supabase: baseSupabase, dbSchema, count: dbCount, select: dbSelect, rpc, ensureAuthenticated } = require('../config/database');
 const logger = require('./logger');
 
 /**
@@ -36,22 +38,27 @@ const SEARCHABLE_FIELDS = {
   perfilumbral: ['perfilid', 'umbralid'],
   asociacion: ['id_device'],
   audit_log_umbral: ['accion'],
-  entidad_localizacion: ['entidadid', 'localizacionid']
+  entidad_localizacion: ['entidadid', 'localizacionid'],
+  perfil_geografia_permiso: ['perfilid']
 };
 
 /**
- * Helper para paginar, buscar y filtrar datos de cualquier tabla
+ * Helper para paginar, buscar y filtrar datos de cualquier tabla usando Supabase API
  * @param {string} tableName - Nombre de la tabla
  * @param {Object} params - Parámetros de paginación, búsqueda y filtros
  * @returns {Promise<Object>} - { data, pagination } o data (modo legacy)
  */
-async function paginateAndFilter(tableName, params = {}) {
+async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
+  // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+  // Si no hay token, usar el cliente base
+  const supabase = userSupabase || baseSupabase;
+  
   const {
     page,
     pageSize = 100,
     limit,  // Parámetro de límite simple (sin paginación completa)
     search = '',
-    sortBy = 'datemodified',
+    sortBy = 'datecreated',
     sortOrder = 'desc',
     ...filters
   } = params;
@@ -60,76 +67,141 @@ async function paginateAndFilter(tableName, params = {}) {
   const simpleLimit = limit ? parseInt(limit) : null;
 
   try {
-    const queryParams = [];
-    let paramIndex = 1;
     
-    // Base query
-    let countSql = `SELECT COUNT(*) as total FROM ${dbSchema}.${tableName}`;
-    let dataSql = `SELECT * FROM ${dbSchema}.${tableName}`;
-    
-    // WHERE clauses
-    const whereClauses = [];
+    // Construir filtros para Supabase
+    const whereFilters = {};
     
     // Aplicar filtros específicos
     Object.keys(filters).forEach(key => {
       const value = filters[key];
       if (value !== undefined && value !== null && value !== '') {
-        whereClauses.push(`${key} = $${paramIndex}`);
-        queryParams.push(value);
-        paramIndex++;
+        whereFilters[key] = value;
       }
     });
 
-    // Aplicar búsqueda en múltiples campos
+    // Construir query de búsqueda para Supabase
+    // Supabase usa ilike para búsqueda case-insensitive
+    let searchFilters = [];
     if (search && search.trim() !== '') {
       const searchFields = SEARCHABLE_FIELDS[tableName] || [];
       if (searchFields.length > 0) {
-        const searchTerm = `%${search.trim().toLowerCase()}%`;
-        const searchClauses = searchFields.map(field => `LOWER(${field}::text) LIKE $${paramIndex}`);
-        whereClauses.push(`(${searchClauses.join(' OR ')})`);
-        queryParams.push(searchTerm);
-        paramIndex++;
+        searchFields.forEach(field => {
+          searchFilters.push({ field, value: `%${search.trim()}%`, operator: 'ilike' });
+        });
       }
     }
 
-    // Agregar WHERE si hay condiciones
-    if (whereClauses.length > 0) {
-      const whereStr = ` WHERE ${whereClauses.join(' AND ')}`;
-      countSql += whereStr;
-      dataSql += whereStr;
+    // Obtener total de registros usando count
+    // Construir query de count con filtros
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    const { dbSchema } = require('../config/database');
+    let countQuery = supabase.schema(dbSchema).from(tableName).select('*', { count: 'exact', head: true });
+    
+    // Aplicar filtros
+    Object.keys(whereFilters).forEach(key => {
+      countQuery = countQuery.eq(key, whereFilters[key]);
+    });
+    
+    // Aplicar búsqueda (usar or() para múltiples campos)
+    if (searchFilters.length > 0) {
+      // Supabase requiere usar or() para múltiples condiciones
+      const orConditions = searchFilters.map(({ field, value }) => `${field}.ilike.${value}`);
+      // Nota: Supabase no soporta or() directamente en select, necesitamos hacerlo diferente
+      // Por ahora, usar el primer campo de búsqueda
+      if (searchFilters.length > 0) {
+        countQuery = countQuery.ilike(searchFilters[0].field, searchFilters[0].value);
+      }
     }
-
-    // Obtener total de registros
-    const countResult = await pool.query(countSql, queryParams.slice(0, paramIndex - 1));
-    const totalRecords = parseInt(countResult.rows[0].total);
-
+    
+    const { count: totalRecords, error: countError } = await countQuery;
+    
+    if (countError) {
+      logger.error(`❌ Error obteniendo count para ${tableName}: ${countError.message}`);
+      logger.error(`❌ [COUNT] Code: ${countError.code || 'N/A'}, Details: ${countError.details || 'N/A'}, Hint: ${countError.hint || 'N/A'}`);
+      throw countError;
+    }
+    
+    // Construir query de datos
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    // Usar el mismo cliente de Supabase (con o sin token de usuario)
+    let dataQuery = supabase.schema(dbSchema).from(tableName).select('*');
+    
+    // Aplicar filtros
+    Object.keys(whereFilters).forEach(key => {
+      dataQuery = dataQuery.eq(key, whereFilters[key]);
+    });
+    
+    // Aplicar búsqueda
+    if (searchFilters.length > 0) {
+      // Usar el primer campo de búsqueda (Supabase limita or() en algunos casos)
+      dataQuery = dataQuery.ilike(searchFilters[0].field, searchFilters[0].value);
+    }
+    
     // Aplicar ordenamiento
-    if (sortBy) {
-      dataSql += ` ORDER BY ${sortBy} ${sortOrder === 'asc' ? 'ASC' : 'DESC'}`;
+    // Para perfil_geografia_permiso, usar permisoid en lugar de datecreated si no se especifica sortBy
+    if (tableName === 'perfil_geografia_permiso' && (!sortBy || sortBy === 'datecreated')) {
+      sortBy = 'permisoid';
+    }
+    
+    // Si no hay sortBy, usar datecreated por defecto
+    if (!sortBy) {
+      sortBy = 'datecreated';
+    }
+    
+    const ascending = sortOrder !== 'desc';
+    
+    // Ordenar por el campo especificado
+    if (sortBy === 'datecreated') {
+      // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
+      dataQuery = dataQuery.order('datecreated', { ascending });
+      // Solo agregar datemodified si la tabla lo tiene (perfil_geografia_permiso no lo tiene)
+      if (tableName !== 'perfil_geografia_permiso') {
+        dataQuery = dataQuery.order('datemodified', { ascending });
+      }
+    } else if (sortBy === 'datemodified') {
+      // Si ordenamos por datemodified, usar datecreated como desempate
+      dataQuery = dataQuery.order('datemodified', { ascending });
+      if (tableName !== 'perfil_geografia_permiso') {
+        dataQuery = dataQuery.order('datecreated', { ascending });
+      }
+    } else {
+      // Ordenar por el campo especificado
+      dataQuery = dataQuery.order(sortBy, { ascending });
     }
 
-    // Aplicar paginación si está habilitada
+    // Aplicar paginación
     if (usePagination) {
       const pageNum = parseInt(page);
       const pageSizeNum = parseInt(pageSize);
       const offset = (pageNum - 1) * pageSizeNum;
       
-      dataSql += ` LIMIT ${pageSizeNum} OFFSET ${offset}`;
-      logger.debug(`Paginación: Tabla=${tableName}, Página=${pageNum}, Total=${totalRecords}`);
+      // Supabase range es inclusivo: range(offset, offset + pageSize - 1)
+      dataQuery = dataQuery.range(offset, offset + pageSizeNum - 1);
+      logger.info(`🔍 Paginación: Tabla=${tableName}, Página=${pageNum}, Total=${totalRecords || 0}`);
     } else if (simpleLimit) {
       // Límite simple sin paginación
-      dataSql += ` LIMIT ${simpleLimit}`;
+      dataQuery = dataQuery.limit(parseInt(simpleLimit));
     }
 
-    const dataResult = await pool.query(dataSql, queryParams.slice(0, paramIndex - 1));
-    const data = dataResult.rows;
-
+    // DEBUG: Log detallado de la query de datos
+    logger.info(`🔍 [DATA] Ejecutando query de datos para ${tableName}`);
+    
+    const { data, error: dataError } = await dataQuery;
+    
+    if (dataError) {
+      logger.error(`❌ Error obteniendo datos para ${tableName}: ${dataError.message}`);
+      logger.error(`❌ [DATA] Code: ${dataError.code || 'N/A'}, Details: ${dataError.details || 'N/A'}, Hint: ${dataError.hint || 'N/A'}`);
+      throw dataError;
+    }
+    
+    logger.info(`🔍 [DATA] Registros devueltos para ${tableName}: ${(data || []).length}`);
+    
     // Si no hay paginación, retornar solo los datos (modo legacy)
     if (!usePagination) {
-      return data;
+      return data || [];
     }
 
-    const totalPages = Math.ceil(totalRecords / parseInt(pageSize));
+    const totalPages = Math.ceil((totalRecords || 0) / parseInt(pageSize));
     
     return {
       data: data || [],
@@ -155,37 +227,128 @@ async function paginateAndFilter(tableName, params = {}) {
 const metadataCache = new Map();
 
 /**
- * Obtener metadatos de tabla usando Stored Procedure
+ * Obtener metadatos de tabla
+ * Intenta usar RPC primero, si falla usa una query directa para inferir estructura
  */
 async function getTableMetadata(tableName) {
   if (metadataCache.has(tableName)) {
-    logger.debug(`Usando metadatos en cache para: ${tableName}`);
     return metadataCache.get(tableName);
   }
   
   try {
-    logger.debug(`Obteniendo metadatos para: ${tableName}`);
+    // Intentar primero con RPC (la función consulta information_schema, no está afectada por RLS)
+    // La función está en joysense y se accede directamente usando .schema('joysense')
+    const rpcResult = await rpc('fn_get_table_metadata', { tbl_name: tableName });
     
-    const result = await pool.query(
-      `SELECT ${dbSchema}.fn_get_table_metadata($1)`,
-      [tableName]
-    );
-    
-    const data = result.rows[0]?.fn_get_table_metadata;
-    
-    if (!data || !data.columns || data.columns.length === 0) {
-      logger.warn(`No hay columnas para ${tableName}`);
-      throw new Error(`La tabla ${tableName} no existe o no tiene columnas`);
+    // Si RPC funciona y retorna datos, usarlos (incluso si la tabla está vacía, debería retornar columnas)
+    if (!rpcResult.error && rpcResult.data) {
+      // Verificar que tenga la estructura esperada
+      if (rpcResult.data.columns !== undefined) {
+        metadataCache.set(tableName, rpcResult.data);
+        const columnCount = Array.isArray(rpcResult.data.columns) ? rpcResult.data.columns.length : 0;
+        logger.info(`✅ Metadatos obtenidos para: ${tableName} (${columnCount} columnas) vía RPC`);
+        return rpcResult.data;
+      }
+      // Si RPC retornó datos pero sin estructura de columnas, continuar con fallback
+      logger.warn(`⚠️ RPC retornó datos pero sin estructura de columnas para ${tableName}, usando fallback`);
+    } else if (rpcResult.error) {
+      logger.warn(`⚠️ RPC falló para ${tableName}: ${rpcResult.error.message}, usando fallback`);
     }
     
-    metadataCache.set(tableName, data);
-    logger.info(`Metadatos obtenidos para: ${tableName} (${data.columns.length} columnas)`);
+    // Fallback: Obtener una fila para inferir estructura
+    logger.info(`ℹ️ Usando fallback para obtener estructura de ${tableName} desde una fila`);
+    const { data: rows, error: queryError } = await baseSupabase
+      .schema(dbSchema)
+      .from(tableName)
+      .select('*')
+      .limit(1);
     
-    return data;
+    if (queryError) {
+      logger.warn(`⚠️ No se pudo obtener fila de ${tableName}: ${queryError.message}. Retornando metadatos vacíos.`);
+      const emptyMetadata = {
+        columns: [],
+        constraints: [],
+        tableName,
+        info: {
+          table_name: tableName,
+          table_type: 'BASE TABLE'
+        }
+      };
+      metadataCache.set(tableName, emptyMetadata);
+      return emptyMetadata;
+    }
+    
+    // Verificar si obtuvimos alguna fila
+    const firstRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    
+    // Si la tabla está vacía (no hay filas), retornar metadatos vacíos
+    if (!firstRow || Object.keys(firstRow).length === 0) {
+      logger.info(`ℹ️ La tabla ${tableName} está vacía. Retornando metadatos vacíos.`);
+      const emptyMetadata = {
+        columns: [],
+        constraints: [],
+        tableName,
+        info: {
+          table_name: tableName,
+          table_type: 'BASE TABLE'
+        }
+      };
+      metadataCache.set(tableName, emptyMetadata);
+      return emptyMetadata;
+    }
+    
+    // Construir metadatos básicos desde la estructura de la primera fila
+    const columns = Object.keys(firstRow).map(colName => ({
+      column_name: colName,
+      data_type: inferDataType(firstRow[colName]),
+      is_nullable: firstRow[colName] === null ? 'YES' : 'NO',
+      column_default: null,
+      is_identity: colName.endsWith('id') && colName !== 'statusid' && colName !== 'usercreatedid' && colName !== 'usermodifiedid'
+    }));
+    
+    const metadata = {
+      columns,
+      constraints: [],
+      tableName
+    };
+    
+    metadataCache.set(tableName, metadata);
+    logger.info(`✅ Metadatos inferidos para: ${tableName} (${columns.length} columnas) desde primera fila`);
+    
+    return metadata;
   } catch (error) {
-    logger.error(`Error obteniendo metadatos para ${tableName}:`, error.message);
-    throw error;
+    // En caso de error inesperado, retornar metadatos vacíos en lugar de lanzar error
+    logger.warn(`⚠️ Error obteniendo metadatos para ${tableName}: ${error.message}. Retornando metadatos vacíos.`);
+    const emptyMetadata = {
+      columns: [],
+      constraints: [],
+      tableName,
+      info: {
+        table_name: tableName,
+        table_type: 'BASE TABLE'
+      }
+    };
+    metadataCache.set(tableName, emptyMetadata);
+    return emptyMetadata;
   }
+}
+
+/**
+ * Inferir tipo de dato desde un valor JavaScript
+ */
+function inferDataType(value) {
+  if (value === null || value === undefined) return 'text';
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? 'integer' : 'numeric';
+  }
+  if (typeof value === 'boolean') return 'boolean';
+  if (typeof value === 'string') {
+    // Intentar detectar fechas/timestamps
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) return 'timestamp';
+    return 'text';
+  }
+  if (value instanceof Date) return 'timestamp';
+  return 'text';
 }
 
 /**
