@@ -441,24 +441,41 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   }, [setFormData, onSubTabChange]);
 
   const handleInsert = useCallback(async () => {
-    // Validar formulario y mostrar mensaje warning si hay errores
-    if (!validateForm()) {
-      // Obtener errores de validación
-      const validationErrors = Object.values(formState.errors).filter(Boolean);
-      const errorMessage = validationErrors.length > 0 
-        ? validationErrors.join('\n')
-        : 'Por favor complete todos los campos requeridos';
-      
-      setMessage({ type: 'warning', text: errorMessage });
-      return;
+    // Para perfil_geografia_permiso, validar campos requeridos manualmente
+    if (selectedTable === 'perfil_geografia_permiso') {
+      if (!formState.data.perfilid) {
+        setMessage({ type: 'warning', text: 'Por favor seleccione un perfil' });
+        return;
+      }
+      if (!formState.data.paisid && !formState.data.empresaid && !formState.data.fundoid && !formState.data.ubicacionid) {
+        setMessage({ type: 'warning', text: 'Por favor seleccione un tipo de geografía y su valor' });
+        return;
+      }
+    } else {
+      // Validar formulario y mostrar mensaje warning si hay errores
+      if (!validateForm()) {
+        // Obtener errores de validación
+        const validationErrors = Object.values(formState.errors).filter(Boolean);
+        const errorMessage = validationErrors.length > 0 
+          ? validationErrors.join('\n')
+          : 'Por favor complete todos los campos requeridos';
+        
+        setMessage({ type: 'warning', text: errorMessage });
+        return;
+      }
     }
 
     // Agregar campos de auditoría
-    const dataToInsert = {
+    const dataToInsert: Record<string, any> = {
       ...formState.data,
       usercreatedid: user?.user_metadata?.usuarioid || 1,
       datecreated: new Date().toISOString()
     };
+
+    // Para perfil_geografia_permiso, excluir permisoid (se genera automáticamente)
+    if (selectedTable === 'perfil_geografia_permiso') {
+      delete dataToInsert.permisoid;
+    }
 
     const result = await insertRow(dataToInsert);
     

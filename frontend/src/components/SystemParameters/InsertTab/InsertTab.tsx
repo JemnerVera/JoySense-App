@@ -5,6 +5,7 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import NormalInsertForm from '../../NormalInsertForm';
+import PerfilGeografiaPermisoForm from '../../PerfilGeografiaPermisoForm';
 // import MultipleSensorForm from '../../MultipleSensorForm';
 // import MultipleMetricaSensorForm from '../../MultipleMetricaSensorForm';
 // import MultipleUsuarioPerfilForm from '../../MultipleUsuarioPerfilForm';
@@ -117,13 +118,27 @@ export const InsertTab: React.FC<InsertTabProps> = ({
 
   // Determinar qué formulario renderizar según la tabla
   const renderForm = () => {
-    // NOTA: Los formularios especiales (MultipleSensorForm, MultipleMetricaSensorForm, MultipleUsuarioPerfilForm)
-    // requieren props muy específicas que no están disponibles en este contexto genérico.
-    // Por ahora, usamos NormalInsertForm para todas las tablas.
-    // Si se necesita soporte para formularios múltiples, se debe implementar en SystemParameters.tsx
-    // con el estado y handlers necesarios antes de pasarlos a InsertTab.
+    // Formulario especializado para perfil_geografia_permiso
+    if (tableName === 'perfil_geografia_permiso') {
+      return (
+        <PerfilGeografiaPermisoForm
+          formData={formData}
+          setFormData={setFormData}
+          updateFormField={updateFormField}
+          loading={loading}
+          onInsert={onInsert}
+          onCancel={onCancel}
+          perfilesData={relatedData.perfilesData}
+          paisesData={relatedData.paisesData}
+          empresasData={relatedData.empresasData}
+          fundosData={relatedData.fundosData}
+          ubicacionesData={relatedData.ubicacionesData}
+          getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
+        />
+      );
+    }
 
-    // Formulario normal para todas las tablas
+    // Formulario normal para todas las demás tablas
     return (
       <NormalInsertForm
         visibleColumns={visibleColumns}
