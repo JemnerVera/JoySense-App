@@ -19,6 +19,7 @@ interface NormalUpdateFormProps {
   relatedData: RelatedData;
   visibleColumns?: any[];
   getColumnDisplayName?: (columnName: string) => string;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
@@ -28,9 +29,45 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   updateFormField,
   relatedData,
   visibleColumns = [],
-  getColumnDisplayName
+  getColumnDisplayName,
+  themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
+  
+  // Helper para obtener clases de color según el tema
+  const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
+    const colors = {
+      red: {
+        text: 'text-red-500',
+        bg: 'bg-red-500',
+        hover: 'hover:bg-red-600',
+        focus: 'focus:ring-red-500',
+        border: 'border-red-500'
+      },
+      blue: {
+        text: 'text-blue-500',
+        bg: 'bg-blue-500',
+        hover: 'hover:bg-blue-600',
+        focus: 'focus:ring-blue-500',
+        border: 'border-blue-500'
+      },
+      green: {
+        text: 'text-green-500',
+        bg: 'bg-green-500',
+        hover: 'hover:bg-green-600',
+        focus: 'focus:ring-green-500',
+        border: 'border-green-500'
+      },
+      orange: {
+        text: 'text-orange-500',
+        bg: 'bg-orange-500',
+        hover: 'hover:bg-orange-600',
+        focus: 'focus:ring-orange-500',
+        border: 'border-orange-500'
+      }
+    };
+    return colors[themeColor]?.[type] || colors.orange[type];
+  };
 
   // Obtener campos de clave primaria
   const primaryKeyFields = useMemo(() => {

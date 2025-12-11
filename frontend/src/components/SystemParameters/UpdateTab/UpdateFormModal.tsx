@@ -21,6 +21,7 @@ interface UpdateFormModalProps {
   handleCancel: () => void;
   visibleColumns?: any[];
   getColumnDisplayName?: (columnName: string) => string;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
@@ -34,9 +35,45 @@ export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
   handleUpdate,
   handleCancel,
   visibleColumns,
-  getColumnDisplayName
+  getColumnDisplayName,
+  themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
+  
+  // Helper para obtener clases de color según el tema
+  const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
+    const colors = {
+      red: {
+        text: 'text-red-500',
+        bg: 'bg-red-500',
+        hover: 'hover:bg-red-600',
+        focus: 'focus:ring-red-500',
+        border: 'border-red-500'
+      },
+      blue: {
+        text: 'text-blue-500',
+        bg: 'bg-blue-500',
+        hover: 'hover:bg-blue-600',
+        focus: 'focus:ring-blue-500',
+        border: 'border-blue-500'
+      },
+      green: {
+        text: 'text-green-500',
+        bg: 'bg-green-500',
+        hover: 'hover:bg-green-600',
+        focus: 'focus:ring-green-500',
+        border: 'border-green-500'
+      },
+      orange: {
+        text: 'text-orange-500',
+        bg: 'bg-orange-500',
+        hover: 'hover:bg-orange-600',
+        focus: 'focus:ring-orange-500',
+        border: 'border-orange-500'
+      }
+    };
+    return colors[themeColor]?.[type] || colors.orange[type];
+  };
 
   if (!isOpen) return null;
 
@@ -77,6 +114,7 @@ export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
             relatedData={relatedData}
             visibleColumns={visibleColumns}
             getColumnDisplayName={getColumnDisplayName}
+            themeColor={themeColor}
           />
         </div>
 
@@ -92,7 +130,7 @@ export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
           <button
             onClick={handleUpdate}
             disabled={isSubmitting}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
           >
             {isSubmitting ? 'Guardando...' : 'Actualizar'}
           </button>

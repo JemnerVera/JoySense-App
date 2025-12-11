@@ -1,6 +1,8 @@
 import React from 'react';
 import ParametersSidebar from './ParametersSidebar';
 import ParametersOperationsSidebar from './ParametersOperationsSidebar';
+import PermisosSidebar from './PermisosSidebar';
+import PermisosOperationsSidebar from './PermisosOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
 import ReportesDashboardSidebar from './ReportesDashboardSidebar';
@@ -23,6 +25,8 @@ interface AuxiliarySidebarProps {
   massiveFormData?: Record<string, any>;
   showThirdLevel?: boolean;
   showDashboardThirdLevel?: boolean;
+  permisosSubTab?: 'status' | 'insert' | 'update';
+  onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -41,7 +45,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   multipleData = [],
   massiveFormData = {},
   showThirdLevel = false,
-  showDashboardThirdLevel = false
+  showDashboardThirdLevel = false,
+  permisosSubTab,
+  onPermisosSubTabChange
 }) => {
   const { t } = useLanguage();
   
@@ -78,6 +84,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
 
   // Determinar qué sidebar auxiliar mostrar
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
+  const isPermisos = activeTab === 'permisos';
   const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
   const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
 
@@ -112,6 +119,33 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         formData={formData}
         multipleData={multipleData}
         massiveFormData={massiveFormData}
+      />
+    );
+  }
+
+  if (isPermisos) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <PermisosOperationsSidebar
+          activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
+          onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <PermisosSidebar
+        activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
+        onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       />
     );
   }
