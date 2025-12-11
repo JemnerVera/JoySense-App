@@ -88,23 +88,81 @@ export const supabaseAuth = createClient(config.url, config.key);
 export const authService = {
   // Iniciar sesión usando Supabase API directamente (según indicaciones del DBA)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔐 [AUTH] Iniciando proceso de autenticación');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📧 Email:', email);
+    console.log('🔑 Password:', password ? '***' : 'NO PROPORCIONADA');
+    console.log('🌐 Supabase URL:', config.url);
+    console.log('🔑 Key (primeros 30 chars):', config.key.substring(0, 30) + '...');
+    
     try {
+      console.log('⏳ [AUTH] Llamando a supabaseAuth.auth.signInWithPassword...');
+      const startTime = Date.now();
+      
       // Usar Supabase API directamente - RLS funciona automáticamente
       const { data, error } = await supabaseAuth.auth.signInWithPassword({
         email: email,
         password: password
       });
 
+      const duration = Date.now() - startTime;
+      console.log(`⏱️  [AUTH] Respuesta recibida en ${duration}ms`);
+
       if (error) {
-        console.error('❌ Error de autenticación:', error.message);
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ [AUTH] Error de autenticación');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('📝 Mensaje:', error.message);
+        console.error('📊 Status:', error.status || 'NO DISPONIBLE');
+        console.error('🔢 Code:', error.code || 'NO DISPONIBLE');
+        console.error('📦 Error completo:', JSON.stringify(error, null, 2));
+        
+        // Log detallado del error
+        if (error.message) {
+          console.error('🔍 Análisis del mensaje de error:');
+          if (error.message.includes('schema')) {
+            console.error('   ⚠️  El error menciona "schema" - posible problema con schema exposure');
+            console.error('   💡 Verifica en Supabase Dashboard → Settings → API → Exposed schemas');
+            console.error('   💡 Asegúrate de que "joysense" esté en la lista');
+          }
+          if (error.message.includes('credentials')) {
+            console.error('   ⚠️  El error menciona "credentials" - credenciales inválidas');
+          }
+          if (error.message.includes('Database')) {
+            console.error('   ⚠️  El error menciona "Database" - problema en la base de datos');
+            console.error('   💡 Puede ser un problema con RLS, vistas, o schema exposure');
+          }
+        }
+        
+        console.error('═══════════════════════════════════════════════════════════');
+        
         return { 
           user: null, 
           error: { message: error.message || 'Error de autenticación' } 
         };
       }
 
+      console.log('✅ [AUTH] No hay error en la respuesta');
+      console.log('📦 Data recibida:', {
+        user: data.user ? {
+          id: data.user.id,
+          email: data.user.email,
+          user_metadata: data.user.user_metadata
+        } : 'NO HAY USER',
+        session: data.session ? {
+          access_token: data.session.access_token ? 'PRESENTE' : 'NO PRESENTE',
+          refresh_token: data.session.refresh_token ? 'PRESENTE' : 'NO PRESENTE'
+        } : 'NO HAY SESSION'
+      });
+
       if (!data.user) {
-        console.error('❌ No se recibió información del usuario');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ [AUTH] No se recibió información del usuario');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('📦 Data completa:', JSON.stringify(data, null, 2));
+        console.error('═══════════════════════════════════════════════════════════');
+        
         return { 
           user: null, 
           error: { message: 'No se recibió información del usuario' } 
@@ -113,6 +171,7 @@ export const authService = {
 
       // Guardar el email en localStorage para uso global
       localStorage.setItem('userEmail', email);
+      console.log('💾 [AUTH] Email guardado en localStorage');
       
       // Convertir usuario de Supabase al formato AuthUser esperado
       const user: AuthUser = {
@@ -121,14 +180,29 @@ export const authService = {
         user_metadata: data.user.user_metadata || {}
       };
 
-      console.log('✅ Autenticación exitosa con Supabase API');
+      console.log('✅ [AUTH] Autenticación exitosa con Supabase API');
+      console.log('👤 Usuario autenticado:', {
+        id: user.id,
+        email: user.email,
+        metadata: user.user_metadata
+      });
+      console.log('═══════════════════════════════════════════════════════════');
+      
       return { 
         user, 
         error: null 
       };
 
     } catch (error: any) {
-      console.error('❌ Error inesperado durante autenticación:', error);
+      console.error('═══════════════════════════════════════════════════════════');
+      console.error('❌ [AUTH] Error inesperado durante autenticación');
+      console.error('═══════════════════════════════════════════════════════════');
+      console.error('📝 Mensaje:', error?.message || 'SIN MENSAJE');
+      console.error('📦 Error completo:', error);
+      console.error('📊 Stack:', error?.stack || 'NO DISPONIBLE');
+      console.error('📦 Tipo de error:', error?.constructor?.name || 'DESCONOCIDO');
+      console.error('═══════════════════════════════════════════════════════════');
+      
       return { 
         user: null, 
         error: { message: error?.message || 'Error inesperado durante el inicio de sesión' } 

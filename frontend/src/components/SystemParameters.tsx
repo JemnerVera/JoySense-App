@@ -551,10 +551,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       if (selectedTable) {
         loadTableData(selectedTable);
       }
+      // Recargar datos relacionados si se insertó en una tabla que afecta a otras
+      // (ej: perfil afecta a jefeid, usuario afecta a usuarioid, etc.)
+      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+        loadRelatedTablesData();
+      }
     } else {
       setMessage({ type: 'error', text: result.error || 'Error al insertar' });
     }
-  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, loadTableData, selectedTable, onSubTabChange]);
+  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, loadTableData, loadRelatedTablesData, selectedTable, onSubTabChange]);
 
   const handleUpdate = useCallback(async () => {
     if (!selectedRow || !validateForm()) {
@@ -587,10 +592,21 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setMessage({ type: 'success', text: 'Registro actualizado correctamente' });
       setSelectedRow(null);
       setActiveSubTab('status');
+      onSubTabChange?.('status');
+      // Recargar datos
+      loadData();
+      if (selectedTable) {
+        loadTableData(selectedTable);
+      }
+      // Recargar datos relacionados si se actualizó en una tabla que afecta a otras
+      // (ej: perfil afecta a jefeid, usuario afecta a usuarioid, etc.)
+      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+        loadRelatedTablesData();
+      }
     } else {
       setMessage({ type: 'error', text: result.error || 'Error al actualizar' });
     }
-  }, [selectedRow, formState.data, validateForm, updateRow, getPrimaryKeyValue, user]);
+  }, [selectedRow, formState.data, validateForm, updateRow, getPrimaryKeyValue, user, loadData, loadTableData, loadRelatedTablesData, selectedTable, onSubTabChange]);
 
   const handleDelete = useCallback(async (row: any) => {
     if (!window.confirm('¿Está seguro de eliminar este registro?')) return;
@@ -899,12 +915,35 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 relatedData={relatedDataForStatus}
                 visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
-                  return !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'perfilid'].includes(col.columnName);
+                  const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+                  // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
+                  if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
+                    excludedFields.push('perfilid');
+                  }
+                  return !excludedFields.includes(col.columnName);
                 })}
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }
                 getUniqueOptionsForField={(columnName: string) => {
+                  // Caso especial para jefeid en tabla perfil: mostrar "nivel - perfil"
+                  if (columnName === 'jefeid' && selectedTable === 'perfil') {
+                    const perfiles = relatedDataForStatus.perfilesData || [];
+                    return perfiles
+                      .filter((p: any) => p.statusid === 1) // Solo perfiles activos
+                      .map((item: any) => ({
+                        value: item.perfilid,
+                        label: `${item.nivel} - ${item.perfil}` || `ID: ${item.perfilid}`
+                      }))
+                      .sort((a: any, b: any) => {
+                        // Ordenar por nivel ascendente, luego por nombre
+                        const nivelA = parseInt(a.label.split(' - ')[0]) || 999;
+                        const nivelB = parseInt(b.label.split(' - ')[0]) || 999;
+                        if (nivelA !== nivelB) return nivelA - nivelB;
+                        return a.label.localeCompare(b.label);
+                      });
+                  }
+                  
                   // Mapeo de campos a tablas relacionadas
                   const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
                     'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
@@ -952,10 +991,71 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getPrimaryKeyValue={getPrimaryKeyValue}
                 user={user}
                 loading={tableState.loading}
-                visibleColumns={columns}
+                visibleColumns={uniqueColumns.filter(col => {
+                  // Filtrar campos automáticos que no deben aparecer en formularios
+                  const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+                  // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
+                  if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
+                    excludedFields.push('perfilid');
+                  }
+                  return !excludedFields.includes(col.columnName);
+                })}
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }
+                getUniqueOptionsForField={(columnName: string) => {
+                  // Caso especial para jefeid en tabla perfil: mostrar "nivel - perfil"
+                  if (columnName === 'jefeid' && selectedTable === 'perfil') {
+                    const perfiles = relatedDataForStatus.perfilesData || [];
+                    return perfiles
+                      .filter((p: any) => p.statusid === 1) // Solo perfiles activos
+                      .map((item: any) => ({
+                        value: item.perfilid,
+                        label: `${item.nivel} - ${item.perfil}` || `ID: ${item.perfilid}`
+                      }))
+                      .sort((a: any, b: any) => {
+                        // Ordenar por nivel ascendente, luego por nombre
+                        const nivelA = parseInt(a.label.split(' - ')[0]) || 999;
+                        const nivelB = parseInt(b.label.split(' - ')[0]) || 999;
+                        if (nivelA !== nivelB) return nivelA - nivelB;
+                        return a.label.localeCompare(b.label);
+                      });
+                  }
+                  
+                  // Mapeo de campos a tablas relacionadas
+                  const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
+                    'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
+                    'empresaid': { table: 'empresasData', key: 'empresaid', label: 'empresa' },
+                    'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
+                    'ubicacionid': { table: 'ubicacionesData', key: 'ubicacionid', label: 'ubicacion' },
+                    'localizacionid': { table: 'localizacionesData', key: 'localizacionid', label: 'localizacion' },
+                    'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
+                    'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
+                    'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
+                    'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
+                    'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' },
+                    'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
+                    'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] }
+                  };
+
+                  const mapping = fieldToTableMap[columnName];
+                  if (mapping && relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus]) {
+                    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
+                    return data.map((item: any) => {
+                      let label = '';
+                      if (Array.isArray(mapping.label)) {
+                        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
+                      } else {
+                        label = item[mapping.label] || '';
+                      }
+                      return {
+                        value: item[mapping.key],
+                        label: label || `ID: ${item[mapping.key]}`
+                      };
+                    });
+                  }
+                  return [];
+                }}
                 existingData={tableState.data}
                 onUpdateSuccess={() => {
                   loadData();

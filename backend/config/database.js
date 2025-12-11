@@ -30,7 +30,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Crear cliente de Supabase
+// Crear cliente de Supabase (anon key para queries normales)
 // NOTA: NO especificamos el schema aquí porque causa problemas en la autenticación
 // El schema 'joysense' está expuesto en Supabase API Settings, así que las queries
 // automáticamente usarán ese schema cuando las tablas estén ahí

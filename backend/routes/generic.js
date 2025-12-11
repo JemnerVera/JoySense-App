@@ -84,11 +84,8 @@ router.get('/:table', async (req, res) => {
   try {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    const hasToken = !!req.headers.authorization;
-    logger.info(`📊 [GET /${table}] Iniciando paginación. Token presente: ${hasToken}`);
     
     const result = await paginateAndFilter(table, req.query, userSupabase);
-    logger.info(`✅ [GET /${table}] Paginación exitosa. Registros: ${result.data?.length || 0}`);
     res.json(result);
   } catch (error) {
     logger.error(`❌ Error en GET /${table}:`, error);
@@ -148,19 +145,21 @@ router.post('/:table', async (req, res) => {
     let dataToInsert = { ...req.body };
     
     // Lógica especial para tabla 'usuario'
+    // IMPORTANTE: Según el DBA, los usuarios deben crearse primero en Supabase UI
+    // Luego se inserta en joysense.usuario y se actualiza el useruuid manualmente
     if (table === 'usuario') {
-      // Si viene 'password' en lugar de 'password_hash', hashearlo
-      if (dataToInsert.password && !dataToInsert.password_hash) {
-        const password_hash = await bcrypt.hash(dataToInsert.password, 10);
-        dataToInsert.password_hash = password_hash;
-        delete dataToInsert.password; // Eliminar password en texto plano
-      }
-      
       // Validar que login sea un email válido
       if (dataToInsert.login && !dataToInsert.login.includes('@')) {
         return res.status(400).json({ 
           error: 'El login debe ser un email válido' 
         });
+      }
+      
+      // Si viene 'password' en lugar de 'password_hash', hashearlo
+      if (dataToInsert.password && !dataToInsert.password_hash) {
+        const password_hash = await bcrypt.hash(dataToInsert.password, 10);
+        dataToInsert.password_hash = password_hash;
+        delete dataToInsert.password; // Eliminar password en texto plano
       }
       
       // Asegurar que password_hash esté presente (usar hash por defecto si no viene)
@@ -171,6 +170,9 @@ router.post('/:table', async (req, res) => {
           delete dataToInsert.password;
         }
       }
+      
+      // NOTA: El useruuid debe actualizarse manualmente después de crear el usuario en Supabase UI
+      // Ver: auth/CREAR_USUARIO_MANUAL.sql para instrucciones
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
@@ -184,8 +186,6 @@ router.post('/:table', async (req, res) => {
       if (error.hint) logger.error(`   Hint: ${error.hint}`);
       throw error;
     }
-    
-    logger.info(`✅ INSERT exitoso en ${table}`);
     
     // Limpiar cache de metadata
     clearMetadataCache(table);

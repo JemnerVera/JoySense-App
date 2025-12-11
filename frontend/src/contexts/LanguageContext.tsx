@@ -415,7 +415,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       'parameters.tables.contact': 'Contacto',
       'parameters.tables.email': 'Correo',
       'parameters.tables.user': 'Usuario',
-      'parameters.tables.user_profile': 'Usuario Perfil',
+      'parameters.tables.user_profile': 'Perfil de Usuario',
       'parameters.tables.profile': 'Perfil',
       'parameters.tables.geography_permission': 'Gestión de Permisos',
       'parameters.operations.status': 'Estado',

@@ -301,6 +301,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               relatedData={relatedData}
               visibleColumns={visibleColumns}
               getColumnDisplayName={getColumnDisplayName}
+              getUniqueOptionsForField={getUniqueOptionsForField}
+              tableName={tableName}
               themeColor={themeColor}
             />
           )}

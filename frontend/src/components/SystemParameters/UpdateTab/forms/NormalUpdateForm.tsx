@@ -19,6 +19,8 @@ interface NormalUpdateFormProps {
   relatedData: RelatedData;
   visibleColumns?: any[];
   getColumnDisplayName?: (columnName: string) => string;
+  getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
+  tableName?: string;
   themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
@@ -30,6 +32,8 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   relatedData,
   visibleColumns = [],
   getColumnDisplayName,
+  getUniqueOptionsForField,
+  tableName,
   themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -110,6 +114,14 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   value={formData[field.name] ?? ''}
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-400 cursor-not-allowed"
+                />
+              ) : field.name === 'jefeid' && tableName === 'perfil' && getUniqueOptionsForField ? (
+                // Caso especial para jefeid en perfil: usar getUniqueOptionsForField para formato "nivel - perfil"
+                <SelectWithPlaceholder
+                  value={formData[field.name] != null ? String(formData[field.name]) : ''}
+                  onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                  options={getUniqueOptionsForField(field.name)}
+                  placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
                 />
               ) : field.foreignKey ? (
                 // Select para foreign keys
