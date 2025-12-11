@@ -120,7 +120,7 @@ export const useTableDataManagement = () => {
       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
       const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
-      // const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []); // Para uso futuro
+      const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
       const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
@@ -140,6 +140,7 @@ export const useTableDataManagement = () => {
       setCriticidadesData(criticidades);
       setPerfilesData(perfiles);
       setUmbralesData(umbrales);
+      setUserData(usuarios);
       setSensorsData(sensors);
       setMetricasensorData(metricasensor);
       setPerfilumbralData(perfilumbral);
@@ -277,12 +278,23 @@ export const useTableDataManagement = () => {
 
       const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
 
-      // Ordenar por fecha de creación (más recientes primero)
-      const sortedData = data.sort((a: any, b: any) => {
-        const dateA = new Date(a.datecreated || a.datemodified || 0);
-        const dateB = new Date(b.datecreated || b.datemodified || 0);
-        return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
-      });
+      // Ordenar datos según la tabla
+      let sortedData = data;
+      if (selectedTable === 'perfil_geografia_permiso') {
+        // Para perfil_geografia_permiso, ordenar por permisoid ascendente
+        sortedData = data.sort((a: any, b: any) => {
+          const idA = a.permisoid || 0;
+          const idB = b.permisoid || 0;
+          return idA - idB; // Orden ascendente por permisoid
+        });
+      } else {
+        // Para otras tablas, ordenar por fecha de creación (más recientes primero)
+        sortedData = data.sort((a: any, b: any) => {
+          const dateA = new Date(a.datecreated || a.datemodified || 0);
+          const dateB = new Date(b.datecreated || b.datemodified || 0);
+          return dateB.getTime() - dateA.getTime(); // Orden descendente (más recientes primero)
+        });
+      }
 
       // Verificar si la llamada fue cancelada antes de actualizar el estado
       if (abortController.signal.aborted) {

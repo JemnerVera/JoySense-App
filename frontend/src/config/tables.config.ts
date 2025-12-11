@@ -644,7 +644,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: true,
     allowDelete: true,
     fields: [
-      { name: 'permisoid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'permisoid', label: 'ID', type: 'number', hidden: false, readonly: true },
       { name: 'perfilid', label: 'Perfil', type: 'select', required: true, foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
       { name: 'paisid', label: 'País', type: 'select', foreignKey: { table: 'pais', valueField: 'paisid', labelField: 'pais' } },
       { name: 'empresaid', label: 'Empresa', type: 'select', foreignKey: { table: 'empresa', valueField: 'empresaid', labelField: 'empresa' } },
