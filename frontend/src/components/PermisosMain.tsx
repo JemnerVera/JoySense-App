@@ -352,6 +352,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
+            getUniqueOptionsForField={getUniqueOptionsForField}
             existingData={tableData}
             onUpdateSuccess={() => {
               loadTableData(selectedTable);

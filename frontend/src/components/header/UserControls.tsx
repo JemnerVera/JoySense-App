@@ -35,6 +35,15 @@ export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
         focusRing: 'focus:ring-blue-500',
         focusBorder: 'focus:border-blue-500'
       };
+    } else if (activeTab === 'permisos') {
+      return {
+        gradient: 'from-red-500 to-red-600',
+        hoverGradient: 'hover:from-red-600 hover:to-red-700',
+        border: 'border-red-400',
+        text: 'text-red-500',
+        focusRing: 'focus:ring-red-500',
+        focusBorder: 'focus:border-red-500'
+      };
     } else {
       // Reportes/Dashboard - verde por defecto
       return {
