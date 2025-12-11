@@ -54,20 +54,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 [AuthContext] signIn llamado con email:', email);
     try {
       const { user: signedInUser, error } = await authService.signIn(email, password);
       
       if (error) {
+        console.error('❌ [AuthContext] Error en signIn:', error.message);
         return { success: false, error: error.message };
       }
 
       if (signedInUser) {
+        console.log('✅ [AuthContext] Usuario autenticado, actualizando estado');
+        console.log('👤 Usuario:', signedInUser);
         setUser(signedInUser);
         return { success: true };
       } else {
+        console.error('❌ [AuthContext] No se recibió usuario después de signIn');
         return { success: false, error: 'No se pudo iniciar sesión' };
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ [AuthContext] Excepción durante signIn:', error);
+      console.error('📦 Error completo:', error);
       return { success: false, error: 'Error inesperado durante el inicio de sesión' };
     }
   };

@@ -77,10 +77,6 @@ router.get('/empresa', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // DEBUG: Log detallado
-    logger.info(`🔍 [GET /empresa] Schema: ${dbSchema}, PaisId: ${paisId || 'ninguno'}`);
-    logger.info(`🔍 [GET /empresa] Usando token de usuario: ${userSupabase !== baseSupabase ? 'SÍ' : 'NO'}`);
-    
     // Usar Supabase API con join usando RPC o queries separadas
     // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
     let query = userSupabase
@@ -101,8 +97,6 @@ router.get('/empresa', async (req, res) => {
       logger.error(`❌ [GET /empresa] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
       throw error;
     }
-    
-    logger.info(`🔍 [GET /empresa] Registros devueltos: ${(data || []).length}`);
     
     // Transformar datos para mantener formato compatible
     const transformed = (data || []).map(emp => ({
@@ -188,8 +182,6 @@ router.get('/fundo', async (req, res) => {
       logger.error(`❌ [GET /fundo] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
       throw error;
     }
-    
-    logger.info(`🔍 [GET /fundo] Registros devueltos: ${(data || []).length}`);
     
     // Transformar datos para mantener formato compatible
     const transformed = (data || []).map(fundo => ({

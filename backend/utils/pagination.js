@@ -122,7 +122,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       throw countError;
     }
     
-    logger.info(`📊 [paginateAndFilter] ${tableName}: Count = ${totalRecords || 0}`);
+    // logger.info(`📊 [paginateAndFilter] ${tableName}: Count = ${totalRecords || 0}`);
     
     // Construir query de datos
     // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
@@ -190,9 +190,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       dataQuery = dataQuery.limit(parseInt(simpleLimit));
     }
 
-    // DEBUG: Log detallado de la query de datos
-    logger.info(`🔍 [DATA] Ejecutando query de datos para ${tableName}`);
-    
+    // Ejecutar query de datos
     const { data, error: dataError } = await dataQuery;
     
     if (dataError) {
@@ -200,8 +198,6 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       logger.error(`❌ [DATA] Code: ${dataError.code || 'N/A'}, Details: ${dataError.details || 'N/A'}, Hint: ${dataError.hint || 'N/A'}`);
       throw dataError;
     }
-    
-    logger.info(`🔍 [DATA] Registros devueltos para ${tableName}: ${(data || []).length}`);
     
     // Si no hay paginación, retornar solo los datos (modo legacy)
     if (!usePagination) {

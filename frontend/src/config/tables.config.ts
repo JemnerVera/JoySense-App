@@ -563,7 +563,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   usuarioperfil: {
     name: 'usuarioperfil',
-    displayName: 'Usuario-Perfil',
+    displayName: 'Perfil de Usuario',
     description: 'Asignación de perfiles a usuarios',
     icon: '🔐',
     category: 'usuarios',
