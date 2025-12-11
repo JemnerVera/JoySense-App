@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../LoadingSpinner';
 import { PaginationControls } from '../PaginationControls';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
+import PerfilGeografiaPermisoUpdateForm from '../../PerfilGeografiaPermisoUpdateForm';
 import { MessageDisplay } from '../MessageDisplay';
 import { useModal } from '../../../contexts/ModalContext';
 import type { ColumnInfo } from '../../../types/systemParameters';
@@ -29,6 +30,7 @@ interface UpdateTabProps {
   loading?: boolean;
   visibleColumns?: any[];
   getColumnDisplayName?: (columnName: string) => string;
+  getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   existingData?: any[];
   onUpdateSuccess?: () => void;
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
@@ -48,6 +50,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   loading = false,
   visibleColumns = [],
   getColumnDisplayName,
+  getUniqueOptionsForField,
   existingData = [],
   onUpdateSuccess,
   setMessage,
@@ -275,16 +278,32 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
           )}
 
           {/* Formulario */}
-          <NormalUpdateForm
-            config={config}
-            formData={formData}
-            formErrors={formErrors}
-            updateFormField={updateFormField}
-            relatedData={relatedData}
-            visibleColumns={visibleColumns}
-            getColumnDisplayName={getColumnDisplayName}
-            themeColor={themeColor}
-          />
+          {tableName === 'perfil_geografia_permiso' ? (
+            <PerfilGeografiaPermisoUpdateForm
+              formData={formData}
+              updateFormField={updateFormField}
+              formErrors={formErrors}
+              loading={isSubmitting}
+              perfilesData={relatedData.perfilesData || []}
+              paisesData={relatedData.paisesData || []}
+              empresasData={relatedData.empresasData || []}
+              fundosData={relatedData.fundosData || []}
+              ubicacionesData={relatedData.ubicacionesData || []}
+              getUniqueOptionsForField={getUniqueOptionsForField}
+              themeColor={themeColor}
+            />
+          ) : (
+            <NormalUpdateForm
+              config={config}
+              formData={formData}
+              formErrors={formErrors}
+              updateFormField={updateFormField}
+              relatedData={relatedData}
+              visibleColumns={visibleColumns}
+              getColumnDisplayName={getColumnDisplayName}
+              themeColor={themeColor}
+            />
+          )}
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">
