@@ -534,6 +534,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'usuarioid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'login', label: 'Login (Email)', type: 'email', required: true },
+      { name: 'password', label: 'Password', type: 'password', required: true },
       { name: 'firstname', label: 'Nombre', type: 'text', required: true },
       { name: 'lastname', label: 'Apellido', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }

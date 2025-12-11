@@ -13,6 +13,7 @@ import { useModal } from '../contexts/ModalContext';
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
 import { TableName } from '../types';
+import type { ColumnInfo } from '../types/systemParameters';
 
 // Hooks
 import { useTableCRUD } from '../hooks/useTableCRUD';
@@ -124,6 +125,49 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setColumns, // Para limpiar columnas inmediatamente
     setLoading // Para establecer loading inmediatamente
   } = useTableDataManagement();
+
+  // Filtrar columnas duplicadas (basándose en columnName)
+  // También filtrar campos ocultos y de solo lectura que no deberían aparecer en formularios
+  const uniqueColumns = useMemo(() => {
+    if (!columns || columns.length === 0) return [];
+    
+    // Debug: mostrar columnas originales para la tabla perfil
+    if (selectedTable === 'perfil') {
+      console.log('🔍 Columnas originales para perfil:', columns.map(c => c.columnName));
+      console.log('🔍 Total de columnas:', columns.length);
+    }
+    
+    const seen = new Set<string>();
+    const config = selectedTable ? getTableConfig(selectedTable as TableName) : null;
+    const filtered: ColumnInfo[] = [];
+    
+    for (const col of columns) {
+      // Eliminar duplicados
+      if (seen.has(col.columnName)) {
+        console.warn(`⚠️ Columna duplicada detectada y eliminada: ${col.columnName} en tabla ${selectedTable}`);
+        continue;
+      }
+      seen.add(col.columnName);
+      
+      // Si hay configuración, verificar si el campo está definido y no está oculto
+      if (config && config.fields) {
+        const fieldConfig = config.fields.find(f => f.name === col.columnName);
+        if (fieldConfig && fieldConfig.hidden) {
+          continue; // Ocultar campos marcados como hidden
+        }
+      }
+      
+      filtered.push(col);
+    }
+    
+    // Debug: mostrar columnas únicas para la tabla perfil
+    if (selectedTable === 'perfil') {
+      console.log('✅ Columnas únicas para perfil:', filtered.map(c => c.columnName));
+      console.log('✅ Total de columnas únicas:', filtered.length);
+    }
+    
+    return filtered;
+  }, [columns, selectedTable]);
 
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => ({
@@ -465,11 +509,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       }
     }
 
+    // Filtrar solo los campos válidos según la configuración de la tabla
+    const validFields = config?.fields.map(f => f.name) || [];
+    const filteredData: Record<string, any> = {};
+    
+    // Solo incluir campos que están en la configuración
+    validFields.forEach(fieldName => {
+      if (formState.data[fieldName] !== undefined && formState.data[fieldName] !== null && formState.data[fieldName] !== '') {
+        filteredData[fieldName] = formState.data[fieldName];
+      }
+    });
+    
     // Agregar campos de auditoría
+    const userId = user?.user_metadata?.usuarioid || 1;
+    const now = new Date().toISOString();
     const dataToInsert: Record<string, any> = {
-      ...formState.data,
-      usercreatedid: user?.user_metadata?.usuarioid || 1,
-      datecreated: new Date().toISOString()
+      ...filteredData,
+      usercreatedid: userId,
+      datecreated: now,
+      // Algunas tablas requieren usermodifiedid y datemodified incluso en inserción
+      usermodifiedid: userId,
+      datemodified: now
     };
 
     // Para perfil_geografia_permiso, excluir permisoid (se genera automáticamente)
@@ -486,11 +546,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setActiveSubTab('status');
       onSubTabChange?.('status');
       // Recargar datos para asegurar que se muestre el nuevo registro
+      // Recargar tanto los datos de useTableCRUD como los de useTableDataManagement
       loadData();
+      if (selectedTable) {
+        loadTableData(selectedTable);
+      }
     } else {
       setMessage({ type: 'error', text: result.error || 'Error al insertar' });
     }
-  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, onSubTabChange]);
+  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, loadTableData, selectedTable, onSubTabChange]);
 
   const handleUpdate = useCallback(async () => {
     if (!selectedRow || !validateForm()) {
@@ -498,9 +562,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       return;
     }
 
+    // Filtrar solo los campos válidos según la configuración de la tabla
+    const validFields = config?.fields.map(f => f.name) || [];
+    const filteredData: Record<string, any> = {};
+    
+    // Solo incluir campos que están en la configuración
+    validFields.forEach(fieldName => {
+      if (formState.data[fieldName] !== undefined && formState.data[fieldName] !== null && formState.data[fieldName] !== '') {
+        filteredData[fieldName] = formState.data[fieldName];
+      }
+    });
+
     // Agregar campos de auditoría
     const dataToUpdate = {
-      ...formState.data,
+      ...filteredData,
       usermodifiedid: user?.user_metadata?.usuarioid || 1,
       datemodified: new Date().toISOString()
     };
@@ -822,7 +897,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 }}
                 message={message}
                 relatedData={relatedDataForStatus}
-                visibleColumns={columns}
+                visibleColumns={uniqueColumns.filter(col => {
+                  // Filtrar campos automáticos que no deben aparecer en formularios
+                  return !['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'perfilid'].includes(col.columnName);
+                })}
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }
@@ -867,7 +945,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               <UpdateTab
                 tableName={selectedTable}
                 tableData={tableState.data}
-                columns={columns}
+                columns={uniqueColumns}
                 relatedData={relatedDataForStatus}
                 config={config}
                 updateRow={updateRow}

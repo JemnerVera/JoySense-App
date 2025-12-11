@@ -71,6 +71,18 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 }) => {
   const { t } = useLanguage();
   
+  // Debug: verificar columnas recibidas para perfil
+  useEffect(() => {
+    if (selectedTable === 'perfil') {
+      console.log('🔍 NormalInsertForm - Columnas recibidas:', visibleColumns.map(c => c.columnName));
+      console.log('🔍 NormalInsertForm - Total de columnas:', visibleColumns.length);
+      const perfilColumns = visibleColumns.filter(c => c.columnName === 'perfil');
+      if (perfilColumns.length > 1) {
+        console.error('❌ ERROR: Se encontraron múltiples columnas "perfil":', perfilColumns.length);
+      }
+    }
+  }, [visibleColumns, selectedTable]);
+  
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
     const colors = {

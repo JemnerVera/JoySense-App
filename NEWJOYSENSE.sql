@@ -1447,13 +1447,14 @@ BEGIN
         )
     );
     ------------------------------------------------------------------
-    -- 4. Insertar identidad
+    -- 4. Insertar identidad (CON provider_id que es obligatorio)
     ------------------------------------------------------------------
     INSERT INTO auth.identities(
         id,
         user_id,
         identity_data,
         provider,
+        provider_id,  -- OBLIGATORIO
         last_sign_in_at,
         created_at,
         updated_at
@@ -1463,6 +1464,7 @@ BEGIN
         v_user_id,
         jsonb_build_object('sub', v_user_id::text, 'email', NEW.login),
         'email',
+        NEW.login,  -- provider_id = email
         v_now,
         v_now,
         v_now

@@ -9,6 +9,7 @@ const { db, dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata, clearMetadataCache } = require('../utils/pagination');
 const { optionalAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const bcrypt = require('bcrypt');
 
 // Aplicar middleware de autenticación opcional a todas las rutas
 // Esto permite que las queries usen el token del usuario para RLS
@@ -143,9 +144,38 @@ router.post('/:table', async (req, res) => {
   }
   
   try {
+    // Preparar datos para inserción
+    let dataToInsert = { ...req.body };
+    
+    // Lógica especial para tabla 'usuario'
+    if (table === 'usuario') {
+      // Si viene 'password' en lugar de 'password_hash', hashearlo
+      if (dataToInsert.password && !dataToInsert.password_hash) {
+        const password_hash = await bcrypt.hash(dataToInsert.password, 10);
+        dataToInsert.password_hash = password_hash;
+        delete dataToInsert.password; // Eliminar password en texto plano
+      }
+      
+      // Validar que login sea un email válido
+      if (dataToInsert.login && !dataToInsert.login.includes('@')) {
+        return res.status(400).json({ 
+          error: 'El login debe ser un email válido' 
+        });
+      }
+      
+      // Asegurar que password_hash esté presente (usar hash por defecto si no viene)
+      if (!dataToInsert.password_hash) {
+        const defaultPassword = dataToInsert.password || 'temporal123';
+        dataToInsert.password_hash = await bcrypt.hash(defaultPassword, 10);
+        if (dataToInsert.password) {
+          delete dataToInsert.password;
+        }
+      }
+    }
+    
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(req.body).select();
+    const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(dataToInsert).select();
     
     if (error) {
       logger.error(`❌ Error en INSERT ${table}:`, error.message);
@@ -192,11 +222,43 @@ router.put('/:table/:id', async (req, res) => {
   }
   
   try {
+    // Preparar datos para actualización
+    let dataToUpdate = { ...req.body };
+    
+    // Lógica especial para tabla 'usuario'
+    if (table === 'usuario') {
+      // Si viene 'password' en lugar de 'password_hash', hashearlo
+      if (dataToUpdate.password !== undefined) {
+        // Solo hashear si realmente hay un valor nuevo de password (no vacío)
+        if (dataToUpdate.password && typeof dataToUpdate.password === 'string' && dataToUpdate.password.trim() !== '') {
+          const password_hash = await bcrypt.hash(dataToUpdate.password, 10);
+          dataToUpdate.password_hash = password_hash;
+        }
+        // SIEMPRE eliminar password en texto plano (no debe llegar a la BD)
+        // Crear un nuevo objeto sin el campo password
+        const { password, ...rest } = dataToUpdate;
+        dataToUpdate = rest;
+      }
+      
+      // Validar que login sea un email válido (si se está actualizando)
+      if (dataToUpdate.login && !dataToUpdate.login.includes('@')) {
+        return res.status(400).json({ 
+          error: 'El login debe ser un email válido' 
+        });
+      }
+    }
+    
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    const { data, error } = await userSupabase.schema(dbSchema).from(table).update(req.body).eq(pk, id).select();
+    const { data, error } = await userSupabase.schema(dbSchema).from(table).update(dataToUpdate).eq(pk, id).select();
     
-    if (error) throw error;
+    if (error) {
+      logger.error(`❌ Error en UPDATE ${table}/${id}:`, error.message);
+      if (error.code) logger.error(`   Código: ${error.code}`);
+      if (error.detail) logger.error(`   Detalle: ${error.detail}`);
+      if (error.hint) logger.error(`   Hint: ${error.hint}`);
+      throw error;
+    }
     
     // Limpiar cache de metadata
     clearMetadataCache(table);
@@ -204,7 +266,12 @@ router.put('/:table/:id', async (req, res) => {
     res.json(data);
   } catch (error) {
     logger.error(`Error en PUT /${table}/${id}:`, error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint
+    });
   }
 });
 
