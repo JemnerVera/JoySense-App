@@ -81,48 +81,57 @@ function getSupabaseConfig() {
 // Obtener y validar configuración
 const config = getSupabaseConfig();
 
-// Crear cliente de Supabase con configuración validada
+// Crear cliente de Supabase con configuración validada ####################################################
 export const supabaseAuth = createClient(config.url, config.key);
 
 // Funciones de autenticación
 export const authService = {
-  // Iniciar sesión usando el backend (modo desarrollo)
+  // Iniciar sesión usando Supabase API directamente (según indicaciones del DBA)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
-      // Backend URL desde process.env - limpiar /api si está duplicado
-      let baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
-      baseUrl = baseUrl.replace(/\/api\/?$/, ''); // Remover /api del final si existe
-      const backendUrl = `${baseUrl}/api/joysense`;
-      const response = await fetch(`${backendUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
+      // Usar Supabase API directamente - RLS funciona automáticamente
+      const { data, error } = await supabaseAuth.auth.signInWithPassword({
+        email: email,
+        password: password
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        console.error('❌ Error de autenticación:', result.error);
+      if (error) {
+        console.error('❌ Error de autenticación:', error.message);
         return { 
           user: null, 
-          error: { message: result.error || 'Error de autenticación' } 
+          error: { message: error.message || 'Error de autenticación' } 
+        };
+      }
+
+      if (!data.user) {
+        console.error('❌ No se recibió información del usuario');
+        return { 
+          user: null, 
+          error: { message: 'No se recibió información del usuario' } 
         };
       }
 
       // Guardar el email en localStorage para uso global
       localStorage.setItem('userEmail', email);
+      
+      // Convertir usuario de Supabase al formato AuthUser esperado
+      const user: AuthUser = {
+        id: data.user.id,
+        email: data.user.email || email,
+        user_metadata: data.user.user_metadata || {}
+      };
+
+      console.log('✅ Autenticación exitosa con Supabase API');
       return { 
-        user: result.user, 
+        user, 
         error: null 
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error inesperado durante autenticación:', error);
       return { 
         user: null, 
-        error: { message: 'Error inesperado durante el inicio de sesión' } 
+        error: { message: error?.message || 'Error inesperado durante el inicio de sesión' } 
       };
     }
   },
@@ -174,11 +183,33 @@ export const authService = {
     }
   },
 
-  // Obtener usuario actual (modo desarrollo)
+  // Obtener usuario actual desde Supabase Auth
   async getCurrentUser(): Promise<{ user: AuthUser | null; error: AuthError | null }> {
-    // En modo desarrollo, no mantenemos sesiones persistentes
-    // El usuario debe iniciar sesión cada vez
-    return { user: null, error: null };
+    try {
+      const { data: { user }, error } = await supabaseAuth.auth.getUser();
+      
+      if (error) {
+        return { user: null, error: { message: error.message } };
+      }
+      
+      if (!user) {
+        return { user: null, error: null };
+      }
+      
+      // Convertir usuario de Supabase al formato AuthUser esperado
+      const authUser: AuthUser = {
+        id: user.id,
+        email: user.email || '',
+        user_metadata: user.user_metadata || {}
+      };
+      
+      return { user: authUser, error: null };
+    } catch (error: any) {
+      return { 
+        user: null, 
+        error: { message: error?.message || 'Error al obtener usuario actual' } 
+      };
+    }
   },
 
   // Escuchar cambios en la autenticación

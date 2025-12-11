@@ -11,62 +11,85 @@ export const useUnsavedChanges = () => {
   const hasUnsavedChanges = useCallback((config: UnsavedChangesConfig): boolean => {
     const { formData, selectedTable, activeSubTab, multipleData = [] } = config;
     
+    // Debug: Log para entender qué está pasando
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Change detection:', {
+        selectedTable,
+        activeSubTab,
+        formDataKeys: Object.keys(formData),
+        formDataValues: Object.entries(formData).filter(([k, v]) => {
+          const val = v;
+          return val !== null && val !== undefined && val !== '' && val !== 1;
+        }).map(([k, v]) => `${k}: ${v}`),
+        multipleDataLength: multipleData.length
+      });
+    }
     
     // Verificar pestaña "Crear"
     if (activeSubTab === 'insert') {
       // Para formularios normales (no múltiples)
       if (selectedTable !== 'usuarioperfil' && selectedTable !== 'metricasensor' && selectedTable !== 'sensor') {
-        // Campos referenciales que no deben considerarse para detección de cambios
-        // Definir campos referenciales específicos por tabla
-        let referentialFields: string[] = [];
+        // Campos que siempre deben ser excluidos (campos de auditoría y referenciales que no son editables)
+        const alwaysExcludedFields = [
+          'usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified',
+          'modified_at', 'modified_by', 'auditid'
+        ];
         
+        // Campos referenciales que no deben considerarse para detección de cambios
+        // Solo excluir IDs de relaciones que no son editables directamente
+        let referentialIdFields: string[] = [];
+        
+        // Para cada tabla, solo excluir los IDs de relaciones que no son campos de entrada directos
+        // Por ejemplo, en 'pais', 'paisid' no es editable (es auto-generado), pero 'pais' y 'paisabrev' sí lo son
         if (selectedTable === 'pais') {
-          // Para pais: pais y paisabrev son campos de entrada
-          referentialFields = ['paisid', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+          // En pais, solo 'pais' y 'paisabrev' son editables
+          referentialIdFields = ['paisid', 'empresaid', 'fundoid', 'entidadid'];
+        } else if (selectedTable === 'empresa') {
+          // En empresa, 'empresa' y 'empresabrev' son editables, pero 'paisid' es una relación
+          referentialIdFields = ['empresaid', 'fundoid', 'entidadid'];
         } else if (selectedTable === 'fundo') {
-          // Para fundo: fundo y fundoabrev son campos de entrada
-          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'entidadid', 'entidad'];
-        } else if (selectedTable === 'ubicacion') {
-          // Para ubicacion: ubicacion es campo de entrada
-          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
-        } else if (selectedTable === 'localizacion') {
-          // Para localizacion: localizacion es campo de entrada
-          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
-        } else if (selectedTable === 'entidad') {
-          // Para entidad: entidad es campo de entrada
-          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid'];
+          // En fundo, 'fundo' y 'fundoabrev' son editables
+          referentialIdFields = ['fundoid', 'entidadid'];
         } else {
-          // Para otras tablas, usar la lista completa
-          referentialFields = ['paisid', 'pais', 'empresaid', 'empresa', 'fundoid', 'fundo', 'entidadid', 'entidad'];
+          // Para otras tablas, excluir solo IDs de relaciones que no son editables
+          referentialIdFields = ['paisid', 'empresaid', 'fundoid', 'entidadid'];
         }
         
         const hasChanges = Object.keys(formData).some(key => {
           const value = formData[key];
           
-          
-          // Excluir campos referenciales
-          if (referentialFields.includes(key)) {
+          // Excluir campos de auditoría
+          if (alwaysExcludedFields.includes(key)) {
             return false;
           }
           
-          // Log específico para campos de país
-          if (selectedTable === 'pais' && (key === 'pais' || key === 'paisabrev')) {
+          // Excluir IDs de relaciones que no son editables (pero NO excluir los campos de texto editables)
+          if (referentialIdFields.includes(key)) {
+            return false;
           }
           
           // Excluir statusid si es 1 (valor por defecto)
           if (key === 'statusid') {
-            const hasStatusChange = value !== 1;
-            return hasStatusChange;
+            return value !== 1 && value !== null && value !== undefined;
           }
           
           // Verificar si hay datos significativos
           if (typeof value === 'string' && value.trim() !== '') {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`✅ Cambio detectado en campo string: ${key} = "${value}"`);
+            }
             return true;
           }
-          if (typeof value === 'number' && value !== null && value !== undefined) {
+          if (typeof value === 'number' && value !== null && value !== undefined && value !== 0) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`✅ Cambio detectado en campo number: ${key} = ${value}`);
+            }
             return true;
           }
           if (Array.isArray(value) && value.length > 0) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`✅ Cambio detectado en campo array: ${key} = [${value.length} items]`);
+            }
             return true;
           }
           if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -74,14 +97,24 @@ export const useUnsavedChanges = () => {
               const objValue = value[objKey];
               return objValue !== null && objValue !== undefined && objValue !== '';
             });
+            if (hasObjectData && process.env.NODE_ENV === 'development') {
+              console.log(`✅ Cambio detectado en campo object: ${key}`);
+            }
             return hasObjectData;
           }
           if (typeof value === 'boolean' && value === true) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`✅ Cambio detectado en campo boolean: ${key} = true`);
+            }
             return true;
           }
           
           return false;
         });
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔍 Change detection result: {hasFormDataChanges: ${hasChanges}, hasMultipleDataChanges: false, hasMassiveFormDataChanges: false, result: ${hasChanges}}`);
+        }
         
         return hasChanges;
       }

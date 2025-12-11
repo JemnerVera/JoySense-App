@@ -1,33 +1,26 @@
 # ============================================================================
-# Configuración de Base de Datos PostgreSQL
+# Configuración de Supabase API
 # ============================================================================
-# Conexión directa a PostgreSQL (Supabase o cualquier servidor)
-DB_HOST=db.xxxxxxxxxxxx.supabase.co
-DB_PORT=5432
-DB_NAME=postgres
-DB_USER=backend_user
-DB_PASSWORD=tu_password_segura
-DB_SSL=true
-DB_SCHEMA=joysense
+# IMPORTANTE: Usa Supabase API directamente (no conexión directa a PostgreSQL)
+# Según indicaciones del DBA: "backend_user YA NO SIRVE"
 
-# ============================================================================
-# Configuración de Supabase (para autenticación, si se usa)
-# ============================================================================
-SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
+SUPABASE_ANON_KEY=tu-anon-key-aqui
+ADMIN_EMAIL=admin@joysense.com
+ADMIN_PASSWORD=Admin123*
 
 # ============================================================================
 # Configuración del Servidor
 # ============================================================================
 PORT=3001
 NODE_ENV=development
+DB_SCHEMA=joysense
 
 # ============================================================================
 # Notas:
-# - DB_HOST: El host de tu base de datos PostgreSQL
-#   Para Supabase: db.[project-ref].supabase.co
-# - DB_USER: Usuario creado con privilegios
-# - DB_PASSWORD: Contraseña del usuario
-# - DB_SSL: true para conexiones remotas (Supabase requiere SSL)
-# - DB_SCHEMA: Schema de la aplicación (joysense)
+# - SUPABASE_URL: URL de tu proyecto Supabase
+# - SUPABASE_ANON_KEY: Anon key (NO service_role_key) - RLS funciona automáticamente
+# - ADMIN_EMAIL: Email del usuario administrador para autenticación del backend
+# - ADMIN_PASSWORD: Password del usuario administrador
+# - El backend se autentica automáticamente con admin@joysense.com al iniciar
 # ============================================================================

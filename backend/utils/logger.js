@@ -3,7 +3,7 @@
  */
 
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const isDebugMode = LOG_LEVEL === 'debug';
+const isDebugMode = LOG_LEVEL === 'debug' || LOG_LEVEL === 'info'; // Activar info también para debugging
 const isInfoMode = ['debug', 'info'].includes(LOG_LEVEL);
 
 const logger = {

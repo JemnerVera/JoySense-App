@@ -161,7 +161,10 @@ export class JoySenseService {
 
   static async getPaises(): Promise<Pais[]> {
     try {
-      const data = await backendAPI.get('/geografia/pais');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/geografia/pais', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getPaises:', error);
@@ -171,7 +174,10 @@ export class JoySenseService {
 
   static async getEmpresas(): Promise<Empresa[]> {
     try {
-      const data = await backendAPI.get('/geografia/empresa');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/geografia/empresa', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getEmpresas:', error);
@@ -191,7 +197,10 @@ export class JoySenseService {
 
   static async getFundos(): Promise<Fundo[]> {
     try {
-      const data = await backendAPI.get('/geografia/fundo');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/geografia/fundo', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getFundos:', error);
@@ -201,7 +210,10 @@ export class JoySenseService {
 
   static async getFundosByEmpresa(empresaId: number): Promise<Fundo[]> {
     try {
-      const data = await backendAPI.get(`/geografia/fundo?empresaid=${empresaId}`);
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get(`/geografia/fundo?empresaid=${empresaId}`, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getFundosByEmpresa:', error);
@@ -211,7 +223,10 @@ export class JoySenseService {
 
   static async getUbicaciones(): Promise<Ubicacion[]> {
     try {
-      const data = await backendAPI.get('/geografia/ubicacion');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/geografia/ubicacion', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getUbicaciones:', error);
@@ -231,9 +246,12 @@ export class JoySenseService {
 
   static async getEntidades(ubicacionId?: number): Promise<any[]> {
     try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
       let endpoint = '/geografia/entidad';
       if (ubicacionId) endpoint += `?ubicacionid=${ubicacionId}`;
-      const data = await backendAPI.get(endpoint);
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getEntidades:', error);
@@ -247,7 +265,10 @@ export class JoySenseService {
 
   static async getTipos(): Promise<Tipo[]> {
     try {
-      const data = await backendAPI.get('/dispositivos/tipo');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/dispositivos/tipo', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getTipos:', error);
@@ -267,7 +288,10 @@ export class JoySenseService {
 
   static async getNodos(): Promise<Nodo[]> {
     try {
-      const data = await backendAPI.get('/dispositivos/nodo');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/dispositivos/nodo', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getNodos:', error);
@@ -277,7 +301,10 @@ export class JoySenseService {
 
   static async getSensores(): Promise<Sensor[]> {
     try {
-      const data = await backendAPI.get('/dispositivos/sensor');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/dispositivos/sensor', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getSensores:', error);
@@ -287,7 +314,10 @@ export class JoySenseService {
 
   static async getLocalizaciones(): Promise<Localizacion[]> {
     try {
-      const data = await backendAPI.get('/dispositivos/localizacion');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/dispositivos/localizacion', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getLocalizaciones:', error);
@@ -297,8 +327,11 @@ export class JoySenseService {
 
   static async getLocalizacionesByUbicacion(ubicacionId: number): Promise<Localizacion[]> {
     try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
       // Localizacion se relaciona con nodo, que tiene ubicacionid
-      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionid=${ubicacionId}`);
+      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionid=${ubicacionId}`, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getLocalizacionesByUbicacion:', error);
@@ -602,7 +635,12 @@ export class JoySenseService {
   static async getTableData(tableName: TableName | string, limit?: number): Promise<any[]> {
     try {
       const endpoint = limit ? `/generic/${tableName}?limit=${limit}` : `/generic/${tableName}`;
-      const data = await backendAPI.get(endpoint);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(endpoint, token || undefined);
       return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
       console.error(`Error in getTableData for ${tableName}:`, error);
@@ -611,7 +649,7 @@ export class JoySenseService {
   }
 
   static async getTableDataPaginated(
-    tableName: TableName | string, 
+    tableName: TableName | string,
     options: {
       page?: number;
       pageSize?: number;
@@ -642,21 +680,27 @@ export class JoySenseService {
       
       const queryString = params.toString();
       const endpoint = `/generic/${tableName}${queryString ? '?' + queryString : ''}`;
-      const response = await backendAPI.get(endpoint);
+      
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const response = await backendAPI.get(endpoint, token || undefined);
       
       if (response && response.pagination) return response;
       
       const data = Array.isArray(response) ? response : (response?.data || []);
       return { data };
     } catch (error) {
-      console.error(`Error in getTableDataPaginated for ${tableName}:`, error);
+      console.error(`❌ [backend-api] Error in getTableDataPaginated for ${tableName}:`, error);
       throw error;
     }
   }
 
   static async getTableColumns(tableName: TableName | string): Promise<any[]> {
     try {
-      const endpoint = `/generic/${tableName}/metadata`;
+      const endpoint = `/generic/${tableName}/columns`;
       const data = await backendAPI.get(endpoint);
       const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
       
@@ -676,9 +720,17 @@ export class JoySenseService {
 
   static async getTableInfoByName(tableName: TableName | string): Promise<any> {
     try {
-      const endpoint = `/generic/${tableName}/metadata`;
-      const data = await backendAPI.get(endpoint);
-      return data || {};
+      // Obtener columnas y construir info básica
+      const columns = await this.getTableColumns(tableName);
+      // Usar getPrimaryKey del config si está disponible
+      const { getPrimaryKey } = await import('../config/tables.config');
+      const primaryKey = getPrimaryKey(tableName);
+      
+      return {
+        columns,
+        tableName,
+        primaryKey
+      };
     } catch (error) {
       console.error(`Error in getTableInfoByName for ${tableName}:`, error);
       throw error;
@@ -688,7 +740,12 @@ export class JoySenseService {
   static async getTableConstraints(tableName: TableName | string): Promise<any[]> {
     try {
       const endpoint = `/generic/${tableName}/metadata`;
-      const data = await backendAPI.get(endpoint);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data?.constraints || [];
     } catch (error) {
       console.error(`Error in getTableConstraints for ${tableName}:`, error);
@@ -699,7 +756,12 @@ export class JoySenseService {
   static async insertTableRow(tableName: TableName | string, data: Record<string, any>): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}`;
-      const result = await backendAPI.post(endpoint, data);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const result = await backendAPI.post(endpoint, data, token || undefined);
       return result;
     } catch (error) {
       console.error(`Error in insertTableRow for ${tableName}:`, error);
@@ -710,7 +772,12 @@ export class JoySenseService {
   static async updateTableRow(tableName: TableName | string, id: string, data: Record<string, any>): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}/${id}`;
-      const result = await backendAPI.put(endpoint, data);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const result = await backendAPI.put(endpoint, data, token || undefined);
       return result;
     } catch (error) {
       console.error(`Error in updateTableRow for ${tableName}:`, error);
@@ -722,7 +789,12 @@ export class JoySenseService {
     try {
       const keyParams = new URLSearchParams(compositeKey).toString();
       const endpoint = `/generic/${tableName}/composite?${keyParams}`;
-      const result = await backendAPI.put(endpoint, data);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const result = await backendAPI.put(endpoint, data, token || undefined);
       return result;
     } catch (error) {
       console.error(`Error in updateTableRowByCompositeKey for ${tableName}:`, error);
@@ -733,7 +805,12 @@ export class JoySenseService {
   static async deleteTableRow(tableName: TableName | string, id: string): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}/${id}`;
-      const result = await backendAPI.delete(endpoint);
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const result = await backendAPI.delete(endpoint, token || undefined);
       return result;
     } catch (error) {
       console.error(`Error in deleteTableRow for ${tableName}:`, error);

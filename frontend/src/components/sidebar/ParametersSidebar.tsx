@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import ProtectedParameterButton from '../ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { JoySenseService } from '../../services/backend-api';
 
 interface ParametersSidebarProps {
   selectedTable: string;
@@ -29,14 +31,71 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
   massiveFormData = {}
 }) => {
   const { t } = useLanguage();
-  
+  const { user } = useAuth();
+  const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
+  const [loadingPerfil, setLoadingPerfil] = useState(true);
+
+  // Obtener el perfil del usuario actual
+  useEffect(() => {
+    const fetchUserPerfil = async () => {
+      if (!user) {
+        setLoadingPerfil(false);
+        return;
+      }
+
+      try {
+        // Intentar obtener usuarioid de user_metadata primero
+        let usuarioid = user.user_metadata?.usuarioid;
+        
+        // Si no está en user_metadata, buscar por email en la tabla usuario
+        if (!usuarioid && user.email) {
+          // Usar limit=100 para obtener solo los primeros usuarios (más rápido)
+          const usuariosData = await JoySenseService.getTableData('usuario', 100);
+          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
+          
+          // Buscar usuario por email (comparar con login)
+          const usuarioEncontrado = usuarios.find((u: any) => u.login === user.email);
+          if (usuarioEncontrado) {
+            usuarioid = usuarioEncontrado.usuarioid;
+          } else {
+            setLoadingPerfil(false);
+            return;
+          }
+        }
+        
+        if (!usuarioid) {
+          setLoadingPerfil(false);
+          return;
+        }
+
+        // Usar limit para obtener solo los registros necesarios (más rápido)
+        const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
+        
+        const userPerfil = Array.isArray(usuarioperfilData) 
+          ? usuarioperfilData.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1)
+          : (usuarioperfilData as any)?.data?.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1);
+        
+        if (userPerfil) {
+          setUserPerfilId(userPerfil.perfilid);
+        }
+      } catch (error) {
+        // Error silencioso - el usuario simplemente no verá la tabla
+      } finally {
+        setLoadingPerfil(false);
+      }
+    };
+
+    fetchUserPerfil();
+  }, [user]);
+
   // Función para obtener las tablas de parámetros con traducciones dinámicas
   const getAllParameterTables = (): Array<{
     id: string;
     label: string;
     icon: React.ReactNode;
     group: string;
-  }> => [
+  }> => {
+    const tables = [
     // Grupo 1: Estructura organizacional
     { id: 'pais', label: t('parameters.tables.country'), group: t('parameters.groups.location'), icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,6 +129,11 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
       </svg>
     )},
+    { id: 'entidad_localizacion', label: t('parameters.tables.entity_localization'), group: t('parameters.groups.location'), icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+    )},
     
     // Grupo 2: Tipos y dispositivos
     { id: 'tipo', label: t('parameters.tables.type'), group: t('parameters.groups.device'), icon: (
@@ -95,6 +159,11 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
     { id: 'metrica', label: t('parameters.tables.metric'), group: t('parameters.groups.device'), icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    )},
+    { id: 'asociacion', label: t('parameters.tables.association'), group: t('parameters.groups.device'), icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
       </svg>
     )},
     
@@ -145,8 +214,25 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 14.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
-    )}
-  ];
+    )},
+    ];
+
+    // Agregar perfil_geografia_permiso solo si el usuario tiene perfilid === 1 (administrador)
+    if (!loadingPerfil && userPerfilId === 1) {
+      tables.push({
+        id: 'perfil_geografia_permiso',
+        label: t('parameters.tables.geography_permission'),
+        group: t('parameters.groups.user'),
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        )
+      });
+    }
+
+    return tables;
+  };
 
   // Obtener las tablas de parámetros con traducciones dinámicas
   const allParameterTables = getAllParameterTables();

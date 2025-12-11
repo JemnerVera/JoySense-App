@@ -159,13 +159,17 @@ export const useTableDataManagement = () => {
   const loadTableData = useCallback(async (selectedTable: string, initializeFormData?: (cols?: ColumnInfo[]) => Record<string, any>) => {
     if (!selectedTable) return;
     
-    // Solo cancelar llamada anterior si es para una tabla diferente
-    if (abortControllerRef.current && loadingTableRef.current !== selectedTable) {
-      abortControllerRef.current.abort();
+    // Limpiar datos inmediatamente si cambió la tabla para evitar mostrar datos incorrectos
+    const isTableChange = loadingTableRef.current && loadingTableRef.current !== selectedTable;
+    if (isTableChange) {
+      // Cancelar llamada anterior
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     }
     
     // Prevenir múltiples llamadas simultáneas para la misma tabla
-    if (loadingTableRef.current === selectedTable) {
+    if (loadingTableRef.current === selectedTable && loading) {
       return;
     }
     
@@ -180,6 +184,10 @@ export const useTableDataManagement = () => {
         return;
       }
 
+      // Limpiar datos y establecer loading inmediatamente (siempre, para asegurar estado limpio)
+      setTableData([]);
+      setColumns([]);
+      setTableColumns([]);
       setLoading(true);
 
 
@@ -199,6 +207,11 @@ export const useTableDataManagement = () => {
         return;
       }
 
+      // Verificar que todavía estamos cargando la misma tabla antes de establecer columnas
+      if (loadingTableRef.current !== selectedTable) {
+        return;
+      }
+      
       // Establecer columnas base para formularios
       setColumns(cols || []);
 
@@ -276,6 +289,11 @@ export const useTableDataManagement = () => {
         return;
       }
 
+      // Verificar que todavía estamos cargando la misma tabla
+      if (loadingTableRef.current !== selectedTable) {
+        return;
+      }
+      
       const data = Array.isArray(dataResponse) ? dataResponse : ((dataResponse as any)?.data || []);
 
       // Ordenar datos según la tabla
@@ -298,6 +316,11 @@ export const useTableDataManagement = () => {
 
       // Verificar si la llamada fue cancelada antes de actualizar el estado
       if (abortController.signal.aborted) {
+        return;
+      }
+
+      // Verificar que todavía estamos cargando la misma tabla antes de actualizar datos
+      if (loadingTableRef.current !== selectedTable) {
         return;
       }
 
@@ -335,9 +358,12 @@ export const useTableDataManagement = () => {
       } else {
       }
     } finally {
-      setLoading(false);
-      loadingTableRef.current = null; // Reset loading ref
-      abortControllerRef.current = null; // Reset abort controller
+      // Solo actualizar loading si todavía estamos cargando la misma tabla
+      if (loadingTableRef.current === selectedTable) {
+        setLoading(false);
+        loadingTableRef.current = null; // Reset loading ref solo si terminamos correctamente
+        abortControllerRef.current = null; // Reset abort controller
+      }
     }
   }, []);
 

@@ -7,6 +7,8 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { db, dbSchema } = require('../config/database');
 const logger = require('../utils/logger');
+const { optionalAuth } = require('../middleware/auth');
+// Nota: setUserContext ya no se necesita - Supabase API maneja RLS automáticamente
 
 // ============================================================================
 // RUTAS ESPECÍFICAS (deben ir ANTES del router genérico)
@@ -15,14 +17,18 @@ const logger = require('../utils/logger');
 // Ruta de health check
 router.get('/health', async (req, res) => {
   try {
-    // Verificar conexión a la base de datos
-    const { data, error } = await db.query('SELECT 1 as check');
+    // Verificar conexión a Supabase
+    const { supabase } = require('../config/database');
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    const { dbSchema } = require('../config/database');
+    const { data, error } = await supabase.schema(dbSchema).from('pais').select('paisid').limit(1);
     
     res.json({ 
       status: error ? 'error' : 'ok',
       schema: dbSchema,
-      database: 'PostgreSQL',
-      timestamp: new Date().toISOString()
+      database: 'Supabase API',
+      timestamp: new Date().toISOString(),
+      error: error ? error.message : null
     });
   } catch (error) {
     res.json({ 
@@ -37,7 +43,7 @@ router.get('/health', async (req, res) => {
 router.get('/test-db', async (req, res) => {
   const results = {
     schema: dbSchema,
-    connection: 'PostgreSQL',
+    connection: 'Supabase API',
     tests: {}
   };
   
@@ -77,7 +83,7 @@ router.get('/detect', async (req, res) => {
       return res.json({ available: false, error: error.message });
     }
     
-    res.json({ available: true, schema: dbSchema, connection: 'PostgreSQL' });
+    res.json({ available: true, schema: dbSchema, connection: 'Supabase API' });
   } catch (error) {
     res.json({ available: false, error: error.message });
   }
@@ -87,8 +93,18 @@ router.get('/detect', async (req, res) => {
 // RUTAS DE AUTENTICACIÓN
 // ============================================================================
 
+// ============================================================================
+// RUTAS DE AUTENTICACIÓN
+// ============================================================================
+// NOTA: El login ahora se hace directamente desde el frontend usando Supabase API
+// Estas rutas se mantienen por compatibilidad pero el frontend ya no las usa
+
 router.post('/auth/login', async (req, res) => {
   try {
+    // Esta ruta ya no se usa - el frontend usa Supabase API directamente
+    // Se mantiene por compatibilidad temporal
+    logger.warn('⚠️ POST /auth/login llamado - el frontend debería usar Supabase API directamente');
+    
     const { email, password } = req.body;
     
     // Buscar usuario por login (email)
@@ -112,9 +128,7 @@ router.post('/auth/login', async (req, res) => {
         return res.status(401).json({ success: false, error: 'Contraseña incorrecta' });
       }
     } else {
-      // Si no hay hash, verificar texto plano (temporal para desarrollo)
       logger.warn('Usuario sin password_hash, verificando texto plano');
-      // Por seguridad, rechazar si no hay hash en producción
       if (process.env.NODE_ENV === 'production') {
         return res.status(401).json({ success: false, error: 'Contraseña no configurada' });
       }
@@ -133,12 +147,18 @@ router.post('/auth/login', async (req, res) => {
       }
     };
     
-    logger.info(`Usuario ${usuario.login} autenticado`);
+    logger.info(`Usuario ${usuario.login} autenticado (ruta legacy)`);
     res.json({ success: true, user: userResponse });
   } catch (error) {
     logger.error('Error en POST /auth/login:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// Endpoint para logout (ya no necesario - Supabase maneja esto)
+router.post('/auth/logout', (req, res) => {
+  // Ya no necesitamos limpiar passwords en memoria
+  res.json({ success: true, message: 'Sesión cerrada' });
 });
 
 // Crear usuario con password hasheado (para setup inicial)
@@ -223,6 +243,14 @@ router.post('/auth/reset-password', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ============================================================================
+// MIDDLEWARE GLOBAL
+// ============================================================================
+// NOTA: Ya no necesitamos setUserContext - Supabase API maneja RLS automáticamente
+// El backend se autentica como admin@joysense.com al iniciar
+// router.use(optionalAuth);        // Opcional si necesitas verificar usuario en requests
+// router.use(setUserContext);      // Ya no necesario - Supabase maneja RLS
 
 // ============================================================================
 // MONTAR ROUTERS DE MÓDULOS

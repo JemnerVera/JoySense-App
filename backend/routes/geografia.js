@@ -5,9 +5,14 @@
 
 const express = require('express');
 const router = express.Router();
-const { db, dbSchema, pool } = require('../config/database');
+const { db, dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
+const { optionalAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// Aplicar middleware de autenticación opcional a todas las rutas
+// Esto permite que las queries usen el token del usuario para RLS
+router.use(optionalAuth);
 
 // ============================================================================
 // PAIS
@@ -15,7 +20,9 @@ const logger = require('../utils/logger');
 
 router.get('/pais', async (req, res) => {
   try {
-    const result = await paginateAndFilter('pais', { ...req.query, sortBy: 'paisid' });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const result = await paginateAndFilter('pais', { ...req.query, sortBy: 'paisid' }, userSupabase);
     res.json(result);
   } catch (error) {
     logger.error('Error en GET /pais:', error);
@@ -35,7 +42,9 @@ router.get('/pais/columns', async (req, res) => {
 
 router.post('/pais', async (req, res) => {
   try {
-    const { data, error } = await db.insert('pais', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('pais').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -46,7 +55,9 @@ router.post('/pais', async (req, res) => {
 
 router.put('/pais/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('pais', req.body, { paisid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('pais').update(req.body).eq('paisid', req.params.id).select();
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -63,23 +74,43 @@ router.get('/empresa', async (req, res) => {
   try {
     const { paisId } = req.query;
     
-    let sql = `
-      SELECT e.*, 
-             json_build_object('paisid', p.paisid, 'pais', p.pais, 'paisabrev', p.paisabrev) as pais
-      FROM ${dbSchema}.empresa e
-      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
+    // DEBUG: Log detallado
+    logger.info(`🔍 [GET /empresa] Schema: ${dbSchema}, PaisId: ${paisId || 'ninguno'}`);
+    logger.info(`🔍 [GET /empresa] Usando token de usuario: ${userSupabase !== baseSupabase ? 'SÍ' : 'NO'}`);
+    
+    // Usar Supabase API con join usando RPC o queries separadas
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('empresa')
+      .select('*, pais:paisid(paisid, pais, paisabrev)');
+    
     if (paisId) {
-      sql += ` WHERE e.paisid = $1`;
-      params.push(paisId);
+      query = query.eq('paisid', paisId);
     }
     
-    sql += ` ORDER BY e.empresaid`;
+    query = query.order('empresaid', { ascending: true });
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) {
+      logger.error(`❌ [GET /empresa] Error: ${error.message}`);
+      logger.error(`❌ [GET /empresa] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
+      throw error;
+    }
+    
+    logger.info(`🔍 [GET /empresa] Registros devueltos: ${(data || []).length}`);
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(emp => ({
+      ...emp,
+      pais: emp.pais ? (Array.isArray(emp.pais) ? emp.pais[0] : emp.pais) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /empresa:', error);
     res.status(500).json({ error: error.message });
@@ -98,7 +129,9 @@ router.get('/empresa/columns', async (req, res) => {
 
 router.post('/empresa', async (req, res) => {
   try {
-    const { data, error } = await db.insert('empresa', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('empresa').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -109,7 +142,9 @@ router.post('/empresa', async (req, res) => {
 
 router.put('/empresa/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('empresa', req.body, { empresaid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('empresa').update(req.body).eq('empresaid', req.params.id).select();
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -126,30 +161,43 @@ router.get('/fundo', async (req, res) => {
   try {
     const { empresaId } = req.query;
     
-    let sql = `
-      SELECT f.*,
-             json_build_object(
-               'empresaid', e.empresaid, 
-               'empresa', e.empresa, 
-               'empresabrev', e.empresabrev,
-               'paisid', e.paisid,
-               'pais', json_build_object('paisid', p.paisid, 'pais', p.pais, 'paisabrev', p.paisabrev)
-             ) as empresa
-      FROM ${dbSchema}.fundo f
-      LEFT JOIN ${dbSchema}.empresa e ON f.empresaid = e.empresaid
-      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
+    // DEBUG: Log detallado
+    logger.info(`🔍 [GET /fundo] Schema: ${dbSchema}, EmpresaId: ${empresaId || 'ninguno'}`);
+    logger.info(`🔍 [GET /fundo] Usando token de usuario: ${userSupabase !== baseSupabase ? 'SÍ' : 'NO'}`);
+    
+    // Usar Supabase API con joins anidados
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('fundo')
+      .select('*, empresa:empresaid(empresaid, empresa, empresabrev, paisid, pais:paisid(paisid, pais, paisabrev))');
+    
     if (empresaId) {
-      sql += ` WHERE f.empresaid = $1`;
-      params.push(empresaId);
+      query = query.eq('empresaid', empresaId);
     }
     
-    sql += ` ORDER BY f.fundoid`;
+    query = query.order('fundoid', { ascending: true });
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) {
+      logger.error(`❌ [GET /fundo] Error: ${error.message}`);
+      logger.error(`❌ [GET /fundo] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
+      throw error;
+    }
+    
+    logger.info(`🔍 [GET /fundo] Registros devueltos: ${(data || []).length}`);
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(fundo => ({
+      ...fundo,
+      empresa: fundo.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /fundo:', error);
     res.status(500).json({ error: error.message });
@@ -168,7 +216,9 @@ router.get('/fundo/columns', async (req, res) => {
 
 router.post('/fundo', async (req, res) => {
   try {
-    const { data, error } = await db.insert('fundo', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('fundo').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -179,7 +229,9 @@ router.post('/fundo', async (req, res) => {
 
 router.put('/fundo/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('fundo', req.body, { fundoid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('fundo').update(req.body).eq('fundoid', req.params.id).select();
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -196,36 +248,32 @@ router.get('/ubicacion', async (req, res) => {
   try {
     const { fundoId } = req.query;
     
-    let sql = `
-      SELECT u.*,
-             json_build_object(
-               'fundoid', f.fundoid,
-               'fundo', f.fundo,
-               'fundoabrev', f.fundoabrev,
-               'empresaid', f.empresaid,
-               'empresa', json_build_object(
-                 'empresaid', e.empresaid,
-                 'empresa', e.empresa,
-                 'paisid', e.paisid,
-                 'pais', json_build_object('paisid', p.paisid, 'pais', p.pais)
-               )
-             ) as fundo
-      FROM ${dbSchema}.ubicacion u
-      LEFT JOIN ${dbSchema}.fundo f ON u.fundoid = f.fundoid
-      LEFT JOIN ${dbSchema}.empresa e ON f.empresaid = e.empresaid
-      LEFT JOIN ${dbSchema}.pais p ON e.paisid = p.paisid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    // Usar Supabase API con joins anidados
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('ubicacion')
+      .select('*, fundo:fundoid(fundoid, fundo, fundoabrev, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais)))');
     
-    const params = [];
     if (fundoId) {
-      sql += ` WHERE u.fundoid = $1`;
-      params.push(fundoId);
+      query = query.eq('fundoid', fundoId);
     }
     
-    sql += ` ORDER BY u.ubicacionid`;
+    query = query.order('ubicacionid', { ascending: true });
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(ubic => ({
+      ...ubic,
+      fundo: ubic.fundo ? (Array.isArray(ubic.fundo) ? ubic.fundo[0] : ubic.fundo) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /ubicacion:', error);
     res.status(500).json({ error: error.message });
@@ -244,7 +292,9 @@ router.get('/ubicacion/columns', async (req, res) => {
 
 router.post('/ubicacion', async (req, res) => {
   try {
-    const { data, error } = await db.insert('ubicacion', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('ubicacion').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -255,7 +305,9 @@ router.post('/ubicacion', async (req, res) => {
 
 router.put('/ubicacion/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('ubicacion', req.body, { ubicacionid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('ubicacion').update(req.body).eq('ubicacionid', req.params.id).select();
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -270,7 +322,9 @@ router.put('/ubicacion/:id', async (req, res) => {
 
 router.get('/entidad', async (req, res) => {
   try {
-    const result = await paginateAndFilter('entidad', { ...req.query, sortBy: 'entidadid' });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const result = await paginateAndFilter('entidad', { ...req.query, sortBy: 'entidadid' }, userSupabase);
     res.json(result);
   } catch (error) {
     logger.error('Error en GET /entidad:', error);
@@ -290,7 +344,9 @@ router.get('/entidad/columns', async (req, res) => {
 
 router.post('/entidad', async (req, res) => {
   try {
-    const { data, error } = await db.insert('entidad', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('entidad').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -301,7 +357,9 @@ router.post('/entidad', async (req, res) => {
 
 router.put('/entidad/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('entidad', req.body, { entidadid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('entidad').update(req.body).eq('entidadid', req.params.id).select();
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -316,18 +374,26 @@ router.put('/entidad/:id', async (req, res) => {
 
 router.get('/entidad_localizacion', async (req, res) => {
   try {
-    const sql = `
-      SELECT el.*,
-             json_build_object('entidadid', e.entidadid, 'entidad', e.entidad) as entidad,
-             json_build_object('localizacionid', l.localizacionid, 'localizacion', l.localizacion) as localizacion
-      FROM ${dbSchema}.entidad_localizacion el
-      LEFT JOIN ${dbSchema}.entidad e ON el.entidadid = e.entidadid
-      LEFT JOIN ${dbSchema}.localizacion l ON el.localizacionid = l.localizacionid
-      ORDER BY el.entidadid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    // Usar Supabase API con joins
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('entidad_localizacion')
+      .select('*, entidad:entidadid(entidadid, entidad), localizacion:localizacionid(localizacionid, localizacion)')
+      .order('entidadid', { ascending: true });
     
-    const result = await pool.query(sql);
-    res.json(result.rows || []);
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(el => ({
+      ...el,
+      entidad: el.entidad ? (Array.isArray(el.entidad) ? el.entidad[0] : el.entidad) : null,
+      localizacion: el.localizacion ? (Array.isArray(el.localizacion) ? el.localizacion[0] : el.localizacion) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /entidad_localizacion:', error);
     res.status(500).json({ error: error.message });
@@ -336,7 +402,9 @@ router.get('/entidad_localizacion', async (req, res) => {
 
 router.post('/entidad_localizacion', async (req, res) => {
   try {
-    const { data, error } = await db.insert('entidad_localizacion', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase.schema(dbSchema).from('entidad_localizacion').insert(req.body).select();
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {

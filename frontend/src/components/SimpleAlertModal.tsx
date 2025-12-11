@@ -9,13 +9,18 @@ const SimpleAlertModal: React.FC = () => {
   const getContextNames = () => {
     switch (modalState.type) {
       case 'subtab':
+        // Si currentContext ya es un nombre legible (como 'Crear', 'Actualizar'), usarlo directamente
+        // Si es un código (como 'insert', 'update'), convertirlo
+        const getSubTabName = (context: string) => {
+          if (context === 'insert' || context === 'Crear') return 'Crear';
+          if (context === 'update' || context === 'Actualizar') return 'Actualizar';
+          if (context === 'massive' || context === 'Masivo') return 'Masivo';
+          if (context === 'status' || context === 'Estado') return 'Estado';
+          return context;
+        };
         return {
-          current: modalState.currentContext === 'insert' ? 'Crear' : 
-                  modalState.currentContext === 'update' ? 'Actualizar' : 
-                  modalState.currentContext === 'massive' ? 'Masivo' : 'Estado',
-          target: modalState.targetContext === 'insert' ? 'Crear' : 
-                  modalState.targetContext === 'update' ? 'Actualizar' : 
-                  modalState.targetContext === 'massive' ? 'Masivo' : 'Estado'
+          current: getSubTabName(modalState.currentContext),
+          target: getSubTabName(modalState.targetContext)
         };
       case 'parameter':
         return {
@@ -57,7 +62,10 @@ const SimpleAlertModal: React.FC = () => {
             Tienes datos sin guardar en <span className="text-orange-400 font-bold">{current}</span>.
           </p>
           <p className="text-white font-mono text-sm leading-relaxed mt-2">
-            Si cambias a <span className="text-orange-400 font-bold">{target}</span>, se perderá toda la información ingresada.
+            {modalState.type === 'subtab' && target === 'Estado' && current === 'Actualizar' 
+              ? 'Si cancelas, se perderán los cambios realizados.'
+              : <>Si cambias a <span className="text-orange-400 font-bold">{target}</span>, se perderá toda la información ingresada.</>
+            }
           </p>
         </div>
 

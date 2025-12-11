@@ -1214,9 +1214,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       // Filtrar mediciones del nodo seleccionado para todos los tipos
       const medicionesDelNodo = umbralNodoSeleccionado === selectedNode?.nodoid
-        ? mediciones.filter(m => m.metricaid === metricId && tiposValidos.includes(m.tipoid))
+        ? mediciones.filter(m => m.metricaid === metricId && m.tipoid !== undefined && m.tipoid !== null && tiposValidos.includes(m.tipoid))
         : (comparisonNode && umbralNodoSeleccionado === comparisonNode.nodoid
-          ? comparisonMediciones.filter(m => m.metricaid === metricId && tiposValidos.includes(m.tipoid))
+          ? comparisonMediciones.filter(m => m.metricaid === metricId && m.tipoid !== undefined && m.tipoid !== null && tiposValidos.includes(m.tipoid))
           : [])
       
       // Extraer valores
@@ -1427,8 +1427,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Agrupar por tipo de sensor y luego por tiempo (usar datos muestreados)
-    const tiposEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.tipoid)))
-    const datosPorTipo: { [tipoid: number]: any[] } = {}
+    const tiposEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.tipoid).filter((id): id is number => id !== undefined && id !== null)))
+    const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
     
     // Inicializar datos para cada tipo
     tiposEnMediciones.forEach(tipoid => {
@@ -1445,6 +1445,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Agrupar mediciones por tipo y tiempo (usar datos muestreados si aplica)
     medicionesParaProcesar.forEach(medicion => {
+      // Filtrar mediciones sin tipoid válido
+      if (medicion.tipoid === undefined || medicion.tipoid === null) {
+        return
+      }
+      
       const date = new Date(medicion.fecha)
       let timeKey: string
       
@@ -1468,7 +1473,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
       
       // Buscar si ya existe un punto para este tipo y tiempo
-      const existingPoint = datosPorTipo[medicion.tipoid].find(p => p.time === timeKey)
+      const existingPoint = datosPorTipo[medicion.tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
       
       if (existingPoint) {
         // Promediar con el valor existente
@@ -1483,6 +1488,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         }
       } else {
         // Crear nuevo punto
+        if (!datosPorTipo[medicion.tipoid]) {
+          datosPorTipo[medicion.tipoid] = []
+        }
         datosPorTipo[medicion.tipoid].push({
           timestamp: date.getTime(),
           time: timeKey,
@@ -1497,7 +1505,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Ordenar los datos de cada tipo por timestamp antes de crear la estructura final
     tiposEnMediciones.forEach(tipoid => {
       if (datosPorTipo[tipoid]) {
-        datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
+        datosPorTipo[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
         // Verificar si hay gaps significativos en los datos
         if (datosPorTipo[tipoid].length > 1) {
           for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
@@ -1528,12 +1536,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // Intentar usar granularidad más fina (minutos en lugar de horas) si hay datos suficientes
         if (filteredMediciones.length >= 3 && !useMinutes) {
           // Re-agrupar con granularidad de minutos para capturar más puntos
-          const datosPorTipoMinutos: { [tipoid: number]: any[] } = {}
+          const datosPorTipoMinutos: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
           tiposEnMediciones.forEach(tipoid => {
             datosPorTipoMinutos[tipoid] = []
           })
           
           filteredMediciones.forEach(medicion => {
+            // Filtrar mediciones sin tipoid válido
+            if (medicion.tipoid === undefined || medicion.tipoid === null) {
+              return
+            }
+            
             const date = new Date(medicion.fecha)
             const minutes = date.getMinutes()
             const roundedMinutes = Math.floor(minutes / 15) * 15
@@ -1545,7 +1558,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               datosPorTipoMinutos[medicion.tipoid] = []
             }
             
-            const existingPoint = datosPorTipoMinutos[medicion.tipoid].find(p => p.time === timeKey)
+            const existingPoint = datosPorTipoMinutos[medicion.tipoid].find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
             
             if (existingPoint) {
               const currentValue = existingPoint.value
@@ -1577,7 +1590,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             // Usar los datos con granularidad de minutos
             tiposEnMediciones.forEach(tipoid => {
               if (datosPorTipoMinutos[tipoid]) {
-                datosPorTipoMinutos[tipoid].sort((a, b) => a.timestamp - b.timestamp)
+                datosPorTipoMinutos[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
                 datosPorTipo[tipoid] = datosPorTipoMinutos[tipoid]
               }
             })
@@ -1597,7 +1610,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Obtener todos los tiempos únicos ordenados por timestamp
     const allTimeStamps = new Set<number>()
     tiposEnMediciones.forEach(tipoid => {
-      datosPorTipo[tipoid].forEach(point => {
+      datosPorTipo[tipoid]?.forEach((point: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => {
         // Obtener el timestamp del inicio del período según la granularidad
         const date = new Date(point.timestamp)
         let periodStart: Date
@@ -1644,7 +1657,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     tiposEnMediciones.forEach(tipoid => {
       const tipo = tipos.find(t => t.tipoid === tipoid)
       const tipoName = tipo?.tipo || `Tipo ${tipoid}`
-      const firstDataPoint = datosPorTipo[tipoid]?.find(p => p.value !== null && p.value !== undefined)
+      const firstDataPoint = datosPorTipo[tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.value !== null && p.value !== undefined)
       firstValueByType[tipoName] = firstDataPoint ? firstDataPoint.value : null
     })
     
@@ -1655,7 +1668,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       tiposEnMediciones.forEach(tipoid => {
         // Buscar el punto más cercano para este tiempo y tipo
         // Si no hay punto exacto, buscar el más cercano dentro de un rango razonable
-        const tipoData = datosPorTipo[tipoid].find(p => p.time === time)
+        const tipoData = datosPorTipo[tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === time)
         const tipo = tipos.find(t => t.tipoid === tipoid)
         const tipoName = tipo?.tipo || `Tipo ${tipoid}`
         
@@ -2369,7 +2382,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 // Obtener tipos únicos de las mediciones
                                 const tiposDelNodo = new Set<number>()
                                 medicionesDelNodo.forEach(m => {
+                                  if (m.tipoid !== undefined && m.tipoid !== null) {
                                   tiposDelNodo.add(m.tipoid)
+                                  }
                                 })
                                 
                                 // Filtrar tipos disponibles que tienen umbrales
@@ -2938,7 +2953,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
                         
                         // Obtener tipos únicos en las mediciones de comparación
-                        const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid)))
+                        const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid).filter((id): id is number => id !== undefined && id !== null)))
                         
                         // Inicializar estructura de datos por tipo
                         const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
@@ -2949,6 +2964,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         // Agrupar mediciones por tipo y tiempo (igual que processChartData)
                         filteredMediciones.forEach(medicion => {
                           if (medicion.medicion == null || isNaN(medicion.medicion)) return
+                          if (medicion.tipoid === undefined || medicion.tipoid === null) return
                           
                           const date = new Date(medicion.fecha)
                           let timeKey: string
@@ -2969,7 +2985,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           }
                           
                           // Buscar si ya existe un punto para este tipo y tiempo
-                          const existingPoint = datosPorTipo[medicion.tipoid].find(p => p.time === timeKey)
+                          const existingPoint = datosPorTipo[medicion.tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
                           
                           if (existingPoint) {
                             const currentValue = existingPoint.value
@@ -2981,6 +2997,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               existingPoint.timestamp = date.getTime()
                             }
                           } else {
+                            if (!datosPorTipo[medicion.tipoid]) {
+                              datosPorTipo[medicion.tipoid] = []
+                            }
                             datosPorTipo[medicion.tipoid].push({
                               timestamp: date.getTime(),
                               time: timeKey,
@@ -2995,7 +3014,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         // Ordenar los datos de cada tipo por timestamp
                         tiposEnMediciones.forEach(tipoid => {
                           if (datosPorTipo[tipoid]) {
-                            datosPorTipo[tipoid].sort((a, b) => a.timestamp - b.timestamp)
+                            datosPorTipo[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
                           }
                         })
                         
@@ -3003,7 +3022,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         const allTimeStamps = new Set<number>()
                         tiposEnMediciones.forEach(tipoid => {
                           if (datosPorTipo[tipoid]) {
-                            datosPorTipo[tipoid].forEach(point => {
+                            datosPorTipo[tipoid].forEach((point: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => {
                               // Calcular el inicio del período para el timeKey
                               const periodStart = new Date(point.timestamp)
                               if (useDays) {
@@ -3048,7 +3067,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           tiposEnMediciones.forEach(tipoid => {
                             const tipo = tipos.find(t => t.tipoid === tipoid)
                             if (tipo && datosPorTipo[tipoid]) {
-                              const tipoPoint = datosPorTipo[tipoid].find(p => p.time === time)
+                              const tipoPoint = datosPorTipo[tipoid].find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === time)
                               if (tipoPoint) {
                                 let value: number | null = tipoPoint.value
                                 
