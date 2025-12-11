@@ -197,6 +197,9 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'fundoabrev': t('table_headers.abbreviation'),
     'ubicacionabrev': t('table_headers.abbreviation'),
     'statusid': t('table_headers.status'),
+    'puede_ver': 'PUEDE VER',
+    'puede_insertar': 'PUEDE INSERTAR',
+    'puede_actualizar': 'PUEDE ACTUALIZAR',
     'password_hash': t('table_headers.password'),
     'usercreatedid': t('table_headers.created_by'),
     'usermodifiedid': t('table_headers.modified_by'),
@@ -391,7 +394,32 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
   // Para campos que son IDs de tablas relacionadas - VERSIÓN SÚPER OPTIMIZADA
   if (idToNameMapping[columnName]) {
     const mapping = idToNameMapping[columnName];
-    const idValue = row[columnName];
+    let idValue = row[columnName];
+    
+    // CASO ESPECIAL: Para perfil_geografia_permiso y otras tablas que vienen con objetos anidados del backend
+    // El backend puede retornar datos expandidos como: { perfilid: 1, perfil: { perfilid: 1, perfil: "Admin" } }
+    // Primero verificar si hay un objeto anidado con el nombre de la tabla
+    const nestedObject = row[mapping.table];
+    if (nestedObject) {
+      // Si es un array (Supabase puede retornar arrays), tomar el primer elemento
+      const nested = Array.isArray(nestedObject) ? nestedObject[0] : nestedObject;
+      if (nested && nested[mapping.nameField]) {
+        return nested[mapping.nameField];
+      }
+    }
+    
+    // CASO ESPECIAL: Para paisid en tablas que no tienen paisid directo (fundo, ubicacion)
+    // Resolver a través de relaciones anidadas
+    // NO aplicar esta lógica a perfil_geografia_permiso porque tiene constraint que solo permite uno NOT NULL
+    const isPerfilGeografiaPermiso = row.permisoid !== undefined && row.permisoid !== null;
+    if (columnName === 'paisid' && !idValue && row.empresaid && !isPerfilGeografiaPermiso) {
+      // Si estamos en fundo/ubicacion y no hay paisid directo, obtenerlo de empresa
+      const empresasData = relatedData.empresasData || [];
+      const empresa = empresasData.find((e: any) => e.empresaid === row.empresaid);
+      if (empresa && empresa.paisid) {
+        idValue = empresa.paisid;
+      }
+    }
     
     if (idValue) {
       // Crear clave de cache eficiente
@@ -412,9 +440,10 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
 
       // Buscar el item relacionado
       const idField = `${mapping.table}id`;
-      const relatedItem = relatedDataArray.find(item => 
-        item[idField] && item[idField].toString() === idValue.toString()
-      );
+      const relatedItem = relatedDataArray.find(item => {
+        const itemId = item[idField];
+        return itemId && itemId.toString() === idValue.toString();
+      });
 
       if (relatedItem) {
         const displayValue = relatedItem[mapping.nameField] || idValue.toString();
@@ -424,8 +453,10 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
         }
         return displayValue;
       }
+      
     }
     
+    // Si hay idValue pero no se encontró en relatedData, retornar el ID en lugar de N/A
     return idValue ? idValue.toString() : 'N/A';
   }
 
@@ -504,10 +535,16 @@ export const formatDate = (dateString: string): string => {
  * Obtiene el nombre de usuario por ID
  */
 export const getUserName = (userId: number, userData: any[] = []): string => {
-  const user = userData.find(u => u.usuarioid === userId);
+  if (!userId || !userData || userData.length === 0) {
+    return userId ? `Usuario ${userId}` : 'N/A';
+  }
+  
+  // Buscar por usuarioid (campo correcto en la BD) o por id (fallback)
+  const user = userData.find((u: any) => u.usuarioid === userId || u.id === userId);
   
   if (user) {
-    return `${user.firstname || ''} ${user.lastname || ''}`.trim() || user.login || `Usuario ${userId}`;
+    const fullName = `${user.firstname || ''} ${user.lastname || ''}`.trim();
+    return fullName || user.login || `Usuario ${userId}`;
   }
   
   return `Usuario ${userId}`;
