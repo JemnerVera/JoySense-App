@@ -16,6 +16,8 @@ interface UpdateTableProps {
   selectedRow: any | null;
   onRowClick: (row: any) => void;
   loading?: boolean;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  tableName?: string;
 }
 
 export const UpdateTable: React.FC<UpdateTableProps> = ({
@@ -24,7 +26,9 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   relatedData,
   selectedRow,
   onRowClick,
-  loading = false
+  loading = false,
+  themeColor = 'orange',
+  tableName
 }) => {
   const { t } = useLanguage();
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
@@ -37,17 +41,27 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   }, []);
 
   const getRowKey = useCallback((row: any) => {
+    // Para perfil_geografia_permiso, usar permisoid
+    if (tableName === 'perfil_geografia_permiso' && row.permisoid) {
+      return `permiso_${row.permisoid}`;
+    }
+    // Para otras tablas, usar la lógica existente
     return row.usuarioid || row.login || row.nodoid || row.tipoid || 'default';
-  }, []);
+  }, [tableName]);
 
   // Memoizar userData para evitar re-renders innecesarios
   const userData = useMemo(() => relatedData.userData || [], [relatedData.userData]);
 
   // Función para determinar si una fila está seleccionada
-  const isRowSelected = (row: any): boolean => {
+  const isRowSelected = useCallback((row: any): boolean => {
     if (!selectedRow) return false;
     
-    // Comparar por clave primaria
+    // Para perfil_geografia_permiso, usar permisoid directamente
+    if (tableName === 'perfil_geografia_permiso') {
+      return row.permisoid && selectedRow.permisoid && row.permisoid === selectedRow.permisoid;
+    }
+    
+    // Para otras tablas, comparar por múltiples campos
     const rowKeys = [
       row.paisid,
       row.empresaid,
@@ -84,7 +98,7 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
     
     return rowKeys.length > 0 && selectedKeys.length > 0 && 
            rowKeys.every((key, index) => key === selectedKeys[index]);
-  };
+  }, [selectedRow, tableName]);
 
   // Si no hay columnas, verificar si está cargando o si realmente hay un problema
   if (columns.length === 0) {
@@ -169,32 +183,45 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
               const isSelected = isRowSelected(row);
               
               // Crear una key única combinando múltiples identificadores y el índice
-              const primaryKeys = [
-                row.paisid,
-                row.empresaid,
-                row.fundoid,
-                row.usuarioid,
-                row.nodoid,
-                row.tipoid,
-                row.sensorid,
-                row.metricaid,
-                row.umbralid,
-                row.perfilid,
-                row.contactoid,
-                row.ubicacionid,
-                row.localizacionid,
-                row.entidadid
-              ].filter(Boolean);
-              
-              const rowKey = primaryKeys.length > 0 
-                ? `${primaryKeys.join('-')}-${index}` 
-                : `row-${index}`;
+              // Para perfil_geografia_permiso, usar permisoid directamente
+              let rowKey: string;
+              if (tableName === 'perfil_geografia_permiso' && row.permisoid) {
+                rowKey = `permiso_${row.permisoid}`;
+              } else {
+                const primaryKeys = [
+                  row.paisid,
+                  row.empresaid,
+                  row.fundoid,
+                  row.usuarioid,
+                  row.nodoid,
+                  row.tipoid,
+                  row.sensorid,
+                  row.metricaid,
+                  row.umbralid,
+                  row.perfilid,
+                  row.contactoid,
+                  row.ubicacionid,
+                  row.localizacionid,
+                  row.entidadid,
+                  row.permisoid
+                ].filter(Boolean);
+                
+                rowKey = primaryKeys.length > 0 
+                  ? `${primaryKeys.join('-')}-${index}` 
+                  : `row-${index}`;
+              }
               
               return (
                 <tr
                   key={rowKey}
                   className={isSelected 
-                    ? 'bg-orange-100 dark:bg-orange-900/20' 
+                    ? themeColor === 'red' 
+                      ? 'bg-red-100 dark:bg-red-900/20' 
+                      : themeColor === 'blue'
+                      ? 'bg-blue-100 dark:bg-blue-900/20'
+                      : themeColor === 'green'
+                      ? 'bg-green-100 dark:bg-green-900/20'
+                      : 'bg-orange-100 dark:bg-orange-900/20'
                     : 'bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'
                   }
                 >
@@ -204,7 +231,15 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => onRowClick(row)}
-                      className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                      className={`w-4 h-4 bg-gray-100 border-gray-300 rounded dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer ${
+                        themeColor === 'red'
+                          ? 'text-red-500 focus:ring-red-500 dark:focus:ring-red-600'
+                          : themeColor === 'blue'
+                          ? 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-600'
+                          : themeColor === 'green'
+                          ? 'text-green-500 focus:ring-green-500 dark:focus:ring-green-600'
+                          : 'text-orange-500 focus:ring-orange-500 dark:focus:ring-orange-600'
+                      }`}
                     />
                   </td>
                   {/* Resto de las columnas - usar la misma lógica de formateo que StatusTableRow */}
@@ -304,13 +339,27 @@ export const UpdateTableMemo = React.memo(UpdateTable, (prevProps, nextProps) =>
   // Comparar longitudes y referencias primero (más rápido)
   if (prevProps.data.length !== nextProps.data.length) return false;
   if (prevProps.columns.length !== nextProps.columns.length) return false;
+  if (prevProps.tableName !== nextProps.tableName) return false;
+  if (prevProps.themeColor !== nextProps.themeColor) return false;
   if (prevProps.loading !== nextProps.loading) return false;
-  if (prevProps.selectedRow !== nextProps.selectedRow) return false;
+  
+  // Comparar selectedRow por valor si son objetos diferentes pero con el mismo contenido
+  if (prevProps.selectedRow && nextProps.selectedRow) {
+    // Para perfil_geografia_permiso, comparar por permisoid
+    if (prevProps.tableName === 'perfil_geografia_permiso' && nextProps.tableName === 'perfil_geografia_permiso') {
+      if (prevProps.selectedRow.permisoid !== nextProps.selectedRow.permisoid) return false;
+    } else if (prevProps.selectedRow !== nextProps.selectedRow) {
+      return false;
+    }
+  } else if (prevProps.selectedRow !== nextProps.selectedRow) {
+    return false;
+  }
   
   // Si las referencias son iguales, no hay cambios
   if (prevProps.data === nextProps.data &&
       prevProps.columns === nextProps.columns &&
-      prevProps.relatedData === nextProps.relatedData) {
+      prevProps.relatedData === nextProps.relatedData &&
+      prevProps.onRowClick === nextProps.onRowClick) {
     return true;
   }
   

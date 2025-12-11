@@ -217,19 +217,8 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
     )},
     ];
 
-    // Agregar perfil_geografia_permiso solo si el usuario tiene perfilid === 1 (administrador)
-    if (!loadingPerfil && userPerfilId === 1) {
-      tables.push({
-        id: 'perfil_geografia_permiso',
-        label: t('parameters.tables.geography_permission'),
-        group: t('parameters.groups.user'),
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        )
-      });
-    }
+    // NOTA: perfil_geografia_permiso ahora está en la pestaña "Permisos" del MainSidebar
+    // Solo visible para administradores (perfilid === 1)
 
     return tables;
   };

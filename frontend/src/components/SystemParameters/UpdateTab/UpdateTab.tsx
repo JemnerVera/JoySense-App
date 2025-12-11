@@ -33,6 +33,7 @@ interface UpdateTabProps {
   onUpdateSuccess?: () => void;
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
   onFormDataChange?: (formData: Record<string, any>) => void;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 export const UpdateTab: React.FC<UpdateTabProps> = ({
@@ -50,7 +51,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   existingData = [],
   onUpdateSuccess,
   setMessage,
-  onFormDataChange
+  onFormDataChange,
+  themeColor = 'orange'
 }) => {
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -281,6 +283,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             relatedData={relatedData}
             visibleColumns={visibleColumns}
             getColumnDisplayName={getColumnDisplayName}
+            themeColor={themeColor}
           />
 
           {/* Botones de acción */}
@@ -288,7 +291,15 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             <button
               onClick={handleUpdate}
               disabled={isSubmitting}
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider"
+              className={`px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider ${
+                themeColor === 'red' 
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : themeColor === 'blue'
+                  ? 'bg-blue-500 hover:bg-blue-600'
+                  : themeColor === 'green'
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}
             >
               {isSubmitting ? 'Guardando...' : '🔧 Actualizar'}
             </button>
@@ -304,6 +315,17 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       ) : (
         <>
           {/* No renderizar hasta que las columnas estén cargadas para evitar renderizado incorrecto */}
+          {(() => {
+            console.log('[UpdateTab] Condición de renderizado', {
+              loading,
+              columnsLength: columns.length,
+              tableVisibleColumnsLength: tableVisibleColumns.length,
+              tableDataLength: tableData.length,
+              paginatedDataLength: paginatedData.length,
+              shouldRender: !loading && columns.length > 0 && tableVisibleColumns.length > 0
+            });
+            return null;
+          })()}
           {!loading && columns.length > 0 && tableVisibleColumns.length > 0 ? (
             <>
               {/* Botones de acción cuando hay fila seleccionada */}
@@ -311,7 +333,15 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 <div className="mb-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                   <button
                     onClick={handleGoToUpdate}
-                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-mono tracking-wider"
+                    className={`px-6 py-2 text-white rounded-lg transition-colors font-mono tracking-wider ${
+                      themeColor === 'red' 
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : themeColor === 'blue'
+                        ? 'bg-blue-500 hover:bg-blue-600'
+                        : themeColor === 'green'
+                        ? 'bg-green-500 hover:bg-green-600'
+                        : 'bg-orange-500 hover:bg-orange-600'
+                    }`}
                   >
                     🔧 Actualizar
                   </button>
@@ -340,6 +370,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 selectedRow={selectedRow}
                 onRowClick={handleRowSelect}
                 loading={false}
+                themeColor={themeColor}
+                tableName={tableName}
               />
 
               {/* Paginación */}

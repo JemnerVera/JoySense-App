@@ -108,6 +108,31 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
+      {/* Tercer sidebar para permisos (siempre visible cuando está en permisos) */}
+      {hasAuxiliarySidebar && activeTab === 'permisos' && (
+        <div className="flex-shrink-0 z-30">
+          <AuxiliarySidebar
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showThirdLevel={true}
+            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
+            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
+          />
+        </div>
+      )}
+
       {/* Tercer sidebar para dashboards (solo cuando está en reportes-dashboard) */}
       {hasAuxiliarySidebar && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
         <div className="flex-shrink-0 z-30">

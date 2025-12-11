@@ -14,7 +14,8 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   const hasAuxiliarySidebar = useCallback((tab?: string) => {
     if (!tab) return false;
     return tab === 'parameters' || tab.startsWith('parameters-') || 
-           tab === 'reportes' || tab.startsWith('reportes-');
+           tab === 'reportes' || tab.startsWith('reportes-') ||
+           tab === 'permisos';
   }, []);
 
   // Efecto para manejar el estado inicial

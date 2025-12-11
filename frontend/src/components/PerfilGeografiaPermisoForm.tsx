@@ -22,6 +22,8 @@ interface PerfilGeografiaPermisoFormProps {
   ubicacionesData?: any[];
   // Funciones auxiliares
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
+  // Tema de color
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 type GeografiaType = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | null;
@@ -38,9 +40,45 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
   empresasData = [],
   fundosData = [],
   ubicacionesData = [],
-  getUniqueOptionsForField
+  getUniqueOptionsForField,
+  themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
+  
+  // Helper para obtener clases de color según el tema
+  const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
+    const colors = {
+      red: {
+        text: 'text-red-500',
+        bg: 'bg-red-500',
+        hover: 'hover:bg-red-600',
+        focus: 'focus:ring-red-500',
+        border: 'border-red-500'
+      },
+      blue: {
+        text: 'text-blue-500',
+        bg: 'bg-blue-500',
+        hover: 'hover:bg-blue-600',
+        focus: 'focus:ring-blue-500',
+        border: 'border-blue-500'
+      },
+      green: {
+        text: 'text-green-500',
+        bg: 'bg-green-500',
+        hover: 'hover:bg-green-600',
+        focus: 'focus:ring-green-500',
+        border: 'border-green-500'
+      },
+      orange: {
+        text: 'text-orange-500',
+        bg: 'bg-orange-500',
+        hover: 'hover:bg-orange-600',
+        focus: 'focus:ring-orange-500',
+        border: 'border-orange-500'
+      }
+    };
+    return colors[themeColor]?.[type] || colors.orange[type];
+  };
   
   // Estado local para el tipo de geografía seleccionado
   const [geografiaType, setGeografiaType] = useState<GeografiaType>(null);
@@ -281,7 +319,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
           {/* Perfil */}
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-              isPerfilEnabled ? 'text-orange-500' : 'text-gray-500'
+              isPerfilEnabled ? getThemeColor('text') : 'text-gray-500'
             }`}>
               PERFIL *
             </label>
@@ -297,7 +335,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
           {/* Tipo de Geografía */}
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-              isGeografiaEnabled ? 'text-orange-500' : 'text-gray-500'
+              isGeografiaEnabled ? getThemeColor('text') : 'text-gray-500'
             }`}>
               GEOGRAFÍA *
             </label>
@@ -317,7 +355,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             {/* Combobox dinámico según geografía seleccionada */}
             <div>
               <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-                isGeografiaValueEnabled ? 'text-orange-500' : 'text-gray-500'
+                isGeografiaValueEnabled ? getThemeColor('text') : 'text-gray-500'
               }`}>
                 {geografiaType === 'pais' ? 'PAÍS' : 
                  geografiaType === 'empresa' ? 'EMPRESA' :
@@ -352,7 +390,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
                         handleCheckboxChange('puede_ver', e.target.checked);
                       }
                     }}
-                    className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
                       !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   />
@@ -372,7 +410,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
                         handleCheckboxChange('puede_insertar', e.target.checked);
                       }
                     }}
-                    className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
                       !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   />
@@ -392,7 +430,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
                         handleCheckboxChange('puede_actualizar', e.target.checked);
                       }
                     }}
-                    className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
                       !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   />
@@ -410,7 +448,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
         {/* Fila 3: STATUS */}
         <div className="mb-4">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-            isStatusEnabled ? 'text-orange-500' : 'text-gray-500'
+            isStatusEnabled ? getThemeColor('text') : 'text-gray-500'
           }`}>
             STATUS
           </label>
@@ -428,7 +466,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
                   }
                 }
               }}
-              className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+              className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
                 !isStatusEnabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             />
@@ -445,7 +483,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
           <button
             onClick={onInsert}
             disabled={loading || !formData.perfilid || !geografiaType || !getCurrentGeografiaValue()}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider"
+            className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider`}
           >
             {loading ? 'Guardando...' : 'Crear'}
           </button>

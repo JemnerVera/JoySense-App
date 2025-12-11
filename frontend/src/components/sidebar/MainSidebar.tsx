@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SidebarFilters from '../SidebarFilters';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { JoySenseService } from '../../services/backend-api';
 
 interface MainSidebarProps {
   isExpanded: boolean;
@@ -20,6 +22,60 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   authToken
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
+  const [loadingPerfil, setLoadingPerfil] = useState(true);
+
+  // Obtener el perfil del usuario actual
+  useEffect(() => {
+    const fetchUserPerfil = async () => {
+      if (!user) {
+        setLoadingPerfil(false);
+        return;
+      }
+
+      try {
+        // Intentar obtener usuarioid de user_metadata primero
+        let usuarioid = user.user_metadata?.usuarioid;
+        
+        // Si no está en user_metadata, buscar por email en la tabla usuario
+        if (!usuarioid && user.email) {
+          const usuariosData = await JoySenseService.getTableData('usuario', 100);
+          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
+          
+          const usuarioEncontrado = usuarios.find((u: any) => u.login === user.email);
+          if (usuarioEncontrado) {
+            usuarioid = usuarioEncontrado.usuarioid;
+          } else {
+            setLoadingPerfil(false);
+            return;
+          }
+        }
+        
+        if (!usuarioid) {
+          setLoadingPerfil(false);
+          return;
+        }
+
+        const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
+        
+        const userPerfil = Array.isArray(usuarioperfilData) 
+          ? usuarioperfilData.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1)
+          : (usuarioperfilData as any)?.data?.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1);
+        
+        if (userPerfil) {
+          setUserPerfilId(userPerfil.perfilid);
+        }
+      } catch (error) {
+        // Error silencioso
+      } finally {
+        setLoadingPerfil(false);
+      }
+    };
+
+    fetchUserPerfil();
+  }, [user]);
+
   const mainTabs = [
     {
       id: 'reportes',
@@ -40,27 +96,45 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         </svg>
       ),
       color: 'orange'
-    },
-    {
-      id: 'umbrales',
-      label: t('tabs.configuration'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" 
-          strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      color: 'blue'
     }
   ];
+
+  // Agregar pestaña de Permisos solo para administradores (perfilid === 1) - antes de Configuración
+  if (!loadingPerfil && userPerfilId === 1) {
+    mainTabs.push({
+      id: 'permisos',
+      label: t('tabs.permissions'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
+      color: 'red'
+    });
+  }
+
+  // Agregar Configuración al final
+  mainTabs.push({
+    id: 'umbrales',
+    label: t('tabs.configuration'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" 
+        strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+    color: 'blue'
+  });
 
   const getTabColor = (color: string) => {
     switch (color) {
       case 'green': return 'text-green-400';
       case 'blue': return 'text-blue-400';
       case 'orange': return 'text-orange-400';
+      case 'red': return 'text-red-400';
       case 'gray': return 'text-gray-400';
+      case 'purple': return 'text-purple-400';
       default: return 'text-gray-400';
     }
   };
@@ -70,7 +144,9 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       case 'green': return 'bg-green-600';
       case 'blue': return 'bg-blue-600';
       case 'orange': return 'bg-orange-500';
+      case 'red': return 'bg-red-500';
       case 'gray': return 'bg-gray-600';
+      case 'purple': return 'bg-purple-600';
       default: return 'bg-gray-600';
     }
   };

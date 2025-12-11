@@ -21,6 +21,7 @@ interface StatusTabProps {
   userData?: any[];
   loading?: boolean;
   onRowClick?: (row: any) => void;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 export const StatusTab: React.FC<StatusTabProps> = ({
@@ -30,7 +31,8 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   relatedData,
   userData = [],
   loading = false,
-  onRowClick
+  onRowClick,
+  themeColor = 'orange'
 }) => {
 
   // Hook que encapsula toda la lógica de Estado
@@ -60,7 +62,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
       {/* Estadísticas de la tabla */}
       {isReady && tableData && tableData.length > 0 && (
-        <TableStatsDisplay tableData={tableData} userData={userData} />
+        <TableStatsDisplay tableData={tableData} userData={userData} themeColor={themeColor} />
       )}
 
       {!isReady ? (

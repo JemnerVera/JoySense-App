@@ -66,6 +66,8 @@ interface InsertTabProps {
   // Para sensor
   onPasteFromClipboard?: () => void;
   onReplicateClick?: () => void;
+  // Tema de color
+  themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
 // ============================================================================
@@ -100,7 +102,8 @@ export const InsertTab: React.FC<InsertTabProps> = ({
   countryCodes,
   resetContactType,
   onPasteFromClipboard,
-  onReplicateClick
+  onReplicateClick,
+  themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
 
@@ -134,6 +137,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
           fundosData={relatedData.fundosData}
           ubicacionesData={relatedData.ubicacionesData}
           getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
+          themeColor={themeColor}
         />
       );
     }
@@ -162,6 +166,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
         selectedContactType={selectedContactType}
         countryCodes={countryCodes}
         resetContactType={resetContactType}
+        themeColor={themeColor}
       />
     );
   };

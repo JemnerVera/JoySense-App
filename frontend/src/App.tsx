@@ -16,6 +16,7 @@ import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
+import PermisosMain from './components/PermisosMain';
 import { JoySenseService } from './services/backend-api';
 import { Pais, Empresa } from './types';
 // import { SkipLink } from './components/Accessibility';
@@ -67,6 +68,9 @@ const AppContentInternal: React.FC = () => {
 
   // Ref para SystemParameters
   const systemParametersRef = useRef<{ handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void }>(null);
+  
+  // Ref para PermisosMain
+  const permisosMainRef = useRef<{ hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update') => void } | null>(null);
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -291,6 +295,11 @@ const AppContentInternal: React.FC = () => {
 // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
     
+    // Si cambiamos a permisos, inicializar activeSubTab a 'status'
+    if (tab === 'permisos' && activeTab !== 'permisos') {
+      setActiveSubTab('status');
+    }
+    
     // Navegación simple sin interceptores
     setActiveTab(tab);
     setShowWelcomeIntegrated(false);
@@ -513,6 +522,19 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
+    if (activeTab === 'permisos') {
+      return (
+        <PermisosMain
+          ref={permisosMainRef}
+          activeSubTab={activeSubTab as 'status' | 'insert' | 'update'}
+          onSubTabChange={(tab) => {
+            setActiveSubTab(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
     if (activeTab === 'dashboard') {
       return (
         <Suspense fallback={
@@ -560,6 +582,8 @@ const AppContentInternal: React.FC = () => {
       return 'theme-orange';
     } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
       return 'theme-blue';
+    } else if (activeTab === 'permisos') {
+      return 'theme-red';
     } else {
       // Reportes/Dashboard - verde por defecto
       return 'theme-green';
@@ -600,7 +624,15 @@ const AppContentInternal: React.FC = () => {
         {!showWelcomeIntegrated && (
           <div className="flex-shrink-0">
             {/* Tactical Header */}
-            <div className="h-16 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-6">
+            <div className={`h-16 bg-white dark:bg-neutral-800 border-b flex items-center justify-between px-6 ${
+              activeTab === 'permisos'
+                ? 'border-red-500 dark:border-red-500'
+                : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
+                ? 'border-orange-500 dark:border-orange-500'
+                : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
+                ? 'border-blue-500 dark:border-blue-500'
+                : 'border-gray-200 dark:border-neutral-700'
+            }`}>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
                   JOYSENSE APP / <span className={
@@ -610,6 +642,8 @@ const AppContentInternal: React.FC = () => {
                       ? 'text-green-500' // Verde para Reportes
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? 'text-blue-500' // Azul para Configuración
+                      : activeTab === 'permisos'
+                      ? 'text-red-500' // Rojo para Permisos
                       : 'text-orange-500' // Naranja por defecto
                   }>
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
@@ -654,6 +688,19 @@ const AppContentInternal: React.FC = () => {
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? t('tabs.configuration')
+                      : activeTab === 'permisos'
+                      ? (() => {
+                          let breadcrumb = `${t('tabs.permissions').toUpperCase()} / ${t('parameters.tables.geography_permission').toUpperCase()}`;
+                          if (activeSubTab) {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update')
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>
