@@ -421,33 +421,44 @@ router.put('/correo/:id', async (req, res) => {
 
 router.get('/perfil_geografia_permiso', async (req, res) => {
   try {
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || require('../config/database').supabase;
     const { perfilId } = req.query;
     
-    let sql = `
-      SELECT pgp.*,
-             json_build_object('perfilid', pf.perfilid, 'perfil', pf.perfil) as perfil,
-             json_build_object('paisid', ps.paisid, 'pais', ps.pais) as pais,
-             json_build_object('empresaid', e.empresaid, 'empresa', e.empresa) as empresa,
-             json_build_object('fundoid', f.fundoid, 'fundo', f.fundo) as fundo,
-             json_build_object('ubicacionid', u.ubicacionid, 'ubicacion', u.ubicacion) as ubicacion
-      FROM ${dbSchema}.perfil_geografia_permiso pgp
-      LEFT JOIN ${dbSchema}.perfil pf ON pgp.perfilid = pf.perfilid
-      LEFT JOIN ${dbSchema}.pais ps ON pgp.paisid = ps.paisid
-      LEFT JOIN ${dbSchema}.empresa e ON pgp.empresaid = e.empresaid
-      LEFT JOIN ${dbSchema}.fundo f ON pgp.fundoid = f.fundoid
-      LEFT JOIN ${dbSchema}.ubicacion u ON pgp.ubicacionid = u.ubicacionid
-    `;
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('perfil_geografia_permiso')
+      .select(`
+        *,
+        perfil:perfilid(perfilid, perfil),
+        pais:paisid(paisid, pais),
+        empresa:empresaid(empresaid, empresa),
+        fundo:fundoid(fundoid, fundo),
+        ubicacion:ubicacionid(ubicacionid, ubicacion)
+      `);
     
-    const params = [];
     if (perfilId) {
-      sql += ` WHERE pgp.perfilid = $1`;
-      params.push(perfilId);
+      query = query.eq('perfilid', perfilId);
     }
     
-    sql += ` ORDER BY pgp.permisoid`;
+    query = query.order('permisoid', { ascending: true });
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(el => ({
+      ...el,
+      perfil: el.perfil ? (Array.isArray(el.perfil) ? el.perfil[0] : el.perfil) : null,
+      pais: el.pais ? (Array.isArray(el.pais) ? el.pais[0] : el.pais) : null,
+      empresa: el.empresa ? (Array.isArray(el.empresa) ? el.empresa[0] : el.empresa) : null,
+      fundo: el.fundo ? (Array.isArray(el.fundo) ? el.fundo[0] : el.fundo) : null,
+      ubicacion: el.ubicacion ? (Array.isArray(el.ubicacion) ? el.ubicacion[0] : el.ubicacion) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /perfil_geografia_permiso:', error);
     res.status(500).json({ error: error.message });
@@ -466,7 +477,16 @@ router.get('/perfil_geografia_permiso/columns', async (req, res) => {
 
 router.post('/perfil_geografia_permiso', async (req, res) => {
   try {
-    const { data, error } = await db.insert('perfil_geografia_permiso', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || require('../config/database').supabase;
+    
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('perfil_geografia_permiso')
+      .insert(req.body)
+      .select();
+    
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -477,7 +497,17 @@ router.post('/perfil_geografia_permiso', async (req, res) => {
 
 router.put('/perfil_geografia_permiso/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('perfil_geografia_permiso', req.body, { permisoid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || require('../config/database').supabase;
+    
+    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('perfil_geografia_permiso')
+      .update(req.body)
+      .eq('permisoid', req.params.id)
+      .select();
+    
     if (error) throw error;
     res.json(data);
   } catch (error) {

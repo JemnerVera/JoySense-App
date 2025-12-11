@@ -3,11 +3,12 @@
  * Versión simplificada usando configuración centralizada
  */
 
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useModal } from '../contexts/ModalContext';
 
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
@@ -15,12 +16,18 @@ import { TableName } from '../types';
 
 // Hooks
 import { useTableCRUD } from '../hooks/useTableCRUD';
+import { useTableDataManagement } from '../hooks/useTableDataManagement';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 
 // Components
 import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
 import { PaginationControls } from './SystemParameters/PaginationControls';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
+import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
+import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
+import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
+import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 
 // ============================================================================
 // INTERFACES
@@ -31,6 +38,8 @@ interface SystemParametersProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
+  onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
 }
 
 export interface SystemParametersRef {
@@ -52,10 +61,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   selectedTable: propSelectedTable,
   onTableSelect,
   activeSubTab: propActiveSubTab = 'status',
-  onSubTabChange
+  onSubTabChange,
+  onFormDataChange,
+  onMassiveFormDataChange
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { showModal } = useModal();
 
   // Estado local
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
@@ -63,12 +75,13 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [message, setMessage] = useState<Message | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRow, setSelectedRow] = useState<any>(null);
+  const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
 
   // Hook CRUD
   const {
     tableState,
     formState,
-    relatedData,
+    relatedData: crudRelatedData,
     config,
     loadData,
     loadRelatedData,
@@ -84,6 +97,65 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     getPrimaryKeyValue
   } = useTableCRUD({ tableName: selectedTable as TableName });
 
+  // Hook para detectar cambios sin guardar
+  const { hasUnsavedChanges } = useUnsavedChanges();
+
+  // Hook para datos relacionados (necesario para StatusTab)
+  const {
+    tableData, // Datos de la tabla actual (de useTableDataManagement)
+    columns,
+    loading: tableDataLoading, // Loading de useTableDataManagement
+    userData,
+    paisesData,
+    empresasData,
+    fundosData,
+    ubicacionesData,
+    localizacionesData,
+    entidadesData,
+    nodosData,
+    tiposData,
+    metricasData,
+    criticidadesData,
+    perfilesData,
+    umbralesData,
+    loadRelatedTablesData,
+    loadTableData,
+    setTableData, // Para limpiar datos inmediatamente
+    setColumns, // Para limpiar columnas inmediatamente
+    setLoading // Para establecer loading inmediatamente
+  } = useTableDataManagement();
+
+  // Adaptar relatedData para StatusTab
+  const relatedDataForStatus = useMemo(() => ({
+    paisesData: paisesData || [],
+    empresasData: empresasData || [],
+    fundosData: fundosData || [],
+    ubicacionesData: ubicacionesData || [],
+    localizacionesData: localizacionesData || [],
+    entidadesData: entidadesData || [],
+    nodosData: nodosData || [],
+    tiposData: tiposData || [],
+    metricasData: metricasData || [],
+    criticidadesData: criticidadesData || [],
+    perfilesData: perfilesData || [],
+    umbralesData: umbralesData || [],
+    userData: userData || []
+  }), [
+    paisesData,
+    empresasData,
+    fundosData,
+    ubicacionesData,
+    localizacionesData,
+    entidadesData,
+    nodosData,
+    tiposData,
+    metricasData,
+    criticidadesData,
+    perfilesData,
+    umbralesData,
+    userData
+  ]);
+
   // Sync con props
   useEffect(() => {
     if (propSelectedTable && propSelectedTable !== selectedTable) {
@@ -91,22 +163,122 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
   }, [propSelectedTable]);
 
+  // Notificar cambios en formData al componente padre (para protección de datos)
+  // Usar useRef para evitar loops infinitos
+  const prevFormDataRef = useRef<string>('');
+  const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
+  const onFormDataChangeRef = useRef(onFormDataChange);
+  
+  // Actualizar el ref cuando cambie la función
+  useEffect(() => {
+    onFormDataChangeRef.current = onFormDataChange;
+  }, [onFormDataChange]);
+  
+  useEffect(() => {
+    // Solo notificar si estamos en la pestaña "insert"
+    if (activeSubTab === 'insert') {
+      // Comparar si el formData realmente cambió (usando JSON.stringify para comparación profunda)
+      const formDataString = JSON.stringify(formState.data);
+      const activeSubTabChanged = prevActiveSubTabRef.current !== activeSubTab;
+      
+      // Solo notificar si cambió el formData o si cambió la pestaña activa
+      if (formDataString !== prevFormDataRef.current || activeSubTabChanged) {
+        if (onFormDataChangeRef.current) {
+          onFormDataChangeRef.current(formState.data, []);
+        }
+        prevFormDataRef.current = formDataString;
+        prevActiveSubTabRef.current = activeSubTab;
+      }
+    } else {
+      // Si no estamos en "insert", resetear el ref
+      prevFormDataRef.current = '';
+      prevActiveSubTabRef.current = activeSubTab;
+    }
+  }, [formState.data, activeSubTab]); // No incluir onFormDataChange para evitar loops
+
+  // Sincronizar activeSubTab con prop cuando cambia desde fuera (ej: ProtectedSubTabButton)
   useEffect(() => {
     if (propActiveSubTab && propActiveSubTab !== activeSubTab) {
+      // Si veníamos de 'insert' o 'update' y cambiamos a otra pestaña, limpiar formulario
+      if ((activeSubTab === 'insert' || activeSubTab === 'update') && 
+          propActiveSubTab !== 'insert' && propActiveSubTab !== 'update') {
+        resetForm();
+        setUpdateFormData({});
+      }
+      
       setActiveSubTab(propActiveSubTab);
     }
-  }, [propActiveSubTab]);
+  }, [propActiveSubTab, activeSubTab, resetForm]);
+
+  // Cargar datos relacionados al montar el componente (una sola vez)
+  useEffect(() => {
+    loadRelatedTablesData();
+  }, []); // Solo al montar
+
+  // Limpiar datos inmediatamente cuando cambia selectedTable (antes de cargar)
+  useEffect(() => {
+    if (selectedTable) {
+      // Limpiar datos inmediatamente al cambiar de tabla para evitar mostrar datos incorrectos
+      // Esto se hace ANTES de cargar los nuevos datos - de forma síncrona
+      setTableData([]); // Limpiar datos de tabla
+      setColumns([]); // Limpiar columnas
+      setLoading(true); // Establecer loading
+      setMessage(null);
+      setSelectedRow(null);
+      resetForm();
+      setUpdateFormData({});
+    }
+  }, [selectedTable, setTableData, setColumns, setLoading, resetForm]); // Solo cuando cambia selectedTable
 
   // Cargar datos cuando cambia la tabla
   useEffect(() => {
     if (selectedTable) {
-      loadData();
-      loadRelatedData();
-      setMessage(null);
-      setSelectedRow(null);
-      resetForm();
+      console.log('🔵 [SystemParameters] selectedTable cambió a:', selectedTable);
+      console.log('🔵 [SystemParameters] Estado actual - tableData.length:', tableData.length, 'columns.length:', columns.length);
+      
+      console.log('🔵 [SystemParameters] Iniciando carga de datos para:', selectedTable);
+      
+      // Para StatusTab: usar solo useTableDataManagement (tableData y columns)
+      // Para Insert/Update: usar useTableCRUD (tableState.data)
+      // Cargar datos de tabla y columnas (para StatusTab)
+      loadTableData(selectedTable);
+      loadRelatedTablesData(); // También cargar cuando cambia la tabla por si acaso
+      
+      // Cargar datos con useTableCRUD solo si no estamos en StatusTab
+      // (se cargará cuando se cambie a Insert o Update)
+      if (activeSubTab !== 'status') {
+        loadData();
+        loadRelatedData();
+      }
     }
-  }, [selectedTable]);
+  }, [selectedTable]); // Solo cuando cambia selectedTable
+
+  // Limpiar formulario cuando se cambia de pestaña (si veníamos de insert o update)
+  useEffect(() => {
+    // Si cambiamos desde 'insert' o 'update' a otra pestaña, limpiar formulario
+    if ((prevActiveSubTabRef.current === 'insert' || prevActiveSubTabRef.current === 'update') && 
+        activeSubTab !== prevActiveSubTabRef.current && 
+        activeSubTab !== 'insert' && activeSubTab !== 'update') {
+      resetForm();
+      setUpdateFormData({});
+    }
+    prevActiveSubTabRef.current = activeSubTab;
+  }, [activeSubTab, resetForm, formState.data]);
+
+  // Recargar datos cuando se cambia a la pestaña de Estado
+  // Usar useRef para evitar loops infinitos
+  const lastLoadRef = useRef<{ table: string; subTab: string }>({ table: '', subTab: '' });
+  useEffect(() => {
+    if (selectedTable && activeSubTab === 'status' && !tableState.loading) {
+      // Solo recargar si cambió la tabla o el subTab
+      const key = `${selectedTable}-${activeSubTab}`;
+      const lastKey = `${lastLoadRef.current.table}-${lastLoadRef.current.subTab}`;
+      if (key !== lastKey) {
+        lastLoadRef.current = { table: selectedTable, subTab: activeSubTab };
+        loadData();
+      }
+    }
+  }, [activeSubTab, selectedTable]); // Removemos loadData de dependencias para evitar loops
 
   // Exponer métodos al padre
   useImperativeHandle(ref, () => ({
@@ -135,18 +307,131 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Handlers
   const handleTableSelect = useCallback((table: string) => {
+    // Verificar si hay cambios sin guardar antes de cambiar de tabla
+    if (selectedTable) {
+      if (activeSubTab === 'insert') {
+        // Verificar con hasUnsavedChanges para detectar cambios reales
+        const hasChanges = hasUnsavedChanges({
+          formData: formState.data,
+          selectedTable,
+          activeSubTab
+        });
+        
+        // Si hay cambios, mostrar confirmación
+        if (hasChanges) {
+          if (!window.confirm('¿Está seguro? Los datos ingresados se perderán.')) {
+            return; // Cancelar cambio de tabla
+          }
+        }
+      } else if (activeSubTab === 'update') {
+        // Para update: verificar si hay cambios o si el formulario está abierto
+        // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
+        if (updateFormData && Object.keys(updateFormData).length > 0) {
+          // Verificar si realmente hay cambios (no es solo el marcador de formulario abierto)
+          const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
+          
+          if (hasRealChanges) {
+            // Obtener nombre de la tabla actual y destino
+            const getTableName = (table: string) => {
+              const config = getTableConfig(table as TableName);
+              return config?.displayName || table;
+            };
+            
+            showModal(
+              'parameter',
+              getTableName(selectedTable),
+              getTableName(table),
+              () => {
+                // Confirmar: proceder con el cambio
+                setSelectedTable(table);
+                onTableSelect?.(table);
+                setActiveSubTab('status');
+                onSubTabChange?.('status');
+                setMessage(null);
+                resetForm();
+                setUpdateFormData({});
+              },
+              () => {
+                // Cancelar: no hacer nada
+              }
+            );
+            return; // Cancelar cambio de tabla (el modal manejará la confirmación)
+          }
+        }
+      }
+    }
+    
     setSelectedTable(table);
     onTableSelect?.(table);
     setActiveSubTab('status');
     onSubTabChange?.('status');
-  }, [onTableSelect, onSubTabChange]);
+    setMessage(null);
+    resetForm();
+    setUpdateFormData({}); // Limpiar datos de actualización
+  }, [selectedTable, formState.data, activeSubTab, hasUnsavedChanges, onTableSelect, onSubTabChange, resetForm, updateFormData]);
 
   const handleSubTabChange = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
+    // Verificar si hay cambios sin guardar antes de cambiar de pestaña
+    if (activeSubTab === 'insert') {
+      // Verificar con hasUnsavedChanges para detectar cambios reales
+      const hasChanges = hasUnsavedChanges({
+        formData: formState.data,
+        selectedTable,
+        activeSubTab
+      });
+      
+      // Si hay cambios, mostrar confirmación
+      if (hasChanges) {
+        if (!window.confirm('¿Está seguro? Los datos ingresados se perderán.')) {
+          return; // Cancelar cambio de pestaña
+        }
+      }
+    } else if (activeSubTab === 'update') {
+      // Para update: verificar si hay cambios o si el formulario está abierto
+      // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
+      if (updateFormData && Object.keys(updateFormData).length > 0) {
+        // Verificar si realmente hay cambios (no es solo el marcador de formulario abierto)
+        const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
+        
+        if (hasRealChanges) {
+          // Obtener nombres de las pestañas
+          const getSubTabName = (subTab: string) => {
+            const names: { [key: string]: string } = {
+              'status': 'Estado',
+              'insert': 'Crear',
+              'update': 'Actualizar',
+              'massive': 'Masivo'
+            };
+            return names[subTab] || subTab;
+          };
+          
+          showModal(
+            'subtab',
+            getSubTabName(activeSubTab),
+            getSubTabName(tab),
+            () => {
+              // Confirmar: proceder con el cambio y limpiar formulario
+              setActiveSubTab(tab);
+              onSubTabChange?.(tab);
+              setMessage(null);
+              resetForm(); // Limpiar formulario siempre al confirmar
+              setUpdateFormData({}); // Limpiar datos de actualización
+            },
+            () => {
+              // Cancelar: no hacer nada
+            }
+          );
+          return; // Cancelar cambio de pestaña (el modal manejará la confirmación)
+        }
+      }
+    }
+    
     setActiveSubTab(tab);
     onSubTabChange?.(tab);
     setMessage(null);
     if (tab === 'insert') resetForm();
-  }, [onSubTabChange, resetForm]);
+    if (tab !== 'update') setUpdateFormData({}); // Limpiar datos de actualización al cambiar de pestaña
+  }, [formState.data, activeSubTab, selectedTable, hasUnsavedChanges, onSubTabChange, resetForm, updateFormData]);
 
   const handleRowSelect = useCallback((row: any) => {
     setSelectedRow(row);
@@ -156,8 +441,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   }, [setFormData, onSubTabChange]);
 
   const handleInsert = useCallback(async () => {
+    // Validar formulario y mostrar mensaje warning si hay errores
     if (!validateForm()) {
-      setMessage({ type: 'error', text: 'Por favor complete todos los campos requeridos' });
+      // Obtener errores de validación
+      const validationErrors = Object.values(formState.errors).filter(Boolean);
+      const errorMessage = validationErrors.length > 0 
+        ? validationErrors.join('\n')
+        : 'Por favor complete todos los campos requeridos';
+      
+      setMessage({ type: 'warning', text: errorMessage });
       return;
     }
 
@@ -173,10 +465,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     if (result.success) {
       setMessage({ type: 'success', text: 'Registro insertado correctamente' });
       resetForm();
+      // Cambiar a la pestaña de Estado para ver el nuevo registro
+      setActiveSubTab('status');
+      onSubTabChange?.('status');
+      // Recargar datos para asegurar que se muestre el nuevo registro
+      loadData();
     } else {
       setMessage({ type: 'error', text: result.error || 'Error al insertar' });
     }
-  }, [formState.data, validateForm, insertRow, resetForm, user]);
+  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, onSubTabChange]);
 
   const handleUpdate = useCallback(async () => {
     if (!selectedRow || !validateForm()) {
@@ -370,7 +667,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   }`}
                 >
                   <option value="">Seleccionar...</option>
-                  {(relatedData[field.foreignKey.table] || []).map((item: any) => {
+                  {(crudRelatedData[field.foreignKey.table] || []).map((item: any) => {
                     const labelFields = Array.isArray(field.foreignKey!.labelField) 
                       ? field.foreignKey!.labelField 
                       : [field.foreignKey!.labelField];
@@ -479,9 +776,107 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
           {/* Contenido según tab activa (controlada por sidebar) */}
           <div className="bg-gray-50 dark:bg-neutral-800/50 rounded-lg p-6">
-            {activeSubTab === 'status' && renderDataTable()}
-            {activeSubTab === 'insert' && renderForm('insert')}
-            {activeSubTab === 'update' && renderForm('update')}
+            {activeSubTab === 'status' && (
+              <StatusTab
+                tableName={selectedTable}
+                tableData={tableData} // Usar tableData de useTableDataManagement, no tableState.data
+                columns={columns}
+                relatedData={relatedDataForStatus}
+                userData={userData || []}
+                loading={tableDataLoading} // Usar loading de useTableDataManagement
+                onRowClick={handleRowSelect}
+              />
+            )}
+            {activeSubTab === 'insert' && (
+              <InsertTab
+                tableName={selectedTable}
+                formData={formState.data}
+                setFormData={(data) => {
+                  setFormData(data);
+                }}
+                updateFormField={(field, value) => {
+                  updateFormField(field, value);
+                }}
+                loading={formState.isSubmitting}
+                onInsert={handleInsert}
+                onCancel={() => {
+                  resetForm();
+                  setMessage(null);
+                }}
+                message={message}
+                relatedData={relatedDataForStatus}
+                visibleColumns={columns}
+                getColumnDisplayName={(columnName: string) => 
+                  getColumnDisplayNameTranslated(columnName, t)
+                }
+                getUniqueOptionsForField={(columnName: string) => {
+                  // Mapeo de campos a tablas relacionadas
+                  const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
+                    'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
+                    'empresaid': { table: 'empresasData', key: 'empresaid', label: 'empresa' },
+                    'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
+                    'ubicacionid': { table: 'ubicacionesData', key: 'ubicacionid', label: 'ubicacion' },
+                    'localizacionid': { table: 'localizacionesData', key: 'localizacionid', label: 'localizacion' },
+                    'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
+                    'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
+                    'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
+                    'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
+                    'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' },
+                    'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
+                    'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] }
+                  };
+
+                  const mapping = fieldToTableMap[columnName];
+                  if (mapping && relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus]) {
+                    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
+                    return data.map((item: any) => {
+                      let label = '';
+                      if (Array.isArray(mapping.label)) {
+                        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
+                      } else {
+                        label = item[mapping.label] || '';
+                      }
+                      return {
+                        value: item[mapping.key],
+                        label: label || `ID: ${item[mapping.key]}`
+                      };
+                    });
+                  }
+                  return [];
+                }}
+              />
+            )}
+            {activeSubTab === 'update' && (
+              <UpdateTab
+                tableName={selectedTable}
+                tableData={tableState.data}
+                columns={columns}
+                relatedData={relatedDataForStatus}
+                config={config}
+                updateRow={updateRow}
+                getPrimaryKeyValue={getPrimaryKeyValue}
+                user={user}
+                loading={tableState.loading}
+                visibleColumns={columns}
+                getColumnDisplayName={(columnName: string) => 
+                  getColumnDisplayNameTranslated(columnName, t)
+                }
+                existingData={tableState.data}
+                onUpdateSuccess={() => {
+                  loadData();
+                }}
+                setMessage={setMessage}
+                onFormDataChange={(formData) => {
+                  // Guardar datos del formulario de actualización para detección de cambios sin guardar
+                  setUpdateFormData(formData);
+                  
+                  // Notificar cambios en formData al componente padre
+                  if (onFormDataChange) {
+                    onFormDataChange(formData, []);
+                  }
+                }}
+              />
+            )}
             {activeSubTab === 'massive' && renderMassiveOperations()}
           </div>
         </div>

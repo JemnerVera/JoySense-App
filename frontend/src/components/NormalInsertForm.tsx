@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import React, { memo, useEffect, useMemo } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/formValidation';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,6 +16,7 @@ interface NormalInsertFormProps {
   visibleColumns: any[];
   formData: Record<string, any>;
   setFormData: (data: Record<string, any>) => void;
+  updateFormField?: (field: string, value: any) => void;
   selectedTable: string;
   loading: boolean;
   onInsert: () => void;
@@ -46,6 +47,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   visibleColumns,
   formData,
   setFormData,
+  updateFormField,
   selectedTable,
   loading,
   onInsert,
@@ -418,10 +420,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
               disabled={!isEnabled}
               onChange={(e) => {
                 if (isEnabled) {
-                  setFormData({
-                    ...formData,
-                    [col.columnName]: e.target.checked ? 1 : 0
-                  });
+                  updateField(col.columnName, e.target.checked ? 1 : 0);
                 }
               }}
               className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
@@ -453,10 +452,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             disabled={!isEnabled}
             onChange={(e) => {
               if (isEnabled) {
-                setFormData({
-                  ...formData,
-                  [col.columnName]: e.target.value
-                });
+                updateField(col.columnName, e.target.value);
               }
             }}
             placeholder={`${displayName.toUpperCase()}`}
@@ -485,43 +481,43 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
           value={value}
           onChange={(newValue) => {
             if (isEnabled) {
-              // Limpiar campos dependientes cuando cambia un campo padre
-              const newFormData: any = { ...formData, [col.columnName]: newValue ? parseInt(newValue.toString()) : null };
+              const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
+              
+              // Actualizar el campo principal
+              updateField(col.columnName, newValueParsed);
               
               // Limpiar campos dependientes según la cascada
               if (col.columnName === 'ubicacionid') {
-                newFormData['nodoid'] = null;
-                newFormData['tipoid'] = null;
-                newFormData['metricaid'] = null;
-                newFormData['criticidadid'] = null;
-                newFormData['minimo'] = '';
-                newFormData['maximo'] = '';
-                newFormData['umbral'] = '';
-                newFormData['statusid'] = 1; // Mantener status por defecto
+                updateField('nodoid', null);
+                updateField('tipoid', null);
+                updateField('metricaid', null);
+                updateField('criticidadid', null);
+                updateField('minimo', '');
+                updateField('maximo', '');
+                updateField('umbral', '');
+                updateField('statusid', 1); // Mantener status por defecto
               } else if (col.columnName === 'nodoid') {
-                newFormData['tipoid'] = null;
-                newFormData['metricaid'] = null;
-                newFormData['criticidadid'] = null;
-                newFormData['minimo'] = '';
-                newFormData['maximo'] = '';
-                newFormData['umbral'] = '';
-                newFormData['statusid'] = 1; // Mantener status por defecto
+                updateField('tipoid', null);
+                updateField('metricaid', null);
+                updateField('criticidadid', null);
+                updateField('minimo', '');
+                updateField('maximo', '');
+                updateField('umbral', '');
+                updateField('statusid', 1); // Mantener status por defecto
               } else if (col.columnName === 'tipoid') {
-                newFormData['metricaid'] = null;
-                newFormData['criticidadid'] = null;
-                newFormData['minimo'] = '';
-                newFormData['maximo'] = '';
-                newFormData['umbral'] = '';
-                newFormData['statusid'] = 1; // Mantener status por defecto
+                updateField('metricaid', null);
+                updateField('criticidadid', null);
+                updateField('minimo', '');
+                updateField('maximo', '');
+                updateField('umbral', '');
+                updateField('statusid', 1); // Mantener status por defecto
               } else if (col.columnName === 'metricaid') {
-                newFormData['criticidadid'] = null;
-                newFormData['minimo'] = '';
-                newFormData['maximo'] = '';
-                newFormData['umbral'] = '';
-                newFormData['statusid'] = 1; // Mantener status por defecto
+                updateField('criticidadid', null);
+                updateField('minimo', '');
+                updateField('maximo', '');
+                updateField('umbral', '');
+                updateField('statusid', 1); // Mantener status por defecto
               }
-              
-              setFormData(newFormData);
             }
           }}
           options={options}
@@ -537,16 +533,35 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     return getUniqueOptionsForField('paisid');
   }, [getUniqueOptionsForField]);
 
+  // Referencia para evitar loops infinitos en el auto-selección de país
+  const autoSelectedPaisRef = useRef(false);
+
   // ============================================================================
   // EFFECTS
   // ============================================================================
 
-  // Auto-seleccionar País si solo hay una opción
-  useEffect(() => {
-    if (paisOptions.length === 1 && !formData.paisid) {
-      setFormData((prev: any) => ({ ...prev, paisid: paisOptions[0].value }));
+  // Función helper para actualizar un campo del formulario
+  const updateField = (field: string, value: any) => {
+    if (updateFormField) {
+      updateFormField(field, value);
+    } else {
+      setFormData({ ...formData, [field]: value });
     }
-  }, [paisOptions, formData.paisid, setFormData]);
+  };
+
+  // Auto-seleccionar País si solo hay una opción (solo una vez)
+  useEffect(() => {
+    if (paisOptions.length === 1 && !formData.paisid && !autoSelectedPaisRef.current) {
+      const newPaisId = paisOptions[0].value;
+      autoSelectedPaisRef.current = true;
+      updateField('paisid', newPaisId);
+    }
+    // Resetear la referencia si cambia la tabla o se resetea el formulario
+    if (formData.paisid === null || formData.paisid === undefined) {
+      autoSelectedPaisRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paisOptions.length, selectedTable]);
 
   // Función para renderizar campos de País con layout específico
   const renderPaisFields = (): React.ReactNode[] => {
@@ -685,10 +700,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             </label>
             <SelectWithPlaceholder
               value={paisValue}
-              onChange={(newValue) => setFormData({
-                ...formData,
-                paisid: newValue ? parseInt(newValue.toString()) : null
-              })}
+              onChange={(newValue) => updateField('paisid', newValue ? parseInt(newValue.toString()) : null)}
               options={paisOptionsManual}
               placeholder={`${t('buttons.select')} ${t('fields.country')}`}
             />
@@ -1114,12 +1126,12 @@ return filteredNodos;
           <input
             type="text"
             value={value}
-            onChange={(e) => setFormData({
-              ...formData,
-              [col.columnName]: col.columnName === 'latitud' || col.columnName === 'longitud' 
+            onChange={(e) => updateField(
+              col.columnName,
+              col.columnName === 'latitud' || col.columnName === 'longitud' 
                 ? parseFloat(e.target.value) || '' 
                 : e.target.value
-            })}
+            )}
             placeholder={`${displayName.toUpperCase()}`}
             disabled={isDisabled}
             className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
@@ -1159,10 +1171,7 @@ return filteredNodos;
                   <input
                     type="checkbox"
                     checked={value === 1}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      [col.columnName]: e.target.checked ? 1 : 0
-                    })}
+                    onChange={(e) => updateField(col.columnName, e.target.checked ? 1 : 0)}
                     className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
                   />
                   <span className="text-white font-mono tracking-wider">
@@ -1183,10 +1192,10 @@ return filteredNodos;
                 </label>
                 <SelectWithPlaceholder
                   value={value}
-                  onChange={(newValue) => setFormData({
-                    ...formData,
-                    [col.columnName]: newValue ? parseInt(newValue.toString()) : null
-                  })}
+                  onChange={(newValue) => updateField(
+                    col.columnName,
+                    newValue ? parseInt(newValue.toString()) : null
+                  )}
                   options={options}
                   placeholder={`${t('buttons.select')} ${t('fields.country')}`}
                 />
@@ -1732,7 +1741,7 @@ return filteredNodos;
           </label>
           <SelectWithPlaceholder
             value={formData.usuarioid || ''}
-            onChange={(value) => setFormData({ ...formData, usuarioid: value })}
+            onChange={(value) => updateField('usuarioid', value)}
             options={getUniqueOptionsForField('usuarioid')}
             placeholder={`${t('create.select_user')}...`}
           />
@@ -1845,7 +1854,7 @@ return filteredNodos;
               onChange={(e) => {
                 const email = e.target.value;
                 // Permitir cualquier texto, solo validar formato al final
-                setFormData({ ...formData, correo: email });
+                updateField('correo', email);
               }}
               placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : t('contact.select_user_first')}
               disabled={!formData.usuarioid}
@@ -1968,7 +1977,7 @@ return filteredNodos;
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
-          <span>{loading ? 'GUARDANDO...' : t('create.save')}</span>
+          <span>{loading ? 'GUARDANDO...' : 'GUARDAR'}</span>
         </button>
         
         <button
@@ -1976,7 +1985,7 @@ return filteredNodos;
           className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>❌</span>
-          <span>{t('create.cancel')}</span>
+          <span>CANCELAR</span>
         </button>
 
         {/* Botón para volver a selección de tipo de contacto */}

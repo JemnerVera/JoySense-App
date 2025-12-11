@@ -165,6 +165,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       const timeData = dataByTimeAndTipo.get(timeKey)!;
       const timestamp = fechaObj.getTime();
       
+      // Filtrar mediciones sin tipoid válido
+      if (medicion.tipoid === undefined || medicion.tipoid === null) {
+        return;
+      }
+      
       if (!timeData[medicion.tipoid]) {
         timeData[medicion.tipoid] = { sum: 0, count: 0, timestamp };
       }
@@ -427,6 +432,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       const medicionesPorTipo: { [tipoid: number]: number[] } = {};
       
       filteredMediciones.forEach(m => {
+        // Filtrar mediciones sin tipoid válido
+        if (m.tipoid === undefined || m.tipoid === null) {
+          return;
+        }
+        
         if (!medicionesPorTipo[m.tipoid]) {
           medicionesPorTipo[m.tipoid] = [];
         }
@@ -678,6 +688,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       
       const timeData = dataByTimeAndTipo.get(timeKey)!;
       const timestamp = fechaObj.getTime();
+      
+      // Filtrar mediciones sin tipoid válido
+      if (medicion.tipoid === undefined || medicion.tipoid === null) {
+        return;
+      }
       
       if (!timeData[medicion.tipoid]) {
         timeData[medicion.tipoid] = { sum: 0, count: 0, timestamp };

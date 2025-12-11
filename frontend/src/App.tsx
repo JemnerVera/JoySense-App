@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import React, { useState, useEffect, startTransition, Suspense, forwardRef, useRef } from 'react';
+import React, { useState, useEffect, startTransition, Suspense, forwardRef, useRef, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -247,6 +247,29 @@ const AppContentInternal: React.FC = () => {
     }
   }, [clearFormData]);
 
+  // Handler para recibir datos del formulario desde SystemParameters
+  // IMPORTANTE: useCallback debe estar ANTES de cualquier return condicional
+  // Usar useCallback para evitar recreaciones que causen loops infinitos
+  const handleFormDataChange = useCallback((formData: Record<string, any>, multipleData: any[]) => {
+    setCurrentFormData(formData);
+    setCurrentMultipleData(multipleData);
+  }, []);
+
+  // Handler para recibir datos de formularios masivos desde SystemParameters
+  const handleMassiveFormDataChange = useCallback((massiveFormData: Record<string, any>) => {
+    setCurrentMassiveFormData(massiveFormData);
+  }, []);
+
+  // Función para obtener datos del formulario actual (si estamos en parámetros)
+  const getCurrentFormData = () => {
+    return currentFormData;
+  };
+
+  // Función para obtener datos múltiples actuales (si estamos en parámetros)
+  const getCurrentMultipleData = () => {
+    return currentMultipleData;
+  };
+
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {
     return (
@@ -264,26 +287,6 @@ const AppContentInternal: React.FC = () => {
     return <LoginForm activeTab={activeTab} />;
   }
 
-  // Función para obtener datos del formulario actual (si estamos en parámetros)
-  const getCurrentFormData = () => {
-    return currentFormData;
-  };
-
-  // Función para obtener datos múltiples actuales (si estamos en parámetros)
-  const getCurrentMultipleData = () => {
-    return currentMultipleData;
-  };
-
-  // Handler para recibir datos del formulario desde SystemParameters
-  const handleFormDataChange = (formData: Record<string, any>, multipleData: any[]) => {
-    setCurrentFormData(formData);
-    setCurrentMultipleData(multipleData);
-  };
-
-  // Handler para recibir datos de formularios masivos desde SystemParameters
-  const handleMassiveFormDataChange = (massiveFormData: Record<string, any>) => {
-    setCurrentMassiveFormData(massiveFormData);
-  };
 
 // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {

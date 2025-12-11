@@ -34,11 +34,13 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging
-app.use((req, res, next) => {
-  logger.debug(`${req.method} ${req.path}`);
-  next();
-});
+// Request logging (solo en modo debug)
+if (process.env.LOG_LEVEL === 'debug') {
+  app.use((req, res, next) => {
+    logger.debug(`${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // ============================================================================
 // RUTAS
@@ -114,7 +116,7 @@ app.use((err, req, res, next) => {
 // INICIAR SERVIDOR
 // ============================================================================
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log('');
   console.log('🌱 ========================================');
   console.log('🌱  JOYSENSE BACKEND API');
@@ -125,7 +127,11 @@ app.listen(PORT, () => {
   console.log(`🌱  API Base:    /api/joysense`);
   console.log('🌱 ========================================');
   console.log('');
-  logger.info(`Servidor iniciado en puerto ${PORT}`);
+  logger.info(`✅ Servidor iniciado en puerto ${PORT}`);
+  
+  // NOTA: Ya NO autenticamos el backend al iniciar
+  // El backend usará el token de sesión del usuario que viene del frontend
+  // Esto permite que las políticas RLS usen auth.uid() correctamente
 });
 
 module.exports = app;

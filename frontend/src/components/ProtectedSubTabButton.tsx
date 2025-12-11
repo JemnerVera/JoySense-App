@@ -50,7 +50,6 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData, massiveFormData);
     
-    
     if (hasChanges) {
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar la pestaña

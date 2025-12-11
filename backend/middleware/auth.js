@@ -1,15 +1,23 @@
 /**
  * Middleware de Autenticación
- * Compatible con PostgreSQL directo (sin Supabase client)
+ * Versión Supabase API
+ * 
+ * IMPORTANTE: El frontend se autentica con Supabase Auth y envía el token de sesión.
+ * El backend usa ese token para crear un cliente de Supabase con el contexto del usuario.
+ * Esto permite que las políticas RLS usen auth.uid() correctamente.
  */
 
-const { pool, dbSchema } = require('../config/database');
+const { supabase: baseSupabase, dbSchema } = require('../config/database');
+const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 
+// Obtener configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
 /**
- * Verifica autenticación básica
- * Por ahora solo verifica que el header existe
- * TODO: Implementar JWT si se requiere autenticación stateless
+ * Verifica autenticación usando token de Supabase
+ * El token viene del frontend después de que el usuario se autentica con Supabase Auth
  */
 async function verifyAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -21,27 +29,32 @@ async function verifyAuth(req, res, next) {
   const token = authHeader.substring(7);
   
   try {
-    // Por ahora, el token es el email del usuario
-    // En producción, implementar JWT
-    const result = await pool.query(
-      `SELECT usuarioid, login, firstname, lastname 
-       FROM ${dbSchema}.usuario 
-       WHERE login = $1 AND statusid = 1`,
-      [token]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Usuario no autorizado' });
-    }
-
-    req.user = {
-      id: result.rows[0].usuarioid,
-      email: result.rows[0].login,
-      user_metadata: {
-        firstname: result.rows[0].firstname,
-        lastname: result.rows[0].lastname
+    // Crear cliente de Supabase con el token del usuario
+    // Esto permite que las queries usen auth.uid() correctamente
+    const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       }
+    });
+    
+    // Verificar que el token es válido obteniendo el usuario
+    const { data: { user }, error } = await userSupabase.auth.getUser();
+    
+    if (error || !user) {
+      logger.error(`❌ [verifyAuth] Token inválido: ${error?.message || 'Usuario no encontrado'}`);
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+    
+    // Crear cliente de Supabase con el contexto del usuario para este request
+    req.supabase = userSupabase;
+    req.user = {
+      id: user.id, // UUID del usuario en auth.users
+      email: user.email,
+      user_metadata: user.user_metadata || {}
     };
+    
     next();
   } catch (error) {
     logger.error('Error verificando autenticación:', error);
@@ -51,40 +64,50 @@ async function verifyAuth(req, res, next) {
 
 /**
  * Middleware opcional - no falla si no hay token
+ * Útil para endpoints que pueden funcionar con o sin autenticación
+ * Si hay token, crea un cliente de Supabase con el contexto del usuario
  */
 async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     req.user = null;
+    req.supabase = baseSupabase; // Usar cliente base sin autenticación
     return next();
   }
 
   const token = authHeader.substring(7);
   
   try {
-    const result = await pool.query(
-      `SELECT usuarioid, login, firstname, lastname 
-       FROM ${dbSchema}.usuario 
-       WHERE login = $1 AND statusid = 1`,
-      [token]
-    );
-    
-    if (result.rows.length > 0) {
-      req.user = {
-        id: result.rows[0].usuarioid,
-        email: result.rows[0].login,
-        user_metadata: {
-          firstname: result.rows[0].firstname,
-          lastname: result.rows[0].lastname
+    // Crear cliente de Supabase con el token del usuario
+    const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      };
-    } else {
+      }
+    });
+    
+    // Verificar que el token es válido
+    const { data: { user }, error } = await userSupabase.auth.getUser();
+    
+    if (error || !user) {
       req.user = null;
+      req.supabase = baseSupabase; // Usar cliente base sin autenticación
+      return next();
     }
+    
+    // Crear cliente de Supabase con el contexto del usuario para este request
+    req.supabase = userSupabase;
+    req.user = {
+      id: user.id, // UUID del usuario en auth.users
+      email: user.email,
+      user_metadata: user.user_metadata || {}
+    };
   } catch (error) {
     logger.error('Error en autenticación opcional:', error);
     req.user = null;
+    req.supabase = baseSupabase; // Usar cliente base sin autenticación
   }
   
   next();

@@ -1,0 +1,59 @@
+# Flujo de Autenticación JoySense
+
+direction right
+
+INSERT en joysense.usuario [icon: database, color: blue]
+
+Trigger dispara [icon: zap, color: orange]
+
+Validar email [icon: mail, color: blue]
+
+Email válido? [shape: diamond, icon: check-circle, color: blue]
+
+Email inválido [shape: oval, icon: x, color: red]
+
+Crear joysense.correo [icon: file-text, color: blue]
+
+Generar UUID [icon: key, color: blue]
+
+Insertar auth.users [icon: user-plus, color: blue]
+
+Insertar auth.identities [icon: id-card, color: blue]
+
+Actualizar useruuid [icon: refresh-cw, color: blue]
+
+Usuario sincronizado [icon: check, color: green]
+
+Usuario hace LOGIN [icon: log-in, color: blue]
+
+Frontend: signInWithPassword [icon: send, color: blue]
+
+Supabase Auth valida [icon: shield, color: blue]
+
+Password válida? [shape: diamond, icon: check-circle, color: blue]
+
+Password inválida [shape: oval, icon: x, color: red]
+
+Genera JWT Token [icon: key, color: green]
+
+Frontend envía REQUEST [icon: arrow-right, color: blue]
+
+Backend recibe token [icon: server, color: blue]
+
+Valida token [icon: shield-check, color: blue]
+
+Token válido? [shape: diamond, icon: check-circle, color: blue]
+
+Token inválido [shape: oval, icon: x, color: red]
+
+Crea req.supabase [icon: user, color: blue]
+
+Ejecuta query SELECT [icon: database, color: blue]
+
+RLS verifica v_permiso_empresa [icon: lock, color: orange]
+
+¿Tiene permiso? [shape: diamond, icon: check-circle, color: orange]
+
+Retorna datos [icon: check-circle, color: green]
+
+Retorna 0 registros [icon: x-circle, color: red]

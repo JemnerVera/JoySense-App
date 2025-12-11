@@ -7,8 +7,9 @@
 -- ============================================================================
 
 -- ============================================================================
--- PASO 1: Verificar que existe el wrapper
+-- PASO 1: Verificar que existe el wrapper y sus permisos
 -- ============================================================================
+-- Verificar que existe la función
 SELECT 
     n.nspname as schema_name,
     p.proname as function_name,
@@ -17,6 +18,20 @@ FROM pg_proc p
 JOIN pg_namespace n ON p.pronamespace = n.oid
 WHERE n.nspname = 'public'
   AND p.proname = 'fn_get_table_metadata';
+
+-- Verificar permisos otorgados (opcional, solo para referencia)
+SELECT 
+    n.nspname as schema_name,
+    p.proname as function_name,
+    r.rolname as grantee,
+    has_function_privilege(r.rolname, p.oid, 'EXECUTE') as can_execute
+FROM pg_proc p
+JOIN pg_namespace n ON p.pronamespace = n.oid
+CROSS JOIN pg_roles r
+WHERE n.nspname = 'public'
+  AND p.proname = 'fn_get_table_metadata'
+  AND r.rolname IN ('authenticated', 'anon', 'service_role')
+ORDER BY r.rolname;
 
 -- ============================================================================
 -- PASO 2: Eliminar la función wrapper
@@ -37,11 +52,17 @@ WHERE n.nspname = 'public'
 -- Debe retornar 0 filas
 
 -- ============================================================================
--- NOTA:
+-- NOTAS IMPORTANTES:
 -- ============================================================================
--- La función original joysense.fn_get_table_metadata NO se elimina,
--- solo se elimina el wrapper en public que ya no es necesario.
+-- 1. La función original joysense.fn_get_table_metadata NO se elimina,
+--    solo se elimina el wrapper en public que ya no es necesario.
 -- 
--- El backend ahora accede directamente usando:
--- supabase.schema('joysense').rpc('fn_get_table_metadata', params)
+-- 2. Al ejecutar DROP FUNCTION, PostgreSQL elimina automáticamente:
+--    - La función
+--    - Todos los permisos (GRANT) otorgados a la función
+--    - El comentario (COMMENT) asociado
+--    No es necesario hacer REVOKE explícito antes de eliminar.
+-- 
+-- 3. El backend ahora accede directamente usando:
+--    supabase.schema('joysense').rpc('fn_get_table_metadata', params)
 -- ============================================================================

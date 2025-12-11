@@ -3,7 +3,7 @@
  * Reemplaza múltiples hooks individuales con una solución unificada
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { getTableConfig, getPrimaryKey, hasCompositeKey, TableConfig, TableFieldConfig } from '../config/tables.config';
 import { TableName } from '../types';
@@ -92,6 +92,21 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     totalPages: 0
   });
 
+  // Limpiar datos inmediatamente cuando cambia la tabla para evitar mostrar datos incorrectos
+  useEffect(() => {
+    if (tableName) {
+      setTableState(prev => ({
+        ...prev,
+        data: [], // Limpiar datos inmediatamente
+        loading: true, // Establecer loading inmediatamente
+        error: null,
+        totalCount: 0,
+        currentPage: 1,
+        totalPages: 0
+      }));
+    }
+  }, [tableName]);
+
   // Estado del formulario
   const [formState, setFormState] = useState<FormState>({
     data: initializeFormData(config),
@@ -113,12 +128,14 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     setTableState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const result = await JoySenseService.getTableDataPaginated(tableName, {
+      const requestParams = {
         page: loadOptions?.page || tableState.currentPage,
         pageSize: tableState.pageSize,
         search: loadOptions?.search,
         ...loadOptions?.filters
-      });
+      };
+      
+      const result = await JoySenseService.getTableDataPaginated(tableName, requestParams);
 
       const data = result.data || [];
       const pagination = result.pagination;
@@ -132,7 +149,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
         currentPage: pagination?.page || prev.currentPage
       }));
     } catch (error) {
-      console.error(`Error loading ${tableName}:`, error);
+      console.error(`❌ [useTableCRUD] Error loading ${tableName}:`, error);
       setTableState(prev => ({
         ...prev,
         loading: false,
