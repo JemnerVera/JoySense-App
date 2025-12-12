@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { validateTableData, validateTableUpdate, ValidationResult, EnhancedValidationResult } from '../utils/formValidation';
+import { validateTableData, validateTableUpdate, ValidationResult, EnhancedValidationResult } from '../utils/validations';
 import { JoySenseService } from '../services/backend-api';
 
 export interface UseFormValidationReturn {

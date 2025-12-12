@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { backendAPI } from '../services/backend-api';
 import { useAuth } from '../contexts/AuthContext';
-import { validateTableUpdate } from '../utils/formValidation';
+import { validateTableUpdate } from '../utils/validations';
 
 export interface UpdateOperationState {
   isUpdating: boolean;
