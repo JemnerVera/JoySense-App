@@ -29,6 +29,7 @@ import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
+import { MassiveUmbralForm } from './MassiveUmbralForm';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 
 // ============================================================================
@@ -851,9 +852,195 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     );
   };
 
+  // Función para obtener opciones únicas de campos (para formularios masivos)
+  const getUniqueOptionsForFieldMassive = useCallback((field: string, filters?: any) => {
+    const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
+      'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
+      'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
+      'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
+      'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
+      'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
+      'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' }
+    };
+
+    const mapping = fieldToTableMap[field];
+    if (!mapping) return [];
+
+    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
+    if (!data) return [];
+
+    let filteredData = data;
+
+    // Aplicar filtros si existen
+    if (filters) {
+      if (field === 'nodoid' && filters.fundoid && filters.entidadid) {
+        // Filtrar nodos por fundo y entidad a través de localizaciones
+        const ubicacionesDelFundo = (relatedDataForStatus.ubicacionesData || []).filter((u: any) => 
+          u.fundoid === parseInt(filters.fundoid)
+        );
+        const ubicacionIds = new Set(ubicacionesDelFundo.map((u: any) => u.ubicacionid));
+        const localizaciones = (relatedDataForStatus.localizacionesData || []).filter((l: any) =>
+          ubicacionIds.has(l.ubicacionid)
+        );
+        const nodoIds = new Set(localizaciones.map((l: any) => l.nodoid));
+        filteredData = filteredData.filter((n: any) => nodoIds.has(n.nodoid));
+      }
+
+      if (field === 'tipoid' && filters.entidadid) {
+        filteredData = filteredData.filter((t: any) => t.entidadid === parseInt(filters.entidadid));
+        
+        if (filters.nodoids) {
+          // Filtrar por nodos específicos a través de sensores
+          const nodoIdsArray = filters.nodoids.split(',').map((id: string) => parseInt(id.trim()));
+          const sensores = (relatedDataForStatus.nodosData || []).filter((n: any) => 
+            nodoIdsArray.includes(n.nodoid)
+          );
+          // En un caso real, necesitarías consultar la tabla sensor para obtener los tipoid
+          // Por ahora, asumimos que todos los tipos de la entidad son válidos
+        }
+      }
+
+      if (field === 'metricaid' && filters.nodoids) {
+        // Filtrar métricas por nodos específicos a través de metricasensor
+        const nodoIdsArray = filters.nodoids.split(',').map((id: string) => parseInt(id.trim()));
+        // En un caso real, necesitarías consultar metricasensor
+        // Por ahora, retornamos todas las métricas
+      }
+    }
+
+    return filteredData.map((item: any) => {
+      let label = '';
+      if (Array.isArray(mapping.label)) {
+        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
+      } else {
+        label = item[mapping.label] || '';
+        // Casos especiales
+        if (field === 'metricaid' && item.unidad) {
+          label = label ? `${label} (${item.unidad})` : item.unidad;
+        }
+      }
+      
+      const option: any = {
+        value: item[mapping.key],
+        label: label || `ID: ${item[mapping.key]}`
+      };
+      
+      // Campos adicionales para métricas
+      if (field === 'metricaid' && item.unidad) {
+        option.unidad = item.unidad;
+      }
+      
+      // Campos adicionales para nodos
+      if (field === 'nodoid') {
+        if (item.datecreated) option.datecreated = item.datecreated;
+        // Obtener ubicacionid desde localizaciones
+        const localizacion = (relatedDataForStatus.localizacionesData || []).find((l: any) => 
+          l.nodoid === item.nodoid
+        );
+        if (localizacion?.ubicacionid) {
+          option.ubicacionid = localizacion.ubicacionid;
+        }
+      }
+      
+      return option;
+    });
+  }, [relatedDataForStatus]);
+
+  // Función para obtener nombres de país, empresa, fundo
+  const getPaisName = useCallback((paisId: string) => {
+    const pais = (relatedDataForStatus.paisesData || []).find((p: any) => p.paisid === parseInt(paisId));
+    return pais?.pais || `País ${paisId}`;
+  }, [relatedDataForStatus]);
+
+  const getEmpresaName = useCallback((empresaId: string) => {
+    const empresa = (relatedDataForStatus.empresasData || []).find((e: any) => e.empresaid === parseInt(empresaId));
+    return empresa?.empresa || `Empresa ${empresaId}`;
+  }, [relatedDataForStatus]);
+
+  const getFundoName = useCallback((fundoId: string) => {
+    const fundo = (relatedDataForStatus.fundosData || []).find((f: any) => f.fundoid === parseInt(fundoId));
+    return fundo?.fundo || `Fundo ${fundoId}`;
+  }, [relatedDataForStatus]);
+
+  // Handler para aplicar operaciones masivas de umbrales
+  const handleMassiveUmbralApply = useCallback(async (dataToApply: any[]) => {
+    if (!dataToApply || dataToApply.length === 0) {
+      setMessage({ type: 'error', text: 'No hay datos para aplicar' });
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const umbralData of dataToApply) {
+        try {
+          const result = await insertRow(umbralData);
+          if (result.success) {
+            successCount++;
+          } else {
+            errorCount++;
+            errors.push(`Nodo ${umbralData.nodoid}, Tipo ${umbralData.tipoid}, Métrica ${umbralData.metricaid}: ${result.error || 'Error desconocido'}`);
+          }
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`Nodo ${umbralData.nodoid}, Tipo ${umbralData.tipoid}, Métrica ${umbralData.metricaid}: ${error.message || 'Error desconocido'}`);
+        }
+      }
+
+      if (errorCount === 0) {
+        setMessage({ 
+          type: 'success', 
+          text: `✅ ${successCount} umbral(es) creado(s) correctamente` 
+        });
+        // Recargar datos
+        loadData();
+        loadTableData(selectedTable);
+      } else {
+        setMessage({ 
+          type: 'warning', 
+          text: `✅ ${successCount} creado(s), ❌ ${errorCount} error(es). ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}` 
+        });
+      }
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: `Error al aplicar umbrales: ${error.message || 'Error desconocido'}` 
+      });
+    }
+  }, [insertRow, loadData, loadTableData, selectedTable]);
+
   const renderMassiveOperations = () => {
     if (!config?.allowMassive) return null;
 
+    // Si es la tabla umbral, renderizar el formulario masivo
+    if (selectedTable === 'umbral') {
+      return (
+        <MassiveUmbralForm
+          getUniqueOptionsForField={getUniqueOptionsForFieldMassive}
+          onApply={handleMassiveUmbralApply}
+          onCancel={() => {
+            setMessage(null);
+          }}
+          loading={formState.isSubmitting}
+          paisSeleccionado={paisSeleccionado}
+          empresaSeleccionada={empresaSeleccionada}
+          fundoSeleccionado={fundoSeleccionado}
+          getPaisName={getPaisName}
+          getEmpresaName={getEmpresaName}
+          getFundoName={getFundoName}
+          onFormDataChange={(massiveFormData) => {
+            if (onMassiveFormDataChange) {
+              onMassiveFormDataChange(massiveFormData);
+            }
+          }}
+          localizacionesData={localizacionesData || []}
+        />
+      );
+    }
+
+    // Para otras tablas, mostrar mensaje de "próximamente"
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">🚧</div>
