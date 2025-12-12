@@ -6,6 +6,7 @@
 import { JoySenseService } from '../../services/backend-api';
 import { ValidationError, EnhancedValidationResult } from './types';
 import { generateUserFriendlyMessage, generateUpdateUserFriendlyMessage } from './common';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // USUARIO VALIDATIONS
@@ -183,7 +184,7 @@ export const checkUsuarioDependencies = async (usuarioid: number): Promise<boole
     const hasAlertas = alertas.some(alerta => alerta.usuarioid === usuarioid);
     return hasAlertas;
   } catch (error) {
-    console.error('Error checking usuario dependencies:', error);
+    logger.error('Error checking usuario dependencies:', error);
     return false;
   }
 };
@@ -394,7 +395,7 @@ export const checkPerfilDependencies = async (perfilid: number): Promise<boolean
     const hasPerfilumbrales = perfilumbrales.some(perfilumbral => perfilumbral.perfilid === perfilid);
     return hasPerfilumbrales;
   } catch (error) {
-    console.error('Error checking perfil dependencies:', error);
+    logger.error('Error checking perfil dependencies:', error);
     return false;
   }
 };
@@ -812,7 +813,7 @@ export const checkMedioDependencies = async (medioid: number): Promise<boolean> 
     const contactos = await JoySenseService.getTableData('contacto');
     return contactos.some(contacto => contacto.medioid === medioid);
   } catch (error) {
-    console.error('Error checking medio dependencies:', error);
+    logger.error('Error checking medio dependencies:', error);
     return false;
   }
 };

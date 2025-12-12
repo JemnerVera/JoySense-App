@@ -3,6 +3,7 @@ import { JoySenseService } from '../services/backend-api';
 import { backendAPI } from '../services/backend-api';
 import { useAuth } from '../contexts/AuthContext';
 import { validateTableUpdate } from '../utils/validations';
+import { logger } from '../utils/logger';
 
 export interface UpdateOperationState {
   isUpdating: boolean;
@@ -85,7 +86,7 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
       return { success: true, id: recordId };
       
     } catch (error) {
-      console.error(`❌ useUpdateOperations.updateSingle - ${tableName} error:`, error);
+      logger.error(`useUpdateOperations.updateSingle - ${tableName} error:`, error);
       
       let errorMessage = 'Error al actualizar el registro';
       
@@ -162,7 +163,7 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
           updatedCount++;
           
         } catch (error) {
-          console.error(`❌ useUpdateOperations.updateMultiple - ${tableName} error for record ${i + 1}:`, error);
+          logger.error(`useUpdateOperations.updateMultiple - ${tableName} error for record ${i + 1}:`, error);
           
           let errorMessage = `Error al actualizar registro ${i + 1}`;
           
@@ -195,7 +196,7 @@ export const useUpdateOperations = (): UpdateOperationState & UpdateOperationAct
       };
       
     } catch (error) {
-      console.error(`❌ useUpdateOperations.updateMultiple - ${tableName} general error:`, error);
+      logger.error(`useUpdateOperations.updateMultiple - ${tableName} general error:`, error);
       
       let errorMessage = 'Error general al actualizar registros';
       

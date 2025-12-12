@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { validateTableData, validateTableUpdate, ValidationResult, EnhancedValidationResult } from '../utils/validations';
 import { JoySenseService } from '../services/backend-api';
+import { logger } from '../utils/logger';
 
 export interface UseFormValidationReturn {
   validateInsert: (formData: Record<string, any>) => Promise<EnhancedValidationResult>;
@@ -27,7 +28,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       return result;
     } catch (error) {
-      console.error('Error en validateInsert:', error);
+      logger.error('Error en validateInsert:', error);
       return {
         isValid: false,
         errors: [{
@@ -58,7 +59,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       return result;
     } catch (error) {
-      console.error('Error en validateUpdate:', error);
+      logger.error('Error en validateUpdate:', error);
       return {
         isValid: false,
         errors: [{
@@ -164,7 +165,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       return hasDependencies;
     } catch (error) {
-      console.error('Error en checkDependencies:', error);
+      logger.error('Error en checkDependencies:', error);
       return false; // En caso de error, permitir la operación
     }
   }, [selectedTable]);
@@ -185,7 +186,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       return results;
     } catch (error) {
-      console.error('Error en validateMultipleInsert:', error);
+      logger.error('Error en validateMultipleInsert:', error);
       return multipleData.map(() => ({
         isValid: false,
         errors: [{
@@ -210,7 +211,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
       
       return result;
     } catch (error) {
-      console.error('Error en validateMassiveInsert:', error);
+      logger.error('Error en validateMassiveInsert:', error);
       return {
         isValid: false,
         errors: [{

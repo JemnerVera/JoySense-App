@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { validateTableUpdate } from '../utils/validations';
 import type { TableConfig } from '../config/tables.config';
+import { logger } from '../utils/logger';
 
 interface UseUpdateFormProps {
   selectedRow: any | null;
@@ -148,7 +149,7 @@ export const useUpdateForm = ({
 
       return true;
     } catch (error) {
-      console.error('Error en validación:', error);
+      logger.error('Error en validación:', error);
       return false;
     }
   }, [tableName, formData, originalData, existingData, config, validateFormFields]);
