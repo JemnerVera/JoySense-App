@@ -11,6 +11,35 @@ import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 
+// Campos foreign key que tienen constraints y no se pueden cambiar en UPDATE
+const CONSTRAINED_FOREIGN_KEYS: Record<string, string[]> = {
+  empresa: ['paisid'], // No se puede cambiar el país de una empresa
+  fundo: ['empresaid'], // No se puede cambiar la empresa de un fundo
+  ubicacion: ['fundoid'], // No se puede cambiar el fundo de una ubicación
+  nodo: ['entidadid'], // No se puede cambiar la entidad de un nodo
+  sensor: ['nodoid', 'tipoid'], // No se puede cambiar el nodo o tipo de un sensor
+  metricasensor: ['nodoid', 'metricaid', 'tipoid'], // No se puede cambiar nodo, métrica o tipo
+  localizacion: ['entidadid', 'nodoid'], // No se puede cambiar entidad o nodo
+  // Agregar más según sea necesario
+};
+
+// Mapeo de nombres de tabla a claves en relatedData
+const tableToRelatedDataKey: Record<string, string> = {
+  pais: 'paisesData',
+  empresa: 'empresasData',
+  fundo: 'fundosData',
+  ubicacion: 'ubicacionesData',
+  localizacion: 'localizacionesData',
+  entidad: 'entidadesData',
+  nodo: 'nodosData',
+  tipo: 'tiposData',
+  metrica: 'metricasData',
+  criticidad: 'criticidadesData',
+  perfil: 'perfilesData',
+  usuario: 'userData',
+  umbral: 'umbralesData'
+};
+
 interface NormalUpdateFormProps {
   config: TableConfig | null;
   formData: Record<string, any>;
@@ -92,20 +121,68 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   // Filtrar campos editables (excluir hidden)
   const editableFields = config.fields.filter(f => !f.hidden);
 
+  // Función helper para determinar si un campo foreign key tiene constraint
+  const isConstrainedField = (fieldName: string): boolean => {
+    const constrainedFields = CONSTRAINED_FOREIGN_KEYS[tableName || ''];
+    return constrainedFields ? constrainedFields.includes(fieldName) : false;
+  };
+
+  // Función helper para obtener datos de una tabla relacionada desde relatedData
+  const getRelatedTableData = (tableName: string): any[] => {
+    const dataKey = tableToRelatedDataKey[tableName];
+    if (!dataKey) {
+      console.warn(`⚠️ [NormalUpdateForm] No se encontró mapeo para tabla: ${tableName}`);
+      return [];
+    }
+    const data = (relatedData as any)[dataKey];
+    return data || [];
+  };
+
+  // Función helper para obtener el label de un foreign key desde relatedData
+  const getForeignKeyLabel = (field: any, value: any): string => {
+    if (!value || !field.foreignKey) return '';
+    const relatedTableData = getRelatedTableData(field.foreignKey.table);
+    const item = relatedTableData.find((item: any) => 
+      String(item[field.foreignKey.valueField]) === String(value)
+    );
+    if (!item) return '';
+    const labelFields = Array.isArray(field.foreignKey.labelField) 
+      ? field.foreignKey.labelField 
+      : [field.foreignKey.labelField];
+    return labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+  };
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {editableFields.map(field => {
           const isPrimaryKey = primaryKeyFields.includes(field.name);
           const isStatusId = field.name === 'statusid';
           const displayName = getColumnDisplayNameHelper(field.name);
 
+          const isConstrained = isConstrainedField(field.name);
+          const fieldValue = formData[field.name];
+          const isRequired = field.required && !isPrimaryKey;
+          
+          // Debug para campos específicos
+          if (field.name === 'empresaid' || field.name === 'fundo' || field.name === 'fundoabrev' || field.name === 'paisid') {
+            console.log(`🔍 [NormalUpdateForm] Campo ${field.name}:`, {
+              fieldValue,
+              formDataValue: formData[field.name],
+              isConstrained,
+              hasForeignKey: !!field.foreignKey,
+              foreignKeyTable: field.foreignKey?.table,
+              relatedDataExists: field.foreignKey ? !!(relatedData as any)[field.foreignKey.table] : false,
+              relatedDataLength: field.foreignKey ? ((relatedData as any)[field.foreignKey.table] || []).length : 0
+            });
+          }
+
           return (
-            <div key={field.name}>
+            <div key={field.name} className="mb-4">
               {!isStatusId && (
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
                   {isPrimaryKey && <span className="mr-1">🔒</span>}
-                  {displayName} {field.required && !isPrimaryKey && <span className="text-red-500">*</span>}
+                  {displayName.toUpperCase()}{isRequired ? '*' : ''}
                 </label>
               )}
 
@@ -115,7 +192,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   type="text"
                   value={formData[field.name] ?? ''}
                   readOnly
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-lg bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-400 cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
                 />
               ) : field.name === 'jefeid' && tableName === 'perfil' && getUniqueOptionsForField ? (
                 // Caso especial para jefeid en perfil: usar getUniqueOptionsForField para formato "nivel - perfil"
@@ -125,29 +202,70 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   options={getUniqueOptionsForField(field.name)}
                   placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
                 />
-              ) : field.foreignKey ? (
-                // Select para foreign keys
-                <select
-                  value={formData[field.name] != null ? String(formData[field.name]) : ''}
-                  onChange={(e) => updateFormField(field.name, e.target.value ? Number(e.target.value) : null)}
-                  className={`w-full px-3 py-2 border rounded-lg dark:bg-neutral-800 dark:border-neutral-700 ${
-                    formErrors[field.name] ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Seleccionar...</option>
-                  {((relatedData as any)[field.foreignKey.table] || []).map((item: any) => {
+              ) : field.foreignKey && isConstrained ? (
+                // Campo foreign key con constraint: mostrar como SelectWithPlaceholder disabled con valor actual
+                (() => {
+                  const fieldValue = formData[field.name];
+                  const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                  const options = relatedTableData.map((item: any) => {
                     const labelFields = Array.isArray(field.foreignKey!.labelField) 
                       ? field.foreignKey!.labelField 
                       : [field.foreignKey!.labelField];
-                    const label = labelFields.map(lf => item[lf]).filter(Boolean).join(' ');
-                    const itemValue = String(item[field.foreignKey!.valueField]);
-                    return (
-                      <option key={itemValue} value={itemValue}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
+                    const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                    const itemValue = item[field.foreignKey!.valueField];
+                    return {
+                      value: itemValue, // Mantener el tipo original (número o string)
+                      label: label || `ID: ${itemValue}`
+                    };
+                  });
+                  
+                  // Debug para campos con constraints
+                  console.log(`🔍 [NormalUpdateForm] Campo con constraint ${field.name}:`, {
+                    fieldValue,
+                    fieldValueType: typeof fieldValue,
+                    optionsLength: options.length,
+                    options: options.slice(0, 3).map((opt: { value: any; label: string }) => ({ value: opt.value, valueType: typeof opt.value, label: opt.label })),
+                    matchingOption: options.find((opt: { value: any; label: string }) => 
+                      opt.value === fieldValue || 
+                      opt.value?.toString() === fieldValue?.toString() ||
+                      String(opt.value) === String(fieldValue)
+                    ),
+                    relatedTableDataLength: relatedTableData.length,
+                    foreignKeyTable: field.foreignKey!.table,
+                    relatedDataKey: tableToRelatedDataKey[field.foreignKey!.table],
+                    relatedDataHasKey: !!(relatedData as any)[tableToRelatedDataKey[field.foreignKey!.table]]
+                  });
+                  
+                  return (
+                    <SelectWithPlaceholder
+                      value={fieldValue != null && fieldValue !== '' ? fieldValue : null}
+                      onChange={() => {}} // No permitir cambios
+                      options={options}
+                      placeholder={`${displayName.toUpperCase()}`}
+                      disabled={true}
+                    />
+                  );
+                })()
+              ) : field.foreignKey ? (
+                // Select para foreign keys sin constraint: usar SelectWithPlaceholder
+                <SelectWithPlaceholder
+                  value={formData[field.name] != null ? formData[field.name] : null}
+                  onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                  options={(() => {
+                    const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                    return relatedTableData.map((item: any) => {
+                      const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                        ? field.foreignKey!.labelField 
+                        : [field.foreignKey!.labelField];
+                      const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                      return {
+                        value: item[field.foreignKey!.valueField],
+                        label: label || `ID: ${item[field.foreignKey!.valueField]}`
+                      };
+                    });
+                  })()}
+                  placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+                />
               ) : isStatusId ? (
                 // Statusid como checkbox - estilo similar a CREAR
                 <div>
@@ -170,18 +288,21 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                 <textarea
                   value={formData[field.name] || ''}
                   onChange={(e) => updateFormField(field.name, e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg dark:bg-neutral-800 dark:border-neutral-700 ${
-                    formErrors[field.name] ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600`}
                   rows={3}
                 />
               ) : field.type === 'boolean' ? (
-                <input
-                  type="checkbox"
-                  checked={formData[field.name] || false}
-                  onChange={(e) => updateFormField(field.name, e.target.checked)}
-                  className="w-5 h-5"
-                />
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={formData[field.name] || false}
+                    onChange={(e) => updateFormField(field.name, e.target.checked)}
+                    className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2`}
+                  />
+                  <span className="text-white font-mono tracking-wider">
+                    {formData[field.name] ? t('create.active') : t('create.inactive')}
+                  </span>
+                </div>
               ) : (
                 <input
                   type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
@@ -190,9 +311,10 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                     field.name, 
                     field.type === 'number' ? (e.target.value ? Number(e.target.value) : null) : e.target.value
                   )}
-                  className={`w-full px-3 py-2 border rounded-lg dark:bg-neutral-800 dark:border-neutral-700 ${
-                    formErrors[field.name] ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600 ${
+                    formErrors[field.name] ? 'border-red-500' : ''
                   }`}
+                  placeholder={`${displayName.toUpperCase()}`}
                 />
               )}
 
