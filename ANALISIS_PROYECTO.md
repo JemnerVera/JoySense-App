@@ -26,9 +26,13 @@
      - ✅ `NormalInsertForm.tsx` reducido a ~604 líneas (solo orquestación)
    - **Resultado**: Reducción de ~70% en tamaño, código más modular y mantenible
 
-4. **`frontend/src/contexts/LanguageContext.tsx`** - **1,831 líneas** ⚠️⚠️
-   - **Problema**: Contexto de idioma con muchas traducciones
-   - **Recomendación**: Mover traducciones a archivos JSON separados por módulos
+4. **`frontend/src/contexts/LanguageContext.tsx`** - **~50 líneas** ✅ **COMPLETADO**
+   - **Estado**: ✅ Refactorizado exitosamente
+   - **Cambios realizados**:
+     - ✅ Creado `locales/es.json` - 883 traducciones en español
+     - ✅ Creado `locales/en.json` - 410 traducciones en inglés
+     - ✅ `LanguageContext.tsx` reducido a ~50 líneas (solo contexto y Provider)
+   - **Resultado**: Reducción de ~97% en tamaño, separación de datos y lógica
 
 5. **`frontend/src/components/MassiveUmbralForm.tsx`** - **1,803 líneas** ⚠️⚠️
    - **Problema**: Formulario masivo
@@ -104,8 +108,8 @@
 3. `NormalInsertForm.tsx` (2,068 líneas) - **ALTA**
 
 ### 🟡 **MEDIA PRIORIDAD** (Archivos 1000-2000 líneas) - **EN PROGRESO**
-4. `LanguageContext.tsx` (1,830 líneas) - **SIGUIENTE**
-5. `MassiveUmbralForm.tsx` (1,803 líneas)
+4. `LanguageContext.tsx` (~50 líneas) - ✅ **COMPLETADO**
+5. `MassiveUmbralForm.tsx` (1,803 líneas) - **SIGUIENTE**
 6. `MetricaPorLoteModal.tsx` (1,523 líneas)
 7. `SystemParameters.tsx` (1,099 líneas) - En proceso (reducido desde tamaño original)
 8. `UmbralesPorLote.tsx` (1,038 líneas)
@@ -148,17 +152,17 @@
 - `validations/common.ts` - Funciones comunes (validateFormData, getValidationMessages)
 - `validations/index.ts` - Exportar todo desde un solo lugar
 
-### Para `LanguageContext.tsx` (1,831 líneas)
+### Para `LanguageContext.tsx` (~50 líneas) ✅ **COMPLETADO**
 **Estructura actual**: 
-- Objeto `translations` masivo con todas las traducciones hardcodeadas
-- ~1,800 líneas de strings de traducción
-- Contexto y Provider mezclados con datos
+- ✅ Traducciones en archivos JSON separados (`locales/es.json`, `locales/en.json`)
+- ✅ Contexto y Provider limpios, solo lógica
+- ✅ Importación de traducciones desde JSON
 
-**Dividir en:**
-- `locales/es.json` - Todas las traducciones en español
-- `locales/en.json` - Todas las traducciones en inglés
-- `contexts/LanguageContext.tsx` - Solo el contexto y Provider (50-100 líneas)
-- `hooks/useLanguage.ts` - Hook para usar traducciones (opcional, ya existe)
+**Resultado:**
+- ✅ `locales/es.json` - 883 traducciones en español
+- ✅ `locales/en.json` - 410 traducciones en inglés
+- ✅ `contexts/LanguageContext.tsx` - Solo contexto y Provider (~50 líneas)
+- ✅ `hooks/useLanguage.ts` - Hook existente funciona correctamente
 
 ## 📈 Métricas del Proyecto
 
