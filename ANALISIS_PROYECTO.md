@@ -11,20 +11,20 @@
    - **Problema**: Archivo de validación masivo
    - **Recomendación**: Dividir por módulos (validaciones de usuario, validaciones de geografía, etc.)
 
-3. **`frontend/src/components/NormalInsertForm.tsx`** - **2,068 líneas** ⚠️⚠️
-   - **Problema**: Formulario monolítico con renderizado específico por tabla
-   - **Estructura actual**: 
-     - Funciones de renderizado específicas (renderUsuarioForm, renderPaisFields, renderEmpresaFields, etc.)
-     - Mucha lógica condicional por tipo de tabla
-     - Validaciones inline
-   - **Recomendación**: 
-     - `components/forms/FormFieldRenderer.tsx` - Renderizador genérico de campos
-     - `components/forms/FormFieldValidators.tsx` - Validaciones específicas por tabla
-     - `components/forms/table-specific/UsuarioFormFields.tsx` - Campos específicos de usuario
-     - `components/forms/table-specific/GeografiaFormFields.tsx` - Campos de geografía (pais, empresa, fundo)
-     - `components/forms/table-specific/ContactoFormFields.tsx` - Campos de contacto
-     - `hooks/useFormValidation.ts` - Hook para validación
-     - `NormalInsertForm.tsx` - Solo orquestación (300-400 líneas)
+3. **`frontend/src/components/NormalInsertForm.tsx`** - **604 líneas** ✅ **COMPLETADO**
+   - **Estado**: ✅ Refactorizado exitosamente
+   - **Cambios realizados**:
+     - ✅ Creado `components/forms/FormFieldRenderer.tsx` - Renderizador genérico de campos
+     - ✅ Creado `components/forms/table-specific/UsuarioFormFields.tsx` - Campos específicos de usuario
+     - ✅ Creado `components/forms/table-specific/GeografiaFormFields.tsx` - Campos de geografía
+     - ✅ Creado `components/forms/table-specific/ContactoFormFields.tsx` - Campos de contacto
+     - ✅ Creado `components/forms/table-specific/DispositivosFormFields.tsx` - Campos de dispositivos
+     - ✅ Creado `components/forms/table-specific/AlertasFormFields.tsx` - Campos de alertas
+     - ✅ Creado `components/forms/table-specific/LocalizacionFormFields.tsx` - Campos de localización
+     - ✅ Creado `components/forms/ContextualRow.tsx` - Renderizado de filas contextuales
+     - ✅ Creado `hooks/useProgressiveEnablement.ts` - Hook para habilitación progresiva
+     - ✅ `NormalInsertForm.tsx` reducido a ~604 líneas (solo orquestación)
+   - **Resultado**: Reducción de ~70% en tamaño, código más modular y mantenible
 
 4. **`frontend/src/contexts/LanguageContext.tsx`** - **1,831 líneas** ⚠️⚠️
    - **Problema**: Contexto de idioma con muchas traducciones
@@ -103,11 +103,11 @@
 2. `formValidation.ts` (3,338 líneas) - **URGENTE**
 3. `NormalInsertForm.tsx` (2,068 líneas) - **ALTA**
 
-### 🟡 **MEDIA PRIORIDAD** (Archivos 1000-2000 líneas)
-4. `LanguageContext.tsx` (1,831 líneas)
+### 🟡 **MEDIA PRIORIDAD** (Archivos 1000-2000 líneas) - **EN PROGRESO**
+4. `LanguageContext.tsx` (1,830 líneas) - **SIGUIENTE**
 5. `MassiveUmbralForm.tsx` (1,803 líneas)
 6. `MetricaPorLoteModal.tsx` (1,523 líneas)
-7. `SystemParameters.tsx` (1,095 líneas) - Ya en proceso
+7. `SystemParameters.tsx` (1,099 líneas) - En proceso (reducido desde tamaño original)
 8. `UmbralesPorLote.tsx` (1,038 líneas)
 
 ### 🟢 **BAJA PRIORIDAD** (Mejoras de calidad)
