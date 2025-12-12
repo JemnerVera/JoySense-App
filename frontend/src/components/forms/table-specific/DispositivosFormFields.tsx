@@ -88,11 +88,44 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const renderNodoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid', 'statusid'].includes(col.columnName));
+    
+    // Renderizar campos principales
     if (otherFields.length > 0) {
+      // Si hay 2 campos y status, ponerlos en la misma fila
+      if (otherFields.length === 2 && statusField) {
+        result.push(
+          <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      } else {
+        // Renderizar campos principales
+        result.push(
+          <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+          </div>
+        );
+        // Renderizar status en fila separada si existe
+        if (statusField) {
+          result.push(
+            <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div></div>
+              <div></div>
+              {renderField(statusField)}
+            </div>
+          );
+        }
+      }
+    } else if (statusField) {
+      // Solo status
       result.push(
-        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {otherFields.map(col => renderField(col))}
+        <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div></div>
+          <div></div>
+          {renderField(statusField)}
         </div>
       );
     }
@@ -104,11 +137,44 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const renderSensorFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid', 'statusid'].includes(col.columnName));
+    
+    // Renderizar campos principales
     if (otherFields.length > 0) {
+      // Si hay 2 campos y status, ponerlos en la misma fila
+      if (otherFields.length === 2 && statusField) {
+        result.push(
+          <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      } else {
+        // Renderizar campos principales
+        result.push(
+          <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+          </div>
+        );
+        // Renderizar status en fila separada si existe
+        if (statusField) {
+          result.push(
+            <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div></div>
+              <div></div>
+              {renderField(statusField)}
+            </div>
+          );
+        }
+      }
+    } else if (statusField) {
+      // Solo status
       result.push(
-        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {otherFields.map(col => renderField(col))}
+        <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div></div>
+          <div></div>
+          {renderField(statusField)}
         </div>
       );
     }
@@ -120,11 +186,44 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const renderSensorMetricaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid', 'statusid'].includes(col.columnName));
+    
+    // Renderizar campos principales
     if (otherFields.length > 0) {
+      // Si hay 2 campos y status, ponerlos en la misma fila
+      if (otherFields.length === 2 && statusField) {
+        result.push(
+          <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      } else {
+        // Renderizar campos principales
+        result.push(
+          <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+          </div>
+        );
+        // Renderizar status en fila separada si existe
+        if (statusField) {
+          result.push(
+            <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div></div>
+              <div></div>
+              {renderField(statusField)}
+            </div>
+          );
+        }
+      }
+    } else if (statusField) {
+      // Solo status
       result.push(
-        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {otherFields.map(col => renderField(col))}
+        <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div></div>
+          <div></div>
+          {renderField(statusField)}
         </div>
       );
     }
@@ -136,11 +235,44 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const renderMetricaFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid'].includes(col.columnName));
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid', 'statusid'].includes(col.columnName));
+    
+    // Renderizar campos principales
     if (otherFields.length > 0) {
+      // Si hay 2 campos y status, ponerlos en la misma fila
+      if (otherFields.length === 2 && statusField) {
+        result.push(
+          <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      } else {
+        // Renderizar campos principales
+        result.push(
+          <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {otherFields.map(col => renderField(col))}
+          </div>
+        );
+        // Renderizar status en fila separada si existe
+        if (statusField) {
+          result.push(
+            <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div></div>
+              <div></div>
+              {renderField(statusField)}
+            </div>
+          );
+        }
+      }
+    } else if (statusField) {
+      // Solo status
       result.push(
-        <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {otherFields.map(col => renderField(col))}
+        <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div></div>
+          <div></div>
+          {renderField(statusField)}
         </div>
       );
     }

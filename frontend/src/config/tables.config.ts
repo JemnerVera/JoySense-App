@@ -70,7 +70,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'paisid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'pais', label: 'País', type: 'text', required: true, validation: { minLength: 2, maxLength: 100 } },
       { name: 'paisabrev', label: 'Abreviatura', type: 'text', required: true, validation: { minLength: 2, maxLength: 10 } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -90,7 +90,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'paisid', label: 'País', type: 'select', required: true, foreignKey: { table: 'pais', valueField: 'paisid', labelField: 'pais' } },
       { name: 'empresa', label: 'Empresa', type: 'text', required: true },
       { name: 'empresabrev', label: 'Abreviatura', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -110,7 +110,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'empresaid', label: 'Empresa', type: 'select', required: true, foreignKey: { table: 'empresa', valueField: 'empresaid', labelField: 'empresa' } },
       { name: 'fundo', label: 'Fundo', type: 'text', required: true },
       { name: 'fundoabrev', label: 'Abreviatura', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -129,7 +129,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'ubicacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'fundoid', label: 'Fundo', type: 'select', required: true, foreignKey: { table: 'fundo', valueField: 'fundoid', labelField: 'fundo' } },
       { name: 'ubicacion', label: 'Ubicación', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -147,7 +147,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'entidadid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'entidad', label: 'Entidad', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -164,7 +164,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'entidadid', label: 'Entidad', type: 'select', required: true, foreignKey: { table: 'entidad', valueField: 'entidadid', labelField: 'entidad' } },
       { name: 'localizacionid', label: 'Localización', type: 'select', required: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -185,7 +185,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'tipoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'tipo', label: 'Tipo', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -204,7 +204,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'metricaid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'metrica', label: 'Métrica', type: 'text', required: true },
       { name: 'unidad', label: 'Unidad', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -222,7 +222,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'sensorid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'tipoid', label: 'Tipo', type: 'select', required: true, foreignKey: { table: 'tipo', valueField: 'tipoid', labelField: 'tipo' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -240,7 +240,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -260,7 +260,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'ubicacionid', label: 'Ubicación', type: 'select', required: true, foreignKey: { table: 'ubicacion', valueField: 'ubicacionid', labelField: 'ubicacion' } },
       { name: 'nodo', label: 'Nombre', type: 'text', required: true },
       { name: 'descripcion', label: 'Descripción', type: 'textarea' },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -284,7 +284,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'latitud', label: 'Latitud', type: 'number' },
       { name: 'longitud', label: 'Longitud', type: 'number' },
       { name: 'referencia', label: 'Referencia', type: 'text' },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -302,7 +302,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'asociacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'localizacionid', label: 'Localización', type: 'select', required: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
       { name: 'id_device', label: 'ID Device (LoRaWAN)', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -387,7 +387,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'frecuencia', label: 'Frecuencia (min)', type: 'number', required: true },
       { name: 'escalamiento', label: 'Escalamiento (min)', type: 'number', required: true },
       { name: 'escalon', label: 'Escalón', type: 'number', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -410,7 +410,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'minimo', label: 'Mínimo', type: 'number', required: true },
       { name: 'maximo', label: 'Máximo', type: 'number', required: true },
       { name: 'estandar', label: 'Estándar', type: 'number' },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -491,7 +491,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'perfilid', label: 'Perfil', type: 'select', required: true, foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
       { name: 'umbralid', label: 'Umbral', type: 'select', required: true, foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -537,7 +537,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'password', label: 'Password', type: 'password', required: true },
       { name: 'firstname', label: 'Nombre', type: 'text', required: true },
       { name: 'lastname', label: 'Apellido', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -557,7 +557,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'perfil', label: 'Perfil', type: 'text', required: true },
       { name: 'nivel', label: 'Nivel', type: 'number', required: true },
       { name: 'jefeid', label: 'Jefe', type: 'select', foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -574,7 +574,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: ['firstname', 'lastname'] } },
       { name: 'perfilid', label: 'Perfil', type: 'select', required: true, foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -593,7 +593,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'codigotelefonoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'codigotelefono', label: 'Código', type: 'text', required: true },
       { name: 'paistelefono', label: 'País', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -612,7 +612,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: ['firstname', 'lastname'] } },
       { name: 'codigotelefonoid', label: 'Código País', type: 'select', required: true, foreignKey: { table: 'codigotelefono', valueField: 'codigotelefonoid', labelField: ['codigotelefono', 'paistelefono'] } },
       { name: 'celular', label: 'Celular', type: 'text', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -630,7 +630,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'correoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: ['firstname', 'lastname'] } },
       { name: 'correo', label: 'Correo', type: 'email', required: true },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
@@ -654,7 +654,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'puede_ver', label: 'Puede Ver', type: 'boolean', defaultValue: true },
       { name: 'puede_insertar', label: 'Puede Insertar', type: 'boolean', defaultValue: false },
       { name: 'puede_actualizar', label: 'Puede Actualizar', type: 'boolean', defaultValue: false },
-      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: true }
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   }
 };

@@ -438,8 +438,72 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {visibleColumns.map(col => renderField(col))}
+          <div>
+            {(() => {
+              const statusField = visibleColumns.find(col => col.columnName === 'statusid');
+              const otherFields = visibleColumns.filter(col => col.columnName !== 'statusid');
+              
+              const result: React.ReactNode[] = [];
+              
+              // Renderizar campos principales
+              if (otherFields.length > 0) {
+                // Si hay 2 campos y status, ponerlos en la misma fila
+                if (otherFields.length === 2 && statusField) {
+                  result.push(
+                    <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                      {otherFields.map(col => renderField(col))}
+                      {statusField && renderField(statusField)}
+                    </div>
+                  );
+                } else {
+                  // Renderizar campos principales en filas de 3
+                  const rows: React.ReactNode[][] = [];
+                  for (let i = 0; i < otherFields.length; i += 3) {
+                    rows.push(otherFields.slice(i, i + 3));
+                  }
+                  
+                  rows.forEach((row, rowIndex) => {
+                    // Si es la última fila y tiene 2 campos y hay status, agregar status
+                    if (rowIndex === rows.length - 1 && row.length === 2 && statusField) {
+                      result.push(
+                        <div key={`row-${rowIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                          {row.map(col => renderField(col))}
+                          {renderField(statusField)}
+                        </div>
+                      );
+                    } else {
+                      result.push(
+                        <div key={`row-${rowIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                          {row.map(col => renderField(col))}
+                        </div>
+                      );
+                    }
+                  });
+                  
+                  // Si status no se agregó en la última fila, agregarlo en una fila separada
+                  if (statusField && (rows.length === 0 || rows[rows.length - 1].length !== 2)) {
+                    result.push(
+                      <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div></div>
+                        <div></div>
+                        {renderField(statusField)}
+                      </div>
+                    );
+                  }
+                }
+              } else if (statusField) {
+                // Solo status
+                result.push(
+                  <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div></div>
+                    <div></div>
+                    {renderField(statusField)}
+                  </div>
+                );
+              }
+              
+              return result;
+            })()}
           </div>
         )}
       </div>
