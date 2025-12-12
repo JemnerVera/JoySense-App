@@ -425,54 +425,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paisOptions.length, selectedTable]);
 
-  // Función para renderizar campos de País con layout específico
-  const renderPaisFields = (): React.ReactNode => {
-    return (
-      <GeografiaFormFields
-        selectedTable="pais"
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        paisOptions={paisOptions}
-        paisSeleccionado={paisSeleccionado}
-        empresaSeleccionada={empresaSeleccionada}
-        fundoSeleccionado={fundoSeleccionado}
-        getPaisName={getPaisName}
-        getEmpresaName={getEmpresaName}
-        getFundoName={getFundoName}
-        renderContextualRow={renderContextualRow}
-      />
-    );
-  };
-
-  // Función para renderizar campos de Empresa con layout específico
-  const renderEmpresaFields = (): React.ReactNode => {
-    return (
-      <GeografiaFormFields
-        selectedTable="empresa"
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        paisOptions={paisOptions}
-        paisSeleccionado={paisSeleccionado}
-        empresaSeleccionada={empresaSeleccionada}
-        fundoSeleccionado={fundoSeleccionado}
-        getPaisName={getPaisName}
-        getEmpresaName={getEmpresaName}
-        getFundoName={getFundoName}
-        renderContextualRow={renderContextualRow}
-      />
-    );
-  };
-
   // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
   useEffect(() => {
     if (empresaSeleccionada && !formData.empresaid) {
@@ -486,54 +438,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
     }
   }, [fundoSeleccionado, formData.fundoid, setFormData]);
-
-  // Función para renderizar campos de Fundo con layout específico
-  const renderFundoFields = (): React.ReactNode => {
-    return (
-      <GeografiaFormFields
-        selectedTable="fundo"
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        paisOptions={paisOptions}
-        paisSeleccionado={paisSeleccionado}
-        empresaSeleccionada={empresaSeleccionada}
-        fundoSeleccionado={fundoSeleccionado}
-        getPaisName={getPaisName}
-        getEmpresaName={getEmpresaName}
-        getFundoName={getFundoName}
-        renderContextualRow={renderContextualRow}
-      />
-    );
-  };
-
-  // Función para renderizar campos de Ubicación con layout específico
-  const renderUbicacionFields = (): React.ReactNode => {
-    return (
-      <GeografiaFormFields
-        selectedTable="ubicacion"
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        paisOptions={paisOptions}
-        paisSeleccionado={paisSeleccionado}
-        empresaSeleccionada={empresaSeleccionada}
-        fundoSeleccionado={fundoSeleccionado}
-        getPaisName={getPaisName}
-        getEmpresaName={getEmpresaName}
-        getFundoName={getFundoName}
-        renderContextualRow={renderContextualRow}
-      />
-    );
-  };
 
   // Función para renderizar campos con Status al extremo derecho (Usuario)
   const renderStatusRightFields = (): React.ReactNode[] => {
@@ -1148,38 +1052,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   };
 
   // ============================================================================
-  // RENDER FUNCTIONS
-  // ============================================================================
-
-  const renderContactFields = () => {
-    return (
-      <ContactoFormFields
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        selectedContactType={selectedContactType}
-        countryCodes={countryCodes}
-      />
-    );
-  };
-
-  // Función para renderizar formulario de usuario con campo password
-  const renderUsuarioForm = (): React.ReactNode => {
-    return (
-      <UsuarioFormFields
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-      />
-    );
-  };
-
-  // ============================================================================
   // RENDER
   // ============================================================================
 
@@ -1188,18 +1060,105 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       {/* Contenido del formulario */}
       <div>
         {selectedTable === 'usuario' ? (
-          renderUsuarioForm()
+          <UsuarioFormFields
+            visibleColumns={visibleColumns}
+            formData={formData}
+            setFormData={setFormData}
+            renderField={renderField}
+            getThemeColor={getThemeColor}
+          />
         ) : selectedTable === 'pais' ? (
-          renderPaisFields()
+          <GeografiaFormFields
+            selectedTable="pais"
+            visibleColumns={visibleColumns}
+            formData={formData}
+            setFormData={setFormData}
+            updateField={updateField}
+            renderField={renderField}
+            getThemeColor={getThemeColor}
+            getUniqueOptionsForField={getUniqueOptionsForField}
+            paisOptions={paisOptions}
+            paisSeleccionado={paisSeleccionado}
+            empresaSeleccionada={empresaSeleccionada}
+            fundoSeleccionado={fundoSeleccionado}
+            getPaisName={getPaisName}
+            getEmpresaName={getEmpresaName}
+            getFundoName={getFundoName}
+            renderContextualRow={renderContextualRow}
+          />
         ) : selectedTable === 'empresa' ? (
-          renderEmpresaFields()
+          <GeografiaFormFields
+            selectedTable="empresa"
+            visibleColumns={visibleColumns}
+            formData={formData}
+            setFormData={setFormData}
+            updateField={updateField}
+            renderField={renderField}
+            getThemeColor={getThemeColor}
+            getUniqueOptionsForField={getUniqueOptionsForField}
+            paisOptions={paisOptions}
+            paisSeleccionado={paisSeleccionado}
+            empresaSeleccionada={empresaSeleccionada}
+            fundoSeleccionado={fundoSeleccionado}
+            getPaisName={getPaisName}
+            getEmpresaName={getEmpresaName}
+            getFundoName={getFundoName}
+            renderContextualRow={renderContextualRow}
+          />
         ) : selectedTable === 'fundo' ? (
-          renderFundoFields()
+          <GeografiaFormFields
+            selectedTable="fundo"
+            visibleColumns={visibleColumns}
+            formData={formData}
+            setFormData={setFormData}
+            updateField={updateField}
+            renderField={renderField}
+            getThemeColor={getThemeColor}
+            getUniqueOptionsForField={getUniqueOptionsForField}
+            paisOptions={paisOptions}
+            paisSeleccionado={paisSeleccionado}
+            empresaSeleccionada={empresaSeleccionada}
+            fundoSeleccionado={fundoSeleccionado}
+            getPaisName={getPaisName}
+            getEmpresaName={getEmpresaName}
+            getFundoName={getFundoName}
+            renderContextualRow={renderContextualRow}
+          />
         ) : selectedTable === 'ubicacion' ? (
-          renderUbicacionFields()
+          <GeografiaFormFields
+            selectedTable="ubicacion"
+            visibleColumns={visibleColumns}
+            formData={formData}
+            setFormData={setFormData}
+            updateField={updateField}
+            renderField={renderField}
+            getThemeColor={getThemeColor}
+            getUniqueOptionsForField={getUniqueOptionsForField}
+            paisOptions={paisOptions}
+            paisSeleccionado={paisSeleccionado}
+            empresaSeleccionada={empresaSeleccionada}
+            fundoSeleccionado={fundoSeleccionado}
+            getPaisName={getPaisName}
+            getEmpresaName={getEmpresaName}
+            getFundoName={getFundoName}
+            renderContextualRow={renderContextualRow}
+          />
         ) : ['localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
           <div>
-            {selectedTable === 'contacto' ? renderContactFields() : renderSpecialLayoutFields()}
+            {selectedTable === 'contacto' ? (
+              <ContactoFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                updateField={updateField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                selectedContactType={selectedContactType}
+                countryCodes={countryCodes}
+              />
+            ) : (
+              renderSpecialLayoutFields()
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
