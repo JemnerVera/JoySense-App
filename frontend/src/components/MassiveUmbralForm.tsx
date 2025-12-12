@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo, memo } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { useLanguage } from '../contexts/LanguageContext';
 import { JoySenseService } from '../services/backend-api';
+import { logger } from '../utils/logger';
 
 // Types
 import {
@@ -160,7 +161,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
         const criticidades = await JoySenseService.getTableData('criticidad', 1000);
         setCriticidadesData(criticidades || []);
       } catch (error) {
-        console.error('Error cargando criticidades:', error);
+        logger.error('Error cargando criticidades:', error);
         setCriticidadesData([]);
       }
     };
@@ -388,7 +389,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
           setSelectedUmbralesToReplicate(new Map());
         }
       } catch (error) {
-        console.error('Error cargando umbrales del nodo fuente:', error);
+        logger.error('Error cargando umbrales del nodo fuente:', error);
         setSourceUmbrales([]);
       } finally {
         setLoadingSourceUmbrales(false);
@@ -507,7 +508,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
 
         setCompatibleSourceNodes(compatibleNodes);
       } catch (error) {
-        console.error('Error cargando nodos fuente compatibles:', error);
+        logger.error('Error cargando nodos fuente compatibles:', error);
         setCompatibleSourceNodes([]);
       } finally {
         setLoadingCompatibleNodes(false);

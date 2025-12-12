@@ -32,6 +32,7 @@ import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
 import { TableSelector } from './SystemParameters/components/TableSelector';
 import { MassiveOperationsRenderer } from './SystemParameters/components/MassiveOperationsRenderer';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
+import { logger } from '../utils/logger';
 
 // Hooks
 import { useSystemParametersUtils } from './SystemParameters/hooks/useSystemParametersUtils';
@@ -144,8 +145,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     // Debug: mostrar columnas originales para la tabla perfil
     if (selectedTable === 'perfil') {
-      console.log('🔍 Columnas originales para perfil:', columns.map(c => c.columnName));
-      console.log('🔍 Total de columnas:', columns.length);
+      logger.debug('Columnas originales para perfil:', columns.map(c => c.columnName));
+      logger.debug('Total de columnas:', columns.length);
     }
     
     const seen = new Set<string>();
@@ -155,7 +156,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     for (const col of columns) {
       // Eliminar duplicados
       if (seen.has(col.columnName)) {
-        console.warn(`⚠️ Columna duplicada detectada y eliminada: ${col.columnName} en tabla ${selectedTable}`);
+        logger.warn(`Columna duplicada detectada y eliminada: ${col.columnName} en tabla ${selectedTable}`);
         continue;
       }
       seen.add(col.columnName);
@@ -173,8 +174,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     // Debug: mostrar columnas únicas para la tabla perfil
     if (selectedTable === 'perfil') {
-      console.log('✅ Columnas únicas para perfil:', filtered.map(c => c.columnName));
-      console.log('✅ Total de columnas únicas:', filtered.length);
+      logger.debug('Columnas únicas para perfil:', filtered.map(c => c.columnName));
+      logger.debug('Total de columnas únicas:', filtered.length);
     }
     
     return filtered;

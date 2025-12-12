@@ -16,6 +16,7 @@ import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormF
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -83,11 +84,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // Debug: verificar columnas recibidas para perfil
   useEffect(() => {
     if (selectedTable === 'perfil') {
-      console.log('🔍 NormalInsertForm - Columnas recibidas:', visibleColumns.map(c => c.columnName));
-      console.log('🔍 NormalInsertForm - Total de columnas:', visibleColumns.length);
+      logger.debug('NormalInsertForm - Columnas recibidas:', visibleColumns.map(c => c.columnName));
+      logger.debug('NormalInsertForm - Total de columnas:', visibleColumns.length);
       const perfilColumns = visibleColumns.filter(c => c.columnName === 'perfil');
       if (perfilColumns.length > 1) {
-        console.error('❌ ERROR: Se encontraron múltiples columnas "perfil":', perfilColumns.length);
+        logger.error('ERROR: Se encontraron múltiples columnas "perfil":', perfilColumns.length);
       }
     }
   }, [visibleColumns, selectedTable]);
@@ -265,7 +266,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
     const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
     
-    console.log('🔍 [NormalInsertForm] Sincronización país:', {
+    logger.debug('[NormalInsertForm] Sincronización país:', {
       selectedTable,
       paisSeleccionado,
       hasGlobalFilter,
@@ -277,14 +278,14 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     if (shouldSync) {
       // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
       if (!formData.paisid || formData.paisid.toString() !== paisSeleccionado.toString()) {
-        console.log('✅ [NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
+        logger.debug('[NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
         setFormData((prev: any) => ({ ...prev, paisid: paisSeleccionado }));
       } else {
-        console.log('⏭️ [NormalInsertForm] País ya está sincronizado, no actualizando');
+        logger.debug('[NormalInsertForm] País ya está sincronizado, no actualizando');
       }
     } else if ((selectedTable === 'empresa' || selectedTable === 'fundo') && !hasGlobalFilter && formData.paisid) {
       // Si no hay filtro global y hay un valor en formData, limpiarlo (solo si fue auto-seleccionado previamente)
-      console.log('🧹 [NormalInsertForm] Limpiando paisid porque no hay filtro global');
+      logger.debug('[NormalInsertForm] Limpiando paisid porque no hay filtro global');
       setFormData((prev: any) => ({ ...prev, paisid: null }));
     }
   }, [paisSeleccionado, selectedTable, formData.paisid, setFormData]);
