@@ -102,10 +102,12 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
 
           return (
             <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {isPrimaryKey && <span className="mr-1">🔒</span>}
-                {displayName} {field.required && !isPrimaryKey && <span className="text-red-500">*</span>}
-              </label>
+              {!isStatusId && (
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {isPrimaryKey && <span className="mr-1">🔒</span>}
+                  {displayName} {field.required && !isPrimaryKey && <span className="text-red-500">*</span>}
+                </label>
+              )}
 
               {isPrimaryKey ? (
                 // Campo de clave primaria: solo lectura
@@ -147,17 +149,22 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   })}
                 </select>
               ) : isStatusId ? (
-                // Statusid como checkbox
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData[field.name] === 1 || formData[field.name] === true}
-                    onChange={(e) => updateFormField(field.name, e.target.checked ? 1 : 0)}
-                    className="w-5 h-5"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {formData[field.name] === 1 || formData[field.name] === true ? 'Activo' : 'Inactivo'}
-                  </span>
+                // Statusid como checkbox - estilo similar a CREAR
+                <div>
+                  <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+                    {displayName.toUpperCase()}{field.required ? '*' : ''}
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={formData[field.name] === 1 || formData[field.name] === true}
+                      onChange={(e) => updateFormField(field.name, e.target.checked ? 1 : 0)}
+                      className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2`}
+                    />
+                    <span className="text-white font-mono tracking-wider">
+                      {formData[field.name] === 1 || formData[field.name] === true ? t('create.active') : t('create.inactive')}
+                    </span>
+                  </div>
                 </div>
               ) : field.type === 'textarea' ? (
                 <textarea
