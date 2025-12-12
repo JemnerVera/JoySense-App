@@ -7,6 +7,9 @@ import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/validations';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
+import { UsuarioFormFields } from './forms/table-specific/UsuarioFormFields';
+import { GeografiaFormFields } from './forms/table-specific/GeografiaFormFields';
+import { ContactoFormFields } from './forms/table-specific/ContactoFormFields';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -341,10 +344,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     
     if (selectedTable === 'umbral') {
       return renderUmbralFields();
-    } else if (selectedTable === 'fundo') {
-      return renderFundoFields();
-    } else if (selectedTable === 'ubicacion') {
-      return renderUbicacionFields();
     } else if (selectedTable === 'localizacion') {
       return renderLocalizacionFields();
     } else if (selectedTable === 'entidad') {
@@ -614,89 +613,51 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   }, [paisOptions.length, selectedTable]);
 
   // Función para renderizar campos de País con layout específico
-  const renderPaisFields = (): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-    
-    // Primera fila: País
-    const paisField = visibleColumns.find(c => c.columnName === 'pais');
-    if (paisField) {
-      result.push(
-        <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {renderField(paisField)}
-          <div></div> {/* Espacio vacío */}
-          <div></div> {/* Espacio vacío */}
-        </div>
-      );
-    }
-    
-    // Segunda fila: Abreviatura y Status en la misma fila
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'paisabrev');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    
-    if (abreviaturaField || statusField) {
-      result.push(
-        <div key="abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {abreviaturaField && renderField(abreviaturaField)}
-          {statusField && renderField(statusField)}
-          <div></div> {/* Espacio vacío */}
-        </div>
-      );
-    }
-    
-    return result;
+  const renderPaisFields = (): React.ReactNode => {
+    return (
+      <GeografiaFormFields
+        selectedTable="pais"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        paisOptions={paisOptions}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        renderContextualRow={renderContextualRow}
+      />
+    );
   };
 
   // Función para renderizar campos de Empresa con layout específico
-  const renderEmpresaFields = (): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-    
-    // Primera fila: País (si hay múltiples opciones, mostrar dropdown; si solo una, mostrar como texto)
-    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
-    if (paisField) {
-      if (paisOptions.length === 1) {
-        // Mostrar como texto cuando solo hay una opción
-        result.push(
-          <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-                {t('create.country')}
-              </label>
-              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-                {paisOptions[0].label}
-              </div>
-            </div>
-            <div></div> {/* Espacio vacío */}
-            <div></div> {/* Espacio vacío */}
-          </div>
-        );
-      } else {
-        // Mostrar dropdown cuando hay múltiples opciones
-        result.push(
-          <div key="pais-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {renderField(paisField)}
-            <div></div> {/* Espacio vacío */}
-            <div></div> {/* Espacio vacío */}
-          </div>
-        );
-      }
-    }
-    
-    // Segunda fila: Empresa, Abreviatura y Status en la misma fila
-    const empresaField = visibleColumns.find(c => c.columnName === 'empresa');
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'empresabrev');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    
-    if (empresaField || abreviaturaField || statusField) {
-      result.push(
-        <div key="empresa-abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {empresaField && renderField(empresaField)}
-          {abreviaturaField && renderField(abreviaturaField)}
-          {statusField && renderField(statusField)}
-        </div>
-      );
-    }
-    
-    return result;
+  const renderEmpresaFields = (): React.ReactNode => {
+    return (
+      <GeografiaFormFields
+        selectedTable="empresa"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        paisOptions={paisOptions}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        renderContextualRow={renderContextualRow}
+      />
+    );
   };
 
   // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
@@ -714,106 +675,51 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   }, [fundoSeleccionado, formData.fundoid, setFormData]);
 
   // Función para renderizar campos de Fundo con layout específico
-  const renderFundoFields = (): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-    
-    // Fila 1: País y Empresa (siempre mostrar País)
-    const paisField = visibleColumns.find(c => c.columnName === 'paisid');
-    const empresaField = visibleColumns.find(c => c.columnName === 'empresaid');
-    
-    // Renderizar campo País (siempre visible)
-    const renderPaisField = () => {
-      if (paisSeleccionado && paisOptions.length > 0) {
-        // Mostrar como texto cuando hay filtro global
-        const selectedPais = paisOptions.find(p => p.value === paisSeleccionado);
-        return (
-          <div>
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              {t('create.country')}*
-            </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-              {selectedPais ? selectedPais.label : getPaisName(paisSeleccionado)}
-            </div>
-          </div>
-        );
-      } else if (paisField) {
-        // Mostrar dropdown cuando NO hay filtro global y el campo existe
-        return renderField(paisField);
-      } else {
-        // Si no existe el campo en visibleColumns, crearlo manualmente
-        const paisOptionsManual = getUniqueOptionsForField('paisid');
-        const paisValue = formData.paisid || '';
-        return (
-          <div>
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              {t('create.country')}*
-            </label>
-            <SelectWithPlaceholder
-              value={paisValue}
-              onChange={(newValue) => updateField('paisid', newValue ? parseInt(newValue.toString()) : null)}
-              options={paisOptionsManual}
-              placeholder={`${t('buttons.select')} ${t('fields.country')}`}
-            />
-          </div>
-        );
-      }
-    };
-    
-    result.push(
-      <div key="pais-empresa-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {renderPaisField()}
-        {empresaField && renderField(empresaField)}
-        <div></div> {/* Espacio vacío */}
-      </div>
+  const renderFundoFields = (): React.ReactNode => {
+    return (
+      <GeografiaFormFields
+        selectedTable="fundo"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        paisOptions={paisOptions}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        renderContextualRow={renderContextualRow}
+      />
     );
-    
-    // Fila 2: Fundo, Abreviatura y Status en la misma fila
-    const fundoField = visibleColumns.find(c => c.columnName === 'fundo');
-    const abreviaturaField = visibleColumns.find(c => c.columnName === 'fundoabrev');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    
-    if (fundoField || abreviaturaField || statusField) {
-      result.push(
-        <div key="fundo-abrev-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {fundoField && renderField(fundoField)}
-          {abreviaturaField && renderField(abreviaturaField)}
-          {statusField && renderField(statusField)}
-        </div>
-      );
-    }
-    
-    return result;
   };
 
   // Función para renderizar campos de Ubicación con layout específico
-  const renderUbicacionFields = (): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-    
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(contextualRow);
-    }
-    
-    // Primera fila: Fundo (si NO hay filtro global), Ubicación, Status (máximo 3 campos)
-    const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
-    const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacion');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    
-    // Solo mostrar campo Fundo si NO hay filtro global de fundo
-    const shouldShowFundoField = fundoField && !fundoSeleccionado;
-    
-    if (shouldShowFundoField || ubicacionField || statusField) {
-      result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {shouldShowFundoField && renderField(fundoField)}
-          {ubicacionField && renderField(ubicacionField)}
-          {statusField && renderField(statusField)}
-        </div>
-      );
-    }
-    
-    return result;
+  const renderUbicacionFields = (): React.ReactNode => {
+    return (
+      <GeografiaFormFields
+        selectedTable="ubicacion"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        paisOptions={paisOptions}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        renderContextualRow={renderContextualRow}
+      />
+    );
   };
 
   // Función para renderizar campos de Tipo con layout específico
@@ -1783,210 +1689,30 @@ return filteredNodos;
 
   const renderContactFields = () => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Campo Usuario */}
-        <div className="space-y-3">
-          <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-            {getColumnDisplayNameTranslated('usuarioid', t)?.toUpperCase()} *
-          </label>
-          <SelectWithPlaceholder
-            value={formData.usuarioid || ''}
-            onChange={(value) => updateField('usuarioid', value)}
-            options={getUniqueOptionsForField('usuarioid')}
-            placeholder={`${t('create.select_user')}...`}
-          />
-        </div>
-
-
-        {/* Campo dinámico según tipo de contacto */}
-        {selectedContactType === 'phone' && (
-          <>
-            {/* Campo País */}
-            <div className="space-y-3">
-              <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-                {t('create.country')} *
-              </label>
-              <SelectWithPlaceholder
-                value={formData.codigotelefonoid || ''}
-                onChange={(value) => {
-                  if (!value) return;
-                  
-                  const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === value.toString());
-                  console.log('🌍 País seleccionado:', {
-                    value,
-                    selectedCountry,
-                    codigotelefono: selectedCountry?.codigotelefono,
-                    paistelefono: selectedCountry?.paistelefono
-                  });
-                  
-                  // Si ya hay un número escrito, concatenarlo con el nuevo código
-                  const existingPhoneNumber = formData.phoneNumber || '';
-                  const newCountryCode = selectedCountry?.codigotelefono || '';
-                  const newFullPhoneNumber = newCountryCode && existingPhoneNumber ? `${newCountryCode}${existingPhoneNumber}` : '';
-                  
-                  setFormData({ 
-                    ...formData, 
-                    codigotelefonoid: value,
-                    phoneNumber: existingPhoneNumber, // Mantener el número existente
-                    celular: newFullPhoneNumber // Actualizar con el nuevo código
-                  });
-                }}
-                options={(() => {
-                  return countryCodes?.map(country => ({
-                    value: country.codigotelefonoid,
-                    label: country.paistelefono
-                  })) || [];
-                })()}
-                placeholder={formData.usuarioid ? `${t('buttons.select')} ${t('fields.country')}...` : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.user')}`}
-                disabled={!formData.usuarioid}
-              />
-            </div>
-
-            {/* Campo Número de Teléfono */}
-            <div className="space-y-3">
-              <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-                {t('contact.phone_number')} *
-              </label>
-              <div className="flex">
-                <span className={`px-4 py-3 border rounded-l-lg text-white text-sm font-medium min-w-[80px] text-center ${
-                  formData.codigotelefonoid 
-                    ? 'bg-orange-600 border-orange-500' 
-                    : 'bg-neutral-800 border-neutral-700'
-                }`}>
-                  {(() => {
-                    const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
-                    return selectedCountry?.codigotelefono || '+';
-                  })()}
-                </span>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber || ''}
-                  onChange={(e) => {
-                    const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === formData.codigotelefonoid?.toString());
-                    const countryCode = selectedCountry?.codigotelefono || '';
-                    const phoneNumber = e.target.value;
-                    const fullPhoneNumber = countryCode && phoneNumber ? `${countryCode}${phoneNumber}` : phoneNumber;
-                    
-                    console.log('📱 Actualizando teléfono:', {
-                      countryCode,
-                      phoneNumber,
-                      fullPhoneNumber,
-                      selectedCountry
-                    });
-                    
-                    setFormData({ 
-                      ...formData, 
-                      phoneNumber: phoneNumber,
-                      celular: fullPhoneNumber
-                    });
-                  }}
-                  placeholder={formData.codigotelefonoid ? "EJ: 987654321" : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.country')}`}
-                  disabled={!formData.codigotelefonoid}
-                  className={`flex-1 px-4 py-3 border border-l-0 rounded-r-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
-                    formData.codigotelefonoid 
-                      ? 'bg-neutral-700 border-neutral-600' 
-                      : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
-                  }`}
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedContactType === 'email' && (
-          <div className="space-y-3">
-            <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-              {t('contact.email_address')} *
-            </label>
-            <input
-              type="email"
-              value={formData.correo || ''}
-              onChange={(e) => {
-                const email = e.target.value;
-                // Permitir cualquier texto, solo validar formato al final
-                updateField('correo', email);
-              }}
-              placeholder={formData.usuarioid ? "USUARIO@DOMINIO.COM" : t('contact.select_user_first')}
-              disabled={!formData.usuarioid}
-              className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
-                formData.usuarioid 
-                  ? 'bg-neutral-700 border-neutral-600' 
-                  : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
-              }`}
-            />
-            {formData.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo) && (
-              <p className="text-red-400 text-sm font-mono">
-                Formato de correo inválido. Use: usuario@dominio.com
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Campo Status (siempre visible en contacto) */}
-        <div className="mb-4">
-          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            {t('create.status')}*
-          </label>
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={formData.statusid === 1}
-              onChange={(e) => setFormData({
-                ...formData,
-                statusid: e.target.checked ? 1 : 0
-              })}
-              className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-            />
-            <span className="text-white font-mono tracking-wider">
-              {formData.statusid === 1 ? t('create.active') : t('create.inactive')}
-            </span>
-          </div>
-        </div>
-      </div>
+      <ContactoFormFields
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        selectedContactType={selectedContactType}
+        countryCodes={countryCodes}
+      />
     );
   };
 
   // Función para renderizar formulario de usuario con campo password
-  const renderUsuarioForm = (): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-
-    // Primera fila: Login, Contraseña
-    const loginField = visibleColumns.find(c => c.columnName === 'login');
-    result.push(
-      <div key="login-password-row" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {loginField && renderField(loginField)}
-        <div className="mb-4">
-          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            CONTRASEÑA*
-          </label>
-          <input
-            type="password"
-            value={formData.password || ''}
-            onChange={(e) => setFormData({
-              ...formData,
-              password: e.target.value
-            })}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
-            placeholder="••••••••"
-          />
-        </div>
-      </div>
+  const renderUsuarioForm = (): React.ReactNode => {
+    return (
+      <UsuarioFormFields
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+      />
     );
-
-    // Segunda fila: Nombre, Apellido, Status
-    const firstnameField = visibleColumns.find(c => c.columnName === 'firstname');
-    const lastnameField = visibleColumns.find(c => c.columnName === 'lastname');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-
-    result.push(
-      <div key="name-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {firstnameField && renderField(firstnameField)}
-        {lastnameField && renderField(lastnameField)}
-        {statusField && renderField(statusField)}
-      </div>
-    );
-
-    return result;
   };
 
   // ============================================================================
@@ -2003,7 +1729,11 @@ return filteredNodos;
           renderPaisFields()
         ) : selectedTable === 'empresa' ? (
           renderEmpresaFields()
-        ) : ['fundo', 'ubicacion', 'localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
+        ) : selectedTable === 'fundo' ? (
+          renderFundoFields()
+        ) : selectedTable === 'ubicacion' ? (
+          renderUbicacionFields()
+        ) : ['localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
           <div>
             {selectedTable === 'contacto' ? renderContactFields() : renderSpecialLayoutFields()}
           </div>
