@@ -144,8 +144,15 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     
     if (!finalSortBy) {
       // Para perfil_geografia_permiso, usar permisoid como default
+      // Para audit_log_umbral, usar modified_at
       // Para otras tablas, usar datecreated
-      finalSortBy = tableName === 'perfil_geografia_permiso' ? 'permisoid' : 'datecreated';
+      if (tableName === 'perfil_geografia_permiso') {
+        finalSortBy = 'permisoid';
+      } else if (tableName === 'audit_log_umbral') {
+        finalSortBy = 'modified_at';
+      } else {
+        finalSortBy = 'datecreated';
+      }
     }
     
     // Para perfil_geografia_permiso, si se intenta ordenar por datemodified (que no existe), usar permisoid
@@ -163,6 +170,9 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       if (tableName !== 'perfil_geografia_permiso') {
         dataQuery = dataQuery.order('datemodified', { ascending });
       }
+    } else if (finalSortBy === 'modified_at') {
+      // Para audit_log_umbral, ordenar solo por modified_at
+      dataQuery = dataQuery.order('modified_at', { ascending });
     } else if (finalSortBy === 'datemodified') {
       // Si ordenamos por datemodified, usar datecreated como desempate
       dataQuery = dataQuery.order('datemodified', { ascending });
