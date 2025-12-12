@@ -131,7 +131,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   const getRelatedTableData = (tableName: string): any[] => {
     const dataKey = tableToRelatedDataKey[tableName];
     if (!dataKey) {
-      console.warn(`⚠️ [NormalUpdateForm] No se encontró mapeo para tabla: ${tableName}`);
       return [];
     }
     const data = (relatedData as any)[dataKey];
@@ -217,23 +216,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                       value: itemValue, // Mantener el tipo original (número o string)
                       label: label || `ID: ${itemValue}`
                     };
-                  });
-                  
-                  // Debug para campos con constraints
-                  console.log(`🔍 [NormalUpdateForm] Campo con constraint ${field.name}:`, {
-                    fieldValue,
-                    fieldValueType: typeof fieldValue,
-                    optionsLength: options.length,
-                    options: options.slice(0, 3).map((opt: { value: any; label: string }) => ({ value: opt.value, valueType: typeof opt.value, label: opt.label })),
-                    matchingOption: options.find((opt: { value: any; label: string }) => 
-                      opt.value === fieldValue || 
-                      opt.value?.toString() === fieldValue?.toString() ||
-                      String(opt.value) === String(fieldValue)
-                    ),
-                    relatedTableDataLength: relatedTableData.length,
-                    foreignKeyTable: field.foreignKey!.table,
-                    relatedDataKey: tableToRelatedDataKey[field.foreignKey!.table],
-                    relatedDataHasKey: !!(relatedData as any)[tableToRelatedDataKey[field.foreignKey!.table]]
                   });
                   
                   return (

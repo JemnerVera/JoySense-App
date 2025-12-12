@@ -335,18 +335,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
         </div>
       ) : (
         <>
-          {/* No renderizar hasta que las columnas estén cargadas para evitar renderizado incorrecto */}
-          {(() => {
-            console.log('[UpdateTab] Condición de renderizado', {
-              loading,
-              columnsLength: columns.length,
-              tableVisibleColumnsLength: tableVisibleColumns.length,
-              tableDataLength: tableData.length,
-              paginatedDataLength: paginatedData.length,
-              shouldRender: !loading && columns.length > 0 && tableVisibleColumns.length > 0
-            });
-            return null;
-          })()}
           {!loading && columns.length > 0 && tableVisibleColumns.length > 0 ? (
             <>
               {/* Botones de acción cuando hay fila seleccionada */}
