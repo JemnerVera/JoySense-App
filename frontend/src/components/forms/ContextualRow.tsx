@@ -29,11 +29,11 @@ export const ContextualRow: React.FC<ContextualRowProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  const contextualFields = fields.map(field => {
+  const contextualFields = fields.map((field, index) => {
     // Para País: mostrar solo si hay filtro global
     if (field === 'pais' && paisSeleccionado) {
       return (
-        <div key="pais-contextual">
+        <div key={`pais-contextual-${index}`}>
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
             {t('create.country')}
           </label>
@@ -46,7 +46,7 @@ export const ContextualRow: React.FC<ContextualRowProps> = ({
     // Para Empresa: mostrar solo si hay filtro global
     else if (field === 'empresa' && empresaSeleccionada) {
       return (
-        <div key="empresa-contextual">
+        <div key={`empresa-contextual-${index}`}>
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
             {t('create.company')}
           </label>
@@ -59,7 +59,7 @@ export const ContextualRow: React.FC<ContextualRowProps> = ({
     // Para Fundo: mostrar solo si hay filtro global
     else if (field === 'fundo' && fundoSeleccionado) {
       return (
-        <div key="fundo-contextual">
+        <div key={`fundo-contextual-${index}`}>
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
             {t('table_headers.fund')}
           </label>
