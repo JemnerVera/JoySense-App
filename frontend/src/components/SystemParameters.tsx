@@ -29,8 +29,16 @@ import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
-import { MassiveUmbralForm } from './MassiveUmbralForm';
+import { TableSelector } from './SystemParameters/components/TableSelector';
+import { MassiveOperationsRenderer } from './SystemParameters/components/MassiveOperationsRenderer';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
+
+// Hooks
+import { useSystemParametersUtils } from './SystemParameters/hooks/useSystemParametersUtils';
+import { useSystemParametersCRUD } from './SystemParameters/hooks/useSystemParametersCRUD';
+import { useMassiveOperations } from './SystemParameters/hooks/useMassiveOperations';
+import { useSystemParametersSync } from './SystemParameters/hooks/useSystemParametersSync';
+import { getUniqueOptionsForField } from './SystemParameters/utils/getUniqueOptionsForField';
 
 // ============================================================================
 // INTERFACES
@@ -203,129 +211,28 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     userData
   ]);
 
-  // Sync con props
-  useEffect(() => {
-    if (propSelectedTable && propSelectedTable !== selectedTable) {
-      setSelectedTable(propSelectedTable);
-    }
-  }, [propSelectedTable]);
-
-  // Notificar cambios en formData al componente padre (para protección de datos)
-  // Usar useRef para evitar loops infinitos
-  const prevFormDataRef = useRef<string>('');
-  const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
-  const onFormDataChangeRef = useRef(onFormDataChange);
-  
-  // Actualizar el ref cuando cambie la función
-  useEffect(() => {
-    onFormDataChangeRef.current = onFormDataChange;
-  }, [onFormDataChange]);
-  
-  useEffect(() => {
-    // Solo notificar si estamos en la pestaña "insert"
-    if (activeSubTab === 'insert') {
-      // Comparar si el formData realmente cambió (usando JSON.stringify para comparación profunda)
-      const formDataString = JSON.stringify(formState.data);
-      const activeSubTabChanged = prevActiveSubTabRef.current !== activeSubTab;
-      
-      // Solo notificar si cambió el formData o si cambió la pestaña activa
-      if (formDataString !== prevFormDataRef.current || activeSubTabChanged) {
-        if (onFormDataChangeRef.current) {
-          onFormDataChangeRef.current(formState.data, []);
-        }
-        prevFormDataRef.current = formDataString;
-        prevActiveSubTabRef.current = activeSubTab;
-      }
-    } else {
-      // Si no estamos en "insert", resetear el ref
-      prevFormDataRef.current = '';
-      prevActiveSubTabRef.current = activeSubTab;
-    }
-  }, [formState.data, activeSubTab]); // No incluir onFormDataChange para evitar loops
-
-  // Sincronizar activeSubTab con prop cuando cambia desde fuera (ej: ProtectedSubTabButton)
-  useEffect(() => {
-    if (propActiveSubTab && propActiveSubTab !== activeSubTab) {
-      // Si veníamos de 'insert' o 'update' y cambiamos a otra pestaña, limpiar formulario
-      if ((activeSubTab === 'insert' || activeSubTab === 'update') && 
-          propActiveSubTab !== 'insert' && propActiveSubTab !== 'update') {
-        resetForm();
-        setUpdateFormData({});
-      }
-      
-      setActiveSubTab(propActiveSubTab);
-    }
-  }, [propActiveSubTab, activeSubTab, resetForm]);
-
-  // Cargar datos relacionados al montar el componente (una sola vez)
-  useEffect(() => {
-    loadRelatedTablesData();
-  }, []); // Solo al montar
-
-  // Limpiar datos inmediatamente cuando cambia selectedTable (antes de cargar)
-  useEffect(() => {
-    if (selectedTable) {
-      // Limpiar datos inmediatamente al cambiar de tabla para evitar mostrar datos incorrectos
-      // Esto se hace ANTES de cargar los nuevos datos - de forma síncrona
-      setTableData([]); // Limpiar datos de tabla
-      setColumns([]); // Limpiar columnas
-      setLoading(true); // Establecer loading
-      setMessage(null);
-      setSelectedRow(null);
-      resetForm();
-      setUpdateFormData({});
-    }
-  }, [selectedTable, setTableData, setColumns, setLoading, resetForm]); // Solo cuando cambia selectedTable
-
-  // Cargar datos cuando cambia la tabla
-  useEffect(() => {
-    if (selectedTable) {
-      console.log('🔵 [SystemParameters] selectedTable cambió a:', selectedTable);
-      console.log('🔵 [SystemParameters] Estado actual - tableData.length:', tableData.length, 'columns.length:', columns.length);
-      
-      console.log('🔵 [SystemParameters] Iniciando carga de datos para:', selectedTable);
-      
-      // Para StatusTab: usar solo useTableDataManagement (tableData y columns)
-      // Para Insert/Update: usar useTableCRUD (tableState.data)
-      // Cargar datos de tabla y columnas (para StatusTab)
-      loadTableData(selectedTable);
-      loadRelatedTablesData(); // También cargar cuando cambia la tabla por si acaso
-      
-      // Cargar datos con useTableCRUD solo si no estamos en StatusTab
-      // (se cargará cuando se cambie a Insert o Update)
-      if (activeSubTab !== 'status') {
-        loadData();
-        loadRelatedData();
-      }
-    }
-  }, [selectedTable]); // Solo cuando cambia selectedTable
-
-  // Limpiar formulario cuando se cambia de pestaña (si veníamos de insert o update)
-  useEffect(() => {
-    // Si cambiamos desde 'insert' o 'update' a otra pestaña, limpiar formulario
-    if ((prevActiveSubTabRef.current === 'insert' || prevActiveSubTabRef.current === 'update') && 
-        activeSubTab !== prevActiveSubTabRef.current && 
-        activeSubTab !== 'insert' && activeSubTab !== 'update') {
-      resetForm();
-      setUpdateFormData({});
-    }
-    prevActiveSubTabRef.current = activeSubTab;
-  }, [activeSubTab, resetForm, formState.data]);
-
-  // Recargar datos cuando se cambia a la pestaña de Estado
-  // Usar useRef para evitar loops infinitos
-  const lastLoadRef = useRef<{ table: string; subTab: string }>({ table: '', subTab: '' });
-  useEffect(() => {
-    if (selectedTable && activeSubTab === 'status' && !tableState.loading) {
-      // Solo recargar si cambió la tabla o el subTab
-      const key = `${selectedTable}-${activeSubTab}`;
-      const lastKey = `${lastLoadRef.current.table}-${lastLoadRef.current.subTab}`;
-      if (key !== lastKey) {
-        lastLoadRef.current = { table: selectedTable, subTab: activeSubTab };
-        loadData();
-      }
-    }
-  }, [activeSubTab, selectedTable]); // Removemos loadData de dependencias para evitar loops
+  // Hook de sincronización
+  useSystemParametersSync({
+    propSelectedTable,
+    propActiveSubTab,
+    selectedTable,
+    activeSubTab,
+    formState,
+    setSelectedTable,
+    setActiveSubTab,
+    resetForm,
+    setUpdateFormData,
+    setTableData,
+    setColumns,
+    setLoading,
+    setMessage,
+    setSelectedRow,
+    onFormDataChange,
+    loadRelatedTablesData,
+    loadTableData,
+    loadData,
+    loadRelatedData
+  });
 
   // Exponer métodos al padre
   useImperativeHandle(ref, () => ({
@@ -352,7 +259,63 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     );
   }, [tableState.data, searchTerm]);
 
-  // Handlers
+  // Hook de utilidades
+  const {
+    getUniqueOptionsForFieldMassive,
+    getPaisName,
+    getEmpresaName,
+    getFundoName
+  } = useSystemParametersUtils({
+    relatedDataForStatus
+  });
+
+  // Hook CRUD
+  const {
+    handleInsert,
+    handleUpdate,
+    handleDelete
+  } = useSystemParametersCRUD({
+    selectedTable,
+    selectedRow,
+    formState,
+    config: config || null,
+    user,
+    validateForm,
+    insertRow,
+    updateRow,
+    deleteRow,
+    resetForm,
+    getPrimaryKeyValue,
+    loadData,
+    loadTableData,
+    loadRelatedTablesData,
+    setMessage,
+    setSelectedRow,
+    setActiveSubTab,
+    onSubTabChange
+  });
+
+  // Hook de operaciones masivas
+  const {
+    handleMassiveUmbralApply
+  } = useMassiveOperations({
+    insertRow,
+    loadData,
+    loadTableData,
+    selectedTable,
+    setMessage
+  });
+
+  // Helper para getUniqueOptionsForField (para InsertTab y UpdateTab)
+  const getUniqueOptionsForFieldHelper = useCallback((columnName: string) => {
+    return getUniqueOptionsForField({
+      columnName,
+      selectedTable,
+      relatedDataForStatus
+    });
+  }, [selectedTable, relatedDataForStatus]);
+
+  // Handlers de navegación
   const handleTableSelect = useCallback((table: string) => {
     // Verificar si hay cambios sin guardar antes de cambiar de tabla
     if (selectedTable) {
@@ -487,184 +450,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     onSubTabChange?.('update');
   }, [setFormData, onSubTabChange]);
 
-  const handleInsert = useCallback(async () => {
-    // Para perfil_geografia_permiso, validar campos requeridos manualmente
-    if (selectedTable === 'perfil_geografia_permiso') {
-      if (!formState.data.perfilid) {
-        setMessage({ type: 'warning', text: 'Por favor seleccione un perfil' });
-        return;
-      }
-      if (!formState.data.paisid && !formState.data.empresaid && !formState.data.fundoid && !formState.data.ubicacionid) {
-        setMessage({ type: 'warning', text: 'Por favor seleccione un tipo de geografía y su valor' });
-        return;
-      }
-    } else {
-      // Validar formulario y mostrar mensaje warning si hay errores
-      if (!validateForm()) {
-        // Obtener errores de validación
-        const validationErrors = Object.values(formState.errors).filter(Boolean);
-        const errorMessage = validationErrors.length > 0 
-          ? validationErrors.join('\n')
-          : 'Por favor complete todos los campos requeridos';
-        
-        setMessage({ type: 'warning', text: errorMessage });
-        return;
-      }
-    }
-
-    // Filtrar solo los campos válidos según la configuración de la tabla
-    const validFields = config?.fields.map(f => f.name) || [];
-    const filteredData: Record<string, any> = {};
-    
-    // Solo incluir campos que están en la configuración
-    validFields.forEach(fieldName => {
-      if (formState.data[fieldName] !== undefined && formState.data[fieldName] !== null && formState.data[fieldName] !== '') {
-        filteredData[fieldName] = formState.data[fieldName];
-      }
-    });
-    
-    // Agregar campos de auditoría
-    const userId = user?.user_metadata?.usuarioid || 1;
-    const now = new Date().toISOString();
-    const dataToInsert: Record<string, any> = {
-      ...filteredData,
-      usercreatedid: userId,
-      datecreated: now,
-      // Algunas tablas requieren usermodifiedid y datemodified incluso en inserción
-      usermodifiedid: userId,
-      datemodified: now
-    };
-
-    // Para perfil_geografia_permiso, excluir permisoid (se genera automáticamente)
-    if (selectedTable === 'perfil_geografia_permiso') {
-      delete dataToInsert.permisoid;
-    }
-
-    const result = await insertRow(dataToInsert);
-    
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Registro insertado correctamente' });
-      resetForm();
-      // Cambiar a la pestaña de Estado para ver el nuevo registro
-      setActiveSubTab('status');
-      onSubTabChange?.('status');
-      // Recargar datos para asegurar que se muestre el nuevo registro
-      // Recargar tanto los datos de useTableCRUD como los de useTableDataManagement
-      loadData();
-      if (selectedTable) {
-        loadTableData(selectedTable);
-      }
-      // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      // (ej: perfil afecta a jefeid, usuario afecta a usuarioid, etc.)
-      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
-        loadRelatedTablesData();
-      }
-    } else {
-      setMessage({ type: 'error', text: result.error || 'Error al insertar' });
-    }
-  }, [formState.data, validateForm, insertRow, resetForm, user, loadData, loadTableData, loadRelatedTablesData, selectedTable, onSubTabChange]);
-
-  const handleUpdate = useCallback(async () => {
-    if (!selectedRow || !validateForm()) {
-      setMessage({ type: 'error', text: 'Por favor complete todos los campos requeridos' });
-      return;
-    }
-
-    // Filtrar solo los campos válidos según la configuración de la tabla
-    const validFields = config?.fields.map(f => f.name) || [];
-    const filteredData: Record<string, any> = {};
-    
-    // Solo incluir campos que están en la configuración
-    validFields.forEach(fieldName => {
-      if (formState.data[fieldName] !== undefined && formState.data[fieldName] !== null && formState.data[fieldName] !== '') {
-        filteredData[fieldName] = formState.data[fieldName];
-      }
-    });
-
-    // Agregar campos de auditoría
-    const dataToUpdate = {
-      ...filteredData,
-      usermodifiedid: user?.user_metadata?.usuarioid || 1,
-      datemodified: new Date().toISOString()
-    };
-
-    const pk = getPrimaryKeyValue(selectedRow);
-    const result = await updateRow(pk, dataToUpdate);
-    
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Registro actualizado correctamente' });
-      setSelectedRow(null);
-      setActiveSubTab('status');
-      onSubTabChange?.('status');
-      // Recargar datos
-      loadData();
-      if (selectedTable) {
-        loadTableData(selectedTable);
-      }
-      // Recargar datos relacionados si se actualizó en una tabla que afecta a otras
-      // (ej: perfil afecta a jefeid, usuario afecta a usuarioid, etc.)
-      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
-        loadRelatedTablesData();
-      }
-    } else {
-      setMessage({ type: 'error', text: result.error || 'Error al actualizar' });
-    }
-  }, [selectedRow, formState.data, validateForm, updateRow, getPrimaryKeyValue, user, loadData, loadTableData, loadRelatedTablesData, selectedTable, onSubTabChange]);
-
-  const handleDelete = useCallback(async (row: any) => {
-    if (!window.confirm('¿Está seguro de eliminar este registro?')) return;
-
-    const pk = getPrimaryKeyValue(row);
-    const result = await deleteRow(pk);
-    
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Registro eliminado correctamente' });
-    } else {
-      setMessage({ type: 'error', text: result.error || 'Error al eliminar' });
-    }
-  }, [deleteRow, getPrimaryKeyValue]);
 
   // ============================================================================
   // RENDER HELPERS
   // ============================================================================
 
-  const renderTableSelector = () => (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-        Seleccionar Tabla
-      </h3>
-      <div className="space-y-4">
-        {Object.entries(TABLE_CATEGORIES).map(([category, { name, icon }]) => {
-          const tables = getTablesByCategory(category as any);
-          if (tables.length === 0) return null;
-
-          return (
-            <div key={category}>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                {icon} {name}
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {tables.map(table => (
-                  <button
-                    key={table.name}
-                    onClick={() => handleTableSelect(table.name)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      selectedTable === table.name
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-900/30'
-                    }`}
-                    title={table.description}
-                  >
-                    {table.icon} {table.displayName}
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 
 
   const renderDataTable = () => {
@@ -852,207 +642,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     );
   };
 
-  // Función para obtener opciones únicas de campos (para formularios masivos)
-  const getUniqueOptionsForFieldMassive = useCallback((field: string, filters?: any) => {
-    const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
-      'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
-      'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
-      'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
-      'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
-      'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
-      'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' }
-    };
-
-    const mapping = fieldToTableMap[field];
-    if (!mapping) return [];
-
-    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
-    if (!data) return [];
-
-    let filteredData = data;
-
-    // Aplicar filtros si existen
-    if (filters) {
-      if (field === 'nodoid' && filters.fundoid && filters.entidadid) {
-        // Filtrar nodos por fundo y entidad a través de localizaciones
-        const ubicacionesDelFundo = (relatedDataForStatus.ubicacionesData || []).filter((u: any) => 
-          u.fundoid === parseInt(filters.fundoid)
-        );
-        const ubicacionIds = new Set(ubicacionesDelFundo.map((u: any) => u.ubicacionid));
-        const localizaciones = (relatedDataForStatus.localizacionesData || []).filter((l: any) =>
-          ubicacionIds.has(l.ubicacionid)
-        );
-        const nodoIds = new Set(localizaciones.map((l: any) => l.nodoid));
-        filteredData = filteredData.filter((n: any) => nodoIds.has(n.nodoid));
-      }
-
-      if (field === 'tipoid' && filters.entidadid) {
-        filteredData = filteredData.filter((t: any) => t.entidadid === parseInt(filters.entidadid));
-        
-        if (filters.nodoids) {
-          // Filtrar por nodos específicos a través de sensores
-          const nodoIdsArray = filters.nodoids.split(',').map((id: string) => parseInt(id.trim()));
-          const sensores = (relatedDataForStatus.nodosData || []).filter((n: any) => 
-            nodoIdsArray.includes(n.nodoid)
-          );
-          // En un caso real, necesitarías consultar la tabla sensor para obtener los tipoid
-          // Por ahora, asumimos que todos los tipos de la entidad son válidos
-        }
-      }
-
-      if (field === 'metricaid' && filters.nodoids) {
-        // Filtrar métricas por nodos específicos a través de metricasensor
-        const nodoIdsArray = filters.nodoids.split(',').map((id: string) => parseInt(id.trim()));
-        // En un caso real, necesitarías consultar metricasensor
-        // Por ahora, retornamos todas las métricas
-      }
-    }
-
-    return filteredData.map((item: any) => {
-      let label = '';
-      if (Array.isArray(mapping.label)) {
-        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
-      } else {
-        label = item[mapping.label] || '';
-        // Casos especiales
-        if (field === 'metricaid' && item.unidad) {
-          label = label ? `${label} (${item.unidad})` : item.unidad;
-        }
-      }
-      
-      const option: any = {
-        value: item[mapping.key],
-        label: label || `ID: ${item[mapping.key]}`
-      };
-      
-      // Campos adicionales para métricas
-      if (field === 'metricaid' && item.unidad) {
-        option.unidad = item.unidad;
-      }
-      
-      // Campos adicionales para nodos
-      if (field === 'nodoid') {
-        if (item.datecreated) option.datecreated = item.datecreated;
-        // Obtener ubicacionid desde localizaciones
-        const localizacion = (relatedDataForStatus.localizacionesData || []).find((l: any) => 
-          l.nodoid === item.nodoid
-        );
-        if (localizacion?.ubicacionid) {
-          option.ubicacionid = localizacion.ubicacionid;
-        }
-      }
-      
-      return option;
-    });
-  }, [relatedDataForStatus]);
-
-  // Función para obtener nombres de país, empresa, fundo
-  const getPaisName = useCallback((paisId: string) => {
-    const pais = (relatedDataForStatus.paisesData || []).find((p: any) => p.paisid === parseInt(paisId));
-    return pais?.pais || `País ${paisId}`;
-  }, [relatedDataForStatus]);
-
-  const getEmpresaName = useCallback((empresaId: string) => {
-    const empresa = (relatedDataForStatus.empresasData || []).find((e: any) => e.empresaid === parseInt(empresaId));
-    return empresa?.empresa || `Empresa ${empresaId}`;
-  }, [relatedDataForStatus]);
-
-  const getFundoName = useCallback((fundoId: string) => {
-    const fundo = (relatedDataForStatus.fundosData || []).find((f: any) => f.fundoid === parseInt(fundoId));
-    return fundo?.fundo || `Fundo ${fundoId}`;
-  }, [relatedDataForStatus]);
-
-  // Handler para aplicar operaciones masivas de umbrales
-  const handleMassiveUmbralApply = useCallback(async (dataToApply: any[]) => {
-    if (!dataToApply || dataToApply.length === 0) {
-      setMessage({ type: 'error', text: 'No hay datos para aplicar' });
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-      const errors: string[] = [];
-
-      for (const umbralData of dataToApply) {
-        try {
-          const result = await insertRow(umbralData);
-          if (result.success) {
-            successCount++;
-          } else {
-            errorCount++;
-            errors.push(`Nodo ${umbralData.nodoid}, Tipo ${umbralData.tipoid}, Métrica ${umbralData.metricaid}: ${result.error || 'Error desconocido'}`);
-          }
-        } catch (error: any) {
-          errorCount++;
-          errors.push(`Nodo ${umbralData.nodoid}, Tipo ${umbralData.tipoid}, Métrica ${umbralData.metricaid}: ${error.message || 'Error desconocido'}`);
-        }
-      }
-
-      if (errorCount === 0) {
-        setMessage({ 
-          type: 'success', 
-          text: `✅ ${successCount} umbral(es) creado(s) correctamente` 
-        });
-        // Recargar datos
-        loadData();
-        loadTableData(selectedTable);
-      } else {
-        setMessage({ 
-          type: 'warning', 
-          text: `✅ ${successCount} creado(s), ❌ ${errorCount} error(es). ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}` 
-        });
-      }
-    } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: `Error al aplicar umbrales: ${error.message || 'Error desconocido'}` 
-      });
-    }
-  }, [insertRow, loadData, loadTableData, selectedTable]);
-
-  const renderMassiveOperations = () => {
-    if (!config?.allowMassive) return null;
-
-    // Si es la tabla umbral, renderizar el formulario masivo
-    if (selectedTable === 'umbral') {
-      return (
-        <MassiveUmbralForm
-          getUniqueOptionsForField={getUniqueOptionsForFieldMassive}
-          onApply={handleMassiveUmbralApply}
-          onCancel={() => {
-            setMessage(null);
-          }}
-          loading={formState.isSubmitting}
-          paisSeleccionado={paisSeleccionado}
-          empresaSeleccionada={empresaSeleccionada}
-          fundoSeleccionado={fundoSeleccionado}
-          getPaisName={getPaisName}
-          getEmpresaName={getEmpresaName}
-          getFundoName={getFundoName}
-          onFormDataChange={(massiveFormData) => {
-            if (onMassiveFormDataChange) {
-              onMassiveFormDataChange(massiveFormData);
-            }
-          }}
-          localizacionesData={localizacionesData || []}
-        />
-      );
-    }
-
-    // Para otras tablas, mostrar mensaje de "próximamente"
-    return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🚧</div>
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Operaciones Masivas
-        </h3>
-        <p className="text-gray-500 dark:text-gray-400">
-          Las operaciones masivas para {config.displayName} estarán disponibles próximamente.
-        </p>
-      </div>
-    );
-  };
 
   // ============================================================================
   // MAIN RENDER
@@ -1061,7 +650,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   return (
     <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
       {/* Selector de tabla */}
-      {!selectedTable && renderTableSelector()}
+      {!selectedTable && (
+        <TableSelector
+          selectedTable={selectedTable}
+          onTableSelect={handleTableSelect}
+        />
+      )}
 
       {/* Contenido de la tabla seleccionada */}
       {selectedTable && config && (
@@ -1117,59 +711,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }
-                getUniqueOptionsForField={(columnName: string) => {
-                  // Caso especial para jefeid en tabla perfil: mostrar "nivel - perfil"
-                  if (columnName === 'jefeid' && selectedTable === 'perfil') {
-                    const perfiles = relatedDataForStatus.perfilesData || [];
-                    return perfiles
-                      .filter((p: any) => p.statusid === 1) // Solo perfiles activos
-                      .map((item: any) => ({
-                        value: item.perfilid,
-                        label: `${item.nivel} - ${item.perfil}` || `ID: ${item.perfilid}`
-                      }))
-                      .sort((a: any, b: any) => {
-                        // Ordenar por nivel ascendente, luego por nombre
-                        const nivelA = parseInt(a.label.split(' - ')[0]) || 999;
-                        const nivelB = parseInt(b.label.split(' - ')[0]) || 999;
-                        if (nivelA !== nivelB) return nivelA - nivelB;
-                        return a.label.localeCompare(b.label);
-                      });
-                  }
-                  
-                  // Mapeo de campos a tablas relacionadas
-                  const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
-                    'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
-                    'empresaid': { table: 'empresasData', key: 'empresaid', label: 'empresa' },
-                    'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
-                    'ubicacionid': { table: 'ubicacionesData', key: 'ubicacionid', label: 'ubicacion' },
-                    'localizacionid': { table: 'localizacionesData', key: 'localizacionid', label: 'localizacion' },
-                    'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
-                    'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
-                    'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
-                    'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
-                    'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' },
-                    'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
-                    'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] }
-                  };
-
-                  const mapping = fieldToTableMap[columnName];
-                  if (mapping && relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus]) {
-                    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
-                    return data.map((item: any) => {
-                      let label = '';
-                      if (Array.isArray(mapping.label)) {
-                        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
-                      } else {
-                        label = item[mapping.label] || '';
-                      }
-                      return {
-                        value: item[mapping.key],
-                        label: label || `ID: ${item[mapping.key]}`
-                      };
-                    });
-                  }
-                  return [];
-                }}
+                getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
               />
             )}
             {activeSubTab === 'update' && (
@@ -1195,59 +737,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }
-                getUniqueOptionsForField={(columnName: string) => {
-                  // Caso especial para jefeid en tabla perfil: mostrar "nivel - perfil"
-                  if (columnName === 'jefeid' && selectedTable === 'perfil') {
-                    const perfiles = relatedDataForStatus.perfilesData || [];
-                    return perfiles
-                      .filter((p: any) => p.statusid === 1) // Solo perfiles activos
-                      .map((item: any) => ({
-                        value: item.perfilid,
-                        label: `${item.nivel} - ${item.perfil}` || `ID: ${item.perfilid}`
-                      }))
-                      .sort((a: any, b: any) => {
-                        // Ordenar por nivel ascendente, luego por nombre
-                        const nivelA = parseInt(a.label.split(' - ')[0]) || 999;
-                        const nivelB = parseInt(b.label.split(' - ')[0]) || 999;
-                        if (nivelA !== nivelB) return nivelA - nivelB;
-                        return a.label.localeCompare(b.label);
-                      });
-                  }
-                  
-                  // Mapeo de campos a tablas relacionadas
-                  const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
-                    'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
-                    'empresaid': { table: 'empresasData', key: 'empresaid', label: 'empresa' },
-                    'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
-                    'ubicacionid': { table: 'ubicacionesData', key: 'ubicacionid', label: 'ubicacion' },
-                    'localizacionid': { table: 'localizacionesData', key: 'localizacionid', label: 'localizacion' },
-                    'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
-                    'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
-                    'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
-                    'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },
-                    'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' },
-                    'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
-                    'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] }
-                  };
-
-                  const mapping = fieldToTableMap[columnName];
-                  if (mapping && relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus]) {
-                    const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
-                    return data.map((item: any) => {
-                      let label = '';
-                      if (Array.isArray(mapping.label)) {
-                        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
-                      } else {
-                        label = item[mapping.label] || '';
-                      }
-                      return {
-                        value: item[mapping.key],
-                        label: label || `ID: ${item[mapping.key]}`
-                      };
-                    });
-                  }
-                  return [];
-                }}
+                getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
                 existingData={tableState.data}
                 onUpdateSuccess={() => {
                   loadData();
@@ -1264,7 +754,30 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 }}
               />
             )}
-            {activeSubTab === 'massive' && renderMassiveOperations()}
+            {activeSubTab === 'massive' && (
+              <MassiveOperationsRenderer
+                selectedTable={selectedTable}
+                config={config}
+                formState={formState}
+                getUniqueOptionsForField={getUniqueOptionsForFieldMassive}
+                onApply={handleMassiveUmbralApply}
+                onCancel={() => {
+                  setMessage(null);
+                }}
+                paisSeleccionado={paisSeleccionado}
+                empresaSeleccionada={empresaSeleccionada}
+                fundoSeleccionado={fundoSeleccionado}
+                getPaisName={getPaisName}
+                getEmpresaName={getEmpresaName}
+                getFundoName={getFundoName}
+                onFormDataChange={(massiveFormData) => {
+                  if (onMassiveFormDataChange) {
+                    onMassiveFormDataChange(massiveFormData);
+                  }
+                }}
+                localizacionesData={localizacionesData || []}
+              />
+            )}
           </div>
         </div>
       )}
