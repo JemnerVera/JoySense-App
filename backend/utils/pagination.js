@@ -122,8 +122,6 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       throw countError;
     }
     
-    // logger.info(`📊 [paginateAndFilter] ${tableName}: Count = ${totalRecords || 0}`);
-    
     // Construir query de datos
     // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
     // Usar el mismo cliente de Supabase (con o sin token de usuario)
@@ -198,6 +196,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       logger.error(`❌ [DATA] Code: ${dataError.code || 'N/A'}, Details: ${dataError.details || 'N/A'}, Hint: ${dataError.hint || 'N/A'}`);
       throw dataError;
     }
+    
     
     // Si no hay paginación, retornar solo los datos (modo legacy)
     if (!usePagination) {

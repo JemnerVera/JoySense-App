@@ -18,7 +18,7 @@ SELECT
     created_at,
     email_confirmed_at
 FROM auth.users
-WHERE email = 'usuario.1@prueba.com'  -- Cambia por el email del usuario
+WHERE email = 'usuario.prueba.1@prueba.com'  -- Cambia por el email del usuario
 ORDER BY created_at DESC;
 
 -- ============================================================================
@@ -29,7 +29,7 @@ UPDATE joysense.usuario
 SET 
     useruuid = 'fbfeac53-de01-46f1-b5e3-d00d62111235'::uuid,  -- ⚠️ CAMBIA ESTE UUID
     datemodified = now()
-WHERE login = 'usuario.1@prueba.com'  -- ⚠️ CAMBIA ESTE EMAIL
+WHERE login = 'usuario.prueba.1@prueba.com'  -- ⚠️ CAMBIA ESTE EMAIL
   AND useruuid IS NULL;  -- Solo actualizar si useruuid es NULL
 
 -- ============================================================================
@@ -47,7 +47,7 @@ SELECT
     END AS estado
 FROM joysense.usuario u
 LEFT JOIN auth.users au ON u.useruuid = au.id
-WHERE u.login = 'usuario.1@prueba.com'  -- Cambia por el email del usuario
+WHERE u.login = 'usuario.prueba.1@prueba.com'  -- Cambia por el email del usuario
 ORDER BY u.usuarioid DESC;
 
 -- ============================================================================

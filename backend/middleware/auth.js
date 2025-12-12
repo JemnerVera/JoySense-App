@@ -30,22 +30,29 @@ async function verifyAuth(req, res, next) {
   
   try {
     // Crear cliente de Supabase con el token del usuario
-    // Esto permite que las queries usen auth.uid() correctamente
+    // IMPORTANTE: Usar global.headers para que RLS funcione correctamente
     const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
           Authorization: `Bearer ${token}`
         }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
       }
     });
     
     // Verificar que el token es válido obteniendo el usuario
-    const { data: { user }, error } = await userSupabase.auth.getUser();
+    const { data: { user }, error: getUserError } = await userSupabase.auth.getUser();
     
-    if (error || !user) {
-      logger.error(`❌ [verifyAuth] Token inválido: ${error?.message || 'Usuario no encontrado'}`);
+    if (getUserError || !user) {
+      logger.error(`❌ [verifyAuth] Token inválido: ${getUserError?.message || 'Usuario no encontrado'}`);
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
+    
+    // IMPORTANTE: Para que RLS funcione, el token debe estar en cada request
+    // El cliente ya está configurado con global.headers, así que debería funcionar
     
     // Crear cliente de Supabase con el contexto del usuario para este request
     req.supabase = userSupabase;
@@ -80,22 +87,31 @@ async function optionalAuth(req, res, next) {
   
   try {
     // Crear cliente de Supabase con el token del usuario
+    // IMPORTANTE: Usar global.headers para que RLS funcione correctamente
     const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
           Authorization: `Bearer ${token}`
         }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
       }
     });
     
-    // Verificar que el token es válido
-    const { data: { user }, error } = await userSupabase.auth.getUser();
+    // Verificar que el token es válido y obtener el usuario
+    const { data: { user }, error: getUserError } = await userSupabase.auth.getUser();
     
-    if (error || !user) {
+    if (getUserError || !user) {
+      logger.warn(`⚠️ [optionalAuth] Token inválido o sin usuario: ${getUserError?.message || 'Usuario no encontrado'}`);
       req.user = null;
       req.supabase = baseSupabase; // Usar cliente base sin autenticación
       return next();
     }
+    
+    // IMPORTANTE: Para que RLS funcione, el token debe estar en cada request
+    // El cliente ya está configurado con global.headers, así que debería funcionar
     
     // Crear cliente de Supabase con el contexto del usuario para este request
     req.supabase = userSupabase;
