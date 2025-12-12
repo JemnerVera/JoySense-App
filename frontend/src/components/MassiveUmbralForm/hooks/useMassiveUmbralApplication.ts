@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { FormData, SelectedNode, UmbralDataToApply } from '../types';
+import { logger } from '../../../utils/logger';
 
 interface UseMassiveUmbralApplicationProps {
   formData: FormData;
@@ -60,7 +61,7 @@ export const useMassiveUmbralApplication = ({
                 // Obtener ubicacionid desde la tabla localizacion
                 const localizacion = localizacionesData?.find(loc => loc.nodoid === node.nodoid);
                 if (!localizacion || !localizacion.ubicacionid) {
-                  console.error('❌ Nodo sin localización o ubicacionid:', { 
+                  logger.error('Nodo sin localización o ubicacionid:', { 
                     nodo: node.nodo, 
                     nodoid: node.nodoid, 
                     localizacion: localizacion 

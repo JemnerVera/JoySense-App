@@ -10,6 +10,7 @@ import { getPrimaryKey } from '../../../../config/tables.config';
 import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
+import { logger } from '../../../../utils/logger';
 
 // Campos foreign key que tienen constraints y no se pueden cambiar en UPDATE
 const CONSTRAINED_FOREIGN_KEYS: Record<string, string[]> = {
@@ -165,7 +166,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           
           // Debug para campos específicos
           if (field.name === 'empresaid' || field.name === 'fundo' || field.name === 'fundoabrev' || field.name === 'paisid') {
-            console.log(`🔍 [NormalUpdateForm] Campo ${field.name}:`, {
+            logger.debug(`[NormalUpdateForm] Campo ${field.name}:`, {
               fieldValue,
               formDataValue: formData[field.name],
               isConstrained,
