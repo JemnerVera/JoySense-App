@@ -1,13 +1,18 @@
 /**
  * Rutas de Mediciones: medicion, sensor_valor
- * Versión PostgreSQL Directo
+ * Versión Supabase API con RLS
  */
 
 const express = require('express');
 const router = express.Router();
-const { db, dbSchema, pool } = require('../config/database');
+const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter } = require('../utils/pagination');
+const { optionalAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// Aplicar middleware de autenticación opcional a todas las rutas
+// Esto permite que las queries usen el token del usuario para RLS
+router.use(optionalAuth);
 
 // ============================================================================
 // MEDICION (simplificado: solo localizacionid)
@@ -268,7 +273,14 @@ router.get('/sensor_valor', async (req, res) => {
 
 router.post('/sensor_valor', async (req, res) => {
   try {
-    const { data, error } = await db.insert('sensor_valor', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('sensor_valor')
+      .insert(req.body)
+      .select();
+    
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {

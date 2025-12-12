@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const { db, dbSchema } = require('../config/database');
+const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const logger = require('../utils/logger');
 const { optionalAuth } = require('../middleware/auth');
 // Nota: setUserContext ya no se necesita - Supabase API maneja RLS automáticamente
@@ -17,11 +17,8 @@ const { optionalAuth } = require('../middleware/auth');
 // Ruta de health check
 router.get('/health', async (req, res) => {
   try {
-    // Verificar conexión a Supabase
-    const { supabase } = require('../config/database');
-    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
-    const { dbSchema } = require('../config/database');
-    const { data, error } = await supabase.schema(dbSchema).from('pais').select('paisid').limit(1);
+    // Verificar conexión a Supabase (ruta pública, usar baseSupabase)
+    const { data, error } = await baseSupabase.schema(dbSchema).from('pais').select('paisid').limit(1);
     
     res.json({ 
       status: error ? 'error' : 'ok',
@@ -39,7 +36,7 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// Endpoint de prueba para verificar permisos y RPC
+// Endpoint de prueba para verificar permisos y RPC (ruta pública, usar baseSupabase)
 router.get('/test-db', async (req, res) => {
   const results = {
     schema: dbSchema,
@@ -49,7 +46,7 @@ router.get('/test-db', async (req, res) => {
   
   // Test 1: Select directo
   try {
-    const { data, error } = await db.select('pais', { limit: 1 });
+    const { data, error } = await baseSupabase.schema(dbSchema).from('pais').select('*').limit(1);
     results.tests.select_pais = error ? { error: error.message } : { success: true, count: data?.length };
   } catch (e) {
     results.tests.select_pais = { error: e.message };
@@ -57,7 +54,7 @@ router.get('/test-db', async (req, res) => {
   
   // Test 2: Select usuario
   try {
-    const { data, error } = await db.select('usuario', { limit: 1 });
+    const { data, error } = await baseSupabase.schema(dbSchema).from('usuario').select('*').limit(1);
     results.tests.select_usuario = error ? { error: error.message } : { success: true, count: data?.length };
   } catch (e) {
     results.tests.select_usuario = { error: e.message };
@@ -65,7 +62,7 @@ router.get('/test-db', async (req, res) => {
   
   // Test 3: RPC fn_get_table_metadata
   try {
-    const { data, error } = await db.rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
+    const { data, error } = await baseSupabase.schema('joysense').rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
     results.tests.rpc_metadata = error ? { error: error.message } : { success: true, data };
   } catch (e) {
     results.tests.rpc_metadata = { error: e.message };
@@ -74,10 +71,10 @@ router.get('/test-db', async (req, res) => {
   res.json(results);
 });
 
-// Ruta de detección de schema
+// Ruta de detección de schema (ruta pública, usar baseSupabase)
 router.get('/detect', async (req, res) => {
   try {
-    const { data, error } = await db.select('pais', { columns: 'paisid', limit: 1 });
+    const { data, error } = await baseSupabase.schema(dbSchema).from('pais').select('paisid').limit(1);
     
     if (error) {
       return res.json({ available: false, error: error.message });
@@ -102,16 +99,19 @@ router.get('/detect', async (req, res) => {
 router.post('/auth/login', async (req, res) => {
   try {
     // Esta ruta ya no se usa - el frontend usa Supabase API directamente
-    // Se mantiene por compatibilidad temporal
+    // Se mantiene por compatibilidad temporal (ruta pública, usar baseSupabase)
     logger.warn('⚠️ POST /auth/login llamado - el frontend debería usar Supabase API directamente');
     
     const { email, password } = req.body;
     
-    // Buscar usuario por login (email)
-    const { data: usuarios, error } = await db.select('usuario', {
-      where: { login: email, statusid: 1 },
-      limit: 1
-    });
+    // Buscar usuario por login (email) - ruta pública, usar baseSupabase
+    const { data: usuarios, error } = await baseSupabase
+      .schema(dbSchema)
+      .from('usuario')
+      .select('*')
+      .eq('login', email)
+      .eq('statusid', 1)
+      .limit(1);
     
     if (error) throw error;
     
@@ -162,6 +162,7 @@ router.post('/auth/logout', (req, res) => {
 });
 
 // Crear usuario con password hasheado (para setup inicial)
+// NOTA: Esta ruta es pública - el usuario debe crearse primero en Supabase Dashboard
 router.post('/auth/register', async (req, res) => {
   try {
     const { login, password, firstname, lastname } = req.body;
@@ -176,18 +177,22 @@ router.post('/auth/register', async (req, res) => {
     // Hashear password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Insertar usuario directamente en la tabla
-    const { data, error } = await db.insert('usuario', {
-      login,
-      password_hash: hashedPassword,
-      firstname,
-      lastname,
-      statusid: 1,
-      usercreatedid: 1,
-      datecreated: new Date().toISOString(),
-      usermodifiedid: 1,
-      datemodified: new Date().toISOString()
-    });
+    // Insertar usuario directamente en la tabla (ruta pública, usar baseSupabase)
+    const { data, error } = await baseSupabase
+      .schema(dbSchema)
+      .from('usuario')
+      .insert({
+        login,
+        password_hash: hashedPassword,
+        firstname,
+        lastname,
+        statusid: 1,
+        usercreatedid: 1,
+        datecreated: new Date().toISOString(),
+        usermodifiedid: 1,
+        datemodified: new Date().toISOString()
+      })
+      .select();
     
     if (error) throw error;
     
@@ -203,12 +208,14 @@ router.post('/auth/reset-password', async (req, res) => {
   try {
     const { login } = req.body;
     
-    // Buscar usuario
-    const { data: usuarios, error } = await db.select('usuario', {
-      columns: 'usuarioid, login, firstname, lastname',
-      where: { login, statusid: 1 },
-      limit: 1
-    });
+    // Buscar usuario (ruta pública, usar baseSupabase)
+    const { data: usuarios, error } = await baseSupabase
+      .schema(dbSchema)
+      .from('usuario')
+      .select('usuarioid, login, firstname, lastname')
+      .eq('login', login)
+      .eq('statusid', 1)
+      .limit(1);
     
     if (error) throw error;
     
@@ -220,12 +227,12 @@ router.post('/auth/reset-password', async (req, res) => {
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     
-    // Actualizar password
-    const { error: updateError } = await db.update(
-      'usuario',
-      { password_hash: hashedPassword },
-      { usuarioid: usuarios[0].usuarioid }
-    );
+    // Actualizar password (ruta pública, usar baseSupabase)
+    const { error: updateError } = await baseSupabase
+      .schema(dbSchema)
+      .from('usuario')
+      .update({ password_hash: hashedPassword })
+      .eq('usuarioid', usuarios[0].usuarioid);
     
     if (updateError) throw updateError;
     
