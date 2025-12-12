@@ -216,7 +216,9 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
   // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
   const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
   if (contextualRow) {
-    result.push(contextualRow);
+    result.push(
+      <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
+    );
   }
   
   // Segunda fila: Entidad, Ubicación, Nodo

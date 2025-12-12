@@ -63,7 +63,9 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
     
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
     if (contextualRow) {
-      result.push(contextualRow);
+      result.push(
+        <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
+      );
     }
     
     const entidadField = visibleColumns.find(c => c.columnName === 'entidad');

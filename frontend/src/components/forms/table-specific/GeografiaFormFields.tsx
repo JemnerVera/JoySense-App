@@ -198,7 +198,9 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
     
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
     if (contextualRow) {
-      result.push(contextualRow);
+      result.push(
+        <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
+      );
     }
     
     const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');

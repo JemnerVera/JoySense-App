@@ -177,7 +177,9 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
     // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
     if (contextualRow) {
-      result.push(contextualRow);
+      result.push(
+        <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
+      );
     }
     
     // Primera fila: Ubicación, Nodo, Tipo
