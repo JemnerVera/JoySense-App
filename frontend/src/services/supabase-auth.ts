@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { AuthUser, AuthError } from '../types';
+import { logger } from '../utils/logger';
 
 // Declaración para TypeScript
 declare const process: any;
@@ -67,13 +68,8 @@ function getSupabaseConfig() {
     throw new Error('Service Role Key cannot be used in frontend');
   }
 
-  // Debug en desarrollo
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔐 Supabase Auth - Configuración validada:');
-    console.log('  - URL:', url);
-    console.log('  - Key:', key.substring(0, 30) + '...');
-    console.log('  - Tipo:', key.includes('anon') ? 'Anon Key ✅' : 'Publishable Key ✅');
-  }
+  // Debug en desarrollo - usar logger solo si está habilitado
+  // Los mensajes críticos de error de configuración se mantienen como console.error
 
   return { url, key };
 }
@@ -88,16 +84,13 @@ export const supabaseAuth = createClient(config.url, config.key);
 export const authService = {
   // Iniciar sesión usando Supabase API directamente (según indicaciones del DBA)
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('🔐 [AUTH] Iniciando proceso de autenticación');
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('📧 Email:', email);
-    console.log('🔑 Password:', password ? '***' : 'NO PROPORCIONADA');
-    console.log('🌐 Supabase URL:', config.url);
-    console.log('🔑 Key (primeros 30 chars):', config.key.substring(0, 30) + '...');
+    // Logs de debug (solo en modo debug)
+    logger.debug('[AUTH] Iniciando proceso de autenticación');
+    logger.debug('Email:', email);
+    logger.debug('Supabase URL:', config.url);
     
     try {
-      console.log('⏳ [AUTH] Llamando a supabaseAuth.auth.signInWithPassword...');
+      logger.debug('[AUTH] Llamando a supabaseAuth.auth.signInWithPassword...');
       const startTime = Date.now();
       
       // Usar Supabase API directamente - RLS funciona automáticamente
@@ -107,7 +100,7 @@ export const authService = {
       });
 
       const duration = Date.now() - startTime;
-      console.log(`⏱️  [AUTH] Respuesta recibida en ${duration}ms`);
+      logger.debug(`[AUTH] Respuesta recibida en ${duration}ms`);
 
       if (error) {
         console.error('═══════════════════════════════════════════════════════════');
@@ -143,8 +136,8 @@ export const authService = {
         };
       }
 
-      console.log('✅ [AUTH] No hay error en la respuesta');
-      console.log('📦 Data recibida:', {
+      logger.debug('[AUTH] No hay error en la respuesta');
+      logger.debug('Data recibida:', {
         user: data.user ? {
           id: data.user.id,
           email: data.user.email,
@@ -171,7 +164,7 @@ export const authService = {
 
       // Guardar el email en localStorage para uso global
       localStorage.setItem('userEmail', email);
-      console.log('💾 [AUTH] Email guardado en localStorage');
+      logger.debug('[AUTH] Email guardado en localStorage');
       
       // Convertir usuario de Supabase al formato AuthUser esperado
       const user: AuthUser = {
@@ -180,13 +173,12 @@ export const authService = {
         user_metadata: data.user.user_metadata || {}
       };
 
-      console.log('✅ [AUTH] Autenticación exitosa con Supabase API');
-      console.log('👤 Usuario autenticado:', {
+      logger.info('[AUTH] Autenticación exitosa con Supabase API');
+      logger.debug('Usuario autenticado:', {
         id: user.id,
         email: user.email,
         metadata: user.user_metadata
       });
-      console.log('═══════════════════════════════════════════════════════════');
       
       return { 
         user, 
@@ -225,21 +217,21 @@ export const authService = {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        console.error('❌ Error al resetear contraseña:', result.error);
+        logger.error('Error al resetear contraseña:', result.error);
         return { 
           success: false, 
           error: result.error || 'Error al resetear la contraseña' 
         };
       }
 
-      console.log('✅ Reset de contraseña exitoso');
+      logger.info('Reset de contraseña exitoso');
       return { 
         success: true, 
         message: result.message || 'Se ha enviado una nueva contraseña al correo registrado' 
       };
 
     } catch (error) {
-      console.error('❌ Error inesperado durante reset de contraseña:', error);
+      logger.error('Error inesperado durante reset de contraseña:', error);
       return { 
         success: false, 
         error: 'Error inesperado durante el reset de contraseña' 

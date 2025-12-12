@@ -7,6 +7,7 @@ import React from 'react';
 import SelectWithPlaceholder from '../../SelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
+import { logger } from '../../../utils/logger';
 
 interface ContactoFormFieldsProps {
   visibleColumns: any[];
@@ -60,7 +61,7 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
                 if (!value) return;
                 
                 const selectedCountry = countryCodes?.find(c => c.codigotelefonoid.toString() === value.toString());
-                console.log('🌍 País seleccionado:', {
+                logger.debug('País seleccionado:', {
                   value,
                   selectedCountry,
                   codigotelefono: selectedCountry?.codigotelefono,
@@ -115,7 +116,7 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
                   const phoneNumber = e.target.value;
                   const fullPhoneNumber = countryCode && phoneNumber ? `${countryCode}${phoneNumber}` : phoneNumber;
                   
-                  console.log('📱 Actualizando teléfono:', {
+                  logger.debug('Actualizando teléfono:', {
                     countryCode,
                     phoneNumber,
                     fullPhoneNumber,

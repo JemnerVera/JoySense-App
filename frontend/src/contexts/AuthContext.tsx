@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/supabase-auth';
 import { AuthUser } from '../types';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -27,7 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (error) {
           // Solo mostrar error si no es por falta de sesión
           if (!error.message.includes('session missing') && !error.message.includes('Auth session missing')) {
-            console.error('Error checking user:', error.message);
+            logger.error('Error checking user:', error.message);
           }
         } else {
           setUser(currentUser);
@@ -35,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error: any) {
         // Solo mostrar error si no es por falta de sesión
         if (!error?.message?.includes('session missing') && !error?.message?.includes('Auth session missing')) {
-          console.error('Error checking user:', error);
+          logger.error('Error checking user:', error);
         }
       } finally {
         setLoading(false);
@@ -54,27 +55,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔐 [AuthContext] signIn llamado con email:', email);
+    logger.debug('[AuthContext] signIn llamado con email:', email);
     try {
       const { user: signedInUser, error } = await authService.signIn(email, password);
       
       if (error) {
-        console.error('❌ [AuthContext] Error en signIn:', error.message);
+        logger.error('[AuthContext] Error en signIn:', error.message);
         return { success: false, error: error.message };
       }
 
       if (signedInUser) {
-        console.log('✅ [AuthContext] Usuario autenticado, actualizando estado');
-        console.log('👤 Usuario:', signedInUser);
+        logger.debug('[AuthContext] Usuario autenticado, actualizando estado');
+        logger.debug('Usuario:', signedInUser);
         setUser(signedInUser);
         return { success: true };
       } else {
-        console.error('❌ [AuthContext] No se recibió usuario después de signIn');
+        logger.error('[AuthContext] No se recibió usuario después de signIn');
         return { success: false, error: 'No se pudo iniciar sesión' };
       }
     } catch (error: any) {
-      console.error('❌ [AuthContext] Excepción durante signIn:', error);
-      console.error('📦 Error completo:', error);
+      logger.error('[AuthContext] Excepción durante signIn:', error);
+      logger.error('Error completo:', error);
       return { success: false, error: 'Error inesperado durante el inicio de sesión' };
     }
   };
@@ -88,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
       }
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
     }
   };
 
