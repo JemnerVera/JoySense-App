@@ -14,6 +14,8 @@ import { DispositivosFormFields } from './forms/table-specific/DispositivosFormF
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
+import { ContextualRow } from './forms/ContextualRow';
+import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -156,191 +158,27 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     return rule ? rule.required : false;
   };
 
-  // Función para determinar si un campo debe estar habilitado (habilitación progresiva)
-  const isFieldEnabled = (columnName: string): boolean => {
-    // Para País: solo habilitar paisabrev si pais tiene valor
-    if (selectedTable === 'pais') {
-      if (columnName === 'paisabrev') {
-        return !!(formData.pais && formData.pais.trim() !== '');
-      }
-      if (columnName === 'pais') {
-        return true; // Siempre habilitado
-      }
-    }
-    
-    // Para Empresa: solo habilitar empresabrev si empresa tiene valor
-    if (selectedTable === 'empresa') {
-      if (columnName === 'empresabrev') {
-        return !!(formData.empresa && formData.empresa.trim() !== '');
-      }
-      if (columnName === 'empresa') {
-        return true; // Siempre habilitado
-      }
-    }
-    
-  // Para Fundo: solo habilitar fundoabrev si fundo tiene valor
-  if (selectedTable === 'fundo') {
-    if (columnName === 'fundoabrev') {
-      return !!(formData.fundo && formData.fundo.trim() !== '');
-    }
-    if (columnName === 'fundo') {
-      return true; // Siempre habilitado
-    }
-  }
-  
-  // Para Tipo: solo habilitar tipo si entidadid tiene valor
-  if (selectedTable === 'tipo') {
-    if (columnName === 'tipo') {
-      return !!(formData.entidadid);
-    }
-    if (columnName === 'entidadid') {
-      return true; // Siempre habilitado
-    }
-  }
-  
-  // Para Nodo: habilitación progresiva nodo -> deveui -> resto
-  if (selectedTable === 'nodo') {
-    if (columnName === 'nodo') {
-      return true; // Siempre habilitado
-    }
-    if (columnName === 'deveui') {
-      return !!(formData.nodo && formData.nodo.trim() !== '');
-    }
-    // Para el resto de campos (appeui, appkey, atpin, statusid)
-    if (['appeui', 'appkey', 'atpin', 'statusid'].includes(columnName)) {
-      return !!(formData.nodo && formData.nodo.trim() !== '' && formData.deveui && formData.deveui.trim() !== '');
-    }
-  }
-  
-  // Para Métrica: habilitación progresiva metrica -> unidad -> resto
-  if (selectedTable === 'metrica') {
-    if (columnName === 'metrica') {
-      return true; // Siempre habilitado
-    }
-    if (columnName === 'unidad') {
-      return !!(formData.metrica && formData.metrica.trim() !== '');
-    }
-    // Para el resto de campos (statusid)
-    if (['statusid'].includes(columnName)) {
-      return !!(formData.metrica && formData.metrica.trim() !== '' && formData.unidad && formData.unidad.trim() !== '');
-    }
-  }
-  
-  // Para Perfil Umbral: habilitación progresiva perfilid -> umbralid -> resto
-  if (selectedTable === 'perfilumbral') {
-    if (columnName === 'perfilid') {
-      return true; // Siempre habilitado
-    }
-    if (columnName === 'umbralid') {
-      return !!(formData.perfilid && formData.perfilid !== 0);
-    }
-    // Para el resto de campos (statusid)
-    if (['statusid'].includes(columnName)) {
-      return !!(formData.perfilid && formData.perfilid !== 0 && formData.umbralid && formData.umbralid !== 0);
-    }
-  }
-  
-  // Para Criticidad: habilitación progresiva criticidad -> criticidadbrev -> resto
-  if (selectedTable === 'criticidad') {
-    if (columnName === 'criticidad') {
-      return true; // Siempre habilitado
-    }
-    if (columnName === 'criticidadbrev') {
-      return !!(formData.criticidad && formData.criticidad.trim() !== '');
-    }
-    // Para el resto de campos (statusid)
-    if (['statusid'].includes(columnName)) {
-      return !!(formData.criticidad && formData.criticidad.trim() !== '' && formData.criticidadbrev && formData.criticidadbrev.trim() !== '');
-    }
-  }
-  
-  // Para Contacto: habilitación progresiva usuarioid -> resto
-  if (selectedTable === 'contacto') {
-    if (columnName === 'usuarioid') {
-      return true; // Siempre habilitado
-    }
-    // Para el resto de campos (codigotelefonoid, celular, correo, statusid)
-    if (['codigotelefonoid', 'celular', 'correo', 'statusid'].includes(columnName)) {
-      return !!(formData.usuarioid && formData.usuarioid !== 0);
-    }
-  }
-  
-  // Para Perfil: habilitación progresiva perfil -> nivel -> resto
-  if (selectedTable === 'perfil') {
-    if (columnName === 'perfil') {
-      return true; // Siempre habilitado
-    }
-    if (columnName === 'nivel') {
-      return !!(formData.perfil && formData.perfil.trim() !== '');
-    }
-    // Para el resto de campos (statusid)
-    if (['statusid'].includes(columnName)) {
-      return !!(formData.perfil && formData.perfil.trim() !== '' && formData.nivel && formData.nivel.trim() !== '');
-    }
-  }
-  
-  // Para otros campos, usar lógica normal
-  return true;
-  };
+  // Hook para habilitación progresiva
+  const { isFieldEnabled } = useProgressiveEnablement(selectedTable, formData);
 
   // ============================================================================
   // RENDER FUNCTIONS
   // ============================================================================
 
   // Función para renderizar fila contextual con filtros globales
-  const renderContextualRow = (fields: string[]) => {
-    
-    const contextualFields = fields.map(field => {
-      // Para País: mostrar solo si hay filtro global
-      if (field === 'pais' && paisSeleccionado) {
-        return (
-          <div key="pais-contextual">
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              {t('create.country')}
-            </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-              {getPaisName(paisSeleccionado)}
-            </div>
-          </div>
-        );
-      } 
-      // Para Empresa: mostrar solo si hay filtro global
-      else if (field === 'empresa' && empresaSeleccionada) {
-        return (
-          <div key="empresa-contextual">
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              {t('create.company')}
-            </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-              {getEmpresaName(empresaSeleccionada)}
-            </div>
-          </div>
-        );
-      } 
-      // Para Fundo: mostrar solo si hay filtro global
-      else if (field === 'fundo' && fundoSeleccionado) {
-        return (
-          <div key="fundo-contextual">
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              {t('table_headers.fund')}
-            </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-              {getFundoName(fundoSeleccionado)}
-            </div>
-          </div>
-        );
-      }
-      return null;
-    }).filter(Boolean);
-
-    if (contextualFields.length > 0) {
-  return (
-        <div key="contextual-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {contextualFields}
-        </div>
-      );
-    }
-    return null;
+  const renderContextualRow = (fields: string[]): React.ReactNode | null => {
+    return (
+      <ContextualRow
+        fields={fields}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        getThemeColor={getThemeColor}
+      />
+    );
   };
 
   // Función para renderizar campos con layout específico
