@@ -14,7 +14,7 @@ jest.mock('../../contexts/AuthContext');
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock de validateTableUpdate
-jest.mock('../../utils/formValidation', () => ({
+jest.mock('../../utils/validations', () => ({
   validateTableUpdate: jest.fn()
 }));
 
@@ -42,7 +42,7 @@ describe('useUpdateOperations', () => {
       { paisid: 1, pais: 'Perú', paisabrev: 'PE', statusid: 1 }
     ]);
 
-    const { validateTableUpdate } = require('../../utils/formValidation');
+    const { validateTableUpdate } = require('../../utils/validations');
     validateTableUpdate.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -70,7 +70,7 @@ describe('useUpdateOperations', () => {
       { paisid: 1, pais: 'Perú', paisabrev: 'PE', statusid: 1 }
     ]);
 
-    const { validateTableUpdate } = require('../../utils/formValidation');
+    const { validateTableUpdate } = require('../../utils/validations');
     validateTableUpdate.mockResolvedValue({
       isValid: false,
       errors: ['Campo obligatorio'],
@@ -97,7 +97,7 @@ describe('useUpdateOperations', () => {
       { paisid: 1, pais: 'Perú', paisabrev: 'PE', statusid: 1 }
     ]);
 
-    const { validateTableUpdate } = require('../../utils/formValidation');
+    const { validateTableUpdate } = require('../../utils/validations');
     validateTableUpdate.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -145,7 +145,7 @@ describe('useUpdateOperations', () => {
       { paisid: 2, pais: 'Chile', paisabrev: 'CL', statusid: 1 }
     ]);
 
-    const { validateTableUpdate } = require('../../utils/formValidation');
+    const { validateTableUpdate } = require('../../utils/validations');
     validateTableUpdate.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -175,7 +175,7 @@ describe('useUpdateOperations', () => {
       { paisid: 2, pais: 'Chile', paisabrev: 'CL', statusid: 1 }
     ]);
 
-    const { validateTableUpdate } = require('../../utils/formValidation');
+    const { validateTableUpdate } = require('../../utils/validations');
     validateTableUpdate
       .mockResolvedValueOnce({
         isValid: true,

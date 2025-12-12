@@ -4,7 +4,7 @@
 
 import React, { memo, useEffect, useMemo, useRef } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
-import { tableValidationSchemas } from '../utils/formValidation';
+import { tableValidationSchemas } from '../utils/validations';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 

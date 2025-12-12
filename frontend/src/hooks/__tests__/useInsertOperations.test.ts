@@ -14,7 +14,7 @@ jest.mock('../../contexts/AuthContext');
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock de validateTableData
-jest.mock('../../utils/formValidation', () => ({
+jest.mock('../../utils/validations', () => ({
   validateTableData: jest.fn()
 }));
 
@@ -47,7 +47,7 @@ describe('useInsertOperations', () => {
     const mockResponse = { id: 1, pais: 'Perú', paisabrev: 'PE' };
     mockBackendAPI.post.mockResolvedValue(mockResponse);
 
-    const { validateTableData } = require('../../utils/formValidation');
+    const { validateTableData } = require('../../utils/validations');
     validateTableData.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -70,7 +70,7 @@ describe('useInsertOperations', () => {
   });
 
   it('debe manejar errores de validación', async () => {
-    const { validateTableData } = require('../../utils/formValidation');
+    const { validateTableData } = require('../../utils/validations');
     validateTableData.mockResolvedValue({
       isValid: false,
       errors: ['Campo obligatorio'],
@@ -92,7 +92,7 @@ describe('useInsertOperations', () => {
   });
 
   it('debe manejar errores de inserción', async () => {
-    const { validateTableData } = require('../../utils/formValidation');
+    const { validateTableData } = require('../../utils/validations');
     validateTableData.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -119,7 +119,7 @@ describe('useInsertOperations', () => {
     const mockResponse = { id: 1, pais: 'Perú', paisabrev: 'PE' };
     mockBackendAPI.post.mockResolvedValue(mockResponse);
 
-    const { validateTableData } = require('../../utils/formValidation');
+    const { validateTableData } = require('../../utils/validations');
     validateTableData.mockResolvedValue({
       isValid: true,
       errors: [],
@@ -144,7 +144,7 @@ describe('useInsertOperations', () => {
   });
 
   it('debe manejar errores en inserción múltiple', async () => {
-    const { validateTableData } = require('../../utils/formValidation');
+    const { validateTableData } = require('../../utils/validations');
     validateTableData
       .mockResolvedValueOnce({
         isValid: true,

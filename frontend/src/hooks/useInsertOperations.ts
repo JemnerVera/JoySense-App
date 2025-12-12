@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { backendAPI } from '../services/backend-api';
 import { useAuth } from '../contexts/AuthContext';
-import { validateTableData } from '../utils/formValidation';
+import { validateTableData } from '../utils/validations';
 import { handleInsertError, handleMultipleInsertError, BackendError } from '../utils/errorHandler';
 
 export interface InsertOperationState {

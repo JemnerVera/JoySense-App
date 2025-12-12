@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { validateTableUpdate } from '../utils/formValidation';
+import { validateTableUpdate } from '../utils/validations';
 import type { TableConfig } from '../config/tables.config';
 
 interface UseUpdateFormProps {
