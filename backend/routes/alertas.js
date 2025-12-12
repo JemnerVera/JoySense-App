@@ -191,41 +191,88 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const fundoIdArray = fundoIds.split(',').map(Number);
     
-    let sql = `
-      WITH ubicaciones AS (
-        SELECT ubicacionid FROM ${dbSchema}.ubicacion WHERE fundoid = ANY($1) AND statusid = 1
-      ),
-      nodos AS (
-        SELECT nodoid FROM ${dbSchema}.nodo WHERE ubicacionid IN (SELECT ubicacionid FROM ubicaciones) AND statusid = 1
-      ),
-      locs AS (
-        SELECT localizacionid FROM ${dbSchema}.localizacion 
-        WHERE nodoid IN (SELECT nodoid FROM nodos) AND statusid = 1
-        ${metricaId ? 'AND metricaid = $2' : ''}
-      )
-      SELECT u.*,
-             json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad) as criticidad,
-             json_build_object(
-               'localizacionid', l.localizacionid,
-               'localizacion', l.localizacion,
-               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
-               'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica)
-             ) as localizacion
-      FROM ${dbSchema}.umbral u
-      JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
-      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
-      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
-      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
-      WHERE u.localizacionid IN (SELECT localizacionid FROM locs) AND u.statusid = 1
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [fundoIdArray];
-    if (metricaId) {
-      params.push(metricaId);
+    // Convertir CTEs a múltiples queries con Supabase API
+    // Paso 1: Obtener ubicaciones
+    const { data: ubicaciones, error: ubicError } = await userSupabase
+      .schema(dbSchema)
+      .from('ubicacion')
+      .select('ubicacionid')
+      .in('fundoid', fundoIdArray)
+      .eq('statusid', 1);
+    
+    if (ubicError) throw ubicError;
+    if (!ubicaciones || ubicaciones.length === 0) {
+      return res.json([]);
     }
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const ubicacionIds = ubicaciones.map(u => u.ubicacionid);
+    
+    // Paso 2: Obtener nodos
+    const { data: nodos, error: nodoError } = await userSupabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select('nodoid')
+      .in('ubicacionid', ubicacionIds)
+      .eq('statusid', 1);
+    
+    if (nodoError) throw nodoError;
+    if (!nodos || nodos.length === 0) {
+      return res.json([]);
+    }
+    
+    const nodoIds = nodos.map(n => n.nodoid);
+    
+    // Paso 3: Obtener localizaciones
+    let locQuery = userSupabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid')
+      .in('nodoid', nodoIds)
+      .eq('statusid', 1);
+    
+    if (metricaId) {
+      locQuery = locQuery.eq('metricaid', metricaId);
+    }
+    
+    const { data: localizaciones, error: locError } = await locQuery;
+    
+    if (locError) throw locError;
+    if (!localizaciones || localizaciones.length === 0) {
+      return res.json([]);
+    }
+    
+    const localizacionIds = localizaciones.map(l => l.localizacionid);
+    
+    // Paso 4: Obtener umbrales con joins
+    const { data: umbrales, error: umbralError } = await userSupabase
+      .schema(dbSchema)
+      .from('umbral')
+      .select(`
+        *,
+        criticidad:criticidadid(criticidadid, criticidad),
+        localizacion:localizacionid(
+          localizacionid,
+          localizacion,
+          nodo:nodoid(nodoid, nodo),
+          metrica:metricaid(metricaid, metrica)
+        )
+      `)
+      .in('localizacionid', localizacionIds)
+      .eq('statusid', 1);
+    
+    if (umbralError) throw umbralError;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (umbrales || []).map(u => ({
+      ...u,
+      criticidad: u.criticidad ? (Array.isArray(u.criticidad) ? u.criticidad[0] : u.criticidad) : null,
+      localizacion: u.localizacion ? (Array.isArray(u.localizacion) ? u.localizacion[0] : u.localizacion) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /umbrales-por-lote:', error);
     res.status(500).json({ error: error.message });
@@ -240,46 +287,49 @@ router.get('/alerta', async (req, res) => {
   try {
     const { umbralId, startDate, endDate, limit = 100 } = req.query;
     
-    let sql = `
-      SELECT a.*,
-             json_build_object(
-               'umbralid', u.umbralid,
-               'umbral', u.umbral,
-               'minimo', u.minimo,
-               'maximo', u.maximo,
-               'localizacion', json_build_object('localizacionid', l.localizacionid, 'localizacion', l.localizacion)
-             ) as umbral,
-             json_build_object('medicionid', m.medicionid, 'medicion', m.medicion, 'fecha', m.fecha) as medicion
-      FROM ${dbSchema}.alerta a
-      LEFT JOIN ${dbSchema}.umbral u ON a.umbralid = u.umbralid
-      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
-      LEFT JOIN ${dbSchema}.medicion m ON a.medicionid = m.medicionid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
-    const conditions = [];
+    // Usar Supabase API con joins anidados profundos
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('alerta')
+      .select(`
+        *,
+        umbral:umbralid(
+          umbralid,
+          umbral,
+          minimo,
+          maximo,
+          localizacion:localizacionid(localizacionid, localizacion)
+        ),
+        medicion:medicionid(medicionid, medicion, fecha)
+      `);
     
     if (umbralId) {
-      conditions.push(`a.umbralid = $${params.length + 1}`);
-      params.push(umbralId);
+      query = query.eq('umbralid', umbralId);
     }
     if (startDate) {
-      conditions.push(`a.fecha >= $${params.length + 1}`);
-      params.push(startDate);
+      query = query.gte('fecha', startDate);
     }
     if (endDate) {
-      conditions.push(`a.fecha <= $${params.length + 1}`);
-      params.push(endDate);
+      query = query.lte('fecha', endDate);
     }
     
-    if (conditions.length > 0) {
-      sql += ` WHERE ${conditions.join(' AND ')}`;
-    }
+    query = query.order('fecha', { ascending: false }).limit(parseInt(limit));
     
-    sql += ` ORDER BY a.fecha DESC LIMIT ${parseInt(limit)}`;
+    const { data, error } = await query;
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(a => ({
+      ...a,
+      umbral: a.umbral ? (Array.isArray(a.umbral) ? a.umbral[0] : a.umbral) : null,
+      medicion: a.medicion ? (Array.isArray(a.medicion) ? a.medicion[0] : a.medicion) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /alerta:', error);
     res.status(500).json({ error: error.message });
@@ -304,34 +354,42 @@ router.get('/alertaconsolidado', async (req, res) => {
   try {
     const { statusid = 1, limit = 100 } = req.query;
     
-    let sql = `
-      SELECT ac.*,
-             json_build_object(
-               'umbralid', u.umbralid,
-               'umbral', u.umbral,
-               'minimo', u.minimo,
-               'maximo', u.maximo,
-               'criticidad', json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad),
-               'localizacion', json_build_object(
-                 'localizacionid', l.localizacionid,
-                 'localizacion', l.localizacion,
-                 'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
-                 'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica)
-               )
-             ) as umbral
-      FROM ${dbSchema}.alertaconsolidado ac
-      LEFT JOIN ${dbSchema}.umbral u ON ac.umbralid = u.umbralid
-      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
-      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
-      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
-      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
-      WHERE ac.statusid = $1
-      ORDER BY ac.fechaultimo DESC
-      LIMIT ${parseInt(limit)}
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const result = await pool.query(sql, [statusid]);
-    res.json(result.rows || []);
+    // Usar Supabase API con joins anidados profundos
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('alertaconsolidado')
+      .select(`
+        *,
+        umbral:umbralid(
+          umbralid,
+          umbral,
+          minimo,
+          maximo,
+          criticidad:criticidadid(criticidadid, criticidad),
+          localizacion:localizacionid(
+            localizacionid,
+            localizacion,
+            nodo:nodoid(nodoid, nodo),
+            metrica:metricaid(metricaid, metrica)
+          )
+        )
+      `)
+      .eq('statusid', statusid)
+      .order('fechaultimo', { ascending: false })
+      .limit(parseInt(limit));
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(ac => ({
+      ...ac,
+      umbral: ac.umbral ? (Array.isArray(ac.umbral) ? ac.umbral[0] : ac.umbral) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /alertaconsolidado:', error);
     res.status(500).json({ error: error.message });
@@ -356,28 +414,39 @@ router.get('/mensaje', async (req, res) => {
   try {
     const { tipo_origen, limit = 100 } = req.query;
     
-    let sql = `
-      SELECT msg.*,
-             json_build_object(
-               'contactoid', ct.contactoid,
-               'celular', ct.celular,
-               'usuario', json_build_object('usuarioid', u.usuarioid, 'login', u.login, 'firstname', u.firstname, 'lastname', u.lastname)
-             ) as contacto
-      FROM ${dbSchema}.mensaje msg
-      LEFT JOIN ${dbSchema}.contacto ct ON msg.contactoid = ct.contactoid
-      LEFT JOIN ${dbSchema}.usuario u ON ct.usuarioid = u.usuarioid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
+    // Usar Supabase API con joins anidados
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('mensaje')
+      .select(`
+        *,
+        contacto:contactoid(
+          contactoid,
+          celular,
+          usuario:usuarioid(usuarioid, login, firstname, lastname)
+        )
+      `);
+    
     if (tipo_origen) {
-      sql += ` WHERE msg.tipo_origen = $1`;
-      params.push(tipo_origen);
+      query = query.eq('tipo_origen', tipo_origen);
     }
     
-    sql += ` ORDER BY msg.fecha DESC LIMIT ${parseInt(limit)}`;
+    query = query.order('fecha', { ascending: false }).limit(parseInt(limit));
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(msg => ({
+      ...msg,
+      contacto: msg.contacto ? (Array.isArray(msg.contacto) ? msg.contacto[0] : msg.contacto) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /mensaje:', error);
     res.status(500).json({ error: error.message });
@@ -504,23 +573,32 @@ router.get('/audit_log_umbral', async (req, res) => {
   try {
     const { umbralId, limit = 100 } = req.query;
     
-    let sql = `
-      SELECT al.*,
-             json_build_object('umbralid', u.umbralid, 'umbral', u.umbral) as umbral
-      FROM ${dbSchema}.audit_log_umbral al
-      LEFT JOIN ${dbSchema}.umbral u ON al.umbralid = u.umbralid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
+    // Usar Supabase API con join anidado
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('audit_log_umbral')
+      .select('*, umbral:umbralid(umbralid, umbral)');
+    
     if (umbralId) {
-      sql += ` WHERE al.umbralid = $1`;
-      params.push(umbralId);
+      query = query.eq('umbralid', umbralId);
     }
     
-    sql += ` ORDER BY al.modified_at DESC LIMIT ${parseInt(limit)}`;
+    query = query.order('modified_at', { ascending: false }).limit(parseInt(limit));
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(al => ({
+      ...al,
+      umbral: al.umbral ? (Array.isArray(al.umbral) ? al.umbral[0] : al.umbral) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /audit_log_umbral:', error);
     res.status(500).json({ error: error.message });
