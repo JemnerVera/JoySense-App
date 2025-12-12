@@ -6,6 +6,7 @@
 import { JoySenseService } from '../../services/backend-api';
 import { ValidationError, EnhancedValidationResult } from './types';
 import { generateUserFriendlyMessage, generateUpdateUserFriendlyMessage } from './common';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // PAIS VALIDATIONS
@@ -169,7 +170,7 @@ export const checkPaisDependencies = async (paisid: number): Promise<boolean> =>
     const empresas = await JoySenseService.getEmpresas();
     return empresas.some(empresa => empresa.paisid === paisid);
   } catch (error) {
-    console.error('Error checking pais dependencies:', error);
+    logger.error('Error checking pais dependencies:', error);
     return false;
   }
 };
@@ -352,7 +353,7 @@ export const checkEmpresaDependencies = async (empresaid: number): Promise<boole
     const fundos = await JoySenseService.getFundos();
     return fundos.some(fundo => fundo.empresaid === empresaid);
   } catch (error) {
-    console.error('Error checking empresa dependencies:', error);
+    logger.error('Error checking empresa dependencies:', error);
     return false;
   }
 };
@@ -535,7 +536,7 @@ export const checkFundoDependencies = async (fundoid: number): Promise<boolean> 
     const ubicaciones = await JoySenseService.getUbicaciones();
     return ubicaciones.some(ubicacion => ubicacion.fundoid === fundoid);
   } catch (error) {
-    console.error('Error checking fundo dependencies:', error);
+    logger.error('Error checking fundo dependencies:', error);
     return false;
   }
 };
@@ -662,7 +663,7 @@ export const checkUbicacionDependencies = async (ubicacionid: number): Promise<b
     const nodos = await JoySenseService.getNodos();
     return nodos.some((nodo: any) => nodo.ubicacionid === ubicacionid);
   } catch (error) {
-    console.error('Error checking ubicacion dependencies:', error);
+    logger.error('Error checking ubicacion dependencies:', error);
     return false;
   }
 };

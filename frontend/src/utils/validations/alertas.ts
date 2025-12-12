@@ -6,6 +6,7 @@
 import { JoySenseService } from '../../services/backend-api';
 import { ValidationError, EnhancedValidationResult } from './types';
 import { generateUserFriendlyMessage, generateUpdateUserFriendlyMessage } from './common';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // UMBRAL VALIDATIONS
@@ -189,7 +190,7 @@ export const checkUmbralDependencies = async (umbralid: number): Promise<boolean
     const hasAlertas = alertas.some(alerta => alerta.umbralid === umbralid);
     return hasAlertas;
   } catch (error) {
-    console.error('Error checking umbral dependencies:', error);
+    logger.error('Error checking umbral dependencies:', error);
     return false;
   }
 };
@@ -407,7 +408,7 @@ export const checkCriticidadDependencies = async (criticidadid: number): Promise
     const hasAlertas = alertas.some(alerta => alerta.criticidadid === criticidadid);
     return hasAlertas;
   } catch (error) {
-    console.error('Error checking criticidad dependencies:', error);
+    logger.error('Error checking criticidad dependencies:', error);
     return false;
   }
 };

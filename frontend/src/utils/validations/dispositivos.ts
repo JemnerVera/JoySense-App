@@ -6,6 +6,7 @@
 import { JoySenseService } from '../../services/backend-api';
 import { ValidationError, EnhancedValidationResult } from './types';
 import { generateUserFriendlyMessage, generateUpdateUserFriendlyMessage } from './common';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // ENTIDAD VALIDATIONS
@@ -112,7 +113,7 @@ export const checkEntidadDependencies = async (entidadid: number): Promise<boole
     const entidadLocalizaciones = await JoySenseService.getTableData('entidad_localizacion');
     return entidadLocalizaciones.some((el: any) => el.entidadid === entidadid);
   } catch (error) {
-    console.error('Error checking entidad dependencies:', error);
+    logger.error('Error checking entidad dependencies:', error);
     return false;
   }
 };
@@ -248,7 +249,7 @@ export const checkTipoDependencies = async (tipoid: number): Promise<boolean> =>
     const hasUmbrales = umbrales.some(umbral => umbral.tipoid === tipoid);
     return hasUmbrales;
   } catch (error) {
-    console.error('Error checking tipo dependencies:', error);
+    logger.error('Error checking tipo dependencies:', error);
     return false;
   }
 };
@@ -408,7 +409,7 @@ export const checkNodoDependencies = async (nodoid: number): Promise<boolean> =>
     const hasLocalizaciones = localizaciones.some(localizacion => localizacion.nodoid === nodoid);
     return hasLocalizaciones;
   } catch (error) {
-    console.error('Error checking nodo dependencies:', error);
+    logger.error('Error checking nodo dependencies:', error);
     return true; // En caso de error, bloquear la operación por seguridad
   }
 };
@@ -555,7 +556,7 @@ export const checkMetricaDependencies = async (metricaid: number): Promise<boole
     const hasUmbrales = umbrales.some(umbral => umbral.metricaid === metricaid);
     return hasUmbrales;
   } catch (error) {
-    console.error('Error checking metrica dependencies:', error);
+    logger.error('Error checking metrica dependencies:', error);
     return false;
   }
 };

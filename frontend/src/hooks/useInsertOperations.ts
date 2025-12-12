@@ -3,6 +3,7 @@ import { backendAPI } from '../services/backend-api';
 import { useAuth } from '../contexts/AuthContext';
 import { validateTableData } from '../utils/validations';
 import { handleInsertError, handleMultipleInsertError, BackendError } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
 
 export interface InsertOperationState {
   isInserting: boolean;
@@ -73,7 +74,7 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
       return { success: true, id: response.id || response[`${tableName}id`] || null };
       
     } catch (error) {
-      console.error(`❌ useInsertOperations.insertSingle - ${tableName} error:`, error);
+      logger.error(`useInsertOperations.insertSingle - ${tableName} error:`, error);
       
       const errorResponse = handleInsertError(error as BackendError);
       setInsertErrorState(errorResponse.message);
@@ -127,7 +128,7 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
           insertedCount++;
           
         } catch (error) {
-          console.error(`❌ useInsertOperations.insertMultiple - ${tableName} error for record ${i + 1}:`, error);
+          logger.error(`useInsertOperations.insertMultiple - ${tableName} error for record ${i + 1}:`, error);
           const errorResponse = handleMultipleInsertError(error as BackendError, tableName);
           errors.push(errorResponse.message);
         }
@@ -149,7 +150,7 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
       };
       
     } catch (error) {
-      console.error(`❌ useInsertOperations.insertMultiple - ${tableName} general error:`, error);
+      logger.error(`useInsertOperations.insertMultiple - ${tableName} general error:`, error);
       
       const errorResponse = handleMultipleInsertError(error as BackendError, tableName);
       setInsertErrorState(errorResponse.message);
@@ -193,7 +194,7 @@ export const useInsertOperations = (): InsertOperationState & InsertOperationAct
       };
       
     } catch (error) {
-      console.error(`❌ useInsertOperations.insertMassive - ${tableName} error:`, error);
+      logger.error(`useInsertOperations.insertMassive - ${tableName} error:`, error);
       
       const errorResponse = handleInsertError(error as BackendError);
       setInsertErrorState(errorResponse.message);
