@@ -5,7 +5,7 @@
  * IMPORTANTE: Usa Supabase API directamente - RLS funciona automáticamente
  */
 
-const { supabase: baseSupabase, dbSchema, count: dbCount, select: dbSelect, rpc, ensureAuthenticated } = require('../config/database');
+const { supabase: baseSupabase, dbSchema } = require('../config/database');
 const logger = require('./logger');
 
 /**
@@ -240,21 +240,23 @@ async function getTableMetadata(tableName) {
   try {
     // Intentar primero con RPC (la función consulta information_schema, no está afectada por RLS)
     // La función está en joysense y se accede directamente usando .schema('joysense')
-    const rpcResult = await rpc('fn_get_table_metadata', { tbl_name: tableName });
+    const { data: rpcData, error: rpcError } = await baseSupabase
+      .schema('joysense')
+      .rpc('fn_get_table_metadata', { tbl_name: tableName });
     
     // Si RPC funciona y retorna datos, usarlos (incluso si la tabla está vacía, debería retornar columnas)
-    if (!rpcResult.error && rpcResult.data) {
+    if (!rpcError && rpcData) {
       // Verificar que tenga la estructura esperada
-      if (rpcResult.data.columns !== undefined) {
-        metadataCache.set(tableName, rpcResult.data);
-        const columnCount = Array.isArray(rpcResult.data.columns) ? rpcResult.data.columns.length : 0;
+      if (rpcData.columns !== undefined) {
+        metadataCache.set(tableName, rpcData);
+        const columnCount = Array.isArray(rpcData.columns) ? rpcData.columns.length : 0;
         logger.info(`✅ Metadatos obtenidos para: ${tableName} (${columnCount} columnas) vía RPC`);
-        return rpcResult.data;
+        return rpcData;
       }
       // Si RPC retornó datos pero sin estructura de columnas, continuar con fallback
       logger.warn(`⚠️ RPC retornó datos pero sin estructura de columnas para ${tableName}, usando fallback`);
-    } else if (rpcResult.error) {
-      logger.warn(`⚠️ RPC falló para ${tableName}: ${rpcResult.error.message}, usando fallback`);
+    } else if (rpcError) {
+      logger.warn(`⚠️ RPC falló para ${tableName}: ${rpcError.message}, usando fallback`);
     }
     
     // Fallback: Obtener una fila para inferir estructura

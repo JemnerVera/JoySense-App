@@ -1,13 +1,18 @@
 /**
  * Rutas de Alertas: umbral, alerta, alertaconsolidado, criticidad, mensaje, perfilumbral
- * Versión PostgreSQL Directo
+ * Versión Supabase API con RLS
  */
 
 const express = require('express');
 const router = express.Router();
-const { db, dbSchema, pool } = require('../config/database');
+const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
+const { optionalAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// Aplicar middleware de autenticación opcional a todas las rutas
+// Esto permite que las queries usen el token del usuario para RLS
+router.use(optionalAuth);
 
 // ============================================================================
 // CRITICIDAD
@@ -15,8 +20,16 @@ const logger = require('../utils/logger');
 
 router.get('/criticidad', async (req, res) => {
   try {
-    const result = await pool.query(`SELECT * FROM ${dbSchema}.criticidad ORDER BY grado`);
-    res.json(result.rows || []);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('criticidad')
+      .select('*')
+      .order('grado', { ascending: true });
+    
+    if (error) throw error;
+    res.json(data || []);
   } catch (error) {
     logger.error('Error en GET /criticidad:', error);
     res.status(500).json({ error: error.message });
@@ -35,7 +48,14 @@ router.get('/criticidad/columns', async (req, res) => {
 
 router.post('/criticidad', async (req, res) => {
   try {
-    const { data, error } = await db.insert('criticidad', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('criticidad')
+      .insert(req.body)
+      .select();
+    
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -46,7 +66,15 @@ router.post('/criticidad', async (req, res) => {
 
 router.put('/criticidad/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('criticidad', req.body, { criticidadid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('criticidad')
+      .update(req.body)
+      .eq('criticidadid', req.params.id)
+      .select();
+    
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -63,32 +91,42 @@ router.get('/umbral', async (req, res) => {
   try {
     const { localizacionId } = req.query;
     
-    let sql = `
-      SELECT u.*,
-             json_build_object('criticidadid', c.criticidadid, 'criticidad', c.criticidad, 'grado', c.grado) as criticidad,
-             json_build_object(
-               'localizacionid', l.localizacionid,
-               'localizacion', l.localizacion,
-               'nodo', json_build_object('nodoid', n.nodoid, 'nodo', n.nodo),
-               'metrica', json_build_object('metricaid', m.metricaid, 'metrica', m.metrica, 'unidad', m.unidad)
-             ) as localizacion
-      FROM ${dbSchema}.umbral u
-      LEFT JOIN ${dbSchema}.criticidad c ON u.criticidadid = c.criticidadid
-      LEFT JOIN ${dbSchema}.localizacion l ON u.localizacionid = l.localizacionid
-      LEFT JOIN ${dbSchema}.nodo n ON l.nodoid = n.nodoid
-      LEFT JOIN ${dbSchema}.metrica m ON l.metricaid = m.metricaid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
+    // Usar Supabase API con joins anidados profundos
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('umbral')
+      .select(`
+        *,
+        criticidad:criticidadid(criticidadid, criticidad, grado),
+        localizacion:localizacionid(
+          localizacionid,
+          localizacion,
+          nodo:nodoid(nodoid, nodo),
+          metrica:metricaid(metricaid, metrica, unidad)
+        )
+      `);
+    
     if (localizacionId) {
-      sql += ` WHERE u.localizacionid = $1`;
-      params.push(localizacionId);
+      query = query.eq('localizacionid', localizacionId);
     }
     
-    sql += ` ORDER BY u.umbralid`;
+    query = query.order('umbralid', { ascending: true });
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(u => ({
+      ...u,
+      criticidad: u.criticidad ? (Array.isArray(u.criticidad) ? u.criticidad[0] : u.criticidad) : null,
+      localizacion: u.localizacion ? (Array.isArray(u.localizacion) ? u.localizacion[0] : u.localizacion) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /umbral:', error);
     res.status(500).json({ error: error.message });
@@ -107,7 +145,14 @@ router.get('/umbral/columns', async (req, res) => {
 
 router.post('/umbral', async (req, res) => {
   try {
-    const { data, error } = await db.insert('umbral', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('umbral')
+      .insert(req.body)
+      .select();
+    
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -118,7 +163,15 @@ router.post('/umbral', async (req, res) => {
 
 router.put('/umbral/:id', async (req, res) => {
   try {
-    const { data, error } = await db.update('umbral', req.body, { umbralid: req.params.id });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('umbral')
+      .update(req.body)
+      .eq('umbralid', req.params.id)
+      .select();
+    
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -349,35 +402,40 @@ router.get('/perfilumbral', async (req, res) => {
   try {
     const { perfilId, umbralId } = req.query;
     
-    let sql = `
-      SELECT pu.*,
-             json_build_object('perfilid', p.perfilid, 'perfil', p.perfil, 'nivel', p.nivel) as perfil,
-             json_build_object('umbralid', u.umbralid, 'umbral', u.umbral) as umbral
-      FROM ${dbSchema}.perfilumbral pu
-      LEFT JOIN ${dbSchema}.perfil p ON pu.perfilid = p.perfilid
-      LEFT JOIN ${dbSchema}.umbral u ON pu.umbralid = u.umbralid
-    `;
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
     
-    const params = [];
-    const conditions = [];
+    // Usar Supabase API con joins anidados
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('perfilumbral')
+      .select(`
+        *,
+        perfil:perfilid(perfilid, perfil, nivel),
+        umbral:umbralid(umbralid, umbral)
+      `);
     
     if (perfilId) {
-      conditions.push(`pu.perfilid = $${params.length + 1}`);
-      params.push(perfilId);
+      query = query.eq('perfilid', perfilId);
     }
     if (umbralId) {
-      conditions.push(`pu.umbralid = $${params.length + 1}`);
-      params.push(umbralId);
+      query = query.eq('umbralid', umbralId);
     }
     
-    if (conditions.length > 0) {
-      sql += ` WHERE ${conditions.join(' AND ')}`;
-    }
+    query = query.order('perfilid', { ascending: true });
     
-    sql += ` ORDER BY pu.perfilid`;
+    const { data, error } = await query;
     
-    const result = await pool.query(sql, params);
-    res.json(result.rows || []);
+    if (error) throw error;
+    
+    // Transformar datos para mantener formato compatible
+    const transformed = (data || []).map(pu => ({
+      ...pu,
+      perfil: pu.perfil ? (Array.isArray(pu.perfil) ? pu.perfil[0] : pu.perfil) : null,
+      umbral: pu.umbral ? (Array.isArray(pu.umbral) ? pu.umbral[0] : pu.umbral) : null
+    }));
+    
+    res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /perfilumbral:', error);
     res.status(500).json({ error: error.message });
@@ -396,7 +454,14 @@ router.get('/perfilumbral/columns', async (req, res) => {
 
 router.post('/perfilumbral', async (req, res) => {
   try {
-    const { data, error } = await db.insert('perfilumbral', req.body);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('perfilumbral')
+      .insert(req.body)
+      .select();
+    
     if (error) throw error;
     res.status(201).json(data);
   } catch (error) {
@@ -409,14 +474,22 @@ router.put('/perfilumbral/composite', async (req, res) => {
   try {
     const { perfilid, umbralid } = req.query;
     
-    const result = await pool.query(
-      `UPDATE ${dbSchema}.perfilumbral SET ${Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`).join(', ')} 
-       WHERE perfilid = $${Object.keys(req.body).length + 1} AND umbralid = $${Object.keys(req.body).length + 2} 
-       RETURNING *`,
-      [...Object.values(req.body), perfilid, umbralid]
-    );
+    if (!perfilid || !umbralid) {
+      return res.status(400).json({ error: 'Se requieren perfilid y umbralid en el query string' });
+    }
     
-    res.json(result.rows);
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .from('perfilumbral')
+      .update(req.body)
+      .eq('perfilid', perfilid)
+      .eq('umbralid', umbralid)
+      .select();
+    
+    if (error) throw error;
+    res.json(data);
   } catch (error) {
     logger.error('Error en PUT /perfilumbral/composite:', error);
     res.status(500).json({ error: error.message });

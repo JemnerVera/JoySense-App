@@ -6,8 +6,6 @@
 
 SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
 SUPABASE_ANON_KEY=tu-anon-key-aqui
-ADMIN_EMAIL=admin@joysense.com
-ADMIN_PASSWORD=Admin123*
 
 # ============================================================================
 # Configuración del Servidor
@@ -20,7 +18,6 @@ DB_SCHEMA=joysense
 # Notas:
 # - SUPABASE_URL: URL de tu proyecto Supabase
 # - SUPABASE_ANON_KEY: Anon key (NO service_role_key) - RLS funciona automáticamente
-# - ADMIN_EMAIL: Email del usuario administrador para autenticación del backend
-# - ADMIN_PASSWORD: Password del usuario administrador
-# - El backend se autentica automáticamente con admin@joysense.com al iniciar
+# - El backend usa tokens de sesión del frontend para todas las queries
+# - Las políticas RLS usan auth.uid() para filtrar datos por usuario
 # ============================================================================
