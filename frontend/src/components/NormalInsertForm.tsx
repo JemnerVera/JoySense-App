@@ -250,13 +250,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     }
   };
 
-  // Auto-seleccionar País si solo hay una opción (solo una vez)
+  // NO auto-seleccionar país automáticamente. Solo sincronizar con filtros globales.
+  // El país solo se debe llenar si hay un filtro global seleccionado.
   useEffect(() => {
-    if (paisOptions.length === 1 && !formData.paisid && !autoSelectedPaisRef.current) {
-      const newPaisId = paisOptions[0].value;
-      autoSelectedPaisRef.current = true;
-      updateField('paisid', newPaisId);
-    }
     // Resetear la referencia si cambia la tabla o se resetea el formulario
     if (formData.paisid === null || formData.paisid === undefined) {
       autoSelectedPaisRef.current = false;
@@ -264,19 +260,66 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paisOptions.length, selectedTable]);
 
-  // Auto-seleccionar Empresa si hay filtro global y no está seleccionada
+  // Auto-seleccionar País si hay filtro global y no está seleccionado (solo para empresa y fundo)
   useEffect(() => {
-    if (empresaSeleccionada && !formData.empresaid) {
-      setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+    const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
+    const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
+    
+    console.log('🔍 [NormalInsertForm] Sincronización país:', {
+      selectedTable,
+      paisSeleccionado,
+      hasGlobalFilter,
+      formDataPaisid: formData.paisid,
+      shouldSync,
+      valuesMatch: formData.paisid && formData.paisid.toString() === paisSeleccionado?.toString()
+    });
+    
+    if (shouldSync) {
+      // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
+      if (!formData.paisid || formData.paisid.toString() !== paisSeleccionado.toString()) {
+        console.log('✅ [NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
+        setFormData((prev: any) => ({ ...prev, paisid: paisSeleccionado }));
+      } else {
+        console.log('⏭️ [NormalInsertForm] País ya está sincronizado, no actualizando');
+      }
+    } else if ((selectedTable === 'empresa' || selectedTable === 'fundo') && !hasGlobalFilter && formData.paisid) {
+      // Si no hay filtro global y hay un valor en formData, limpiarlo (solo si fue auto-seleccionado previamente)
+      console.log('🧹 [NormalInsertForm] Limpiando paisid porque no hay filtro global');
+      setFormData((prev: any) => ({ ...prev, paisid: null }));
     }
-  }, [empresaSeleccionada, formData.empresaid, setFormData]);
+  }, [paisSeleccionado, selectedTable, formData.paisid, setFormData]);
 
-  // Auto-seleccionar Fundo si hay filtro global y no está seleccionado
+  // Auto-seleccionar Empresa si hay filtro global y no está seleccionada (solo para fundo)
   useEffect(() => {
-    if (fundoSeleccionado && !formData.fundoid) {
-      setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+    const hasGlobalFilter = empresaSeleccionada && empresaSeleccionada.trim() !== '';
+    const shouldSync = hasGlobalFilter && selectedTable === 'fundo';
+    
+    if (shouldSync) {
+      // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
+      if (!formData.empresaid || formData.empresaid.toString() !== empresaSeleccionada.toString()) {
+        setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+      }
+    } else if (selectedTable === 'fundo' && !hasGlobalFilter && formData.empresaid) {
+      // Si no hay filtro global y hay un valor en formData, limpiarlo
+      setFormData((prev: any) => ({ ...prev, empresaid: null }));
     }
-  }, [fundoSeleccionado, formData.fundoid, setFormData]);
+  }, [empresaSeleccionada, selectedTable, formData.empresaid, setFormData]);
+
+  // Auto-seleccionar Fundo si hay filtro global y no está seleccionado (solo para ubicacion)
+  useEffect(() => {
+    const hasGlobalFilter = fundoSeleccionado && fundoSeleccionado.trim() !== '';
+    const shouldSync = hasGlobalFilter && selectedTable === 'ubicacion';
+    
+    if (shouldSync) {
+      // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
+      if (!formData.fundoid || formData.fundoid.toString() !== fundoSeleccionado.toString()) {
+        setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+      }
+    } else if (selectedTable === 'ubicacion' && !hasGlobalFilter && formData.fundoid) {
+      // Si no hay filtro global y hay un valor en formData, limpiarlo
+      setFormData((prev: any) => ({ ...prev, fundoid: null }));
+    }
+  }, [fundoSeleccionado, selectedTable, formData.fundoid, setFormData]);
 
   // Función para renderizar campos con Status al extremo derecho (Usuario)
   const renderStatusRightFields = (): React.ReactNode[] => {

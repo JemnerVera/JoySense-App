@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
+import { useFilters } from '../contexts/FilterContext';
 
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
@@ -69,6 +70,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showModal } = useModal();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
   // Estado local
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
@@ -913,6 +915,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 }}
                 message={message}
                 relatedData={relatedDataForStatus}
+                paisSeleccionado={paisSeleccionado}
+                empresaSeleccionada={empresaSeleccionada}
+                fundoSeleccionado={fundoSeleccionado}
                 visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
                   const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];

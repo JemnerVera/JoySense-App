@@ -167,10 +167,32 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
       }
     };
     
+    // Renderizar campo de empresa con sincronización de filtros globales
+    const renderEmpresaField = () => {
+      if (empresaSeleccionada && empresaField) {
+        // Si hay empresa seleccionada en filtros globales, mostrar como disabled
+        const empresaOptions = getUniqueOptionsForField('empresaid');
+        const selectedEmpresa = empresaOptions.find(e => e.value.toString() === empresaSeleccionada.toString());
+        return (
+          <div>
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+              {t('create.company')}*
+            </label>
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
+              {selectedEmpresa ? selectedEmpresa.label : getEmpresaName(empresaSeleccionada)}
+            </div>
+          </div>
+        );
+      } else if (empresaField) {
+        return renderField(empresaField);
+      }
+      return null;
+    };
+    
     result.push(
       <div key="pais-empresa-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {renderPaisField()}
-        {empresaField && renderField(empresaField)}
+        {renderEmpresaField()}
         <div></div>
       </div>
     );
