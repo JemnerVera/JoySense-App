@@ -2,10 +2,11 @@
 // IMPORTS
 // ============================================================================
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import NormalInsertForm from '../../NormalInsertForm';
-import PerfilGeografiaPermisoForm from '../../PerfilGeografiaPermisoForm';
+import { LoadingSpinner } from '../LoadingSpinner';
+import { logger } from '../../../utils/logger';
 // import MultipleSensorForm from '../../MultipleSensorForm';
 // import MultipleMetricaSensorForm from '../../MultipleMetricaSensorForm';
 // import MultipleUsuarioPerfilForm from '../../MultipleUsuarioPerfilForm';
@@ -121,6 +122,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
 
   // Determinar qué formulario renderizar según la tabla
   const renderForm = () => {
+
     // Formulario normal para todas las tablas
     return (
       <NormalInsertForm
@@ -175,7 +177,11 @@ export const InsertTab: React.FC<InsertTabProps> = ({
       )}
 
       {/* Formulario */}
-      {renderForm()}
+      {visibleColumns.length > 0 || loading ? (
+        renderForm()
+      ) : (
+        <LoadingSpinner message="Cargando columnas del formulario..." />
+      )}
     </div>
   );
 };
