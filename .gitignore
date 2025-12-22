@@ -74,11 +74,14 @@ Thumbs.db
 .azure
 
 # ============================================================================
-# CARPETAS DE DOCUMENTACIÓN Y SCRIPTS SQL
+# CARPETAS DE DOCUMENTACIÓN, SCRIPTS Y SCHEMA
 # ============================================================================
-# Ignorar carpetas completas de documentación y scripts SQL
+# Ignorar carpetas completas de documentación, scripts SQL, schema y auth
 docs/
 sql/
+schema/
+scripts/
+auth/
 
 # ============================================================================
 # ARCHIVOS CON DATOS SENSIBLES (NO PUBLICAR)
@@ -100,3 +103,7 @@ docs/*_users.md
 *_real.json
 *_production.json
 *_sensitive.json
+
+# Scripts con credenciales (nunca committear la versión real)
+scripts/actualizar-env.ps1
+*.env.local

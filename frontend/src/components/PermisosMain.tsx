@@ -57,7 +57,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   const { showModal } = useModal();
 
   // Tabla fija para permisos
-  const selectedTable = 'perfil_geografia_permiso';
+  const selectedTable = 'permiso';
 
   // Estado local - usar propActiveSubTab directamente, no estado local
   const activeSubTab = propActiveSubTab;
@@ -175,13 +175,17 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   }, [setFormData, onSubTabChange]);
 
   const handleInsert = useCallback(async () => {
-    // Para perfil_geografia_permiso, validar campos requeridos manualmente
+    // Validación de campos requeridos según la configuración de la tabla
     if (!formState.data.perfilid) {
       setMessage({ type: 'warning', text: 'Por favor seleccione un perfil' });
       return;
     }
-    if (!formState.data.paisid && !formState.data.empresaid && !formState.data.fundoid && !formState.data.ubicacionid) {
-      setMessage({ type: 'warning', text: 'Por favor seleccione un tipo de geografía y su valor' });
+    if (!formState.data.origenid) {
+      setMessage({ type: 'warning', text: 'Por favor seleccione un origen' });
+      return;
+    }
+    if (!formState.data.fuenteid) {
+      setMessage({ type: 'warning', text: 'Por favor seleccione una fuente' });
       return;
     }
 

@@ -57,17 +57,8 @@ export const useSystemParametersCRUD = ({
 }: UseSystemParametersCRUDProps) => {
 
   const handleInsert = useCallback(async () => {
-    // Validación especial para perfil_geografia_permiso
-    if (selectedTable === 'perfil_geografia_permiso') {
-      if (!formState.data.perfilid) {
-        setMessage({ type: 'warning', text: 'Por favor seleccione un perfil' });
-        return;
-      }
-      if (!formState.data.paisid && !formState.data.empresaid && !formState.data.fundoid && !formState.data.ubicacionid) {
-        setMessage({ type: 'warning', text: 'Por favor seleccione un tipo de geografía y su valor' });
-        return;
-      }
-    } else if (selectedTable === 'nodo') {
+    // Validaciones especiales según la tabla
+    if (selectedTable === 'nodo') {
       // Validación especial para nodo (validación progresiva)
       // Validación progresiva: primero debe tener nodo, luego deveui
       const nodoValue = formState.data.nodo;
@@ -118,10 +109,8 @@ export const useSystemParametersCRUD = ({
       datemodified: now
     };
 
-    // Para perfil_geografia_permiso, excluir permisoid (se genera automáticamente)
-    if (selectedTable === 'perfil_geografia_permiso') {
-      delete dataToInsert.permisoid;
-    }
+    // Excluir campos de clave primaria que se generan automáticamente
+    // (ya se maneja en la configuración de cada tabla)
 
     const result = await insertRow(dataToInsert);
     

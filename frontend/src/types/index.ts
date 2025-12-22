@@ -344,16 +344,48 @@ export interface Mensaje {
   contacto?: Contacto;
 }
 
-export interface PerfilUmbral {
+// perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
+
+export interface Regla {
+  reglaid: number;
+  nombre: string;
+  prioridad: number;
+  statusid: number;
+  usercreatedid: number;
+  datecreated: string;
+  usermodifiedid: number;
+  datemodified: string;
+}
+
+export interface ReglaPerfil {
+  regla_perfilid: number;
+  reglaid: number;
   perfilid: number;
-  umbralid: number;
   statusid: number;
   usercreatedid: number;
   datecreated: string;
   usermodifiedid: number;
   datemodified: string;
   // Relaciones
+  regla?: Regla;
   perfil?: Perfil;
+}
+
+export interface ReglaUmbral {
+  regla_umbralid: number;
+  reglaid: number;
+  umbralid: number;
+  operador_logico: string;
+  agrupador_inicio: boolean;
+  agrupador_fin: boolean;
+  orden: number;
+  statusid: number;
+  usercreatedid: number;
+  datecreated: string;
+  usermodifiedid: number;
+  datemodified: string;
+  // Relaciones
+  regla?: Regla;
   umbral?: Umbral;
 }
 
@@ -479,28 +511,56 @@ export interface Correo {
 }
 
 /**
- * PerfilGeografiaPermiso - NUEVA TABLA
- * Sistema de permisos por nivel geográfico
+ * Permiso - Sistema de permisos unificado
+ * origenid: 1 = GEOGRAFÍA, 2 = TABLA
  */
-export interface PerfilGeografiaPermiso {
+export interface Permiso {
   permisoid: number;
   perfilid: number;
-  paisid?: number;
-  empresaid?: number;
-  fundoid?: number;
-  ubicacionid?: number;
+  origenid: number; // 1 = GEOGRAFÍA, 2 = TABLA
+  fuenteid: number;
+  objetoid?: number; // NULL = global, valor = puntual
   puede_ver: boolean;
   puede_insertar: boolean;
   puede_actualizar: boolean;
+  puede_eliminar: boolean;
   statusid: number;
   usercreatedid: number;
+  usermodifiedid: number;
   datecreated: string;
+  datemodified: string;
   // Relaciones
   perfil?: Perfil;
-  pais?: Pais;
-  empresa?: Empresa;
-  fundo?: Fundo;
-  ubicacion?: Ubicacion;
+  origen?: Origen;
+  fuente?: Fuente;
+}
+
+/**
+ * Fuente - Objeto lógico (tabla o nivel geográfico)
+ */
+export interface Fuente {
+  fuenteid: number;
+  esquema: string;
+  fuente: string; // Nombre de tabla o nivel geográfico
+  statusid: number;
+  usercreatedid: number;
+  usermodifiedid: number;
+  datecreated: string;
+  datemodified: string;
+}
+
+/**
+ * Origen - Tipo de permiso
+ * origenid: 1 = GEOGRAFÍA, 2 = TABLA
+ */
+export interface Origen {
+  origenid: number;
+  origen: string;
+  statusid: number;
+  usercreatedid: number;
+  usermodifiedid: number;
+  datecreated: string;
+  datemodified: string;
 }
 
 // ============================================================================
@@ -598,8 +658,10 @@ export type TableName =
   | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
-  | 'criticidad' | 'umbral' | 'alerta' | 'alertaconsolidado' | 'mensaje' | 'perfilumbral' | 'audit_log_umbral'
-  | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono' | 'perfil_geografia_permiso';
+  | 'criticidad' | 'umbral' | 'alerta' | 'alertaconsolidado' | 'mensaje' | 'audit_log_umbral'
+  | 'regla' | 'regla_objeto' | 'regla_perfil' | 'regla_umbral'
+  | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
+  | 'permiso' | 'fuente' | 'origen'; // Nuevo sistema de permisos
 
 // Mapeo de PK por tabla
 export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
@@ -624,13 +686,18 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   alerta: 'uuid_alertaid',
   alertaconsolidado: 'uuid_consolidadoid',
   mensaje: ['uuid_origen', 'contactoid'],
-  perfilumbral: ['perfilid', 'umbralid'],
   audit_log_umbral: 'auditid',
+  regla: 'reglaid',
+  regla_objeto: 'regla_objetoid',
+  regla_perfil: 'regla_perfilid',
+  regla_umbral: 'regla_umbralid',
   usuario: 'usuarioid',
   perfil: 'perfilid',
   usuarioperfil: ['usuarioid', 'perfilid'],
   contacto: 'contactoid',
   correo: 'correoid',
   codigotelefono: 'codigotelefonoid',
-  perfil_geografia_permiso: 'permisoid'
+  permiso: 'permisoid', // Nuevo sistema de permisos
+  fuente: 'fuenteid',
+  origen: 'origenid'
 };

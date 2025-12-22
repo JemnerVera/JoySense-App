@@ -29,7 +29,6 @@ export const useTableDataManagement = () => {
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
-  const [perfilumbralData, setPerfilumbralData] = useState<any[]>([]);
   const [contactosData, setContactosData] = useState<any[]>([]);
   const [correosData, setCorreosData] = useState<any[]>([]);
 
@@ -76,7 +75,6 @@ export const useTableDataManagement = () => {
         usuariosResponse,
         sensorsResponse,
         metricasensorResponse,
-        perfilumbralResponse,
         contactosResponse,
         correosResponse
       ] = await Promise.all([
@@ -95,7 +93,6 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('usuario', 500),
         JoySenseService.getTableData('sensor', 500),
         JoySenseService.getTableData('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
-        JoySenseService.getTableData('perfilumbral', 500),
         JoySenseService.getTableData('contacto', 500),
         JoySenseService.getTableData('correo', 500)
       ]);
@@ -123,7 +120,6 @@ export const useTableDataManagement = () => {
       const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
-      const perfilumbral = Array.isArray(perfilumbralResponse) ? perfilumbralResponse : ((perfilumbralResponse as any)?.data || []);
       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
       const correos = Array.isArray(correosResponse) ? correosResponse : ((correosResponse as any)?.data || []);
 
@@ -143,7 +139,6 @@ export const useTableDataManagement = () => {
       setUserData(usuarios);
       setSensorsData(sensors);
       setMetricasensorData(metricasensor);
-      setPerfilumbralData(perfilumbral);
       setContactosData(contactos);
       setCorreosData(correos);
 
@@ -298,8 +293,8 @@ export const useTableDataManagement = () => {
 
       // Ordenar datos según la tabla
       let sortedData = data;
-      if (selectedTable === 'perfil_geografia_permiso') {
-        // Para perfil_geografia_permiso, ordenar por permisoid ascendente
+      if (selectedTable === 'permiso') {
+        // Para permiso, ordenar por permisoid ascendente
         sortedData = data.sort((a: any, b: any) => {
           const idA = a.permisoid || 0;
           const idB = b.permisoid || 0;
@@ -388,7 +383,6 @@ export const useTableDataManagement = () => {
     umbralesData,
     sensorsData,
     metricasensorData,
-    perfilumbralData,
     contactosData,
     correosData,
     
@@ -417,7 +411,6 @@ export const useTableDataManagement = () => {
     setUmbralesData,
     setSensorsData,
     setMetricasensorData,
-    setPerfilumbralData,
     setContactosData,
     setCorreosData
   };

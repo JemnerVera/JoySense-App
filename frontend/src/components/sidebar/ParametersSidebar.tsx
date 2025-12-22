@@ -217,8 +217,7 @@ const ParametersSidebar: React.FC<ParametersSidebarProps> = ({
     )},
     ];
 
-    // NOTA: perfil_geografia_permiso ahora está en la pestaña "Permisos" del MainSidebar
-    // Solo visible para administradores (perfilid === 1)
+    // NOTA: permiso, fuente, origen ahora están disponibles en la configuración de tablas
 
     return tables;
   };

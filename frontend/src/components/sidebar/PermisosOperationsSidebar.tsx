@@ -37,7 +37,7 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
     // Verificar cambios sin guardar
     const hasChanges = hasSignificantChanges(
       formData,
-      'perfil_geografia_permiso',
+      'permiso',
       activeSubTab,
       []
     );

@@ -30,7 +30,10 @@ export const filterColumnsByTable = (
     'sensor': ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metricasensor': ['nodoid', 'metricaid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'umbral': ['ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'umbral', 'maximo', 'minimo', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'perfilumbral': ['perfilid', 'umbralid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'regla': ['reglaid', 'nombre', 'prioridad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'regla_perfil': ['regla_perfilid', 'reglaid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'regla_umbral': ['regla_umbralid', 'reglaid', 'umbralid', 'operador_logico', 'agrupador_inicio', 'agrupador_fin', 'orden', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'regla_objeto': ['regla_objetoid', 'reglaid', 'origenid', 'fuenteid', 'objetoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'audit_log_umbral': ['auditid', 'umbralid', 'old_minimo', 'new_minimo', 'old_maximo', 'new_maximo', 'old_criticidadid', 'new_criticidadid', 'modified_by', 'modified_at', 'accion'],
     'criticidad': ['criticidad', 'grado', 'frecuencia', 'escalamiento', 'escalon', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'usuario': ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -38,7 +41,9 @@ export const filterColumnsByTable = (
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'mensaje': ['alertaid', 'contactoid', 'mensaje', 'fecha', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'alerta': ['umbralid', 'medicionid', 'fecha', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'perfil_geografia_permiso': ['permisoid', 'perfilid', 'paisid', 'empresaid', 'fundoid', 'ubicacionid', 'puede_ver', 'puede_insertar', 'puede_actualizar', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'permiso': ['permisoid', 'perfilid', 'origenid', 'fuenteid', 'objetoid', 'puede_ver', 'puede_insertar', 'puede_actualizar', 'puede_eliminar', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'fuente': ['fuenteid', 'esquema', 'fuente', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'origen': ['origenid', 'origen', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
   };
 
   // Caso especial para nodo
@@ -318,10 +323,8 @@ export const getVisibleColumns = (
   // 1. Filtrar columnas según la tabla
   let filtered = filterColumnsByTable(columns, tableName, selectedContactType);
 
-  // 2. Para formularios (Crear/Actualizar), excluir permisoid de perfil_geografia_permiso
-  if (!forTable && tableName === 'perfil_geografia_permiso') {
-    filtered = filtered.filter(col => col.columnName !== 'permisoid');
-  }
+  // 2. Para formularios (Crear/Actualizar), excluir campos de clave primaria que se generan automáticamente
+  // (esto ya se maneja en la configuración de cada tabla)
 
   // 3. Inyectar columnas faltantes (solo para formularios)
   if (!forTable) {

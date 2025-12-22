@@ -54,7 +54,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   // ============================================================================
   // FORM DATA HOOK
   // ============================================================================
-  
+
   // Initialize nodes state first for the form hook
   const [tempSelectedNodes, setTempSelectedNodes] = useState<SelectedNode[]>([]);
   
@@ -74,7 +74,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   // ============================================================================
   // NODES HOOK
   // ============================================================================
-  
+
   const {
     selectedNodes,
     allNodesSelected,

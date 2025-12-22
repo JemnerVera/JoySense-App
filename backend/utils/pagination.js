@@ -39,7 +39,9 @@ const SEARCHABLE_FIELDS = {
   asociacion: ['id_device'],
   audit_log_umbral: ['accion'],
   entidad_localizacion: ['entidadid', 'localizacionid'],
-  perfil_geografia_permiso: ['perfilid']
+  permiso: ['perfilid'], // Nuevo sistema de permisos
+  fuente: ['fuente'],
+  origen: ['origen']
 };
 
 /**
@@ -143,21 +145,13 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     let finalSortBy = sortBy;
     
     if (!finalSortBy) {
-      // Para perfil_geografia_permiso, usar permisoid como default
       // Para audit_log_umbral, usar modified_at
       // Para otras tablas, usar datecreated
-      if (tableName === 'perfil_geografia_permiso') {
-        finalSortBy = 'permisoid';
-      } else if (tableName === 'audit_log_umbral') {
+      if (tableName === 'audit_log_umbral') {
         finalSortBy = 'modified_at';
       } else {
         finalSortBy = 'datecreated';
       }
-    }
-    
-    // Para perfil_geografia_permiso, si se intenta ordenar por datemodified (que no existe), usar permisoid
-    if (tableName === 'perfil_geografia_permiso' && finalSortBy === 'datemodified') {
-      finalSortBy = 'permisoid';
     }
     
     const ascending = sortOrder !== 'desc';
@@ -166,19 +160,14 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     if (finalSortBy === 'datecreated') {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
-      // Solo agregar datemodified si la tabla lo tiene (perfil_geografia_permiso no lo tiene)
-      if (tableName !== 'perfil_geografia_permiso') {
-        dataQuery = dataQuery.order('datemodified', { ascending });
-      }
+      dataQuery = dataQuery.order('datemodified', { ascending });
     } else if (finalSortBy === 'modified_at') {
       // Para audit_log_umbral, ordenar solo por modified_at
       dataQuery = dataQuery.order('modified_at', { ascending });
     } else if (finalSortBy === 'datemodified') {
       // Si ordenamos por datemodified, usar datecreated como desempate
       dataQuery = dataQuery.order('datemodified', { ascending });
-      if (tableName !== 'perfil_geografia_permiso') {
-        dataQuery = dataQuery.order('datecreated', { ascending });
-      }
+      dataQuery = dataQuery.order('datecreated', { ascending });
     } else {
       // Ordenar por el campo especificado
       dataQuery = dataQuery.order(finalSortBy, { ascending });
