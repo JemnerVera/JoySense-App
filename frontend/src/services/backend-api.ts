@@ -901,8 +901,9 @@ export class JoySenseService {
       'pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion',
       'tipo', 'metrica', 'sensor', 'metricasensor', 'nodo', 'localizacion', 'asociacion',
       'medicion', 'sensor_valor', 'sensor_valor_error',
-      'criticidad', 'umbral', 'alerta', 'alertaconsolidado', 'mensaje', 'perfilumbral', 'audit_log_umbral',
-      'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo', 'codigotelefono', 'perfil_geografia_permiso'
+      'criticidad', 'umbral', 'alerta', 'alertaconsolidado', 'mensaje', 'audit_log_umbral',
+      'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
+      'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo', 'codigotelefono', 'permiso', 'fuente', 'origen'
     ];
   }
 

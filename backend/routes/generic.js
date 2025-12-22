@@ -21,11 +21,11 @@ const ALLOWED_TABLES = [
   'entidad', 'entidad_localizacion',
   'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
   'umbral', 'alerta', 'alertaconsolidado', 'criticidad',
-  'perfilumbral', 'audit_log_umbral',
+  'audit_log_umbral', 'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
   'usuario', 'perfil', 'usuarioperfil', 
   'contacto', 'correo', 'codigotelefono',
   'mensaje', 'asociacion',
-  'perfil_geografia_permiso',
+  'permiso', 'fuente', 'origen', // Nuevo sistema de permisos
   'sensor_valor', 'sensor_valor_error'
 ];
 
@@ -52,12 +52,17 @@ const PK_MAPPING = {
   codigotelefono: 'codigotelefonoid',
   mensaje: null, // PK compuesta
   asociacion: 'asociacionid',
-  perfil_geografia_permiso: 'permisoid',
+  permiso: 'permisoid', // Nuevo sistema de permisos
+  fuente: 'fuenteid',
+  origen: 'origenid',
   audit_log_umbral: 'auditid',
   entidad_localizacion: null, // PK compuesta
   metricasensor: null, // PK compuesta
   usuarioperfil: null, // PK compuesta
-  perfilumbral: null, // PK compuesta
+  regla: 'reglaid',
+  regla_objeto: 'regla_objetoid',
+  regla_perfil: 'regla_perfilid',
+  regla_umbral: 'regla_umbralid',
   sensor_valor: 'id',
   sensor_valor_error: 'id'
 };

@@ -477,20 +477,86 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
-  perfilumbral: {
-    name: 'perfilumbral',
-    displayName: 'Perfil-Umbral',
-    description: 'Asignación de umbrales a perfiles',
-    icon: '👤',
+  // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
+  
+  regla: {
+    name: 'regla',
+    displayName: 'Reglas',
+    description: 'Reglas de negocio para alertas',
+    icon: '📋',
     category: 'alertas',
-    primaryKey: ['perfilid', 'umbralid'],
+    primaryKey: 'reglaid',
     allowInsert: true,
     allowUpdate: true,
     allowDelete: true,
-    allowMassive: true,
+    allowMassive: false,
     fields: [
+      { name: 'reglaid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+      { name: 'prioridad', label: 'Prioridad', type: 'number', defaultValue: 1 },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  regla_perfil: {
+    name: 'regla_perfil',
+    displayName: 'Regla-Perfil',
+    description: 'Asignación de reglas a perfiles',
+    icon: '👤',
+    category: 'alertas',
+    primaryKey: 'regla_perfilid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    allowMassive: false,
+    fields: [
+      { name: 'regla_perfilid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'reglaid', label: 'Regla', type: 'select', required: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
       { name: 'perfilid', label: 'Perfil', type: 'select', required: true, foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  regla_umbral: {
+    name: 'regla_umbral',
+    displayName: 'Regla-Umbral',
+    description: 'Asignación de umbrales a reglas',
+    icon: '⚡',
+    category: 'alertas',
+    primaryKey: 'regla_umbralid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    allowMassive: false,
+    fields: [
+      { name: 'regla_umbralid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'reglaid', label: 'Regla', type: 'select', required: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
       { name: 'umbralid', label: 'Umbral', type: 'select', required: true, foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
+      { name: 'operador_logico', label: 'Operador Lógico', type: 'text', defaultValue: 'AND' },
+      { name: 'agrupador_inicio', label: 'Agrupador Inicio', type: 'boolean', defaultValue: false },
+      { name: 'agrupador_fin', label: 'Agrupador Fin', type: 'boolean', defaultValue: false },
+      { name: 'orden', label: 'Orden', type: 'number', required: true },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  regla_objeto: {
+    name: 'regla_objeto',
+    displayName: 'Regla-Objeto',
+    description: 'Asignación de objetos (geográficos/funcionales) a reglas',
+    icon: '🎯',
+    category: 'alertas',
+    primaryKey: 'regla_objetoid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    allowMassive: false,
+    fields: [
+      { name: 'regla_objetoid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'reglaid', label: 'Regla', type: 'select', required: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
+      { name: 'origenid', label: 'Origen', type: 'select', required: true, foreignKey: { table: 'origen', valueField: 'origenid', labelField: 'origen' } },
+      { name: 'fuenteid', label: 'Fuente', type: 'select', required: true, foreignKey: { table: 'fuente', valueField: 'fuenteid', labelField: 'fuente' } },
+      { name: 'objetoid', label: 'Objeto ID', type: 'number', required: false },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
@@ -634,10 +700,10 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
-  perfil_geografia_permiso: {
-    name: 'perfil_geografia_permiso',
-    displayName: 'Permisos Geográficos',
-    description: 'Permisos de acceso por nivel geográfico',
+  permiso: {
+    name: 'permiso',
+    displayName: 'Permisos',
+    description: 'Sistema de permisos unificado (GEOGRAFÍA y TABLA)',
     icon: '🔒',
     category: 'usuarios',
     primaryKey: 'permisoid',
@@ -645,15 +711,50 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: true,
     allowDelete: true,
     fields: [
-      { name: 'permisoid', label: 'ID', type: 'number', hidden: false, readonly: true },
+      { name: 'permisoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'perfilid', label: 'Perfil', type: 'select', required: true, foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
-      { name: 'paisid', label: 'País', type: 'select', foreignKey: { table: 'pais', valueField: 'paisid', labelField: 'pais' } },
-      { name: 'empresaid', label: 'Empresa', type: 'select', foreignKey: { table: 'empresa', valueField: 'empresaid', labelField: 'empresa' } },
-      { name: 'fundoid', label: 'Fundo', type: 'select', foreignKey: { table: 'fundo', valueField: 'fundoid', labelField: 'fundo' } },
-      { name: 'ubicacionid', label: 'Ubicación', type: 'select', foreignKey: { table: 'ubicacion', valueField: 'ubicacionid', labelField: 'ubicacion' } },
-      { name: 'puede_ver', label: 'Puede Ver', type: 'boolean', defaultValue: true },
+      { name: 'origenid', label: 'Origen', type: 'select', required: true, foreignKey: { table: 'origen', valueField: 'origenid', labelField: 'origen' } },
+      { name: 'fuenteid', label: 'Fuente', type: 'select', required: true, foreignKey: { table: 'fuente', valueField: 'fuenteid', labelField: 'fuente' } },
+      { name: 'objetoid', label: 'Objeto ID', type: 'number', required: false },
+      { name: 'puede_ver', label: 'Puede Ver', type: 'boolean', defaultValue: false },
       { name: 'puede_insertar', label: 'Puede Insertar', type: 'boolean', defaultValue: false },
       { name: 'puede_actualizar', label: 'Puede Actualizar', type: 'boolean', defaultValue: false },
+      { name: 'puede_eliminar', label: 'Puede Eliminar', type: 'boolean', defaultValue: false },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  fuente: {
+    name: 'fuente',
+    displayName: 'Fuentes',
+    description: 'Fuentes de permisos (tablas o niveles geográficos)',
+    icon: '📋',
+    category: 'sistema',
+    primaryKey: 'fuenteid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: false,
+    fields: [
+      { name: 'fuenteid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'esquema', label: 'Esquema', type: 'text', required: true, defaultValue: 'joysense' },
+      { name: 'fuente', label: 'Fuente', type: 'text', required: true },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  origen: {
+    name: 'origen',
+    displayName: 'Orígenes',
+    description: 'Tipos de origen de permisos (GEOGRAFÍA o TABLA)',
+    icon: '🎯',
+    category: 'sistema',
+    primaryKey: 'origenid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: false,
+    fields: [
+      { name: 'origenid', label: 'ID', type: 'number', hidden: false, readonly: true },
+      { name: 'origen', label: 'Origen', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   }

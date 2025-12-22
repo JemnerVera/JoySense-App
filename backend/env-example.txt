@@ -4,7 +4,7 @@
 # IMPORTANTE: Usa Supabase API directamente (no conexión directa a PostgreSQL)
 # Según indicaciones del DBA: "backend_user YA NO SIRVE"
 
-SUPABASE_URL=https://fagswxnjkcavchfrnrhs.supabase.co
+SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu-anon-key-aqui
 
 # ============================================================================

@@ -123,9 +123,9 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return umbrales.some(umbral => umbral.metricaid === id);
             
           case 'umbral':
-            // Verificar si hay perfilumbrales que referencian este umbral
-            const perfilumbrales = await JoySenseService.getTableData('perfilumbral');
-            return perfilumbrales.some(perfilumbral => perfilumbral.umbralid === id);
+            // Verificar si hay regla_umbral que referencian este umbral
+            const reglaUmbrales = await JoySenseService.getTableData('regla_umbral');
+            return reglaUmbrales.some((ru: any) => ru.umbralid === id);
             
           case 'criticidad':
             // Verificar si hay umbrales que referencian esta criticidad

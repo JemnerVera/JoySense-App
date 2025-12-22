@@ -1,5 +1,6 @@
 /**
- * Rutas de Alertas: umbral, alerta, alertaconsolidado, criticidad, mensaje, perfilumbral
+ * Rutas de Alertas: umbral, alerta, alertaconsolidado, criticidad, mensaje
+ * Nota: perfilumbral fue eliminado - usar regla, regla_perfil, regla_umbral
  * Versión Supabase API con RLS
  */
 
@@ -464,106 +465,15 @@ router.get('/mensaje/columns', async (req, res) => {
 });
 
 // ============================================================================
-// PERFILUMBRAL
+// REGLA_PERFIL y REGLA_UMBRAL (reemplazo de perfilumbral)
 // ============================================================================
+// Nota: perfilumbral fue reemplazado por el sistema de reglas
+// Las relaciones ahora son: regla <-> regla_perfil <-> perfil
+//                         regla <-> regla_umbral <-> umbral
 
-router.get('/perfilumbral', async (req, res) => {
-  try {
-    const { perfilId, umbralId } = req.query;
-    
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
-    
-    // Usar Supabase API con joins anidados
-    let query = userSupabase
-      .schema(dbSchema)
-      .from('perfilumbral')
-      .select(`
-        *,
-        perfil:perfilid(perfilid, perfil, nivel),
-        umbral:umbralid(umbralid, umbral)
-      `);
-    
-    if (perfilId) {
-      query = query.eq('perfilid', perfilId);
-    }
-    if (umbralId) {
-      query = query.eq('umbralid', umbralId);
-    }
-    
-    query = query.order('perfilid', { ascending: true });
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    // Transformar datos para mantener formato compatible
-    const transformed = (data || []).map(pu => ({
-      ...pu,
-      perfil: pu.perfil ? (Array.isArray(pu.perfil) ? pu.perfil[0] : pu.perfil) : null,
-      umbral: pu.umbral ? (Array.isArray(pu.umbral) ? pu.umbral[0] : pu.umbral) : null
-    }));
-    
-    res.json(transformed);
-  } catch (error) {
-    logger.error('Error en GET /perfilumbral:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Las operaciones CRUD para regla, regla_perfil y regla_umbral
+// se manejan a través de las rutas genéricas en routes/generic.js
 
-router.get('/perfilumbral/columns', async (req, res) => {
-  try {
-    const metadata = await getTableMetadata('perfilumbral');
-    res.json(metadata.columns);
-  } catch (error) {
-    logger.error('Error en GET /perfilumbral/columns:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/perfilumbral', async (req, res) => {
-  try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
-    const { data, error } = await userSupabase
-      .schema(dbSchema)
-      .from('perfilumbral')
-      .insert(req.body)
-      .select();
-    
-    if (error) throw error;
-    res.status(201).json(data);
-  } catch (error) {
-    logger.error('Error en POST /perfilumbral:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.put('/perfilumbral/composite', async (req, res) => {
-  try {
-    const { perfilid, umbralid } = req.query;
-    
-    if (!perfilid || !umbralid) {
-      return res.status(400).json({ error: 'Se requieren perfilid y umbralid en el query string' });
-    }
-    
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
-    const { data, error } = await userSupabase
-      .schema(dbSchema)
-      .from('perfilumbral')
-      .update(req.body)
-      .eq('perfilid', perfilid)
-      .eq('umbralid', umbralid)
-      .select();
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    logger.error('Error en PUT /perfilumbral/composite:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // ============================================================================
 // AUDIT_LOG_UMBRAL

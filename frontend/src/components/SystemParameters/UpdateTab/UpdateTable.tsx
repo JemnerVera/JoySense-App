@@ -41,11 +41,7 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   }, []);
 
   const getRowKey = useCallback((row: any) => {
-    // Para perfil_geografia_permiso, usar permisoid
-    if (tableName === 'perfil_geografia_permiso' && row.permisoid) {
-      return `permiso_${row.permisoid}`;
-    }
-    // Para otras tablas, usar la lógica existente
+    // Usar la lógica estándar basada en la configuración de la tabla
     return row.usuarioid || row.login || row.nodoid || row.tipoid || 'default';
   }, [tableName]);
 
@@ -56,12 +52,7 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   const isRowSelected = useCallback((row: any): boolean => {
     if (!selectedRow) return false;
     
-    // Para perfil_geografia_permiso, usar permisoid directamente
-    if (tableName === 'perfil_geografia_permiso') {
-      return row.permisoid && selectedRow.permisoid && row.permisoid === selectedRow.permisoid;
-    }
-    
-    // Para otras tablas, comparar por múltiples campos
+    // Comparar por múltiples campos (lógica estándar)
     const rowKeys = [
       row.paisid,
       row.empresaid,
@@ -183,11 +174,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
               const isSelected = isRowSelected(row);
               
               // Crear una key única combinando múltiples identificadores y el índice
-              // Para perfil_geografia_permiso, usar permisoid directamente
               let rowKey: string;
-              if (tableName === 'perfil_geografia_permiso' && row.permisoid) {
-                rowKey = `permiso_${row.permisoid}`;
-              } else {
+              {
                 const primaryKeys = [
                   row.paisid,
                   row.empresaid,
@@ -345,10 +333,7 @@ export const UpdateTableMemo = React.memo(UpdateTable, (prevProps, nextProps) =>
   
   // Comparar selectedRow por valor si son objetos diferentes pero con el mismo contenido
   if (prevProps.selectedRow && nextProps.selectedRow) {
-    // Para perfil_geografia_permiso, comparar por permisoid
-    if (prevProps.tableName === 'perfil_geografia_permiso' && nextProps.tableName === 'perfil_geografia_permiso') {
-      if (prevProps.selectedRow.permisoid !== nextProps.selectedRow.permisoid) return false;
-    } else if (prevProps.selectedRow !== nextProps.selectedRow) {
+    if (prevProps.selectedRow !== nextProps.selectedRow) {
       return false;
     }
   } else if (prevProps.selectedRow !== nextProps.selectedRow) {

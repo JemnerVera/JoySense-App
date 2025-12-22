@@ -11,7 +11,6 @@ import { LoadingSpinner } from '../LoadingSpinner';
 import { PaginationControls } from '../PaginationControls';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
-import PerfilGeografiaPermisoUpdateForm from '../../PerfilGeografiaPermisoUpdateForm';
 import { MessageDisplay } from '../MessageDisplay';
 import { useModal } from '../../../contexts/ModalContext';
 import type { ColumnInfo } from '../../../types/systemParameters';
@@ -278,22 +277,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
           )}
 
           {/* Formulario */}
-          {tableName === 'perfil_geografia_permiso' ? (
-            <PerfilGeografiaPermisoUpdateForm
-              formData={formData}
-              updateFormField={updateFormField}
-              formErrors={formErrors}
-              loading={isSubmitting}
-              perfilesData={relatedData.perfilesData || []}
-              paisesData={relatedData.paisesData || []}
-              empresasData={relatedData.empresasData || []}
-              fundosData={relatedData.fundosData || []}
-              ubicacionesData={relatedData.ubicacionesData || []}
-              getUniqueOptionsForField={getUniqueOptionsForField}
-              themeColor={themeColor}
-            />
-          ) : (
-            <NormalUpdateForm
+          <NormalUpdateForm
               config={config}
               formData={formData}
               formErrors={formErrors}
@@ -305,7 +289,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               tableName={tableName}
               themeColor={themeColor}
             />
-          )}
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">

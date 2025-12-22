@@ -396,7 +396,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     const mapping = idToNameMapping[columnName];
     let idValue = row[columnName];
     
-    // CASO ESPECIAL: Para perfil_geografia_permiso y otras tablas que vienen con objetos anidados del backend
+    // CASO ESPECIAL: Para tablas que vienen con objetos anidados del backend
     // El backend puede retornar datos expandidos como: { perfilid: 1, perfil: { perfilid: 1, perfil: "Admin" } }
     // Primero verificar si hay un objeto anidado con el nombre de la tabla
     const nestedObject = row[mapping.table];
@@ -410,9 +410,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     
     // CASO ESPECIAL: Para paisid en tablas que no tienen paisid directo (fundo, ubicacion)
     // Resolver a través de relaciones anidadas
-    // NO aplicar esta lógica a perfil_geografia_permiso porque tiene constraint que solo permite uno NOT NULL
-    const isPerfilGeografiaPermiso = row.permisoid !== undefined && row.permisoid !== null;
-    if (columnName === 'paisid' && !idValue && row.empresaid && !isPerfilGeografiaPermiso) {
+    if (columnName === 'paisid' && !idValue && row.empresaid) {
       // Si estamos en fundo/ubicacion y no hay paisid directo, obtenerlo de empresa
       const empresasData = relatedData.empresasData || [];
       const empresa = empresasData.find((e: any) => e.empresaid === row.empresaid);
