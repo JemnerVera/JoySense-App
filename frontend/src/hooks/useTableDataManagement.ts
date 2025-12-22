@@ -152,7 +152,12 @@ export const useTableDataManagement = () => {
    * Cargar datos de una tabla específica
    */
   const loadTableData = useCallback(async (selectedTable: string, initializeFormData?: (cols?: ColumnInfo[]) => Record<string, any>) => {
-    if (!selectedTable) return;
+    // Acceder al estado actual de columns usando una función
+    // Esto requiere pasar columns como dependencia o usar ref
+    if (!selectedTable) {
+      return;
+    }
+    
     
     // Limpiar datos inmediatamente si cambió la tabla para evitar mostrar datos incorrectos
     const isTableChange = loadingTableRef.current && loadingTableRef.current !== selectedTable;
@@ -164,6 +169,7 @@ export const useTableDataManagement = () => {
     }
     
     // Prevenir múltiples llamadas simultáneas para la misma tabla
+    // Si ya está cargando la misma tabla, ignorar la llamada
     if (loadingTableRef.current === selectedTable && loading) {
       return;
     }
@@ -197,6 +203,7 @@ export const useTableDataManagement = () => {
       
       const cols = await JoySenseService.getTableColumns(selectedTable);
       
+      
       // Verificar si la llamada fue cancelada después de recibir las columnas
       if (abortController.signal.aborted) {
         return;
@@ -208,7 +215,13 @@ export const useTableDataManagement = () => {
       }
       
       // Establecer columnas base para formularios
+      
+      // IMPORTANTE: NO resetear loadingTableRef.current hasta después de establecer las columnas
+      // para evitar race conditions
       setColumns(cols || []);
+      
+      // Resetear la referencia solo después de establecer columnas exitosamente
+      // Pero mantenerlo como selectedTable para evitar limpieza prematura
 
       // Agregar columnas virtuales para tablas agrupadas
       if (selectedTable === 'sensor') {

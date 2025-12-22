@@ -16,6 +16,7 @@ import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormF
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
+import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { logger } from '../utils/logger';
 
 // ============================================================================
@@ -81,17 +82,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 }) => {
   const { t } = useLanguage();
   
-  // Debug: verificar columnas recibidas para perfil
-  useEffect(() => {
-    if (selectedTable === 'perfil') {
-      logger.debug('NormalInsertForm - Columnas recibidas:', visibleColumns.map(c => c.columnName));
-      logger.debug('NormalInsertForm - Total de columnas:', visibleColumns.length);
-      const perfilColumns = visibleColumns.filter(c => c.columnName === 'perfil');
-      if (perfilColumns.length > 1) {
-        logger.error('ERROR: Se encontraron múltiples columnas "perfil":', perfilColumns.length);
-      }
-    }
-  }, [visibleColumns, selectedTable]);
   
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
@@ -466,7 +456,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
           />
         ) : ['localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
           <div>
-            {selectedTable === 'contacto' ? (
+            {visibleColumns.length === 0 && !loading ? (
+              <LoadingSpinner message="Cargando columnas del formulario..." />
+            ) : selectedTable === 'contacto' ? (
               <ContactoFormFields
                 visibleColumns={visibleColumns}
                 formData={formData}
@@ -483,7 +475,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
           </div>
         ) : (
           <div>
-            {(() => {
+            {visibleColumns.length === 0 && !loading ? (
+              <LoadingSpinner message="Cargando columnas del formulario..." />
+            ) : (() => {
               const statusField = visibleColumns.find(col => col.columnName === 'statusid');
               const otherFields = visibleColumns.filter(col => col.columnName !== 'statusid');
               

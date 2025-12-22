@@ -700,15 +700,20 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 paisSeleccionado={paisSeleccionado}
                 empresaSeleccionada={empresaSeleccionada}
                 fundoSeleccionado={fundoSeleccionado}
-                visibleColumns={uniqueColumns.filter(col => {
-                  // Filtrar campos automáticos que no deben aparecer en formularios
-                  const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
-                  // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
-                  if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
-                    excludedFields.push('perfilid');
-                  }
-                  return !excludedFields.includes(col.columnName);
-                })}
+                visibleColumns={(() => {
+                  const filtered = uniqueColumns.filter(col => {
+                    // Filtrar campos automáticos que no deben aparecer en formularios
+                    const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+                    // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
+                    if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
+                      excludedFields.push('perfilid');
+                    }
+                    return !excludedFields.includes(col.columnName);
+                  });
+                  
+                  
+                  return filtered;
+                })()}
                 getColumnDisplayName={(columnName: string) => 
                   getColumnDisplayNameTranslated(columnName, t)
                 }

@@ -112,16 +112,19 @@ export const useSystemParametersSync = ({
   }, [loadRelatedTablesData]); // Solo al montar
 
   // Limpiar datos inmediatamente cuando cambia selectedTable (antes de cargar)
+  // PERO NO limpiar columnas si solo cambia activeSubTab
+  const prevSelectedTableRef = useRef<string>('');
   useEffect(() => {
-    if (selectedTable) {
+    if (selectedTable && selectedTable !== prevSelectedTableRef.current) {
       // Limpiar datos inmediatamente al cambiar de tabla para evitar mostrar datos incorrectos
       setTableData([]); // Limpiar datos de tabla
-      setColumns([]); // Limpiar columnas
+      setColumns([]); // Limpiar columnas solo cuando cambia la tabla
       setLoading(true); // Establecer loading
       setMessage(null);
       setSelectedRow(null);
       resetForm();
       setUpdateFormData({});
+      prevSelectedTableRef.current = selectedTable;
     }
   }, [
     selectedTable,
@@ -134,14 +137,19 @@ export const useSystemParametersSync = ({
     setUpdateFormData
   ]);
 
-  // Cargar datos cuando cambia la tabla
+  // Cargar datos cuando cambia la tabla (NO cuando cambia activeSubTab)
+  const prevTableForLoadRef = useRef<string>('');
   useEffect(() => {
-    if (selectedTable) {
+    if (selectedTable && selectedTable !== prevTableForLoadRef.current) {
+      
       // Para StatusTab: usar solo useTableDataManagement (tableData y columns)
       // Para Insert/Update: usar useTableCRUD (tableState.data)
-      // Cargar datos de tabla y columnas (para StatusTab)
+      // SIEMPRE cargar columnas cuando cambia la tabla
+      // Las columnas son necesarias para InsertTab y UpdateTab
       loadTableData(selectedTable);
       loadRelatedTablesData(); // También cargar cuando cambia la tabla por si acaso
+      
+      prevTableForLoadRef.current = selectedTable;
       
       // Cargar datos con useTableCRUD solo si no estamos en StatusTab
       // (se cargará cuando se cambie a Insert o Update)
@@ -150,7 +158,7 @@ export const useSystemParametersSync = ({
         loadRelatedData();
       }
     }
-  }, [selectedTable, activeSubTab, loadTableData, loadRelatedTablesData, loadData, loadRelatedData]);
+  }, [selectedTable, loadTableData, loadRelatedTablesData, loadData, loadRelatedData]); // Removido activeSubTab de dependencias para evitar recargas innecesarias
 
   // Limpiar formulario cuando se cambia de pestaña (si veníamos de insert o update)
   useEffect(() => {
