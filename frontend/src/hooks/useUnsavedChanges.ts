@@ -29,6 +29,11 @@ export const useUnsavedChanges = () => {
     if (activeSubTab === 'insert') {
       // Para formularios normales (no múltiples)
       if (selectedTable !== 'usuarioperfil' && selectedTable !== 'metricasensor' && selectedTable !== 'sensor') {
+        console.log('[useUnsavedChanges] Verificando cambios en insert (formulario normal)', {
+          selectedTable,
+          formDataKeys: Object.keys(formData),
+          formData
+        });
         // Campos que siempre deben ser excluidos (campos de auditoría y referenciales que no son editables)
         const alwaysExcludedFields = [
           'usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified',
@@ -60,36 +65,34 @@ export const useUnsavedChanges = () => {
           
           // Excluir campos de auditoría
           if (alwaysExcludedFields.includes(key)) {
+            console.log(`[useUnsavedChanges] Excluyendo campo de auditoría: ${key}`);
             return false;
           }
           
           // Excluir IDs de relaciones que no son editables (pero NO excluir los campos de texto editables)
           if (referentialIdFields.includes(key)) {
+            console.log(`[useUnsavedChanges] Excluyendo campo referencial: ${key}`);
             return false;
           }
           
           // Excluir statusid si es 1 (valor por defecto)
           if (key === 'statusid') {
-            return value !== 1 && value !== null && value !== undefined;
+            const isSignificant = value !== 1 && value !== null && value !== undefined;
+            console.log(`[useUnsavedChanges] Verificando statusid: ${key} = ${value}, isSignificant = ${isSignificant}`);
+            return isSignificant;
           }
           
           // Verificar si hay datos significativos
           if (typeof value === 'string' && value.trim() !== '') {
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ Cambio detectado en campo string: ${key} = "${value}"`);
-            }
+            console.log(`✅ [useUnsavedChanges] Cambio detectado en campo string: ${key} = "${value}"`);
             return true;
           }
           if (typeof value === 'number' && value !== null && value !== undefined && value !== 0) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ Cambio detectado en campo number: ${key} = ${value}`);
-            }
+            console.log(`✅ [useUnsavedChanges] Cambio detectado en campo number: ${key} = ${value}`);
             return true;
           }
           if (Array.isArray(value) && value.length > 0) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ Cambio detectado en campo array: ${key} = [${value.length} items]`);
-            }
+            console.log(`✅ [useUnsavedChanges] Cambio detectado en campo array: ${key} = [${value.length} items]`);
             return true;
           }
           if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -97,24 +100,25 @@ export const useUnsavedChanges = () => {
               const objValue = value[objKey];
               return objValue !== null && objValue !== undefined && objValue !== '';
             });
-            if (hasObjectData && process.env.NODE_ENV === 'development') {
-              console.log(`✅ Cambio detectado en campo object: ${key}`);
+            if (hasObjectData) {
+              console.log(`✅ [useUnsavedChanges] Cambio detectado en campo object: ${key}`);
             }
             return hasObjectData;
           }
           if (typeof value === 'boolean' && value === true) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ Cambio detectado en campo boolean: ${key} = true`);
-            }
+            console.log(`✅ [useUnsavedChanges] Cambio detectado en campo boolean: ${key} = true`);
             return true;
           }
           
           return false;
         });
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔍 Change detection result: {hasFormDataChanges: ${hasChanges}, hasMultipleDataChanges: false, hasMassiveFormDataChanges: false, result: ${hasChanges}}`);
-        }
+        console.log(`🔍 [useUnsavedChanges] Resultado de detección de cambios: ${hasChanges}`, {
+          hasFormDataChanges: hasChanges,
+          formDataKeys: Object.keys(formData),
+          selectedTable,
+          activeSubTab
+        });
         
         return hasChanges;
       }

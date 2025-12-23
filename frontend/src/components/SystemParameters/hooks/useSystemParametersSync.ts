@@ -177,22 +177,75 @@ export const useSystemParametersSync = ({
   useEffect(() => {
     // Si cambiamos de pestaña (cualquier cambio), limpiar el mensaje y registros insertados
     if (activeSubTab !== prevActiveSubTabRef.current) {
+      console.log('[useSystemParametersSync] Cambio de pestaña detectado', {
+        from: prevActiveSubTabRef.current,
+        to: activeSubTab,
+        formDataKeys: Object.keys(formState.data),
+        formDataValues: Object.entries(formState.data).filter(([k, v]) => {
+          const val = v;
+          return val !== null && val !== undefined && val !== '' && val !== 1;
+        }).map(([k, v]) => `${k}: ${v}`)
+      });
+      
       setMessage(null);
       
-      // Si cambiamos desde 'insert' a otra pestaña, limpiar registros insertados
-      if (prevActiveSubTabRef.current === 'insert' && activeSubTab !== 'insert') {
-        setInsertedRecords([]);
+      // SIEMPRE limpiar el formulario cuando cambiamos de pestaña, independientemente de la dirección
+      // Esto asegura que los valores no persistan entre pestañas
+      const shouldResetForm = 
+        (prevActiveSubTabRef.current === 'insert' && activeSubTab !== 'insert') || // Salimos de insert
+        (activeSubTab === 'insert' && prevActiveSubTabRef.current !== 'insert') || // Entramos a insert
+        (prevActiveSubTabRef.current === 'update' && activeSubTab !== 'insert' && activeSubTab !== 'update') || // Salimos de update
+        (prevActiveSubTabRef.current !== 'insert' && prevActiveSubTabRef.current !== 'update' && activeSubTab === 'insert'); // Entramos a insert desde status/massive
+      
+      // IMPORTANTE: Si estamos entrando a insert desde cualquier otra pestaña, SIEMPRE resetear
+      // Esto asegura que el formulario esté limpio cuando volvemos a insert
+      const isEnteringInsert = activeSubTab === 'insert' && prevActiveSubTabRef.current !== 'insert';
+      const isLeavingUpdate = prevActiveSubTabRef.current === 'update' && activeSubTab !== 'update';
+      
+      // CRÍTICO: Si estamos saliendo de UPDATE, siempre resetear ANTES de cualquier otra cosa
+      // Esto previene que los datos de UPDATE persistan cuando volvemos a INSERT
+      if (isLeavingUpdate) {
+        console.log('[useSystemParametersSync] CRÍTICO: Saliendo de update, reseteando formulario inmediatamente', {
+          from: prevActiveSubTabRef.current,
+          to: activeSubTab,
+          formDataBeforeReset: formState.data
+        });
+        resetForm(); // Resetear inmediatamente al salir de update
+        setUpdateFormData({}); // Limpiar datos de actualización
       }
       
-      // Si cambiamos desde 'insert' o 'update' a otra pestaña, limpiar formulario
-      if ((prevActiveSubTabRef.current === 'insert' || prevActiveSubTabRef.current === 'update') && 
-          activeSubTab !== 'insert' && activeSubTab !== 'update') {
-        resetForm();
-        setUpdateFormData({});
+      if (shouldResetForm || isEnteringInsert) {
+        console.log('[useSystemParametersSync] Limpiando formulario por cambio de pestaña', {
+          from: prevActiveSubTabRef.current,
+          to: activeSubTab,
+          formDataBeforeReset: formState.data,
+          isLeavingUpdate,
+          isEnteringInsert
+        });
+        
+        // Limpiar registros insertados siempre que salimos o entramos a insert
+        if (prevActiveSubTabRef.current === 'insert' || activeSubTab === 'insert') {
+          setInsertedRecords([]);
+        }
+        
+        // Si no se reseteó ya (por isLeavingUpdate), resetear ahora
+        if (!isLeavingUpdate) {
+          resetForm();
+        }
+        
+        // Verificar después de un delay que el reset se aplicó correctamente
+        setTimeout(() => {
+          console.log('[useSystemParametersSync] Verificación después de resetForm', {
+            formDataAfterReset: formState.data,
+            formDataKeysAfterReset: Object.keys(formState.data),
+            hasEmptyPaisid: !formState.data.paisid || formState.data.paisid === null || formState.data.paisid === ''
+          });
+        }, 150);
       }
     }
     prevActiveSubTabRef.current = activeSubTab;
-  }, [activeSubTab, resetForm, setUpdateFormData, setMessage, setInsertedRecords]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSubTab]); // Removido formState.data de dependencias para evitar ejecuciones múltiples
 
   // Recargar datos cuando se cambia a la pestaña de Estado
   useEffect(() => {

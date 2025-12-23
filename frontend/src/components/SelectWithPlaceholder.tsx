@@ -20,6 +20,102 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const previousValueRef = useRef<string | number | null>(value);
+  const isUserInteractionRef = useRef(false);
+  const isRevertingRef = useRef(false); // Flag para evitar loops al revertir cambios
+  
+  // Detectar cuando el value cambia desde fuera (reset)
+  React.useEffect(() => {
+    // Si estamos en medio de una reversión, ignorar este efecto
+    if (isRevertingRef.current) {
+      isRevertingRef.current = false;
+      return;
+    }
+    
+    if (previousValueRef.current !== value) {
+      const wasUserInteraction = isUserInteractionRef.current;
+      const previousWasEmpty = !previousValueRef.current || previousValueRef.current === '' || previousValueRef.current === null || previousValueRef.current === undefined;
+      const currentIsEmpty = !value || value === '' || value === null || value === undefined;
+      
+      // CRÍTICO: Si el dropdown NO está abierto PERO fue una interacción reciente del usuario, confiar en el flag
+      // El flag se mantiene activo por 500ms después de un click, así que si wasUserInteraction es true,
+      // probablemente es una interacción real, incluso si el dropdown ya se cerró
+      const isActuallyUserInteraction = wasUserInteraction;
+      
+      // Solo resetear el flag si definitivamente NO fue una interacción (ni flag ni dropdown abierto)
+      if (!wasUserInteraction && !isOpen) {
+        // No es una interacción del usuario
+      } else if (wasUserInteraction && !isOpen) {
+        // El flag dice que fue una interacción, pero el dropdown está cerrado
+        // Esto es normal después de hacer click - confiar en el flag
+        console.log('[SelectWithPlaceholder] Interacción detectada por flag aunque dropdown cerrado (normal después de click)', {
+          previous: previousValueRef.current,
+          current: value,
+          placeholder,
+          isOpen
+        });
+      }
+      
+      console.log('[SelectWithPlaceholder] Value cambió desde fuera:', {
+        previous: previousValueRef.current,
+        current: value,
+        placeholder,
+        wasUserInteraction,
+        isOpen,
+        isActuallyUserInteraction,
+        previousWasEmpty,
+        currentIsEmpty,
+        isReset: previousWasEmpty && !currentIsEmpty && !isActuallyUserInteraction
+      });
+      
+      // Si el valor cambió desde empty a un valor Y NO fue una interacción real del usuario, es un problema
+      // PERO solo revertir si estamos SEGUROS de que no fue una interacción del usuario
+      // No revertir si el flag indica que fue una interacción (incluso si el dropdown está cerrado)
+      if (previousWasEmpty && !currentIsEmpty && !isActuallyUserInteraction) {
+        // Verificar si estamos en medio de una reversión para evitar loops
+        if (isRevertingRef.current) {
+          // Ya estamos revirtiendo, no hacer nada más
+          return;
+        }
+        
+        console.warn('[SelectWithPlaceholder] ⚠️ Valor restaurado incorrectamente después de reset! Revirtiendo cambio.', {
+          previous: previousValueRef.current,
+          current: value,
+          placeholder,
+          wasUserInteraction,
+          isOpen,
+          isActuallyUserInteraction,
+          stackTrace: new Error().stack
+        });
+        // Marcar que estamos revirtiendo para evitar loops
+        isRevertingRef.current = true;
+        // NO actualizar previousValueRef aún - lo haremos después de revertir
+        isUserInteractionRef.current = false;
+        // Llamar onChange(null) para revertir el cambio en el estado padre
+        // Esto es seguro porque isRevertingRef evitará que este efecto se ejecute nuevamente
+        if (onChange) {
+          onChange(null);
+        }
+        // Actualizar previousValueRef a null para que el componente muestre el placeholder
+        previousValueRef.current = null;
+        // Resetear el flag de reversión después de un delay para permitir que el cambio se procese
+        setTimeout(() => {
+          isRevertingRef.current = false;
+        }, 100);
+        return;
+      }
+      
+      // Si el valor cambió a null/empty y NO fue una interacción del usuario, es un reset
+      if (currentIsEmpty && !isActuallyUserInteraction) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+      
+      previousValueRef.current = value;
+      isUserInteractionRef.current = false; // Resetear el flag después de procesar el cambio
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, placeholder, isOpen]);
 
   // Cerrar dropdown cuando se hace clic fuera
   useEffect(() => {
@@ -35,10 +131,38 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     };
   }, []);
 
-  const handleOptionClick = (optionValue: any) => {
-    onChange(optionValue);
+  const handleOptionClick = (optionValue: any, event?: React.MouseEvent) => {
+    // CRÍTICO: Verificar que esto es realmente un click del usuario
+    // Si el dropdown no está abierto, NO es una interacción del usuario
+    if (!isOpen) {
+      console.warn('[SelectWithPlaceholder] handleOptionClick llamado cuando dropdown está cerrado - ignorando completamente');
+      return;
+    }
+    
+    // Verificar que el valor realmente cambió ANTES de marcar como interacción del usuario
+    const valueChanged = optionValue !== value && String(optionValue || '') !== String(value || '');
+    if (!valueChanged) {
+      console.warn('[SelectWithPlaceholder] handleOptionClick llamado pero el valor no cambió - ignorando');
+      setIsOpen(false);
+      setSearchTerm('');
+      return;
+    }
+    
+    // Marcar como interacción del usuario ANTES de llamar onChange
+    // Usar un timestamp para rastrear cuándo ocurrió la interacción
+    isUserInteractionRef.current = true;
+    
+    // Cerrar el dropdown ANTES de llamar onChange para evitar que el useEffect detecte isOpen=false
     setIsOpen(false);
     setSearchTerm('');
+    
+    // Llamar onChange DESPUÉS de cerrar el dropdown
+    onChange(optionValue);
+    
+    // Mantener el flag activo por más tiempo (500ms) para asegurar que el useEffect lo detecte
+    setTimeout(() => {
+      isUserInteractionRef.current = false;
+    }, 500);
   };
 
   const selectedOption = options.find(option => 

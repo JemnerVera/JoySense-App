@@ -150,15 +150,61 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
         return renderField(paisField);
       } else {
         const paisOptionsManual = getUniqueOptionsForField('paisid');
-        const paisValue = formData.paisid || '';
+        // Normalizar el valor: convertir null/undefined a '' para evitar problemas de comparación
+        const paisValue = formData.paisid || null;
+        
+        // Usar una key que cambie cuando el valor se resetea para forzar re-mount completo
+        const selectKey = `paisid-select-${selectedTable}-${paisValue || 'empty'}`;
+        
         return (
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
               {t('create.country')}*
             </label>
             <SelectWithPlaceholder
+              key={`${selectKey}-reset`}
               value={paisValue}
-              onChange={(newValue) => updateField('paisid', newValue ? parseInt(newValue.toString()) : null)}
+              onChange={(newValue) => {
+                // Solo procesar si el valor realmente cambió
+                const normalizedNewValue = newValue || null;
+                const normalizedCurrentValue = paisValue || null;
+                
+                // Comparación estricta
+                const valuesAreDifferent = normalizedNewValue !== normalizedCurrentValue &&
+                                           String(normalizedNewValue || '') !== String(normalizedCurrentValue || '');
+                
+                if (valuesAreDifferent) {
+                  // Si el valor actual está vacío y estamos tratando de establecer un valor no vacío,
+                  // podría ser una restauración después de reset. Verificar si pasó poco tiempo desde el último cambio.
+                  const isSettingValueAfterEmpty = !normalizedCurrentValue && normalizedNewValue;
+                  
+                  if (isSettingValueAfterEmpty) {
+                    console.warn('[GeografiaFormFields] ⚠️ Intento de establecer paisid después de estar vacío - puede ser restauración después de reset', {
+                      newValue,
+                      currentValue: paisValue,
+                      normalizedNewValue,
+                      normalizedCurrentValue
+                    });
+                  }
+                  
+                  console.log('[GeografiaFormFields] onChange paisid ejecutado:', {
+                    newValue,
+                    currentValue: paisValue,
+                    normalizedNewValue,
+                    normalizedCurrentValue,
+                    valuesAreDifferent,
+                    isSettingValueAfterEmpty
+                  });
+                  
+                  // Llamar a updateField - la protección real está en useTableCRUD
+                  updateField('paisid', newValue ? parseInt(newValue.toString()) : null);
+                } else {
+                  console.log('[GeografiaFormFields] onChange paisid ignorado - valor no cambió', {
+                    newValue,
+                    currentValue: paisValue
+                  });
+                }
+              }}
               options={paisOptionsManual}
               placeholder={`${t('buttons.select')} ${t('fields.country')}`}
             />
