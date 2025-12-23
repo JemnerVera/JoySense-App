@@ -69,7 +69,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'paisid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'pais', label: 'País', type: 'text', required: true, validation: { minLength: 2, maxLength: 100 } },
-      { name: 'paisabrev', label: 'Abreviatura', type: 'text', required: true, validation: { minLength: 2, maxLength: 10 } },
+      { name: 'paisabrev', label: 'Abreviatura', type: 'text', required: true, validation: { minLength: 1, maxLength: 2 } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },

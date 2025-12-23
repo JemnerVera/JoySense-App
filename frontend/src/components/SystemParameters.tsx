@@ -296,7 +296,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setSelectedRow,
     setActiveSubTab,
     onSubTabChange,
-    setInsertedRecords
+    setInsertedRecords,
+    existingData: tableState.data || []
   });
 
   // Hook de operaciones masivas

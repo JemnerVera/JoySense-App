@@ -7,6 +7,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { getTableConfig, getPrimaryKey, hasCompositeKey, TableConfig, TableFieldConfig } from '../config/tables.config';
 import { TableName } from '../types';
+import { handleInsertError, handleUpdateError, BackendError } from '../utils/errorHandler';
 
 // ============================================================================
 // TYPES
@@ -206,8 +207,9 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       return { success: true, data: result };
     } catch (error: any) {
       setFormState(prev => ({ ...prev, isSubmitting: false }));
-      const errorMessage = error.response?.data?.error || error.message || 'Error al insertar';
-      return { success: false, error: errorMessage };
+      // Convertir error del backend a mensaje amigable usando handleInsertError
+      const errorResponse = handleInsertError(error as BackendError);
+      return { success: false, error: errorResponse.message };
     }
   }, [tableName, config, refreshData]);
 
@@ -231,8 +233,9 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       return { success: true, data: result };
     } catch (error: any) {
       setFormState(prev => ({ ...prev, isSubmitting: false }));
-      const errorMessage = error.response?.data?.error || error.message || 'Error al actualizar';
-      return { success: false, error: errorMessage };
+      // Convertir error del backend a mensaje amigable usando handleUpdateError
+      const errorResponse = handleUpdateError(error as BackendError);
+      return { success: false, error: errorResponse.message };
     }
   }, [tableName, config, refreshData]);
 
