@@ -69,8 +69,10 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
 
   // Función para obtener los campos a excluir según la tabla
   const getExcludedFieldsForTable = (table: string): string[] => {
+    // Excluir solo: datemodified, usermodifiedid, statusid (según requerimiento del usuario)
+    // INCLUIR: datecreated, usercreatedid (mostrar "Creado por" y "Fecha de creación")
     const baseExcludeFields = [
-      'datecreated', 'datemodified', 'usercreatedid', 'usermodifiedid',
+      'datemodified', 'usermodifiedid', 'statusid',
       'modified_at', 'modified_by', 'auditid'
     ];
     
@@ -100,12 +102,19 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     return [...baseExcludeFields, ...(tableSpecificExcludes[table] || [])];
   };
 
-  // Función para obtener los campos importantes (excluyendo fechas, usuarios de auditoría y campos de relación irrelevantes)
+  // Función para obtener los campos importantes
+  // INCLUIR: datecreated, usercreatedid
+  // EXCLUIR: datemodified, usermodifiedid, statusid
   const getImportantFields = (fields: Record<string, any>): Record<string, any> => {
     const excludeFields = getExcludedFieldsForTable(tableName);
     
-    // Para nodo, siempre incluir deveui, appeui, appkey, atpin incluso si están vacíos
-    const alwaysIncludeFields = tableName === 'nodo' ? ['deveui', 'appeui', 'appkey', 'atpin'] : [];
+    // Campos que siempre deben incluirse (incluso si están vacíos)
+    const alwaysIncludeFields: string[] = [];
+    if (tableName === 'nodo') {
+      alwaysIncludeFields.push('deveui', 'appeui', 'appkey', 'atpin');
+    }
+    // Siempre incluir datecreated y usercreatedid
+    alwaysIncludeFields.push('datecreated', 'usercreatedid');
     
     const importantFields: Record<string, any> = {};
     Object.entries(fields).forEach(([key, value]) => {
@@ -116,7 +125,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
           importantFields[key] = value;
         } else if (alwaysIncludeFields.includes(keyLower)) {
           // Incluir campos que siempre deben aparecer, incluso si están vacíos
-          importantFields[key] = null;
+          importantFields[key] = value; // Incluir el valor (puede ser null/undefined)
         }
       }
     });
@@ -165,6 +174,8 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'email': 'Email',
       'statusid': 'Status',
       'status': 'Status',
+      'datecreated': 'Fecha de Creación',
+      'usercreatedid': 'Creado Por',
       // Campos de relación (solo se mostrarán si son relevantes para la tabla)
       'paisid': 'País',
       'empresaid': 'Empresa',
@@ -198,12 +209,20 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
 
   // Función para formatear el valor del campo
   const formatFieldValue = (value: any, fieldKey: string): string => {
-    // Para campos de nodo (deveui, appeui, appkey, atpin), mostrar "-" si está vacío
-    if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
-      if (value === null || value === undefined || value === '') {
+    // Si el valor es null o undefined, retornar string vacío
+    if (value === null || value === undefined) {
+      // Para campos de nodo (deveui, appeui, appkey, atpin), mostrar "-" si está vacío
+      if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
         return '-';
       }
-    } else if (value === null || value === undefined || value === '') {
+      return '';
+    }
+    
+    // Si es string vacío, retornar string vacío (excepto para campos especiales de nodo)
+    if (typeof value === 'string' && value.trim() === '') {
+      if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
+        return '-';
+      }
       return '';
     }
     
@@ -280,6 +299,33 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     // Manejar statusid
     if (fieldKey === 'statusid') {
       return normalizedValue === 1 ? 'Activo' : 'Inactivo';
+    }
+    
+    // Manejar usercreatedid (Creado Por)
+    if (fieldKey === 'usercreatedid' && userData.length > 0) {
+      const usuario = userData.find(u => normalizeValue(u.usuarioid) === normalizedValue);
+      if (usuario) {
+        return `${usuario.firstname || ''} ${usuario.lastname || ''}`.trim() || usuario.login || value.toString();
+      }
+      return value.toString();
+    }
+    
+    // Manejar datecreated (Fecha de Creación) - formatear fecha
+    if (fieldKey === 'datecreated') {
+      if (!value) return '';
+      try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return String(value);
+        return date.toLocaleString('es-ES', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch {
+        return String(value);
+      }
     }
     
     if (typeof value === 'number') {
@@ -402,7 +448,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
           <thead>
             <tr className="border-b border-blue-500 border-opacity-40">
               {fieldKeys.map(fieldKey => (
-                <th key={fieldKey} className="text-left py-2 px-3 text-blue-200 text-opacity-70 font-medium">
+                <th key={fieldKey} className="text-center py-2 px-3 text-blue-200 text-opacity-70 font-medium">
                   {fieldKey === 'entidad_tipo' ? 'Entidad Tipo' : formatFieldName(fieldKey)}
                 </th>
               ))}
@@ -412,7 +458,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
             {insertedRecords.slice(-3).map((record, index) => (
               <tr key={record.id} className="border-b border-blue-600 border-opacity-30 last:border-b-0">
                 {fieldKeys.map(fieldKey => (
-                  <td key={fieldKey} className="py-2 px-3 text-blue-200 text-opacity-70">
+                  <td key={fieldKey} className="py-2 px-3 text-center text-blue-200 text-opacity-70">
                     {fieldKey === 'entidad_tipo' 
                       ? getCombinedEntidadTipo(record)
                       : formatFieldValue(record.fields[fieldKey], fieldKey)}

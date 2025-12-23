@@ -89,6 +89,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
+  const [insertedRecords, setInsertedRecords] = useState<Array<{ id: string; fields: Record<string, any> }>>([]);
 
   // Hook CRUD
   const {
@@ -232,7 +233,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadRelatedTablesData,
     loadTableData,
     loadData,
-    loadRelatedData
+    loadRelatedData,
+    setInsertedRecords
   });
 
   // Exponer métodos al padre
@@ -293,7 +295,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setMessage,
     setSelectedRow,
     setActiveSubTab,
-    onSubTabChange
+    onSubTabChange,
+    setInsertedRecords
   });
 
   // Hook de operaciones masivas
@@ -718,6 +721,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   getColumnDisplayNameTranslated(columnName, t)
                 }
                 getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
+                insertedRecords={insertedRecords}
+                onClearInsertedRecords={() => setInsertedRecords([])}
               />
             )}
             {activeSubTab === 'update' && (

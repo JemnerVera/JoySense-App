@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -21,7 +22,7 @@ interface UseSystemParametersCRUDProps {
   config: any;
   user: any;
   validateForm: () => boolean;
-  insertRow: (data: Record<string, any>) => Promise<{ success: boolean; error?: string }>;
+  insertRow: (data: Record<string, any>) => Promise<{ success: boolean; data?: any; error?: string }>;
   updateRow: (pk: any, data: Record<string, any>) => Promise<{ success: boolean; error?: string }>;
   deleteRow: (pk: any) => Promise<{ success: boolean; error?: string }>;
   resetForm: () => void;
@@ -33,6 +34,7 @@ interface UseSystemParametersCRUDProps {
   setSelectedRow: (row: any) => void;
   setActiveSubTab: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   onSubTabChange?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  setInsertedRecords: Dispatch<SetStateAction<Array<{ id: string; fields: Record<string, any> }>>>;
 }
 
 export const useSystemParametersCRUD = ({
@@ -53,7 +55,8 @@ export const useSystemParametersCRUD = ({
   setMessage,
   setSelectedRow,
   setActiveSubTab,
-  onSubTabChange
+  onSubTabChange,
+  setInsertedRecords
 }: UseSystemParametersCRUDProps) => {
 
   const handleInsert = useCallback(async () => {
@@ -115,18 +118,41 @@ export const useSystemParametersCRUD = ({
     const result = await insertRow(dataToInsert);
     
     if (result.success) {
-      setMessage({ type: 'success', text: 'Registro insertado correctamente' });
+      // NO cambiar de pestaña, permanecer en 'insert'
+      // Agregar el registro insertado a la lista de registros insertados
+      // El backend devuelve un array con el registro insertado, tomar el primer elemento
+      let insertedData = result.data;
+      
+      // Si result.data es un array, tomar el primer elemento
+      if (Array.isArray(insertedData)) {
+        insertedData = insertedData[0] || dataToInsert;
+      }
+      
+      // Si result.data no existe o está vacío, usar dataToInsert
+      if (!insertedData || (typeof insertedData === 'object' && Object.keys(insertedData).length === 0)) {
+        insertedData = dataToInsert;
+      }
+      
+      const insertedRecord = {
+        id: `${selectedTable}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        fields: insertedData
+      };
+      
+      setInsertedRecords(prev => {
+        const updated = [...prev, insertedRecord];
+        // Mantener solo las últimas 3 entradas
+        return updated.slice(-3);
+      });
+      
       resetForm();
-      // Cambiar a la pestaña de Estado para ver el nuevo registro
-      setActiveSubTab('status');
-      onSubTabChange?.('status');
-      // Recargar datos para asegurar que se muestre el nuevo registro
+      // NO cambiar de pestaña
+      // Recargar datos de la tabla para actualizar la tabla de estado
       loadData();
       if (selectedTable) {
         loadTableData(selectedTable);
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable || '')) {
         loadRelatedTablesData();
       }
     } else {

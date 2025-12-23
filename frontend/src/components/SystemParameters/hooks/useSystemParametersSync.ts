@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { useEffect, useRef } from 'react';
+import React from 'react';
 
 interface UseSystemParametersSyncProps {
   propSelectedTable?: string;
@@ -27,6 +28,7 @@ interface UseSystemParametersSyncProps {
   loadTableData: (table: string) => void;
   loadData: () => void;
   loadRelatedData: () => void;
+  setInsertedRecords: React.Dispatch<React.SetStateAction<Array<{ id: string; fields: Record<string, any> }>>>;
 }
 
 export const useSystemParametersSync = ({
@@ -48,7 +50,8 @@ export const useSystemParametersSync = ({
   loadRelatedTablesData,
   loadTableData,
   loadData,
-  loadRelatedData
+  loadRelatedData,
+  setInsertedRecords
 }: UseSystemParametersSyncProps) => {
   
   // Refs para evitar loops infinitos
@@ -95,6 +98,14 @@ export const useSystemParametersSync = ({
   // Sincronizar activeSubTab con prop cuando cambia desde fuera
   useEffect(() => {
     if (propActiveSubTab && propActiveSubTab !== activeSubTab) {
+      // Limpiar mensaje cuando cambia la pestaña desde fuera
+      setMessage(null);
+      
+      // Si veníamos de 'insert' y cambiamos a otra pestaña, limpiar registros insertados
+      if (activeSubTab === 'insert' && propActiveSubTab !== 'insert') {
+        setInsertedRecords([]);
+      }
+      
       // Si veníamos de 'insert' o 'update' y cambiamos a otra pestaña, limpiar formulario
       if ((activeSubTab === 'insert' || activeSubTab === 'update') && 
           propActiveSubTab !== 'insert' && propActiveSubTab !== 'update') {
@@ -104,7 +115,7 @@ export const useSystemParametersSync = ({
       
       setActiveSubTab(propActiveSubTab);
     }
-  }, [propActiveSubTab, activeSubTab, resetForm, setActiveSubTab, setUpdateFormData]);
+  }, [propActiveSubTab, activeSubTab, resetForm, setActiveSubTab, setUpdateFormData, setMessage, setInsertedRecords]);
 
   // Cargar datos relacionados al montar el componente (una sola vez)
   useEffect(() => {
@@ -124,6 +135,7 @@ export const useSystemParametersSync = ({
       setSelectedRow(null);
       resetForm();
       setUpdateFormData({});
+      setInsertedRecords([]); // Limpiar registros insertados al cambiar de tabla
       prevSelectedTableRef.current = selectedTable;
     }
   }, [
@@ -134,7 +146,8 @@ export const useSystemParametersSync = ({
     setMessage,
     setSelectedRow,
     resetForm,
-    setUpdateFormData
+    setUpdateFormData,
+    setInsertedRecords
   ]);
 
   // Cargar datos cuando cambia la tabla (NO cuando cambia activeSubTab)
@@ -160,17 +173,26 @@ export const useSystemParametersSync = ({
     }
   }, [selectedTable, loadTableData, loadRelatedTablesData, loadData, loadRelatedData]); // Removido activeSubTab de dependencias para evitar recargas innecesarias
 
-  // Limpiar formulario cuando se cambia de pestaña (si veníamos de insert o update)
+  // Limpiar formulario, mensaje y registros insertados cuando se cambia de pestaña
   useEffect(() => {
-    // Si cambiamos desde 'insert' o 'update' a otra pestaña, limpiar formulario
-    if ((prevActiveSubTabRef.current === 'insert' || prevActiveSubTabRef.current === 'update') && 
-        activeSubTab !== prevActiveSubTabRef.current && 
-        activeSubTab !== 'insert' && activeSubTab !== 'update') {
-      resetForm();
-      setUpdateFormData({});
+    // Si cambiamos de pestaña (cualquier cambio), limpiar el mensaje y registros insertados
+    if (activeSubTab !== prevActiveSubTabRef.current) {
+      setMessage(null);
+      
+      // Si cambiamos desde 'insert' a otra pestaña, limpiar registros insertados
+      if (prevActiveSubTabRef.current === 'insert' && activeSubTab !== 'insert') {
+        setInsertedRecords([]);
+      }
+      
+      // Si cambiamos desde 'insert' o 'update' a otra pestaña, limpiar formulario
+      if ((prevActiveSubTabRef.current === 'insert' || prevActiveSubTabRef.current === 'update') && 
+          activeSubTab !== 'insert' && activeSubTab !== 'update') {
+        resetForm();
+        setUpdateFormData({});
+      }
     }
     prevActiveSubTabRef.current = activeSubTab;
-  }, [activeSubTab, resetForm, setUpdateFormData, formState.data]);
+  }, [activeSubTab, resetForm, setUpdateFormData, setMessage, setInsertedRecords]);
 
   // Recargar datos cuando se cambia a la pestaña de Estado
   useEffect(() => {
