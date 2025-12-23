@@ -13,6 +13,7 @@ import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
 import { MessageDisplay } from '../MessageDisplay';
 import { useModal } from '../../../contexts/ModalContext';
+import { consolidateErrorMessages } from '../../../utils/messageConsolidation';
 import type { ColumnInfo } from '../../../types/systemParameters';
 import type { RelatedData } from '../../../utils/systemParametersUtils';
 import type { TableConfig } from '../../../config/tables.config';
@@ -256,11 +257,13 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             if (hasValidationErrors) {
               const errorMessages = Object.values(formErrors).filter(Boolean);
               if (errorMessages.length > 0) {
+                // Consolidar mensajes similares
+                const consolidatedErrors = consolidateErrorMessages(errorMessages);
                 return (
                   <MessageDisplay 
                     message={{ 
                       type: 'warning', 
-                      text: errorMessages.join('\n') || 'Por favor complete todos los campos requeridos' 
+                      text: consolidatedErrors.join('\n') || 'Por favor complete todos los campos requeridos' 
                     }} 
                   />
                 );
