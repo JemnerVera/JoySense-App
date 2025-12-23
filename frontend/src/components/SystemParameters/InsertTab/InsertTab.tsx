@@ -69,6 +69,8 @@ interface InsertTabProps {
   onReplicateClick?: () => void;
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  // Key para forzar re-mount
+  resetKey?: string;
 }
 
 // ============================================================================
@@ -104,7 +106,8 @@ export const InsertTab: React.FC<InsertTabProps> = ({
   resetContactType,
   onPasteFromClipboard,
   onReplicateClick,
-  themeColor = 'orange'
+  themeColor = 'orange',
+  resetKey
 }) => {
   const { t } = useLanguage();
 
@@ -124,8 +127,10 @@ export const InsertTab: React.FC<InsertTabProps> = ({
   const renderForm = () => {
 
     // Formulario normal para todas las tablas
+    // Usar una key que incluya tableName y resetKey para forzar re-mount cuando se resetea
     return (
       <NormalInsertForm
+        key={`normal-insert-${tableName}-${resetKey || '0'}`}
         visibleColumns={visibleColumns}
         formData={formData}
         setFormData={setFormData}
@@ -177,8 +182,11 @@ export const InsertTab: React.FC<InsertTabProps> = ({
       )}
 
       {/* Formulario */}
+      {/* Usar key para forzar re-mount completo cuando cambia la tabla o sub-tab, limpiando todo el estado interno */}
       {visibleColumns.length > 0 || loading ? (
-        renderForm()
+        <div key={`insert-form-${tableName}`}>
+          {renderForm()}
+        </div>
       ) : (
         <LoadingSpinner message="Cargando columnas del formulario..." />
       )}

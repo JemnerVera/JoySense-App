@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useCallback } from 'react';
 import SelectWithPlaceholder from './SelectWithPlaceholder';
 import { tableValidationSchemas } from '../utils/validations';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -227,90 +227,217 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Referencia para evitar loops infinitos en el auto-selección de país
   const autoSelectedPaisRef = useRef(false);
+  const previousFormDataRef = useRef<string>('');
+  const isResettingRef = useRef(false);
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ============================================================================
   // EFFECTS
   // ============================================================================
 
   // Función helper para actualizar un campo del formulario
-  const updateField = (field: string, value: any) => {
+  const updateField = useCallback((field: string, value: any) => {
+    // Si estamos en medio de un reset, ignorar todas las actualizaciones
+    if (isResettingRef.current) {
+      console.log('[NormalInsertForm] updateField ignorado - reset en progreso', { field, value });
+      return;
+    }
+
+    // Para paisid, verificar que el valor realmente cambió
+    if (field === 'paisid') {
+      const currentValue = formData.paisid || null;
+      const newValue = value || null;
+      
+      // Si los valores son iguales, no actualizar
+      if (currentValue === newValue || 
+          (currentValue !== null && currentValue !== undefined && currentValue !== '' && 
+           String(currentValue) === String(newValue))) {
+        console.log('[NormalInsertForm] updateField ignorado - valor no cambió', { 
+          field, 
+          currentValue, 
+          newValue 
+        });
+        return;
+      }
+    }
+
     if (updateFormField) {
       updateFormField(field, value);
     } else {
       setFormData({ ...formData, [field]: value });
     }
-  };
+  }, [formData, updateFormField, setFormData]);
+
+  // Detectar cuando el formulario se resetea (formData pasa de tener valores a estar vacío)
+  useEffect(() => {
+    const currentFormDataString = JSON.stringify(formData);
+    const previousHadPaisid = previousFormDataRef.current && 
+                               JSON.parse(previousFormDataRef.current || '{}').paisid;
+    const currentHasNoPaisid = !formData.paisid || formData.paisid === null || 
+                                formData.paisid === undefined || formData.paisid === '';
+    
+    const wasReset = previousFormDataRef.current && 
+                     previousFormDataRef.current !== currentFormDataString &&
+                     previousHadPaisid && 
+                     currentHasNoPaisid;
+    
+    if (wasReset) {
+      logger.debug('[NormalInsertForm] Formulario detectado como reseteado, bloqueando actualizaciones temporalmente');
+      autoSelectedPaisRef.current = false;
+      
+      // Bloquear actualizaciones por 100ms para evitar que se restauren valores durante el reset
+      isResettingRef.current = true;
+      
+      // Limpiar timeout anterior si existe
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+      
+      // Permitir actualizaciones después de 500ms (suficiente tiempo para que React complete todos los re-renders)
+      resetTimeoutRef.current = setTimeout(() => {
+        isResettingRef.current = false;
+        logger.debug('[NormalInsertForm] Bloqueo de reset levantado');
+      }, 500);
+    }
+    
+    previousFormDataRef.current = currentFormDataString;
+    
+    // Cleanup
+    return () => {
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, [formData]);
 
   // NO auto-seleccionar país automáticamente. Solo sincronizar con filtros globales.
   // El país solo se debe llenar si hay un filtro global seleccionado.
   useEffect(() => {
     // Resetear la referencia si cambia la tabla o se resetea el formulario
-    if (formData.paisid === null || formData.paisid === undefined) {
+    if (formData.paisid === null || formData.paisid === undefined || formData.paisid === '') {
       autoSelectedPaisRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paisOptions.length, selectedTable]);
 
   // Auto-seleccionar País si hay filtro global y no está seleccionado (solo para empresa y fundo)
+  // Usar useRef para rastrear el último valor procesado y evitar ejecuciones múltiples
+  const lastProcessedPaisRef = useRef<string | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
-    const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
-    
-    logger.debug('[NormalInsertForm] Sincronización país:', {
-      selectedTable,
-      paisSeleccionado,
-      hasGlobalFilter,
-      formDataPaisid: formData.paisid,
-      shouldSync,
-      valuesMatch: formData.paisid && formData.paisid.toString() === paisSeleccionado?.toString()
-    });
-    
-    if (shouldSync) {
-      // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
-      if (!formData.paisid || formData.paisid.toString() !== paisSeleccionado.toString()) {
-        logger.debug('[NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
-        setFormData((prev: any) => ({ ...prev, paisid: paisSeleccionado }));
-      } else {
-        logger.debug('[NormalInsertForm] País ya está sincronizado, no actualizando');
-      }
-    } else if ((selectedTable === 'empresa' || selectedTable === 'fundo') && !hasGlobalFilter && formData.paisid) {
-      // Si no hay filtro global y hay un valor en formData, limpiarlo (solo si fue auto-seleccionado previamente)
-      logger.debug('[NormalInsertForm] Limpiando paisid porque no hay filtro global');
-      setFormData((prev: any) => ({ ...prev, paisid: null }));
+    // Limpiar timeout anterior si existe
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
     }
-  }, [paisSeleccionado, selectedTable, formData.paisid, setFormData]);
+    
+    // CRÍTICO: Si estamos en medio de un reset, NO ejecutar este efecto
+    if (isResettingRef.current) {
+      logger.debug('[NormalInsertForm] Sincronización país bloqueada - reset en progreso');
+      return;
+    }
+    
+      // Debounce: esperar un poco antes de sincronizar para evitar ejecuciones múltiples
+      syncTimeoutRef.current = setTimeout(() => {
+        // VERIFICAR NUEVAMENTE después del timeout si estamos en medio de un reset
+        if (isResettingRef.current) {
+          logger.debug('[NormalInsertForm] Sincronización país bloqueada - reset en progreso (después de timeout)');
+          return;
+        }
+        
+        const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
+        const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
+        
+        // Verificar si formData.paisid está vacío/null (formulario reseteado)
+        const isPaisidEmpty = !formData.paisid || formData.paisid === '' || formData.paisid === null || formData.paisid === undefined;
+        
+        // CRÍTICO: Si no hay filtro global Y el paisid está vacío, NO hacer nada
+        // Esto previene restauraciones no deseadas después de un reset
+        if (!hasGlobalFilter && isPaisidEmpty) {
+          lastProcessedPaisRef.current = null;
+          return;
+        }
+        
+        // Evitar ejecuciones múltiples del mismo valor
+        const currentPaisValue = paisSeleccionado || '';
+        if (lastProcessedPaisRef.current === currentPaisValue && !isPaisidEmpty) {
+          return; // Ya procesamos este valor, no hacer nada
+        }
+        
+        // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
+        if (shouldSync && isPaisidEmpty) {
+          logger.debug('[NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
+          if (updateFormField) {
+            updateFormField('paisid', paisSeleccionado);
+          } else {
+            setFormData((prev: any) => ({ ...prev, paisid: paisSeleccionado }));
+          }
+          lastProcessedPaisRef.current = currentPaisValue;
+        } else if (!hasGlobalFilter) {
+          // Si no hay filtro global, resetear el ref
+          lastProcessedPaisRef.current = null;
+        }
+      }, 250); // Aumentar debounce a 250ms para dar más tiempo al reset
+    
+    // Cleanup
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+    // Removido formData.paisid de dependencias - solo reaccionar a cambios en filtros o tabla
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paisSeleccionado, selectedTable]);
 
   // Auto-seleccionar Empresa si hay filtro global y no está seleccionada (solo para fundo)
   useEffect(() => {
+    // CRÍTICO: Si estamos en medio de un reset, NO ejecutar este efecto
+    if (isResettingRef.current) {
+      return;
+    }
+    
     const hasGlobalFilter = empresaSeleccionada && empresaSeleccionada.trim() !== '';
     const shouldSync = hasGlobalFilter && selectedTable === 'fundo';
     
+    // Solo sincronizar cuando hay filtro global activo
     if (shouldSync) {
       // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
       if (!formData.empresaid || formData.empresaid.toString() !== empresaSeleccionada.toString()) {
-        setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+        if (updateFormField) {
+          updateFormField('empresaid', empresaSeleccionada);
+        } else {
+          setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+        }
       }
-    } else if (selectedTable === 'fundo' && !hasGlobalFilter && formData.empresaid) {
-      // Si no hay filtro global y hay un valor en formData, limpiarlo
-      setFormData((prev: any) => ({ ...prev, empresaid: null }));
     }
-  }, [empresaSeleccionada, selectedTable, formData.empresaid, setFormData]);
+    // Removido formData.empresaid de dependencias para evitar loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaSeleccionada, selectedTable, updateFormField, setFormData]);
 
   // Auto-seleccionar Fundo si hay filtro global y no está seleccionado (solo para ubicacion)
   useEffect(() => {
+    // CRÍTICO: Si estamos en medio de un reset, NO ejecutar este efecto
+    if (isResettingRef.current) {
+      return;
+    }
+    
     const hasGlobalFilter = fundoSeleccionado && fundoSeleccionado.trim() !== '';
     const shouldSync = hasGlobalFilter && selectedTable === 'ubicacion';
     
+    // Solo sincronizar cuando hay filtro global activo
     if (shouldSync) {
       // Solo sincronizar si no hay valor o si el valor actual no coincide con el filtro
       if (!formData.fundoid || formData.fundoid.toString() !== fundoSeleccionado.toString()) {
-        setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+        if (updateFormField) {
+          updateFormField('fundoid', fundoSeleccionado);
+        } else {
+          setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+        }
       }
-    } else if (selectedTable === 'ubicacion' && !hasGlobalFilter && formData.fundoid) {
-      // Si no hay filtro global y hay un valor en formData, limpiarlo
-      setFormData((prev: any) => ({ ...prev, fundoid: null }));
     }
-  }, [fundoSeleccionado, selectedTable, formData.fundoid, setFormData]);
+    // Removido formData.fundoid de dependencias para evitar loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fundoSeleccionado, selectedTable, updateFormField, setFormData]);
 
   // Función para renderizar campos con Status al extremo derecho (Usuario)
   const renderStatusRightFields = (): React.ReactNode[] => {

@@ -90,6 +90,27 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
   const [insertedRecords, setInsertedRecords] = useState<Array<{ id: string; fields: Record<string, any> }>>([]);
+  const insertTabMountCounterRef = useRef<number>(0); // Contador para forzar re-mount de InsertTab
+  const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
+  
+  // Calcular key para InsertTab basado en si estamos entrando a insert desde otra pestaña
+  const insertTabKey = useMemo(() => {
+    if (activeSubTab === 'insert' && prevActiveSubTabRef.current !== 'insert') {
+      // Estamos entrando a insert desde otra pestaña - incrementar contador
+      insertTabMountCounterRef.current += 1;
+      console.log('[SystemParameters] Calculando insertTabKey - entrando a insert', {
+        from: prevActiveSubTabRef.current,
+        to: activeSubTab,
+        counter: insertTabMountCounterRef.current
+      });
+    }
+    prevActiveSubTabRef.current = activeSubTab;
+    return insertTabMountCounterRef.current;
+  }, [activeSubTab]);
+  
+  // Trackear la última combinación de resetKey e insertTabKey para detectar re-mounts
+  const lastInsertKeyRef = useRef<string>('');
+  const lastCleanDataRef = useRef<Record<string, any> | null>(null);
 
   // Hook CRUD
   const {
@@ -105,6 +126,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setFormData,
     updateFormField,
     resetForm,
+    getResetKey,
     validateForm,
     setPage,
     getDisplayValue,
@@ -212,6 +234,80 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     umbralesData,
     userData
   ]);
+
+  // Generar datos limpios para InsertTab SOLO cuando el key cambia (re-mount)
+  // Después de eso, usar formState.data para reflejar cambios del usuario
+  // NOTA: Este useMemo debe ir DESPUÉS de que se declaren config, formState, y getResetKey
+  const cleanFormDataForInsert = useMemo(() => {
+    if (!config || activeSubTab !== 'insert') {
+      lastCleanDataRef.current = null;
+      return formState.data;
+    }
+    
+    const currentResetKey = getResetKey();
+    const currentInsertKey = insertTabKey;
+    const currentKey = `${currentResetKey}-${currentInsertKey}-${selectedTable}`;
+    
+    // Si el key cambió, es un re-mount - generar datos limpios
+    if (currentKey !== lastInsertKeyRef.current) {
+      lastInsertKeyRef.current = currentKey;
+      
+      // Generar datos limpios basados en la configuración
+      const cleanData: Record<string, any> = {};
+      config.fields.forEach(field => {
+        if (!field.hidden && !field.readonly) {
+          if (field.defaultValue !== undefined) {
+            cleanData[field.name] = field.defaultValue;
+          } else if (field.type === 'number') {
+            cleanData[field.name] = null;
+          } else if (field.type === 'boolean') {
+            cleanData[field.name] = false;
+          } else {
+            cleanData[field.name] = '';
+          }
+        }
+      });
+      if (!cleanData.hasOwnProperty('statusid')) {
+        cleanData.statusid = 1;
+      }
+      
+      // Guardar los datos limpios generados
+      lastCleanDataRef.current = cleanData;
+      
+      console.log('[SystemParameters] Generando datos limpios para InsertTab (re-mount detectado)', {
+        previousKey: lastInsertKeyRef.current,
+        currentKey,
+        cleanDataKeys: Object.keys(cleanData)
+      });
+      
+      return cleanData;
+    }
+    
+    // El key no cambió (mismo mount)
+    // Si tenemos datos limpios guardados, usarlos hasta que formState.data se sincronice
+    // Verificar si formState.data ya se sincronizó comparando con los datos limpios esperados
+    if (lastCleanDataRef.current) {
+      const formDataMatchesClean = Object.keys(lastCleanDataRef.current).every(key => {
+        const cleanValue = lastCleanDataRef.current![key];
+        const formValue = formState.data[key];
+        return cleanValue === formValue || 
+               (cleanValue === null && (formValue === null || formValue === undefined || formValue === '')) ||
+               (cleanValue === '' && (formValue === null || formValue === undefined || formValue === ''));
+      });
+      
+      // Si formState.data ya se sincronizó, usar formState.data y limpiar el ref
+      if (formDataMatchesClean) {
+        lastCleanDataRef.current = null;
+        return formState.data;
+      }
+      
+      // Todavía no se sincronizó, usar los datos limpios guardados
+      return lastCleanDataRef.current;
+    }
+    
+    // No hay datos limpios guardados, usar formState.data normal
+    return formState.data;
+  }, [getResetKey, insertTabKey, selectedTable, config, activeSubTab, formState.data]); // Incluir formState.data para reflejar cambios del usuario
 
   // Hook de sincronización
   useSystemParametersSync({
@@ -386,6 +482,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   }, [selectedTable, formState.data, activeSubTab, hasUnsavedChanges, onTableSelect, onSubTabChange, resetForm, updateFormData]);
 
   const handleSubTabChange = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
+    logger.debug('[SystemParameters] handleSubTabChange llamado', {
+      activeSubTab,
+      targetTab: tab,
+      formDataKeys: Object.keys(formState.data),
+      formData: formState.data,
+      selectedTable
+    });
+    
     // Verificar si hay cambios sin guardar antes de cambiar de pestaña
     if (activeSubTab === 'insert') {
       // Verificar con hasUnsavedChanges para detectar cambios reales
@@ -395,11 +499,49 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         activeSubTab
       });
       
-      // Si hay cambios, mostrar confirmación
+      logger.debug('[SystemParameters] Verificación de cambios en insert', {
+        hasChanges,
+        formDataKeys: Object.keys(formState.data),
+        formDataValues: Object.entries(formState.data).filter(([k, v]) => {
+          const val = v;
+          return val !== null && val !== undefined && val !== '' && val !== 1;
+        }).map(([k, v]) => `${k}: ${v}`)
+      });
+      
+      // Si hay cambios, mostrar modal de confirmación
       if (hasChanges) {
-        if (!window.confirm('¿Está seguro? Los datos ingresados se perderán.')) {
-          return; // Cancelar cambio de pestaña
-        }
+        logger.debug('[SystemParameters] Mostrando modal de confirmación');
+        // Obtener nombres de las pestañas
+        const getSubTabName = (subTab: string) => {
+          const names: { [key: string]: string } = {
+            'status': 'Estado',
+            'insert': 'Crear',
+            'update': 'Actualizar',
+            'massive': 'Masivo'
+          };
+          return names[subTab] || subTab;
+        };
+        
+        showModal(
+          'subtab',
+          getSubTabName(activeSubTab),
+          getSubTabName(tab),
+          () => {
+            // Confirmar: proceder con el cambio y limpiar formulario
+            // El key se calculará automáticamente en useMemo cuando activeSubTab cambie
+            setActiveSubTab(tab);
+            onSubTabChange?.(tab);
+            setMessage(null);
+            resetForm(); // Limpiar formulario siempre al confirmar
+            setInsertedRecords([]); // Limpiar registros insertados
+          },
+          () => {
+            // Cancelar: no hacer nada
+          }
+        );
+        return; // Cancelar cambio de pestaña (el modal manejará la confirmación)
+      } else {
+        logger.debug('[SystemParameters] No hay cambios en insert, procediendo sin modal');
       }
     } else if (activeSubTab === 'update') {
       // Para update: verificar si hay cambios o si el formulario está abierto
@@ -441,19 +583,51 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       }
     }
     
+    // No hay cambios o ya se confirmó, proceder con el cambio
+    logger.debug('[SystemParameters] Procediendo con cambio de pestaña', {
+      from: activeSubTab,
+      to: tab,
+      willResetFormOnEnter: tab === 'insert',
+      willResetFormOnExit: activeSubTab === 'insert',
+      formDataBeforeChange: formState.data,
+      formDataKeysBeforeChange: Object.keys(formState.data)
+    });
+    
+    // El key se calculará automáticamente en useMemo cuando activeSubTab cambie
+    
     setActiveSubTab(tab);
     onSubTabChange?.(tab);
     setMessage(null);
-    if (tab === 'insert') resetForm();
+    // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
+    if (tab === 'insert') {
+      logger.debug('[SystemParameters] Limpiando formulario al entrar a insert', {
+        formDataBeforeReset: formState.data,
+        formDataKeysBeforeReset: Object.keys(formState.data)
+      });
+      resetForm(); // Limpiar formulario al entrar a insert
+      setInsertedRecords([]); // Limpiar registros insertados
+      // Esperar un momento y verificar que se limpió
+      setTimeout(() => {
+        logger.debug('[SystemParameters] Después de resetForm (timeout)', {
+          formDataAfterReset: formState.data,
+          formDataKeysAfterReset: Object.keys(formState.data)
+        });
+      }, 100);
+    } else if (activeSubTab === 'insert') {
+      logger.debug('[SystemParameters] Limpiando formulario al salir de insert');
+      resetForm(); // Limpiar formulario al salir de insert
+      setInsertedRecords([]); // Limpiar registros insertados
+    }
     if (tab !== 'update') setUpdateFormData({}); // Limpiar datos de actualización al cambiar de pestaña
-  }, [formState.data, activeSubTab, selectedTable, hasUnsavedChanges, onSubTabChange, resetForm, updateFormData]);
+  }, [formState.data, activeSubTab, selectedTable, hasUnsavedChanges, onSubTabChange, resetForm, updateFormData, showModal, setInsertedRecords]);
 
   const handleRowSelect = useCallback((row: any) => {
     setSelectedRow(row);
-    setFormData(row);
+    // NO llamar setFormData aquí - useUpdateForm maneja su propio estado interno
+    // setFormData(row); // <-- ESTO CONTAMINABA EL ESTADO COMPARTIDO
     setActiveSubTab('update');
     onSubTabChange?.('update');
-  }, [setFormData, onSubTabChange]);
+  }, [onSubTabChange]); // Removido setFormData de dependencias
 
 
   // ============================================================================
@@ -685,8 +859,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             )}
             {activeSubTab === 'insert' && (
               <InsertTab
+                key={`insert-${selectedTable}-${activeSubTab}-${getResetKey()}-${insertTabKey}`}
                 tableName={selectedTable}
-                formData={formState.data}
+                formData={cleanFormDataForInsert}
                 setFormData={(data) => {
                   setFormData(data);
                 }}
@@ -724,6 +899,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getUniqueOptionsForField={getUniqueOptionsForFieldHelper}
                 insertedRecords={insertedRecords}
                 onClearInsertedRecords={() => setInsertedRecords([])}
+                resetKey={getResetKey()}
               />
             )}
             {activeSubTab === 'update' && (

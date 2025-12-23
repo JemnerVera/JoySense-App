@@ -3,7 +3,7 @@
  * Reemplaza múltiples hooks individuales con una solución unificada
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { getTableConfig, getPrimaryKey, hasCompositeKey, TableConfig, TableFieldConfig } from '../config/tables.config';
 import { TableName } from '../types';
@@ -61,6 +61,7 @@ export interface UseTableCRUDReturn {
   setFormData: (data: Record<string, any>) => void;
   updateFormField: (field: string, value: any) => void;
   resetForm: () => void;
+  getResetKey: () => string; // Función para obtener key de reset
   validateForm: () => boolean;
 
   // Paginación
@@ -118,6 +119,12 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
 
   // Datos relacionados (para dropdowns)
   const [relatedData, setRelatedData] = useState<RelatedData>({});
+
+  // Ref para bloquear actualizaciones durante reset (declarados ANTES de las funciones que los usan)
+  const isResettingRef = useRef(false);
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const resetTimestampRef = useRef<number | null>(null);
+  const resetCounterRef = useRef<number>(0); // Contador para forzar re-mounts de componentes hijos
 
   // ============================================================================
   // DATA LOADING
@@ -260,31 +267,195 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
   // ============================================================================
 
   const setFormData = useCallback((data: Record<string, any>) => {
+    if (data.paisid) {
+      console.log('[useTableCRUD] setFormData llamado con paisid:', {
+        paisid: data.paisid,
+        previousPaisid: formState.data.paisid,
+        tableName,
+        stackTrace: new Error().stack
+      });
+    }
     setFormState(prev => ({
       ...prev,
       data,
       isDirty: true,
       errors: {}
     }));
-  }, []);
+  }, [tableName, formState.data.paisid]);
 
   const updateFormField = useCallback((field: string, value: any) => {
+    // Bloquear actualizaciones durante reset
+    if (isResettingRef.current) {
+      console.log('[useTableCRUD] updateFormField bloqueado - reset en progreso', { field, value, tableName });
+      return;
+    }
+    
+    // Para paisid específicamente, verificar que el valor realmente cambió
+    if (field === 'paisid') {
+      const currentValue = formState.data.paisid || null;
+      const newValue = value || null;
+      
+      // Si los valores son iguales, no actualizar
+      if (currentValue === newValue || 
+          (currentValue !== null && currentValue !== undefined && currentValue !== '' && 
+           String(currentValue) === String(newValue))) {
+        console.log('[useTableCRUD] updateFormField ignorado - valor no cambió', {
+          field,
+          currentValue,
+          newValue,
+          tableName
+        });
+        return;
+      }
+      
+      // PROTECCIÓN CRÍTICA: Bloquear actualizaciones automáticas de paisid durante 3 segundos después de un reset
+      // PERO permitir interacciones reales del usuario (clicks en SelectWithPlaceholder)
+      if (field === 'paisid') {
+        const isSettingNonEmptyValue = newValue !== null && newValue !== undefined && newValue !== '' && newValue !== 0;
+        const wasRecentlyReset = !currentValue || currentValue === null || currentValue === undefined || currentValue === '';
+        
+        // Verificar si esta es una interacción real del usuario analizando el stack trace
+        const stack = new Error().stack || '';
+        const isUserClick = stack.includes('handleOptionClick') || stack.includes('onClick');
+        
+        // Solo bloquear si NO es una interacción del usuario Y estamos dentro del período de bloqueo
+        const isWithinBlockPeriod = resetTimestampRef.current && (Date.now() - resetTimestampRef.current) < 3000;
+        const shouldBlock = !isUserClick 
+                          && (isResettingRef.current || isWithinBlockPeriod)
+                          && isSettingNonEmptyValue 
+                          && wasRecentlyReset;
+        
+        if (shouldBlock) {
+          const timeSinceReset = resetTimestampRef.current ? Date.now() - resetTimestampRef.current : 0;
+          console.warn('[useTableCRUD] ⚠️ updateFormField bloqueado - muy pronto después de reset (BLOQUEO ACTIVO)', {
+            field,
+            currentValue,
+            newValue,
+            tableName,
+            timeSinceReset,
+            timeSinceResetMs: `${timeSinceReset}ms`,
+            isResetting: isResettingRef.current,
+            resetTimestamp: resetTimestampRef.current,
+            currentTimestamp: Date.now(),
+            isSettingNonEmptyValue,
+            wasRecentlyReset,
+            isUserClick,
+            message: 'El formulario fue reseteado recientemente, bloqueando actualizaciones automáticas de paisid para prevenir restauración incorrecta'
+          });
+          return;
+        } else if (!isUserClick && isSettingNonEmptyValue && wasRecentlyReset && !resetTimestampRef.current && !isResettingRef.current) {
+          // Si no hay timestamp de reset pero estamos intentando establecer un valor después de estar vacío,
+          // Y NO es una interacción del usuario, podría ser una restauración después de un re-mount. Bloquear de todas formas.
+          console.warn('[useTableCRUD] ⚠️ updateFormField bloqueado - posible restauración sin timestamp de reset', {
+            field,
+            currentValue,
+            newValue,
+            tableName,
+            isSettingNonEmptyValue,
+            wasRecentlyReset,
+            isResetting: isResettingRef.current,
+            isUserClick,
+            message: 'Intentando establecer paisid después de estar vacío sin timestamp de reset - bloqueando por seguridad'
+          });
+          return;
+        } else if (isUserClick) {
+          // Es una interacción del usuario - permitir y limpiar el timestamp de reset para permitir futuras interacciones
+          console.log('[useTableCRUD] updateFormField permitido - interacción del usuario detectada', {
+            field,
+            currentValue,
+            newValue,
+            tableName,
+            isUserClick
+          });
+          // Limpiar el timestamp de reset cuando el usuario interactúa manualmente
+          if (resetTimestampRef.current) {
+            resetTimestampRef.current = null;
+          }
+        }
+      }
+      
+      console.log('[useTableCRUD] updateFormField llamado para paisid:', {
+        value,
+        previousValue: formState.data.paisid,
+        tableName,
+        stackTrace: new Error().stack
+      });
+    }
+    
     setFormState(prev => ({
       ...prev,
       data: { ...prev.data, [field]: value },
       isDirty: true,
       errors: { ...prev.errors, [field]: '' }
     }));
-  }, []);
+  }, [tableName, formState.data.paisid]);
 
   const resetForm = useCallback(() => {
+    const initialData = initializeFormData(config);
+    
+    // Incrementar contador de reset para forzar re-mounts
+    resetCounterRef.current += 1;
+    
+    console.log('[useTableCRUD] resetForm llamado', {
+      tableName,
+      hasConfig: !!config,
+      initialData,
+      initialDataKeys: Object.keys(initialData),
+      resetCounter: resetCounterRef.current
+    });
+    
+    // ESTABLECER timestamp ANTES de cambiar el estado para que esté disponible inmediatamente
+    const resetTimestamp = Date.now();
+    resetTimestampRef.current = resetTimestamp;
+    
+    // Activar bloqueo de actualizaciones
+    isResettingRef.current = true;
+    
+    // Limpiar timeout anterior si existe
+    if (resetTimeoutRef.current) {
+      clearTimeout(resetTimeoutRef.current);
+    }
+    
+    console.log('[useTableCRUD] Estableciendo bloqueo de reset', {
+      tableName,
+      resetTimestamp: resetTimestampRef.current,
+      timestampActual: Date.now()
+    });
+    
     setFormState({
-      data: initializeFormData(config),
+      data: initialData,
       errors: {},
       isSubmitting: false,
       isDirty: false
     });
-  }, [config]);
+    
+    // Permitir actualizaciones después de 2000ms (tiempo suficiente para que React complete todos los re-renders y re-mounts)
+    // PERO mantener el timestamp por 5 segundos para el bloqueo específico de paisid
+    resetTimeoutRef.current = setTimeout(() => {
+      isResettingRef.current = false;
+      console.log('[useTableCRUD] Bloqueo de reset levantado (isResettingRef = false)', {
+        tableName,
+        resetTimestamp: resetTimestampRef.current,
+        tiempoTranscurrido: Date.now() - resetTimestamp
+      });
+      
+      // Mantener el timestamp por 5 segundos más para el bloqueo específico de paisid
+      setTimeout(() => {
+        if (resetTimestampRef.current === resetTimestamp) {
+          resetTimestampRef.current = null;
+          console.log('[useTableCRUD] Timestamp de reset limpiado después de 5 segundos', {
+            tableName,
+            tiempoTotal: Date.now() - resetTimestamp
+          });
+        }
+      }, 5000 - 2000); // Limpiar después de 5 segundos totales (3 segundos después de levantar el bloqueo)
+    }, 2000);
+  }, [config, tableName]);
+  
+  // Exponer resetCounter para usar como key en componentes hijos
+  const getResetKey = useCallback(() => {
+    return `reset-${resetCounterRef.current}`;
+  }, []);
 
   const validateForm = useCallback(() => {
     if (!config) return false;
@@ -413,6 +584,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     setFormData,
     updateFormField,
     resetForm,
+    getResetKey,
     validateForm,
     setPage,
     setPageSize,

@@ -133,33 +133,43 @@ export const useSimpleChangeDetection = () => {
         if (typeof value === 'number') {
           // Si el campo termina en 'id', es un foreign key
           if (key.endsWith('id')) {
-            // Solo considerar cambio si es > 0 Y hay datos relacionados ingresados
-            // Por ejemplo, si paisid > 0 pero pais y paisabrev están vacíos, es un valor por defecto
-            if (value > 0 && value !== null && value !== undefined) {
-              // Verificar si hay datos en los campos relacionados (no foreign keys)
-              // Si todos los campos de texto están vacíos, probablemente es un valor por defecto
-              const hasRelatedData = Object.keys(formData).some(otherKey => {
-                if (otherKey === key || otherKey.endsWith('id') || alwaysExcludedFields.includes(otherKey)) {
-                  return false;
-                }
-                const otherValue = formData[otherKey];
-                if (typeof otherValue === 'string' && otherValue.trim() !== '') {
-                  return true;
-                }
-                if (typeof otherValue === 'number' && otherValue > 0 && !otherKey.endsWith('id')) {
-                  return true;
-                }
-                if (typeof otherValue === 'boolean' && otherValue === true) {
-                  return true;
-                }
-                return false;
-              });
-              
-              if (hasRelatedData) {
+            // En formularios de inserción, cualquier foreign key seleccionada (> 0) cuenta como cambio
+            // porque el usuario la seleccionó manualmente en un combobox
+            if (activeSubTab === 'insert') {
+              if (value > 0 && value !== null && value !== undefined) {
                 changes.push(key);
-                console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key: ${key} = ${value} (hay datos relacionados)`);
-              } else {
-                console.log(`⚠️ [useSimpleChangeDetection] Foreign key ${key} = ${value} pero no hay datos relacionados, ignorando como valor por defecto`);
+                console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key (insert): ${key} = ${value}`);
+              }
+            } else {
+              // Para otras pestañas (update, etc.), verificar si hay datos relacionados
+              // Solo considerar cambio si es > 0 Y hay datos relacionados ingresados
+              // Por ejemplo, si paisid > 0 pero pais y paisabrev están vacíos, es un valor por defecto
+              if (value > 0 && value !== null && value !== undefined) {
+                // Verificar si hay datos en los campos relacionados (no foreign keys)
+                // Si todos los campos de texto están vacíos, probablemente es un valor por defecto
+                const hasRelatedData = Object.keys(formData).some(otherKey => {
+                  if (otherKey === key || otherKey.endsWith('id') || alwaysExcludedFields.includes(otherKey)) {
+                    return false;
+                  }
+                  const otherValue = formData[otherKey];
+                  if (typeof otherValue === 'string' && otherValue.trim() !== '') {
+                    return true;
+                  }
+                  if (typeof otherValue === 'number' && otherValue > 0 && !otherKey.endsWith('id')) {
+                    return true;
+                  }
+                  if (typeof otherValue === 'boolean' && otherValue === true) {
+                    return true;
+                  }
+                  return false;
+                });
+                
+                if (hasRelatedData) {
+                  changes.push(key);
+                  console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key: ${key} = ${value} (hay datos relacionados)`);
+                } else {
+                  console.log(`⚠️ [useSimpleChangeDetection] Foreign key ${key} = ${value} pero no hay datos relacionados, ignorando como valor por defecto`);
+                }
               }
             }
             return;
