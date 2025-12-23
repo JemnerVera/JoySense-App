@@ -27,7 +27,7 @@ export const useMassiveOperations = ({
 
   const handleMassiveUmbralApply = useCallback(async (dataToApply: any[]) => {
     if (!dataToApply || dataToApply.length === 0) {
-      setMessage({ type: 'error', text: 'No hay datos para aplicar' });
+      setMessage({ type: 'warning', text: 'No hay datos para aplicar' });
       return;
     }
 
@@ -67,7 +67,7 @@ export const useMassiveOperations = ({
       }
     } catch (error: any) {
       setMessage({ 
-        type: 'error', 
+        type: 'warning', 
         text: `Error al aplicar umbrales: ${error.message || 'Error desconocido'}` 
       });
     }

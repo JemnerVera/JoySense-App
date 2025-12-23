@@ -269,10 +269,10 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             return null;
           })()}
 
-          {/* Mensaje de error general */}
+          {/* Mensaje de error general (convertir a warning) */}
           {formErrors.general && (
             <MessageDisplay 
-              message={{ type: 'error', text: formErrors.general }} 
+              message={{ type: 'warning', text: formErrors.general }} 
             />
           )}
 

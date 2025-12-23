@@ -39,16 +39,20 @@ export const extractDuplicateKeyInfo = (error: BackendError): { fieldName: strin
   if (constraintName.includes('_pkey') || constraintName.includes('pk_')) {
     fieldName = 'clave primaria';
   } else if (constraintName.includes('unq_')) {
-    // Para constraints como "unq_entidad", extraer el nombre de la tabla
-    if (constraintName.startsWith('unq_')) {
-      const tableName = constraintName.substring(4); // Remover "unq_"
-      fieldName = tableName; // Usar el nombre de la tabla como nombre del campo
-    }
-    
-    // También intentar extraer de los detalles si está disponible
+    // Para constraints como "unq_pais_0", extraer información más específica
+    // Intentar extraer de los detalles primero (más preciso)
     const detailsMatch = details.match(/Key \(([^)]+)\)=\(([^)]+)\) already exists/);
     if (detailsMatch && detailsMatch[1]) {
-      fieldName = detailsMatch[1]; // Usar el nombre del campo de los detalles
+      // Los detalles pueden contener múltiples campos separados por coma
+      const keyFields = detailsMatch[1].split(',').map(f => f.trim());
+      // Si hay múltiples campos, preferir el primero no-id
+      fieldName = keyFields.find(f => !f.endsWith('id')) || keyFields[0] || 'campo';
+    } else if (constraintName.startsWith('unq_')) {
+      // Parsear constraint name como "unq_pais_0" -> extraer "pais"
+      const parts = constraintName.split('_');
+      if (parts.length >= 2) {
+        fieldName = parts[1]; // Usar "pais" de "unq_pais_0"
+      }
     }
   }
   
@@ -90,13 +94,57 @@ export const extractDuplicateKeyInfo = (error: BackendError): { fieldName: strin
   return { fieldName, conflictingValue };
 };
 
+// Función auxiliar para convertir errores de longitud a mensajes amigables
+function convertLengthError(errorText: string): string | null {
+  if (!errorText || (!errorText.includes('value too long') && !errorText.includes('character varying') && 
+      !errorText.includes('varchar'))) {
+    return null;
+  }
+  
+  // Extraer el límite de caracteres y el campo
+  const lengthMatch = errorText.match(/character varying\((\d+)\)|varchar\((\d+)\)/);
+  const length = lengthMatch ? (lengthMatch[1] || lengthMatch[2]) : '';
+  
+  // Intentar identificar qué campo tiene el problema
+  let fieldName = '';
+  const lowerErrorText = errorText.toLowerCase();
+  if (lowerErrorText.includes('paisabrev') || lowerErrorText.includes('pais_abrev')) {
+    fieldName = 'abreviatura';
+  } else if (lowerErrorText.includes('empresabrev') || lowerErrorText.includes('empresa_abrev')) {
+    fieldName = 'abreviatura de empresa';
+  } else if (lowerErrorText.includes('fundoabrev') || lowerErrorText.includes('fundo_abrev')) {
+    fieldName = 'abreviatura de fundo';
+  } else {
+    fieldName = 'campo';
+  }
+  
+  if (length) {
+    return `⚠️ El ${fieldName} excede el límite de ${length} caracteres`;
+  } else {
+    return `⚠️ El ${fieldName} excede el límite de caracteres permitido`;
+  }
+}
+
 // Función principal para manejar errores de inserción
 export const handleInsertError = (error: BackendError): ErrorResponse => {
   console.error('Error inserting row:', error);
   console.error('Error response data:', error.response?.data);
   console.error('Error response status:', error.response?.status);
   
-  // Detectar errores de clave única
+  // Obtener el texto del error de todas las fuentes posibles
+  const errorText = error.response?.data?.error || error.response?.data?.message || error.message || '';
+  
+  // 1. PRIMERO: Detectar y convertir errores de longitud (varchar, character varying)
+  // Estos errores pueden venir con cualquier código de estado (400, 500, etc.)
+  const lengthError = convertLengthError(errorText);
+  if (lengthError) {
+    return {
+      type: 'warning',
+      message: lengthError
+    };
+  }
+  
+  // 2. Detectar errores de clave única
   if (isDuplicateKeyError(error)) {
     const { fieldName } = extractDuplicateKeyInfo(error);
     
@@ -104,15 +152,21 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     let message = '';
     if (fieldName === 'login' || fieldName === 'usuario') {
       message = `⚠️ El login ya existe`;
-    } else if (fieldName === 'pais') {
+    } else if (fieldName === 'pais' || fieldName === 'país') {
       message = `⚠️ El país se repite`;
+    } else if (fieldName === 'paisabrev') {
+      message = `⚠️ La abreviatura se repite`;
     } else if (fieldName === 'empresa') {
       message = `⚠️ La empresa se repite`;
+    } else if (fieldName === 'empresabrev') {
+      message = `⚠️ La abreviatura de empresa se repite`;
     } else if (fieldName === 'fundo') {
       message = `⚠️ El fundo se repite`;
+    } else if (fieldName === 'fundoabrev') {
+      message = `⚠️ La abreviatura de fundo se repite`;
     } else if (fieldName === 'nodo') {
       message = `⚠️ El nodo se repite`;
-    } else if (fieldName === 'metrica') {
+    } else if (fieldName === 'metrica' || fieldName === 'métrica') {
       message = `⚠️ La métrica se repite`;
     } else if (fieldName === 'tipo') {
       message = `⚠️ El tipo se repite`;
@@ -129,10 +183,8 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     };
   }
   
-  // Detectar errores 500 que podrían ser de clave única (fallback)
+  // 3. Detectar errores 500 que podrían ser de clave única (fallback)
   if (error.response?.status === 500) {
-    const errorText = error.response?.data?.error || error.message || '';
-    
     if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
         errorText.includes('violates') || errorText.includes('already exists')) {
       return {
@@ -140,28 +192,167 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
         message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
       };
     }
-    
-    // Si es un error 500, intentar mostrar el mensaje específico del backend
-    const backendError = error.response?.data?.error || error.message;
-    return {
-      type: 'warning',
-      message: `⚠️ Alerta: ${backendError || 'No se pudo guardar la información. Verifique que todos los campos estén completos y que no haya duplicados.'}`
-    };
   }
   
-  // Manejar otros tipos de errores
-  let errorMessage = 'Error al insertar registro';
+  // 4. Manejar otros tipos de errores - convertir a warning
+  let errorMessage = errorText || 'Error al insertar registro';
   
-  if (error.response?.data?.message) {
-    errorMessage = error.response.data.message;
-  } else if (error.response?.data?.error) {
-    errorMessage = error.response.data.error;
-  } else if (error.message) {
-    errorMessage = error.message;
+  // Convertir mensajes técnicos a mensajes amigables en español
+  
+  // Errores de constraint duplicado
+  if (errorMessage.includes('duplicate') || errorMessage.includes('constraint') || 
+      errorMessage.includes('violates') || errorMessage.includes('unique')) {
+    // Intentar extraer información del constraint
+    const constraintMatch = errorMessage.match(/constraint "([^"]+)"/);
+    if (constraintMatch) {
+      const constraintName = constraintMatch[1];
+      if (constraintName.includes('unq_pais')) {
+        errorMessage = '⚠️ El país o abreviatura se repite';
+      } else if (constraintName.includes('unq_empresa')) {
+        errorMessage = '⚠️ La empresa o abreviatura se repite';
+      } else if (constraintName.includes('unq_fundo')) {
+        errorMessage = '⚠️ El fundo o abreviatura se repite';
+      } else {
+        errorMessage = '⚠️ Esta entrada ya existe';
+      }
+    }
+  }
+  // Errores de NOT NULL
+  else if (errorMessage.includes('null value') || errorMessage.includes('not null') || 
+           errorMessage.includes('violates not-null constraint')) {
+    errorMessage = '⚠️ Falta completar campos obligatorios';
+  }
+  // Errores de foreign key
+  else if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key constraint')) {
+    errorMessage = '⚠️ La referencia seleccionada no es válida';
+  }
+  // Otros errores de constraint
+  else if (errorMessage.includes('check constraint') || errorMessage.includes('violates check constraint')) {
+    errorMessage = '⚠️ El valor ingresado no cumple con las reglas de validación';
+  }
+  // Si aún no se ha convertido, agregar el prefijo de advertencia
+  else if (!errorMessage.startsWith('⚠️')) {
+    errorMessage = `⚠️ ${errorMessage}`;
   }
   
   return {
-    type: 'error',
+    type: 'warning', // Todos los mensajes son warning (amarillo), nunca error (rojo)
+    message: errorMessage
+  };
+};
+
+// Función para manejar errores de actualización (reutiliza la lógica de inserción)
+export const handleUpdateError = (error: BackendError): ErrorResponse => {
+  console.error('Error updating row:', error);
+  console.error('Error response data:', error.response?.data);
+  console.error('Error response status:', error.response?.status);
+  
+  // Obtener el texto del error de todas las fuentes posibles
+  const errorText = error.response?.data?.error || error.response?.data?.message || error.message || '';
+  
+  // 1. PRIMERO: Detectar y convertir errores de longitud (varchar, character varying)
+  // Estos errores pueden venir con cualquier código de estado (400, 500, etc.)
+  const lengthError = convertLengthError(errorText);
+  if (lengthError) {
+    return {
+      type: 'warning',
+      message: lengthError
+    };
+  }
+  
+  // 2. Detectar errores de clave única
+  if (isDuplicateKeyError(error)) {
+    const { fieldName } = extractDuplicateKeyInfo(error);
+    
+    // Simplificar mensajes según el tipo de campo
+    let message = '';
+    if (fieldName === 'login' || fieldName === 'usuario') {
+      message = `⚠️ El login ya existe`;
+    } else if (fieldName === 'pais' || fieldName === 'país') {
+      message = `⚠️ El país se repite`;
+    } else if (fieldName === 'paisabrev') {
+      message = `⚠️ La abreviatura se repite`;
+    } else if (fieldName === 'empresa') {
+      message = `⚠️ La empresa se repite`;
+    } else if (fieldName === 'empresabrev') {
+      message = `⚠️ La abreviatura de empresa se repite`;
+    } else if (fieldName === 'fundo') {
+      message = `⚠️ El fundo se repite`;
+    } else if (fieldName === 'fundoabrev') {
+      message = `⚠️ La abreviatura de fundo se repite`;
+    } else if (fieldName === 'nodo') {
+      message = `⚠️ El nodo se repite`;
+    } else if (fieldName === 'metrica' || fieldName === 'métrica') {
+      message = `⚠️ La métrica se repite`;
+    } else if (fieldName === 'tipo') {
+      message = `⚠️ El tipo se repite`;
+    } else if (fieldName === 'entidad') {
+      message = `⚠️ La entidad se repite`;
+    } else {
+      // Fallback para otros campos
+      message = `⚠️ Esta entrada ya existe`;
+    }
+    
+    return {
+      type: 'warning',
+      message
+    };
+  }
+  
+  // 3. Detectar errores 500 que podrían ser de clave única (fallback)
+  if (error.response?.status === 500) {
+    if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
+        errorText.includes('violates') || errorText.includes('already exists')) {
+      return {
+        type: 'warning',
+        message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
+      };
+    }
+  }
+  
+  // 4. Manejar otros tipos de errores - convertir a warning
+  let errorMessage = errorText || 'Error al actualizar registro';
+  
+  // Convertir mensajes técnicos a mensajes amigables en español
+  
+  // Errores de constraint duplicado
+  if (errorMessage.includes('duplicate') || errorMessage.includes('constraint') || 
+      errorMessage.includes('violates') || errorMessage.includes('unique')) {
+    // Intentar extraer información del constraint
+    const constraintMatch = errorMessage.match(/constraint "([^"]+)"/);
+    if (constraintMatch) {
+      const constraintName = constraintMatch[1];
+      if (constraintName.includes('unq_pais')) {
+        errorMessage = '⚠️ El país o abreviatura se repite';
+      } else if (constraintName.includes('unq_empresa')) {
+        errorMessage = '⚠️ La empresa o abreviatura se repite';
+      } else if (constraintName.includes('unq_fundo')) {
+        errorMessage = '⚠️ El fundo o abreviatura se repite';
+      } else {
+        errorMessage = '⚠️ Esta entrada ya existe';
+      }
+    }
+  }
+  // Errores de NOT NULL
+  else if (errorMessage.includes('null value') || errorMessage.includes('not null') || 
+           errorMessage.includes('violates not-null constraint')) {
+    errorMessage = '⚠️ Falta completar campos obligatorios';
+  }
+  // Errores de foreign key
+  else if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key constraint')) {
+    errorMessage = '⚠️ La referencia seleccionada no es válida';
+  }
+  // Otros errores de constraint
+  else if (errorMessage.includes('check constraint') || errorMessage.includes('violates check constraint')) {
+    errorMessage = '⚠️ El valor ingresado no cumple con las reglas de validación';
+  }
+  // Si aún no se ha convertido, agregar el prefijo de advertencia
+  else if (!errorMessage.startsWith('⚠️')) {
+    errorMessage = `⚠️ ${errorMessage}`;
+  }
+  
+  return {
+    type: 'warning', // Todos los mensajes son warning (amarillo), nunca error (rojo)
     message: errorMessage
   };
 };
@@ -205,19 +396,30 @@ export const handleMultipleInsertError = (error: BackendError, entityType: strin
     };
   }
   
-  // Manejar otros tipos de errores
-  let errorMessage = `Error al crear ${entityType} múltiples`;
+  // Manejar otros tipos de errores - convertir a warning
+  const errorText = error.response?.data?.error || error.response?.data?.message || error.message || '';
   
-  if (error.response?.data?.message) {
-    errorMessage = error.response.data.message;
-  } else if (error.response?.data?.error) {
-    errorMessage = error.response.data.error;
-  } else if (error.message) {
-    errorMessage = error.message;
+  // Verificar primero errores de longitud
+  const lengthError = convertLengthError(errorText);
+  if (lengthError) {
+    return {
+      type: 'warning',
+      message: lengthError
+    };
+  }
+  
+  let errorMessage = errorText || `Error al crear ${entityType} múltiples`;
+  
+  // Convertir mensaje técnico a mensaje amigable si contiene "duplicate" o "constraint"
+  if (errorMessage.includes('duplicate') || errorMessage.includes('constraint') || 
+      errorMessage.includes('violates') || errorMessage.includes('unique')) {
+    errorMessage = `⚠️ Algunos ${entityType} ya existen`;
+  } else if (!errorMessage.startsWith('⚠️')) {
+    errorMessage = `⚠️ ${errorMessage}`;
   }
   
   return {
-    type: 'error',
+    type: 'warning', // Todos los mensajes son warning (amarillo), nunca error (rojo)
     message: errorMessage
   };
 };

@@ -136,28 +136,37 @@ export function getValidationMessages(validationResult: ValidationResult): strin
 }
 
 // Función para generar mensaje amigable de errores
+// Muestra errores uno por línea para mejor legibilidad
 export function generateUserFriendlyMessage(errors: any[]): string {
   if (errors.length === 0) {
     return 'Validación exitosa';
   }
   
-  if (errors.length === 1) {
-    return errors[0].message || 'Hay un error en el formulario';
+  // Mostrar cada error en una línea separada
+  const errorMessages = errors.map(e => e.message || 'Error desconocido').filter(Boolean);
+  
+  if (errorMessages.length === 1) {
+    return errorMessages[0];
   }
   
-  return `Hay ${errors.length} errores en el formulario. Por favor, revíselos antes de continuar.`;
+  // Múltiples errores: uno por línea
+  return errorMessages.join('\n');
 }
 
 // Función para generar mensaje amigable de actualización
+// Muestra errores uno por línea para mejor legibilidad
 export function generateUpdateUserFriendlyMessage(errors: any[]): string {
   if (errors.length === 0) {
     return 'Validación exitosa';
   }
   
-  if (errors.length === 1) {
-    return errors[0].message || 'Hay un error en el formulario';
+  // Mostrar cada error en una línea separada
+  const errorMessages = errors.map(e => e.message || 'Error desconocido').filter(Boolean);
+  
+  if (errorMessages.length === 1) {
+    return errorMessages[0];
   }
   
-  const errorMessages = errors.map(e => e.message || 'Error desconocido').join(', ');
-  return `Hay ${errors.length} errores: ${errorMessages}`;
+  // Múltiples errores: uno por línea
+  return errorMessages.join('\n');
 }

@@ -4,6 +4,7 @@
 
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { validateTableData } from '../../../utils/validations/routers';
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -35,6 +36,7 @@ interface UseSystemParametersCRUDProps {
   setActiveSubTab: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   onSubTabChange?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   setInsertedRecords: Dispatch<SetStateAction<Array<{ id: string; fields: Record<string, any> }>>>;
+  existingData?: any[]; // Datos existentes para validación de duplicados
 }
 
 export const useSystemParametersCRUD = ({
@@ -56,7 +58,8 @@ export const useSystemParametersCRUD = ({
   setSelectedRow,
   setActiveSubTab,
   onSubTabChange,
-  setInsertedRecords
+  setInsertedRecords,
+  existingData
 }: UseSystemParametersCRUDProps) => {
 
   const handleInsert = useCallback(async () => {
@@ -76,15 +79,37 @@ export const useSystemParametersCRUD = ({
         return;
       }
     } else {
-      // Validar formulario y mostrar mensaje warning si hay errores
+      // PRIMERO: Validación específica de tabla (duplicados, constraints, longitud, etc.)
+      // Esta validación es más específica y debe ejecutarse antes de la validación básica
+      if (selectedTable && existingData) {
+        try {
+          const validationResult = await validateTableData(selectedTable, formState.data, existingData);
+          if (!validationResult.isValid) {
+            // Mostrar errores uno por línea
+            const errorMessage = validationResult.userFriendlyMessage || validationResult.errors.map(e => e.message).join('\n');
+            setMessage({ type: 'warning', text: errorMessage });
+            return;
+          }
+        } catch (validationError) {
+          // Si falla la validación, continuar (el backend también validará)
+          console.error('Error en validación:', validationError);
+        }
+      }
+      
+      // SEGUNDO: Validar formulario básico (campos requeridos)
+      // Solo si no hay errores específicos de tabla, validar campos requeridos
       if (!validateForm()) {
-        // Obtener errores de validación
+        // Obtener errores de validación básicos (campos requeridos)
         const validationErrors = Object.values(formState.errors).filter(Boolean);
-        const errorMessage = validationErrors.length > 0 
-          ? validationErrors.join('\n')
-          : 'Por favor complete todos los campos requeridos';
-        
-        setMessage({ type: 'warning', text: errorMessage });
+        // Solo mostrar mensaje genérico si realmente no hay errores específicos
+        if (validationErrors.length > 0) {
+          const errorMessage = validationErrors.join('\n');
+          setMessage({ type: 'warning', text: errorMessage });
+        } else {
+          // Si validateForm() retorna false pero no hay errores específicos,
+          // puede ser un problema de validación interna, mostrar mensaje genérico
+          setMessage({ type: 'warning', text: 'Por favor complete todos los campos requeridos' });
+        }
         return;
       }
     }
@@ -156,7 +181,8 @@ export const useSystemParametersCRUD = ({
         loadRelatedTablesData();
       }
     } else {
-      setMessage({ type: 'error', text: result.error || 'Error al insertar' });
+      // Todos los mensajes deben ser 'warning' (amarillo), nunca 'error' (rojo)
+      setMessage({ type: 'warning', text: result.error || 'Error al insertar' });
     }
   }, [
     selectedTable,
@@ -172,12 +198,48 @@ export const useSystemParametersCRUD = ({
     setMessage,
     setActiveSubTab,
     onSubTabChange,
-    config
+    config,
+    existingData,
+    setInsertedRecords
   ]);
 
   const handleUpdate = useCallback(async () => {
-    if (!selectedRow || !validateForm()) {
-      setMessage({ type: 'error', text: 'Por favor complete todos los campos requeridos' });
+    if (!selectedRow) {
+      setMessage({ type: 'warning', text: 'No hay registro seleccionado para actualizar' });
+      return;
+    }
+
+    // PRIMERO: Validación específica de tabla (duplicados, constraints, longitud, etc.)
+    // Esta validación es más específica y debe ejecutarse antes de la validación básica
+    if (selectedTable && existingData) {
+      try {
+        const validationResult = await validateTableData(selectedTable, formState.data, existingData);
+        if (!validationResult.isValid) {
+          // Mostrar errores uno por línea
+          const errorMessage = validationResult.userFriendlyMessage || validationResult.errors.map(e => e.message).join('\n');
+          setMessage({ type: 'warning', text: errorMessage });
+          return;
+        }
+      } catch (validationError) {
+        // Si falla la validación, continuar (el backend también validará)
+        console.error('Error en validación:', validationError);
+      }
+    }
+
+    // SEGUNDO: Validar formulario básico (campos requeridos)
+    // Solo si no hay errores específicos de tabla, validar campos requeridos
+    if (!validateForm()) {
+      // Obtener errores de validación básicos (campos requeridos)
+      const validationErrors = Object.values(formState.errors).filter(Boolean);
+      // Solo mostrar mensaje genérico si realmente no hay errores específicos
+      if (validationErrors.length > 0) {
+        const errorMessage = validationErrors.join('\n');
+        setMessage({ type: 'warning', text: errorMessage });
+      } else {
+        // Si validateForm() retorna false pero no hay errores específicos,
+        // puede ser un problema de validación interna, mostrar mensaje genérico
+        setMessage({ type: 'warning', text: 'Por favor complete todos los campos requeridos' });
+      }
       return;
     }
 
@@ -217,7 +279,7 @@ export const useSystemParametersCRUD = ({
         loadRelatedTablesData();
       }
     } else {
-      setMessage({ type: 'error', text: result.error || 'Error al actualizar' });
+      setMessage({ type: 'warning', text: result.error || 'Error al actualizar' });
     }
   }, [
     selectedRow,
@@ -246,7 +308,7 @@ export const useSystemParametersCRUD = ({
     if (result.success) {
       setMessage({ type: 'success', text: 'Registro eliminado correctamente' });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Error al eliminar' });
+      setMessage({ type: 'warning', text: result.error || 'Error al eliminar' });
     }
   }, [deleteRow, getPrimaryKeyValue, setMessage]);
 
