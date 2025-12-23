@@ -5,6 +5,7 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { validateTableData } from '../../../utils/validations/routers';
+import { consolidateErrorMessages } from '../../../utils/messageConsolidation';
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -85,8 +86,10 @@ export const useSystemParametersCRUD = ({
         try {
           const validationResult = await validateTableData(selectedTable, formState.data, existingData);
           if (!validationResult.isValid) {
-            // Mostrar errores uno por línea
-            const errorMessage = validationResult.userFriendlyMessage || validationResult.errors.map(e => e.message).join('\n');
+            // Mostrar errores uno por línea, consolidando mensajes similares
+            const errorMessages = validationResult.errors.map(e => e.message).filter(Boolean);
+            const consolidatedErrors = consolidateErrorMessages(errorMessages);
+            const errorMessage = validationResult.userFriendlyMessage || consolidatedErrors.join('\n');
             setMessage({ type: 'warning', text: errorMessage });
             return;
           }
@@ -103,7 +106,9 @@ export const useSystemParametersCRUD = ({
         const validationErrors = Object.values(formState.errors).filter(Boolean);
         // Solo mostrar mensaje genérico si realmente no hay errores específicos
         if (validationErrors.length > 0) {
-          const errorMessage = validationErrors.join('\n');
+          // Consolidar mensajes similares
+          const consolidatedErrors = consolidateErrorMessages(validationErrors);
+          const errorMessage = consolidatedErrors.join('\n');
           setMessage({ type: 'warning', text: errorMessage });
         } else {
           // Si validateForm() retorna false pero no hay errores específicos,
@@ -215,8 +220,10 @@ export const useSystemParametersCRUD = ({
       try {
         const validationResult = await validateTableData(selectedTable, formState.data, existingData);
         if (!validationResult.isValid) {
-          // Mostrar errores uno por línea
-          const errorMessage = validationResult.userFriendlyMessage || validationResult.errors.map(e => e.message).join('\n');
+          // Mostrar errores uno por línea, consolidando mensajes similares
+          const errorMessages = validationResult.errors.map(e => e.message).filter(Boolean);
+          const consolidatedErrors = consolidateErrorMessages(errorMessages);
+          const errorMessage = validationResult.userFriendlyMessage || consolidatedErrors.join('\n');
           setMessage({ type: 'warning', text: errorMessage });
           return;
         }
@@ -233,7 +240,9 @@ export const useSystemParametersCRUD = ({
       const validationErrors = Object.values(formState.errors).filter(Boolean);
       // Solo mostrar mensaje genérico si realmente no hay errores específicos
       if (validationErrors.length > 0) {
-        const errorMessage = validationErrors.join('\n');
+        // Consolidar mensajes similares
+        const consolidatedErrors = consolidateErrorMessages(validationErrors);
+        const errorMessage = consolidatedErrors.join('\n');
         setMessage({ type: 'warning', text: errorMessage });
       } else {
         // Si validateForm() retorna false pero no hay errores específicos,

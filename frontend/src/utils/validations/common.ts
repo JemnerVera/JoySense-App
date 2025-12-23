@@ -4,6 +4,7 @@
 
 import { ValidationRule, ValidationResult } from './types';
 import { tableValidationSchemas } from './schemas';
+import { consolidateErrorMessages } from '../messageConsolidation';
 
 // Función de validación progresiva para nodo
 function validateNodoProgressive(formData: Record<string, any>): ValidationResult {
@@ -137,6 +138,7 @@ export function getValidationMessages(validationResult: ValidationResult): strin
 
 // Función para generar mensaje amigable de errores
 // Muestra errores uno por línea para mejor legibilidad
+// Consolida mensajes similares
 export function generateUserFriendlyMessage(errors: any[]): string {
   if (errors.length === 0) {
     return 'Validación exitosa';
@@ -149,12 +151,16 @@ export function generateUserFriendlyMessage(errors: any[]): string {
     return errorMessages[0];
   }
   
+  // Consolidar mensajes similares antes de unirlos
+  const consolidated = consolidateErrorMessages(errorMessages);
+  
   // Múltiples errores: uno por línea
-  return errorMessages.join('\n');
+  return consolidated.join('\n');
 }
 
 // Función para generar mensaje amigable de actualización
 // Muestra errores uno por línea para mejor legibilidad
+// Consolida mensajes similares
 export function generateUpdateUserFriendlyMessage(errors: any[]): string {
   if (errors.length === 0) {
     return 'Validación exitosa';
@@ -167,6 +173,10 @@ export function generateUpdateUserFriendlyMessage(errors: any[]): string {
     return errorMessages[0];
   }
   
+  // Consolidar mensajes similares antes de unirlos
+  const { consolidateErrorMessages } = require('../messageConsolidation');
+  const consolidated = consolidateErrorMessages(errorMessages);
+  
   // Múltiples errores: uno por línea
-  return errorMessages.join('\n');
+  return consolidated.join('\n');
 }
