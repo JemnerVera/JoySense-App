@@ -239,7 +239,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   const updateField = useCallback((field: string, value: any) => {
     // Si estamos en medio de un reset, ignorar todas las actualizaciones
     if (isResettingRef.current) {
-      console.log('[NormalInsertForm] updateField ignorado - reset en progreso', { field, value });
       return;
     }
 
@@ -252,11 +251,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       if (currentValue === newValue || 
           (currentValue !== null && currentValue !== undefined && currentValue !== '' && 
            String(currentValue) === String(newValue))) {
-        console.log('[NormalInsertForm] updateField ignorado - valor no cambió', { 
-          field, 
-          currentValue, 
-          newValue 
-        });
         return;
       }
     }
@@ -282,7 +276,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                      currentHasNoPaisid;
     
     if (wasReset) {
-      logger.debug('[NormalInsertForm] Formulario detectado como reseteado, bloqueando actualizaciones temporalmente');
       autoSelectedPaisRef.current = false;
       
       // Bloquear actualizaciones por 100ms para evitar que se restauren valores durante el reset
@@ -296,7 +289,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       // Permitir actualizaciones después de 500ms (suficiente tiempo para que React complete todos los re-renders)
       resetTimeoutRef.current = setTimeout(() => {
         isResettingRef.current = false;
-        logger.debug('[NormalInsertForm] Bloqueo de reset levantado');
       }, 500);
     }
     
@@ -333,7 +325,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     
     // CRÍTICO: Si estamos en medio de un reset, NO ejecutar este efecto
     if (isResettingRef.current) {
-      logger.debug('[NormalInsertForm] Sincronización país bloqueada - reset en progreso');
       return;
     }
     
@@ -341,7 +332,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       syncTimeoutRef.current = setTimeout(() => {
         // VERIFICAR NUEVAMENTE después del timeout si estamos en medio de un reset
         if (isResettingRef.current) {
-          logger.debug('[NormalInsertForm] Sincronización país bloqueada - reset en progreso (después de timeout)');
           return;
         }
         
@@ -366,7 +356,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         
         // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
         if (shouldSync && isPaisidEmpty) {
-          logger.debug('[NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado);
           if (updateFormField) {
             updateFormField('paisid', paisSeleccionado);
           } else {
@@ -681,7 +670,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       {/* Botones de acción centrados */}
       <div className="flex justify-center items-center mt-8 space-x-4">
         <button
-          onClick={onInsert}
+          onClick={() => {
+            if (onInsert && !loading) {
+              onInsert();
+            }
+          }}
           disabled={loading}
           className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider`}
         >

@@ -96,26 +96,39 @@ export const useSystemParametersSync = ({
   }, [formState.data, activeSubTab]);
 
   // Sincronizar activeSubTab con prop cuando cambia desde fuera
+  // NOTA: Cuando propActiveSubTab cambia, significa que App.tsx ya actualizó el estado
+  // Necesitamos validar si ese cambio es válido antes de proceder
+  // Si hay cambios sin guardar, debemos REVERTIR el cambio en App.tsx
+  const lastPropActiveSubTabRef = useRef<string>('');
+  const lastValidatedTabRef = useRef<string>('');
+  
   useEffect(() => {
-    if (propActiveSubTab && propActiveSubTab !== activeSubTab) {
-      // Limpiar mensaje cuando cambia la pestaña desde fuera
-      setMessage(null);
+    // Solo procesar si el prop cambió y es diferente al último validado
+    if (propActiveSubTab && propActiveSubTab !== activeSubTab && propActiveSubTab !== lastPropActiveSubTabRef.current) {
+      lastPropActiveSubTabRef.current = propActiveSubTab;
       
-      // Si veníamos de 'insert' y cambiamos a otra pestaña, limpiar registros insertados
-      if (activeSubTab === 'insert' && propActiveSubTab !== 'insert') {
-        setInsertedRecords([]);
-      }
-      
-      // Si veníamos de 'insert' o 'update' y cambiamos a otra pestaña, limpiar formulario
-      if ((activeSubTab === 'insert' || activeSubTab === 'update') && 
-          propActiveSubTab !== 'insert' && propActiveSubTab !== 'update') {
-        resetForm();
-        setUpdateFormData({});
-      }
-      
+      // Llamar a setActiveSubTab que validará cambios
+      // IMPORTANTE: setActiveSubTab ahora puede prevenir el cambio si hay cambios sin guardar
+      // y debería revertir propActiveSubTab llamando a onSubTabChange con el tab actual
       setActiveSubTab(propActiveSubTab);
+      
+      // Resetear el ref después de un delay para permitir futuros cambios
+      setTimeout(() => {
+        // Si después del delay el activeSubTab NO cambió a propActiveSubTab,
+        // significa que el cambio fue bloqueado y debemos revertir propActiveSubTab
+        if (activeSubTab !== propActiveSubTab && propActiveSubTab !== lastValidatedTabRef.current) {
+          // El cambio fue bloqueado - necesitamos revertir en App.tsx
+          // Pero esto puede causar un loop, así que mejor no hacer nada aquí
+          // El modal ya debería haber prevenido el cambio visualmente
+        } else if (activeSubTab === propActiveSubTab) {
+          // El cambio fue exitoso
+          lastValidatedTabRef.current = propActiveSubTab;
+        }
+        // Resetear para permitir futuros cambios
+        lastPropActiveSubTabRef.current = '';
+      }, 500);
     }
-  }, [propActiveSubTab, activeSubTab, resetForm, setActiveSubTab, setUpdateFormData, setMessage, setInsertedRecords]);
+  }, [propActiveSubTab, activeSubTab, setActiveSubTab]);
 
   // Cargar datos relacionados al montar el componente (una sola vez)
   useEffect(() => {
@@ -177,16 +190,6 @@ export const useSystemParametersSync = ({
   useEffect(() => {
     // Si cambiamos de pestaña (cualquier cambio), limpiar el mensaje y registros insertados
     if (activeSubTab !== prevActiveSubTabRef.current) {
-      console.log('[useSystemParametersSync] Cambio de pestaña detectado', {
-        from: prevActiveSubTabRef.current,
-        to: activeSubTab,
-        formDataKeys: Object.keys(formState.data),
-        formDataValues: Object.entries(formState.data).filter(([k, v]) => {
-          const val = v;
-          return val !== null && val !== undefined && val !== '' && val !== 1;
-        }).map(([k, v]) => `${k}: ${v}`)
-      });
-      
       setMessage(null);
       
       // SIEMPRE limpiar el formulario cuando cambiamos de pestaña, independientemente de la dirección
@@ -205,24 +208,11 @@ export const useSystemParametersSync = ({
       // CRÍTICO: Si estamos saliendo de UPDATE, siempre resetear ANTES de cualquier otra cosa
       // Esto previene que los datos de UPDATE persistan cuando volvemos a INSERT
       if (isLeavingUpdate) {
-        console.log('[useSystemParametersSync] CRÍTICO: Saliendo de update, reseteando formulario inmediatamente', {
-          from: prevActiveSubTabRef.current,
-          to: activeSubTab,
-          formDataBeforeReset: formState.data
-        });
         resetForm(); // Resetear inmediatamente al salir de update
         setUpdateFormData({}); // Limpiar datos de actualización
       }
       
       if (shouldResetForm || isEnteringInsert) {
-        console.log('[useSystemParametersSync] Limpiando formulario por cambio de pestaña', {
-          from: prevActiveSubTabRef.current,
-          to: activeSubTab,
-          formDataBeforeReset: formState.data,
-          isLeavingUpdate,
-          isEnteringInsert
-        });
-        
         // Limpiar registros insertados siempre que salimos o entramos a insert
         if (prevActiveSubTabRef.current === 'insert' || activeSubTab === 'insert') {
           setInsertedRecords([]);
@@ -232,15 +222,6 @@ export const useSystemParametersSync = ({
         if (!isLeavingUpdate) {
           resetForm();
         }
-        
-        // Verificar después de un delay que el reset se aplicó correctamente
-        setTimeout(() => {
-          console.log('[useSystemParametersSync] Verificación después de resetForm', {
-            formDataAfterReset: formState.data,
-            formDataKeysAfterReset: Object.keys(formState.data),
-            hasEmptyPaisid: !formState.data.paisid || formState.data.paisid === null || formState.data.paisid === ''
-          });
-        }, 150);
       }
     }
     prevActiveSubTabRef.current = activeSubTab;
