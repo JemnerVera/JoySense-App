@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { validateTableData } from '../../../utils/validations/routers';
 import { consolidateErrorMessages } from '../../../utils/messageConsolidation';
+import { logger } from '../../../utils/logger';
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -131,7 +132,30 @@ export const useSystemParametersCRUD = ({
     });
     
     // Agregar campos de auditoría
-    const userId = user?.user_metadata?.usuarioid || 1;
+    // DIAGNÓSTICO: Log del objeto user completo para ver su estructura
+    logger.debug('[useSystemParametersCRUD] Objeto user completo:', {
+      user,
+      userKeys: user ? Object.keys(user) : [],
+      user_metadata: user?.user_metadata,
+      user_metadataKeys: user?.user_metadata ? Object.keys(user.user_metadata) : [],
+      id: user?.id,
+      email: user?.email,
+      rawUser: JSON.stringify(user, null, 2)
+    })
+    
+    // NOTA: En useSystemParametersCRUD no podemos usar async fácilmente en handleInsert
+    // Por ahora usamos la lógica anterior, pero idealmente debería usar la misma función helper
+    // Para diagnóstico, intentar obtener usuarioid de user_metadata primero
+    const userId = 
+      user?.user_metadata?.usuarioid || 
+      1
+    
+    logger.debug('[useSystemParametersCRUD] userId calculado:', {
+      userId,
+      source: user?.user_metadata?.usuarioid ? 'user_metadata.usuarioid' : 'fallback: 1',
+      note: 'Para obtener usuarioid desde tabla usuario, usar useInsertForm en lugar de este hook'
+    })
+    
     const now = new Date().toISOString();
     const dataToInsert: Record<string, any> = {
       ...filteredData,
@@ -141,6 +165,13 @@ export const useSystemParametersCRUD = ({
       usermodifiedid: userId,
       datemodified: now
     };
+    
+    logger.debug('[useSystemParametersCRUD] Datos a insertar (incluyendo auditoría):', {
+      tableName: selectedTable,
+      usercreatedid: dataToInsert.usercreatedid,
+      usermodifiedid: dataToInsert.usermodifiedid,
+      dataKeys: Object.keys(dataToInsert)
+    })
 
     // Excluir campos de clave primaria que se generan automáticamente
     // (ya se maneja en la configuración de cada tabla)

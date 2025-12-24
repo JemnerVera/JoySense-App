@@ -144,7 +144,20 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     };
   }
   
-  // 2. Detectar errores de clave única
+  // 2. PRIMERO: Detectar errores de Row-Level Security (RLS)
+  // Estos tienen código 42501 y mensaje "new row violates row-level security policy"
+  if (error.response?.data?.code === '42501' || 
+      error.response?.status === 403 ||
+      errorText.toLowerCase().includes('row-level security') ||
+      errorText.toLowerCase().includes('violates row-level security policy')) {
+    const tableName = errorText.match(/table "([^"]+)"/)?.[1] || 'la tabla';
+    return {
+      type: 'error',
+      message: `⚠️ Error de permisos: No tiene permiso para insertar registros en ${tableName}. Contacte al administrador.`
+    };
+  }
+  
+  // 3. Detectar errores de clave única
   if (isDuplicateKeyError(error)) {
     const { fieldName } = extractDuplicateKeyInfo(error);
     
@@ -183,10 +196,14 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     };
   }
   
-  // 3. Detectar errores 500 que podrían ser de clave única (fallback)
+  // 4. Detectar errores 500 que podrían ser de clave única (fallback)
+  // PERO primero verificar que NO sea un error de RLS
   if (error.response?.status === 500) {
-    if (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
-        errorText.includes('violates') || errorText.includes('already exists')) {
+    // Verificar que no sea RLS disfrazado
+    if (!errorText.toLowerCase().includes('row-level security') && 
+        !errorText.toLowerCase().includes('violates row-level security policy') &&
+        (errorText.includes('duplicate') || errorText.includes('unique') || errorText.includes('constraint') || 
+         errorText.includes('violates') || errorText.includes('already exists'))) {
       return {
         type: 'warning',
         message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
@@ -194,7 +211,7 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     }
   }
   
-  // 4. Manejar otros tipos de errores - convertir a warning
+  // 5. Manejar otros tipos de errores - convertir a warning
   let errorMessage = errorText || 'Error al insertar registro';
   
   // Convertir mensajes técnicos a mensajes amigables en español

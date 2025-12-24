@@ -4,12 +4,14 @@
  * Similar a useUpdateForm pero completamente aislado para evitar contaminación de estado
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { validateTableData } from '../utils/validations'
 import type { TableConfig } from '../config/tables.config'
 import { getTableConfig } from '../config/tables.config'
 import { logger } from '../utils/logger'
 import { consolidateErrorMessages } from '../utils/messageConsolidation'
+import { AuthUser, Usuario } from '../types'
+import { JoySenseService } from '../services/backend-api'
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info'
@@ -49,6 +51,63 @@ interface UseInsertFormReturn {
  * Hook que encapsula toda la lógica del formulario de inserción
  * Estado completamente aislado de UPDATE
  */
+// Helper para obtener usuarioid desde la tabla usuario
+// Busca por useruuid (UUID de Supabase Auth) o por email/login
+async function getUsuarioidFromUser(user: AuthUser | null | undefined): Promise<number | null> {
+  if (!user) {
+    logger.debug('[getUsuarioidFromUser] No hay usuario proporcionado')
+    return null
+  }
+
+  // Primero intentar obtener de user_metadata si está disponible
+  if (user.user_metadata?.usuarioid) {
+    logger.debug('[getUsuarioidFromUser] usuarioid encontrado en user_metadata:', user.user_metadata.usuarioid)
+    return user.user_metadata.usuarioid
+  }
+
+  try {
+    // Consultar tabla usuario por useruuid (coincide con user.id de Supabase Auth)
+    logger.debug('[getUsuarioidFromUser] Buscando usuarioid en tabla usuario...', {
+      useruuid: user.id,
+      email: user.email
+    })
+    
+    const usuariosData = await JoySenseService.getTableData('usuario', 100)
+    const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || []
+    
+    // Buscar por useruuid primero (más preciso)
+    if (user.id) {
+      const usuarioByUuid = usuarios.find((u: Usuario) => 
+        u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase()
+      )
+      if (usuarioByUuid?.usuarioid) {
+        logger.debug('[getUsuarioidFromUser] usuarioid encontrado por useruuid:', usuarioByUuid.usuarioid)
+        return usuarioByUuid.usuarioid
+      }
+    }
+    
+    // Si no se encuentra por UUID, buscar por email/login
+    if (user.email) {
+      const usuarioByEmail = usuarios.find((u: Usuario) => 
+        u.login && u.login.toLowerCase() === user.email.toLowerCase()
+      )
+      if (usuarioByEmail?.usuarioid) {
+        logger.debug('[getUsuarioidFromUser] usuarioid encontrado por email/login:', usuarioByEmail.usuarioid)
+        return usuarioByEmail.usuarioid
+      }
+    }
+    
+    logger.warn('[getUsuarioidFromUser] No se encontró usuarioid para el usuario:', {
+      useruuid: user.id,
+      email: user.email
+    })
+    return null
+  } catch (error) {
+    logger.error('[getUsuarioidFromUser] Error al buscar usuarioid:', error)
+    return null
+  }
+}
+
 export const useInsertForm = ({
   tableName,
   insertRow,
@@ -103,76 +162,113 @@ export const useInsertForm = ({
     const cleanData = initializeFormData()
     setFormDataState(cleanData)
     setFormErrors({})
+    // Resetear flags de selección manual cuando se resetea el formulario
+    userSelectedPaisRef.current = false
+    userSelectedEmpresaRef.current = false
+    userSelectedFundoRef.current = false
   }, [tableName, resetKey, initializeFormData])
   
+  // Refs para rastrear si el usuario ha seleccionado valores manualmente
+  const userSelectedPaisRef = useRef(false)
+  const userSelectedEmpresaRef = useRef(false)
+  const userSelectedFundoRef = useRef(false)
+  
   // Sincronizar con filtros globales (similar a NormalInsertForm)
+  // IMPORTANTE: Solo sincronizar cuando el formulario está vacío, NO limpiar valores seleccionados por el usuario
   useEffect(() => {
     if (!config || !tableName) return
     
-    // Sincronizar paisid si hay filtro global
+    // Sincronizar paisid si hay filtro global Y el formulario está vacío (no hay valor previo)
     if (paisSeleccionado && tableName !== 'pais') {
       const paisField = config.fields.find(f => f.name === 'paisid')
-      if (paisField && !formData.paisid) {
+      const isPaisidEmpty = !formData.paisid || formData.paisid === '' || formData.paisid === null || formData.paisid === undefined
+      
+      // Solo sincronizar si está vacío Y el usuario no lo ha seleccionado manualmente
+      if (paisField && isPaisidEmpty && !userSelectedPaisRef.current) {
         const paisId = parseInt(paisSeleccionado, 10)
         if (!isNaN(paisId)) {
           setFormDataState(prev => ({ ...prev, paisid: paisId }))
         }
       }
-    } else if (!paisSeleccionado && tableName !== 'pais') {
-      // Limpiar paisid si no hay filtro global
-      if (formData.paisid) {
-        setFormDataState(prev => {
-          const { paisid, ...rest } = prev
-          return rest
-        })
-      }
     }
+    // NO limpiar paisid si el usuario lo seleccionó manualmente - solo sincronizar cuando hay filtro
     
-    // Sincronizar empresaid si hay filtro global
+    // Sincronizar empresaid si hay filtro global Y el formulario está vacío
     if (empresaSeleccionada && tableName !== 'empresa') {
       const empresaField = config.fields.find(f => f.name === 'empresaid')
-      if (empresaField && !formData.empresaid) {
+      const isEmpresaidEmpty = !formData.empresaid || formData.empresaid === '' || formData.empresaid === null || formData.empresaid === undefined
+      
+      // Solo sincronizar si está vacío Y el usuario no lo ha seleccionado manualmente
+      if (empresaField && isEmpresaidEmpty && !userSelectedEmpresaRef.current) {
         const empresaId = parseInt(empresaSeleccionada, 10)
         if (!isNaN(empresaId)) {
           setFormDataState(prev => ({ ...prev, empresaid: empresaId }))
         }
       }
-    } else if (!empresaSeleccionada && tableName !== 'empresa') {
-      // Limpiar empresaid si no hay filtro global
-      if (formData.empresaid) {
-        setFormDataState(prev => {
-          const { empresaid, ...rest } = prev
-          return rest
-        })
-      }
     }
+    // NO limpiar empresaid si el usuario lo seleccionó manualmente - solo sincronizar cuando hay filtro
     
-    // Sincronizar fundoid si hay filtro global
+    // Sincronizar fundoid si hay filtro global Y el formulario está vacío
     if (fundoSeleccionado && tableName !== 'fundo') {
       const fundoField = config.fields.find(f => f.name === 'fundoid')
-      if (fundoField && !formData.fundoid) {
+      const isFundoidEmpty = !formData.fundoid || formData.fundoid === '' || formData.fundoid === null || formData.fundoid === undefined
+      
+      // Solo sincronizar si está vacío Y el usuario no lo ha seleccionado manualmente
+      if (fundoField && isFundoidEmpty && !userSelectedFundoRef.current) {
         const fundoId = parseInt(fundoSeleccionado, 10)
         if (!isNaN(fundoId)) {
           setFormDataState(prev => ({ ...prev, fundoid: fundoId }))
         }
       }
-    } else if (!fundoSeleccionado && tableName !== 'fundo') {
-      // Limpiar fundoid si no hay filtro global
-      if (formData.fundoid) {
-        setFormDataState(prev => {
-          const { fundoid, ...rest } = prev
-          return rest
-        })
-      }
     }
-  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, tableName, config, formData.paisid, formData.empresaid, formData.fundoid])
+    // NO limpiar fundoid si el usuario lo seleccionó manualmente - solo sincronizar cuando hay filtro
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, tableName, config]) // Removido formData.* de dependencias para evitar loops
   
   // Actualizar campo del formulario
   const updateFormField = useCallback((field: string, value: any) => {
-    setFormDataState(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    logger.debug('[useInsertForm] updateFormField llamado', {
+      field,
+      value,
+      previousValue: formData[field],
+      formDataKeys: Object.keys(formData)
+    })
+    
+    // Marcar que el usuario seleccionó este campo manualmente (si es un campo de geografía)
+    if (field === 'paisid' && value) {
+      userSelectedPaisRef.current = true
+    } else if (field === 'empresaid' && value) {
+      userSelectedEmpresaRef.current = true
+    } else if (field === 'fundoid' && value) {
+      userSelectedFundoRef.current = true
+    }
+    
+    // Si el usuario limpia el campo (pone null/undefined/vacío), resetear el flag
+    if (field === 'paisid' && (!value || value === '' || value === null || value === undefined)) {
+      userSelectedPaisRef.current = false
+    } else if (field === 'empresaid' && (!value || value === '' || value === null || value === undefined)) {
+      userSelectedEmpresaRef.current = false
+    } else if (field === 'fundoid' && (!value || value === '' || value === null || value === undefined)) {
+      userSelectedFundoRef.current = false
+    }
+    
+    setFormDataState(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      }
+      logger.debug('[useInsertForm] Actualizando formDataState', {
+        field,
+        value,
+        previousValue: prev[field],
+        newDataKeys: Object.keys(newData),
+        newDataValue: newData[field],
+        userSelected: field === 'paisid' ? userSelectedPaisRef.current : 
+                     field === 'empresaid' ? userSelectedEmpresaRef.current :
+                     field === 'fundoid' ? userSelectedFundoRef.current : false
+      })
+      return newData
+    })
+    
     // Limpiar error del campo cuando se modifica
     if (formErrors[field]) {
       setFormErrors(prev => {
@@ -181,7 +277,7 @@ export const useInsertForm = ({
         return newErrors
       })
     }
-  }, [formErrors])
+  }, [formErrors, formData])
   
   // Establecer datos del formulario (para compatibilidad)
   const setFormData = useCallback((data: Record<string, any>) => {
@@ -314,7 +410,29 @@ export const useInsertForm = ({
       })
       
       // Agregar campos de auditoría
-      const userId = user?.user_metadata?.usuarioid || user?.id || 1
+      // DIAGNÓSTICO: Log del objeto user completo para ver su estructura
+      logger.debug('[useInsertForm] Objeto user completo:', {
+        user,
+        userKeys: user ? Object.keys(user) : [],
+        user_metadata: user?.user_metadata,
+        user_metadataKeys: user?.user_metadata ? Object.keys(user.user_metadata) : [],
+        id: user?.id,
+        email: user?.email,
+        rawUser: JSON.stringify(user, null, 2)
+      })
+      
+      // Obtener usuarioid consultando la tabla usuario
+      const usuarioid = await getUsuarioidFromUser(user)
+      const userId = usuarioid || 1
+      
+      logger.debug('[useInsertForm] userId calculado:', {
+        userId,
+        usuarioid,
+        source: usuarioid ? 'tabla usuario (por useruuid/email)' :
+                user?.user_metadata?.usuarioid ? 'user_metadata.usuarioid' :
+                'fallback: 1'
+      })
+      
       const now = new Date().toISOString()
       const dataToInsert: Record<string, any> = {
         ...filteredData,
@@ -324,6 +442,13 @@ export const useInsertForm = ({
         usermodifiedid: userId,
         datemodified: now
       }
+      
+      logger.debug('[useInsertForm] Datos a insertar (incluyendo auditoría):', {
+        tableName,
+        usercreatedid: dataToInsert.usercreatedid,
+        usermodifiedid: dataToInsert.usermodifiedid,
+        dataKeys: Object.keys(dataToInsert)
+      })
 
       const result = await insertRow(dataToInsert)
       
