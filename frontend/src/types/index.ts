@@ -658,10 +658,10 @@ export type TableName =
   | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
-  | 'criticidad' | 'umbral' | 'alerta' | 'alertaconsolidado' | 'mensaje' | 'audit_log_umbral'
+  | 'criticidad' | 'umbral' | 'alerta' | 'alerta_regla_consolidado' | 'mensaje' | 'audit_log_umbral'
   | 'regla' | 'regla_objeto' | 'regla_perfil' | 'regla_umbral'
   | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
-  | 'permiso' | 'fuente' | 'origen'; // Nuevo sistema de permisos
+  | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje'; // Nuevo sistema de permisos
 
 // Mapeo de PK por tabla
 export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
@@ -684,8 +684,8 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   criticidad: 'criticidadid',
   umbral: 'umbralid',
   alerta: 'uuid_alertaid',
-  alertaconsolidado: 'uuid_consolidadoid',
-  mensaje: ['uuid_origen', 'contactoid'],
+  alerta_regla_consolidado: 'uuid_consolidadoid',
+  mensaje: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],
   audit_log_umbral: 'auditid',
   regla: 'reglaid',
   regla_objeto: 'regla_objetoid',
@@ -699,5 +699,6 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   codigotelefono: 'codigotelefonoid',
   permiso: 'permisoid', // Nuevo sistema de permisos
   fuente: 'fuenteid',
-  origen: 'origenid'
+  origen: 'origenid',
+  tipo_mensaje: 'tipo_mensajeid'
 };
