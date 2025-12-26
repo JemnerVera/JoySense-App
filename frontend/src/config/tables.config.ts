@@ -435,10 +435,10 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
-  alertaconsolidado: {
-    name: 'alertaconsolidado',
+  alerta_regla_consolidado: {
+    name: 'alerta_regla_consolidado',
     displayName: 'Alerta Consolidada',
-    description: 'Alertas agrupadas para notificación',
+    description: 'Alertas agrupadas por regla para notificación',
     icon: '📋',
     category: 'alertas',
     primaryKey: 'uuid_consolidadoid',
@@ -447,13 +447,17 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: false,
     fields: [
       { name: 'uuid_consolidadoid', label: 'UUID', type: 'text', readonly: true },
-      { name: 'umbralid', label: 'Umbral', type: 'select', foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
+      { name: 'reglaid', label: 'Regla', type: 'select', readonly: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
+      { name: 'localizacionid', label: 'Localización', type: 'select', readonly: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
       { name: 'fechainicio', label: 'Fecha Inicio', type: 'datetime', readonly: true },
       { name: 'fechaultimo', label: 'Última Alerta', type: 'datetime', readonly: true },
-      { name: 'ultimamedicion', label: 'Última Medición', type: 'number', readonly: true },
+      { name: 'fechaultimacorrida', label: 'Fecha Última Corrida', type: 'datetime', readonly: true },
+      { name: 'ultimovalor', label: 'Último Valor', type: 'number', readonly: true },
       { name: 'contador', label: 'Contador', type: 'number', readonly: true },
-      { name: 'nivelnotificado', label: 'Nivel Notificado', type: 'number' },
-      { name: 'nivelescalamiento', label: 'Nivel Escalamiento', type: 'number' },
+      { name: 'nivelnotificado', label: 'Nivel Notificado', type: 'number', readonly: true },
+      { name: 'ultimoenvio', label: 'Último Envío', type: 'datetime', readonly: true },
+      { name: 'ultimoescalamiento', label: 'Último Escalamiento', type: 'datetime', readonly: true },
+      { name: 'nivelescalamiento', label: 'Nivel Escalamiento', type: 'number', readonly: true },
       { name: 'statusid', label: 'Estado', type: 'number' }
     ]
   },
@@ -464,16 +468,17 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     description: 'Mensajes de notificación enviados',
     icon: '✉️',
     category: 'alertas',
-    primaryKey: ['uuid_origen', 'contactoid'],
+    primaryKey: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],
     allowInsert: false,
     allowUpdate: false,
     allowDelete: false,
     fields: [
       { name: 'uuid_origen', label: 'UUID Origen', type: 'text', readonly: true },
-      { name: 'contactoid', label: 'Contacto', type: 'select', foreignKey: { table: 'contacto', valueField: 'contactoid', labelField: 'celular' } },
-      { name: 'tipo_origen', label: 'Tipo', type: 'text', readonly: true },
+      { name: 'contactoid', label: 'Contacto', type: 'select', readonly: true, foreignKey: { table: 'contacto', valueField: 'contactoid', labelField: 'celular' } },
+      { name: 'tipo_mensajeid', label: 'Tipo Mensaje', type: 'select', readonly: true, foreignKey: { table: 'tipo_mensaje', valueField: 'tipo_mensajeid', labelField: 'tipo_mensaje' } },
       { name: 'mensaje', label: 'Mensaje', type: 'textarea', readonly: true },
-      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true }
+      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
+      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
     ]
   },
 
@@ -755,6 +760,23 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'origenid', label: 'ID', type: 'number', hidden: false, readonly: true },
       { name: 'origen', label: 'Origen', type: 'text', required: true },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  tipo_mensaje: {
+    name: 'tipo_mensaje',
+    displayName: 'Tipo Mensaje',
+    description: 'Tipos de mensajes de notificación',
+    icon: '✉️',
+    category: 'sistema',
+    primaryKey: 'tipo_mensajeid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: false,
+    fields: [
+      { name: 'tipo_mensajeid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'tipo_mensaje', label: 'Tipo Mensaje', type: 'text', required: true, validation: { minLength: 1, maxLength: 50 } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   }

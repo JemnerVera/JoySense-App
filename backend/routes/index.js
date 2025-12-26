@@ -275,7 +275,7 @@ const genericRouter = require('./generic');
 router.use('/geografia', geografiaRouter);      // pais, empresa, fundo, ubicacion, entidad
 router.use('/dispositivos', dispositivosRouter);   // nodo, sensor, metrica, tipo, localizacion, metricasensor
 router.use('/mediciones', medicionesRouter);     // medicion, sensor_valor
-router.use('/alertas', alertasRouter);        // umbral, alerta, alertaconsolidado, criticidad, mensaje
+router.use('/alertas', alertasRouter);        // umbral, alerta, alerta_regla_consolidado, criticidad, mensaje
 router.use('/usuarios', usuariosRouter);       // usuario, perfil, contacto, correo, usuarioperfil
 router.use('/generic', genericRouter);  // Operaciones genéricas CRUD (DEBE IR AL FINAL)
 

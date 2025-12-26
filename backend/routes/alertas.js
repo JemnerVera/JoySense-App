@@ -1,5 +1,5 @@
 /**
- * Rutas de Alertas: umbral, alerta, alertaconsolidado, criticidad, mensaje
+ * Rutas de Alertas: umbral, alerta, alerta_regla_consolidado, criticidad, mensaje
  * Nota: perfilumbral fue eliminado - usar regla, regla_perfil, regla_umbral
  * Versión Supabase API con RLS
  */
@@ -351,7 +351,7 @@ router.get('/alerta/columns', async (req, res) => {
 // ALERTACONSOLIDADO
 // ============================================================================
 
-router.get('/alertaconsolidado', async (req, res) => {
+router.get('/alerta_regla_consolidado', async (req, res) => {
   try {
     const { statusid = 1, limit = 100 } = req.query;
     
@@ -361,7 +361,7 @@ router.get('/alertaconsolidado', async (req, res) => {
     // Usar Supabase API con joins anidados profundos
     const { data, error } = await userSupabase
       .schema(dbSchema)
-      .from('alertaconsolidado')
+      .from('alerta_regla_consolidado')
       .select(`
         *,
         umbral:umbralid(
@@ -392,17 +392,17 @@ router.get('/alertaconsolidado', async (req, res) => {
     
     res.json(transformed);
   } catch (error) {
-    logger.error('Error en GET /alertaconsolidado:', error);
+    logger.error('Error en GET /alerta_regla_consolidado:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/alertaconsolidado/columns', async (req, res) => {
+router.get('/alerta_regla_consolidado/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('alertaconsolidado');
+    const metadata = await getTableMetadata('alerta_regla_consolidado');
     res.json(metadata.columns);
   } catch (error) {
-    logger.error('Error en GET /alertaconsolidado/columns:', error);
+    logger.error('Error en GET /alerta_regla_consolidado/columns:', error);
     res.status(500).json({ error: error.message });
   }
 });

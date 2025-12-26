@@ -26,7 +26,7 @@ const SEARCHABLE_FIELDS = {
   entidad: ['entidad'],
   umbral: ['umbral'],
   alerta: ['uuid_alertaid'],
-  alertaconsolidado: ['uuid_consolidadoid'],
+  alerta_regla_consolidado: ['uuid_consolidadoid'],
   criticidad: ['criticidad'],
   perfil: ['perfil'],
   usuario: ['login', 'firstname', 'lastname'],
