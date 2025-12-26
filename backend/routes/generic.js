@@ -150,10 +150,10 @@ router.post('/:table', async (req, res) => {
     // Preparar datos para inserción
     let dataToInsert = { ...req.body };
     
-    // Lógica especial para tabla 'usuario'
-    // IMPORTANTE: Según el DBA, los usuarios deben crearse primero en Supabase UI
-    // Luego se inserta en joysense.usuario y se actualiza el useruuid manualmente
-    if (table === 'usuario') {
+      // Lógica especial para tabla 'usuario'
+      // IMPORTANTE: Después de insertar, se sincroniza automáticamente con Supabase Auth
+      // usando fn_sync_usuario_con_auth_wait (ver código más abajo)
+      if (table === 'usuario') {
       // Validar que login sea un email válido
       if (dataToInsert.login && !dataToInsert.login.includes('@')) {
         return res.status(400).json({ 
@@ -177,8 +177,8 @@ router.post('/:table', async (req, res) => {
         }
       }
       
-      // NOTA: El useruuid debe actualizarse manualmente después de crear el usuario en Supabase UI
-      // Ver: auth/CREAR_USUARIO_MANUAL.sql para instrucciones
+      // NOTA: La sincronización con Supabase Auth se realiza automáticamente después del INSERT
+      // Ver código de sincronización más abajo
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
@@ -191,6 +191,115 @@ router.post('/:table', async (req, res) => {
       if (error.detail) logger.error(`   Detalle: ${error.detail}`);
       if (error.hint) logger.error(`   Hint: ${error.hint}`);
       throw error;
+    }
+    
+    // ========================================================================
+    // SINCRONIZAR CON SUPABASE AUTH (Solo para tabla 'usuario')
+    // Recomendación del DBA: llamar fn_sync_usuario_con_auth_wait después de crear
+    // ========================================================================
+    if (table === 'usuario' && data && data[0]) {
+      const newUsuario = data[0];
+      if (newUsuario.usuarioid) {
+        try {
+          logger.info(`🔄 Sincronizando usuario ${newUsuario.usuarioid} con Supabase Auth (desde generic route)...`);
+          
+          // Llamar a fn_sync_usuario_con_auth_wait según recomendación del DBA
+          // IMPORTANTE: Especificar schema joysense explícitamente
+          const { data: syncResult, error: syncError } = await userSupabase
+            .schema('joysense')
+            .rpc('fn_sync_usuario_con_auth_wait', {
+              p_usuarioid: newUsuario.usuarioid,
+              p_max_attempts: 6,
+              p_sleep_ms: 250
+            });
+
+          if (syncResult && !syncError) {
+            // Actualizar usuario con useruuid
+            const { data: updatedData, error: updateError } = await userSupabase
+              .schema(dbSchema)
+              .from('usuario')
+              .update({ useruuid: syncResult })
+              .eq('usuarioid', newUsuario.usuarioid)
+              .select();
+
+            if (!updateError && updatedData && updatedData[0]) {
+              // Actualizar data para retornar useruuid
+              data[0] = updatedData[0];
+              logger.info(`✅ Usuario sincronizado exitosamente. useruuid: ${syncResult}`);
+              
+              // Actualizar contraseña en Auth usando función PostgreSQL (usa secrets del vault)
+              // Buscar password en dataToInsert (puede venir como 'password' antes de hashear)
+              const originalPassword = req.body.password || (Array.isArray(req.body) ? req.body[0]?.password : null);
+              
+              if (originalPassword) {
+                try {
+                  logger.info(`🔑 Actualizando contraseña en Supabase Auth para usuario ${syncResult}...`);
+                  
+                  const { data: passwordUpdateResult, error: passwordUpdateError } = await userSupabase
+                    .schema('joysense')
+                    .rpc('fn_update_password_auth', {
+                      p_useruuid: syncResult,
+                      p_password: originalPassword
+                    });
+                  
+                  if (passwordUpdateError) {
+                    logger.warn('⚠️ No se pudo actualizar contraseña en Auth (usando función SQL):', passwordUpdateError.message);
+                    logger.warn('   El usuario puede usar scripts/update-password-auth.js para actualizar manualmente');
+                  } else {
+                    logger.info('✅ Contraseña actualizada en Supabase Auth exitosamente (usando función SQL)');
+                  }
+                } catch (passwordErr) {
+                  logger.warn('⚠️ Error al actualizar contraseña en Auth:', passwordErr.message);
+                  // No fallar - el usuario se creó correctamente
+                }
+              } else {
+                logger.warn('⚠️ No se proporcionó contraseña - usuario tendrá contraseña temporal en Auth');
+              }
+              
+              // Agregar estado de sincronización a la respuesta
+              data[0] = {
+                ...data[0],
+                syncStatus: 'success',
+                syncMessage: 'Usuario creado y sincronizado exitosamente'
+              };
+            } else {
+              logger.warn('⚠️ Usuario sincronizado pero no se pudo actualizar useruuid:', updateError);
+              // Agregar estado pendiente
+              data[0] = {
+                ...data[0],
+                syncStatus: 'pending',
+                syncMessage: 'Usuario creado pero useruuid pendiente de actualización'
+              };
+            }
+          } else {
+            // Si retorna NULL o hay error, agregar estado pendiente
+            logger.warn('⚠️ Usuario creado pero sincronización pendiente:', {
+              usuarioid: newUsuario.usuarioid,
+              login: newUsuario.login,
+              error: syncError ? syncError.message : 'Retornó NULL (puede ser normal si pg_net tarda)'
+            });
+            
+            // Agregar estado pendiente para que frontend pueda reintentar
+            data[0] = {
+              ...data[0],
+              syncStatus: 'pending',
+              syncMessage: 'Usuario creado pero sincronización pendiente. Reintentando...',
+              useruuid: null
+            };
+          }
+        } catch (syncErr) {
+          // Log error pero no fallar la creación - el trigger seguirá intentando sincronizar
+          logger.error('❌ Error en sincronización automática (usuario se creó igualmente):', syncErr);
+          
+          // Agregar estado de error
+          data[0] = {
+            ...data[0],
+            syncStatus: 'error',
+            syncMessage: 'Usuario creado pero error en sincronización. Puede reintentar más tarde.',
+            syncError: syncErr.message
+          };
+        }
+      }
     }
     
     // Limpiar cache de metadata

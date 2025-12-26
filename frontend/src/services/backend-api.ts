@@ -136,6 +136,34 @@ export const backendAPI = {
 };
 
 // ============================================================================
+// FUNCIONES AUXILIARES PARA SINCRONIZACIÓN DE USUARIOS
+// ============================================================================
+
+/**
+ * Verificar estado de sincronización de un usuario
+ * @param usuarioid ID del usuario a verificar
+ * @returns Estado de sincronización
+ */
+export async function checkUserSyncStatus(usuarioid: number): Promise<{
+  synced: boolean;
+  useruuid: string | null;
+  message: string;
+  error?: string;
+}> {
+  try {
+    const response = await backendAPI.get(`/usuario/${usuarioid}/sync-status`);
+    return response;
+  } catch (error: any) {
+    return {
+      synced: false,
+      useruuid: null,
+      message: 'Error al verificar sincronización',
+      error: error.message
+    };
+  }
+}
+
+// ============================================================================
 // JOYSENSE SERVICE
 // ============================================================================
 

@@ -11,7 +11,7 @@ import { getTableConfig } from '../config/tables.config'
 import { logger } from '../utils/logger'
 import { consolidateErrorMessages } from '../utils/messageConsolidation'
 import { AuthUser, Usuario } from '../types'
-import { JoySenseService } from '../services/backend-api'
+import { JoySenseService, checkUserSyncStatus } from '../services/backend-api'
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info'
@@ -453,12 +453,58 @@ export const useInsertForm = ({
       const result = await insertRow(dataToInsert)
       
       if (result.success) {
-        // Éxito: llamar callback y limpiar
-        const cleanData = initializeFormData()
-        setFormDataState(cleanData)
-        setFormErrors({})
-        setMessage?.({ type: 'success', text: 'Registro insertado correctamente' })
-        onSuccess?.()
+        // Verificar si es tabla 'usuario' y tiene estado de sincronización pendiente
+        if (tableName === 'usuario' && result.data) {
+          const syncStatus = result.data.syncStatus
+          const usuarioid = result.data.usuarioid
+          
+          if (syncStatus === 'pending' && usuarioid) {
+            // Mostrar mensaje de sincronización pendiente
+            setMessage?.({ 
+              type: 'warning', 
+              text: result.data.syncMessage || 'Usuario creado. Sincronizando con sistema de autenticación...' 
+            })
+            
+            // Reintentar sincronización automáticamente (según recomendación del DBA)
+            retryUserSync(usuarioid, setMessage, () => {
+              // Callback cuando la sincronización se complete exitosamente
+              const cleanData = initializeFormData()
+              setFormDataState(cleanData)
+              setFormErrors({})
+              setMessage?.({ 
+                type: 'success', 
+                text: 'Usuario creado y sincronizado exitosamente' 
+              })
+              onSuccess?.()
+            })
+            
+            return // No continuar con el flujo normal, esperar sincronización
+          } else if (syncStatus === 'error') {
+            // Sincronización falló, pero usuario fue creado
+            setMessage?.({ 
+              type: 'warning', 
+              text: result.data.syncMessage || 'Usuario creado pero sincronización falló. Puede reintentar más tarde.' 
+            })
+            // Continuar con flujo normal aunque haya error en sync
+          } else if (syncStatus === 'success') {
+            // Sincronización exitosa inmediatamente
+            setMessage?.({ 
+              type: 'success', 
+              text: result.data.syncMessage || 'Usuario creado y sincronizado exitosamente' 
+            })
+          }
+        }
+        
+        // Éxito: llamar callback y limpiar (si no es usuario con sync pendiente)
+        if (tableName !== 'usuario' || !result.data?.syncStatus || result.data.syncStatus !== 'pending') {
+          const cleanData = initializeFormData()
+          setFormDataState(cleanData)
+          setFormErrors({})
+          if (tableName !== 'usuario') {
+            setMessage?.({ type: 'success', text: 'Registro insertado correctamente' })
+          }
+          onSuccess?.()
+        }
       } else {
         // Error: mostrar mensaje (todos los mensajes deben ser 'warning' amarillo, nunca 'error' rojo)
         setMessage?.({ type: 'warning', text: result.error || 'Error al insertar' })
@@ -497,5 +543,65 @@ export const useInsertForm = ({
     resetForm,
     validateForm: validateFormFields
   }
+}
+
+/**
+ * Reintentar sincronización de usuario automáticamente
+ * Según recomendación del DBA: si sync retorna NULL, reintentar en 1-2 segundos
+ * @param usuarioid ID del usuario a sincronizar
+ * @param setMessage Función para mostrar mensajes al usuario
+ * @param onSuccess Callback cuando la sincronización se complete exitosamente
+ */
+function retryUserSync(
+  usuarioid: number,
+  setMessage: ((msg: { type: 'success' | 'warning' | 'error'; text: string } | null) => void) | undefined,
+  onSuccess: () => void
+) {
+  const maxAttempts = 5 // Máximo 5 reintentos (10 segundos total)
+  let attempts = 0
+  
+  const retryInterval = setInterval(async () => {
+    attempts++
+    
+    try {
+      const syncStatus = await checkUserSyncStatus(usuarioid)
+      
+      if (syncStatus.synced) {
+        // ✅ Sincronización exitosa
+        clearInterval(retryInterval)
+        logger.info(`✅ Usuario ${usuarioid} sincronizado exitosamente después de ${attempts} intento(s)`)
+        onSuccess()
+      } else if (attempts >= maxAttempts) {
+        // ⚠️ Timeout después de N intentos
+        clearInterval(retryInterval)
+        logger.warn(`⚠️ Usuario ${usuarioid} no sincronizado después de ${maxAttempts} intentos`)
+        setMessage?.({
+          type: 'warning',
+          text: 'Usuario creado pero sincronización pendiente. ' +
+                'El usuario podrá hacer login una vez se complete la sincronización automática.'
+        })
+      } else {
+        // 🔄 Aún pendiente, continuar reintentando
+        logger.debug(`🔄 Reintentando sincronización de usuario ${usuarioid} (intento ${attempts}/${maxAttempts})...`)
+        setMessage?.({
+          type: 'warning',
+          text: `Creando usuario... (${attempts}/${maxAttempts})`
+        })
+      }
+    } catch (error: any) {
+      logger.error(`❌ Error al verificar sincronización de usuario ${usuarioid}:`, error)
+      
+      if (attempts >= maxAttempts) {
+        clearInterval(retryInterval)
+        setMessage?.({
+          type: 'warning',
+          text: 'Usuario creado pero error al verificar sincronización. Puede reintentar más tarde.'
+        })
+      }
+    }
+  }, 2000) // Reintentar cada 2 segundos (según recomendación del DBA)
+  
+  // Cleanup: cancelar intervalo si el componente se desmonta
+  return () => clearInterval(retryInterval)
 }
 
