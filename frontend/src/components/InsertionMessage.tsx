@@ -110,9 +110,6 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     
     // Campos que siempre deben incluirse (incluso si están vacíos)
     const alwaysIncludeFields: string[] = [];
-    if (tableName === 'nodo') {
-      alwaysIncludeFields.push('deveui', 'appeui', 'appkey', 'atpin');
-    }
     // Siempre incluir datecreated y usercreatedid
     alwaysIncludeFields.push('datecreated', 'usercreatedid');
     
@@ -151,10 +148,6 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'entidad': 'Entidad',
       'tipo': 'Tipo',
       'nodo': 'Nodo',
-      'deveui': 'DEVEUI',
-      'appeui': 'APPEUI',
-      'appkey': 'APPKEY',
-      'atpin': 'ATPIN',
       'sensor': 'Sensor',
       'metrica': 'Métrica',
       'unidad': 'Unidad',
@@ -211,18 +204,11 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
   const formatFieldValue = (value: any, fieldKey: string): string => {
     // Si el valor es null o undefined, retornar string vacío
     if (value === null || value === undefined) {
-      // Para campos de nodo (deveui, appeui, appkey, atpin), mostrar "-" si está vacío
-      if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
-        return '-';
-      }
       return '';
     }
     
-    // Si es string vacío, retornar string vacío (excepto para campos especiales de nodo)
+    // Si es string vacío, retornar string vacío
     if (typeof value === 'string' && value.trim() === '') {
-      if (tableName === 'nodo' && ['deveui', 'appeui', 'appkey', 'atpin'].includes(fieldKey)) {
-        return '-';
-      }
       return '';
     }
     
@@ -366,7 +352,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'ubicacion': ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid'],
       'localizacion': ['ubicacionid', 'nodoid', 'entidadid', 'latitud', 'longitud', 'referencia', 'statusid'],
       'entidad': ['entidad', 'statusid'],
-      'nodo': ['nodo', 'deveui', 'appeui', 'appkey', 'atpin', 'statusid'],
+      'nodo': ['ubicacionid', 'nodo', 'descripcion', 'statusid'],
       'tipo': ['entidadid', 'tipo', 'statusid'],
       'sensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensor', 'statusid'],
       'metrica': ['metrica', 'unidad', 'statusid'],

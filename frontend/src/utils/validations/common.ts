@@ -6,35 +6,9 @@ import { ValidationRule, ValidationResult } from './types';
 import { tableValidationSchemas } from './schemas';
 import { consolidateErrorMessages } from '../messageConsolidation';
 
-// Función de validación progresiva para nodo
-function validateNodoProgressive(formData: Record<string, any>): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  // Siempre validar nodo (siempre habilitado)
-  const nodoValue = formData.nodo;
-  if (!nodoValue || (typeof nodoValue === 'string' && nodoValue.trim() === '')) {
-    errors.push('El nombre del nodo es obligatorio');
-    return { isValid: false, errors, warnings };
-  }
-
-  // Si nodo tiene valor, validar deveui (se habilita cuando nodo tiene valor)
-  const deveuiValue = formData.deveui;
-  if (!deveuiValue || (typeof deveuiValue === 'string' && deveuiValue.trim() === '')) {
-    errors.push('El campo DEVEUI es obligatorio');
-    return { isValid: false, errors, warnings };
-  }
-
-  // Los demás campos (appeui, appkey, atpin) son opcionales
-  return { isValid: true, errors, warnings };
-}
-
 // Función principal de validación
 export function validateFormData(tableName: string, formData: Record<string, any>): ValidationResult {
-  // Validación especial para nodo con habilitación progresiva
-  if (tableName === 'nodo') {
-    return validateNodoProgressive(formData);
-  }
+  // Ya no hay validación especial para nodo (se usa el schema estándar)
 
   const schema = tableValidationSchemas[tableName];
   if (!schema) {
@@ -126,7 +100,7 @@ export function getValidationMessages(validationResult: ValidationResult): strin
   const messages: string[] = [];
   
   if (validationResult.errors.length > 0) {
-    messages.push(...validationResult.errors.map(error => `⚠️ ${error}`));
+    messages.push(...validationResult.errors.map(error => error));
   }
   
   if (validationResult.warnings.length > 0) {

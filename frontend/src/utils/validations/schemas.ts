@@ -48,7 +48,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   nodo: [
     { field: 'nodo', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del nodo es obligatorio' },
-    { field: 'deveui', required: true, type: 'string', minLength: 1, customMessage: 'El campo DEVEUI es obligatorio' }
+    { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' }
   ],
   
   metrica: [

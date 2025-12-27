@@ -124,7 +124,7 @@ export const validateTableUpdate = async (
           type: 'format' as const
         })),
         userFriendlyMessage: basicResult.errors.length > 0 
-          ? basicResult.errors.map(error => `⚠️ ${error}`).join('\n')
+          ? basicResult.errors.map(error => error).join('\n')
           : ''
       };
   }
@@ -190,7 +190,7 @@ export const validateTableData = async (
           type: 'format' as const
         })),
         userFriendlyMessage: basicResult.errors.length > 0 
-          ? basicResult.errors.map(error => `⚠️ ${error}`).join('\n')
+          ? basicResult.errors.map(error => error).join('\n')
           : ''
       };
   }

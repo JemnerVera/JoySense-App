@@ -273,40 +273,27 @@ export const validateNodoData = async (
     });
   }
   
-  if (!formData.deveui || formData.deveui.trim() === '') {
+  if (!formData.ubicacionid) {
     errors.push({
-      field: 'deveui',
-      message: 'El DevEUI es obligatorio',
+      field: 'ubicacionid',
+      message: 'Debe seleccionar una ubicación',
       type: 'required'
     });
   }
   
   // 2. Validar duplicados si hay datos existentes
-  if (existingData && existingData.length > 0) {
-    const nodoExists = existingData.some(item => 
-      item.nodo && item.nodo.toLowerCase() === formData.nodo?.toLowerCase()
+  // El constraint es UNIQUE (ubicacionid, nodo), así que validamos esa combinación
+  if (existingData && existingData.length > 0 && formData.nodo && formData.ubicacionid) {
+    const duplicateExists = existingData.some(item => 
+      item.ubicacionid === formData.ubicacionid &&
+      item.nodo && 
+      item.nodo.toLowerCase() === formData.nodo.toLowerCase()
     );
     
-    const deveuiExists = existingData.some(item => 
-      item.deveui && item.deveui.toLowerCase() === formData.deveui?.toLowerCase()
-    );
-    
-    if (nodoExists && deveuiExists) {
-      errors.push({
-        field: 'both',
-        message: 'El nodo y DevEUI ya existen',
-        type: 'duplicate'
-      });
-    } else if (nodoExists) {
+    if (duplicateExists) {
       errors.push({
         field: 'nodo',
-        message: 'El nombre del nodo ya existe',
-        type: 'duplicate'
-      });
-    } else if (deveuiExists) {
-      errors.push({
-        field: 'deveui',
-        message: 'El DevEUI ya existe',
+        message: 'Ya existe un nodo con este nombre en la ubicación seleccionada',
         type: 'duplicate'
       });
     }
@@ -339,34 +326,19 @@ export const validateNodoUpdate = async (
   }
   
   // 2. Validar duplicados (excluyendo el registro actual)
-  if (formData.nodo && formData.nodo.trim() !== '') {
-    const nodoExists = existingData.some(item => 
+  // El constraint es UNIQUE (ubicacionid, nodo), así que validamos esa combinación
+  if (formData.nodo && formData.nodo.trim() !== '' && formData.ubicacionid) {
+    const duplicateExists = existingData.some(item => 
       item.nodoid !== originalData.nodoid && 
+      item.ubicacionid === formData.ubicacionid &&
       item.nodo && 
       item.nodo.toLowerCase() === formData.nodo.toLowerCase()
     );
     
-    if (nodoExists) {
+    if (duplicateExists) {
       errors.push({
         field: 'nodo',
-        message: 'El nodo ya existe',
-        type: 'duplicate'
-      });
-    }
-  }
-  
-  // 3. Validar duplicados para deveui (si se proporciona)
-  if (formData.deveui && formData.deveui.trim() !== '') {
-    const deveuiExists = existingData.some(item => 
-      item.nodoid !== originalData.nodoid && 
-      item.deveui && 
-      item.deveui.toLowerCase() === formData.deveui.toLowerCase()
-    );
-    
-    if (deveuiExists) {
-      errors.push({
-        field: 'deveui',
-        message: 'El DevEUI ya existe',
+        message: 'Ya existe un nodo con este nombre en la ubicación seleccionada',
         type: 'duplicate'
       });
     }

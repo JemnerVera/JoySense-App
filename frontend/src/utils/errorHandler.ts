@@ -119,9 +119,9 @@ function convertLengthError(errorText: string): string | null {
   }
   
   if (length) {
-    return `⚠️ El ${fieldName} excede el límite de ${length} caracteres`;
+    return `El ${fieldName} excede el límite de ${length} caracteres`;
   } else {
-    return `⚠️ El ${fieldName} excede el límite de caracteres permitido`;
+    return `El ${fieldName} excede el límite de caracteres permitido`;
   }
 }
 
@@ -153,7 +153,7 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     const tableName = errorText.match(/table "([^"]+)"/)?.[1] || 'la tabla';
     return {
       type: 'error',
-      message: `⚠️ Error de permisos: No tiene permiso para insertar registros en ${tableName}. Contacte al administrador.`
+      message: `Error de permisos: No tiene permiso para insertar registros en ${tableName}. Contacte al administrador.`
     };
   }
   
@@ -164,30 +164,30 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     // Simplificar mensajes según el tipo de campo
     let message = '';
     if (fieldName === 'login' || fieldName === 'usuario') {
-      message = `⚠️ El login ya existe`;
+      message = `El login ya existe`;
     } else if (fieldName === 'pais' || fieldName === 'país') {
-      message = `⚠️ El país se repite`;
+      message = `El país se repite`;
     } else if (fieldName === 'paisabrev') {
-      message = `⚠️ La abreviatura se repite`;
+      message = `La abreviatura se repite`;
     } else if (fieldName === 'empresa') {
-      message = `⚠️ La empresa se repite`;
+      message = `La empresa se repite`;
     } else if (fieldName === 'empresabrev') {
-      message = `⚠️ La abreviatura de empresa se repite`;
+      message = `La abreviatura de empresa se repite`;
     } else if (fieldName === 'fundo') {
-      message = `⚠️ El fundo se repite`;
+      message = `El fundo se repite`;
     } else if (fieldName === 'fundoabrev') {
-      message = `⚠️ La abreviatura de fundo se repite`;
+      message = `La abreviatura de fundo se repite`;
     } else if (fieldName === 'nodo') {
-      message = `⚠️ El nodo se repite`;
+      message = `El nodo se repite`;
     } else if (fieldName === 'metrica' || fieldName === 'métrica') {
-      message = `⚠️ La métrica se repite`;
+      message = `La métrica se repite`;
     } else if (fieldName === 'tipo') {
-      message = `⚠️ El tipo se repite`;
+      message = `El tipo se repite`;
     } else if (fieldName === 'entidad') {
-      message = `⚠️ La entidad se repite`;
+      message = `La entidad se repite`;
     } else {
       // Fallback para otros campos
-      message = `⚠️ Esta entrada ya existe`;
+      message = `Esta entrada ya existe`;
     }
     
     return {
@@ -206,7 +206,7 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
          errorText.includes('violates') || errorText.includes('already exists'))) {
       return {
         type: 'warning',
-        message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
+        message: `Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
       };
     }
   }
@@ -224,32 +224,28 @@ export const handleInsertError = (error: BackendError): ErrorResponse => {
     if (constraintMatch) {
       const constraintName = constraintMatch[1];
       if (constraintName.includes('unq_pais')) {
-        errorMessage = '⚠️ El país o abreviatura se repite';
+        errorMessage = 'El país o abreviatura se repite';
       } else if (constraintName.includes('unq_empresa')) {
-        errorMessage = '⚠️ La empresa o abreviatura se repite';
+        errorMessage = 'La empresa o abreviatura se repite';
       } else if (constraintName.includes('unq_fundo')) {
-        errorMessage = '⚠️ El fundo o abreviatura se repite';
+        errorMessage = 'El fundo o abreviatura se repite';
       } else {
-        errorMessage = '⚠️ Esta entrada ya existe';
+        errorMessage = 'Esta entrada ya existe';
       }
     }
   }
   // Errores de NOT NULL
   else if (errorMessage.includes('null value') || errorMessage.includes('not null') || 
            errorMessage.includes('violates not-null constraint')) {
-    errorMessage = '⚠️ Falta completar campos obligatorios';
+    errorMessage = 'Falta completar campos obligatorios';
   }
   // Errores de foreign key
   else if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key constraint')) {
-    errorMessage = '⚠️ La referencia seleccionada no es válida';
+    errorMessage = 'La referencia seleccionada no es válida';
   }
   // Otros errores de constraint
   else if (errorMessage.includes('check constraint') || errorMessage.includes('violates check constraint')) {
-    errorMessage = '⚠️ El valor ingresado no cumple con las reglas de validación';
-  }
-  // Si aún no se ha convertido, agregar el prefijo de advertencia
-  else if (!errorMessage.startsWith('⚠️')) {
-    errorMessage = `⚠️ ${errorMessage}`;
+    errorMessage = 'El valor ingresado no cumple con las reglas de validación';
   }
   
   return {
@@ -284,30 +280,30 @@ export const handleUpdateError = (error: BackendError): ErrorResponse => {
     // Simplificar mensajes según el tipo de campo
     let message = '';
     if (fieldName === 'login' || fieldName === 'usuario') {
-      message = `⚠️ El login ya existe`;
+      message = `El login ya existe`;
     } else if (fieldName === 'pais' || fieldName === 'país') {
-      message = `⚠️ El país se repite`;
+      message = `El país se repite`;
     } else if (fieldName === 'paisabrev') {
-      message = `⚠️ La abreviatura se repite`;
+      message = `La abreviatura se repite`;
     } else if (fieldName === 'empresa') {
-      message = `⚠️ La empresa se repite`;
+      message = `La empresa se repite`;
     } else if (fieldName === 'empresabrev') {
-      message = `⚠️ La abreviatura de empresa se repite`;
+      message = `La abreviatura de empresa se repite`;
     } else if (fieldName === 'fundo') {
-      message = `⚠️ El fundo se repite`;
+      message = `El fundo se repite`;
     } else if (fieldName === 'fundoabrev') {
-      message = `⚠️ La abreviatura de fundo se repite`;
+      message = `La abreviatura de fundo se repite`;
     } else if (fieldName === 'nodo') {
-      message = `⚠️ El nodo se repite`;
+      message = `El nodo se repite`;
     } else if (fieldName === 'metrica' || fieldName === 'métrica') {
-      message = `⚠️ La métrica se repite`;
+      message = `La métrica se repite`;
     } else if (fieldName === 'tipo') {
-      message = `⚠️ El tipo se repite`;
+      message = `El tipo se repite`;
     } else if (fieldName === 'entidad') {
-      message = `⚠️ La entidad se repite`;
+      message = `La entidad se repite`;
     } else {
       // Fallback para otros campos
-      message = `⚠️ Esta entrada ya existe`;
+      message = `Esta entrada ya existe`;
     }
     
     return {
@@ -322,7 +318,7 @@ export const handleUpdateError = (error: BackendError): ErrorResponse => {
         errorText.includes('violates') || errorText.includes('already exists')) {
       return {
         type: 'warning',
-        message: `⚠️ Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
+        message: `Alerta: Esta entrada ya existe en el sistema. Verifique que no esté duplicando información.`
       };
     }
   }
@@ -340,32 +336,28 @@ export const handleUpdateError = (error: BackendError): ErrorResponse => {
     if (constraintMatch) {
       const constraintName = constraintMatch[1];
       if (constraintName.includes('unq_pais')) {
-        errorMessage = '⚠️ El país o abreviatura se repite';
+        errorMessage = 'El país o abreviatura se repite';
       } else if (constraintName.includes('unq_empresa')) {
-        errorMessage = '⚠️ La empresa o abreviatura se repite';
+        errorMessage = 'La empresa o abreviatura se repite';
       } else if (constraintName.includes('unq_fundo')) {
-        errorMessage = '⚠️ El fundo o abreviatura se repite';
+        errorMessage = 'El fundo o abreviatura se repite';
       } else {
-        errorMessage = '⚠️ Esta entrada ya existe';
+        errorMessage = 'Esta entrada ya existe';
       }
     }
   }
   // Errores de NOT NULL
   else if (errorMessage.includes('null value') || errorMessage.includes('not null') || 
            errorMessage.includes('violates not-null constraint')) {
-    errorMessage = '⚠️ Falta completar campos obligatorios';
+    errorMessage = 'Falta completar campos obligatorios';
   }
   // Errores de foreign key
   else if (errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key constraint')) {
-    errorMessage = '⚠️ La referencia seleccionada no es válida';
+    errorMessage = 'La referencia seleccionada no es válida';
   }
   // Otros errores de constraint
   else if (errorMessage.includes('check constraint') || errorMessage.includes('violates check constraint')) {
-    errorMessage = '⚠️ El valor ingresado no cumple con las reglas de validación';
-  }
-  // Si aún no se ha convertido, agregar el prefijo de advertencia
-  else if (!errorMessage.startsWith('⚠️')) {
-    errorMessage = `⚠️ ${errorMessage}`;
+    errorMessage = 'El valor ingresado no cumple con las reglas de validación';
   }
   
   return {
@@ -387,24 +379,24 @@ export const handleMultipleInsertError = (error: BackendError, entityType: strin
     // Simplificar mensajes según el tipo de campo
     let message = '';
     if (fieldName === 'login' || fieldName === 'usuario') {
-      message = `⚠️ El login ya existe`;
+      message = `El login ya existe`;
     } else if (fieldName === 'pais') {
-      message = `⚠️ El país se repite`;
+      message = `El país se repite`;
     } else if (fieldName === 'empresa') {
-      message = `⚠️ La empresa se repite`;
+      message = `La empresa se repite`;
     } else if (fieldName === 'fundo') {
-      message = `⚠️ El fundo se repite`;
+      message = `El fundo se repite`;
     } else if (fieldName === 'nodo') {
-      message = `⚠️ El nodo se repite`;
+      message = `El nodo se repite`;
     } else if (fieldName === 'metrica') {
-      message = `⚠️ La métrica se repite`;
+      message = `La métrica se repite`;
     } else if (fieldName === 'tipo') {
-      message = `⚠️ El tipo se repite`;
+      message = `El tipo se repite`;
     } else if (fieldName === 'entidad') {
-      message = `⚠️ La entidad se repite`;
+      message = `La entidad se repite`;
     } else {
       // Fallback para otros campos
-      message = `⚠️ Esta entrada ya existe`;
+      message = `Esta entrada ya existe`;
     }
     
     return {
@@ -430,9 +422,7 @@ export const handleMultipleInsertError = (error: BackendError, entityType: strin
   // Convertir mensaje técnico a mensaje amigable si contiene "duplicate" o "constraint"
   if (errorMessage.includes('duplicate') || errorMessage.includes('constraint') || 
       errorMessage.includes('violates') || errorMessage.includes('unique')) {
-    errorMessage = `⚠️ Algunos ${entityType} ya existen`;
-  } else if (!errorMessage.startsWith('⚠️')) {
-    errorMessage = `⚠️ ${errorMessage}`;
+    errorMessage = `Algunos ${entityType} ya existen`;
   }
   
   return {

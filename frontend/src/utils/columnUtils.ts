@@ -46,10 +46,11 @@ export const filterColumnsByTable = (
     'origen': ['origenid', 'origen', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
   };
 
-  // Caso especial para nodo
+  // Caso especial para nodo - ya no tiene campos obsoletos (deveui, appeui, appkey, atpin)
+  // Los campos actuales son: ubicacionid, nodo, descripcion, statusid, campos de auditoría
   if (tableName === 'nodo') {
     return columns.filter(col => 
-      ['nodo', 'deveui', 'statusid', 'appeui', 'appkey', 'atpin', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
+      ['ubicacionid', 'nodo', 'descripcion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
     );
   }
 
@@ -167,10 +168,11 @@ export const reorderColumns = (
 
   const reordered: ColumnInfo[] = [];
 
-  // Caso especial para nodo
+  // Caso especial para nodo - orden: ubicacionid, nodo, descripcion
   if (tableName === 'nodo') {
-    reordered.push(...otherColumns.filter(col => ['nodo', 'deveui'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['appeui', 'appkey', 'atpin'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['nodo'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['descripcion'].includes(col.columnName)));
     reordered.push(...auditColumns);
     if (statusColumn) reordered.push(statusColumn);
     return reordered;
