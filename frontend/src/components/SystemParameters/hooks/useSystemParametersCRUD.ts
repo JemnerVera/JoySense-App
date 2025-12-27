@@ -65,59 +65,42 @@ export const useSystemParametersCRUD = ({
 }: UseSystemParametersCRUDProps) => {
 
   const handleInsert = useCallback(async () => {
-    // Validaciones especiales según la tabla
-    if (selectedTable === 'nodo') {
-      // Validación especial para nodo (validación progresiva)
-      // Validación progresiva: primero debe tener nodo, luego deveui
-      const nodoValue = formState.data.nodo;
-      if (!nodoValue || (typeof nodoValue === 'string' && nodoValue.trim() === '')) {
-        setMessage({ type: 'warning', text: 'El nombre del nodo es obligatorio' });
-        return;
-      }
-      
-      const deveuiValue = formState.data.deveui;
-      if (!deveuiValue || (typeof deveuiValue === 'string' && deveuiValue.trim() === '')) {
-        setMessage({ type: 'warning', text: 'El campo DEVEUI es obligatorio cuando se especifica un nodo' });
-        return;
-      }
-    } else {
-      // PRIMERO: Validación específica de tabla (duplicados, constraints, longitud, etc.)
-      // Esta validación es más específica y debe ejecutarse antes de la validación básica
-      if (selectedTable && existingData) {
-        try {
-          const validationResult = await validateTableData(selectedTable, formState.data, existingData);
-          if (!validationResult.isValid) {
-            // Mostrar errores uno por línea, consolidando mensajes similares
-            const errorMessages = validationResult.errors.map(e => e.message).filter(Boolean);
-            const consolidatedErrors = consolidateErrorMessages(errorMessages);
-            const errorMessage = validationResult.userFriendlyMessage || consolidatedErrors.join('\n');
-            setMessage({ type: 'warning', text: errorMessage });
-            return;
-          }
-        } catch (validationError) {
-          // Si falla la validación, continuar (el backend también validará)
-          console.error('Error en validación:', validationError);
-        }
-      }
-      
-      // SEGUNDO: Validar formulario básico (campos requeridos)
-      // Solo si no hay errores específicos de tabla, validar campos requeridos
-      if (!validateForm()) {
-        // Obtener errores de validación básicos (campos requeridos)
-        const validationErrors = Object.values(formState.errors).filter(Boolean);
-        // Solo mostrar mensaje genérico si realmente no hay errores específicos
-        if (validationErrors.length > 0) {
-          // Consolidar mensajes similares
-          const consolidatedErrors = consolidateErrorMessages(validationErrors);
-          const errorMessage = consolidatedErrors.join('\n');
+    // PRIMERO: Validación específica de tabla (duplicados, constraints, longitud, etc.)
+    // Esta validación es más específica y debe ejecutarse antes de la validación básica
+    if (selectedTable && existingData) {
+      try {
+        const validationResult = await validateTableData(selectedTable, formState.data, existingData);
+        if (!validationResult.isValid) {
+          // Mostrar errores uno por línea, consolidando mensajes similares
+          const errorMessages = validationResult.errors.map(e => e.message).filter(Boolean);
+          const consolidatedErrors = consolidateErrorMessages(errorMessages);
+          const errorMessage = validationResult.userFriendlyMessage || consolidatedErrors.join('\n');
           setMessage({ type: 'warning', text: errorMessage });
-        } else {
-          // Si validateForm() retorna false pero no hay errores específicos,
-          // puede ser un problema de validación interna, mostrar mensaje genérico
-          setMessage({ type: 'warning', text: 'Por favor complete todos los campos requeridos' });
+          return;
         }
-        return;
+      } catch (validationError) {
+        // Si falla la validación, continuar (el backend también validará)
+        console.error('Error en validación:', validationError);
       }
+    }
+    
+    // SEGUNDO: Validar formulario básico (campos requeridos)
+    // Solo si no hay errores específicos de tabla, validar campos requeridos
+    if (!validateForm()) {
+      // Obtener errores de validación básicos (campos requeridos)
+      const validationErrors = Object.values(formState.errors).filter(Boolean);
+      // Solo mostrar mensaje genérico si realmente no hay errores específicos
+      if (validationErrors.length > 0) {
+        // Consolidar mensajes similares
+        const consolidatedErrors = consolidateErrorMessages(validationErrors);
+        const errorMessage = consolidatedErrors.join('\n');
+        setMessage({ type: 'warning', text: errorMessage });
+      } else {
+        // Si validateForm() retorna false pero no hay errores específicos,
+        // puede ser un problema de validación interna, mostrar mensaje genérico
+        setMessage({ type: 'warning', text: 'Por favor complete todos los campos requeridos' });
+      }
+      return;
     }
 
     // Filtrar solo los campos válidos según la configuración de la tabla

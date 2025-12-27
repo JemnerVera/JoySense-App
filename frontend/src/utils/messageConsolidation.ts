@@ -15,14 +15,23 @@ export function consolidateErrorMessages(messages: string[]): string[] {
   const consolidated: string[] = [];
   const obligatorioGroup: Array<{ original: string; field: string }> = [];
   const requeridoGroup: Array<{ original: string; field: string }> = [];
+  const debeSeleccionarGroup: Array<{ original: string; field: string }> = [];
   const otros: string[] = [];
 
   // Separar mensajes por tipo
   messages.forEach(msg => {
     const trimmedMsg = msg.trim();
     
+    // Mensajes que empiezan con "Debe seleccionar"
+    if (trimmedMsg.match(/^Debe seleccionar/i)) {
+      // Extraer el nombre del campo después de "Debe seleccionar"
+      // Ejemplo: "Debe seleccionar una entidad" -> "una entidad"
+      // Ejemplo: "Debe seleccionar un nodo" -> "un nodo"
+      const fieldName = trimmedMsg.replace(/^Debe seleccionar\s+/i, '').trim();
+      debeSeleccionarGroup.push({ original: trimmedMsg, field: fieldName });
+    }
     // Mensajes que terminan con "es obligatorio" o "es obligatoria"
-    if (trimmedMsg.match(/es obligatori[oa]$/i)) {
+    else if (trimmedMsg.match(/es obligatori[oa]$/i)) {
       // Extraer el nombre del campo (todo antes de "es obligatorio/a")
       // Ejemplo: "El nombre de la empresa es obligatorio" -> "El nombre de la empresa"
       // Ejemplo: "La abreviatura es obligatoria" -> "La abreviatura"
@@ -35,7 +44,7 @@ export function consolidateErrorMessages(messages: string[]): string[] {
       const fieldName = trimmedMsg.replace(/\s*es requerid[oa]$/i, '').trim();
       requeridoGroup.push({ original: trimmedMsg, field: fieldName });
     }
-    // Otros mensajes (como "Debe seleccionar un país")
+    // Otros mensajes
     else {
       otros.push(trimmedMsg);
     }
@@ -104,6 +113,20 @@ export function consolidateErrorMessages(messages: string[]): string[] {
       const last = fields[fields.length - 1];
       const rest = fields.slice(0, -1);
       consolidated.push(`${rest.join(', ')} y ${last} son requeridos`);
+    }
+  }
+
+  // Consolidar mensajes de "Debe seleccionar"
+  if (debeSeleccionarGroup.length > 0) {
+    if (debeSeleccionarGroup.length === 1) {
+      // Un solo campo - mantener el mensaje original
+      consolidated.push(debeSeleccionarGroup[0].original);
+    } else {
+      // Múltiples campos: "Debe seleccionar una entidad, ubicación y nodo"
+      const fields = debeSeleccionarGroup.map(item => item.field);
+      const last = fields[fields.length - 1];
+      const rest = fields.slice(0, -1);
+      consolidated.push(`Debe seleccionar ${rest.join(', ')} y ${last}`);
     }
   }
 

@@ -36,7 +36,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
           message: 'Error al validar la inserción',
           type: 'format'
         }],
-        userFriendlyMessage: '⚠️ Error al validar la inserción'
+        userFriendlyMessage: 'Error al validar la inserción'
       };
     }
   }, [selectedTable]);
@@ -67,7 +67,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
           message: 'Error al validar la actualización',
           type: 'format'
         }],
-        userFriendlyMessage: '⚠️ Error al validar la actualización'
+        userFriendlyMessage: 'Error al validar la actualización'
       };
     }
   }, [selectedTable]);
@@ -194,7 +194,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
           message: 'Error al validar la inserción múltiple',
           type: 'format'
         }],
-        userFriendlyMessage: '⚠️ Error al validar la inserción múltiple'
+        userFriendlyMessage: 'Error al validar la inserción múltiple'
       }));
     }
   }, [selectedTable]);
@@ -219,7 +219,7 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
           message: 'Error al validar la inserción masiva',
           type: 'format'
         }],
-        userFriendlyMessage: '⚠️ Error al validar la inserción masiva'
+        userFriendlyMessage: 'Error al validar la inserción masiva'
       };
     }
   }, [selectedTable]);

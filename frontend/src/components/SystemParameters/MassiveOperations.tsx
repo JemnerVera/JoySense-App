@@ -106,7 +106,7 @@ export function MassiveOperations({
       localizacion: ['latitud', 'longitud', 'referencia', 'entidadid', 'ubicacionid', 'nodoid'],
       entidad: ['entidad'],
       tipo: ['tipo', 'entidadid'],
-      nodo: ['nodo', 'deveui'],
+      nodo: ['ubicacionid', 'nodo', 'descripcion'],
       metrica: ['metrica', 'unidad'],
       umbral: ['minimo', 'maximo', 'umbral', 'metricaid'],
       perfilumbral: ['perfil', 'umbralid'],
