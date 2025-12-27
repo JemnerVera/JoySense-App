@@ -214,61 +214,32 @@ router.post('/:table', async (req, res) => {
             });
 
           if (syncResult && !syncError) {
-            // Actualizar usuario con useruuid
+            // La función fn_sync_usuario_con_auth_wait ya actualiza el useruuid automáticamente
+            // Solo necesitamos obtener el usuario actualizado
             const { data: updatedData, error: updateError } = await userSupabase
               .schema(dbSchema)
               .from('usuario')
-              .update({ useruuid: syncResult })
+              .select('*')
               .eq('usuarioid', newUsuario.usuarioid)
-              .select();
+              .single();
 
-            if (!updateError && updatedData && updatedData[0]) {
-              // Actualizar data para retornar useruuid
-              data[0] = updatedData[0];
+            if (!updateError && updatedData) {
               logger.info(`✅ Usuario sincronizado exitosamente. useruuid: ${syncResult}`);
-              
-              // Actualizar contraseña en Auth usando función PostgreSQL (usa secrets del vault)
-              // Buscar password en dataToInsert (puede venir como 'password' antes de hashear)
-              const originalPassword = req.body.password || (Array.isArray(req.body) ? req.body[0]?.password : null);
-              
-              if (originalPassword) {
-                try {
-                  logger.info(`🔑 Actualizando contraseña en Supabase Auth para usuario ${syncResult}...`);
-                  
-                  const { data: passwordUpdateResult, error: passwordUpdateError } = await userSupabase
-                    .schema('joysense')
-                    .rpc('fn_update_password_auth', {
-                      p_useruuid: syncResult,
-                      p_password: originalPassword
-                    });
-                  
-                  if (passwordUpdateError) {
-                    logger.warn('⚠️ No se pudo actualizar contraseña en Auth (usando función SQL):', passwordUpdateError.message);
-                    logger.warn('   El usuario puede usar scripts/update-password-auth.js para actualizar manualmente');
-                  } else {
-                    logger.info('✅ Contraseña actualizada en Supabase Auth exitosamente (usando función SQL)');
-                  }
-                } catch (passwordErr) {
-                  logger.warn('⚠️ Error al actualizar contraseña en Auth:', passwordErr.message);
-                  // No fallar - el usuario se creó correctamente
-                }
-              } else {
-                logger.warn('⚠️ No se proporcionó contraseña - usuario tendrá contraseña temporal en Auth');
-              }
+              logger.info('   Usando funciones del DBA: fn_sync_usuario_con_auth_wait actualiza useruuid y password automáticamente');
               
               // Agregar estado de sincronización a la respuesta
               data[0] = {
-                ...data[0],
+                ...updatedData,
                 syncStatus: 'success',
                 syncMessage: 'Usuario creado y sincronizado exitosamente'
               };
             } else {
-              logger.warn('⚠️ Usuario sincronizado pero no se pudo actualizar useruuid:', updateError);
+              logger.warn('⚠️ Usuario sincronizado pero no se pudo obtener datos actualizados:', updateError);
               // Agregar estado pendiente
               data[0] = {
                 ...data[0],
                 syncStatus: 'pending',
-                syncMessage: 'Usuario creado pero useruuid pendiente de actualización'
+                syncMessage: 'Usuario creado pero error al obtener datos actualizados'
               };
             }
           } else {
