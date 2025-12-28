@@ -120,6 +120,22 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
 
   if (!config) return null;
 
+  // Función helper para determinar si un campo foreign key tiene constraint
+  const isConstrainedField = (fieldName: string): boolean => {
+    const constrainedFields = CONSTRAINED_FOREIGN_KEYS[tableName || ''];
+    return constrainedFields ? constrainedFields.includes(fieldName) : false;
+  };
+
+  // Función helper para obtener datos de una tabla relacionada desde relatedData
+  const getRelatedTableData = (tableName: string): any[] => {
+    const dataKey = tableToRelatedDataKey[tableName];
+    if (!dataKey) {
+      return [];
+    }
+    const data = (relatedData as any)[dataKey];
+    return data || [];
+  };
+
   // Layout específico para localizacion
   if (tableName === 'localizacion') {
     // Layout específico para localizacion:
@@ -276,22 +292,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
 
   // Filtrar campos editables (excluir hidden)
   const editableFields = config.fields.filter(f => !f.hidden);
-
-  // Función helper para determinar si un campo foreign key tiene constraint
-  const isConstrainedField = (fieldName: string): boolean => {
-    const constrainedFields = CONSTRAINED_FOREIGN_KEYS[tableName || ''];
-    return constrainedFields ? constrainedFields.includes(fieldName) : false;
-  };
-
-  // Función helper para obtener datos de una tabla relacionada desde relatedData
-  const getRelatedTableData = (tableName: string): any[] => {
-    const dataKey = tableToRelatedDataKey[tableName];
-    if (!dataKey) {
-      return [];
-    }
-    const data = (relatedData as any)[dataKey];
-    return data || [];
-  };
 
   // Función helper para obtener el label de un foreign key desde relatedData
   const getForeignKeyLabel = (field: any, value: any): string => {
