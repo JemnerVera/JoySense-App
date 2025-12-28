@@ -108,7 +108,7 @@ export function MassiveOperations({
       tipo: ['tipo', 'entidadid'],
       nodo: ['ubicacionid', 'nodo', 'descripcion'],
       metrica: ['metrica', 'unidad'],
-      umbral: ['minimo', 'maximo', 'umbral', 'metricaid'],
+      umbral: ['minimo', 'maximo', 'umbral', 'estandar', 'operador', 'inversion'],
       perfilumbral: ['perfil', 'umbralid'],
       criticidad: ['criticidad', 'criticidadbrev'],
       medio: ['medio'],

@@ -5,6 +5,8 @@ import PermisosSidebar from './PermisosSidebar';
 import PermisosOperationsSidebar from './PermisosOperationsSidebar';
 import AccesoSidebar from './AccesoSidebar';
 import AccesoOperationsSidebar from './AccesoOperationsSidebar';
+import AlertasSidebar from './AlertasSidebar';
+import ReglaOperationsSidebar from './ReglaOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
 import ReportesDashboardSidebar from './ReportesDashboardSidebar';
@@ -29,6 +31,8 @@ interface AuxiliarySidebarProps {
   showDashboardThirdLevel?: boolean;
   permisosSubTab?: 'status' | 'insert' | 'update';
   onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  reglaSubTab?: 'status' | 'insert' | 'update';
+  onReglaSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -49,7 +53,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   showThirdLevel = false,
   showDashboardThirdLevel = false,
   permisosSubTab,
-  onPermisosSubTabChange
+  onPermisosSubTabChange,
+  reglaSubTab,
+  onReglaSubTabChange
 }) => {
   const { t } = useLanguage();
   
@@ -88,6 +94,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
   const isPermisos = activeTab === 'permisos';
   const isAcceso = activeTab === 'acceso' || activeTab.startsWith('acceso-');
+  const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
   const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
   const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
 
@@ -145,6 +152,40 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
     return (
       <AccesoSidebar
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+      />
+    );
+  }
+
+  if (isAlertas) {
+    // Determinar qué tabla de alertas está activa
+    const isRegla = activeTab?.startsWith('alertas-regla') && !activeTab?.startsWith('alertas-regla_');
+    const isReglaObjeto = activeTab?.startsWith('alertas-regla_objeto');
+    const isReglaUmbral = activeTab?.startsWith('alertas-regla_umbral');
+    const isReglaPerfil = activeTab?.startsWith('alertas-regla_perfil');
+    
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel && (isRegla || isReglaObjeto || isReglaUmbral || isReglaPerfil)) {
+      return (
+        <ReglaOperationsSidebar
+          activeSubTab={reglaSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
+          onSubTabChange={onReglaSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <AlertasSidebar
         isExpanded={isExpanded}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

@@ -144,35 +144,12 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(`${displayName.toUpperCase()}`);
   }
 
-  // Combobox para umbral - ubicacionid, criticidadid, nodoid, metricaid, tipoid
-  if (col.columnName === 'ubicacionid' && selectedTable === 'umbral') {
-    return renderSelectField(t('create.select_location'));
+  // Combobox para umbral - localizacionid
+  if (col.columnName === 'localizacionid' && selectedTable === 'umbral') {
+    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
   }
 
-  if (col.columnName === 'criticidadid' && selectedTable === 'umbral') {
-    return renderSelectField(t('create.select_criticality'));
-  }
-
-  if (col.columnName === 'nodoid' && selectedTable === 'umbral') {
-    return renderSelectField(t('create.select_node'));
-  }
-
-  if (col.columnName === 'metricaid' && selectedTable === 'umbral') {
-    return renderSelectField(t('create.select_metric'));
-  }
-
-  if (col.columnName === 'tipoid' && selectedTable === 'umbral') {
-    return renderSelectField(`${displayName.toUpperCase()}`);
-  }
-
-  // Combobox para perfilumbral - perfilid, umbralid
-  if (col.columnName === 'perfilid' && selectedTable === 'perfilumbral') {
-    return renderSelectField(t('create.profile'));
-  }
-
-  if (col.columnName === 'umbralid' && selectedTable === 'perfilumbral') {
-    return renderSelectField(t('create.threshold'));
-  }
+  // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
 
   // Combobox para audit_log_umbral - umbralid, modified_by
   if (col.columnName === 'umbralid' && selectedTable === 'audit_log_umbral') {
@@ -197,13 +174,13 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_boss'));
   }
 
-  // Combobox para contacto - usuarioid, medioid
+  // Combobox para contacto - usuarioid, codigotelefonoid
   if (col.columnName === 'usuarioid' && selectedTable === 'contacto') {
     return renderSelectField(t('create.user'));
   }
 
-  if (col.columnName === 'medioid' && selectedTable === 'contacto') {
-    return renderSelectField(t('create.medium'));
+  if (col.columnName === 'codigotelefonoid' && selectedTable === 'contacto') {
+    return renderSelectField(t('create.country_code') || 'Código de País');
   }
 
   // Combobox para entidad_localizacion - entidadid, localizacionid
@@ -218,6 +195,44 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   // Combobox para asociacion - localizacionid
   if (col.columnName === 'localizacionid' && selectedTable === 'asociacion') {
     return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  // Select para umbral - operador (con opciones válidas según constraint)
+  if (col.columnName === 'operador' && selectedTable === 'umbral') {
+    const operadorOptions = [
+      { value: '', label: '' },
+      { value: 'FUERA', label: 'FUERA' },
+      { value: 'OUTSIDE', label: 'OUTSIDE' },
+      { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
+      { value: 'RANGO', label: 'RANGO' },
+      { value: 'DENTRO', label: 'DENTRO' },
+      { value: 'INSIDE', label: 'INSIDE' },
+      { value: 'IN_RANGE', label: 'IN_RANGE' },
+      { value: 'BETWEEN', label: 'BETWEEN' },
+      { value: '>', label: '>' },
+      { value: '>=', label: '>=' },
+      { value: '<', label: '<' },
+      { value: '<=', label: '<=' }
+    ];
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={value}
+          onChange={(newValue) => {
+            setFormData({
+              ...formData,
+              [col.columnName]: newValue || ''
+            });
+          }}
+          options={operadorOptions}
+          placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+        />
+      </div>
+    );
   }
 
   // Campo de texto normal

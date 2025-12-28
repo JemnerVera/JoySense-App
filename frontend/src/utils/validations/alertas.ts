@@ -18,27 +18,46 @@ export const validateUmbralData = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  // 1. Validar campos obligatorios
-  const requiredFields = ['umbral', 'ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'tipoid'];
+  // 1. Validar campos obligatorios según schema actual
+  if (!formData.localizacionid || formData.localizacionid === '' || formData.localizacionid === 0) {
+    errors.push({
+      field: 'localizacionid',
+      message: 'Debe seleccionar una localización',
+      type: 'required'
+    });
+  }
   
-  requiredFields.forEach(field => {
-    if (!formData[field] || (typeof formData[field] === 'string' && formData[field].trim() === '')) {
-      const fieldNames: Record<string, string> = {
-        'umbral': 'El nombre del umbral es obligatorio',
-        'ubicacionid': 'Debe seleccionar una ubicación',
-        'criticidadid': 'Debe seleccionar una criticidad',
-        'nodoid': 'Debe seleccionar un nodo',
-        'metricaid': 'Debe seleccionar una métrica',
-        'tipoid': 'Debe seleccionar un tipo'
-      };
-      
-      errors.push({
-        field,
-        message: fieldNames[field],
-        type: 'required'
-      });
-    }
-  });
+  if (!formData.umbral || (typeof formData.umbral === 'string' && formData.umbral.trim() === '')) {
+    errors.push({
+      field: 'umbral',
+      message: 'El nombre del umbral es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (formData.minimo === null || formData.minimo === undefined || formData.minimo === '') {
+    errors.push({
+      field: 'minimo',
+      message: 'El valor mínimo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (formData.maximo === null || formData.maximo === undefined || formData.maximo === '') {
+    errors.push({
+      field: 'maximo',
+      message: 'El valor máximo es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  if (!formData.operador || (typeof formData.operador === 'string' && formData.operador.trim() === '')) {
+    errors.push({
+      field: 'operador',
+      message: 'El operador es obligatorio',
+      type: 'required'
+    });
+  }
   
   // 2. Validar constraint de negocio: minimo < maximo
   if (formData.minimo !== null && formData.minimo !== undefined && 
@@ -55,20 +74,17 @@ export const validateUmbralData = async (
     }
   }
   
-  // 3. Validar duplicados si hay datos existentes
+  // 3. Validar duplicados si hay datos existentes (basado en localizacionid y nombre)
   if (existingData && existingData.length > 0) {
     const umbralExists = existingData.some(item => 
       item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase() &&
-      item.ubicacionid === formData.ubicacionid &&
-      item.nodoid === formData.nodoid &&
-      item.metricaid === formData.metricaid &&
-      item.tipoid === formData.tipoid
+      item.localizacionid === formData.localizacionid
     );
     
     if (umbralExists) {
       errors.push({
         field: 'general',
-        message: 'Ya existe un umbral con la misma configuración (ubicación, nodo, métrica y tipo)',
+        message: 'Ya existe un umbral con el mismo nombre para esta localización',
         type: 'duplicate'
       });
     }
@@ -91,7 +107,15 @@ export const validateUmbralUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
 
-  // 1. Validar campos obligatorios
+  // 1. Validar campos obligatorios según schema actual
+  if (!formData.localizacionid || formData.localizacionid === '' || formData.localizacionid === 0) {
+    errors.push({
+      field: 'localizacionid',
+      message: 'Debe seleccionar una localización',
+      type: 'required'
+    });
+  }
+  
   if (!formData.umbral || formData.umbral.trim() === '') {
     errors.push({
       field: 'umbral',
@@ -100,77 +124,63 @@ export const validateUmbralUpdate = async (
     });
   }
   
-  if (!formData.ubicacionid || formData.ubicacionid === '') {
+  if (formData.minimo === null || formData.minimo === undefined || formData.minimo === '') {
     errors.push({
-      field: 'ubicacionid',
-      message: 'La ubicación es obligatoria',
+      field: 'minimo',
+      message: 'El valor mínimo es obligatorio',
       type: 'required'
     });
   }
   
-  if (!formData.criticidadid || formData.criticidadid === '') {
+  if (formData.maximo === null || formData.maximo === undefined || formData.maximo === '') {
     errors.push({
-      field: 'criticidadid',
-      message: 'La criticidad es obligatoria',
+      field: 'maximo',
+      message: 'El valor máximo es obligatorio',
       type: 'required'
     });
   }
   
-  if (!formData.nodoid || formData.nodoid === '') {
+  if (!formData.operador || (typeof formData.operador === 'string' && formData.operador.trim() === '')) {
     errors.push({
-      field: 'nodoid',
-      message: 'El nodo es obligatorio',
+      field: 'operador',
+      message: 'El operador es obligatorio',
       type: 'required'
     });
   }
   
-  if (!formData.metricaid || formData.metricaid === '') {
-    errors.push({
-      field: 'metricaid',
-      message: 'La métrica es obligatoria',
-      type: 'required'
-    });
+  // 2. Validar constraint de negocio: minimo < maximo
+  if (formData.minimo !== null && formData.minimo !== undefined && 
+      formData.maximo !== null && formData.maximo !== undefined) {
+    const minimo = parseFloat(formData.minimo);
+    const maximo = parseFloat(formData.maximo);
+    
+    if (!isNaN(minimo) && !isNaN(maximo) && minimo >= maximo) {
+      errors.push({
+        field: 'minimo',
+        message: 'El valor mínimo debe ser menor que el valor máximo',
+        type: 'format'
+      });
+    }
   }
   
-  if (!formData.tipoid || formData.tipoid === '') {
-    errors.push({
-      field: 'tipoid',
-      message: 'El tipo es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  // 2. Validar duplicados (excluyendo el registro actual)
-  if (formData.umbral && formData.umbral.trim() !== '') {
+  // 3. Validar duplicados si hay datos existentes (basado en localizacionid y nombre)
+  if (existingData && existingData.length > 0) {
     const umbralExists = existingData.some(item => 
-      item.umbralid !== originalData.umbralid && 
-      item.umbral && 
-      item.umbral.toLowerCase() === formData.umbral.toLowerCase()
+      item.umbralid !== originalData.umbralid &&
+      item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase() &&
+      item.localizacionid === formData.localizacionid
     );
     
     if (umbralExists) {
       errors.push({
-        field: 'umbral',
-        message: 'El nombre del umbral ya existe',
+        field: 'general',
+        message: 'Ya existe un umbral con el mismo nombre para esta localización',
         type: 'duplicate'
       });
     }
   }
   
-  // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
-    const hasDependentRecords = await checkUmbralDependencies(originalData.umbralid);
-    
-    if (hasDependentRecords) {
-      errors.push({
-        field: 'statusid',
-        message: 'No se puede inactivar el umbral porque tiene perfiles o alertas asociadas',
-        type: 'constraint'
-      });
-    }
-  }
-  
-  // 4. Generar mensaje amigable para actualización
+  // 4. Generar mensaje amigable
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
   
   return {
@@ -182,9 +192,10 @@ export const validateUmbralUpdate = async (
 
 export const checkUmbralDependencies = async (umbralid: number): Promise<boolean> => {
   try {
-    const perfilumbrales = await JoySenseService.getTableData('perfilumbral');
-    const hasPerfilumbrales = perfilumbrales.some(perfilumbral => perfilumbral.umbralid === umbralid);
-    if (hasPerfilumbrales) return true;
+    // Verificar si el umbral está usado en regla_umbral (reemplazo de perfilumbral)
+    const reglaUmbrales = await JoySenseService.getTableData('regla_umbral');
+    const hasReglaUmbrales = reglaUmbrales.some(reglaUmbral => reglaUmbral.umbralid === umbralid);
+    if (hasReglaUmbrales) return true;
     
     const alertas = await JoySenseService.getTableData('alerta');
     const hasAlertas = alertas.some(alerta => alerta.umbralid === umbralid);
@@ -198,105 +209,8 @@ export const checkUmbralDependencies = async (umbralid: number): Promise<boolean
 // ============================================================================
 // PERFILUMBRAL VALIDATIONS
 // ============================================================================
-
-export const validatePerfilUmbralData = async (
-  formData: Record<string, any>, 
-  existingData?: any[]
-): Promise<EnhancedValidationResult> => {
-  const errors: ValidationError[] = [];
-  
-  // 1. Validar campos obligatorios
-  if (!formData.perfilid || formData.perfilid === 0) {
-    errors.push({
-      field: 'perfilid',
-      message: 'Debe seleccionar un perfil',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.umbralid || formData.umbralid === 0) {
-    errors.push({
-      field: 'umbralid',
-      message: 'Debe seleccionar un umbral',
-      type: 'required'
-    });
-  }
-  
-  // 2. Validar duplicados si hay datos existentes (PRIMARY KEY compuesta)
-  if (existingData && existingData.length > 0) {
-    const perfilUmbralExists = existingData.some(item => 
-      item.perfilid === formData.perfilid && item.umbralid === formData.umbralid
-    );
-    
-    if (perfilUmbralExists) {
-      errors.push({
-        field: 'general',
-        message: 'Ya existe una relación entre este perfil y umbral',
-        type: 'duplicate'
-      });
-    }
-  }
-  
-  // 3. Generar mensaje amigable
-  const userFriendlyMessage = generateUserFriendlyMessage(errors);
-  
-  return {
-    isValid: errors.length === 0,
-    errors,
-    userFriendlyMessage
-  };
-};
-
-export const validatePerfilUmbralUpdate = async (
-  formData: Record<string, any>,
-  originalData: Record<string, any>,
-  existingData: any[]
-): Promise<EnhancedValidationResult> => {
-  const errors: ValidationError[] = [];
-
-  // 1. Validar campos obligatorios
-  if (!formData.perfilid || formData.perfilid === '') {
-    errors.push({
-      field: 'perfilid',
-      message: 'El perfil es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.umbralid || formData.umbralid === '') {
-    errors.push({
-      field: 'umbralid',
-      message: 'El umbral es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  // 2. Validar duplicados (excluyendo el registro actual)
-  if (formData.perfilid && formData.umbralid) {
-    const perfilUmbralExists = existingData.some(item => 
-      (item.perfilid !== originalData.perfilid || item.umbralid !== originalData.umbralid) && 
-      item.perfilid === formData.perfilid && 
-      item.umbralid === formData.umbralid
-    );
-    
-    if (perfilUmbralExists) {
-      errors.push({
-        field: 'composite',
-        message: 'Ya existe una relación entre este perfil y umbral',
-        type: 'duplicate'
-      });
-    }
-  }
-  
-  // 3. Generar mensaje amigable para actualización
-  const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
-  
-  return {
-    isValid: errors.length === 0,
-    errors,
-    userFriendlyMessage
-  };
-};
+// NOTA: perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
+// Las funciones validatePerfilUmbralData y validatePerfilUmbralUpdate fueron eliminadas
 
 // ============================================================================
 // CRITICIDAD VALIDATIONS
@@ -400,10 +314,8 @@ export const validateCriticidadUpdate = async (
 
 export const checkCriticidadDependencies = async (criticidadid: number): Promise<boolean> => {
   try {
-    const umbrales = await JoySenseService.getTableData('umbral');
-    const hasUmbrales = umbrales.some(umbral => umbral.criticidadid === criticidadid);
-    if (hasUmbrales) return true;
-    
+    // Nota: umbral ya no tiene criticidadid según el schema actual
+    // Solo verificar alertas que puedan tener criticidadid
     const alertas = await JoySenseService.getTableData('alerta');
     const hasAlertas = alertas.some(alerta => alerta.criticidadid === criticidadid);
     return hasAlertas;

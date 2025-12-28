@@ -79,8 +79,81 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
       );
     }
 
-    // Campos de texto (umbral, minimo, maximo)
-    if (['umbral', 'minimo', 'maximo'].includes(col.columnName)) {
+    // Campo operador - select con opciones válidas según constraint
+    if (col.columnName === 'operador') {
+      const operadorOptions = [
+        { value: '', label: '' },
+        { value: 'FUERA', label: 'FUERA' },
+        { value: 'OUTSIDE', label: 'OUTSIDE' },
+        { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
+        { value: 'RANGO', label: 'RANGO' },
+        { value: 'DENTRO', label: 'DENTRO' },
+        { value: 'INSIDE', label: 'INSIDE' },
+        { value: 'IN_RANGE', label: 'IN_RANGE' },
+        { value: 'BETWEEN', label: 'BETWEEN' },
+        { value: '>', label: '>' },
+        { value: '>=', label: '>=' },
+        { value: '<', label: '<' },
+        { value: '<=', label: '<=' }
+      ];
+      
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+            isEnabled ? 'text-orange-500' : 'text-gray-500'
+          }`}>
+            {displayName.toUpperCase()}{isRequired ? '*' : ''}
+          </label>
+          <SelectWithPlaceholder
+            value={value || ''}
+            onChange={(newValue) => {
+              if (isEnabled) {
+                updateField(col.columnName, newValue || '');
+              }
+            }}
+            options={operadorOptions}
+            placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+            disabled={!isEnabled}
+          />
+        </div>
+      );
+    }
+
+    // Campo inversion - checkbox
+    if (col.columnName === 'inversion') {
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+            isEnabled ? 'text-orange-500' : 'text-gray-500'
+          }`}>
+            {displayName.toUpperCase()}{isRequired ? '*' : ''}
+          </label>
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={value === true || value === 1}
+              disabled={!isEnabled}
+              onChange={(e) => {
+                if (isEnabled) {
+                  updateField(col.columnName, e.target.checked);
+                }
+              }}
+              className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2 ${
+                !isEnabled ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            />
+            <span className={`font-mono tracking-wider ${
+              isEnabled ? 'text-white' : 'text-gray-500'
+            }`}>
+              {value === true || value === 1 ? 'Sí' : 'No'}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Campos de texto (umbral, minimo, maximo, estandar)
+    if (['umbral', 'minimo', 'maximo', 'estandar'].includes(col.columnName)) {
       return (
         <div key={col.columnName} className="mb-4">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
@@ -94,7 +167,10 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
             disabled={!isEnabled}
             onChange={(e) => {
               if (isEnabled) {
-                updateField(col.columnName, e.target.value);
+                const newValue = col.columnName === 'umbral' 
+                  ? e.target.value 
+                  : (e.target.value ? parseFloat(e.target.value) : null);
+                updateField(col.columnName, newValue);
               }
             }}
             placeholder={`${displayName.toUpperCase()}`}
@@ -108,128 +184,81 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
       );
     }
 
-    // Campos de selección (ubicacionid, nodoid, tipoid, metricaid, criticidadid)
-    const options = getUniqueOptionsForField(col.columnName);
-    const placeholder = `${displayName.toUpperCase()}`;
-    
-    return (
-      <div key={col.columnName} className="mb-4">
-        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-          isEnabled ? 'text-orange-500' : 'text-gray-500'
-        }`}>
-          {displayName.toUpperCase()}
-        </label>
-        <SelectWithPlaceholder
-          value={value}
-          onChange={(newValue) => {
-            if (isEnabled) {
-              const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
-              
-              // Actualizar el campo principal
-              updateField(col.columnName, newValueParsed);
-              
-              // Limpiar campos dependientes según la cascada
-              if (col.columnName === 'ubicacionid') {
-                updateField('nodoid', null);
-                updateField('tipoid', null);
-                updateField('metricaid', null);
-                updateField('criticidadid', null);
-                updateField('minimo', '');
-                updateField('maximo', '');
-                updateField('umbral', '');
-                updateField('statusid', 1);
-              } else if (col.columnName === 'nodoid') {
-                updateField('tipoid', null);
-                updateField('metricaid', null);
-                updateField('criticidadid', null);
-                updateField('minimo', '');
-                updateField('maximo', '');
-                updateField('umbral', '');
-                updateField('statusid', 1);
-              } else if (col.columnName === 'tipoid') {
-                updateField('metricaid', null);
-                updateField('criticidadid', null);
-                updateField('minimo', '');
-                updateField('maximo', '');
-                updateField('umbral', '');
-                updateField('statusid', 1);
-              } else if (col.columnName === 'metricaid') {
-                updateField('criticidadid', null);
-                updateField('minimo', '');
-                updateField('maximo', '');
-                updateField('umbral', '');
-                updateField('statusid', 1);
+    // Campo localizacionid - select
+    if (col.columnName === 'localizacionid') {
+      const options = getUniqueOptionsForField(col.columnName);
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+            isEnabled ? 'text-orange-500' : 'text-gray-500'
+          }`}>
+            {displayName.toUpperCase()}{isRequired ? '*' : ''}
+          </label>
+          <SelectWithPlaceholder
+            value={value}
+            onChange={(newValue) => {
+              if (isEnabled) {
+                const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
+                updateField(col.columnName, newValueParsed);
               }
-            }
-          }}
-          options={options}
-          placeholder={placeholder}
-          disabled={!isEnabled}
-        />
-      </div>
-    );
+            }}
+            options={options}
+            placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+            disabled={!isEnabled}
+          />
+        </div>
+      );
+    }
+
+    // Campo desconocido - no renderizar
+    return null;
   };
 
-  // Función para renderizar campos de umbral con layout específico y cascada
+  // Función para renderizar campos de umbral según schema actual
+  // Schema: umbralid, localizacionid, umbral, minimo, maximo, estandar, operador, inversion, statusid
   const renderUmbralFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila contextual: País, Empresa, Fundo (si hay filtros globales)
-    const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
-    if (contextualRow) {
-      result.push(
-        <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
-      );
-    }
+    // Fila 1: Localización, Nombre Umbral, Operador
+    const localizacionField = visibleColumns.find(c => c.columnName === 'localizacionid');
+    const umbralField = visibleColumns.find(c => c.columnName === 'umbral');
+    const operadorField = visibleColumns.find(c => c.columnName === 'operador');
     
-    // Primera fila: Ubicación, Nodo, Tipo
-    const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
-    const nodoField = visibleColumns.find(c => c.columnName === 'nodoid');
-    const tipoField = visibleColumns.find(c => c.columnName === 'tipoid');
-    
-    if (ubicacionField || nodoField || tipoField) {
+    if (localizacionField || umbralField || operadorField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {ubicacionField && renderUmbralField(ubicacionField, true)}
-          {nodoField && renderUmbralField(nodoField, !!formData.ubicacionid)}
-          {tipoField && renderUmbralField(tipoField, !!formData.nodoid)}
+          {localizacionField && renderUmbralField(localizacionField, true)}
+          {umbralField && renderUmbralField(umbralField, !!formData.localizacionid)}
+          {operadorField && renderUmbralField(operadorField, !!formData.localizacionid)}
         </div>
       );
     }
 
-    // Segunda fila: Métrica, (Valor Mínimo, Valor Máximo), Criticidad
-    const metricaField = visibleColumns.find(c => c.columnName === 'metricaid');
+    // Fila 2: Mínimo, Máximo, Estándar
     const minimoField = visibleColumns.find(c => c.columnName === 'minimo');
     const maximoField = visibleColumns.find(c => c.columnName === 'maximo');
-    const criticidadField = visibleColumns.find(c => c.columnName === 'criticidadid');
+    const estandarField = visibleColumns.find(c => c.columnName === 'estandar');
     
-    if (metricaField || minimoField || maximoField || criticidadField) {
+    if (minimoField || maximoField || estandarField) {
       result.push(
         <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {metricaField && renderUmbralField(metricaField, !!formData.tipoid)}
-          
-          <div className="bg-gray-600 bg-opacity-40 p-3 rounded-lg border border-gray-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {minimoField && renderUmbralField(minimoField, !!formData.metricaid)}
-              {maximoField && renderUmbralField(maximoField, !!formData.metricaid)}
-            </div>
-          </div>
-          
-          {criticidadField && renderUmbralField(criticidadField, !!formData.metricaid)}
+          {minimoField && renderUmbralField(minimoField, !!formData.localizacionid)}
+          {maximoField && renderUmbralField(maximoField, !!formData.localizacionid)}
+          {estandarField && renderUmbralField(estandarField, !!formData.localizacionid)}
         </div>
       );
     }
 
-    // Tercera fila: Nombre Umbral, (vacío), Status
-    const umbralField = visibleColumns.find(c => c.columnName === 'umbral');
+    // Fila 3: (vacío), Inversión, Status
+    const inversionField = visibleColumns.find(c => c.columnName === 'inversion');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    if (umbralField || statusField) {
+    if (inversionField || statusField) {
       result.push(
         <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {umbralField && renderUmbralField(umbralField, !!formData.metricaid)}
-          <div></div>
-          {statusField && renderUmbralField(statusField, !!formData.metricaid)}
+          <div></div> {/* Espacio vacío */}
+          {inversionField && renderUmbralField(inversionField, !!formData.localizacionid)}
+          {statusField && renderUmbralField(statusField, !!formData.localizacionid)}
         </div>
       );
     }

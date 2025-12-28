@@ -17,6 +17,8 @@ import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, Um
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain from './components/PermisosMain';
+import ReglasMain from './components/ReglasMain';
+import AlertasTableMain from './components/AlertasTableMain';
 import { JoySenseService } from './services/backend-api';
 import { Pais, Empresa } from './types';
 // import { SkipLink } from './components/Accessibility';
@@ -269,6 +271,14 @@ const AppContentInternal: React.FC = () => {
     setActiveSubTab(subTab);
     startTransition(() => {
       setActiveTab(`acceso-permiso-${subTab}`);
+    });
+  };
+
+  // Handler para cambios de pestaña de ALERTAS
+  const handleAlertasReglaChange = (subTab: 'status' | 'insert' | 'update') => {
+    setActiveSubTab(subTab);
+    startTransition(() => {
+      setActiveTab(`alertas-regla-${subTab}`);
     });
   };
 
@@ -553,6 +563,73 @@ const AppContentInternal: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <h2 className="text-2xl font-bold text-purple-500 font-mono tracking-wider">{t('tabs.access')}</h2>
+              </div>
+              <p className="text-neutral-300 font-mono tracking-wider">{t('forms.select_option')}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Manejar sub-rutas de ALERTAS
+    if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {
+      const alertasSubTab = activeTab.replace('alertas-regla-', '') as 'status' | 'insert' | 'update';
+      return (
+        <ReglasMain
+          activeSubTab={alertasSubTab || 'status'}
+          onSubTabChange={handleAlertasReglaChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    // Manejar sub-rutas de ALERTAS para tablas relacionadas (regla_objeto, regla_umbral, regla_perfil)
+    if (activeTab.startsWith('alertas-regla_objeto-')) {
+      const alertasSubTab = activeTab.replace('alertas-regla_objeto-', '') as 'status' | 'insert' | 'update';
+      return (
+        <AlertasTableMain
+          tableName="regla_objeto"
+          activeSubTab={alertasSubTab || 'status'}
+          onSubTabChange={handleAlertasReglaChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    if (activeTab.startsWith('alertas-regla_umbral-')) {
+      const alertasSubTab = activeTab.replace('alertas-regla_umbral-', '') as 'status' | 'insert' | 'update';
+      return (
+        <AlertasTableMain
+          tableName="regla_umbral"
+          activeSubTab={alertasSubTab || 'status'}
+          onSubTabChange={handleAlertasReglaChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    if (activeTab.startsWith('alertas-regla_perfil-')) {
+      const alertasSubTab = activeTab.replace('alertas-regla_perfil-', '') as 'status' | 'insert' | 'update';
+      return (
+        <AlertasTableMain
+          tableName="regla_perfil"
+          activeSubTab={alertasSubTab || 'status'}
+          onSubTabChange={handleAlertasReglaChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    if (activeTab === 'alertas') {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <div className="text-center">
+            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <div className="flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <h2 className="text-2xl font-bold text-red-500 font-mono tracking-wider">{t('tabs.alerts')}</h2>
               </div>
               <p className="text-neutral-300 font-mono tracking-wider">{t('forms.select_option')}</p>
             </div>

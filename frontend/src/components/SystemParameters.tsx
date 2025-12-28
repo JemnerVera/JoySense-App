@@ -178,6 +178,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     perfilesData,
     umbralesData,
     sensorsData,
+    codigotelefonosData,
     loadRelatedTablesData,
     loadTableData,
     setTableData, // Para limpiar datos inmediatamente
@@ -239,7 +240,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     perfilesData: perfilesData || [],
     umbralesData: umbralesData || [],
     userData: userData || [],
-    sensorsData: sensorsData || []
+    sensorsData: sensorsData || [],
+    codigotelefonosData: codigotelefonosData || []
   }), [
     paisesData,
     empresasData,
@@ -254,7 +256,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     perfilesData,
     umbralesData,
     userData,
-    sensorsData
+    sensorsData,
+    codigotelefonosData
   ]);
 
   // Ref para poder usar handleSubTabChangeInternal en useSystemParametersSync (debe declararse antes)

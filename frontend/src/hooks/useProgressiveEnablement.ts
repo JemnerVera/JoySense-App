@@ -73,19 +73,7 @@ export const useProgressiveEnablement = (
       }
     }
     
-    // Para Perfil Umbral: habilitación progresiva perfilid -> umbralid -> resto
-    if (selectedTable === 'perfilumbral') {
-      if (columnName === 'perfilid') {
-        return true; // Siempre habilitado
-      }
-      if (columnName === 'umbralid') {
-        return !!(formData.perfilid && formData.perfilid !== 0);
-      }
-      // Para el resto de campos (statusid)
-      if (['statusid'].includes(columnName)) {
-        return !!(formData.perfilid && formData.perfilid !== 0 && formData.umbralid && formData.umbralid !== 0);
-      }
-    }
+    // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
     
     // Para Criticidad: habilitación progresiva criticidad -> criticidadbrev -> resto
     if (selectedTable === 'criticidad') {

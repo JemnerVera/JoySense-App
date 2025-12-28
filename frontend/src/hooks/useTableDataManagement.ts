@@ -27,10 +27,12 @@ export const useTableDataManagement = () => {
   const [criticidadesData, setCriticidadesData] = useState<any[]>([]);
   const [perfilesData, setPerfilesData] = useState<any[]>([]);
   const [umbralesData, setUmbralesData] = useState<any[]>([]);
+  const [reglasData, setReglasData] = useState<any[]>([]);
   const [sensorsData, setSensorsData] = useState<any[]>([]);
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
   const [contactosData, setContactosData] = useState<any[]>([]);
   const [correosData, setCorreosData] = useState<any[]>([]);
+  const [codigotelefonosData, setCodigotelefonosData] = useState<any[]>([]);
 
   // Referencias para control de carga
   const loadingTableRef = useRef<string | null>(null);
@@ -72,11 +74,13 @@ export const useTableDataManagement = () => {
         criticidadesResponse,
         perfilesResponse,
         umbralesResponse,
+        reglasResponse,
         usuariosResponse,
         sensorsResponse,
         metricasensorResponse,
         contactosResponse,
-        correosResponse
+        correosResponse,
+        codigotelefonosResponse
       ] = await Promise.all([
         JoySenseService.getTableData('pais', 500),
         JoySenseService.getTableData('empresa', 500),
@@ -90,11 +94,13 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('criticidad', 500),
         JoySenseService.getTableData('perfil', 500),
         JoySenseService.getTableData('umbral', 500),
+        JoySenseService.getTableData('regla', 500),
         JoySenseService.getTableData('usuario', 500),
         JoySenseService.getTableData('sensor', 500),
         JoySenseService.getTableData('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
         JoySenseService.getTableData('contacto', 500),
-        JoySenseService.getTableData('correo', 500)
+        JoySenseService.getTableData('correo', 500),
+        JoySenseService.getTableData('codigotelefono', 500)
       ]);
 
       // Procesar respuestas
@@ -117,11 +123,13 @@ export const useTableDataManagement = () => {
       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
       const umbrales = Array.isArray(umbralesResponse) ? umbralesResponse : ((umbralesResponse as any)?.data || []);
+      const reglas = Array.isArray(reglasResponse) ? reglasResponse : ((reglasResponse as any)?.data || []);
       const usuarios = Array.isArray(usuariosResponse) ? usuariosResponse : ((usuariosResponse as any)?.data || []);
       const sensors = Array.isArray(sensorsResponse) ? sensorsResponse : ((sensorsResponse as any)?.data || []);
       const metricasensor = Array.isArray(metricasensorResponse) ? metricasensorResponse : ((metricasensorResponse as any)?.data || []);
       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
       const correos = Array.isArray(correosResponse) ? correosResponse : ((correosResponse as any)?.data || []);
+      const codigotelefonos = Array.isArray(codigotelefonosResponse) ? codigotelefonosResponse : ((codigotelefonosResponse as any)?.data || []);
 
       // Establecer todos los datos
       setPaisesData(paises);
@@ -136,11 +144,13 @@ export const useTableDataManagement = () => {
       setCriticidadesData(criticidades);
       setPerfilesData(perfiles);
       setUmbralesData(umbrales);
+      setReglasData(reglas);
       setUserData(usuarios);
       setSensorsData(sensors);
       setMetricasensorData(metricasensor);
       setContactosData(contactos);
       setCorreosData(correos);
+      setCodigotelefonosData(codigotelefonos);
 
       // const endTime = performance.now(); // Para debugging de performance
     } catch (error) {
@@ -394,10 +404,12 @@ export const useTableDataManagement = () => {
     criticidadesData,
     perfilesData,
     umbralesData,
+    reglasData,
     sensorsData,
     metricasensorData,
     contactosData,
     correosData,
+    codigotelefonosData,
     
     // Funciones de carga
     loadUserData,
@@ -422,6 +434,7 @@ export const useTableDataManagement = () => {
     setCriticidadesData,
     setPerfilesData,
     setUmbralesData,
+    setReglasData,
     setSensorsData,
     setMetricasensorData,
     setContactosData,

@@ -36,8 +36,7 @@ import {
 import {
   validateUmbralData,
   validateUmbralUpdate,
-  validatePerfilUmbralData,
-  validatePerfilUmbralUpdate,
+  // validatePerfilUmbralData, validatePerfilUmbralUpdate - eliminadas (perfilumbral ya no existe)
   validateCriticidadData,
   validateCriticidadUpdate
 } from './alertas';
@@ -94,8 +93,7 @@ export const validateTableUpdate = async (
     // Alertas
     case 'umbral':
       return await validateUmbralUpdate(formData, originalData, existingData || []);
-    case 'perfilumbral':
-      return await validatePerfilUmbralUpdate(formData, originalData, existingData || []);
+    // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
     case 'criticidad':
       return await validateCriticidadUpdate(formData, originalData, existingData || []);
     
@@ -162,8 +160,7 @@ export const validateTableData = async (
     // Alertas
     case 'umbral':
       return await validateUmbralData(formData, existingData);
-    case 'perfilumbral':
-      return await validatePerfilUmbralData(formData, existingData);
+    // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
     case 'criticidad':
       return await validateCriticidadData(formData, existingData);
     

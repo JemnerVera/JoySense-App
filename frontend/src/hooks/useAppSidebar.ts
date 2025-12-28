@@ -19,7 +19,8 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
     if (!tab) return false;
     return tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
-           tab === 'acceso' || tab.startsWith('acceso-');
+           tab === 'acceso' || tab.startsWith('acceso-') ||
+           tab === 'alertas' || tab.startsWith('alertas-');
   };
 
   // Efecto para mantener el sidebar expandido cuando se muestra la ventana de bienvenida

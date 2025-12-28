@@ -230,9 +230,9 @@ export const checkTipoDependencies = async (tipoid: number): Promise<boolean> =>
     const hasMetricasensores = false;
     if (hasMetricasensores) return true;
     
-    const umbrales = await JoySenseService.getTableData('umbral');
-    const hasUmbrales = umbrales.some(umbral => umbral.tipoid === tipoid);
-    return hasUmbrales;
+    // Nota: umbral ya no tiene tipoid según el schema actual
+    // Los umbrales ahora están asociados a localizaciones, no directamente a tipos
+    return false;
   } catch (error) {
     logger.error('Error checking tipo dependencies:', error);
     return false;
@@ -505,9 +505,22 @@ export const checkMetricaDependencies = async (metricaid: number): Promise<boole
     const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.metricaid === metricaid);
     if (hasMetricasensores) return true;
     
-    const umbrales = await JoySenseService.getTableData('umbral');
-    const hasUmbrales = umbrales.some(umbral => umbral.metricaid === metricaid);
-    return hasUmbrales;
+    // Nota: umbral ya no tiene metricaid según el schema actual
+    // Los umbrales ahora están asociados a localizaciones, que a su vez tienen metricaid
+    // Verificar a través de localizaciones
+    try {
+      const localizaciones = await JoySenseService.getTableData('localizacion');
+      const localizacionesConMetrica = localizaciones.filter((loc: any) => loc.metricaid === metricaid);
+      if (localizacionesConMetrica.length === 0) return false;
+      
+      const localizacionIds = localizacionesConMetrica.map((loc: any) => loc.localizacionid);
+      const umbrales = await JoySenseService.getTableData('umbral');
+      const hasUmbrales = umbrales.some((umbral: any) => localizacionIds.includes(umbral.localizacionid));
+      return hasUmbrales;
+    } catch (error) {
+      logger.error('Error checking metrica dependencies through localizaciones:', error);
+      return true; // En caso de error, bloquear por seguridad
+    }
   } catch (error) {
     logger.error('Error checking metrica dependencies:', error);
     return false;
