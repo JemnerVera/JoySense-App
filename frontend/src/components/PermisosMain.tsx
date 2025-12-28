@@ -312,7 +312,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             userData={userData}
             loading={tableDataLoading}
             onRowClick={handleRowSelect}
-            themeColor="red"
+            themeColor="purple"
           />
         );
       
@@ -336,7 +336,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
               getColumnDisplayNameTranslated(columnName, t)
             }
             getUniqueOptionsForField={getUniqueOptionsForField}
-            themeColor="red"
+            themeColor="purple"
           />
         );
       
@@ -366,7 +366,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             onFormDataChange={(formData: Record<string, any>) => {
               setUpdateFormData(formData);
             }}
-            themeColor="red"
+            themeColor="purple"
           />
         );
       

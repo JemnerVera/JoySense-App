@@ -153,7 +153,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   entidad_localizacion: {
     name: 'entidad_localizacion',
-    displayName: 'Entidad-Localización',
+    displayName: 'Localización de Entidad',
     description: 'Relación entre entidades y localizaciones',
     icon: '🔗',
     category: 'geografia',
@@ -173,7 +173,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
   // --------------------------------------------------------------------------
   tipo: {
     name: 'tipo',
-    displayName: 'Tipo de Sensor',
+    displayName: 'Tipo',
     description: 'Tipos de sensores disponibles',
     icon: '🔧',
     category: 'dispositivos',
@@ -228,7 +228,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   metricasensor: {
     name: 'metricasensor',
-    displayName: 'Métrica-Sensor',
+    displayName: 'Métrica de Sensor',
     description: 'Métricas que puede medir cada sensor',
     icon: '📈',
     category: 'dispositivos',
@@ -290,7 +290,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   asociacion: {
     name: 'asociacion',
-    displayName: 'Asociación Device-Localización',
+    displayName: 'Asociación',
     description: 'Mapeo de dispositivos LoRaWAN a localizaciones',
     icon: '🔌',
     category: 'dispositivos',
@@ -436,6 +436,29 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
+  alerta_regla: {
+    name: 'alerta_regla',
+    displayName: 'Alerta Regla',
+    description: 'Historial de alertas disparadas por reglas',
+    icon: '📝',
+    category: 'alertas',
+    primaryKey: 'uuid_alerta_reglaid',
+    allowInsert: false,
+    allowUpdate: false,
+    allowDelete: false,
+    sortField: 'fecha',
+    sortOrder: 'desc',
+    fields: [
+      { name: 'uuid_alerta_reglaid', label: 'UUID', type: 'text', readonly: true },
+      { name: 'reglaid', label: 'Regla', type: 'select', readonly: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
+      { name: 'localizacionid', label: 'Localización', type: 'select', readonly: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
+      { name: 'medicionid', label: 'Medición', type: 'number', readonly: true },
+      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
+      { name: 'valor', label: 'Valor', type: 'number', readonly: true },
+      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
+    ]
+  },
+
   alerta_regla_consolidado: {
     name: 'alerta_regla_consolidado',
     displayName: 'Alerta Consolidada',
@@ -500,6 +523,9 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'reglaid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'prioridad', label: 'Prioridad', type: 'number', defaultValue: 1 },
+      { name: 'ventana', label: 'Ventana', type: 'text', required: true, defaultValue: '00:10:00' },
+      { name: 'cooldown', label: 'Cooldown', type: 'text', required: true, defaultValue: '1 day' },
+      { name: 'criticidadid', label: 'Criticidad', type: 'select', required: true, foreignKey: { table: 'criticidad', valueField: 'criticidadid', labelField: 'criticidad' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
@@ -569,7 +595,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   audit_log_umbral: {
     name: 'audit_log_umbral',
-    displayName: 'Auditoría Umbrales',
+    displayName: 'Auditoría de Umbral',
     description: 'Log de cambios en umbrales',
     icon: '📜',
     category: 'alertas',

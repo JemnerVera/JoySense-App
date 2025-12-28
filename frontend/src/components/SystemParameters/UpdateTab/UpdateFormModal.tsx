@@ -21,7 +21,7 @@ interface UpdateFormModalProps {
   handleCancel: () => void;
   visibleColumns?: any[];
   getColumnDisplayName?: (columnName: string) => string;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
 }
 
 export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
@@ -70,6 +70,13 @@ export const UpdateFormModal: React.FC<UpdateFormModalProps> = ({
         hover: 'hover:bg-orange-600',
         focus: 'focus:ring-orange-500',
         border: 'border-orange-500'
+      },
+      purple: {
+        text: 'text-purple-500',
+        bg: 'bg-purple-500',
+        hover: 'hover:bg-purple-600',
+        focus: 'focus:ring-purple-500',
+        border: 'border-purple-500'
       }
     };
     return colors[themeColor]?.[type] || colors.orange[type];

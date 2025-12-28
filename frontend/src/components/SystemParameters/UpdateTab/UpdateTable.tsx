@@ -16,7 +16,7 @@ interface UpdateTableProps {
   selectedRow: any | null;
   onRowClick: (row: any) => void;
   loading?: boolean;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
   tableName?: string;
 }
 

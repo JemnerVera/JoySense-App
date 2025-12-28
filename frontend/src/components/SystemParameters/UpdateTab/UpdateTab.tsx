@@ -35,7 +35,7 @@ interface UpdateTabProps {
   onUpdateSuccess?: () => void;
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
   onFormDataChange?: (formData: Record<string, any>) => void;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
 }
 
 export const UpdateTab: React.FC<UpdateTabProps> = ({
@@ -305,6 +305,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                   ? 'bg-blue-500 hover:bg-blue-600'
                   : themeColor === 'green'
                   ? 'bg-green-500 hover:bg-green-600'
+                  : themeColor === 'purple'
+                  ? 'bg-purple-500 hover:bg-purple-600'
                   : 'bg-orange-500 hover:bg-orange-600'
               }`}
             >
@@ -335,6 +337,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                         ? 'bg-blue-500 hover:bg-blue-600'
                         : themeColor === 'green'
                         ? 'bg-green-500 hover:bg-green-600'
+                        : themeColor === 'purple'
+                        ? 'bg-purple-500 hover:bg-purple-600'
                         : 'bg-orange-500 hover:bg-orange-600'
                     }`}
                   >
