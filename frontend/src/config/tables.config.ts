@@ -405,11 +405,12 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'umbralid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'localizacionid', label: 'Localización', type: 'select', required: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
-      { name: 'criticidadid', label: 'Criticidad', type: 'select', required: true, foreignKey: { table: 'criticidad', valueField: 'criticidadid', labelField: 'criticidad' } },
       { name: 'umbral', label: 'Nombre', type: 'text', required: true },
       { name: 'minimo', label: 'Mínimo', type: 'number', required: true },
       { name: 'maximo', label: 'Máximo', type: 'number', required: true },
       { name: 'estandar', label: 'Estándar', type: 'number' },
+      { name: 'operador', label: 'Operador', type: 'text', required: true },
+      { name: 'inversion', label: 'Inversión', type: 'boolean', defaultValue: false },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },

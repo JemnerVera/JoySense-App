@@ -99,8 +99,9 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             
           case 'ubicacion':
             // Verificar si hay localizaciones que referencian esta ubicación
-            const localizaciones = await JoySenseService.getTableData('localizacion');
-            return localizaciones.some(localizacion => localizacion.ubicacionid === id);
+            // Nota: localizacion ya no tiene ubicacionid según el schema actual
+            // Las localizaciones están asociadas directamente a nodos, no a ubicaciones
+            return false;
             
           case 'entidad':
             // Verificar si hay tipos que referencian esta entidad
@@ -118,9 +119,16 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return sensoresNodo.some(sensor => sensor.nodoid === id);
             
           case 'metrica':
-            // Verificar si hay umbrales que referencian esta métrica
+            // Nota: umbral ya no tiene metricaid según el schema actual
+            // Los umbrales están asociados a localizaciones, que a su vez tienen metricaid
+            // Verificar a través de localizaciones
+            const localizacionesData = await JoySenseService.getTableData('localizacion');
+            const localizacionesConMetrica = localizacionesData.filter((loc: any) => loc.metricaid === id);
+            if (localizacionesConMetrica.length === 0) return false;
+            
+            const localizacionIds = localizacionesConMetrica.map((loc: any) => loc.localizacionid);
             const umbrales = await JoySenseService.getTableData('umbral');
-            return umbrales.some(umbral => umbral.metricaid === id);
+            return umbrales.some((umbral: any) => localizacionIds.includes(umbral.localizacionid));
             
           case 'umbral':
             // Verificar si hay regla_umbral que referencian este umbral
@@ -128,9 +136,10 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return reglaUmbrales.some((ru: any) => ru.umbralid === id);
             
           case 'criticidad':
-            // Verificar si hay umbrales que referencian esta criticidad
-            const umbralesCriticidad = await JoySenseService.getTableData('umbral');
-            return umbralesCriticidad.some(umbral => umbral.criticidadid === id);
+            // Nota: umbral ya no tiene criticidadid según el schema actual
+            // Solo verificar alertas que puedan tener criticidadid
+            const alertas = await JoySenseService.getTableData('alerta');
+            return alertas.some((alerta: any) => alerta.criticidadid === id);
             
           case 'medio':
             // Verificar si hay contactos que referencian este medio
@@ -148,12 +157,12 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
                    
           case 'perfil':
             // Optimización: Hacer llamadas paralelas para perfil
-            const [usuarioperfilesPerfil, perfilumbralesPerfil] = await Promise.all([
+            const [usuarioperfilesPerfil, reglaPerfilesPerfil] = await Promise.all([
               JoySenseService.getTableData('usuarioperfil'),
-              JoySenseService.getTableData('perfilumbral')
+              JoySenseService.getTableData('regla_perfil')
             ]);
             return usuarioperfilesPerfil.some(usuarioperfil => usuarioperfil.perfilid === id) ||
-                   perfilumbralesPerfil.some(perfilumbral => perfilumbral.perfilid === id);
+                   reglaPerfilesPerfil.some(reglaPerfil => reglaPerfil.perfilid === id);
                    
           default:
             return false;

@@ -29,7 +29,7 @@ export const filterColumnsByTable = (
     'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'localizacion', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'sensor': ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metricasensor': ['sensorid', 'metricaid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'umbral': ['ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'umbral', 'maximo', 'minimo', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'umbral': ['umbralid', 'localizacionid', 'umbral', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla': ['reglaid', 'nombre', 'prioridad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla_perfil': ['regla_perfilid', 'reglaid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla_umbral': ['regla_umbralid', 'reglaid', 'umbralid', 'operador_logico', 'agrupador_inicio', 'agrupador_fin', 'orden', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],

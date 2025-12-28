@@ -145,10 +145,10 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     let finalSortBy = sortBy;
     
     if (!finalSortBy) {
-      // Para audit_log_umbral, usar modified_at
+      // Para audit_log_umbral, usar datemodified (no tiene datecreated)
       // Para otras tablas, usar datecreated
       if (tableName === 'audit_log_umbral') {
-        finalSortBy = 'modified_at';
+        finalSortBy = 'datemodified';
       } else {
         finalSortBy = 'datecreated';
       }
@@ -160,14 +160,17 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     if (finalSortBy === 'datecreated') {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
-      dataQuery = dataQuery.order('datemodified', { ascending });
-    } else if (finalSortBy === 'modified_at') {
-      // Para audit_log_umbral, ordenar solo por modified_at
-      dataQuery = dataQuery.order('modified_at', { ascending });
+      // Solo agregar datemodified si la tabla lo tiene (no todas las tablas lo tienen)
+      if (tableName !== 'audit_log_umbral') {
+        dataQuery = dataQuery.order('datemodified', { ascending });
+      }
     } else if (finalSortBy === 'datemodified') {
-      // Si ordenamos por datemodified, usar datecreated como desempate
+      // Si ordenamos por datemodified, usar datecreated como desempate (si existe)
       dataQuery = dataQuery.order('datemodified', { ascending });
-      dataQuery = dataQuery.order('datecreated', { ascending });
+      // Solo agregar datecreated si la tabla lo tiene
+      if (tableName !== 'audit_log_umbral') {
+        dataQuery = dataQuery.order('datecreated', { ascending });
+      }
     } else {
       // Ordenar por el campo especificado
       dataQuery = dataQuery.order(finalSortBy, { ascending });

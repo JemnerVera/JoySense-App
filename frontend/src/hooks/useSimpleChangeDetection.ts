@@ -72,8 +72,7 @@ export const useSimpleChangeDetection = () => {
           return ['perfil', 'perfilabrev'];
         case 'metricasensor':
           return ['sensorid', 'metricaid'];
-        case 'perfilumbral':
-          return ['perfilid', 'umbralid'];
+        // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
         case 'auditlogumbral':
           return ['auditlogumbral', 'auditlogumbralabrev'];
         case 'criticidad':

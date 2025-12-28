@@ -57,18 +57,14 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   umbral: [
+    { field: 'localizacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una localización' },
     { field: 'umbral', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del umbral es obligatorio' },
-    { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' },
-    { field: 'criticidadid', required: true, type: 'number', customMessage: 'Debe seleccionar una criticidad' },
-    { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
-    { field: 'metricaid', required: true, type: 'number', customMessage: 'Debe seleccionar una métrica' },
-    { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
+    { field: 'minimo', required: true, type: 'number', customMessage: 'El valor mínimo es obligatorio' },
+    { field: 'maximo', required: true, type: 'number', customMessage: 'El valor máximo es obligatorio' },
+    { field: 'operador', required: true, type: 'string', minLength: 1, customMessage: 'El operador es obligatorio' }
   ],
   
-  perfilumbral: [
-    { field: 'perfilid', required: true, type: 'number', customMessage: 'Debe seleccionar un perfil' },
-    { field: 'umbralid', required: true, type: 'number', customMessage: 'Debe seleccionar un umbral' }
-  ],
+  // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
   
   sensor: [
     { field: 'sensorid', required: true, type: 'number', customMessage: 'El ID del sensor es obligatorio' },
@@ -97,8 +93,8 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   
   contacto: [
     { field: 'usuarioid', required: true, type: 'number', customMessage: 'Debe seleccionar un usuario' },
-    { field: 'codigotelefonoid', required: false, type: 'number', customMessage: 'Debe seleccionar un código de país' },
-    { field: 'celular', required: false, type: 'phone', customMessage: 'El formato del celular no es válido' }
+    { field: 'codigotelefonoid', required: true, type: 'number', customMessage: 'Debe seleccionar un código de país' },
+    { field: 'celular', required: true, type: 'string', minLength: 1, maxLength: 12, customMessage: 'El número de celular es obligatorio (máximo 12 caracteres)' }
   ],
   
   correo: [

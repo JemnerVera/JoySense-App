@@ -55,7 +55,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'metricasensor': 'Métrica Sensor',
       'metrica': 'Métrica',
       'umbral': 'Umbral',
-      'perfilumbral': 'Perfil Umbral',
+      // 'perfilumbral': 'Perfil Umbral', // Ya no existe - reemplazado por regla_perfil y regla_umbral
       'audit_log_umbral': 'Log Auditoría Umbral',
       'criticidad': 'Criticidad',
       'medio': 'Medio',
@@ -89,8 +89,8 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'sensor': ['sensorid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'metrica': ['metricaid', 'metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
       'metricasensor': ['metricasensorid', 'umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
-      'umbral': ['umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
-      'perfilumbral': ['perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'],
+      'umbral': ['umbralid', 'perfilid', 'usuarioid', 'medioid', 'contactoid'],
+      // 'perfilumbral': ['perfilid', 'usuarioid', 'medioid', 'contactoid', 'criticidadid'], // Ya no existe
       'criticidad': ['criticidadid', 'perfilid', 'usuarioid', 'medioid', 'contactoid'],
       'medio': ['medioid', 'contactoid', 'perfilid', 'usuarioid', 'criticidadid'],
       'contacto': ['contactoid', 'perfilid', 'usuarioid', 'medioid', 'criticidadid'],
@@ -357,8 +357,8 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
       'sensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensor', 'statusid'],
       'metrica': ['metrica', 'unidad', 'statusid'],
       'metricasensor': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'sensorid', 'metricaid', 'statusid'],
-      'umbral': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'entidadid', 'nodoid', 'tipoid', 'metricaid', 'umbral', 'minimo', 'maximo', 'criticidadid', 'statusid'],
-      'perfilumbral': ['perfilid', 'umbralid', 'statusid'],
+      'umbral': ['umbral', 'localizacionid', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid'],
+      // 'perfilumbral': ['perfilid', 'umbralid', 'statusid'], // Ya no existe
       'criticidad': ['criticidad', 'criticidadbrev', 'statusid'],
       'medio': ['medio', 'statusid'],
       'contacto': ['contacto', 'medioid', 'celular', 'correo', 'statusid'],

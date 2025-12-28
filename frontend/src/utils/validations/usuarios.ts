@@ -391,9 +391,9 @@ export const checkPerfilDependencies = async (perfilid: number): Promise<boolean
     const hasUsuarioperfiles = usuarioperfiles.some(usuarioperfil => usuarioperfil.perfilid === perfilid);
     if (hasUsuarioperfiles) return true;
     
-    const perfilumbrales = await JoySenseService.getTableData('perfilumbral');
-    const hasPerfilumbrales = perfilumbrales.some(perfilumbral => perfilumbral.perfilid === perfilid);
-    return hasPerfilumbrales;
+    const reglaPerfiles = await JoySenseService.getTableData('regla_perfil');
+    const hasReglaPerfiles = reglaPerfiles.some(reglaPerfil => reglaPerfil.perfilid === perfilid);
+    return hasReglaPerfiles;
   } catch (error) {
     logger.error('Error checking perfil dependencies:', error);
     return false;
@@ -474,22 +474,27 @@ export const validateContactoData = async (
     });
   }
   
-  // 2. Validar constraint de negocio: al menos uno de celular debe estar presente
-  if (!formData.celular || formData.celular.trim() === '') {
-    errors.push({
-      field: 'celular',
-      message: 'Debe proporcionar un número de teléfono',
-      type: 'required'
-    });
-  }
-  
-  // 3. Validar que si hay celular, también debe haber código de país
-  if (formData.celular && formData.celular.trim() !== '' && 
-      (!formData.codigotelefonoid || formData.codigotelefonoid === 0)) {
+  // 2. Validar codigotelefonoid (obligatorio según schema)
+  if (!formData.codigotelefonoid || formData.codigotelefonoid === 0) {
     errors.push({
       field: 'codigotelefonoid',
       message: 'Debe seleccionar un código de país',
       type: 'required'
+    });
+  }
+  
+  // 3. Validar celular (obligatorio según schema, máximo 12 caracteres)
+  if (!formData.celular || formData.celular.trim() === '') {
+    errors.push({
+      field: 'celular',
+      message: 'El número de celular es obligatorio',
+      type: 'required'
+    });
+  } else if (formData.celular.length > 12) {
+    errors.push({
+      field: 'celular',
+      message: 'El número de celular no puede exceder 12 caracteres',
+      type: 'length'
     });
   }
   
@@ -534,22 +539,27 @@ export const validateContactoUpdate = async (
     });
   }
   
-  // 2. Validar que el celular esté presente
-  if (!formData.celular || formData.celular.trim() === '') {
-    errors.push({
-      field: 'celular',
-      message: 'El número de teléfono es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  // 3. Validar que si hay celular, también debe haber código de país
-  if (formData.celular && formData.celular.trim() !== '' && 
-      (!formData.codigotelefonoid || formData.codigotelefonoid === 0)) {
+  // 2. Validar codigotelefonoid (obligatorio según schema)
+  if (!formData.codigotelefonoid || formData.codigotelefonoid === 0) {
     errors.push({
       field: 'codigotelefonoid',
       message: 'Debe seleccionar un código de país',
       type: 'required'
+    });
+  }
+  
+  // 3. Validar celular (obligatorio según schema, máximo 12 caracteres)
+  if (!formData.celular || formData.celular.trim() === '') {
+    errors.push({
+      field: 'celular',
+      message: 'El número de celular es obligatorio',
+      type: 'required'
+    });
+  } else if (formData.celular.length > 12) {
+    errors.push({
+      field: 'celular',
+      message: 'El número de celular no puede exceder 12 caracteres',
+      type: 'length'
     });
   }
   
