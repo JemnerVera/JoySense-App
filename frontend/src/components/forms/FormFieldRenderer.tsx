@@ -206,6 +206,20 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.medium'));
   }
 
+  // Combobox para entidad_localizacion - entidadid, localizacionid
+  if (col.columnName === 'entidadid' && selectedTable === 'entidad_localizacion') {
+    return renderSelectField(t('create.select_entity') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  if (col.columnName === 'localizacionid' && selectedTable === 'entidad_localizacion') {
+    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  // Combobox para asociacion - localizacionid
+  if (col.columnName === 'localizacionid' && selectedTable === 'asociacion') {
+    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
   // Campo de texto normal
   const isEnabled = isFieldEnabled(col.columnName);
   return (
