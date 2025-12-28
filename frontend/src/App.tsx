@@ -759,6 +759,8 @@ const AppContentInternal: React.FC = () => {
                 ? 'border-purple-500 dark:border-purple-500'
                 : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                 ? 'border-red-500 dark:border-red-500'
+                : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
+                ? 'border-green-500 dark:border-green-500'
                 : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                 ? 'border-orange-500 dark:border-orange-500'
                 : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')

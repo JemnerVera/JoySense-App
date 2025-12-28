@@ -35,7 +35,25 @@ export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
         focusRing: 'focus:ring-blue-500',
         focusBorder: 'focus:border-blue-500'
       };
-    } else if (activeTab === 'permisos') {
+    } else if (activeTab === 'acceso' || activeTab?.startsWith('acceso-')) {
+      return {
+        gradient: 'from-purple-500 to-purple-600',
+        hoverGradient: 'hover:from-purple-600 hover:to-purple-700',
+        border: 'border-purple-400',
+        text: 'text-purple-500',
+        focusRing: 'focus:ring-purple-500',
+        focusBorder: 'focus:border-purple-500'
+      };
+    } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
+      return {
+        gradient: 'from-purple-500 to-purple-600',
+        hoverGradient: 'hover:from-purple-600 hover:to-purple-700',
+        border: 'border-purple-400',
+        text: 'text-purple-500',
+        focusRing: 'focus:ring-purple-500',
+        focusBorder: 'focus:border-purple-500'
+      };
+    } else if (activeTab === 'alertas' || activeTab?.startsWith('alertas-')) {
       return {
         gradient: 'from-red-500 to-red-600',
         hoverGradient: 'hover:from-red-600 hover:to-red-700',
@@ -44,8 +62,17 @@ export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
         focusRing: 'focus:ring-red-500',
         focusBorder: 'focus:border-red-500'
       };
+    } else if (activeTab === 'reportes' || activeTab?.startsWith('reportes-')) {
+      return {
+        gradient: 'from-green-500 to-green-600',
+        hoverGradient: 'hover:from-green-600 hover:to-green-700',
+        border: 'border-green-400',
+        text: 'text-green-500',
+        focusRing: 'focus:ring-green-500',
+        focusBorder: 'focus:border-green-500'
+      };
     } else {
-      // Reportes/Dashboard - verde por defecto
+      // Dashboard - verde por defecto
       return {
         gradient: 'from-green-500 to-green-600',
         hoverGradient: 'hover:from-green-600 hover:to-green-700',
