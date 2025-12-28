@@ -825,7 +825,7 @@ const AppContentInternal: React.FC = () => {
                           return `${t('tabs.reports')} / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                      ? t('tabs.configuration')
+                      ? ''
                       : activeTab === 'acceso' || activeTab?.startsWith('acceso-')
                       ? (() => {
                           let breadcrumb = `${t('tabs.access').toUpperCase()}`;

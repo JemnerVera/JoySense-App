@@ -45,11 +45,6 @@ function getBackendUrl(): string {
 
 const BACKEND_URL = getBackendUrl();
 
-// Debug en desarrollo
-if (process.env.NODE_ENV === 'development') {
-  console.log('🌐 Backend API - URL:', BACKEND_URL);
-}
-
 // ============================================================================
 // HTTP CLIENT
 // ============================================================================

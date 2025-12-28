@@ -29,115 +29,63 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   // Obtener el perfil del usuario actual
   useEffect(() => {
     const fetchUserPerfil = async () => {
-      console.log('[MainSidebar] ========================================');
-      console.log('[MainSidebar] Iniciando fetchUserPerfil');
-      console.log('[MainSidebar] user:', user);
-      
       if (!user) {
-        console.log('[MainSidebar] No hay usuario, finalizando');
         setLoadingPerfil(false);
         return;
       }
 
-      console.log('[MainSidebar] user.id:', user.id);
-      console.log('[MainSidebar] user.email:', user.email);
-      console.log('[MainSidebar] user.user_metadata:', user.user_metadata);
-
       try {
         // Intentar obtener usuarioid de user_metadata primero
         let usuarioid = user.user_metadata?.usuarioid;
-        console.log('[MainSidebar] usuarioid de user_metadata:', usuarioid);
         
         // Si no está en user_metadata, buscar en la tabla usuario
         if (!usuarioid) {
-          console.log('[MainSidebar] Buscando usuarioid en tabla usuario...');
           const usuariosData = await JoySenseService.getTableData('usuario', 100);
-          console.log('[MainSidebar] usuariosData recibido:', usuariosData);
-          
           const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
-          console.log('[MainSidebar] usuarios array length:', usuarios.length);
-          console.log('[MainSidebar] primeros 3 usuarios:', usuarios.slice(0, 3).map((u: any) => ({
-            usuarioid: u.usuarioid,
-            login: u.login,
-            useruuid: u.useruuid
-          })));
           
           // Buscar por useruuid primero (más preciso - coincide con user.id de Supabase Auth)
           if (user.id) {
-            console.log('[MainSidebar] Buscando por useruuid:', user.id);
-            const usuarioByUuid = usuarios.find((u: any) => {
-              const match = u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase();
-              if (match) {
-                console.log('[MainSidebar] Usuario encontrado por UUID:', u);
-              }
-              return match;
-            });
+            const usuarioByUuid = usuarios.find((u: any) => 
+              u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase()
+            );
             if (usuarioByUuid?.usuarioid) {
               usuarioid = usuarioByUuid.usuarioid;
-              console.log('[MainSidebar] usuarioid encontrado por UUID:', usuarioid);
-            } else {
-              console.log('[MainSidebar] No se encontró usuario por UUID');
             }
           }
           
           // Si no se encuentra por UUID, buscar por email/login
           if (!usuarioid && user.email) {
-            console.log('[MainSidebar] Buscando por email/login:', user.email);
-            const usuarioByEmail = usuarios.find((u: any) => {
-              const match = u.login && u.login.toLowerCase() === user.email.toLowerCase();
-              if (match) {
-                console.log('[MainSidebar] Usuario encontrado por email:', u);
-              }
-              return match;
-            });
+            const usuarioByEmail = usuarios.find((u: any) => 
+              u.login && u.login.toLowerCase() === user.email.toLowerCase()
+            );
             if (usuarioByEmail?.usuarioid) {
               usuarioid = usuarioByEmail.usuarioid;
-              console.log('[MainSidebar] usuarioid encontrado por email:', usuarioid);
-            } else {
-              console.log('[MainSidebar] No se encontró usuario por email');
             }
           }
           
           if (!usuarioid) {
-            console.log('[MainSidebar] ❌ No se encontró usuarioid para el usuario');
             setLoadingPerfil(false);
             return;
           }
         }
-        
-        console.log('[MainSidebar] ✅ usuarioid final:', usuarioid);
 
-        console.log('[MainSidebar] Buscando perfil en usuarioperfil...');
+        // Buscar perfil en usuarioperfil
         const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
-        console.log('[MainSidebar] usuarioperfilData recibido:', usuarioperfilData);
-        
         const usuarioperfilArray = Array.isArray(usuarioperfilData) 
           ? usuarioperfilData 
           : (usuarioperfilData as any)?.data || [];
-        console.log('[MainSidebar] usuarioperfil array length:', usuarioperfilArray.length);
-        console.log('[MainSidebar] primeros 3 usuarioperfil:', usuarioperfilArray.slice(0, 3));
         
-        const userPerfil = usuarioperfilArray.find((up: any) => {
-          const match = up.usuarioid === usuarioid && up.statusid === 1;
-          if (match) {
-            console.log('[MainSidebar] Perfil encontrado:', up);
-          }
-          return match;
-        });
+        const userPerfil = usuarioperfilArray.find((up: any) => 
+          up.usuarioid === usuarioid && up.statusid === 1
+        );
         
         if (userPerfil) {
-          console.log('[MainSidebar] ✅ User perfilid encontrado:', userPerfil.perfilid);
           setUserPerfilId(userPerfil.perfilid);
-        } else {
-          console.log('[MainSidebar] ❌ No se encontró perfil para usuarioid:', usuarioid);
-          console.log('[MainSidebar] Filtrados por usuarioid:', usuarioperfilArray.filter((up: any) => up.usuarioid === usuarioid));
         }
       } catch (error) {
-        console.error('[MainSidebar] ❌ Error obteniendo perfil:', error);
+        console.error('[MainSidebar] Error obteniendo perfil:', error);
       } finally {
-        console.log('[MainSidebar] Finalizando fetchUserPerfil, setting loadingPerfil = false');
         setLoadingPerfil(false);
-        console.log('[MainSidebar] ========================================');
       }
     };
 
@@ -170,15 +118,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     ];
 
     // Agregar pestaña de ACCESO solo para administradores (perfilid === 1) - antes de Configuración
-    console.log('[MainSidebar] useMemo - Construyendo mainTabs');
-    console.log('[MainSidebar] useMemo - loadingPerfil:', loadingPerfil);
-    console.log('[MainSidebar] useMemo - userPerfilId:', userPerfilId);
-    console.log('[MainSidebar] useMemo - userPerfilId === 1?', userPerfilId === 1);
-    console.log('[MainSidebar] useMemo - !loadingPerfil?', !loadingPerfil);
-    console.log('[MainSidebar] useMemo - Condición completa (!loadingPerfil && userPerfilId === 1):', !loadingPerfil && userPerfilId === 1);
-    
     if (!loadingPerfil && userPerfilId === 1) {
-      console.log('[MainSidebar] ✅ Agregando pestaña ACCESO');
       tabs.push({
         id: 'acceso',
         label: t('tabs.access'),
@@ -189,10 +129,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         ),
         color: 'purple'
       });
-      console.log('[MainSidebar] ✅ Pestaña ACCESO agregada. Total de tabs:', tabs.length);
-    } else {
-      console.log('[MainSidebar] ❌ NO se agregó pestaña ACCESO');
-      console.log('[MainSidebar] ❌ Razón: loadingPerfil=', loadingPerfil, 'userPerfilId=', userPerfilId);
     }
     
     // Agregar pestaña de ALERTAS (visible para todos los usuarios autenticados)
@@ -207,7 +143,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       color: 'red'
     });
     
-    console.log('[MainSidebar] useMemo - tabs finales:', tabs.map(t => t.id));
 
     // Agregar Configuración al final
     tabs.push({
