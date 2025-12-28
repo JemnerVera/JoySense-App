@@ -26,6 +26,7 @@ const SEARCHABLE_FIELDS = {
   entidad: ['entidad'],
   umbral: ['umbral'],
   alerta: ['uuid_alertaid'],
+  alerta_regla: ['uuid_alerta_reglaid'],
   alerta_regla_consolidado: ['uuid_consolidadoid'],
   criticidad: ['criticidad'],
   perfil: ['perfil'],
@@ -146,9 +147,12 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     
     if (!finalSortBy) {
       // Para audit_log_umbral, usar datemodified (no tiene datecreated)
+      // Para alerta_regla, usar fecha (no tiene datemodified)
       // Para otras tablas, usar datecreated
       if (tableName === 'audit_log_umbral') {
         finalSortBy = 'datemodified';
+      } else if (tableName === 'alerta_regla') {
+        finalSortBy = 'fecha';
       } else {
         finalSortBy = 'datecreated';
       }
@@ -161,7 +165,8 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
       // Solo agregar datemodified si la tabla lo tiene (no todas las tablas lo tienen)
-      if (tableName !== 'audit_log_umbral') {
+      // alerta_regla no tiene datemodified, solo tiene datecreated y fecha
+      if (tableName !== 'audit_log_umbral' && tableName !== 'alerta_regla') {
         dataQuery = dataQuery.order('datemodified', { ascending });
       }
     } else if (finalSortBy === 'datemodified') {
@@ -171,6 +176,11 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       if (tableName !== 'audit_log_umbral') {
         dataQuery = dataQuery.order('datecreated', { ascending });
       }
+    } else if (finalSortBy === 'fecha' && tableName === 'alerta_regla') {
+      // Para alerta_regla, ordenar por fecha (campo principal de timestamp)
+      dataQuery = dataQuery.order('fecha', { ascending });
+      // Usar datecreated como desempate
+      dataQuery = dataQuery.order('datecreated', { ascending });
     } else {
       // Ordenar por el campo especificado
       dataQuery = dataQuery.order(finalSortBy, { ascending });

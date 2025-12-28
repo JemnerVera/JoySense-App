@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface TableStatsDisplayProps {
   tableData: any[];
   userData?: any[];
-  themeColor?: 'orange' | 'red' | 'blue' | 'green';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
 }
 
 export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }: TableStatsDisplayProps) {
@@ -45,6 +45,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
           themeColor === 'red' ? 'text-red-500' :
           themeColor === 'blue' ? 'text-blue-500' :
           themeColor === 'green' ? 'text-green-500' :
+          themeColor === 'purple' ? 'text-purple-500' :
           'text-orange-500'
         }`}>{tableData.length}</div>
       </div>
@@ -55,6 +56,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
           themeColor === 'red' ? 'text-red-500' :
           themeColor === 'blue' ? 'text-blue-500' :
           themeColor === 'green' ? 'text-green-500' :
+          themeColor === 'purple' ? 'text-purple-500' :
           'text-orange-500'
         }`}>{new Date().toLocaleDateString('es-ES')}</div>
       </div>
@@ -65,6 +67,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
           themeColor === 'red' ? 'text-red-500' :
           themeColor === 'blue' ? 'text-blue-500' :
           themeColor === 'green' ? 'text-green-500' :
+          themeColor === 'purple' ? 'text-purple-500' :
           'text-orange-500'
         }`}>
           {getLastUser()}

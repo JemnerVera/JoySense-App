@@ -620,6 +620,18 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
+    if (activeTab.startsWith('alertas-alerta_regla-')) {
+      const alertasSubTab = activeTab.replace('alertas-alerta_regla-', '') as 'status' | 'insert' | 'update';
+      return (
+        <AlertasTableMain
+          tableName="alerta_regla"
+          activeSubTab={alertasSubTab || 'status'}
+          onSubTabChange={handleAlertasReglaChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
     if (activeTab === 'alertas') {
       return (
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -741,7 +753,11 @@ const AppContentInternal: React.FC = () => {
           <div className="flex-shrink-0">
             {/* Tactical Header */}
             <div className={`h-16 bg-white dark:bg-neutral-800 border-b flex items-center justify-between px-6 ${
-              activeTab === 'permisos'
+              activeTab === 'acceso' || activeTab?.startsWith('acceso-')
+                ? 'border-purple-500 dark:border-purple-500'
+                : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
+                ? 'border-purple-500 dark:border-purple-500'
+                : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                 ? 'border-red-500 dark:border-red-500'
                 : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                 ? 'border-orange-500 dark:border-orange-500'
@@ -758,8 +774,12 @@ const AppContentInternal: React.FC = () => {
                       ? 'text-green-500' // Verde para Reportes
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? 'text-blue-500' // Azul para Configuración
-                      : activeTab === 'permisos'
-                      ? 'text-red-500' // Rojo para Permisos
+                      : activeTab === 'acceso' || activeTab?.startsWith('acceso-')
+                      ? 'text-purple-500' // Púrpura para Acceso
+                      : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
+                      ? 'text-purple-500' // Púrpura para Permisos
+                      : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
+                      ? 'text-red-500' // Rojo para Alertas
                       : 'text-orange-500' // Naranja por defecto
                   }>
                     {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
@@ -804,7 +824,24 @@ const AppContentInternal: React.FC = () => {
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? t('tabs.configuration')
-                      : activeTab === 'permisos'
+                      : activeTab === 'acceso' || activeTab?.startsWith('acceso-')
+                      ? (() => {
+                          let breadcrumb = `${t('tabs.access').toUpperCase()}`;
+                          if (activeTab.startsWith('acceso-permiso-')) {
+                            breadcrumb += ` / ${t('parameters.tables.geography_permission').toUpperCase()}`;
+                            const subTab = activeTab.replace('acceso-permiso-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
                       ? (() => {
                           let breadcrumb = `${t('tabs.permissions').toUpperCase()} / ${t('parameters.tables.geography_permission').toUpperCase()}`;
                           if (activeSubTab) {
@@ -814,6 +851,68 @@ const AppContentInternal: React.FC = () => {
                               'update': t('subtabs.update')
                             };
                             breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
+                      ? (() => {
+                          let breadcrumb = `${t('tabs.alerts').toUpperCase()}`;
+                          // Determinar qué tabla de alertas está activa
+                          if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {
+                            breadcrumb += ` / ${t('alerts.rule').toUpperCase()}`;
+                            const subTab = activeTab.replace('alertas-regla-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
+                          } else if (activeTab.startsWith('alertas-regla_objeto-')) {
+                            breadcrumb += ` / ${t('alerts.rule_object').toUpperCase()}`;
+                            const subTab = activeTab.replace('alertas-regla_objeto-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
+                          } else if (activeTab.startsWith('alertas-regla_umbral-')) {
+                            breadcrumb += ` / ${t('alerts.rule_threshold').toUpperCase()}`;
+                            const subTab = activeTab.replace('alertas-regla_umbral-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
+                          } else if (activeTab.startsWith('alertas-regla_perfil-')) {
+                            breadcrumb += ` / ${t('alerts.rule_profile').toUpperCase()}`;
+                            const subTab = activeTab.replace('alertas-regla_perfil-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
+                          } else if (activeTab.startsWith('alertas-alerta_regla-')) {
+                            breadcrumb += ` / ${t('alerts.rule_alert').toUpperCase()}`;
+                            const subTab = activeTab.replace('alertas-alerta_regla-', '');
+                            if (subTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update')
+                              };
+                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                            }
                           }
                           return breadcrumb;
                         })()

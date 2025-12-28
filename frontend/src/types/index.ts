@@ -658,7 +658,7 @@ export type TableName =
   | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
-  | 'criticidad' | 'umbral' | 'alerta' | 'alerta_regla_consolidado' | 'mensaje' | 'audit_log_umbral'
+  | 'criticidad' | 'umbral' | 'alerta' | 'alerta_regla' | 'alerta_regla_consolidado' | 'mensaje' | 'audit_log_umbral'
   | 'regla' | 'regla_objeto' | 'regla_perfil' | 'regla_umbral'
   | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
   | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje'; // Nuevo sistema de permisos
@@ -684,6 +684,7 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   criticidad: 'criticidadid',
   umbral: 'umbralid',
   alerta: 'uuid_alertaid',
+  alerta_regla: 'uuid_alerta_reglaid',
   alerta_regla_consolidado: 'uuid_consolidadoid',
   mensaje: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],
   audit_log_umbral: 'auditid',

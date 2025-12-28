@@ -1,6 +1,6 @@
 /**
  * AlertasTableMain - Componente genérico para gestionar tablas relacionadas con alertas
- * Reutilizable para regla_objeto, regla_umbral, regla_perfil
+ * Reutilizable para regla_objeto, regla_umbral, regla_perfil, alerta_regla
  */
 
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
@@ -28,7 +28,7 @@ import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 // ============================================================================
 
 interface AlertasTableMainProps {
-  tableName: 'regla_objeto' | 'regla_umbral' | 'regla_perfil';
+  tableName: 'regla_objeto' | 'regla_umbral' | 'regla_perfil' | 'alerta_regla';
   activeSubTab?: 'status' | 'insert' | 'update';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;

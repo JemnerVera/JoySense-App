@@ -411,6 +411,7 @@
   "alerts.rule": "RULE",
   "alerts.rule_object": "RULE-OBJECT",
   "alerts.rule_threshold": "RULE-THRESHOLD",
+  "alerts.rule_alert": "RULE-ALERT",
   "alerts.rule_profile": "RULE-PROFILE",
   "status.records": "Records",
   "status.last_update": "Last Update",
