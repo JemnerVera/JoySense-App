@@ -25,10 +25,10 @@ export const filterColumnsByTable = (
     'ubicacion': ['paisid', 'empresaid', 'fundoid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'entidad': ['entidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metrica': ['metrica', 'unidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'tipo': ['tipo', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'localizacion': ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'latitud', 'longitud', 'referencia', 'statusid', 'entidadid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'tipo': ['tipo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'localizacion', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'sensor': ['nodoid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'metricasensor': ['nodoid', 'metricaid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'metricasensor': ['sensorid', 'metricaid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'umbral': ['ubicacionid', 'criticidadid', 'nodoid', 'metricaid', 'umbral', 'maximo', 'minimo', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla': ['reglaid', 'nombre', 'prioridad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla_perfil': ['regla_perfilid', 'reglaid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -131,21 +131,7 @@ export const injectMissingColumns = (
     }
   }
 
-  if (tableName === 'localizacion') {
-    ['paisid', 'empresaid', 'fundoid'].forEach(colName => {
-      if (!injected.some(col => col.columnName === colName)) {
-        injected.unshift({
-          columnName: colName,
-          dataType: 'integer',
-          isNullable: false,
-          isIdentity: false,
-          isPrimaryKey: false,
-          isForeignKey: true,
-          defaultValue: null
-        } as ColumnInfo);
-      }
-    });
-  }
+  // localizacion ya no necesita campos inyectados según el schema actual
 
   return injected;
 };
@@ -203,10 +189,15 @@ export const reorderColumns = (
     reordered.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
   } else if (tableName === 'localizacion') {
-    reordered.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
+    // Orden para tablas: localizacionid, nodoid, sensorid, metricaid, localizacion, latitud, longitud, referencia
+    reordered.push(...otherColumns.filter(col => ['localizacionid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['latitud', 'longitud', 'referencia'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['sensorid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['localizacion'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['latitud'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['longitud'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['referencia'].includes(col.columnName)));
   } else if (tableName === 'tipo') {
     reordered.push(...otherColumns.filter(col => ['entidadid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['tipo'].includes(col.columnName)));

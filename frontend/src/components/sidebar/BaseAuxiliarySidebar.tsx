@@ -7,7 +7,7 @@ interface BaseAuxiliarySidebarProps {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
-  color?: 'orange' | 'green' | 'blue' | 'gray' | 'red';
+  color?: 'orange' | 'green' | 'blue' | 'gray' | 'red' | 'purple';
   collapsedText?: string; // Texto personalizado cuando está colapsado
 }
 
@@ -37,6 +37,7 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
             color === 'blue' ? 'text-blue-500' :
             color === 'gray' ? 'text-gray-500' :
             color === 'red' ? 'text-red-500' :
+            color === 'purple' ? 'text-purple-500' :
             'text-orange-500'
           }`}>{title.toUpperCase()}</h3>
         ) : (

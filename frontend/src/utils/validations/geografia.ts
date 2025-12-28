@@ -678,23 +678,9 @@ export const validateLocalizacionData = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  // 1. Validar campos obligatorios
-  if (!formData.entidadid) {
-    errors.push({
-      field: 'entidadid',
-      message: 'Debe seleccionar una entidad',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.ubicacionid) {
-    errors.push({
-      field: 'ubicacionid',
-      message: 'Debe seleccionar una ubicación',
-      type: 'required'
-    });
-  }
-  
+  // 1. Validar campos obligatorios según schema actual
+  // Schema: nodoid, sensorid, metricaid, localizacion (requeridos)
+  // latitud, longitud, referencia (opcionales)
   if (!formData.nodoid) {
     errors.push({
       field: 'nodoid',
@@ -703,33 +689,46 @@ export const validateLocalizacionData = async (
     });
   }
   
-  if (!formData.latitud || formData.latitud === '') {
+  if (!formData.sensorid) {
     errors.push({
-      field: 'latitud',
-      message: 'La latitud es obligatoria',
+      field: 'sensorid',
+      message: 'Debe seleccionar un sensor',
       type: 'required'
     });
   }
   
-  if (!formData.longitud || formData.longitud === '') {
+  if (!formData.metricaid) {
     errors.push({
-      field: 'longitud',
-      message: 'La longitud es obligatoria',
+      field: 'metricaid',
+      message: 'Debe seleccionar una métrica',
       type: 'required'
     });
   }
+  
+  if (!formData.localizacion || formData.localizacion.trim() === '') {
+    errors.push({
+      field: 'localizacion',
+      message: 'El nombre de la localización es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // latitud y longitud son opcionales según el schema
   
   // 2. Validar duplicados si hay datos existentes
-  if (existingData && existingData.length > 0) {
+  // Según el schema, la PK es localizacionid (auto-increment)
+  // No hay constraint único explícito, pero validamos combinación nodoid + sensorid + metricaid
+  if (existingData && existingData.length > 0 && formData.nodoid && formData.sensorid && formData.metricaid) {
     const localizacionExists = existingData.some(item => 
-      item.ubicacionid && item.ubicacionid.toString() === formData.ubicacionid?.toString() &&
-      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString()
+      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString() &&
+      item.sensorid && item.sensorid.toString() === formData.sensorid?.toString() &&
+      item.metricaid && item.metricaid.toString() === formData.metricaid?.toString()
     );
     
     if (localizacionExists) {
       errors.push({
-        field: 'ubicacionid',
-        message: 'La ubicación y nodo ya están asociados',
+        field: 'composite',
+        message: 'Ya existe una localización para esta combinación de nodo, sensor y métrica',
         type: 'duplicate'
       });
     }
@@ -752,72 +751,65 @@ export const validateLocalizacionUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
 
-  // 1. Validar campos obligatorios
-  if (!formData.ubicacionid || formData.ubicacionid === '') {
-    errors.push({
-      field: 'ubicacionid',
-      message: 'La ubicación es obligatoria',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.nodoid || formData.nodoid === '') {
+  // 1. Validar campos obligatorios según schema actual
+  // Schema: nodoid, sensorid, metricaid, localizacion (requeridos)
+  // latitud, longitud, referencia (opcionales)
+  if (!formData.nodoid) {
     errors.push({
       field: 'nodoid',
-      message: 'El nodo es obligatorio',
+      message: 'Debe seleccionar un nodo',
       type: 'required'
     });
   }
   
-  if (!formData.latitud || formData.latitud === '') {
+  if (!formData.sensorid) {
     errors.push({
-      field: 'latitud',
-      message: 'La latitud es obligatoria',
+      field: 'sensorid',
+      message: 'Debe seleccionar un sensor',
       type: 'required'
     });
   }
   
-  if (!formData.longitud || formData.longitud === '') {
+  if (!formData.metricaid) {
     errors.push({
-      field: 'longitud',
-      message: 'La longitud es obligatoria',
+      field: 'metricaid',
+      message: 'Debe seleccionar una métrica',
       type: 'required'
     });
   }
+  
+  if (!formData.localizacion || formData.localizacion.trim() === '') {
+    errors.push({
+      field: 'localizacion',
+      message: 'El nombre de la localización es obligatorio',
+      type: 'required'
+    });
+  }
+  
+  // latitud y longitud son opcionales según el schema
   
   // 2. Validar duplicados (excluyendo el registro actual)
-  if (formData.ubicacionid && formData.nodoid) {
+  if (formData.nodoid && formData.sensorid && formData.metricaid) {
     const localizacionExists = existingData.some(item => 
-      (item.ubicacionid !== originalData.ubicacionid || item.nodoid !== originalData.nodoid) && 
-      item.ubicacionid === formData.ubicacionid && 
-      item.nodoid === formData.nodoid
+      item.localizacionid !== originalData.localizacionid &&
+      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString() &&
+      item.sensorid && item.sensorid.toString() === formData.sensorid?.toString() &&
+      item.metricaid && item.metricaid.toString() === formData.metricaid?.toString()
     );
     
     if (localizacionExists) {
       errors.push({
         field: 'composite',
-        message: 'Ya existe una localización para esta ubicación y nodo',
+        message: 'Ya existe una localización para esta combinación de nodo, sensor y métrica',
         type: 'duplicate'
       });
     }
   }
   
   // 3. Validar restricción "unico_nodo_activo" (solo si se está activando)
-  if (formData.statusid === 1 && originalData.statusid !== 1) {
-    const nodoActivoExists = existingData.some(item => 
-      item.nodoid === formData.nodoid && 
-      item.statusid === 1 &&
-      (item.ubicacionid !== originalData.ubicacionid || item.nodoid !== originalData.nodoid)
-    );
-    
-    if (nodoActivoExists) {
-      errors.push({
-        field: 'statusid',
-        message: 'Ya existe una localización activa para este nodo. Un nodo solo puede tener una localización activa a la vez.',
-        type: 'constraint'
-      });
-    }
-  }
+  // Según el schema actual, no hay constraint único explícito para nodo activo
+  // Pero validamos que no haya duplicados de la combinación nodoid + sensorid + metricaid
+  // (ya validado en el paso 2)
   
   // 4. Generar mensaje amigable para actualización
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);

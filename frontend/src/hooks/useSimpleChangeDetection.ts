@@ -51,11 +51,11 @@ export const useSimpleChangeDetection = () => {
         case 'nodo':
           return ['nodo', 'nodoabrev'];
         case 'sensor':
-          return ['nodoid', 'tipoid'];
+          return ['tipoid'];
         case 'metrica':
           return ['metrica', 'metricaabrev'];
         case 'tipo':
-          return ['entidadid', 'tipo'];
+          return ['tipo'];
         case 'medicion':
           return ['medicion', 'medicionabrev'];
         case 'umbral':
@@ -71,7 +71,7 @@ export const useSimpleChangeDetection = () => {
         case 'perfil':
           return ['perfil', 'perfilabrev'];
         case 'metricasensor':
-          return ['nodoid', 'metricaid', 'tipoid'];
+          return ['sensorid', 'metricaid'];
         case 'perfilumbral':
           return ['perfilid', 'umbralid'];
         case 'auditlogumbral':

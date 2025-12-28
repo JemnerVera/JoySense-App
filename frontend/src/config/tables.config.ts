@@ -220,7 +220,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: false,
     allowMassive: true,
     fields: [
-      { name: 'sensorid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'sensorid', label: 'ID del Sensor', type: 'number', hidden: false, readonly: false, required: true },
       { name: 'tipoid', label: 'Tipo', type: 'select', required: true, foreignKey: { table: 'tipo', valueField: 'tipoid', labelField: 'tipo' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
@@ -238,7 +238,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: true,
     allowMassive: true,
     fields: [
-      { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
+      { name: 'sensorid', label: 'ID del Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
@@ -278,7 +278,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'localizacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'nodoid', label: 'Nodo', type: 'select', required: true, foreignKey: { table: 'nodo', valueField: 'nodoid', labelField: 'nodo' } },
-      { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
+      { name: 'sensorid', label: 'ID del Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
       { name: 'localizacion', label: 'Nombre', type: 'text', required: true },
       { name: 'latitud', label: 'Latitud', type: 'number' },
@@ -301,7 +301,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'asociacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'localizacionid', label: 'Localización', type: 'select', required: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
-      { name: 'id_device', label: 'ID Device (LoRaWAN)', type: 'text', required: true },
+      { name: 'id_device', label: 'ID del Dispositivo', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
@@ -340,7 +340,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: false,
     allowDelete: false,
     fields: [
-      { name: 'id_device', label: 'ID Device', type: 'text', readonly: true },
+      { name: 'id_device', label: 'ID del Dispositivo', type: 'text', readonly: true },
       { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
       { name: 'valor', label: 'Valor', type: 'number', readonly: true },
       { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
@@ -359,7 +359,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: false,
     fields: [
       { name: 'sensorvalorerrorid', label: 'ID', type: 'number', readonly: true },
-      { name: 'id_device', label: 'ID Device', type: 'text', readonly: true },
+      { name: 'id_device', label: 'ID del Dispositivo', type: 'text', readonly: true },
       { name: 'error', label: 'Error', type: 'text', readonly: true },
       { name: 'valor', label: 'Valor', type: 'number', readonly: true },
       { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true }

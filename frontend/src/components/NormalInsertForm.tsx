@@ -189,18 +189,55 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         renderContextualRow={renderContextualRow}
       />];
     } else if (selectedTable === 'localizacion') {
-      return [<LocalizacionFormFields
-        key="localizacion"
-        visibleColumns={visibleColumns}
-        formData={formData}
-        setFormData={setFormData}
-        updateField={updateField}
-        renderField={renderField}
-        getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        isFieldRequired={isFieldRequired}
-        renderContextualRow={renderContextualRow}
-      />];
+      // Layout específico para localizacion:
+      // Fila 1: NODO, ID DEL SENSOR, METRICA
+      // Fila 2: LOCALIZACION, LATITUD, LONGITUD
+      // Fila 3: (VACIO), REFERENCIA, STATUS
+      const nodoField = visibleColumns.find(col => col.columnName === 'nodoid');
+      const sensorField = visibleColumns.find(col => col.columnName === 'sensorid');
+      const metricaField = visibleColumns.find(col => col.columnName === 'metricaid');
+      const localizacionField = visibleColumns.find(col => col.columnName === 'localizacion');
+      const latitudField = visibleColumns.find(col => col.columnName === 'latitud');
+      const longitudField = visibleColumns.find(col => col.columnName === 'longitud');
+      const referenciaField = visibleColumns.find(col => col.columnName === 'referencia');
+      const statusField = visibleColumns.find(col => col.columnName === 'statusid');
+      
+      const result: React.ReactNode[] = [];
+      
+      // Fila 1: NODO, ID DEL SENSOR, METRICA
+      if (nodoField || sensorField || metricaField) {
+        result.push(
+          <div key="row-1" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {nodoField && renderField(nodoField)}
+            {sensorField && renderField(sensorField)}
+            {metricaField && renderField(metricaField)}
+          </div>
+        );
+      }
+      
+      // Fila 2: LOCALIZACION, LATITUD, LONGITUD
+      if (localizacionField || latitudField || longitudField) {
+        result.push(
+          <div key="row-2" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {localizacionField && renderField(localizacionField)}
+            {latitudField && renderField(latitudField)}
+            {longitudField && renderField(longitudField)}
+          </div>
+        );
+      }
+      
+      // Fila 3: (VACIO), REFERENCIA, STATUS
+      if (referenciaField || statusField) {
+        result.push(
+          <div key="row-3" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div></div> {/* Espacio vacío */}
+            {referenciaField && renderField(referenciaField)}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      }
+      
+      return result;
     } else if (['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica'].includes(selectedTable)) {
       return [<DispositivosFormFields
         key="dispositivos"
@@ -666,7 +703,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['localizacion', 'entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />

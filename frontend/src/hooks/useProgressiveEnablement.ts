@@ -38,12 +38,9 @@ export const useProgressiveEnablement = (
       }
     }
     
-    // Para Tipo: solo habilitar tipo si entidadid tiene valor
+    // Para Tipo: el campo 'tipo' siempre está habilitado (según schema actual, no tiene entidadid)
     if (selectedTable === 'tipo') {
       if (columnName === 'tipo') {
-        return !!(formData.entidadid);
-      }
-      if (columnName === 'entidadid') {
         return true; // Siempre habilitado
       }
     }

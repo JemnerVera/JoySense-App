@@ -15,6 +15,7 @@ export interface RelatedData {
   nodosData?: any[];
   tiposData?: any[];
   metricasData?: any[];
+  sensorsData?: any[];
   localizacionesData?: any[];
   criticidadesData?: any[];
   perfilesData?: any[];
@@ -164,6 +165,8 @@ export const getColumnDisplayName = (columnName: string): string => {
     'certificacion_ifetel': 'Certificación IFETEL',
     'certificacion_telecom': 'Certificación TELECOM',
     'certificacion_osiptel': 'Certificación OSIPTEL',
+    'sensorid': 'ID del Sensor',
+    'id_device': 'ID del Dispositivo',
   };
 
   return columnMappings[columnName] || columnName;
@@ -323,6 +326,8 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'certificacion_ifetel': 'Certificación IFETEL',
     'certificacion_telecom': 'Certificación TELECOM',
     'certificacion_osiptel': 'Certificación OSIPTEL',
+    'sensorid': 'ID del Sensor',
+    'id_device': 'ID del Dispositivo',
   };
 
   return columnMappings[columnName] || columnName;
@@ -351,6 +356,7 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
     case 'nodo': return relatedData.nodosData || [];
     case 'tipo': return relatedData.tiposData || [];
     case 'metrica': return relatedData.metricasData || [];
+    case 'sensor': return (relatedData as any).sensorsData || [];
     case 'localizacion': return relatedData.localizacionesData || [];
     case 'criticidad': return relatedData.criticidadesData || [];
     case 'perfil': return relatedData.perfilesData || [];
@@ -381,7 +387,8 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'nodoid': { table: 'nodo', nameField: 'nodo' },
     'tipoid': { table: 'tipo', nameField: 'tipo' },
     'metricaid': { table: 'metrica', nameField: 'metrica' },
-    'localizacionid': { table: 'localizacion', nameField: 'localizacionid' },
+    'sensorid': { table: 'sensor', nameField: 'sensorid' }, // Mostrar ID del sensor
+    'localizacionid': { table: 'localizacion', nameField: 'localizacion' },
     'criticidadid': { table: 'criticidad', nameField: 'criticidad' },
     'perfilid': { table: 'perfil', nameField: 'perfil' },
     'umbralid': { table: 'umbral', nameField: 'umbral' },
@@ -600,8 +607,8 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'tipo':
-      if (!data.tipo || !data.entidadid) {
-        return 'Tipo y entidad son obligatorios';
+      if (!data.tipo) {
+        return 'El tipo es obligatorio';
       }
       break;
     

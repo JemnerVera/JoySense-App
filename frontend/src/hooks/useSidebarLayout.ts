@@ -15,7 +15,8 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     if (!tab) return false;
     return tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
-           tab === 'permisos';
+           tab === 'permisos' ||
+           tab === 'acceso' || tab.startsWith('acceso-');
   }, []);
 
   // Efecto para manejar el estado inicial

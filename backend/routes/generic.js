@@ -94,18 +94,13 @@ router.get('/:table', async (req, res) => {
     const result = await paginateAndFilter(table, req.query, userSupabase);
     res.json(result);
   } catch (error) {
-    logger.error(`❌ Error en GET /${table}:`, error);
-    logger.error(`   Mensaje: ${error.message}`);
-    logger.error(`   Code: ${error.code || 'N/A'}`);
-    logger.error(`   Details: ${error.details || 'N/A'}`);
-    logger.error(`   Hint: ${error.hint || 'N/A'}`);
-    logger.error(`   Stack:`, error.stack);
+    const errorMessage = error.message || 'Error desconocido';
+    logger.error(`❌ Error en GET /${table}: ${errorMessage}`);
     res.status(500).json({ 
-      error: error.message || 'Error desconocido',
+      error: errorMessage,
       code: error.code,
       details: error.details,
-      hint: error.hint,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      hint: error.hint
     });
   }
 });
@@ -122,14 +117,9 @@ router.get('/:table/columns', async (req, res) => {
   }
   
   try {
-    logger.info(`🔍 [GET /${table}/columns] Obteniendo metadatos para ${table}`);
     const metadata = await getTableMetadata(table);
-    const columnCount = Array.isArray(metadata.columns) ? metadata.columns.length : 0;
-    logger.info(`✅ [GET /${table}/columns] Retornando ${columnCount} columnas`);
-    // Retornar columnas vacías si no hay metadatos, en lugar de error
     res.json(metadata.columns || []);
   } catch (error) {
-    // Si aún así hay un error, retornar array vacío en lugar de error 500
     logger.warn(`⚠️ Error en GET /${table}/columns: ${error.message}. Retornando columnas vacías.`);
     res.json([]);
   }

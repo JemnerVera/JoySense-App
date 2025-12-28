@@ -59,8 +59,14 @@ export const backendAPI = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${BACKEND_URL}${endpoint}`, { headers });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const url = `${BACKEND_URL}${endpoint}`;
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     return response.json();
   },
 
@@ -663,15 +669,18 @@ export class JoySenseService {
   static async getTableData(tableName: TableName | string, limit?: number): Promise<any[]> {
     try {
       const endpoint = limit ? `/generic/${tableName}?limit=${limit}` : `/generic/${tableName}`;
+      
       // Obtener token de sesión de Supabase para enviarlo al backend
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
       const data = await backendAPI.get(endpoint, token || undefined);
-      return Array.isArray(data) ? data : (data?.data || []);
+      const result = Array.isArray(data) ? data : (data?.data || []);
+      
+      return result;
     } catch (error) {
-      console.error(`Error in getTableData for ${tableName}:`, error);
+      console.error(`❌ Error in getTableData for ${tableName}:`, error);
       throw error;
     }
   }
