@@ -114,35 +114,13 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_location'));
   }
 
-  // Campos de relación para localizacion
-  if (col.columnName === 'ubicacionid' && selectedTable === 'localizacion') {
-    return renderSelectField(t('create.select_location'));
-  }
-
+  // Campos de relación para localizacion (según schema actual: nodoid, sensorid, metricaid)
   if (col.columnName === 'nodoid' && selectedTable === 'localizacion') {
     return renderSelectField(t('create.select_node'));
   }
 
-  if (col.columnName === 'entidadid' && (selectedTable === 'localizacion' || selectedTable === 'tipo')) {
-    const options = getUniqueOptionsForField(col.columnName);
-    const displayNameForField = getColumnDisplayNameTranslated(col.columnName, t);
-    return (
-      <div key={col.columnName} className="mb-4">
-        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-          {displayNameForField.toUpperCase()}{isRequired ? '*' : ''}
-        </label>
-        <SelectWithPlaceholder
-          value={value}
-          onChange={(newValue) => setFormData({
-            ...formData,
-            [col.columnName]: newValue ? parseInt(newValue.toString()) : null
-          })}
-          options={options}
-          placeholder={`${displayNameForField.toUpperCase()}`}
-        />
-      </div>
-    );
-  }
+  // NOTA: La tabla 'tipo' NO tiene campo 'entidadid' según el schema actual
+  // Esta condición se eliminó porque entidadid no existe en la tabla tipo
 
   // Campos de relación para sensor
   if (col.columnName === 'nodoid' && selectedTable === 'sensor') {

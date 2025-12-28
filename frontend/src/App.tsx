@@ -264,6 +264,14 @@ const AppContentInternal: React.FC = () => {
     setCurrentMassiveFormData(massiveFormData);
   }, []);
 
+  // Handler para cambios de pestaña de ACCESO
+  const handleAccesoPermisoChange = (subTab: 'status' | 'insert' | 'update') => {
+    setActiveSubTab(subTab);
+    startTransition(() => {
+      setActiveTab(`acceso-permiso-${subTab}`);
+    });
+  };
+
   // Función para obtener datos del formulario actual (si estamos en parámetros)
   const getCurrentFormData = () => {
     return currentFormData;
@@ -518,6 +526,37 @@ const AppContentInternal: React.FC = () => {
       return (
         <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
           <ConfigurationPanel />
+        </div>
+      );
+    }
+
+    // Manejar sub-rutas de ACCESO
+    if (activeTab.startsWith('acceso-permiso-')) {
+      const accesoSubTab = activeTab.replace('acceso-permiso-', '') as 'status' | 'insert' | 'update';
+      return (
+        <PermisosMain
+          ref={permisosMainRef}
+          activeSubTab={accesoSubTab || 'status'}
+          onSubTabChange={handleAccesoPermisoChange}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    if (activeTab === 'acceso') {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <div className="text-center">
+            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <div className="flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <h2 className="text-2xl font-bold text-purple-500 font-mono tracking-wider">{t('tabs.access')}</h2>
+              </div>
+              <p className="text-neutral-300 font-mono tracking-wider">{t('forms.select_option')}</p>
+            </div>
+          </div>
         </div>
       );
     }

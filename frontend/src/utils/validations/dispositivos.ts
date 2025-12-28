@@ -137,25 +137,16 @@ export const validateTipoData = async (
     });
   }
   
-  if (!formData.entidadid) {
-    errors.push({
-      field: 'entidadid',
-      message: 'Debe seleccionar una entidad',
-      type: 'required'
-    });
-  }
-  
-  // 2. Validar duplicados si hay datos existentes
+  // 2. Validar duplicados si hay datos existentes (según schema actual, solo se valida por 'tipo' único)
   if (existingData && existingData.length > 0) {
     const tipoExists = existingData.some(item => 
-      item.tipo && item.tipo.toLowerCase() === formData.tipo?.toLowerCase() &&
-      item.entidadid && item.entidadid.toString() === formData.entidadid?.toString()
+      item.tipo && item.tipo.toLowerCase() === formData.tipo?.toLowerCase()
     );
     
     if (tipoExists) {
       errors.push({
         field: 'tipo',
-        message: 'El tipo ya existe en esta entidad',
+        message: 'El tipo ya existe',
         type: 'duplicate'
       });
     }
@@ -183,14 +174,6 @@ export const validateTipoUpdate = async (
     errors.push({
       field: 'tipo',
       message: 'El tipo es obligatorio',
-      type: 'required'
-    });
-  }
-  
-  if (!formData.entidadid || formData.entidadid === '') {
-    errors.push({
-      field: 'entidadid',
-      message: 'La entidad es obligatoria',
       type: 'required'
     });
   }
@@ -242,7 +225,9 @@ export const checkTipoDependencies = async (tipoid: number): Promise<boolean> =>
     if (hasSensores) return true;
     
     const metricasensores = await JoySenseService.getTableData('metricasensor');
-    const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.tipoid === tipoid);
+    // Según el schema actual, metricasensor NO tiene tipoid (solo tiene sensorid, metricaid, statusid)
+    // Por lo tanto, no hay dependencias directas de tipo -> metricasensor
+    const hasMetricasensores = false;
     if (hasMetricasensores) return true;
     
     const umbrales = await JoySenseService.getTableData('umbral');
@@ -369,14 +354,10 @@ export const validateNodoUpdate = async (
 
 export const checkNodoDependencies = async (nodoid: number): Promise<boolean> => {
   try {
-    const sensores = await JoySenseService.getTableData('sensor');
-    const hasSensores = sensores.some(sensor => sensor.nodoid === nodoid);
-    if (hasSensores) return true;
-    
-    const metricasensores = await JoySenseService.getTableData('metricasensor');
-    const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.nodoid === nodoid);
-    if (hasMetricasensores) return true;
-    
+    // Según el schema actual:
+    // - sensor NO tiene nodoid (solo tiene sensorid, tipoid, statusid)
+    // - metricasensor NO tiene nodoid (solo tiene sensorid, metricaid, statusid)
+    // - localizacion SÍ tiene nodoid
     const localizaciones = await JoySenseService.getLocalizaciones();
     const hasLocalizaciones = localizaciones.some(localizacion => localizacion.nodoid === nodoid);
     return hasLocalizaciones;

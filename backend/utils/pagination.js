@@ -93,35 +93,35 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       }
     }
 
-    // Obtener total de registros usando count
-    // Construir query de count con filtros
-    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
-    const { dbSchema } = require('../config/database');
-    let countQuery = supabase.schema(dbSchema).from(tableName).select('*', { count: 'exact', head: true });
-    
-    // Aplicar filtros
-    Object.keys(whereFilters).forEach(key => {
-      countQuery = countQuery.eq(key, whereFilters[key]);
-    });
-    
-    // Aplicar búsqueda (usar or() para múltiples campos)
-    if (searchFilters.length > 0) {
-      // Supabase requiere usar or() para múltiples condiciones
-      const orConditions = searchFilters.map(({ field, value }) => `${field}.ilike.${value}`);
-      // Nota: Supabase no soporta or() directamente en select, necesitamos hacerlo diferente
-      // Por ahora, usar el primer campo de búsqueda
+    // Obtener total de registros usando count (solo si se usa paginación)
+    let totalRecords = null;
+    if (usePagination) {
+      const { dbSchema } = require('../config/database');
+      let countQuery = supabase.schema(dbSchema).from(tableName).select('*', { count: 'exact', head: true });
+      
+      // Aplicar filtros
+      Object.keys(whereFilters).forEach(key => {
+        countQuery = countQuery.eq(key, whereFilters[key]);
+      });
+      
+      // Aplicar búsqueda
       if (searchFilters.length > 0) {
         countQuery = countQuery.ilike(searchFilters[0].field, searchFilters[0].value);
       }
-    }
-    
-    const { count: totalRecords, error: countError } = await countQuery;
-    
-    if (countError) {
-      logger.error(`❌ Error obteniendo count para ${tableName}: ${countError.message}`);
-      logger.error(`❌ [COUNT] Code: ${countError.code || 'N/A'}, Details: ${countError.details || 'N/A'}, Hint: ${countError.hint || 'N/A'}`);
-      logger.error(`❌ [COUNT] Params: ${JSON.stringify(params || {}, null, 2)}`);
-      throw countError;
+      
+      const { count, error: countError } = await countQuery;
+      
+      if (countError) {
+        const errorMessage = countError.message || (typeof countError === 'string' ? countError : JSON.stringify(countError)) || 'Error desconocido en count';
+        logger.error(`❌ Error obteniendo count para ${tableName}: ${errorMessage}`);
+        const error = new Error(errorMessage);
+        if (countError.code) error.code = countError.code;
+        if (countError.details) error.details = countError.details;
+        if (countError.hint) error.hint = countError.hint;
+        throw error;
+      }
+      
+      totalRecords = count;
     }
     
     // Construir query de datos
@@ -181,7 +181,6 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       
       // Supabase range es inclusivo: range(offset, offset + pageSize - 1)
       dataQuery = dataQuery.range(offset, offset + pageSizeNum - 1);
-      logger.info(`🔍 Paginación: Tabla=${tableName}, Página=${pageNum}, Total=${totalRecords || 0}`);
     } else if (simpleLimit) {
       // Límite simple sin paginación
       dataQuery = dataQuery.limit(parseInt(simpleLimit));
@@ -191,8 +190,8 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     const { data, error: dataError } = await dataQuery;
     
     if (dataError) {
-      logger.error(`❌ Error obteniendo datos para ${tableName}: ${dataError.message}`);
-      logger.error(`❌ [DATA] Code: ${dataError.code || 'N/A'}, Details: ${dataError.details || 'N/A'}, Hint: ${dataError.hint || 'N/A'}`);
+      const errorMessage = dataError.message || 'Error desconocido obteniendo datos';
+      logger.error(`❌ Error obteniendo datos para ${tableName}: ${errorMessage}`);
       throw dataError;
     }
     
@@ -248,18 +247,11 @@ async function getTableMetadata(tableName) {
       // Verificar que tenga la estructura esperada
       if (rpcData.columns !== undefined) {
         metadataCache.set(tableName, rpcData);
-        const columnCount = Array.isArray(rpcData.columns) ? rpcData.columns.length : 0;
-        logger.info(`✅ Metadatos obtenidos para: ${tableName} (${columnCount} columnas) vía RPC`);
         return rpcData;
       }
-      // Si RPC retornó datos pero sin estructura de columnas, continuar con fallback
-      logger.warn(`⚠️ RPC retornó datos pero sin estructura de columnas para ${tableName}, usando fallback`);
-    } else if (rpcError) {
-      logger.warn(`⚠️ RPC falló para ${tableName}: ${rpcError.message}, usando fallback`);
     }
     
     // Fallback: Obtener una fila para inferir estructura
-    logger.info(`ℹ️ Usando fallback para obtener estructura de ${tableName} desde una fila`);
     const { data: rows, error: queryError } = await baseSupabase
       .schema(dbSchema)
       .from(tableName)
@@ -267,7 +259,6 @@ async function getTableMetadata(tableName) {
       .limit(1);
     
     if (queryError) {
-      logger.warn(`⚠️ No se pudo obtener fila de ${tableName}: ${queryError.message}. Retornando metadatos vacíos.`);
       const emptyMetadata = {
         columns: [],
         constraints: [],
@@ -286,7 +277,6 @@ async function getTableMetadata(tableName) {
     
     // Si la tabla está vacía (no hay filas), retornar metadatos vacíos
     if (!firstRow || Object.keys(firstRow).length === 0) {
-      logger.info(`ℹ️ La tabla ${tableName} está vacía. Retornando metadatos vacíos.`);
       const emptyMetadata = {
         columns: [],
         constraints: [],

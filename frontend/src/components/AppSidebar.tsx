@@ -4,6 +4,7 @@ import { useCascadingFilters } from '../hooks/useCascadingFilters';
 import CollapsibleGlobalFilters from './CollapsibleGlobalFilters';
 import ParametersSidebar from './sidebar/ParametersSidebar';
 import ReportesDashboardSidebar from './sidebar/ReportesDashboardSidebar';
+import AuxiliarySidebar from './sidebar/AuxiliarySidebar';
 
 interface AppSidebarProps {
   activeTab: string;
@@ -361,6 +362,50 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           formData={formData}
           multipleData={multipleData}
           massiveFormData={massiveFormData}
+        />
+      )}
+
+      {/* Sidebar auxiliar para ACCESO */}
+      {(activeTab === 'acceso' || activeTab.startsWith('acceso-')) && !activeTab.startsWith('acceso-permiso-') && (
+        <AuxiliarySidebar
+          isExpanded={auxiliarySidebarVisible}
+          onMouseEnter={onAuxiliarySidebarMouseEnter}
+          onMouseLeave={onAuxiliarySidebarMouseLeave}
+          activeTab={activeTab}
+          onTabChange={onTabChange || (() => {})}
+          selectedTable={undefined}
+          onTableSelect={() => {}}
+          activeSubTab={activeSubTab}
+          onSubTabChange={onSubTabChange || (() => {})}
+          dashboardSubTab={undefined}
+          onDashboardSubTabChange={() => {}}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+          showThirdLevel={false}
+          showDashboardThirdLevel={false}
+        />
+      )}
+
+      {/* Tercer sidebar para ACCESO-PERMISO (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
+      {(activeTab === 'acceso-permiso' || activeTab.startsWith('acceso-permiso-')) && (
+        <AuxiliarySidebar
+          isExpanded={auxiliarySidebarVisible}
+          onMouseEnter={onAuxiliarySidebarMouseEnter}
+          onMouseLeave={onAuxiliarySidebarMouseLeave}
+          activeTab={activeTab}
+          onTabChange={onTabChange || (() => {})}
+          selectedTable={undefined}
+          onTableSelect={() => {}}
+          activeSubTab={activeSubTab}
+          onSubTabChange={onSubTabChange || (() => {})}
+          dashboardSubTab={undefined}
+          onDashboardSubTabChange={() => {}}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+          showThirdLevel={true}
+          showDashboardThirdLevel={false}
         />
       )}
 

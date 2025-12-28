@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import SidebarFilters from '../SidebarFilters';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,103 +29,190 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   // Obtener el perfil del usuario actual
   useEffect(() => {
     const fetchUserPerfil = async () => {
+      console.log('[MainSidebar] ========================================');
+      console.log('[MainSidebar] Iniciando fetchUserPerfil');
+      console.log('[MainSidebar] user:', user);
+      
       if (!user) {
+        console.log('[MainSidebar] No hay usuario, finalizando');
         setLoadingPerfil(false);
         return;
       }
 
+      console.log('[MainSidebar] user.id:', user.id);
+      console.log('[MainSidebar] user.email:', user.email);
+      console.log('[MainSidebar] user.user_metadata:', user.user_metadata);
+
       try {
         // Intentar obtener usuarioid de user_metadata primero
         let usuarioid = user.user_metadata?.usuarioid;
+        console.log('[MainSidebar] usuarioid de user_metadata:', usuarioid);
         
-        // Si no está en user_metadata, buscar por email en la tabla usuario
-        if (!usuarioid && user.email) {
+        // Si no está en user_metadata, buscar en la tabla usuario
+        if (!usuarioid) {
+          console.log('[MainSidebar] Buscando usuarioid en tabla usuario...');
           const usuariosData = await JoySenseService.getTableData('usuario', 100);
-          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
+          console.log('[MainSidebar] usuariosData recibido:', usuariosData);
           
-          const usuarioEncontrado = usuarios.find((u: any) => u.login === user.email);
-          if (usuarioEncontrado) {
-            usuarioid = usuarioEncontrado.usuarioid;
-          } else {
+          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
+          console.log('[MainSidebar] usuarios array length:', usuarios.length);
+          console.log('[MainSidebar] primeros 3 usuarios:', usuarios.slice(0, 3).map((u: any) => ({
+            usuarioid: u.usuarioid,
+            login: u.login,
+            useruuid: u.useruuid
+          })));
+          
+          // Buscar por useruuid primero (más preciso - coincide con user.id de Supabase Auth)
+          if (user.id) {
+            console.log('[MainSidebar] Buscando por useruuid:', user.id);
+            const usuarioByUuid = usuarios.find((u: any) => {
+              const match = u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase();
+              if (match) {
+                console.log('[MainSidebar] Usuario encontrado por UUID:', u);
+              }
+              return match;
+            });
+            if (usuarioByUuid?.usuarioid) {
+              usuarioid = usuarioByUuid.usuarioid;
+              console.log('[MainSidebar] usuarioid encontrado por UUID:', usuarioid);
+            } else {
+              console.log('[MainSidebar] No se encontró usuario por UUID');
+            }
+          }
+          
+          // Si no se encuentra por UUID, buscar por email/login
+          if (!usuarioid && user.email) {
+            console.log('[MainSidebar] Buscando por email/login:', user.email);
+            const usuarioByEmail = usuarios.find((u: any) => {
+              const match = u.login && u.login.toLowerCase() === user.email.toLowerCase();
+              if (match) {
+                console.log('[MainSidebar] Usuario encontrado por email:', u);
+              }
+              return match;
+            });
+            if (usuarioByEmail?.usuarioid) {
+              usuarioid = usuarioByEmail.usuarioid;
+              console.log('[MainSidebar] usuarioid encontrado por email:', usuarioid);
+            } else {
+              console.log('[MainSidebar] No se encontró usuario por email');
+            }
+          }
+          
+          if (!usuarioid) {
+            console.log('[MainSidebar] ❌ No se encontró usuarioid para el usuario');
             setLoadingPerfil(false);
             return;
           }
         }
         
-        if (!usuarioid) {
-          setLoadingPerfil(false);
-          return;
-        }
+        console.log('[MainSidebar] ✅ usuarioid final:', usuarioid);
 
+        console.log('[MainSidebar] Buscando perfil en usuarioperfil...');
         const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
+        console.log('[MainSidebar] usuarioperfilData recibido:', usuarioperfilData);
         
-        const userPerfil = Array.isArray(usuarioperfilData) 
-          ? usuarioperfilData.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1)
-          : (usuarioperfilData as any)?.data?.find((up: any) => up.usuarioid === usuarioid && up.statusid === 1);
+        const usuarioperfilArray = Array.isArray(usuarioperfilData) 
+          ? usuarioperfilData 
+          : (usuarioperfilData as any)?.data || [];
+        console.log('[MainSidebar] usuarioperfil array length:', usuarioperfilArray.length);
+        console.log('[MainSidebar] primeros 3 usuarioperfil:', usuarioperfilArray.slice(0, 3));
+        
+        const userPerfil = usuarioperfilArray.find((up: any) => {
+          const match = up.usuarioid === usuarioid && up.statusid === 1;
+          if (match) {
+            console.log('[MainSidebar] Perfil encontrado:', up);
+          }
+          return match;
+        });
         
         if (userPerfil) {
+          console.log('[MainSidebar] ✅ User perfilid encontrado:', userPerfil.perfilid);
           setUserPerfilId(userPerfil.perfilid);
+        } else {
+          console.log('[MainSidebar] ❌ No se encontró perfil para usuarioid:', usuarioid);
+          console.log('[MainSidebar] Filtrados por usuarioid:', usuarioperfilArray.filter((up: any) => up.usuarioid === usuarioid));
         }
       } catch (error) {
-        // Error silencioso
+        console.error('[MainSidebar] ❌ Error obteniendo perfil:', error);
       } finally {
+        console.log('[MainSidebar] Finalizando fetchUserPerfil, setting loadingPerfil = false');
         setLoadingPerfil(false);
+        console.log('[MainSidebar] ========================================');
       }
     };
 
     fetchUserPerfil();
   }, [user]);
 
-  const mainTabs = [
-    {
-      id: 'reportes',
-      label: t('tabs.reports'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      color: 'green'
-    },
-    {
-      id: 'parameters',
-      label: t('tabs.parameters'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-      ),
-      color: 'orange'
+  // Construir el array de pestañas de forma inmutable
+  const mainTabs = useMemo(() => {
+    const tabs = [
+      {
+        id: 'reportes',
+        label: t('tabs.reports'),
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        ),
+        color: 'green'
+      },
+      {
+        id: 'parameters',
+        label: t('tabs.parameters'),
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+        ),
+        color: 'orange'
+      }
+    ];
+
+    // Agregar pestaña de ACCESO solo para administradores (perfilid === 1) - antes de Configuración
+    console.log('[MainSidebar] useMemo - Construyendo mainTabs');
+    console.log('[MainSidebar] useMemo - loadingPerfil:', loadingPerfil);
+    console.log('[MainSidebar] useMemo - userPerfilId:', userPerfilId);
+    console.log('[MainSidebar] useMemo - userPerfilId === 1?', userPerfilId === 1);
+    console.log('[MainSidebar] useMemo - !loadingPerfil?', !loadingPerfil);
+    console.log('[MainSidebar] useMemo - Condición completa (!loadingPerfil && userPerfilId === 1):', !loadingPerfil && userPerfilId === 1);
+    
+    if (!loadingPerfil && userPerfilId === 1) {
+      console.log('[MainSidebar] ✅ Agregando pestaña ACCESO');
+      tabs.push({
+        id: 'acceso',
+        label: t('tabs.access'),
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        ),
+        color: 'purple'
+      });
+      console.log('[MainSidebar] ✅ Pestaña ACCESO agregada. Total de tabs:', tabs.length);
+    } else {
+      console.log('[MainSidebar] ❌ NO se agregó pestaña ACCESO');
+      console.log('[MainSidebar] ❌ Razón: loadingPerfil=', loadingPerfil, 'userPerfilId=', userPerfilId);
     }
-  ];
+    
+    console.log('[MainSidebar] useMemo - tabs finales:', tabs.map(t => t.id));
 
-  // Agregar pestaña de Permisos solo para administradores (perfilid === 1) - antes de Configuración
-  if (!loadingPerfil && userPerfilId === 1) {
-    mainTabs.push({
-      id: 'permisos',
-      label: t('tabs.permissions'),
+    // Agregar Configuración al final
+    tabs.push({
+      id: 'umbrales',
+      label: t('tabs.configuration'),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" 
+          strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      color: 'red'
+      color: 'blue'
     });
-  }
 
-  // Agregar Configuración al final
-  mainTabs.push({
-    id: 'umbrales',
-    label: t('tabs.configuration'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" 
-        strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-    color: 'blue'
-  });
+    return tabs;
+  }, [loadingPerfil, userPerfilId, t]);
 
   const getTabColor = (color: string) => {
     switch (color) {

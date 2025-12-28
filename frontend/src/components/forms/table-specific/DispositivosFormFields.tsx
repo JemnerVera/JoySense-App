@@ -37,17 +37,16 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const { t } = useLanguage();
 
   // Función para renderizar campos de Tipo
+  // Schema: tipoid (PK), tipo (varchar(50), NOT NULL), statusid, campos de auditoría
   const renderTipoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const entidadField = visibleColumns.find(c => c.columnName === 'entidadid');
     const tipoField = visibleColumns.find(c => c.columnName === 'tipo');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
     
-    if (entidadField || tipoField || statusField) {
+    if (tipoField || statusField) {
       result.push(
-        <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {entidadField && renderField(entidadField)}
+        <div key="first-row" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {tipoField && renderField(tipoField)}
           {statusField && renderField(statusField)}
         </div>

@@ -27,9 +27,17 @@ export function validateFormData(tableName: string, formData: Record<string, any
     
     // Validar campo requerido
     if (rule.required) {
-      if (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')) {
-        errors.push(rule.customMessage || `El campo ${rule.field} es obligatorio`);
-        continue;
+      // Para campos numéricos, 0 es un valor válido, solo null/undefined/cadena vacía son inválidos
+      if (rule.type === 'number') {
+        if (value === undefined || value === null || value === '') {
+          errors.push(rule.customMessage || `El campo ${rule.field} es obligatorio`);
+          continue;
+        }
+      } else {
+        if (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')) {
+          errors.push(rule.customMessage || `El campo ${rule.field} es obligatorio`);
+          continue;
+        }
       }
     }
 
@@ -48,7 +56,9 @@ export function validateFormData(tableName: string, formData: Record<string, any
           }
           break;
         case 'number':
-          if (typeof value !== 'number' || isNaN(value)) {
+          // Convertir string a número si es necesario (los inputs de tipo number pueden retornar strings)
+          const numValue = typeof value === 'string' && value.trim() !== '' ? parseFloat(value) : value;
+          if (typeof numValue !== 'number' || isNaN(numValue)) {
             errors.push(rule.customMessage || `El campo ${rule.field} debe ser un número`);
             continue;
           }

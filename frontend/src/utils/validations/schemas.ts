@@ -29,9 +29,10 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   localizacion: [
-    { field: 'entidadid', required: false, type: 'number', customMessage: 'Debe seleccionar una entidad' },
-    { field: 'ubicacionid', required: true, type: 'number', customMessage: 'Debe seleccionar una ubicación' },
     { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
+    { field: 'sensorid', required: true, type: 'number', customMessage: 'Debe seleccionar un sensor' },
+    { field: 'metricaid', required: true, type: 'number', customMessage: 'Debe seleccionar una métrica' },
+    { field: 'localizacion', required: true, type: 'string', minLength: 1, customMessage: 'El nombre de la localización es obligatorio' },
     { field: 'latitud', required: false, type: 'number', customMessage: 'La latitud es obligatoria' },
     { field: 'longitud', required: false, type: 'number', customMessage: 'La longitud es obligatoria' },
     { field: 'referencia', required: false, type: 'string', customMessage: 'La referencia es obligatoria' }
@@ -42,8 +43,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   tipo: [
-    { field: 'tipo', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del tipo es obligatorio' },
-    { field: 'entidadid', required: true, type: 'number', customMessage: 'Debe seleccionar una entidad' }
+    { field: 'tipo', required: true, type: 'string', minLength: 1, customMessage: 'El nombre del tipo es obligatorio' }
   ],
   
   nodo: [
@@ -71,7 +71,7 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   sensor: [
-    { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
+    { field: 'sensorid', required: true, type: 'number', customMessage: 'El ID del sensor es obligatorio' },
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
   ],
   
@@ -113,9 +113,8 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   ],
   
   metricasensor: [
-    { field: 'nodoid', required: true, type: 'number', customMessage: 'Debe seleccionar un nodo' },
-    { field: 'metricaid', required: true, type: 'number', customMessage: 'Debe seleccionar una métrica' },
-    { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
+    { field: 'sensorid', required: true, type: 'number', customMessage: 'Debe seleccionar un sensor' },
+    { field: 'metricaid', required: true, type: 'number', customMessage: 'Debe seleccionar una métrica' }
   ],
   
   auditlogumbral: [

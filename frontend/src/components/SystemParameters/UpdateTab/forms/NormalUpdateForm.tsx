@@ -20,7 +20,7 @@ const CONSTRAINED_FOREIGN_KEYS: Record<string, string[]> = {
   nodo: ['entidadid'], // No se puede cambiar la entidad de un nodo
   sensor: ['nodoid', 'tipoid'], // No se puede cambiar el nodo o tipo de un sensor
   metricasensor: ['nodoid', 'metricaid', 'tipoid'], // No se puede cambiar nodo, métrica o tipo
-  localizacion: ['entidadid', 'nodoid'], // No se puede cambiar entidad o nodo
+  localizacion: ['nodoid', 'sensorid', 'metricaid'], // No se puede cambiar nodo, sensor o métrica
   // Agregar más según sea necesario
 };
 
@@ -35,6 +35,7 @@ const tableToRelatedDataKey: Record<string, string> = {
   nodo: 'nodosData',
   tipo: 'tiposData',
   metrica: 'metricasData',
+  sensor: 'sensorsData',
   criticidad: 'criticidadesData',
   perfil: 'perfilesData',
   usuario: 'userData',
@@ -118,6 +119,160 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   }, [getColumnDisplayName, t]);
 
   if (!config) return null;
+
+  // Layout específico para localizacion
+  if (tableName === 'localizacion') {
+    // Layout específico para localizacion:
+    // Fila 1: NODO, ID DEL SENSOR, METRICA
+    // Fila 2: LOCALIZACION, LATITUD, LONGITUD
+    // Fila 3: (VACIO), REFERENCIA, STATUS
+    const nodoField = config.fields.find(f => f.name === 'nodoid');
+    const sensorField = config.fields.find(f => f.name === 'sensorid');
+    const metricaField = config.fields.find(f => f.name === 'metricaid');
+    const localizacionField = config.fields.find(f => f.name === 'localizacion');
+    const latitudField = config.fields.find(f => f.name === 'latitud');
+    const longitudField = config.fields.find(f => f.name === 'longitud');
+    const referenciaField = config.fields.find(f => f.name === 'referencia');
+    const statusField = config.fields.find(f => f.name === 'statusid');
+    
+    const renderField = (field: any) => {
+      const isPrimaryKey = primaryKeyFields.includes(field.name);
+      const isStatusId = field.name === 'statusid';
+      const displayName = getColumnDisplayNameHelper(field.name);
+      const isConstrained = isConstrainedField(field.name);
+      const fieldValue = formData[field.name];
+      const isRequired = field.required && !isPrimaryKey;
+      
+      return (
+        <div key={field.name} className="mb-4">
+          {!isStatusId && (
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+              {isPrimaryKey && <span className="mr-1">🔒</span>}
+              {displayName.toUpperCase()}{isRequired ? '*' : ''}
+            </label>
+          )}
+
+          {isPrimaryKey ? (
+            <input
+              type="text"
+              value={formData[field.name] ?? ''}
+              readOnly
+              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+            />
+          ) : field.foreignKey && isConstrained ? (
+            (() => {
+              const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+              const options = relatedTableData.map((item: any) => {
+                const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                  ? field.foreignKey!.labelField 
+                  : [field.foreignKey!.labelField];
+                const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                const itemValue = item[field.foreignKey!.valueField];
+                return {
+                  value: itemValue,
+                  label: label || `ID: ${itemValue}`
+                };
+              });
+              
+              return (
+                <SelectWithPlaceholder
+                  value={fieldValue != null && fieldValue !== '' ? fieldValue : null}
+                  onChange={() => {}}
+                  options={options}
+                  placeholder={`${displayName.toUpperCase()}`}
+                  disabled={true}
+                />
+              );
+            })()
+          ) : field.foreignKey ? (
+            <SelectWithPlaceholder
+              value={formData[field.name] != null ? formData[field.name] : null}
+              onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+              options={(() => {
+                const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                return relatedTableData.map((item: any) => {
+                  const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                    ? field.foreignKey!.labelField 
+                    : [field.foreignKey!.labelField];
+                  const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                  return {
+                    value: item[field.foreignKey!.valueField],
+                    label: label || `ID: ${item[field.foreignKey!.valueField]}`
+                  };
+                });
+              })()}
+              placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+            />
+          ) : isStatusId ? (
+            <div>
+              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+                {displayName.toUpperCase()}{field.required ? '*' : ''}
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData[field.name] === 1 || formData[field.name] === true}
+                  onChange={(e) => updateFormField(field.name, e.target.checked ? 1 : 0)}
+                  className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2`}
+                />
+                <span className="text-white font-mono tracking-wider">
+                  {formData[field.name] === 1 || formData[field.name] === true ? t('create.active') : t('create.inactive')}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <input
+              type={field.type === 'number' ? 'number' : 'text'}
+              value={formData[field.name] ?? ''}
+              onChange={(e) => updateFormField(
+                field.name, 
+                field.type === 'number' ? (e.target.value ? Number(e.target.value) : null) : e.target.value
+              )}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600 ${
+                formErrors[field.name] ? 'border-red-500' : ''
+              }`}
+              placeholder={`${displayName.toUpperCase()}`}
+            />
+          )}
+
+          {formErrors[field.name] && (
+            <p className="text-red-500 text-xs mt-1">{formErrors[field.name]}</p>
+          )}
+        </div>
+      );
+    };
+    
+    return (
+      <div className="space-y-4">
+        {/* Fila 1: NODO, ID DEL SENSOR, METRICA */}
+        {(nodoField || sensorField || metricaField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {nodoField && !nodoField.hidden && renderField(nodoField)}
+            {sensorField && !sensorField.hidden && renderField(sensorField)}
+            {metricaField && !metricaField.hidden && renderField(metricaField)}
+          </div>
+        )}
+        
+        {/* Fila 2: LOCALIZACION, LATITUD, LONGITUD */}
+        {(localizacionField || latitudField || longitudField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {localizacionField && !localizacionField.hidden && renderField(localizacionField)}
+            {latitudField && !latitudField.hidden && renderField(latitudField)}
+            {longitudField && !longitudField.hidden && renderField(longitudField)}
+          </div>
+        )}
+        
+        {/* Fila 3: (VACIO), REFERENCIA, STATUS */}
+        {(referenciaField || statusField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div></div> {/* Espacio vacío */}
+            {referenciaField && !referenciaField.hidden && renderField(referenciaField)}
+            {statusField && !statusField.hidden && renderField(statusField)}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Filtrar campos editables (excluir hidden)
   const editableFields = config.fields.filter(f => !f.hidden);
