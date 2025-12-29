@@ -16,7 +16,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     return tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
            tab === 'permisos' || tab.startsWith('permisos-') ||
-           tab === 'acceso' || tab.startsWith('acceso-') ||
            tab === 'alertas' || tab.startsWith('alertas-');
   }, []);
 

@@ -266,13 +266,6 @@ const AppContentInternal: React.FC = () => {
     setCurrentMassiveFormData(massiveFormData);
   }, []);
 
-  // Handler para cambios de pestaña de ACCESO
-  const handleAccesoPermisoChange = (subTab: 'status' | 'insert' | 'update') => {
-    setActiveSubTab(subTab);
-    startTransition(() => {
-      setActiveTab(`acceso-permiso-${subTab}`);
-    });
-  };
 
   // Handler para cambios de pestaña de ALERTAS
   const handleAlertasReglaChange = (subTab: 'status' | 'insert' | 'update') => {
@@ -542,36 +535,6 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
-    // Manejar sub-rutas de ACCESO
-    if (activeTab.startsWith('acceso-permiso-')) {
-      const accesoSubTab = activeTab.replace('acceso-permiso-', '') as 'status' | 'insert' | 'update';
-      return (
-        <PermisosMain
-          ref={permisosMainRef}
-          activeSubTab={accesoSubTab || 'status'}
-          onSubTabChange={handleAccesoPermisoChange}
-          onFormDataChange={handleFormDataChange}
-        />
-      );
-    }
-
-    if (activeTab === 'acceso') {
-      return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-          <div className="text-center">
-            <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <div className="flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <h2 className="text-2xl font-bold text-purple-500 font-mono tracking-wider">{t('tabs.access')}</h2>
-              </div>
-              <p className="text-neutral-300 font-mono tracking-wider">{t('forms.select_option')}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
 
     // Manejar sub-rutas de ALERTAS
     if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {
@@ -795,9 +758,7 @@ const AppContentInternal: React.FC = () => {
           <div className="flex-shrink-0">
             {/* Tactical Header */}
             <div className={`h-16 bg-white dark:bg-neutral-800 border-b flex items-center justify-between px-6 ${
-              activeTab === 'acceso' || activeTab?.startsWith('acceso-')
-                ? 'border-purple-500 dark:border-purple-500'
-                : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
+              activeTab === 'permisos' || activeTab?.startsWith('permisos-')
                 ? 'border-purple-500 dark:border-purple-500'
                 : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                 ? 'border-red-500 dark:border-red-500'
@@ -818,8 +779,6 @@ const AppContentInternal: React.FC = () => {
                       ? 'text-green-500' // Verde para Reportes
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? 'text-blue-500' // Azul para Configuración
-                      : activeTab === 'acceso' || activeTab?.startsWith('acceso-')
-                      ? 'text-purple-500' // Púrpura para Acceso
                       : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
                       ? 'text-purple-500' // Púrpura para Permisos
                       : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
@@ -868,23 +827,6 @@ const AppContentInternal: React.FC = () => {
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? ''
-                      : activeTab === 'acceso' || activeTab?.startsWith('acceso-')
-                      ? (() => {
-                          let breadcrumb = `${t('tabs.access').toUpperCase()}`;
-                          if (activeTab.startsWith('acceso-permiso-')) {
-                            breadcrumb += ` / ${t('parameters.tables.geography_permission').toUpperCase()}`;
-                            const subTab = activeTab.replace('acceso-permiso-', '');
-                            if (subTab) {
-                              const subTabNames: { [key: string]: string } = {
-                                'status': t('subtabs.status'),
-                                'insert': t('subtabs.insert'),
-                                'update': t('subtabs.update')
-                              };
-                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
-                            }
-                          }
-                          return breadcrumb;
-                        })()
                       : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
                       ? (() => {
                           let breadcrumb = `${t('tabs.permissions').toUpperCase()}`;
