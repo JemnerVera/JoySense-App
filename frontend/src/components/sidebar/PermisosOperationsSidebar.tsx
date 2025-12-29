@@ -5,9 +5,8 @@
 
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
+import ProtectedSubTabButton from '../ProtectedSubTabButton';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useModal } from '../../contexts/ModalContext';
-import { useSimpleChangeDetection } from '../../hooks/useSimpleChangeDetection';
 
 interface PermisosOperationsSidebarProps {
   isExpanded: boolean;
@@ -17,6 +16,7 @@ interface PermisosOperationsSidebarProps {
   onSubTabChange: (subTab: 'status' | 'insert' | 'update') => void;
   formData?: Record<string, any>;
   activeTab?: string;
+  onSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
 }
 
 const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
@@ -26,11 +26,10 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
   activeSubTab,
   onSubTabChange,
   formData = {},
-  activeTab = ''
+  activeTab = '',
+  onSubTabChangeFromProtectedButton
 }) => {
   const { t } = useLanguage();
-  const { showModal } = useModal();
-  const { hasSignificantChanges } = useSimpleChangeDetection();
 
   // Determinar qué tabla está seleccionada basándose en activeTab
   const getSelectedTable = () => {
@@ -53,44 +52,6 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
         return t('parameters.tables.source');
       default:
         return t('parameters.tables.geography_permission');
-    }
-  };
-
-  // Handler para cambio de subTab con protección de cambios
-  const handleSubTabChange = (targetTab: 'status' | 'insert' | 'update') => {
-    if (targetTab === activeSubTab) return;
-
-    // Verificar cambios sin guardar
-    const hasChanges = hasSignificantChanges(
-      formData,
-      selectedTable,
-      activeSubTab,
-      []
-    );
-
-    if (hasChanges) {
-      const getSubTabName = (subTab: string) => {
-        const names: { [key: string]: string } = {
-          'status': t('subtabs.status'),
-          'insert': t('subtabs.insert'),
-          'update': t('subtabs.update')
-        };
-        return names[subTab] || subTab;
-      };
-
-      showModal(
-        'subtab',
-        getSubTabName(activeSubTab),
-        getSubTabName(targetTab),
-        () => {
-          onSubTabChange(targetTab);
-        },
-        () => {
-          // Cancelar: no hacer nada
-        }
-      );
-    } else {
-      onSubTabChange(targetTab);
     }
   };
   
@@ -149,10 +110,32 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
           <nav className="space-y-2">
             {operations.map((operation) => {
               const isActive = activeSubTab === operation.id;
+              // Si tenemos onSubTabChangeFromProtectedButton, usarlo (limpia el formulario antes)
+              // Si no, usar onSubTabChange normal
+              const handleTabChange = onSubTabChangeFromProtectedButton 
+                ? (tab: 'status' | 'insert' | 'update' | 'massive') => {
+                    // Solo llamar si el tab es uno de los permitidos para permisos
+                    if (tab === 'status' || tab === 'insert' || tab === 'update') {
+                      onSubTabChangeFromProtectedButton(tab);
+                    }
+                  }
+                : (tab: 'status' | 'insert' | 'update' | 'massive') => {
+                    // Solo llamar si el tab es uno de los permitidos para permisos
+                    if (tab === 'status' || tab === 'insert' || tab === 'update') {
+                      onSubTabChange(tab);
+                    }
+                  };
+              
               return (
-                <button
+                <ProtectedSubTabButton
                   key={operation.id}
-                  onClick={() => handleSubTabChange(operation.id)}
+                  targetTab={operation.id}
+                  currentTab={activeSubTab}
+                  selectedTable={selectedTable}
+                  formData={formData}
+                  multipleData={[]}
+                  massiveFormData={{}}
+                  onTabChange={handleTabChange}
                   className={`w-full flex items-center p-3 rounded transition-colors ${
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
@@ -167,7 +150,7 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
                   {isExpanded && (
                     <span className="text-sm font-medium tracking-wider">{operation.label.toUpperCase()}</span>
                   )}
-                </button>
+                </ProtectedSubTabButton>
               );
             })}
           </nav>

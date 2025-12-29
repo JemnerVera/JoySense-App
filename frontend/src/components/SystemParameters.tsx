@@ -268,6 +268,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Guard para prevenir múltiples llamadas simultáneas a handleSubTabChangeInternal
   const isProcessingTabChangeRef = useRef<boolean>(false);
 
+  // Ref para comunicar con useSystemParametersSync
+  const skipNextSyncRef = useRef<boolean>(false);
+  
+  // Ref para rastrear si el cambio viene de ProtectedSubTabButton (ya validado)
+  const changeFromProtectedButtonRef = useRef<boolean>(false);
+  
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
     propSelectedTable,
@@ -292,9 +298,60 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadTableData,
     loadData,
     loadRelatedData,
-    setInsertedRecords
+    setInsertedRecords,
+    skipNextSyncRef,
+    isProcessingTabChangeRef
   });
 
+  // Wrapper para propOnSubTabChange que marca cuando viene de ProtectedSubTabButton
+  // Este wrapper se pasa a ProtectedSubTabButton para que pueda marcar el cambio como ya validado
+  // IMPORTANTE: Este wrapper debe limpiar el formulario ANTES de llamar a propOnSubTabChange
+  // para evitar que SystemParameters valide de nuevo
+  const handleSubTabChangeFromProtectedButton = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
+    // IMPORTANTE: Limpiar el formulario ANTES de marcar el ref y llamar al callback
+    // Esto evita que SystemParameters detecte cambios sin guardar cuando valida de nuevo
+    if (activeSubTab === 'insert') {
+      insertForm?.resetForm();
+      setInsertedRecords([]);
+    }
+    if (activeSubTab === 'update') {
+      setUpdateFormData({});
+    }
+    
+    // Marcar que el cambio viene de ProtectedSubTabButton (ya validado)
+    changeFromProtectedButtonRef.current = true;
+    
+    // Marcar para saltar la próxima sincronización
+    skipNextSyncRef.current = true;
+    isProcessingTabChangeRef.current = true;
+    
+    // IMPORTANTE: Actualizar el estado interno PRIMERO para que la UI se actualice inmediatamente
+    // Esto debe hacerse ANTES de llamar al callback del padre
+    setActiveSubTabState(tab);
+    setMessage(null);
+    
+    // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
+    if (tab === 'insert') {
+      insertForm?.resetForm();
+      setInsertedRecords([]);
+    } else if (activeSubTab === 'insert') {
+      insertForm?.resetForm();
+      setInsertedRecords([]);
+    }
+    if (tab !== 'update') setUpdateFormData({});
+    
+    // Llamar al callback original del padre (esto actualizará propActiveSubTab en App.tsx)
+    // IMPORTANTE: Esto se hace DESPUÉS de actualizar el estado interno para evitar conflictos
+    propOnSubTabChange?.(tab);
+    
+    // Resetear después de un delay suficiente para que el estado se propague
+    setTimeout(() => {
+      changeFromProtectedButtonRef.current = false;
+      isProcessingTabChangeRef.current = false;
+      skipNextSyncRef.current = false;
+    }, 500);
+  }, [propOnSubTabChange, activeSubTab, insertForm, setInsertedRecords]);
+  
   // Exponer métodos al padre
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => formState.isDirty,
@@ -304,8 +361,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     handleTableChange: (table) => {
       setSelectedTable(table);
       onTableSelect?.(table);
-    }
+    },
+    // Exponer el wrapper para que ProtectedSubTabButton pueda usarlo
+    handleSubTabChangeFromProtectedButton
   }));
+  
+  // Exponer handleSubTabChangeFromProtectedButton a través de onFormDataChange
+  // para que pueda ser accedido desde PermisosOperationsSidebar
+  // Esto se hace pasando la función en el contexto o a través de un ref global
+  // Por ahora, usaremos una solución más simple: modificar el callback que se pasa
+  // a PermisosOperationsSidebar para que use handleSubTabChangeFromProtectedButton
 
   // Filtrar datos por búsqueda
   const filteredData = useMemo(() => {
@@ -459,6 +524,33 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       return;
     }
     
+    // Si el cambio viene de ProtectedSubTabButton (ya validado), proceder sin validar de nuevo
+    if (changeFromProtectedButtonRef.current) {
+      changeFromProtectedButtonRef.current = false;
+      // Marcar para saltar la próxima sincronización y evitar que useSystemParametersSync procese el cambio
+      skipNextSyncRef.current = true;
+      // Mantener isProcessingTabChangeRef en true para evitar que useSystemParametersSync procese
+      isProcessingTabChangeRef.current = true;
+      setActiveSubTabState(tab);
+      propOnSubTabChange?.(tab);
+      setMessage(null);
+      // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
+      if (tab === 'insert') {
+        insertForm?.resetForm();
+        setInsertedRecords([]);
+      } else if (activeSubTab === 'insert') {
+        insertForm?.resetForm();
+        setInsertedRecords([]);
+      }
+      if (tab !== 'update') setUpdateFormData({});
+      // Resetear después de un delay suficiente
+      setTimeout(() => {
+        isProcessingTabChangeRef.current = false;
+        skipNextSyncRef.current = false;
+      }, 300);
+      return;
+    }
+    
     // Verificar si hay cambios sin guardar antes de cambiar de pestaña
     if (activeSubTab === 'insert') {
       // Verificar con hasUnsavedChanges para detectar cambios reales
@@ -487,21 +579,45 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         const currentTabName = getSubTabName(activeSubTab);
         const targetTabName = getSubTabName(tab);
         
+        console.log('[SystemParameters] Llamando a showModal', {
+          currentTabName,
+          targetTabName,
+          activeSubTab,
+          tab
+        });
+        
         showModal(
           'subtab',
           currentTabName,
           targetTabName,
           () => {
+            console.log('[SystemParameters] Modal confirmado (INSERT -> otro)', {
+              from: activeSubTab,
+              to: tab,
+              skipNextSyncBefore: skipNextSyncRef.current,
+              isProcessingBefore: isProcessingTabChangeRef.current
+            });
+            
             // Confirmar: proceder con el cambio y limpiar formulario
+            // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
+            skipNextSyncRef.current = true;
+            // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
             insertForm?.resetForm(); // Limpiar formulario usando useInsertForm
             setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-            propOnSubTabChange?.(tab); // Llamar al callback del padre
+            // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
+            console.log('[SystemParameters] Llamando a propOnSubTabChange con tab:', tab);
+            propOnSubTabChange?.(tab);
             setMessage(null);
             setInsertedRecords([]); // Limpiar registros insertados
-            // Liberar el guard después de un breve delay para evitar llamadas inmediatas
+            // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
             setTimeout(() => {
+              console.log('[SystemParameters] Liberando isProcessingTabChangeRef');
               isProcessingTabChangeRef.current = false;
-            }, 100);
+              // Resetear skipNextSyncRef después de que se haya procesado
+              setTimeout(() => {
+                skipNextSyncRef.current = false;
+              }, 100);
+            }, 200);
           },
           () => {
             // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
@@ -540,15 +656,23 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             getSubTabName(tab),
             () => {
               // Confirmar: proceder con el cambio y limpiar formulario
+              // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
+              skipNextSyncRef.current = true;
+              // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
               setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-              propOnSubTabChange?.(tab); // Llamar al callback del padre
+              // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
+              propOnSubTabChange?.(tab);
               setMessage(null);
               resetForm(); // Limpiar formulario siempre al confirmar
               setUpdateFormData({}); // Limpiar datos de actualización
-              // Liberar el guard después de un breve delay
+              // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
               setTimeout(() => {
                 isProcessingTabChangeRef.current = false;
-              }, 100);
+                // Resetear skipNextSyncRef después de que se haya procesado
+                setTimeout(() => {
+                  skipNextSyncRef.current = false;
+                }, 100);
+              }, 200);
             },
             () => {
               // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
@@ -563,8 +687,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
     
     // No hay cambios o ya se confirmó, proceder con el cambio
+    console.log('[SystemParameters] No hay cambios o ya se confirmó, procediendo con el cambio', {
+      from: activeSubTab,
+      to: tab,
+      selectedTable
+    });
+    
+    // Marcar para saltar la próxima sincronización ya que el cambio fue iniciado internamente
+    skipNextSyncRef.current = true;
     setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación o no había cambios)
     // IMPORTANTE: Llamar al onSubTabChange del padre solo después de pasar todas las validaciones
+    console.log('[SystemParameters] Llamando a propOnSubTabChange (sin cambios)', tab);
     propOnSubTabChange?.(tab); // Llamar al callback del padre
     setMessage(null);
     // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'

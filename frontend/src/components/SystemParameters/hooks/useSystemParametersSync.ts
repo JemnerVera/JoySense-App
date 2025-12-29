@@ -29,6 +29,8 @@ interface UseSystemParametersSyncProps {
   loadData: () => void;
   loadRelatedData: () => void;
   setInsertedRecords: React.Dispatch<React.SetStateAction<Array<{ id: string; fields: Record<string, any> }>>>;
+  skipNextSyncRef?: React.MutableRefObject<boolean>;
+  isProcessingTabChangeRef?: React.MutableRefObject<boolean>;
 }
 
 export const useSystemParametersSync = ({
@@ -51,7 +53,9 @@ export const useSystemParametersSync = ({
   loadTableData,
   loadData,
   loadRelatedData,
-  setInsertedRecords
+  setInsertedRecords,
+  skipNextSyncRef,
+  isProcessingTabChangeRef
 }: UseSystemParametersSyncProps) => {
   
   // Refs para evitar loops infinitos
@@ -101,10 +105,34 @@ export const useSystemParametersSync = ({
   // Si hay cambios sin guardar, debemos REVERTIR el cambio en App.tsx
   const lastPropActiveSubTabRef = useRef<string>('');
   const lastValidatedTabRef = useRef<string>('');
+  const isProcessingSyncRef = useRef<boolean>(false);
+  const internalSkipNextSyncRef = skipNextSyncRef || { current: false };
   
   useEffect(() => {
+    // Si se marcó para saltar la próxima sincronización (porque el cambio fue iniciado internamente)
+    if (internalSkipNextSyncRef.current) {
+      internalSkipNextSyncRef.current = false;
+      // Actualizar el ref para evitar procesar este cambio
+      lastPropActiveSubTabRef.current = propActiveSubTab || '';
+      return;
+    }
+    
+    // Si hay un procesamiento de cambio de tab en curso, no procesar
+    if (isProcessingTabChangeRef?.current) {
+      return;
+    }
+    
     // Solo procesar si el prop cambió y es diferente al último validado
-    if (propActiveSubTab && propActiveSubTab !== activeSubTab && propActiveSubTab !== lastPropActiveSubTabRef.current) {
+    // Y si no hay un procesamiento en curso
+    // IMPORTANTE: Si activeSubTab ya coincide con propActiveSubTab, significa que el cambio
+    // ya fue procesado por ProtectedSubTabButton, así que no necesitamos validar de nuevo
+    if (propActiveSubTab && 
+        propActiveSubTab !== activeSubTab && 
+        propActiveSubTab !== lastPropActiveSubTabRef.current &&
+        !isProcessingSyncRef.current) {
+      
+      // Marcar que estamos procesando para evitar llamadas duplicadas
+      isProcessingSyncRef.current = true;
       lastPropActiveSubTabRef.current = propActiveSubTab;
       
       // Llamar a setActiveSubTab que validará cambios
@@ -126,6 +154,7 @@ export const useSystemParametersSync = ({
         }
         // Resetear para permitir futuros cambios
         lastPropActiveSubTabRef.current = '';
+        isProcessingSyncRef.current = false;
       }, 500);
     }
   }, [propActiveSubTab, activeSubTab, setActiveSubTab]);

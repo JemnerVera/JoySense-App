@@ -29,6 +29,7 @@ interface AuxiliarySidebarProps {
   showDashboardThirdLevel?: boolean;
   permisosSubTab?: 'status' | 'insert' | 'update';
   onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   reglaSubTab?: 'status' | 'insert' | 'update';
   onReglaSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
 }
@@ -52,6 +53,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   showDashboardThirdLevel = false,
   permisosSubTab,
   onPermisosSubTabChange,
+  onPermisosSubTabChangeFromProtectedButton,
   reglaSubTab,
   onReglaSubTabChange
 }) => {
@@ -165,19 +167,13 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   }
 
   if (isPermisos) {
-    console.log('[AuxiliarySidebar] isPermisos es true:', {
-      activeTab,
-      showThirdLevel,
-      permisosSubTab,
-      activeSubTab
-    });
     // Si showThirdLevel es true, solo renderizar el tercer sidebar
     if (showThirdLevel) {
-      console.log('[AuxiliarySidebar] Renderizando PermisosOperationsSidebar (tercer nivel)');
       return (
         <PermisosOperationsSidebar
           activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
           onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+          onSubTabChangeFromProtectedButton={onPermisosSubTabChangeFromProtectedButton}
           isExpanded={isExpanded}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
@@ -188,7 +184,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     }
 
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
-    console.log('[AuxiliarySidebar] Renderizando PermisosSidebar (segundo nivel)');
     return (
       <PermisosSidebar
         activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
