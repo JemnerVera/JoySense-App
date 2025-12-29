@@ -245,6 +245,25 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       }
       
       return result;
+    } else if (selectedTable === 'origen') {
+      // Layout específico para origen:
+      // Fila 1: ORIGEN, STATUS (en la misma fila, juntos)
+      const origenField = visibleColumns.find(col => col.columnName === 'origen');
+      const statusField = visibleColumns.find(col => col.columnName === 'statusid');
+      
+      const result: React.ReactNode[] = [];
+      
+      // Fila 1: ORIGEN, STATUS (juntos en una fila de 2 columnas)
+      if (origenField || statusField) {
+        result.push(
+          <div key="row-1" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {origenField && renderField(origenField)}
+            {statusField && renderField(statusField)}
+          </div>
+        );
+      }
+      
+      return result;
     } else if (['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica'].includes(selectedTable)) {
       return [<DispositivosFormFields
         key="dispositivos"
@@ -710,7 +729,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
