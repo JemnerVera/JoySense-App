@@ -298,8 +298,10 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     fundosData: fundosData || [],
     ubicacionesData: ubicacionesData || [],
     perfilesData: perfilesData || [],
+    origenesData: origenesData || [],
+    fuentesData: fuentesData || [],
     userData: userData || []
-  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, userData]);
+  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, origenesData, fuentesData, userData]);
 
   // Datos relacionados para InsertTab
   const relatedDataForStatus = useMemo(() => ({
