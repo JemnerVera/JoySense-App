@@ -196,6 +196,69 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_source') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
   }
 
+  // Combobox para regla - criticidadid
+  if (col.columnName === 'criticidadid' && selectedTable === 'regla') {
+    return renderSelectField(t('create.select_criticality') || `${t('buttons.select')} ${displayName.toUpperCase()}`, true);
+  }
+
+  // Combobox para regla_objeto - reglaid, origenid, fuenteid
+  if (col.columnName === 'reglaid' && selectedTable === 'regla_objeto') {
+    return renderSelectField(`${t('buttons.select')} REGLA`);
+  }
+
+  if (col.columnName === 'origenid' && selectedTable === 'regla_objeto') {
+    return renderSelectField(t('create.select_origin') || `${t('buttons.select')} ORIGEN`);
+  }
+
+  if (col.columnName === 'fuenteid' && selectedTable === 'regla_objeto') {
+    return renderSelectField(t('create.select_source') || `${t('buttons.select')} FUENTE`);
+  }
+
+  // Combobox para regla_umbral - reglaid, umbralid
+  if (col.columnName === 'reglaid' && selectedTable === 'regla_umbral') {
+    return renderSelectField(`${t('buttons.select')} REGLA`);
+  }
+
+  if (col.columnName === 'umbralid' && selectedTable === 'regla_umbral') {
+    return renderSelectField(t('create.select_threshold') || `${t('buttons.select')} UMBRAL`);
+  }
+
+  // Combobox para regla_perfil - reglaid, perfilid
+  if (col.columnName === 'reglaid' && selectedTable === 'regla_perfil') {
+    return renderSelectField(`${t('buttons.select')} REGLA`);
+  }
+
+  if (col.columnName === 'perfilid' && selectedTable === 'regla_perfil') {
+    return renderSelectField(t('create.select_profile') || `${t('buttons.select')} PERFIL`);
+  }
+
+  // Select para operador_logico en regla_umbral
+  if (col.columnName === 'operador_logico' && selectedTable === 'regla_umbral') {
+    const operadorLogicoOptions = [
+      { value: 'AND', label: 'AND' },
+      { value: 'OR', label: 'OR' }
+    ];
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={value || 'AND'}
+          onChange={(newValue) => {
+            setFormData({
+              ...formData,
+              [col.columnName]: newValue || 'AND'
+            });
+          }}
+          options={operadorLogicoOptions}
+          placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+        />
+      </div>
+    );
+  }
+
   // Combobox para entidad_localizacion - entidadid, localizacionid
   if (col.columnName === 'entidadid' && selectedTable === 'entidad_localizacion') {
     return renderSelectField(t('create.select_entity') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
@@ -270,8 +333,45 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     );
   }
 
+  // Campos booleanos para regla_umbral (agrupador_inicio, agrupador_fin)
+  if ((col.columnName === 'agrupador_inicio' || col.columnName === 'agrupador_fin') && selectedTable === 'regla_umbral') {
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            checked={value === true || value === 1}
+            onChange={(e) => updateField(col.columnName, e.target.checked)}
+            className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')}`}
+          />
+          <span className="text-white font-mono tracking-wider">
+            {value === true || value === 1 ? 'Sí' : 'No'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   // Campo de texto normal
   const isEnabled = isFieldEnabled(col.columnName);
+  
+  // Placeholders específicos para ventana y cooldown en regla
+  let placeholder = `${displayName.toUpperCase()}`;
+  if (col.columnName === 'ventana' && selectedTable === 'regla') {
+    placeholder = 'Ej: 00:10:00 (HH:MM:SS) o 10 minutes';
+  } else if (col.columnName === 'cooldown' && selectedTable === 'regla') {
+    placeholder = 'Ej: 1 day, 2 hours, 30 minutes';
+  } else if (col.columnName === 'paisabrev') {
+    placeholder = `${displayName.toUpperCase()} (${t('create.abbreviation_2_chars').split('(')[1]}`;
+  } else if (col.columnName === 'empresabrev') {
+    placeholder = `${displayName.toUpperCase()} (${t('create.abbreviation_10_chars').split('(')[1]}`;
+  } else if (col.columnName === 'fundoabrev') {
+    placeholder = `${displayName.toUpperCase()} (${t('create.abbreviation_10_chars').split('(')[1]}`;
+  }
+  
   return (
     <div key={col.columnName} className="mb-4">
       <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
@@ -296,8 +396,16 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
             ? 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600' 
             : 'bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 opacity-50 cursor-not-allowed'
         }`}
-        placeholder={`${displayName.toUpperCase()}${col.columnName === 'paisabrev' ? ` (${t('create.abbreviation_2_chars').split('(')[1]}` : ''}${col.columnName === 'empresabrev' ? ` (${t('create.abbreviation_10_chars').split('(')[1]}` : ''}${col.columnName === 'fundoabrev' ? ` (${t('create.abbreviation_10_chars').split('(')[1]}` : ''}`}
+        placeholder={placeholder}
       />
+      {/* Ayuda adicional para ventana y cooldown */}
+      {(col.columnName === 'ventana' || col.columnName === 'cooldown') && selectedTable === 'regla' && (
+        <p className="text-xs text-neutral-400 mt-1 font-mono">
+          {col.columnName === 'ventana' 
+            ? 'Formato: HH:MM:SS (ej: 00:10:00) o cantidad + unidad (ej: 10 minutes)' 
+            : 'Formato: cantidad + unidad (ej: 1 day, 2 hours, 30 minutes)'}
+        </p>
+      )}
     </div>
   );
 };

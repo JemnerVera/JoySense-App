@@ -194,10 +194,14 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     }
 
     // Agregar campos de auditoría
+    const userId = user?.user_metadata?.usuarioid || 1;
+    const now = new Date().toISOString();
     const dataToInsert: Record<string, any> = {
       ...formState.data,
-      usercreatedid: user?.user_metadata?.usuarioid || 1,
-      datecreated: new Date().toISOString()
+      usercreatedid: userId,
+      datecreated: now,
+      usermodifiedid: userId,
+      datemodified: now
     };
 
     // Excluir permisoid (se genera automáticamente)

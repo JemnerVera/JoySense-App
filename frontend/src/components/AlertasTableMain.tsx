@@ -97,6 +97,8 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     criticidadesData,
     umbralesData,
     reglasData,
+    origenesData,
+    fuentesData,
     loadTableData,
     setTableData,
     setColumns,
@@ -184,10 +186,14 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     }
 
     // Agregar campos de auditoría
+    const userId = user?.user_metadata?.usuarioid || 1;
+    const now = new Date().toISOString();
     const dataToInsert: Record<string, any> = {
       ...formState.data,
-      usercreatedid: user?.user_metadata?.usuarioid || 1,
-      datecreated: new Date().toISOString()
+      usercreatedid: userId,
+      datecreated: now,
+      usermodifiedid: userId,
+      datemodified: now
     };
 
     // Excluir el ID principal (se genera automáticamente)
@@ -247,8 +253,21 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
 
   // Función helper para obtener opciones únicas
   const getUniqueOptionsForField = useCallback((columnName: string): Array<{value: any, label: string}> => {
-    const relatedTable = crudRelatedData[columnName.replace('id', '')] || 
-                        crudRelatedData[columnName] || [];
+    let relatedTable = crudRelatedData[columnName.replace('id', '')] || 
+                       crudRelatedData[columnName] || [];
+    
+    // Si no se encuentra en crudRelatedData, buscar en datos relacionados específicos
+    if ((!Array.isArray(relatedTable) || relatedTable.length === 0)) {
+      if (columnName === 'reglaid') {
+        relatedTable = reglasData || [];
+      } else if (columnName === 'origenid') {
+        relatedTable = origenesData || [];
+      } else if (columnName === 'fuenteid') {
+        relatedTable = fuentesData || [];
+      } else if (columnName === 'perfilid') {
+        relatedTable = perfilesData || [];
+      }
+    }
     
     if (!Array.isArray(relatedTable) || relatedTable.length === 0) {
       return [];
@@ -274,7 +293,7 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
       
       return { value, label };
     });
-  }, [crudRelatedData]);
+  }, [crudRelatedData, reglasData, origenesData, fuentesData, perfilesData]);
 
   // Construir relatedData
   const relatedData = useMemo(() => ({
@@ -286,8 +305,10 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     criticidadesData: criticidadesData || [],
     umbralesData: umbralesData || [],
     reglasData: reglasData || [],
+    origenesData: origenesData || [],
+    fuentesData: fuentesData || [],
     userData: userData || []
-  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, criticidadesData, umbralesData, reglasData, userData]);
+  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, criticidadesData, umbralesData, reglasData, origenesData, fuentesData, userData]);
 
   const relatedDataForStatus = useMemo(() => ({
     paisesData: paisesData || [],
@@ -298,8 +319,10 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     criticidadesData: criticidadesData || [],
     umbralesData: umbralesData || [],
     reglasData: reglasData || [],
+    origenesData: origenesData || [],
+    fuentesData: fuentesData || [],
     userData: userData || []
-  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, criticidadesData, umbralesData, reglasData, userData]);
+  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, criticidadesData, umbralesData, reglasData, origenesData, fuentesData, userData]);
 
   // Renderizar contenido según el subTab activo
   const renderContent = () => {
@@ -309,7 +332,13 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
           <StatusTab
             tableName={selectedTable}
             tableData={tableData}
-            columns={columns}
+            columns={columns.filter(col => {
+              // Filtrar primary keys de las tablas de reglas
+              if (selectedTable === 'regla_objeto' && col.columnName === 'regla_objetoid') return false;
+              if (selectedTable === 'regla_umbral' && col.columnName === 'regla_umbralid') return false;
+              if (selectedTable === 'regla_perfil' && col.columnName === 'regla_perfilid') return false;
+              return true;
+            })}
             relatedData={relatedData}
             userData={userData}
             loading={tableDataLoading}
@@ -333,7 +362,21 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
             }}
             message={message}
             relatedData={relatedDataForStatus}
-            visibleColumns={columns}
+            visibleColumns={columns.filter(col => {
+              // Filtrar campos automáticos que no deben aparecer en formularios
+              const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+              // Filtrar primary key auto-generado según la tabla
+              if (selectedTable === 'regla_objeto') {
+                excludedFields.push('regla_objetoid');
+              } else if (selectedTable === 'regla_umbral') {
+                excludedFields.push('regla_umbralid');
+              } else if (selectedTable === 'regla_perfil') {
+                excludedFields.push('regla_perfilid');
+              } else if (selectedTable === 'alerta_regla') {
+                excludedFields.push('uuid_alerta_reglaid');
+              }
+              return !excludedFields.includes(col.columnName);
+            })}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
@@ -343,18 +386,25 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
         );
       
       case 'update':
+        const filteredColumnsForUpdate = columns.filter(col => {
+          // Filtrar primary keys de las tablas de reglas
+          if (selectedTable === 'regla_objeto' && col.columnName === 'regla_objetoid') return false;
+          if (selectedTable === 'regla_umbral' && col.columnName === 'regla_umbralid') return false;
+          if (selectedTable === 'regla_perfil' && col.columnName === 'regla_perfilid') return false;
+          return true;
+        });
         return (
           <UpdateTab
             tableName={selectedTable}
             tableData={tableData}
-            columns={columns}
+            columns={filteredColumnsForUpdate}
             relatedData={relatedData}
             config={config || null}
             updateRow={updateRow}
             getPrimaryKeyValue={getPrimaryKeyValue}
             user={user}
             loading={tableDataLoading}
-            visibleColumns={columns}
+            visibleColumns={filteredColumnsForUpdate}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }

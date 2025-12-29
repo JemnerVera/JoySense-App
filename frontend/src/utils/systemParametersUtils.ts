@@ -20,6 +20,9 @@ export interface RelatedData {
   criticidadesData?: any[];
   perfilesData?: any[];
   umbralesData?: any[];
+  reglasData?: any[];
+  origenesData?: any[];
+  fuentesData?: any[];
   userData?: any[];
   mediosData?: any[];
 }
@@ -329,6 +332,17 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'certificacion_osiptel': 'Certificación OSIPTEL',
     'sensorid': 'ID del Sensor',
     'id_device': 'ID del Dispositivo',
+    // Campos de reglas
+    'reglaid': 'Regla',
+    'regla_objetoid': 'ID',
+    'regla_umbralid': 'ID',
+    'regla_perfilid': 'ID',
+    'operador_logico': 'Operador Lógico',
+    'agrupador_inicio': 'Agrupador de Inicio',
+    'agrupador_fin': 'Agrupador de Fin',
+    'objetoid': 'ID de Objeto',
+    'fuenteid': 'Fuente',
+    'origenid': 'Origen',
   };
 
   return columnMappings[columnName] || columnName;
@@ -362,6 +376,9 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
     case 'criticidad': return relatedData.criticidadesData || [];
     case 'perfil': return relatedData.perfilesData || [];
     case 'umbral': return relatedData.umbralesData || [];
+    case 'regla': return relatedData.reglasData || [];
+    case 'origen': return relatedData.origenesData || [];
+    case 'fuente': return relatedData.fuentesData || [];
     case 'usuario': return relatedData.userData || [];
     case 'medio': return relatedData.mediosData || [];
     default: return [];
@@ -396,7 +413,10 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'usuarioid': { table: 'usuario', nameField: 'login' },
     'medioid': { table: 'medio', nameField: 'nombre' },
     'old_criticidadid': { table: 'criticidad', nameField: 'criticidad' },
-    'new_criticidadid': { table: 'criticidad', nameField: 'criticidad' }
+    'new_criticidadid': { table: 'criticidad', nameField: 'criticidad' },
+    'reglaid': { table: 'regla', nameField: 'nombre' },
+    'origenid': { table: 'origen', nameField: 'origen' },
+    'fuenteid': { table: 'fuente', nameField: 'fuente' }
   };
 
   // Para campos que son IDs de tablas relacionadas - VERSIÓN SÚPER OPTIMIZADA

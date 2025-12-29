@@ -183,10 +183,14 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
     }
 
     // Agregar campos de auditoría
+    const userId = user?.user_metadata?.usuarioid || 1;
+    const now = new Date().toISOString();
     const dataToInsert: Record<string, any> = {
       ...formState.data,
-      usercreatedid: user?.user_metadata?.usuarioid || 1,
-      datecreated: new Date().toISOString()
+      usercreatedid: userId,
+      datecreated: now,
+      usermodifiedid: userId,
+      datemodified: now
     };
 
     // Excluir reglaid (se genera automáticamente)
@@ -243,8 +247,14 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
 
   // Función helper para obtener opciones únicas
   const getUniqueOptionsForField = useCallback((columnName: string): Array<{value: any, label: string}> => {
-    const relatedTable = crudRelatedData[columnName.replace('id', '')] || 
-                        crudRelatedData[columnName] || [];
+    // Buscar en crudRelatedData primero
+    let relatedTable = crudRelatedData[columnName.replace('id', '')] || 
+                       crudRelatedData[columnName] || [];
+    
+    // Si no se encuentra, buscar en criticidadesData (para criticidadid)
+    if ((!Array.isArray(relatedTable) || relatedTable.length === 0) && columnName === 'criticidadid') {
+      relatedTable = criticidadesData || [];
+    }
     
     if (!Array.isArray(relatedTable) || relatedTable.length === 0) {
       return [];
@@ -264,7 +274,7 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
       
       return { value, label };
     });
-  }, [crudRelatedData]);
+  }, [crudRelatedData, criticidadesData]);
 
   // Construir relatedData para StatusTab y UpdateTab
   const relatedData = useMemo(() => ({
@@ -296,7 +306,7 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
           <StatusTab
             tableName={selectedTable}
             tableData={tableData}
-            columns={columns}
+            columns={columns.filter(col => col.columnName !== 'reglaid')}
             relatedData={relatedData}
             userData={userData}
             loading={tableDataLoading}
@@ -320,7 +330,11 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
             }}
             message={message}
             relatedData={relatedDataForStatus}
-            visibleColumns={columns}
+            visibleColumns={columns.filter(col => {
+              // Filtrar campos automáticos que no deben aparecer en formularios
+              const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified', 'reglaid'];
+              return !excludedFields.includes(col.columnName);
+            })}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
@@ -334,14 +348,14 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
           <UpdateTab
             tableName={selectedTable}
             tableData={tableData}
-            columns={columns}
+            columns={columns.filter(col => col.columnName !== 'reglaid')}
             relatedData={relatedData}
             config={config || null}
             updateRow={updateRow}
             getPrimaryKeyValue={getPrimaryKeyValue}
             user={user}
             loading={tableDataLoading}
-            visibleColumns={columns}
+            visibleColumns={columns.filter(col => col.columnName !== 'reglaid')}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
