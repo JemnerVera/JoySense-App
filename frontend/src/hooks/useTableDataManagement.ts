@@ -31,6 +31,8 @@ export const useTableDataManagement = () => {
   const [sensorsData, setSensorsData] = useState<any[]>([]);
   const [metricasensorData, setMetricasensorData] = useState<any[]>([]);
   const [contactosData, setContactosData] = useState<any[]>([]);
+  const [origenesData, setOrigenesData] = useState<any[]>([]);
+  const [fuentesData, setFuentesData] = useState<any[]>([]);
   const [correosData, setCorreosData] = useState<any[]>([]);
   const [codigotelefonosData, setCodigotelefonosData] = useState<any[]>([]);
 
@@ -80,7 +82,9 @@ export const useTableDataManagement = () => {
         metricasensorResponse,
         contactosResponse,
         correosResponse,
-        codigotelefonosResponse
+        codigotelefonosResponse,
+        origenesResponse,
+        fuentesResponse
       ] = await Promise.all([
         JoySenseService.getTableData('pais', 500),
         JoySenseService.getTableData('empresa', 500),
@@ -100,7 +104,9 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
         JoySenseService.getTableData('contacto', 500),
         JoySenseService.getTableData('correo', 500),
-        JoySenseService.getTableData('codigotelefono', 500)
+        JoySenseService.getTableData('codigotelefono', 500),
+        JoySenseService.getTableData('origen', 500),
+        JoySenseService.getTableData('fuente', 500)
       ]);
 
       // Procesar respuestas
@@ -130,6 +136,8 @@ export const useTableDataManagement = () => {
       const contactos = Array.isArray(contactosResponse) ? contactosResponse : ((contactosResponse as any)?.data || []);
       const correos = Array.isArray(correosResponse) ? correosResponse : ((correosResponse as any)?.data || []);
       const codigotelefonos = Array.isArray(codigotelefonosResponse) ? codigotelefonosResponse : ((codigotelefonosResponse as any)?.data || []);
+      const origenes = Array.isArray(origenesResponse) ? origenesResponse : ((origenesResponse as any)?.data || []);
+      const fuentes = Array.isArray(fuentesResponse) ? fuentesResponse : ((fuentesResponse as any)?.data || []);
 
       // Establecer todos los datos
       setPaisesData(paises);
@@ -149,6 +157,8 @@ export const useTableDataManagement = () => {
       setSensorsData(sensors);
       setMetricasensorData(metricasensor);
       setContactosData(contactos);
+      setOrigenesData(origenes);
+      setFuentesData(fuentes);
       setCorreosData(correos);
       setCodigotelefonosData(codigotelefonos);
 
@@ -410,6 +420,8 @@ export const useTableDataManagement = () => {
     contactosData,
     correosData,
     codigotelefonosData,
+    origenesData,
+    fuentesData,
     
     // Funciones de carga
     loadUserData,
@@ -438,6 +450,8 @@ export const useTableDataManagement = () => {
     setSensorsData,
     setMetricasensorData,
     setContactosData,
-    setCorreosData
+    setCorreosData,
+    setOrigenesData,
+    setFuentesData
   };
 };

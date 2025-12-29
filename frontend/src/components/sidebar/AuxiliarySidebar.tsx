@@ -92,7 +92,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
 
   // Determinar qué sidebar auxiliar mostrar
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
-  const isPermisos = activeTab === 'permisos';
+  const isPermisos = activeTab === 'permisos' || activeTab.startsWith('permisos-');
   const isAcceso = activeTab === 'acceso' || activeTab.startsWith('acceso-');
   const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
   const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
@@ -196,8 +196,15 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   }
 
   if (isPermisos) {
+    console.log('[AuxiliarySidebar] isPermisos es true:', {
+      activeTab,
+      showThirdLevel,
+      permisosSubTab,
+      activeSubTab
+    });
     // Si showThirdLevel es true, solo renderizar el tercer sidebar
     if (showThirdLevel) {
+      console.log('[AuxiliarySidebar] Renderizando PermisosOperationsSidebar (tercer nivel)');
       return (
         <PermisosOperationsSidebar
           activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
@@ -206,11 +213,13 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
           formData={formData}
+          activeTab={activeTab}
         />
       );
     }
 
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    console.log('[AuxiliarySidebar] Renderizando PermisosSidebar (segundo nivel)');
     return (
       <PermisosSidebar
         activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
@@ -218,6 +227,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         isExpanded={isExpanded}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
       />
     );
   }

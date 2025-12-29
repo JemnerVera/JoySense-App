@@ -16,6 +16,7 @@ interface PermisosOperationsSidebarProps {
   activeSubTab: 'status' | 'insert' | 'update';
   onSubTabChange: (subTab: 'status' | 'insert' | 'update') => void;
   formData?: Record<string, any>;
+  activeTab?: string;
 }
 
 const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
@@ -24,11 +25,36 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
   onMouseLeave,
   activeSubTab,
   onSubTabChange,
-  formData = {}
+  formData = {},
+  activeTab = ''
 }) => {
   const { t } = useLanguage();
   const { showModal } = useModal();
   const { hasSignificantChanges } = useSimpleChangeDetection();
+
+  // Determinar qué tabla está seleccionada basándose en activeTab
+  const getSelectedTable = () => {
+    if (activeTab.startsWith('permisos-permiso')) return 'permiso';
+    if (activeTab.startsWith('permisos-origen')) return 'origen';
+    if (activeTab.startsWith('permisos-fuente')) return 'fuente';
+    return 'permiso'; // Default
+  };
+
+  const selectedTable = getSelectedTable();
+
+  // Determinar el título según la tabla seleccionada
+  const getTitle = () => {
+    switch (selectedTable) {
+      case 'permiso':
+        return t('parameters.tables.geography_permission');
+      case 'origen':
+        return t('parameters.tables.origin');
+      case 'fuente':
+        return t('parameters.tables.source');
+      default:
+        return t('parameters.tables.geography_permission');
+    }
+  };
 
   // Handler para cambio de subTab con protección de cambios
   const handleSubTabChange = (targetTab: 'status' | 'insert' | 'update') => {
@@ -37,7 +63,7 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
     // Verificar cambios sin guardar
     const hasChanges = hasSignificantChanges(
       formData,
-      'permiso',
+      selectedTable,
       activeSubTab,
       []
     );
@@ -112,9 +138,9 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title={t('parameters.tables.geography_permission')}
+      title={getTitle()}
       icon={operationsIcon}
-      color="red"
+      color="purple"
       collapsedText="..."
     >
       {/* Operaciones disponibles */}
@@ -131,7 +157,7 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-red-500 text-white"
+                      ? "bg-purple-600 text-white"
                       : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
                   }`}
                 >

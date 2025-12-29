@@ -129,6 +129,18 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         ),
         color: 'purple'
       });
+      
+      // Agregar pestaña de PERMISOS solo para administradores (perfilid === 1)
+      tabs.push({
+        id: 'permisos',
+        label: t('tabs.permissions'),
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        ),
+        color: 'purple'
+      });
     }
     
     // Agregar pestaña de ALERTAS (visible para todos los usuarios autenticados)
@@ -158,6 +170,13 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       color: 'blue'
     });
 
+    console.log('[MainSidebar] mainTabs construido:', { 
+      tabsCount: tabs.length, 
+      tabIds: tabs.map(t => t.id),
+      loadingPerfil,
+      userPerfilId,
+      hasPermisosTab: tabs.some(t => t.id === 'permisos')
+    });
     return tabs;
   }, [loadingPerfil, userPerfilId, t]);
 
@@ -220,7 +239,10 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => {
+                  console.log('[MainSidebar] Click en pestaña:', { tabId: tab.id, tabLabel: tab.label });
+                  onTabChange(tab.id);
+                }}
                 className={`w-full flex items-center p-3 rounded transition-colors ${
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${

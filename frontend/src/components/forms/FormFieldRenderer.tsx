@@ -56,7 +56,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
             type="checkbox"
             checked={value === 1}
             onChange={(e) => updateField(col.columnName, e.target.checked ? 1 : 0)}
-            className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
+            className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')}`}
           />
           <span className="text-white font-mono tracking-wider">
             {value === 1 ? t('create.active') : t('create.inactive')}
@@ -183,6 +183,19 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.country_code') || 'Código de País');
   }
 
+  // Combobox para permiso - perfilid, origenid, fuenteid
+  if (col.columnName === 'perfilid' && selectedTable === 'permiso') {
+    return renderSelectField(t('create.select_profile') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  if (col.columnName === 'origenid' && selectedTable === 'permiso') {
+    return renderSelectField(t('create.select_origin') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  if (col.columnName === 'fuenteid' && selectedTable === 'permiso') {
+    return renderSelectField(t('create.select_source') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
   // Combobox para entidad_localizacion - entidadid, localizacionid
   if (col.columnName === 'entidadid' && selectedTable === 'entidad_localizacion') {
     return renderSelectField(t('create.select_entity') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
@@ -235,12 +248,34 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     );
   }
 
+  // Campos booleanos (puede_ver, puede_insertar, puede_actualizar, puede_eliminar)
+  if (['puede_ver', 'puede_insertar', 'puede_actualizar', 'puede_eliminar'].includes(col.columnName)) {
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            checked={value === true || value === 1}
+            onChange={(e) => updateField(col.columnName, e.target.checked)}
+            className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')}`}
+          />
+          <span className="text-white font-mono tracking-wider">
+            {value === true || value === 1 ? t('create.active') : t('create.inactive')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   // Campo de texto normal
   const isEnabled = isFieldEnabled(col.columnName);
   return (
     <div key={col.columnName} className="mb-4">
       <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-        isEnabled ? 'text-orange-500' : 'text-gray-500'
+        isEnabled ? getThemeColor('text') : 'text-gray-500'
       }`}>
         {displayName.toUpperCase()}{isRequired ? '*' : ''}
       </label>
@@ -256,7 +291,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           }
         }}
         disabled={!isEnabled}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 dark:text-white text-base placeholder-gray-500 dark:placeholder-neutral-400 font-mono ${
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-gray-800 dark:text-white text-base placeholder-gray-500 dark:placeholder-neutral-400 font-mono ${
           isEnabled 
             ? 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600' 
             : 'bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 opacity-50 cursor-not-allowed'

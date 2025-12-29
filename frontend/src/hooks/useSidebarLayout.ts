@@ -15,7 +15,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     if (!tab) return false;
     return tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
-           tab === 'permisos' ||
+           tab === 'permisos' || tab.startsWith('permisos-') ||
            tab === 'acceso' || tab.startsWith('acceso-') ||
            tab === 'alertas' || tab.startsWith('alertas-');
   }, []);
@@ -120,7 +120,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     // Estados
     mainSidebarExpanded,
     auxiliarySidebarExpanded,
-    hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
+    hasAuxiliarySidebar, // Retornar la función, no el resultado
     
     // Handlers
     handleMainSidebarMouseEnter,
