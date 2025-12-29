@@ -179,28 +179,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para ACCESO-PERMISO (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {hasAuxiliarySidebar(activeTab) && (activeTab === 'acceso-permiso' || activeTab.startsWith('acceso-permiso-')) && (
-        <div className="flex-shrink-0 z-30">
-          <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            selectedTable={selectedTable}
-            onTableSelect={onTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
-            dashboardSubTab={dashboardSubTab}
-            onDashboardSubTabChange={onDashboardSubTabChange}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-            showThirdLevel={true}
-          />
-        </div>
-      )}
 
       {/* Tercer sidebar para ALERTAS (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
       {hasAuxiliarySidebar(activeTab) && (

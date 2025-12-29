@@ -35,7 +35,7 @@ export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
         focusRing: 'focus:ring-blue-500',
         focusBorder: 'focus:border-blue-500'
       };
-    } else if (activeTab === 'acceso' || activeTab?.startsWith('acceso-')) {
+    } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
       return {
         gradient: 'from-purple-500 to-purple-600',
         hoverGradient: 'hover:from-purple-600 hover:to-purple-700',

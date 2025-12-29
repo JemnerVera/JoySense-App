@@ -3,8 +3,6 @@ import ParametersSidebar from './ParametersSidebar';
 import ParametersOperationsSidebar from './ParametersOperationsSidebar';
 import PermisosSidebar from './PermisosSidebar';
 import PermisosOperationsSidebar from './PermisosOperationsSidebar';
-import AccesoSidebar from './AccesoSidebar';
-import AccesoOperationsSidebar from './AccesoOperationsSidebar';
 import AlertasSidebar from './AlertasSidebar';
 import ReglaOperationsSidebar from './ReglaOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
@@ -93,7 +91,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   // Determinar qué sidebar auxiliar mostrar
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
   const isPermisos = activeTab === 'permisos' || activeTab.startsWith('permisos-');
-  const isAcceso = activeTab === 'acceso' || activeTab.startsWith('acceso-');
   const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
   const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
   const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
@@ -129,34 +126,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         formData={formData}
         multipleData={multipleData}
         massiveFormData={massiveFormData}
-      />
-    );
-  }
-
-  if (isAcceso) {
-    // Si showThirdLevel es true, solo renderizar el tercer sidebar
-    if (showThirdLevel) {
-      return (
-        <AccesoOperationsSidebar
-          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
-          onSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
-          isExpanded={isExpanded}
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-        />
-      );
-    }
-
-    // Si no es showThirdLevel, renderizar solo el segundo sidebar
-    return (
-      <AccesoSidebar
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        activeTab={activeTab}
-        onTabChange={onTabChange}
       />
     );
   }
