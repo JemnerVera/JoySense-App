@@ -95,6 +95,8 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     fundosData,
     ubicacionesData,
     perfilesData,
+    origenesData,
+    fuentesData,
     loadTableData,
     setTableData,
     setColumns,
@@ -144,26 +146,27 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     }
   }, [activeSubTab, loadRelatedData, loadRelatedTablesData]);
 
-  // Cargar datos de la tabla cuando cambia el subTab a 'status' o 'update'
+  // Cargar datos de la tabla cuando cambia el subTab
+  // Para 'insert' también necesitamos cargar las columnas (aunque no los datos)
   useEffect(() => {
-    if (activeSubTab === 'status' || activeSubTab === 'update') {
-      console.log('[PermisosMain] Cargando datos para subTab:', activeSubTab);
+    if (activeSubTab === 'status' || activeSubTab === 'update' || activeSubTab === 'insert') {
+      console.log('[PermisosMain] Cargando datos/columnas para subTab:', activeSubTab);
       loadTableData(selectedTable);
     }
   }, [activeSubTab, loadTableData, selectedTable]);
 
-  // Limpiar datos solo cuando cambia a 'insert' (que no necesita datos de tabla)
+  // Limpiar datos solo cuando cambia a 'insert' (pero mantener las columnas)
   useEffect(() => {
     if (activeSubTab === 'insert') {
       setTableData([]);
-      setColumns([]);
+      // NO limpiar columnas - InsertTab las necesita para renderizar el formulario
       setLoading(false);
       setMessage(null);
       setSelectedRow(null);
       setUpdateFormData({});
       resetForm();
     }
-  }, [activeSubTab, setTableData, setColumns, setLoading, resetForm]);
+  }, [activeSubTab, setTableData, setLoading, resetForm]);
 
   // Handler para cambio de subTab (ya no se usa, se maneja desde el sidebar)
   // Se mantiene por compatibilidad pero no se usa directamente
@@ -263,6 +266,10 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       
       if (columnName === 'perfilid') {
         label = item.perfil || `Perfil ${value}`;
+      } else if (columnName === 'origenid') {
+        label = item.origen || `Origen ${value}`;
+      } else if (columnName === 'fuenteid') {
+        label = item.fuente || `Fuente ${value}`;
       } else if (columnName === 'paisid') {
         label = item.pais || `País ${value}`;
       } else if (columnName === 'empresaid') {
@@ -296,8 +303,10 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     fundosData: fundosData || [],
     ubicacionesData: ubicacionesData || [],
     perfilesData: perfilesData || [],
+    origenesData: origenesData || [],
+    fuentesData: fuentesData || [],
     userData: userData || []
-  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, userData]);
+  }), [paisesData, empresasData, fundosData, ubicacionesData, perfilesData, origenesData, fuentesData, userData]);
 
   // Renderizar contenido según el subTab activo
   const renderContent = () => {

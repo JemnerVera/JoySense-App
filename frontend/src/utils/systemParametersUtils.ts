@@ -203,6 +203,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'puede_ver': 'PUEDE VER',
     'puede_insertar': 'PUEDE INSERTAR',
     'puede_actualizar': 'PUEDE ACTUALIZAR',
+    'puede_eliminar': 'PUEDE ELIMINAR',
     'password_hash': t('table_headers.password'),
     'usercreatedid': t('table_headers.created_by'),
     'usermodifiedid': t('table_headers.modified_by'),

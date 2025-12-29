@@ -63,8 +63,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         />
       </div>
 
-      {/* Sidebar auxiliar */}
-      {hasAuxiliarySidebar && (
+      {/* Sidebar auxiliar (excluir permisos - se maneja después) */}
+      {hasAuxiliarySidebar(activeTab) && activeTab !== 'permisos' && !activeTab.startsWith('permisos-') && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
@@ -86,7 +86,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
       {/* Tercer sidebar para parámetros (solo cuando hay tabla seleccionada) */}
-      {hasAuxiliarySidebar && (activeTab === 'parameters' || activeTab.startsWith('parameters-')) && selectedTable && (
+      {hasAuxiliarySidebar(activeTab) && (activeTab === 'parameters' || activeTab.startsWith('parameters-')) && selectedTable && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
@@ -108,8 +108,54 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para permisos (siempre visible cuando está en permisos) */}
-      {hasAuxiliarySidebar && activeTab === 'permisos' && (
+      {/* Segundo sidebar para permisos (PERMISO, ORIGEN, FUENTE) */}
+      {(() => {
+        const shouldShow = (activeTab === 'permisos' || activeTab.startsWith('permisos-')) && hasAuxiliarySidebar(activeTab);
+        console.log('[SidebarContainer] Segundo sidebar para permisos:', {
+          activeTab,
+          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
+          shouldShow,
+          condition1: activeTab === 'permisos',
+          condition2: activeTab.startsWith('permisos-')
+        });
+        return shouldShow;
+      })() && (
+        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
+          <AuxiliarySidebar
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showThirdLevel={false}
+            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
+            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
+          />
+        </div>
+      )}
+
+      {/* Tercer sidebar para permisos (ESTADO, CREAR, ACTUALIZAR) - cuando se selecciona permiso, origen o fuente */}
+      {(() => {
+        const shouldShow = (activeTab === 'permisos-permiso' || activeTab === 'permisos-origen' || activeTab === 'permisos-fuente') && hasAuxiliarySidebar(activeTab);
+        console.log('[SidebarContainer] Tercer sidebar para permisos:', {
+          activeTab,
+          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
+          shouldShow,
+          condition1: activeTab === 'permisos-permiso',
+          condition2: activeTab === 'permisos-origen',
+          condition3: activeTab === 'permisos-fuente'
+        });
+        return shouldShow;
+      })() && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
@@ -134,7 +180,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
       {/* Tercer sidebar para ACCESO-PERMISO (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {hasAuxiliarySidebar && (activeTab === 'acceso-permiso' || activeTab.startsWith('acceso-permiso-')) && (
+      {hasAuxiliarySidebar(activeTab) && (activeTab === 'acceso-permiso' || activeTab.startsWith('acceso-permiso-')) && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
@@ -157,7 +203,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
       {/* Tercer sidebar para ALERTAS (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {hasAuxiliarySidebar && (
+      {hasAuxiliarySidebar(activeTab) && (
         (activeTab === 'alertas-regla' || activeTab.startsWith('alertas-regla-')) ||
         (activeTab === 'alertas-regla_objeto' || activeTab.startsWith('alertas-regla_objeto-')) ||
         (activeTab === 'alertas-regla_umbral' || activeTab.startsWith('alertas-regla_umbral-')) ||
@@ -187,7 +233,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
       {/* Tercer sidebar para dashboards (solo cuando está en reportes-dashboard) */}
-      {hasAuxiliarySidebar && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
+      {hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
