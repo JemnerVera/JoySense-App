@@ -70,7 +70,12 @@ const AppContentInternal: React.FC = () => {
   usePreloadCriticalComponents();
 
   // Ref para SystemParameters
-  const systemParametersRef = useRef<{ handleTableChange: (table: string) => void; hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void }>(null);
+  const systemParametersRef = useRef<{ 
+    handleTableChange: (table: string) => void; 
+    hasUnsavedChanges: () => boolean; 
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  }>(null);
   
   // Ref para PermisosMain
   const permisosMainRef = useRef<{ hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update') => void } | null>(null);
@@ -749,6 +754,12 @@ const AppContentInternal: React.FC = () => {
           formData={currentFormData}
           multipleData={currentMultipleData}
           massiveFormData={currentMassiveFormData}
+          onPermisosSubTabChangeFromProtectedButton={
+            // Solo pasar la función si estamos en permisos-origen o permisos-fuente
+            (activeTab.startsWith('permisos-origen') || activeTab.startsWith('permisos-fuente'))
+              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton
+              : undefined
+          }
         />
 
         {/* Área principal con header fijo y contenido scrolleable */}

@@ -17,6 +17,7 @@ interface SidebarContainerProps {
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
+  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({
@@ -32,7 +33,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   onDashboardSubTabChange,
   formData = {},
   multipleData = [],
-  massiveFormData = {}
+  massiveFormData = {},
+  onPermisosSubTabChangeFromProtectedButton
 }) => {
   const {
     mainSidebarExpanded,
@@ -111,13 +113,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {/* Segundo sidebar para permisos (PERMISO, ORIGEN, FUENTE) */}
       {(() => {
         const shouldShow = (activeTab === 'permisos' || activeTab.startsWith('permisos-')) && hasAuxiliarySidebar(activeTab);
-        console.log('[SidebarContainer] Segundo sidebar para permisos:', {
-          activeTab,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
-          shouldShow,
-          condition1: activeTab === 'permisos',
-          condition2: activeTab.startsWith('permisos-')
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -146,14 +141,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {/* Tercer sidebar para permisos (ESTADO, CREAR, ACTUALIZAR) - cuando se selecciona permiso, origen o fuente */}
       {(() => {
         const shouldShow = (activeTab === 'permisos-permiso' || activeTab === 'permisos-origen' || activeTab === 'permisos-fuente') && hasAuxiliarySidebar(activeTab);
-        console.log('[SidebarContainer] Tercer sidebar para permisos:', {
-          activeTab,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
-          shouldShow,
-          condition1: activeTab === 'permisos-permiso',
-          condition2: activeTab === 'permisos-origen',
-          condition3: activeTab === 'permisos-fuente'
-        });
         return shouldShow;
       })() && (
         <div className="flex-shrink-0 z-30">
@@ -175,6 +162,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             showThirdLevel={true}
             permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
             onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
+            onPermisosSubTabChangeFromProtectedButton={onPermisosSubTabChangeFromProtectedButton}
           />
         </div>
       )}
