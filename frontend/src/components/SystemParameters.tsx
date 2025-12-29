@@ -217,17 +217,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         }
       }
       
-      // También excluir la clave primaria de la tabla (se genera automáticamente)
+      // También excluir la clave primaria de la tabla SOLO si es auto-incremental
+      // (es decir, si NO es una foreign key requerida)
       const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
       if (primaryKey) {
-        if (Array.isArray(primaryKey)) {
-          // Si es una clave compuesta, excluir todos los campos
-          if (primaryKey.includes(col.columnName)) {
-            continue;
-          }
-        } else {
-          // Si es una clave simple, excluir solo ese campo
-          if (col.columnName === primaryKey) {
+        const primaryKeyFields = Array.isArray(primaryKey) ? primaryKey : [primaryKey];
+        if (primaryKeyFields.includes(col.columnName)) {
+          // Verificar si el campo de clave primaria es una foreign key
+          const fieldConfig = config?.fields.find(f => f.name === col.columnName);
+          // Si NO es foreign key, entonces es auto-incremental y debe excluirse
+          // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
+          if (!fieldConfig?.foreignKey) {
             continue;
           }
         }
@@ -994,16 +994,22 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                     // Filtrar campos automáticos que no deben aparecer en formularios
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
                     
-                    // Excluir la clave primaria de la tabla (se genera automáticamente)
+                    // Excluir la clave primaria de la tabla SOLO si es auto-incremental
+                    // (es decir, si NO es una foreign key requerida)
                     const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
                     if (primaryKey) {
-                      if (Array.isArray(primaryKey)) {
-                        // Si es una clave compuesta, excluir todos los campos
-                        primaryKey.forEach(pk => excludedFields.push(pk));
-                      } else {
-                        // Si es una clave simple, excluir solo ese campo
-                        excludedFields.push(primaryKey);
-                      }
+                      const config = getTableConfig(selectedTable as TableName);
+                      const primaryKeyFields = Array.isArray(primaryKey) ? primaryKey : [primaryKey];
+                      
+                      primaryKeyFields.forEach(pk => {
+                        // Verificar si el campo de clave primaria es una foreign key
+                        const fieldConfig = config?.fields.find(f => f.name === pk);
+                        // Si NO es foreign key, entonces es auto-incremental y debe excluirse
+                        // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
+                        if (!fieldConfig?.foreignKey) {
+                          excludedFields.push(pk);
+                        }
+                      });
                     }
                     
                     return !excludedFields.includes(col.columnName);
