@@ -44,7 +44,7 @@
   background: #2563eb; /* blue-600 */
 }
 
-/* Scrollbar Rojo (Permisos) */
+/* Scrollbar Rojo (Alertas) */
 .theme-red .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #ef4444; /* red-500 */
   border-radius: 3px;
@@ -52,6 +52,16 @@
 
 .theme-red .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #dc2626; /* red-600 */
+}
+
+/* Scrollbar Morado (Permisos) */
+.theme-purple .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #a855f7; /* purple-500 */
+  border-radius: 3px;
+}
+
+.theme-purple .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9333ea; /* purple-600 */
 }
 
 /* Para Firefox - Verde (por defecto) */
@@ -82,13 +92,22 @@
   scrollbar-color: #3b82f6 #404040; /* blue-500 neutral-700 */
 }
 
-/* Para Firefox - Rojo (Permisos) */
+/* Para Firefox - Rojo (Alertas) */
 .theme-red .custom-scrollbar {
   scrollbar-color: #ef4444 #d1d5db; /* red-500 gray-300 */
 }
 
 .dark .theme-red .custom-scrollbar {
   scrollbar-color: #ef4444 #404040; /* red-500 neutral-700 */
+}
+
+/* Para Firefox - Morado (Permisos) */
+.theme-purple .custom-scrollbar {
+  scrollbar-color: #a855f7 #d1d5db; /* purple-500 gray-300 */
+}
+
+.dark .theme-purple .custom-scrollbar {
+  scrollbar-color: #a855f7 #404040; /* purple-500 neutral-700 */
 }
 
 /* Ocultar scrollbar cuando está colapsado */

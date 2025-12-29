@@ -37,39 +37,31 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
     }
   };
 
+  const getValueColor = () => {
+    switch (themeColor) {
+      case 'red': return 'text-red-500';
+      case 'blue': return 'text-blue-500';
+      case 'green': return 'text-green-500';
+      case 'purple': return 'text-purple-500';
+      default: return 'text-orange-500';
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
         <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.records')}</div>
-        <div className={`text-2xl font-bold font-mono ${
-          themeColor === 'red' ? 'text-red-500' :
-          themeColor === 'blue' ? 'text-blue-500' :
-          themeColor === 'green' ? 'text-green-500' :
-          themeColor === 'purple' ? 'text-purple-500' :
-          'text-orange-500'
-        }`}>{tableData.length}</div>
+        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>{tableData.length}</div>
       </div>
 
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
         <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_update')}</div>
-        <div className={`text-2xl font-bold font-mono ${
-          themeColor === 'red' ? 'text-red-500' :
-          themeColor === 'blue' ? 'text-blue-500' :
-          themeColor === 'green' ? 'text-green-500' :
-          themeColor === 'purple' ? 'text-purple-500' :
-          'text-orange-500'
-        }`}>{new Date().toLocaleDateString('es-ES')}</div>
+        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>{new Date().toLocaleDateString('es-ES')}</div>
       </div>
 
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
         <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_user')}</div>
-        <div className={`text-2xl font-bold font-mono ${
-          themeColor === 'red' ? 'text-red-500' :
-          themeColor === 'blue' ? 'text-blue-500' :
-          themeColor === 'green' ? 'text-green-500' :
-          themeColor === 'purple' ? 'text-purple-500' :
-          'text-orange-500'
-        }`}>
+        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>
           {getLastUser()}
         </div>
       </div>

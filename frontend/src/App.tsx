@@ -46,6 +46,7 @@ const SystemParametersWithSuspense = React.forwardRef<
     onFormDataChange: (formData: Record<string, any>, multipleData: any[]) => void;
     onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
     clearFormData?: boolean;
+    themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
   }
 >((props, ref) => (
   <SystemParametersLazyWithBoundary {...props} ref={ref} />
@@ -663,6 +664,7 @@ const AppContentInternal: React.FC = () => {
             onFormDataChange={handleFormDataChange}
             onMassiveFormDataChange={handleMassiveFormDataChange}
             clearFormData={clearFormData}
+            themeColor="purple"
           />
         );
       }
@@ -715,7 +717,9 @@ const AppContentInternal: React.FC = () => {
       return 'theme-orange';
     } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
       return 'theme-blue';
-    } else if (activeTab === 'permisos') {
+    } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
+      return 'theme-purple';
+    } else if (activeTab === 'alertas' || activeTab?.startsWith('alertas-')) {
       return 'theme-red';
     } else {
       // Reportes/Dashboard - verde por defecto

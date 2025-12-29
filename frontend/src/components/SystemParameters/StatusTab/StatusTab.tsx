@@ -75,6 +75,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
             onSearchChange={handleSearchChange}
             filteredCount={filteredData.length}
             totalCount={tableData.length}
+            themeColor={themeColor}
           />
 
           {/* Tabla con datos - Solo renderizar cuando está listo */}
@@ -97,6 +98,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
               totalPages={totalPages}
               onPageChange={handlePageChange}
               showPagination={totalPages > 1}
+              themeColor={themeColor}
             />
           )}
         </>
