@@ -13,7 +13,7 @@ import { useFilters } from '../contexts/FilterContext';
 
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
-import { TableName } from '../types';
+import { TableName, PRIMARY_KEY_MAP } from '../types';
 import type { ColumnInfo } from '../types/systemParameters';
 
 // Hooks
@@ -214,6 +214,22 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         const fieldConfig = config.fields.find(f => f.name === col.columnName);
         if (fieldConfig && fieldConfig.hidden) {
           continue; // Ocultar campos marcados como hidden
+        }
+      }
+      
+      // También excluir la clave primaria de la tabla (se genera automáticamente)
+      const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
+      if (primaryKey) {
+        if (Array.isArray(primaryKey)) {
+          // Si es una clave compuesta, excluir todos los campos
+          if (primaryKey.includes(col.columnName)) {
+            continue;
+          }
+        } else {
+          // Si es una clave simple, excluir solo ese campo
+          if (col.columnName === primaryKey) {
+            continue;
+          }
         }
       }
       
@@ -977,10 +993,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   const filtered = uniqueColumns.filter(col => {
                     // Filtrar campos automáticos que no deben aparecer en formularios
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
-                    // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
-                    if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
-                      excludedFields.push('perfilid');
+                    
+                    // Excluir la clave primaria de la tabla (se genera automáticamente)
+                    const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
+                    if (primaryKey) {
+                      if (Array.isArray(primaryKey)) {
+                        // Si es una clave compuesta, excluir todos los campos
+                        primaryKey.forEach(pk => excludedFields.push(pk));
+                      } else {
+                        // Si es una clave simple, excluir solo ese campo
+                        excludedFields.push(primaryKey);
+                      }
                     }
+                    
                     return !excludedFields.includes(col.columnName);
                   });
                   
@@ -1012,10 +1037,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
                   const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
-                  // Solo excluir perfilid si estamos en la tabla 'perfil' (donde es la clave primaria)
-                  if (selectedTable === 'perfil' && col.columnName === 'perfilid') {
-                    excludedFields.push('perfilid');
+                  
+                  // Excluir la clave primaria de la tabla (se genera automáticamente)
+                  const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
+                  if (primaryKey) {
+                    if (Array.isArray(primaryKey)) {
+                      // Si es una clave compuesta, excluir todos los campos
+                      primaryKey.forEach(pk => excludedFields.push(pk));
+                    } else {
+                      // Si es una clave simple, excluir solo ese campo
+                      excludedFields.push(primaryKey);
+                    }
                   }
+                  
                   return !excludedFields.includes(col.columnName);
                 })}
                 getColumnDisplayName={(columnName: string) => 

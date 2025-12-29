@@ -785,7 +785,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: true,
     allowDelete: false,
     fields: [
-      { name: 'origenid', label: 'ID', type: 'number', hidden: false, readonly: true },
+      { name: 'origenid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'origen', label: 'Origen', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]

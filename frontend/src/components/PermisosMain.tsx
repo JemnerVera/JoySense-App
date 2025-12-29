@@ -22,6 +22,7 @@ import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
+import { TableName, PRIMARY_KEY_MAP } from '../types';
 
 // ============================================================================
 // INTERFACES
@@ -340,7 +341,24 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             }}
             message={message}
             relatedData={relatedDataForStatus}
-            visibleColumns={columns}
+            visibleColumns={columns.filter(col => {
+              // Filtrar campos automáticos que no deben aparecer en formularios
+              const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+              
+              // Excluir la clave primaria de la tabla (se genera automáticamente)
+              const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
+              if (primaryKey) {
+                if (Array.isArray(primaryKey)) {
+                  // Si es una clave compuesta, excluir todos los campos
+                  primaryKey.forEach(pk => excludedFields.push(pk));
+                } else {
+                  // Si es una clave simple, excluir solo ese campo
+                  excludedFields.push(primaryKey);
+                }
+              }
+              
+              return !excludedFields.includes(col.columnName);
+            })}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
@@ -361,7 +379,24 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             getPrimaryKeyValue={getPrimaryKeyValue}
             user={user}
             loading={tableDataLoading}
-            visibleColumns={columns}
+            visibleColumns={columns.filter(col => {
+              // Filtrar campos automáticos que no deben aparecer en formularios
+              const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
+              
+              // Excluir la clave primaria de la tabla (se genera automáticamente)
+              const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
+              if (primaryKey) {
+                if (Array.isArray(primaryKey)) {
+                  // Si es una clave compuesta, excluir todos los campos
+                  primaryKey.forEach(pk => excludedFields.push(pk));
+                } else {
+                  // Si es una clave simple, excluir solo ese campo
+                  excludedFields.push(primaryKey);
+                }
+              }
+              
+              return !excludedFields.includes(col.columnName);
+            })}
             getColumnDisplayName={(columnName: string) => 
               getColumnDisplayNameTranslated(columnName, t)
             }
