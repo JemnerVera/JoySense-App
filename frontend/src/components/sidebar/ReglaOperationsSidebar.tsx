@@ -62,12 +62,54 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     </svg>
   );
 
+  // Determinar qué tabla está activa basándome en activeTab
+  const getCurrentTablePrefix = (): string => {
+    if (!activeTab) return 'alertas-regla';
+    
+    if (activeTab.startsWith('alertas-regla_objeto')) {
+      return 'alertas-regla_objeto';
+    }
+    if (activeTab.startsWith('alertas-regla_umbral')) {
+      return 'alertas-regla_umbral';
+    }
+    if (activeTab.startsWith('alertas-regla_perfil')) {
+      return 'alertas-regla_perfil';
+    }
+    if (activeTab.startsWith('alertas-alerta_regla')) {
+      return 'alertas-alerta_regla';
+    }
+    // Por defecto, regla (sin guion bajo)
+    return 'alertas-regla';
+  };
+
+  // Obtener el título dinámico según la tabla activa
+  const getTitle = (): string => {
+    if (!activeTab) return t('alerts.rule');
+    
+    if (activeTab.startsWith('alertas-regla_objeto')) {
+      return t('alerts.rule_object');
+    }
+    if (activeTab.startsWith('alertas-regla_umbral')) {
+      return t('alerts.rule_threshold');
+    }
+    if (activeTab.startsWith('alertas-regla_perfil')) {
+      return t('alerts.rule_profile');
+    }
+    if (activeTab.startsWith('alertas-alerta_regla')) {
+      return t('alerts.rule_alert');
+    }
+    // Por defecto, regla
+    return t('alerts.rule');
+  };
+
+  const currentTablePrefix = getCurrentTablePrefix();
+
   return (
     <BaseAuxiliarySidebar
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title={t('alerts.rule')}
+      title={getTitle()}
       icon={operationsIcon}
       color="red"
       collapsedText="..."
@@ -82,7 +124,8 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                   key={operation.id}
                   onClick={() => {
                     onSubTabChange?.(operation.id);
-                    onTabChange?.(`alertas-regla-${operation.id}`);
+                    // Construir la ruta correcta según la tabla activa
+                    onTabChange?.(`${currentTablePrefix}-${operation.id}`);
                   }}
                   className={`w-full flex items-center p-3 rounded transition-colors ${
                     isExpanded ? 'gap-3' : 'justify-center'

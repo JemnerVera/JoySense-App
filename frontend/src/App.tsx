@@ -180,6 +180,39 @@ const AppContentInternal: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Sincronizar activeSubTab con activeTab para tablas de alertas
+  useEffect(() => {
+    if (activeTab.startsWith('alertas-regla-') || activeTab.startsWith('alertas-regla_') || activeTab.startsWith('alertas-alerta_regla-')) {
+      // Extraer el subTab del activeTab
+      let subTab: 'status' | 'insert' | 'update' | undefined;
+      
+      if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {
+        // Para alertas-regla-xxx
+        subTab = activeTab.replace('alertas-regla-', '') as 'status' | 'insert' | 'update';
+      } else if (activeTab.startsWith('alertas-regla_objeto-')) {
+        // Para alertas-regla_objeto-xxx
+        subTab = activeTab.replace('alertas-regla_objeto-', '') as 'status' | 'insert' | 'update';
+      } else if (activeTab.startsWith('alertas-regla_umbral-')) {
+        // Para alertas-regla_umbral-xxx
+        subTab = activeTab.replace('alertas-regla_umbral-', '') as 'status' | 'insert' | 'update';
+      } else if (activeTab.startsWith('alertas-regla_perfil-')) {
+        // Para alertas-regla_perfil-xxx
+        subTab = activeTab.replace('alertas-regla_perfil-', '') as 'status' | 'insert' | 'update';
+      } else if (activeTab.startsWith('alertas-alerta_regla-')) {
+        // Para alertas-alerta_regla-xxx
+        subTab = activeTab.replace('alertas-alerta_regla-', '') as 'status' | 'insert' | 'update';
+      }
+      
+      // Si se encontró un subTab válido, actualizar activeSubTab
+      if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+        setActiveSubTab(subTab);
+      } else {
+        // Si no hay subTab, resetear a 'status'
+        setActiveSubTab('status');
+      }
+    }
+  }, [activeTab]);
+
   // Hook para el layout del sidebar
   const {
     sidebarVisible,
@@ -316,6 +349,24 @@ const AppContentInternal: React.FC = () => {
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
       setActiveSubTab('status');
+    }
+    
+    // Si cambiamos entre tablas de alertas (regla, regla_objeto, regla_umbral, regla_perfil, alerta_regla)
+    // y el tab ya incluye '-status', '-insert', o '-update', extraer el subTab
+    // Si no incluye ninguno, resetear a 'status'
+    if (tab.startsWith('alertas-regla') || tab.startsWith('alertas-alerta_regla')) {
+      if (tab.endsWith('-status') || tab.endsWith('-insert') || tab.endsWith('-update')) {
+        // El tab ya incluye el subTab, extraerlo
+        const subTab = tab.split('-').pop() as 'status' | 'insert' | 'update';
+        setActiveSubTab(subTab);
+      } else {
+        // El tab no incluye subTab, resetear a 'status'
+        setActiveSubTab('status');
+        // Si el tab no termina con '-status', agregarlo
+        if (!tab.endsWith('-status')) {
+          tab = `${tab}-status`;
+        }
+      }
     }
     
     // Navegación simple sin interceptores

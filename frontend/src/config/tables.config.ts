@@ -523,8 +523,8 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'reglaid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'prioridad', label: 'Prioridad', type: 'number', defaultValue: 1 },
-      { name: 'ventana', label: 'Ventana', type: 'text', required: true, defaultValue: '00:10:00' },
-      { name: 'cooldown', label: 'Cooldown', type: 'text', required: true, defaultValue: '1 day' },
+      { name: 'ventana', label: 'Ventana', type: 'text', required: true, defaultValue: '00:10:00', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },
+      { name: 'cooldown', label: 'Cooldown', type: 'text', required: true, defaultValue: '1 day', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },
       { name: 'criticidadid', label: 'Criticidad', type: 'select', required: true, foreignKey: { table: 'criticidad', valueField: 'criticidadid', labelField: 'criticidad' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
@@ -564,7 +564,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'regla_umbralid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'reglaid', label: 'Regla', type: 'select', required: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
       { name: 'umbralid', label: 'Umbral', type: 'select', required: true, foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
-      { name: 'operador_logico', label: 'Operador Lógico', type: 'text', defaultValue: 'AND' },
+      { name: 'operador_logico', label: 'Operador Lógico', type: 'select', required: true, defaultValue: 'AND' },
       { name: 'agrupador_inicio', label: 'Agrupador Inicio', type: 'boolean', defaultValue: false },
       { name: 'agrupador_fin', label: 'Agrupador Fin', type: 'boolean', defaultValue: false },
       { name: 'orden', label: 'Orden', type: 'number', required: true },
@@ -588,7 +588,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'reglaid', label: 'Regla', type: 'select', required: true, foreignKey: { table: 'regla', valueField: 'reglaid', labelField: 'nombre' } },
       { name: 'origenid', label: 'Origen', type: 'select', required: true, foreignKey: { table: 'origen', valueField: 'origenid', labelField: 'origen' } },
       { name: 'fuenteid', label: 'Fuente', type: 'select', required: true, foreignKey: { table: 'fuente', valueField: 'fuenteid', labelField: 'fuente' } },
-      { name: 'objetoid', label: 'Objeto ID', type: 'number', required: false },
+      { name: 'objetoid', label: 'ID de Objeto', type: 'number', required: false },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
