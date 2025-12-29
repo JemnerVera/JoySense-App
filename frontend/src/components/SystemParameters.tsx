@@ -53,6 +53,7 @@ interface SystemParametersProps {
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
   onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
 }
 
 export interface SystemParametersRef {
@@ -76,7 +77,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   activeSubTab: propActiveSubTab = 'status',
   onSubTabChange: propOnSubTabChange, // Renombrar para evitar conflicto
   onFormDataChange,
-  onMassiveFormDataChange
+  onMassiveFormDataChange,
+  themeColor = 'orange'
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -814,6 +816,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 userData={userData || []}
                 loading={tableDataLoading} // Usar loading de useTableDataManagement
                 onRowClick={handleRowSelect}
+                themeColor={themeColor}
               />
             )}
             {activeSubTab === 'insert' && insertForm && (
@@ -858,6 +861,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 insertedRecords={insertedRecords}
                 onClearInsertedRecords={() => setInsertedRecords([])}
                 resetKey={`${selectedTable}-${insertTabKey}-${getResetKey()}`}
+                themeColor={themeColor}
               />
             )}
             {activeSubTab === 'update' && (
@@ -871,6 +875,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getPrimaryKeyValue={getPrimaryKeyValue}
                 user={user}
                 loading={tableState.loading}
+                themeColor={themeColor}
                 visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
                   const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];

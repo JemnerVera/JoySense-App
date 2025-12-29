@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated, getDisplayValue, getUserName, formatDate } from '../../../utils/systemParametersUtils';
+import { getPrimaryKey } from '../../../config/tables.config';
 import type { ColumnInfo } from '../../../types/systemParameters';
 import type { RelatedData } from '../../../utils/systemParametersUtils';
 
@@ -52,8 +53,27 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   const isRowSelected = useCallback((row: any): boolean => {
     if (!selectedRow) return false;
     
-    // Comparar por múltiples campos (lógica estándar)
+    // Primero intentar usar la clave primaria de la tabla
+    if (tableName) {
+      try {
+        const primaryKey = getPrimaryKey(tableName);
+        if (typeof primaryKey === 'string') {
+          // Clave primaria simple
+          return row[primaryKey] === selectedRow[primaryKey];
+        } else if (Array.isArray(primaryKey)) {
+          // Clave primaria compuesta
+          return primaryKey.every(key => row[key] === selectedRow[key]);
+        }
+      } catch (e) {
+        // Si falla, continuar con la lógica estándar
+      }
+    }
+    
+    // Comparar por múltiples campos (lógica estándar como fallback)
     const rowKeys = [
+      row.permisoid,
+      row.origenid,
+      row.fuenteid,
       row.paisid,
       row.empresaid,
       row.fundoid,
@@ -71,6 +91,9 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
     ].filter(Boolean);
     
     const selectedKeys = [
+      selectedRow.permisoid,
+      selectedRow.origenid,
+      selectedRow.fuenteid,
       selectedRow.paisid,
       selectedRow.empresaid,
       selectedRow.fundoid,
@@ -87,8 +110,15 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
       selectedRow.entidadid
     ].filter(Boolean);
     
-    return rowKeys.length > 0 && selectedKeys.length > 0 && 
-           rowKeys.every((key, index) => key === selectedKeys[index]);
+    // Si hay claves, comparar que todas coincidan
+    if (rowKeys.length > 0 && selectedKeys.length > 0) {
+      // Comparar por el primer campo que coincida (más eficiente)
+      return rowKeys.some(key => selectedKeys.includes(key)) && 
+             rowKeys.length === selectedKeys.length &&
+             rowKeys.every((key, index) => key === selectedKeys[index]);
+    }
+    
+    return false;
   }, [selectedRow, tableName]);
 
   // Si no hay columnas, verificar si está cargando o si realmente hay un problema
@@ -209,6 +239,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                       ? 'bg-blue-100 dark:bg-blue-900/20'
                       : themeColor === 'green'
                       ? 'bg-green-100 dark:bg-green-900/20'
+                      : themeColor === 'purple'
+                      ? 'bg-purple-100 dark:bg-purple-900/20'
                       : 'bg-orange-100 dark:bg-orange-900/20'
                     : 'bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'
                   }
@@ -226,6 +258,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                           ? 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-600'
                           : themeColor === 'green'
                           ? 'text-green-500 focus:ring-green-500 dark:focus:ring-green-600'
+                          : themeColor === 'purple'
+                          ? 'text-purple-500 focus:ring-purple-500 dark:focus:ring-purple-600'
                           : 'text-orange-500 focus:ring-orange-500 dark:focus:ring-orange-600'
                       }`}
                     />

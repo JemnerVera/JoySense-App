@@ -359,6 +359,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 onSearchChange={handleSearchChange}
                 filteredCount={filteredData.length}
                 totalCount={tableData.length}
+                themeColor={themeColor}
               />
 
               {/* Tabla con datos - Solo renderizar cuando está listo */}
@@ -379,6 +380,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
                 showPagination={totalPages > 1}
+                themeColor={themeColor}
               />
             </>
           ) : (
