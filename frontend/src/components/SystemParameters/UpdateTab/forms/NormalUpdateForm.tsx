@@ -176,12 +176,38 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           )}
 
           {isPrimaryKey ? (
-            <input
-              type="text"
-              value={formData[field.name] ?? ''}
-              readOnly
-              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
-            />
+            // Si es clave primaria pero también foreign key, mostrar el nombre
+            field.foreignKey ? (
+              (() => {
+                const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                const fieldValue = formData[field.name];
+                const item = relatedTableData.find((item: any) => 
+                  String(item[field.foreignKey!.valueField]) === String(fieldValue)
+                );
+                const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                  ? field.foreignKey!.labelField 
+                  : [field.foreignKey!.labelField];
+                const displayValue = item 
+                  ? labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ')
+                  : fieldValue ?? '';
+                
+                return (
+                  <input
+                    type="text"
+                    value={displayValue}
+                    readOnly
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+                  />
+                );
+              })()
+            ) : (
+              <input
+                type="text"
+                value={formData[field.name] ?? ''}
+                readOnly
+                className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+              />
+            )
           ) : field.foreignKey && isConstrained ? (
             (() => {
               const relatedTableData = getRelatedTableData(field.foreignKey!.table);
@@ -349,13 +375,38 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
               )}
 
               {isPrimaryKey ? (
-                // Campo de clave primaria: solo lectura
-                <input
-                  type="text"
-                  value={formData[field.name] ?? ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
-                />
+                // Si es clave primaria pero también foreign key, mostrar el nombre
+                field.foreignKey ? (
+                  (() => {
+                    const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                    const fieldValue = formData[field.name];
+                    const item = relatedTableData.find((item: any) => 
+                      String(item[field.foreignKey!.valueField]) === String(fieldValue)
+                    );
+                    const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                      ? field.foreignKey!.labelField 
+                      : [field.foreignKey!.labelField];
+                    const displayValue = item 
+                      ? labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ')
+                      : fieldValue ?? '';
+                    
+                    return (
+                      <input
+                        type="text"
+                        value={displayValue}
+                        readOnly
+                        className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+                      />
+                    );
+                  })()
+                ) : (
+                  <input
+                    type="text"
+                    value={formData[field.name] ?? ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+                  />
+                )
               ) : field.name === 'jefeid' && tableName === 'perfil' && getUniqueOptionsForField ? (
                 // Caso especial para jefeid en perfil: usar getUniqueOptionsForField para formato "nivel - perfil"
                 <SelectWithPlaceholder
