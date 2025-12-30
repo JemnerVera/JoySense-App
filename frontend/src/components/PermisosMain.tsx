@@ -466,7 +466,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-visible" style={{ minHeight: 'calc(100vh - 200px)' }}>
       {/* Mensaje */}
       {message && (
         <MessageDisplay message={message} />

@@ -9,6 +9,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { MessageDisplay } from '../SystemParameters/MessageDisplay';
+import MultiSelectWithPlaceholder from '../MultiSelectWithPlaceholder';
+import SelectWithPlaceholder from '../SelectWithPlaceholder';
 
 // ============================================================================
 // INTERFACES
@@ -61,61 +63,134 @@ export function AsignarPermisosTab({
   const [permisoMatrix, setPermisoMatrix] = useState<PermisoMatrix>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; text: string } | null>(null);
+  
+  // Estados para datos de tabla cargados dinámicamente
+  const [tablaData, setTablaData] = useState<any[]>([]);
+  const [loadingTablaData, setLoadingTablaData] = useState(false);
+  const [fuenteNombre, setFuenteNombre] = useState<string | null>(null);
 
-  // Determinar nivel de geografía según fuente seleccionada
+  // Determinar tipo de origen (GEOGRAFÍA o TABLA) y cargar datos correspondientes
   useEffect(() => {
-    if (!selectedFuente || !fuentesData.length) {
+    if (!selectedOrigen || !selectedFuente || !origenesData.length || !fuentesData.length) {
       setGeografiaLevel(null);
+      setFuenteNombre(null);
+      setTablaData([]);
       return;
     }
 
+    const origen = origenesData.find(o => o.origenid === selectedOrigen);
     const fuente = fuentesData.find(f => f.fuenteid === selectedFuente);
-    if (!fuente) {
+    
+    if (!origen || !fuente) {
       setGeografiaLevel(null);
+      setFuenteNombre(null);
+      setTablaData([]);
       return;
     }
 
+    const origenName = origen.origen?.toUpperCase() || '';
     const fuenteName = fuente.fuente?.toLowerCase() || '';
-    if (fuenteName === 'pais') setGeografiaLevel('pais');
-    else if (fuenteName === 'empresa') setGeografiaLevel('empresa');
-    else if (fuenteName === 'fundo') setGeografiaLevel('fundo');
-    else if (fuenteName === 'ubicacion') setGeografiaLevel('ubicacion');
-    else setGeografiaLevel(null);
-  }, [selectedFuente, fuentesData]);
+    setFuenteNombre(fuente.fuente || null);
 
-  // Cargar objetos según el nivel de geografía seleccionado
-  const objetosData = useMemo(() => {
-    if (!geografiaLevel) return [];
-
-    switch (geografiaLevel) {
-      case 'pais':
-        return paisesData.map(p => ({
-          id: p.paisid,
-          nombre: p.pais || `País ${p.paisid}`,
-          objetoid: p.paisid
-        }));
-      case 'empresa':
-        return empresasData.map(e => ({
-          id: e.empresaid,
-          nombre: e.empresa || `Empresa ${e.empresaid}`,
-          objetoid: e.empresaid
-        }));
-      case 'fundo':
-        return fundosData.map(f => ({
-          id: f.fundoid,
-          nombre: f.fundo || `Fundo ${f.fundoid}`,
-          objetoid: f.fundoid
-        }));
-      case 'ubicacion':
-        return ubicacionesData.map(u => ({
-          id: u.ubicacionid,
-          nombre: u.ubicacion || `Ubicación ${u.ubicacionid}`,
-          objetoid: u.ubicacionid
-        }));
-      default:
-        return [];
+    // Si es GEOGRAFÍA, determinar el nivel
+    if (origenName === 'GEOGRAFÍA' || origenName === 'GEOGRAFIA') {
+      if (fuenteName === 'pais') setGeografiaLevel('pais');
+      else if (fuenteName === 'empresa') setGeografiaLevel('empresa');
+      else if (fuenteName === 'fundo') setGeografiaLevel('fundo');
+      else if (fuenteName === 'ubicacion') setGeografiaLevel('ubicacion');
+      else setGeografiaLevel(null);
+      setTablaData([]);
+    } 
+    // Si es TABLA, cargar datos de la tabla
+    else if (origenName === 'TABLA') {
+      setGeografiaLevel(null);
+      // Cargar datos de la tabla dinámicamente
+      const loadTablaData = async () => {
+        setLoadingTablaData(true);
+        try {
+          const data = await JoySenseService.getTableData(fuenteName, 1000);
+          setTablaData(Array.isArray(data) ? data : []);
+        } catch (error) {
+          console.error(`Error cargando datos de tabla ${fuenteName}:`, error);
+          setTablaData([]);
+          setMessage({ type: 'error', text: `Error al cargar datos de ${fuenteName}` });
+        } finally {
+          setLoadingTablaData(false);
+        }
+      };
+      loadTablaData();
+    } else {
+      setGeografiaLevel(null);
+      setTablaData([]);
     }
-  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData]);
+  }, [selectedOrigen, selectedFuente, origenesData, fuentesData]);
+
+  // Cargar objetos según el tipo de origen (GEOGRAFÍA o TABLA)
+  const objetosData = useMemo(() => {
+    // Si es geografía, usar datos geográficos
+    if (geografiaLevel) {
+      switch (geografiaLevel) {
+        case 'pais':
+          return paisesData.map(p => ({
+            id: p.paisid,
+            nombre: p.pais || `País ${p.paisid}`,
+            objetoid: p.paisid
+          }));
+        case 'empresa':
+          return empresasData.map(e => ({
+            id: e.empresaid,
+            nombre: e.empresa || `Empresa ${e.empresaid}`,
+            objetoid: e.empresaid
+          }));
+        case 'fundo':
+          return fundosData.map(f => ({
+            id: f.fundoid,
+            nombre: f.fundo || `Fundo ${f.fundoid}`,
+            objetoid: f.fundoid
+          }));
+        case 'ubicacion':
+          return ubicacionesData.map(u => ({
+            id: u.ubicacionid,
+            nombre: u.ubicacion || `Ubicación ${u.ubicacionid}`,
+            objetoid: u.ubicacionid
+          }));
+        default:
+          return [];
+      }
+    }
+    
+    // Si es TABLA, usar datos cargados dinámicamente
+    if (tablaData.length > 0 && fuenteNombre) {
+      // Mapeo de nombres de tabla a campos ID y nombre
+      const tableFieldMap: Record<string, { idField: string; nameField: string }> = {
+        'nodo': { idField: 'nodoid', nameField: 'nodo' },
+        'sensor': { idField: 'sensorid', nameField: 'sensor' },
+        'usuario': { idField: 'usuarioid', nameField: 'login' },
+        'perfil': { idField: 'perfilid', nameField: 'perfil' },
+        'contacto': { idField: 'contactoid', nameField: 'celular' },
+        'tipo': { idField: 'tipoid', nameField: 'tipo' },
+        'metrica': { idField: 'metricaid', nameField: 'metrica' },
+        'entidad': { idField: 'entidadid', nameField: 'entidad' },
+        'localizacion': { idField: 'localizacionid', nameField: 'localizacion' },
+        'umbral': { idField: 'umbralid', nameField: 'umbral' },
+        'criticidad': { idField: 'criticidadid', nameField: 'criticidad' },
+        'regla': { idField: 'reglaid', nameField: 'nombre' }
+      };
+
+      const fields = tableFieldMap[fuenteNombre.toLowerCase()] || { 
+        idField: `${fuenteNombre.toLowerCase()}id`, 
+        nameField: fuenteNombre.toLowerCase() 
+      };
+
+      return tablaData.map(item => ({
+        id: item[fields.idField],
+        nombre: item[fields.nameField] || `${fuenteNombre} ${item[fields.idField]}`,
+        objetoid: item[fields.idField]
+      }));
+    }
+
+    return [];
+  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, tablaData, fuenteNombre]);
 
   // Inicializar matriz de permisos cuando cambian los objetos
   useEffect(() => {
@@ -278,113 +353,121 @@ export function AsignarPermisosTab({
 
   // Opciones de fuentes (filtradas por origen si está seleccionado)
   const fuenteOptions = useMemo(() => {
-    if (!selectedOrigen) return [];
+    if (!selectedOrigen || !origenesData.length) return [];
     
+    const origen = origenesData.find(o => o.origenid === selectedOrigen);
+    if (!origen) return [];
+    
+    const origenName = origen.origen?.toUpperCase() || '';
+    
+    // Fuentes de geografía
+    const geografiaFuentes = ['pais', 'empresa', 'fundo', 'ubicacion'];
+    
+    // Filtrar fuentes según el origen
     return fuentesData
       .filter(f => {
-        // Filtrar por origen si es necesario (asumiendo que hay relación)
-        return true; // Por ahora mostrar todas
+        const fuenteName = f.fuente?.toLowerCase() || '';
+        
+        // Si el origen es GEOGRAFÍA, solo mostrar fuentes de geografía
+        if (origenName === 'GEOGRAFÍA' || origenName === 'GEOGRAFIA') {
+          return geografiaFuentes.includes(fuenteName);
+        }
+        
+        // Si el origen es TABLA, excluir fuentes de geografía
+        if (origenName === 'TABLA') {
+          return !geografiaFuentes.includes(fuenteName);
+        }
+        
+        // Por defecto, mostrar todas
+        return true;
       })
       .map(f => ({
         value: f.fuenteid,
         label: f.fuente || `Fuente ${f.fuenteid}`
       }));
-  }, [fuentesData, selectedOrigen]);
+  }, [fuentesData, selectedOrigen, origenesData]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 300px)', paddingBottom: '200px' }}>
       {/* Mensaje */}
-      {message && <MessageDisplay message={message} />}
+      {message && <div className="mb-4"><MessageDisplay message={message} /></div>}
 
-      {/* Selección de Perfiles y Origen */}
-      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 space-y-4">
-        <h3 className="text-xl font-bold text-purple-500 font-mono tracking-wider mb-4">
+      {/* Selección de Perfiles y Origen - Una sola fila */}
+      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-4 flex-shrink-0" style={{ position: 'relative', zIndex: 10 }}>
+        <h3 className="text-lg font-bold text-purple-500 font-mono tracking-wider mb-3">
           CONFIGURACIÓN INICIAL
         </h3>
 
-        {/* Perfiles (múltiple) */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-2">
-            Perfiles <span className="text-red-500">*</span>
-          </label>
-          <div className="space-y-2 max-h-40 overflow-y-auto border border-neutral-700 rounded p-2">
-            {perfilOptions.map(option => (
-              <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-neutral-800 p-2 rounded">
-                <input
-                  type="checkbox"
-                  checked={selectedPerfiles.includes(option.value)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedPerfiles([...selectedPerfiles, option.value]);
-                    } else {
-                      setSelectedPerfiles(selectedPerfiles.filter(p => p !== option.value));
-                    }
-                  }}
-                  className="w-4 h-4 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500"
-                />
-                <span className="text-neutral-300">{option.label}</span>
-              </label>
-            ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+          {/* Perfiles (múltiple) */}
+          <div style={{ position: 'relative', zIndex: 30 }}>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">
+              Perfiles <span className="text-red-500">*</span>
+            </label>
+            <MultiSelectWithPlaceholder
+              value={selectedPerfiles}
+              onChange={setSelectedPerfiles}
+              options={perfilOptions}
+              placeholder="Seleccione perfiles"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              disabled={false}
+            />
           </div>
-        </div>
 
-        {/* Origen */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-2">
-            Origen <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={selectedOrigen || ''}
-            onChange={(e) => {
-              setSelectedOrigen(Number(e.target.value));
-              setSelectedFuente(null); // Reset fuente cuando cambia origen
-            }}
-            className="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">Seleccione un origen</option>
-            {origenOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Origen */}
+          <div style={{ position: 'relative', zIndex: 30 }}>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">
+              Origen <span className="text-red-500">*</span>
+            </label>
+            <SelectWithPlaceholder
+              value={selectedOrigen || null}
+              onChange={(value) => {
+                setSelectedOrigen(value ? Number(value) : null);
+                setSelectedFuente(null); // Reset fuente cuando cambia origen
+              }}
+              options={origenOptions}
+              placeholder="Seleccione un origen"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono"
+              disabled={false}
+            />
+          </div>
 
-        {/* Fuente */}
-        {selectedOrigen && (
-          <div>
+          {/* Fuente */}
+          <div style={{ position: 'relative', zIndex: 30 }}>
             <label className="block text-sm font-medium text-neutral-300 mb-2">
               Fuente <span className="text-red-500">*</span>
             </label>
-            <select
-              value={selectedFuente || ''}
-              onChange={(e) => setSelectedFuente(Number(e.target.value))}
-              className="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">Seleccione una fuente</option>
-              {fuenteOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <SelectWithPlaceholder
+              value={selectedFuente || null}
+              onChange={(value) => setSelectedFuente(value ? Number(value) : null)}
+              options={fuenteOptions}
+              placeholder={selectedOrigen ? 'Seleccione una fuente' : 'Seleccione origen primero'}
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!selectedOrigen || fuenteOptions.length === 0}
+            />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Matriz de Permisos */}
-      {geografiaLevel && objetosData.length > 0 && (
-        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
+      {((geografiaLevel || (tablaData.length > 0 && fuenteNombre)) && objetosData.length > 0) && (
+        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 flex-1 flex flex-col min-h-0">
           <h3 className="text-xl font-bold text-purple-500 font-mono tracking-wider mb-4">
-            ASIGNAR PERMISOS - {geografiaLevel.toUpperCase()}
+            ASIGNAR PERMISOS - {geografiaLevel ? geografiaLevel.toUpperCase() : (fuenteNombre?.toUpperCase() || '')}
           </h3>
+          
+          {loadingTablaData && (
+            <div className="text-center py-8 text-neutral-400">
+              Cargando datos de {fuenteNombre}...
+            </div>
+          )}
 
-          <div className="overflow-x-auto">
+          <div className="overflow-auto flex-1">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-neutral-800">
                   <th className="border border-neutral-700 px-4 py-3 text-left text-neutral-300 font-semibold sticky left-0 bg-neutral-800 z-10">
-                    {geografiaLevel.toUpperCase()}
+                    {geografiaLevel ? geografiaLevel.toUpperCase() : (fuenteNombre?.toUpperCase() || 'OBJETO')}
                   </th>
                   <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
                     <div className="flex flex-col items-center">
