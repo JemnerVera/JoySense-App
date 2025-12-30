@@ -179,12 +179,12 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
     return map;
   }, [criticidadesData]);
 
-  // Mapa de criticidad ID a grado (para ordenamiento)
-  const criticidadGradoMap = useMemo(() => {
-    const map = new Map<number, number>();
+  // Mapa de criticidad ID a nombre (para ordenamiento)
+  const criticidadNameMap = useMemo(() => {
+    const map = new Map<number, string>();
     criticidadesData.forEach((c: any) => {
-      if (c.criticidadid && c.grado !== undefined) {
-        map.set(c.criticidadid, c.grado || 999);
+      if (c.criticidadid && c.criticidad) {
+        map.set(c.criticidadid, c.criticidad);
       }
     });
     return map;
@@ -227,19 +227,19 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
       organizados[metricaid].tipos[tipoid].umbrales.push(umbral);
     });
 
-    // Ordenar umbrales por grado de criticidad (ascendente)
+    // Ordenar umbrales por nombre de criticidad (alfabético)
     Object.keys(organizados).forEach(metricaid => {
       Object.keys(organizados[parseInt(metricaid)].tipos).forEach(tipoid => {
         organizados[parseInt(metricaid)].tipos[parseInt(tipoid)].umbrales.sort((a: any, b: any) => {
-          const gradoA = criticidadGradoMap.get(a.criticidadid) || 999;
-          const gradoB = criticidadGradoMap.get(b.criticidadid) || 999;
-          return gradoA - gradoB;
+          const nameA = criticidadNameMap.get(a.criticidadid) || '';
+          const nameB = criticidadNameMap.get(b.criticidadid) || '';
+          return nameA.localeCompare(nameB);
         });
       });
     });
 
     return organizados;
-  }, [sourceUmbrales, formData.entidadid, getUniqueOptionsForField, criticidadGradoMap]);
+  }, [sourceUmbrales, formData.entidadid, getUniqueOptionsForField, criticidadNameMap]);
 
   // Función para manejar la selección de umbrales
   const handleUmbralToggle = (metricaid: number, tipoid: number, umbralid: number) => {

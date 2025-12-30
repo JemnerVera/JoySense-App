@@ -252,8 +252,6 @@ export interface SensorValorError {
 export interface Criticidad {
   criticidadid: number;
   criticidad: string;
-  grado: number;
-  frecuencia: number;
   escalamiento: number;
   escalon: number;
   statusid: number;
@@ -264,17 +262,19 @@ export interface Criticidad {
 }
 
 /**
- * Umbral - SIMPLIFICADO
- * Solo referencia localizacionid + campo estandar nuevo
+ * Umbral - Configuración de umbrales por localización
+ * NOTA: La tabla SÍ tiene criticidadid (verificado en BD real)
  */
 export interface Umbral {
   umbralid: number;
   localizacionid: number;
   criticidadid: number;
   umbral: string;
-  maximo: number;
   minimo: number;
+  maximo: number;
   estandar?: number;
+  operador: string;
+  inversion: boolean;
   statusid: number;
   usercreatedid: number;
   datecreated: string;
@@ -683,7 +683,7 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   sensor_valor_error: 'sensorvalorerrorid',
   criticidad: 'criticidadid',
   umbral: 'umbralid',
-  alerta: 'uuid_alertaid',
+  alerta: 'alertaid',
   alerta_regla: 'uuid_alerta_reglaid',
   alerta_regla_consolidado: 'uuid_consolidadoid',
   mensaje: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],

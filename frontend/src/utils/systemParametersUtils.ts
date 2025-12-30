@@ -70,7 +70,6 @@ export const getColumnDisplayName = (columnName: string): string => {
     'metrica': 'Métrica',
     'localizacion': 'Localización',
     'criticidad': 'Criticidad',
-    'grado': 'Grado',
     'escalamiento': 'Escalamiento',
     'escalon': 'Escalón',
     'perfil': 'Perfil',
@@ -226,7 +225,6 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'longitud': t('table_headers.longitude'),
     'referencia': t('table_headers.reference'),
     'criticidad': t('table_headers.criticality'),
-    'grado': t('table_headers.grade'),
     'escalamiento': t('table_headers.escalation'),
     'escalon': t('table_headers.step'),
     'nombre': t('table_headers.name'),
@@ -652,8 +650,20 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'umbral':
-      if (!data.metricasensorid || data.valor_minimo === undefined || data.valor_maximo === undefined) {
-        return 'Métrica sensor, valor mínimo y máximo son obligatorios';
+      if (!data.localizacionid) {
+        return 'Localización es obligatoria';
+      }
+      if (!data.criticidadid) {
+        return 'Criticidad es obligatoria';
+      }
+      if (!data.umbral || data.umbral.trim() === '') {
+        return 'Nombre del umbral es obligatorio';
+      }
+      if (data.minimo === undefined || data.maximo === undefined) {
+        return 'Mínimo y máximo son obligatorios';
+      }
+      if (!data.operador || data.operador.trim() === '') {
+        return 'Operador es obligatorio';
       }
       break;
     
