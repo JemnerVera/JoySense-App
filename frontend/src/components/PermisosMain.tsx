@@ -21,6 +21,7 @@ import { MessageDisplay } from './SystemParameters/MessageDisplay';
 import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
+import { AsignarPermisosTab } from './Permisos/AsignarPermisosTab';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 import { TableName, PRIMARY_KEY_MAP } from '../types';
 
@@ -29,14 +30,15 @@ import { TableName, PRIMARY_KEY_MAP } from '../types';
 // ============================================================================
 
 interface PermisosMainProps {
-  activeSubTab?: 'status' | 'insert' | 'update';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  activeSubTab?: 'status' | 'insert' | 'update' | 'asignar';
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
 }
 
 export interface PermisosMainRef {
   hasUnsavedChanges: () => boolean;
-  handleTabChange: (tab: 'status' | 'insert' | 'update') => void;
+  handleTabChange: (tab: 'status' | 'insert' | 'update' | 'asignar') => void;
+  handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'asignar') => void;
 }
 
 interface Message {
@@ -131,12 +133,32 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     });
   }, [formState.data, activeSubTab, selectedTable, updateFormData, checkUnsavedChanges]);
 
+  // Handler para cambio de tab desde ProtectedSubTabButton (similar a SystemParameters)
+  const handleSubTabChangeFromProtectedButton = useCallback((tab: 'status' | 'insert' | 'update' | 'asignar') => {
+    // Limpiar formularios antes de cambiar
+    if (activeSubTab === 'insert') {
+      resetForm();
+      setTableData([]);
+    }
+    if (activeSubTab === 'update') {
+      setUpdateFormData({});
+    }
+    
+    // Limpiar mensajes
+    setMessage(null);
+    setSelectedRow(null);
+    
+    // Llamar al callback del padre
+    onSubTabChange?.(tab);
+  }, [activeSubTab, resetForm, setTableData, onSubTabChange]);
+
   // Exponer métodos al padre mediante ref
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasUnsavedChanges(),
-    handleTabChange: (tab: 'status' | 'insert' | 'update') => {
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'asignar') => {
       onSubTabChange?.(tab);
-    }
+    },
+    handleSubTabChangeFromProtectedButton
   }));
 
   // Cargar datos relacionados al montar
@@ -154,6 +176,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       console.log('[PermisosMain] Cargando datos/columnas para subTab:', activeSubTab);
       loadTableData(selectedTable);
     }
+    // Para 'asignar' no necesitamos cargar datos de la tabla, solo los relacionados
   }, [activeSubTab, loadTableData, selectedTable]);
 
   // Limpiar datos solo cuando cambia a 'insert' (pero mantener las columnas)
@@ -417,6 +440,23 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
               setUpdateFormData(formData);
             }}
             themeColor="purple"
+          />
+        );
+      
+      case 'asignar':
+        return (
+          <AsignarPermisosTab
+            perfilesData={perfilesData}
+            origenesData={origenesData}
+            fuentesData={fuentesData}
+            paisesData={paisesData}
+            empresasData={empresasData}
+            fundosData={fundosData}
+            ubicacionesData={ubicacionesData}
+            onSuccess={() => {
+              loadTableData(selectedTable);
+              setMessage({ type: 'success', text: 'Permisos asignados correctamente' });
+            }}
           />
         );
       

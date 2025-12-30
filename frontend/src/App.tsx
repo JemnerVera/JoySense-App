@@ -16,7 +16,7 @@ import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
-import PermisosMain from './components/PermisosMain';
+import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
 import ReglasMain from './components/ReglasMain';
 import AlertasTableMain from './components/AlertasTableMain';
 import { JoySenseService } from './services/backend-api';
@@ -78,7 +78,7 @@ const AppContentInternal: React.FC = () => {
   }>(null);
   
   // Ref para PermisosMain
-  const permisosMainRef = useRef<{ hasUnsavedChanges: () => boolean; handleTabChange: (tab: 'status' | 'insert' | 'update') => void } | null>(null);
+  const permisosMainRef = useRef<PermisosMainRef | null>(null);
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -139,7 +139,7 @@ const AppContentInternal: React.FC = () => {
 
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
-  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive'>('status');
+  const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive' | 'asignar'>('status');
   
   // Estados para Dashboard (Reportes)
   const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica' | 'umbrales'>('mapeo');
@@ -385,8 +385,8 @@ const AppContentInternal: React.FC = () => {
     });
   };
 
-  const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive') => {
-    setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive');
+  const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => {
+    setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
   };
 
   // Handler para cambiar el subTab del Dashboard
@@ -443,8 +443,10 @@ const AppContentInternal: React.FC = () => {
           ref={systemParametersRef}
           selectedTable={parameterTab}
           onTableSelect={handleTableSelect}
-          activeSubTab={activeSubTab}
-          onSubTabChange={handleSubTabChange}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
           activeTab={activeTab}
           onFormDataChange={handleFormDataChange}
           onMassiveFormDataChange={handleMassiveFormDataChange}
@@ -695,9 +697,9 @@ const AppContentInternal: React.FC = () => {
       return (
         <PermisosMain
           ref={permisosMainRef}
-          activeSubTab={activeSubTab as 'status' | 'insert' | 'update'}
+          activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'asignar'}
           onSubTabChange={(tab) => {
-            setActiveSubTab(tab);
+            setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
           }}
           onFormDataChange={handleFormDataChange}
         />
@@ -714,8 +716,10 @@ const AppContentInternal: React.FC = () => {
             ref={systemParametersRef}
             selectedTable={permisosTable}
             onTableSelect={handleTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={handleSubTabChange}
+            activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+            onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+              handleSubTabChange(tab);
+            }}
             activeTab={activeTab}
             onFormDataChange={handleFormDataChange}
             onMassiveFormDataChange={handleMassiveFormDataChange}
@@ -798,17 +802,37 @@ const AppContentInternal: React.FC = () => {
           authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
               selectedTable={selectedTable}
               onTableSelect={handleTableSelect}
-          activeSubTab={activeSubTab}
-          onSubTabChange={handleSubTabChange}
+          activeSubTab={activeSubTab === 'asignar' ? 'status' : activeSubTab}
+          onSubTabChange={(tab) => {
+            if (tab !== 'asignar') {
+              handleSubTabChange(tab);
+            }
+          }}
           dashboardSubTab={dashboardSubTab}
           onDashboardSubTabChange={handleDashboardSubTabChange}
           formData={currentFormData}
           multipleData={currentMultipleData}
           massiveFormData={currentMassiveFormData}
           onPermisosSubTabChangeFromProtectedButton={
-            // Solo pasar la función si estamos en permisos-origen o permisos-fuente
-            (activeTab.startsWith('permisos-origen') || activeTab.startsWith('permisos-fuente'))
-              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton
+            // Pasar la función según el tab activo
+            activeTab === 'permisos-permiso'
+              ? permisosMainRef.current?.handleSubTabChangeFromProtectedButton
+                ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
+                    // Filtrar 'massive' ya que PermisosMain no lo soporta
+                    if (tab !== 'massive') {
+                      permisosMainRef.current?.handleSubTabChangeFromProtectedButton?.(tab as 'status' | 'insert' | 'update' | 'asignar');
+                    }
+                  }
+                : undefined
+              : (activeTab.startsWith('permisos-origen') || activeTab.startsWith('permisos-fuente'))
+              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton 
+                ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
+                    // Filtrar 'asignar' ya que SystemParameters no lo soporta
+                    if (tab !== 'asignar') {
+                      systemParametersRef.current?.handleSubTabChangeFromProtectedButton?.(tab as 'status' | 'insert' | 'update' | 'massive');
+                    }
+                  }
+                : undefined
               : undefined
           }
         />

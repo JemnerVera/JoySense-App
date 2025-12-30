@@ -135,32 +135,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setMessage(msg)
   }, [])
 
-  // Hook para formulario de inserción (estado completamente aislado de UPDATE)
-  const insertForm = useInsertForm({
-    tableName: selectedTable || '',
-    insertRow,
-    user,
-    existingData: tableState.data || [],
-    onSuccess: () => {
-      loadData()
-      if (selectedTable) {
-        loadTableData(selectedTable)
-      }
-      // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
-        loadRelatedTablesData()
-      }
-    },
-    onCancel: () => {
-      setMessage(null)
-    },
-    setMessage: handleInsertFormMessage, // Pasar setMessage para mostrar mensajes de validación (con wrapper para logs)
-    paisSeleccionado,
-    empresaSeleccionada,
-    fundoSeleccionado,
-    resetKey: `${selectedTable}-${insertTabKey}-${getResetKey()}`
-  })
-
   // Hook para datos relacionados (necesario para StatusTab)
   const {
     tableData, // Datos de la tabla actual (de useTableDataManagement)
@@ -187,6 +161,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setColumns, // Para limpiar columnas inmediatamente
     setLoading // Para establecer loading inmediatamente
   } = useTableDataManagement();
+
+  // Hook para formulario de inserción (estado completamente aislado de UPDATE)
+  // IMPORTANTE: Debe ir después de useTableDataManagement para tener acceso a codigotelefonosData
+  const insertForm = useInsertForm({
+    tableName: selectedTable || '',
+    insertRow,
+    user,
+    existingData: tableState.data || [],
+    onSuccess: () => {
+      loadData()
+      if (selectedTable) {
+        loadTableData(selectedTable)
+      }
+      // Recargar datos relacionados si se insertó en una tabla que afecta a otras
+      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+        loadRelatedTablesData()
+      }
+    },
+    onCancel: () => {
+      setMessage(null)
+    },
+    setMessage: handleInsertFormMessage, // Pasar setMessage para mostrar mensajes de validación (con wrapper para logs)
+    codigotelefonosData: codigotelefonosData || [],
+    paisSeleccionado,
+    empresaSeleccionada,
+    fundoSeleccionado,
+    resetKey: `${selectedTable}-${insertTabKey}-${getResetKey()}`
+  })
 
   // Filtrar columnas duplicadas (basándose en columnName)
   // También filtrar campos ocultos y de solo lectura que no deberían aparecer en formularios

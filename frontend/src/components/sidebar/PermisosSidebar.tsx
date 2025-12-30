@@ -11,8 +11,8 @@ interface PermisosSidebarProps {
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  activeSubTab?: 'status' | 'insert' | 'update';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  activeSubTab?: 'status' | 'insert' | 'update' | 'asignar';
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }

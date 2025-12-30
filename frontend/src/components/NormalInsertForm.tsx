@@ -44,6 +44,7 @@ interface NormalInsertFormProps {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  codigotelefonosData?: any[];
   // Props específicas para contacto
   selectedContactType?: 'phone' | 'email' | null;
   countryCodes?: any[];
@@ -75,6 +76,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   paisesData,
   empresasData,
   fundosData,
+  codigotelefonosData,
   selectedContactType,
   countryCodes,
   resetContactType,
