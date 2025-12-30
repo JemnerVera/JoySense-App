@@ -12,11 +12,11 @@ interface PermisosOperationsSidebarProps {
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  activeSubTab: 'status' | 'insert' | 'update';
-  onSubTabChange: (subTab: 'status' | 'insert' | 'update') => void;
+  activeSubTab: 'status' | 'insert' | 'update' | 'asignar';
+  onSubTabChange: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   formData?: Record<string, any>;
   activeTab?: string;
-  onSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  onSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void;
 }
 
 const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
@@ -67,6 +67,15 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
       )
     },
     {
+      id: 'asignar' as const,
+      label: 'ASIGNAR',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+      )
+    },
+    {
       id: 'insert' as const,
       label: t('subtabs.insert'),
       icon: (
@@ -113,15 +122,16 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
               // Si tenemos onSubTabChangeFromProtectedButton, usarlo (limpia el formulario antes)
               // Si no, usar onSubTabChange normal
               const handleTabChange = onSubTabChangeFromProtectedButton 
-                ? (tab: 'status' | 'insert' | 'update' | 'massive') => {
+                ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
                     // Solo llamar si el tab es uno de los permitidos para permisos
-                    if (tab === 'status' || tab === 'insert' || tab === 'update') {
+                    if (tab === 'status' || tab === 'insert' || tab === 'update' || tab === 'asignar') {
+                      // Usar onSubTabChangeFromProtectedButton para todos los tabs (incluyendo 'asignar')
                       onSubTabChangeFromProtectedButton(tab);
                     }
                   }
-                : (tab: 'status' | 'insert' | 'update' | 'massive') => {
+                : (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
                     // Solo llamar si el tab es uno de los permitidos para permisos
-                    if (tab === 'status' || tab === 'insert' || tab === 'update') {
+                    if (tab === 'status' || tab === 'insert' || tab === 'update' || tab === 'asignar') {
                       onSubTabChange(tab);
                     }
                   };

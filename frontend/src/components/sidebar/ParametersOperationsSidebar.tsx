@@ -160,7 +160,12 @@ const ParametersOperationsSidebar: React.FC<ParametersOperationsSidebarProps> = 
                 formData={formData}
                 multipleData={multipleData}
                 massiveFormData={massiveFormData}
-                onTabChange={onSubTabChange}
+                onTabChange={(tab) => {
+                  // Filtrar 'asignar' ya que ParametersOperationsSidebar no lo soporta
+                  if (tab !== 'asignar') {
+                    onSubTabChange(tab);
+                  }
+                }}
                 className={`w-full flex items-center p-3 rounded transition-colors ${
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${

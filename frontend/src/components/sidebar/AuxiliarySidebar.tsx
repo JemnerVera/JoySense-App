@@ -27,9 +27,9 @@ interface AuxiliarySidebarProps {
   massiveFormData?: Record<string, any>;
   showThirdLevel?: boolean;
   showDashboardThirdLevel?: boolean;
-  permisosSubTab?: 'status' | 'insert' | 'update';
-  onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
-  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  permisosSubTab?: 'status' | 'insert' | 'update' | 'asignar';
+  onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
+  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void;
   reglaSubTab?: 'status' | 'insert' | 'update';
   onReglaSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
 }
@@ -171,8 +171,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     if (showThirdLevel) {
       return (
         <PermisosOperationsSidebar
-          activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
-          onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+          activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update' | 'asignar') || 'status'}
+          onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update' | 'asignar') => void)) || (() => {}))}
           onSubTabChangeFromProtectedButton={onPermisosSubTabChangeFromProtectedButton}
           isExpanded={isExpanded}
           onMouseEnter={onMouseEnter}
@@ -184,10 +184,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     }
 
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
-    return (
-      <PermisosSidebar
-        activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update') || 'status'}
-        onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {}))}
+      return (
+        <PermisosSidebar
+          activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update' | 'asignar') || 'status'}
+          onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update' | 'asignar') => void)) || (() => {}))}
         isExpanded={isExpanded}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

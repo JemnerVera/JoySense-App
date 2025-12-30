@@ -27,6 +27,8 @@ interface UseInsertFormProps {
   onCancel?: () => void
   // Para mostrar mensajes de validación y error
   setMessage?: (message: Message | null) => void
+  // Datos relacionados para concatenación (ej: codigotelefonosData para contacto)
+  codigotelefonosData?: any[]
   // Para sincronización con filtros globales
   paisSeleccionado?: string
   empresaSeleccionada?: string
@@ -116,6 +118,7 @@ export const useInsertForm = ({
   onSuccess,
   onCancel,
   setMessage,
+  codigotelefonosData,
   paisSeleccionado,
   empresaSeleccionada,
   fundoSeleccionado,
@@ -418,13 +421,32 @@ export const useInsertForm = ({
       })
       
       const now = new Date().toISOString()
-      const dataToInsert: Record<string, any> = {
+      let dataToInsert: Record<string, any> = {
         ...filteredData,
         usercreatedid: userId,
         datecreated: now,
         // Algunas tablas requieren usermodifiedid y datemodified incluso en inserción
         usermodifiedid: userId,
         datemodified: now
+      }
+      
+      // Para contacto: concatenar código de país con número de celular antes de guardar
+      if (tableName === 'contacto' && dataToInsert.codigotelefonoid && dataToInsert.celular) {
+        // Obtener el código de país desde codigotelefonosData
+        const codigoTelefono = codigotelefonosData?.find(
+          (codigo: any) => codigo.codigotelefonoid === dataToInsert.codigotelefonoid
+        );
+        
+        if (codigoTelefono?.codigotelefono) {
+          // Concatenar código de país con número (ej: +51987654321)
+          const celularCompleto = codigoTelefono.codigotelefono + dataToInsert.celular;
+          dataToInsert.celular = celularCompleto;
+          logger.debug('[useInsertForm] Celular concatenado:', {
+            codigo: codigoTelefono.codigotelefono,
+            numero: filteredData.celular,
+            completo: celularCompleto
+          });
+        }
       }
       
       logger.debug('[useInsertForm] Datos a insertar (incluyendo auditoría):', {

@@ -11,13 +11,13 @@ interface SidebarContainerProps {
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
   dashboardSubTab?: 'mapeo' | 'metrica' | 'umbrales';
   onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
-  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void;
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({
@@ -132,8 +132,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             multipleData={multipleData}
             massiveFormData={massiveFormData}
             showThirdLevel={false}
-            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
-            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
+            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'asignar') || 'status'}
+            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update' | 'asignar') => void)) || (() => {})}
           />
         </div>
       )}
@@ -160,9 +160,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             multipleData={multipleData}
             massiveFormData={massiveFormData}
             showThirdLevel={true}
-            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update') || 'status'}
-            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update') => void)) || (() => {})}
-            onPermisosSubTabChangeFromProtectedButton={onPermisosSubTabChangeFromProtectedButton}
+            permisosSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'asignar') || 'status'}
+            onPermisosSubTabChange={(onSubTabChange as ((subTab: 'status' | 'insert' | 'update' | 'asignar') => void)) || (() => {})}
+            onPermisosSubTabChangeFromProtectedButton={onPermisosSubTabChangeFromProtectedButton as ((subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void) | undefined}
           />
         </div>
       )}

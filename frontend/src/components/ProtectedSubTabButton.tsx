@@ -4,13 +4,13 @@ import { useSimpleChangeDetection } from '../hooks/useSimpleChangeDetection';
 
 interface ProtectedSubTabButtonProps {
   children: React.ReactNode;
-  targetTab: 'status' | 'insert' | 'update' | 'massive';
-  currentTab: 'status' | 'insert' | 'update' | 'massive';
+  targetTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar';
+  currentTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar';
   selectedTable: string;
   formData: Record<string, any>;
   multipleData: any[];
   massiveFormData?: Record<string, any>;
-  onTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  onTabChange: (tab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
   className?: string;
   onClick?: () => void;
 }

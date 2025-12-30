@@ -18,6 +18,7 @@ interface ContactoFormFieldsProps {
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   selectedContactType?: 'phone' | 'email' | null;
   countryCodes?: any[];
+  codigotelefonosData?: any[];
 }
 
 export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
@@ -28,7 +29,8 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
   getThemeColor,
   getUniqueOptionsForField,
   selectedContactType,
-  countryCodes
+  countryCodes,
+  codigotelefonosData = []
 }) => {
   const { t } = useLanguage();
 
@@ -44,47 +46,62 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
           onChange={(value) => updateField('usuarioid', value)}
           options={getUniqueOptionsForField('usuarioid')}
           placeholder={`${t('create.select_user')}...`}
+          className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 dark:text-white text-base font-mono"
         />
       </div>
 
-      {/* Campo Código de País */}
-      <div className="space-y-3">
-        <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
-          {getColumnDisplayNameTranslated('codigotelefonoid', t)?.toUpperCase()} *
-        </label>
-        <SelectWithPlaceholder
-          value={formData.codigotelefonoid || ''}
-          onChange={(value) => updateField('codigotelefonoid', value)}
-          options={getUniqueOptionsForField('codigotelefonoid')}
-          placeholder={formData.usuarioid ? t('create.select_country_code') : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.user')}`}
-          disabled={!formData.usuarioid}
-        />
-      </div>
-
-      {/* Campo Celular */}
+      {/* Campo Celular con Código de País (Combinado - Estilo Input Group) */}
       <div className="space-y-3">
         <label className="block text-lg font-bold text-orange-500 font-mono tracking-wider">
           {getColumnDisplayNameTranslated('celular', t)?.toUpperCase()} *
         </label>
-        <input
-          type="tel"
-          value={formData.celular || ''}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Validar que no exceda 12 caracteres
-            if (value.length <= 12) {
-              updateField('celular', value);
-            }
-          }}
-          placeholder={formData.codigotelefonoid ? "EJ: 987654321" : `${t('buttons.previous')} ${t('buttons.select')} ${t('fields.country_code')}`}
-          disabled={!formData.codigotelefonoid}
-          maxLength={12}
-          className={`w-full px-4 py-3 border rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-mono ${
-            formData.codigotelefonoid 
-              ? 'bg-neutral-700 border-neutral-600' 
-              : 'bg-neutral-800 border-neutral-700 cursor-not-allowed opacity-50'
-          }`}
-        />
+        {/* Input combinado estilo e-commerce */}
+        <div className="flex items-center border border-neutral-600 rounded-lg bg-neutral-700 focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition-all overflow-visible h-[42px]">
+          {/* Código de País - Parte izquierda */}
+          <div className="flex items-center flex-shrink-0 border-r border-neutral-600 relative z-10">
+            <div className="w-20 min-w-[80px]">
+              <SelectWithPlaceholder
+                value={formData.codigotelefonoid || ''}
+                onChange={(value) => {
+                  updateField('codigotelefonoid', value);
+                }}
+                options={getUniqueOptionsForField('codigotelefonoid')}
+                placeholder="PAIS"
+                disabled={!formData.usuarioid || formData.usuarioid === 0 || formData.usuarioid === ''}
+                className="w-full px-2 py-2 bg-transparent border-0 text-white font-mono text-sm focus:ring-0 focus:outline-none h-[42px]"
+                renderSelectedLabel={(label) => {
+                  // Si el label contiene " - ", extraer solo el código y mostrarlo en paréntesis
+                  if (label && label.includes(' - ')) {
+                    const [codigo] = label.split(' - ');
+                    return (
+                      <span className="text-orange-500">({codigo})</span>
+                    );
+                  }
+                  // Si no tiene " - ", asumir que es solo el código
+                  return label ? <span className="text-orange-500">({label})</span> : label;
+                }}
+              />
+            </div>
+          </div>
+          {/* Número de Celular - Parte derecha */}
+          <div className="flex items-center flex-1 min-w-0">
+            <input
+              type="tel"
+              value={formData.celular || ''}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Solo números
+                // Validar que no exceda 12 caracteres
+                if (value.length <= 12) {
+                  updateField('celular', value);
+                }
+              }}
+              placeholder={formData.codigotelefonoid ? "XXX-XXX-XXX" : "Selecciona país primero"}
+              disabled={!formData.codigotelefonoid}
+              maxLength={12}
+              className="flex-1 min-w-0 px-4 py-2 bg-transparent border-0 text-white placeholder-neutral-400 focus:outline-none focus:ring-0 font-mono text-base h-[42px]"
+            />
+          </div>
+        </div>
         {formData.celular && formData.celular.length > 12 && (
           <p className="text-red-400 text-sm font-mono">
             El número de celular no puede exceder 12 caracteres
