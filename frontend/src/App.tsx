@@ -181,8 +181,10 @@ const AppContentInternal: React.FC = () => {
   }, [activeTab]);
 
   // Sincronizar activeSubTab con activeTab para tablas de alertas
+  // NO procesar si es de permisos-permiso, ya que permisos maneja su propio estado
   useEffect(() => {
-    if (activeTab.startsWith('alertas-regla-') || activeTab.startsWith('alertas-regla_') || activeTab.startsWith('alertas-alerta_regla-')) {
+    // Solo procesar alertas, NO permisos
+    if ((activeTab.startsWith('alertas-regla-') || activeTab.startsWith('alertas-regla_') || activeTab.startsWith('alertas-alerta_regla-')) && !activeTab.startsWith('permisos-')) {
       // Extraer el subTab del activeTab
       let subTab: 'status' | 'insert' | 'update' | undefined;
       
@@ -211,6 +213,7 @@ const AppContentInternal: React.FC = () => {
         setActiveSubTab('status');
       }
     }
+    // Si es permisos-permiso, NO resetear el activeSubTab aquí - dejarlo que se maneje por el callback onSubTabChange
   }, [activeTab]);
 
   // Hook para el layout del sidebar
@@ -802,9 +805,12 @@ const AppContentInternal: React.FC = () => {
           authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
               selectedTable={selectedTable}
               onTableSelect={handleTableSelect}
-          activeSubTab={activeSubTab === 'asignar' ? 'status' : activeSubTab}
+          activeSubTab={activeTab === 'permisos-permiso' ? activeSubTab : (activeSubTab === 'asignar' ? 'status' : activeSubTab)}
           onSubTabChange={(tab) => {
-            if (tab !== 'asignar') {
+            if (activeTab === 'permisos-permiso') {
+              // Para permisos-permiso, permitir todos los tabs incluyendo 'asignar'
+              setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
+            } else if (tab !== 'asignar') {
               handleSubTabChange(tab);
             }
           }}

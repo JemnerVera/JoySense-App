@@ -56,7 +56,7 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
   };
   
   // Operaciones disponibles para permisos
-  const operations = [
+  const allOperations = [
     {
       id: 'status' as const,
       label: t('subtabs.status'),
@@ -94,6 +94,14 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
       )
     }
   ];
+
+  // Filtrar operaciones: 'asignar' solo para 'permiso', no para 'origen' ni 'fuente'
+  const operations = allOperations.filter(op => {
+    if (op.id === 'asignar') {
+      return selectedTable === 'permiso';
+    }
+    return true;
+  });
 
   // Icono para el sidebar de operaciones
   const operationsIcon = (

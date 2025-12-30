@@ -1,7 +1,7 @@
 /**
  * AsignarPermisosTab - Componente para asignación masiva de permisos
- * Permite seleccionar múltiples perfiles, origen y fuente, y asignar permisos
- * mediante una matriz tipo Power BI
+ * Permite seleccionar múltiples perfiles, origen y fuentes, y asignar permisos
+ * mediante una matriz tipo Power BI con pestañas para cada combinación
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -36,6 +36,16 @@ interface PermisoMatrix {
   };
 }
 
+interface TabConfig {
+  key: string; // Formato: "perfilid-origenid-fuenteid"
+  perfilid: number;
+  origenid: number;
+  fuenteid: number;
+  perfilNombre: string;
+  origenNombre: string;
+  fuenteNombre: string;
+}
+
 type GeografiaLevel = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | null;
 
 // ============================================================================
@@ -58,33 +68,82 @@ export function AsignarPermisosTab({
   // Estados
   const [selectedPerfiles, setSelectedPerfiles] = useState<number[]>([]);
   const [selectedOrigen, setSelectedOrigen] = useState<number | null>(null);
-  const [selectedFuente, setSelectedFuente] = useState<number | null>(null);
+  const [selectedFuentes, setSelectedFuentes] = useState<number[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null); // Formato: "perfilid-origenid-fuenteid"
   const [geografiaLevel, setGeografiaLevel] = useState<GeografiaLevel>(null);
   const [permisoMatrix, setPermisoMatrix] = useState<PermisoMatrix>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; text: string } | null>(null);
+  const [existingPermisos, setExistingPermisos] = useState<any[]>([]); // Permisos existentes cargados
+  const [loadingPermisos, setLoadingPermisos] = useState(false);
   
   // Estados para datos de tabla cargados dinámicamente
-  const [tablaData, setTablaData] = useState<any[]>([]);
-  const [loadingTablaData, setLoadingTablaData] = useState(false);
+  const [tablaData, setTablaData] = useState<Record<number, any[]>>({}); // Múltiples fuentes pueden tener datos
+  const [loadingTablaData, setLoadingTablaData] = useState<Record<number, boolean>>({});
   const [fuenteNombre, setFuenteNombre] = useState<string | null>(null);
+
+  // Generar pestañas basadas en las selecciones
+  const tabs = useMemo(() => {
+    if (selectedPerfiles.length === 0 || !selectedOrigen || selectedFuentes.length === 0) {
+      return [];
+    }
+
+    const tabsList: TabConfig[] = [];
+    
+    selectedPerfiles.forEach(perfilid => {
+      selectedFuentes.forEach(fuenteid => {
+        const perfil = perfilesData.find(p => p.perfilid === perfilid);
+        const origen = origenesData.find(o => o.origenid === selectedOrigen);
+        const fuente = fuentesData.find(f => f.fuenteid === fuenteid);
+        
+        if (perfil && origen && fuente) {
+          tabsList.push({
+            key: `${perfilid}-${selectedOrigen}-${fuenteid}`,
+            perfilid,
+            origenid: selectedOrigen,
+            fuenteid,
+            perfilNombre: perfil.perfil || `Perfil ${perfilid}`,
+            origenNombre: origen.origen || `Origen ${selectedOrigen}`,
+            fuenteNombre: fuente.fuente || `Fuente ${fuenteid}`
+          });
+        }
+      });
+    });
+
+    return tabsList;
+  }, [selectedPerfiles, selectedOrigen, selectedFuentes, perfilesData, origenesData, fuentesData]);
+
+  // Establecer la primera pestaña como activa cuando se generan las pestañas
+  useEffect(() => {
+    if (tabs.length > 0) {
+      // Si no hay pestaña activa o la pestaña activa ya no existe, seleccionar la primera
+      if (!activeTab || !tabs.find(t => t.key === activeTab)) {
+        setActiveTab(tabs[0].key);
+      }
+    } else {
+      setActiveTab(null);
+    }
+  }, [tabs, activeTab]);
+
+  // Obtener la configuración de la pestaña activa
+  const activeTabConfig = useMemo(() => {
+    return tabs.find(t => t.key === activeTab) || null;
+  }, [tabs, activeTab]);
 
   // Determinar tipo de origen (GEOGRAFÍA o TABLA) y cargar datos correspondientes
   useEffect(() => {
-    if (!selectedOrigen || !selectedFuente || !origenesData.length || !fuentesData.length) {
+    if (!activeTabConfig || !origenesData.length || !fuentesData.length) {
       setGeografiaLevel(null);
       setFuenteNombre(null);
-      setTablaData([]);
       return;
     }
 
-    const origen = origenesData.find(o => o.origenid === selectedOrigen);
-    const fuente = fuentesData.find(f => f.fuenteid === selectedFuente);
+    const origen = origenesData.find(o => o.origenid === activeTabConfig.origenid);
+    const fuente = fuentesData.find(f => f.fuenteid === activeTabConfig.fuenteid);
     
     if (!origen || !fuente) {
       setGeografiaLevel(null);
       setFuenteNombre(null);
-      setTablaData([]);
       return;
     }
 
@@ -99,34 +158,68 @@ export function AsignarPermisosTab({
       else if (fuenteName === 'fundo') setGeografiaLevel('fundo');
       else if (fuenteName === 'ubicacion') setGeografiaLevel('ubicacion');
       else setGeografiaLevel(null);
-      setTablaData([]);
     } 
     // Si es TABLA, cargar datos de la tabla
     else if (origenName === 'TABLA') {
       setGeografiaLevel(null);
-      // Cargar datos de la tabla dinámicamente
-      const loadTablaData = async () => {
-        setLoadingTablaData(true);
-        try {
-          const data = await JoySenseService.getTableData(fuenteName, 1000);
-          setTablaData(Array.isArray(data) ? data : []);
-        } catch (error) {
-          console.error(`Error cargando datos de tabla ${fuenteName}:`, error);
-          setTablaData([]);
-          setMessage({ type: 'error', text: `Error al cargar datos de ${fuenteName}` });
-        } finally {
-          setLoadingTablaData(false);
-        }
-      };
-      loadTablaData();
+      // Cargar datos de la tabla dinámicamente solo si no están cargados
+      if (!tablaData[activeTabConfig.fuenteid] && !loadingTablaData[activeTabConfig.fuenteid]) {
+        const loadTablaData = async () => {
+          setLoadingTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: true }));
+          try {
+            const data = await JoySenseService.getTableData(fuenteName, 1000);
+            setTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: Array.isArray(data) ? data : [] }));
+          } catch (error) {
+            console.error(`Error cargando datos de tabla ${fuenteName}:`, error);
+            setTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: [] }));
+            setMessage({ type: 'error', text: `Error al cargar datos de ${fuenteName}` });
+          } finally {
+            setLoadingTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: false }));
+          }
+        };
+        loadTablaData();
+      }
     } else {
       setGeografiaLevel(null);
-      setTablaData([]);
     }
-  }, [selectedOrigen, selectedFuente, origenesData, fuentesData]);
+  }, [activeTabConfig, origenesData, fuentesData, tablaData, loadingTablaData]);
+
+  // Cargar permisos existentes cuando cambia la pestaña activa
+  useEffect(() => {
+    if (!activeTabConfig) {
+      setExistingPermisos([]);
+      return;
+    }
+
+    const loadExistingPermisos = async () => {
+      setLoadingPermisos(true);
+      try {
+        // Cargar todos los permisos que coincidan con la combinación
+        const allPermisos = await JoySenseService.getTableData('permiso', 10000);
+        const filtered = Array.isArray(allPermisos) 
+          ? allPermisos.filter((p: any) => 
+              p.perfilid === activeTabConfig.perfilid &&
+              p.origenid === activeTabConfig.origenid &&
+              p.fuenteid === activeTabConfig.fuenteid &&
+              p.statusid === 1
+            )
+          : [];
+        setExistingPermisos(filtered);
+      } catch (error) {
+        console.error('Error cargando permisos existentes:', error);
+        setExistingPermisos([]);
+      } finally {
+        setLoadingPermisos(false);
+      }
+    };
+
+    loadExistingPermisos();
+  }, [activeTabConfig]);
 
   // Cargar objetos según el tipo de origen (GEOGRAFÍA o TABLA)
   const objetosData = useMemo(() => {
+    if (!activeTabConfig) return [];
+
     // Si es geografía, usar datos geográficos
     if (geografiaLevel) {
       switch (geografiaLevel) {
@@ -160,7 +253,7 @@ export function AsignarPermisosTab({
     }
     
     // Si es TABLA, usar datos cargados dinámicamente
-    if (tablaData.length > 0 && fuenteNombre) {
+    if (tablaData[activeTabConfig.fuenteid] && tablaData[activeTabConfig.fuenteid].length > 0 && fuenteNombre) {
       // Mapeo de nombres de tabla a campos ID y nombre
       const tableFieldMap: Record<string, { idField: string; nameField: string }> = {
         'nodo': { idField: 'nodoid', nameField: 'nodo' },
@@ -182,7 +275,7 @@ export function AsignarPermisosTab({
         nameField: fuenteNombre.toLowerCase() 
       };
 
-      return tablaData.map(item => ({
+      return tablaData[activeTabConfig.fuenteid].map(item => ({
         id: item[fields.idField],
         nombre: item[fields.nameField] || `${fuenteNombre} ${item[fields.idField]}`,
         objetoid: item[fields.idField]
@@ -190,25 +283,33 @@ export function AsignarPermisosTab({
     }
 
     return [];
-  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, tablaData, fuenteNombre]);
+  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, tablaData, fuenteNombre, activeTabConfig]);
 
-  // Inicializar matriz de permisos cuando cambian los objetos
+  // Inicializar matriz de permisos cuando cambian los objetos o los permisos existentes
   useEffect(() => {
-    if (objetosData.length > 0) {
+    if (objetosData.length > 0 && activeTabConfig) {
       const newMatrix: PermisoMatrix = {};
+      
       objetosData.forEach(obj => {
+        // Buscar permiso existente para este objeto
+        const existingPermiso = existingPermisos.find((p: any) => 
+          p.objetoid === obj.objetoid || p.objetoid === null
+        );
+        
+        // Si existe un permiso, usar sus valores; si no, inicializar en false
         newMatrix[obj.objetoid] = {
-          puede_ver: false,
-          puede_insertar: false,
-          puede_actualizar: false,
-          puede_eliminar: false
+          puede_ver: existingPermiso?.puede_ver || false,
+          puede_insertar: existingPermiso?.puede_insertar || false,
+          puede_actualizar: existingPermiso?.puede_actualizar || false,
+          puede_eliminar: existingPermiso?.puede_eliminar || false
         };
       });
+      
       setPermisoMatrix(newMatrix);
     } else {
       setPermisoMatrix({});
     }
-  }, [objetosData]);
+  }, [objetosData, existingPermisos, activeTabConfig]);
 
   // Handler para toggle de permisos
   const handlePermisoToggle = useCallback((objetoid: string, permiso: keyof PermisoMatrix[string]) => {
@@ -240,18 +341,8 @@ export function AsignarPermisosTab({
 
   // Guardar permisos
   const handleGuardar = useCallback(async () => {
-    if (selectedPerfiles.length === 0) {
-      setMessage({ type: 'warning', text: 'Por favor seleccione al menos un perfil' });
-      return;
-    }
-
-    if (!selectedOrigen) {
-      setMessage({ type: 'warning', text: 'Por favor seleccione un origen' });
-      return;
-    }
-
-    if (!selectedFuente) {
-      setMessage({ type: 'warning', text: 'Por favor seleccione una fuente' });
+    if (!activeTabConfig) {
+      setMessage({ type: 'warning', text: 'Por favor seleccione una pestaña activa' });
       return;
     }
 
@@ -277,19 +368,36 @@ export function AsignarPermisosTab({
       const userId = user?.user_metadata?.usuarioid || 1;
       const now = new Date().toISOString();
 
-      // Crear array de permisos a insertar
-      const permisosToInsert: any[] = [];
+      // Crear array de permisos a insertar/actualizar
+      const permisosToUpsert: any[] = [];
 
-      selectedPerfiles.forEach(perfilid => {
-        objetosData.forEach(obj => {
-          const permisos = permisoMatrix[obj.objetoid];
-          
-          // Solo crear permiso si al menos uno está activo
-          if (permisos.puede_ver || permisos.puede_insertar || permisos.puede_actualizar || permisos.puede_eliminar) {
-            permisosToInsert.push({
-              perfilid,
-              origenid: selectedOrigen,
-              fuenteid: selectedFuente,
+      objetosData.forEach(obj => {
+        const permisos = permisoMatrix[obj.objetoid];
+        
+        // Buscar permiso existente
+        const existingPermiso = existingPermisos.find((p: any) => 
+          p.objetoid === obj.objetoid || (p.objetoid === null && obj.objetoid === null)
+        );
+        
+        // Solo crear/actualizar permiso si al menos uno está activo
+        if (permisos.puede_ver || permisos.puede_insertar || permisos.puede_actualizar || permisos.puede_eliminar) {
+          if (existingPermiso) {
+            // Actualizar permiso existente
+            permisosToUpsert.push({
+              ...existingPermiso,
+              puede_ver: permisos.puede_ver,
+              puede_insertar: permisos.puede_insertar,
+              puede_actualizar: permisos.puede_actualizar,
+              puede_eliminar: permisos.puede_eliminar,
+              usermodifiedid: userId,
+              datemodified: now
+            });
+          } else {
+            // Crear nuevo permiso
+            permisosToUpsert.push({
+              perfilid: activeTabConfig.perfilid,
+              origenid: activeTabConfig.origenid,
+              fuenteid: activeTabConfig.fuenteid,
               objetoid: obj.objetoid,
               puede_ver: permisos.puede_ver,
               puede_insertar: permisos.puede_insertar,
@@ -302,14 +410,28 @@ export function AsignarPermisosTab({
               datemodified: now
             });
           }
-        });
+        } else if (existingPermiso) {
+          // Si no hay permisos activos pero existe un permiso, desactivarlo
+          permisosToUpsert.push({
+            ...existingPermiso,
+            statusid: 0,
+            usermodifiedid: userId,
+            datemodified: now
+          });
+        }
       });
 
-      // Insertar permisos de forma masiva
+      // Insertar/actualizar permisos
       const results = await Promise.all(
-        permisosToInsert.map(permiso => 
-          JoySenseService.insertTableRow('permiso', permiso)
-        )
+        permisosToUpsert.map(permiso => {
+          if (permiso.permisoid) {
+            // Actualizar
+            return JoySenseService.updateTableRow('permiso', permiso.permisoid, permiso);
+          } else {
+            // Insertar
+            return JoySenseService.insertTableRow('permiso', permiso);
+          }
+        })
       );
 
       const errors = results.filter(r => !r || (r as any).error);
@@ -323,6 +445,17 @@ export function AsignarPermisosTab({
           type: 'success', 
           text: `Se guardaron ${results.length} permisos correctamente` 
         });
+        // Recargar permisos existentes
+        const allPermisos = await JoySenseService.getTableData('permiso', 10000);
+        const filtered = Array.isArray(allPermisos) 
+          ? allPermisos.filter((p: any) => 
+              p.perfilid === activeTabConfig.perfilid &&
+              p.origenid === activeTabConfig.origenid &&
+              p.fuenteid === activeTabConfig.fuenteid &&
+              p.statusid === 1
+            )
+          : [];
+        setExistingPermisos(filtered);
         onSuccess?.();
       }
     } catch (error: any) {
@@ -333,9 +466,9 @@ export function AsignarPermisosTab({
     } finally {
       setLoading(false);
     }
-  }, [selectedPerfiles, selectedOrigen, selectedFuente, objetosData, permisoMatrix, user, onSuccess]);
+  }, [activeTabConfig, objetosData, permisoMatrix, existingPermisos, user, onSuccess]);
 
-  // Opciones de perfiles
+  // Opciones para los dropdowns
   const perfilOptions = useMemo(() => {
     return perfilesData.map(p => ({
       value: p.perfilid,
@@ -343,7 +476,6 @@ export function AsignarPermisosTab({
     }));
   }, [perfilesData]);
 
-  // Opciones de orígenes
   const origenOptions = useMemo(() => {
     return origenesData.map(o => ({
       value: o.origenid,
@@ -353,32 +485,20 @@ export function AsignarPermisosTab({
 
   // Opciones de fuentes (filtradas por origen si está seleccionado)
   const fuenteOptions = useMemo(() => {
-    if (!selectedOrigen || !origenesData.length) return [];
-    
+    if (!selectedOrigen) return [];
+
     const origen = origenesData.find(o => o.origenid === selectedOrigen);
-    if (!origen) return [];
-    
-    const origenName = origen.origen?.toUpperCase() || '';
-    
-    // Fuentes de geografía
-    const geografiaFuentes = ['pais', 'empresa', 'fundo', 'ubicacion'];
-    
-    // Filtrar fuentes según el origen
+    const origenName = origen?.origen?.toLowerCase() || '';
+
     return fuentesData
       .filter(f => {
         const fuenteName = f.fuente?.toLowerCase() || '';
-        
-        // Si el origen es GEOGRAFÍA, solo mostrar fuentes de geografía
-        if (origenName === 'GEOGRAFÍA' || origenName === 'GEOGRAFIA') {
-          return geografiaFuentes.includes(fuenteName);
+        // Normalizar: 'geografía' o 'geografia' (con o sin tilde)
+        if (origenName === 'geografía' || origenName === 'geografia') {
+          return ['pais', 'empresa', 'fundo', 'ubicacion'].includes(fuenteName);
+        } else if (origenName === 'tabla') {
+          return !['pais', 'empresa', 'fundo', 'ubicacion'].includes(fuenteName);
         }
-        
-        // Si el origen es TABLA, excluir fuentes de geografía
-        if (origenName === 'TABLA') {
-          return !geografiaFuentes.includes(fuenteName);
-        }
-        
-        // Por defecto, mostrar todas
         return true;
       })
       .map(f => ({
@@ -392,18 +512,11 @@ export function AsignarPermisosTab({
       {/* Mensaje */}
       {message && <div className="mb-4"><MessageDisplay message={message} /></div>}
 
-      {/* Selección de Perfiles y Origen - Una sola fila */}
-      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-4 flex-shrink-0" style={{ position: 'relative', zIndex: 10 }}>
-        <h3 className="text-lg font-bold text-purple-500 font-mono tracking-wider mb-3">
-          CONFIGURACIÓN INICIAL
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+      {/* Selección de Perfiles, Origen y Fuentes - Una sola fila */}
+      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-4 flex-shrink-0" style={{ position: 'relative', zIndex: 50 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ position: 'relative', zIndex: 50 }}>
           {/* Perfiles (múltiple) */}
-          <div style={{ position: 'relative', zIndex: 30 }}>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
-              Perfiles <span className="text-red-500">*</span>
-            </label>
+          <div style={{ position: 'relative', zIndex: 100 }}>
             <MultiSelectWithPlaceholder
               value={selectedPerfiles}
               onChange={setSelectedPerfiles}
@@ -415,15 +528,12 @@ export function AsignarPermisosTab({
           </div>
 
           {/* Origen */}
-          <div style={{ position: 'relative', zIndex: 30 }}>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
-              Origen <span className="text-red-500">*</span>
-            </label>
+          <div style={{ position: 'relative', zIndex: 100 }}>
             <SelectWithPlaceholder
               value={selectedOrigen || null}
               onChange={(value) => {
                 setSelectedOrigen(value ? Number(value) : null);
-                setSelectedFuente(null); // Reset fuente cuando cambia origen
+                setSelectedFuentes([]); // Reset fuentes cuando cambia origen
               }}
               options={origenOptions}
               placeholder="Seleccione un origen"
@@ -432,17 +542,14 @@ export function AsignarPermisosTab({
             />
           </div>
 
-          {/* Fuente */}
-          <div style={{ position: 'relative', zIndex: 30 }}>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
-              Fuente <span className="text-red-500">*</span>
-            </label>
-            <SelectWithPlaceholder
-              value={selectedFuente || null}
-              onChange={(value) => setSelectedFuente(value ? Number(value) : null)}
+          {/* Fuentes (múltiple) */}
+          <div style={{ position: 'relative', zIndex: 100 }}>
+            <MultiSelectWithPlaceholder
+              value={selectedFuentes}
+              onChange={setSelectedFuentes}
               options={fuenteOptions}
-              placeholder={selectedOrigen ? 'Seleccione una fuente' : 'Seleccione origen primero'}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder={selectedOrigen ? 'Seleccione fuentes' : 'Seleccione origen primero'}
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedOrigen || fuenteOptions.length === 0}
             />
           </div>
@@ -450,128 +557,154 @@ export function AsignarPermisosTab({
       </div>
 
       {/* Matriz de Permisos */}
-      {((geografiaLevel || (tablaData.length > 0 && fuenteNombre)) && objetosData.length > 0) && (
+      {activeTabConfig && ((geografiaLevel || (tablaData[activeTabConfig.fuenteid] && tablaData[activeTabConfig.fuenteid].length > 0 && fuenteNombre)) && objetosData.length > 0) && (
         <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 flex-1 flex flex-col min-h-0">
-          <h3 className="text-xl font-bold text-purple-500 font-mono tracking-wider mb-4">
-            ASIGNAR PERMISOS - {geografiaLevel ? geografiaLevel.toUpperCase() : (fuenteNombre?.toUpperCase() || '')}
-          </h3>
+          {/* Pestañas de combinaciones - Solo mostrar si hay más de 1 combinación */}
+          {tabs.length > 1 && (
+            <div className="mb-4">
+              <div className="flex flex-wrap gap-2 justify-center">
+                {tabs.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2 rounded-lg font-mono text-sm transition-colors ${
+                      activeTab === tab.key
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                    }`}
+                  >
+                    {tab.fuenteNombre.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           
-          {loadingTablaData && (
+          {loadingTablaData[activeTabConfig.fuenteid] && (
             <div className="text-center py-8 text-neutral-400">
               Cargando datos de {fuenteNombre}...
             </div>
           )}
 
-          <div className="overflow-auto flex-1">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-neutral-800">
-                  <th className="border border-neutral-700 px-4 py-3 text-left text-neutral-300 font-semibold sticky left-0 bg-neutral-800 z-10">
-                    {geografiaLevel ? geografiaLevel.toUpperCase() : (fuenteNombre?.toUpperCase() || 'OBJETO')}
-                  </th>
-                  <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
-                    <div className="flex flex-col items-center">
-                      <span>PUEDE VER</span>
-                      <button
-                        onClick={() => handleSelectAllColumn('puede_ver')}
-                        className="text-xs text-purple-400 hover:text-purple-300 mt-1"
-                      >
-                        (Todos)
-                      </button>
-                    </div>
-                  </th>
-                  <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
-                    <div className="flex flex-col items-center">
-                      <span>PUEDE INSERTAR</span>
-                      <button
-                        onClick={() => handleSelectAllColumn('puede_insertar')}
-                        className="text-xs text-purple-400 hover:text-purple-300 mt-1"
-                      >
-                        (Todos)
-                      </button>
-                    </div>
-                  </th>
-                  <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
-                    <div className="flex flex-col items-center">
-                      <span>PUEDE ACTUALIZAR</span>
-                      <button
-                        onClick={() => handleSelectAllColumn('puede_actualizar')}
-                        className="text-xs text-purple-400 hover:text-purple-300 mt-1"
-                      >
-                        (Todos)
-                      </button>
-                    </div>
-                  </th>
-                  <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
-                    <div className="flex flex-col items-center">
-                      <span>PUEDE ELIMINAR</span>
-                      <button
-                        onClick={() => handleSelectAllColumn('puede_eliminar')}
-                        className="text-xs text-purple-400 hover:text-purple-300 mt-1"
-                      >
-                        (Todos)
-                      </button>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {objetosData.map(obj => (
-                  <tr key={obj.id} className="hover:bg-neutral-800">
-                    <td className="border border-neutral-700 px-4 py-3 text-neutral-300 sticky left-0 bg-neutral-900 z-10">
-                      {obj.nombre}
-                    </td>
-                    <td className="border border-neutral-700 px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={permisoMatrix[obj.objetoid]?.puede_ver || false}
-                        onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_ver')}
-                        className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="border border-neutral-700 px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={permisoMatrix[obj.objetoid]?.puede_insertar || false}
-                        onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_insertar')}
-                        className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="border border-neutral-700 px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={permisoMatrix[obj.objetoid]?.puede_actualizar || false}
-                        onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_actualizar')}
-                        className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="border border-neutral-700 px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={permisoMatrix[obj.objetoid]?.puede_eliminar || false}
-                        onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_eliminar')}
-                        className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loadingPermisos && (
+            <div className="text-center py-8 text-neutral-400">
+              Cargando permisos existentes...
+            </div>
+          )}
 
-          {/* Botón Guardar */}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleGuardar}
-              disabled={loading}
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Guardando...' : 'Guardar Permisos'}
-            </button>
-          </div>
+          {!loadingTablaData[activeTabConfig.fuenteid] && !loadingPermisos && (
+            <>
+              <div className="overflow-auto flex-1">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-neutral-800">
+                      <th className="border border-neutral-700 px-4 py-3 text-left text-neutral-300 font-semibold sticky left-0 bg-neutral-800 z-10">
+                        {geografiaLevel ? geografiaLevel.toUpperCase() : (fuenteNombre?.toUpperCase() || 'OBJETO')}
+                      </th>
+                      <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
+                        <div className="flex flex-col items-center">
+                          <span>PUEDE VER</span>
+                          <button
+                            onClick={() => handleSelectAllColumn('puede_ver')}
+                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                          >
+                            (Todos)
+                          </button>
+                        </div>
+                      </th>
+                      <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
+                        <div className="flex flex-col items-center">
+                          <span>PUEDE INSERTAR</span>
+                          <button
+                            onClick={() => handleSelectAllColumn('puede_insertar')}
+                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                          >
+                            (Todos)
+                          </button>
+                        </div>
+                      </th>
+                      <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
+                        <div className="flex flex-col items-center">
+                          <span>PUEDE ACTUALIZAR</span>
+                          <button
+                            onClick={() => handleSelectAllColumn('puede_actualizar')}
+                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                          >
+                            (Todos)
+                          </button>
+                        </div>
+                      </th>
+                      <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
+                        <div className="flex flex-col items-center">
+                          <span>PUEDE ELIMINAR</span>
+                          <button
+                            onClick={() => handleSelectAllColumn('puede_eliminar')}
+                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                          >
+                            (Todos)
+                          </button>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {objetosData.map(obj => (
+                      <tr key={obj.id} className="hover:bg-neutral-800">
+                        <td className="border border-neutral-700 px-4 py-3 text-neutral-300 sticky left-0 bg-neutral-900 z-10">
+                          {obj.nombre}
+                        </td>
+                        <td className="border border-neutral-700 px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={permisoMatrix[obj.objetoid]?.puede_ver || false}
+                            onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_ver')}
+                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="border border-neutral-700 px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={permisoMatrix[obj.objetoid]?.puede_insertar || false}
+                            onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_insertar')}
+                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="border border-neutral-700 px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={permisoMatrix[obj.objetoid]?.puede_actualizar || false}
+                            onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_actualizar')}
+                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="border border-neutral-700 px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={permisoMatrix[obj.objetoid]?.puede_eliminar || false}
+                            onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_eliminar')}
+                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Botón Guardar */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleGuardar}
+                  disabled={loading}
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Permisos'}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
   );
 }
-
