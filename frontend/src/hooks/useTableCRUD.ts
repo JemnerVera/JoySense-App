@@ -391,6 +391,15 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
   }, [tableName, formState.data.paisid]);
 
   const resetForm = useCallback(() => {
+    // Si ya hay un reset en curso, no hacer nada (evitar múltiples resets)
+    if (isResettingRef.current) {
+      console.log('[useTableCRUD] resetForm ignorado - ya hay un reset en curso', {
+        tableName,
+        resetCounter: resetCounterRef.current
+      });
+      return;
+    }
+
     const initialData = initializeFormData(config);
     
     // Incrementar contador de reset para forzar re-mounts
@@ -422,6 +431,16 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       timestampActual: Date.now()
     });
     
+    console.log('[useTableCRUD] Estableciendo formState con initialData', {
+      tableName,
+      initialDataKeys: Object.keys(initialData),
+      initialDataSample: Object.keys(initialData).slice(0, 5).reduce((acc, key) => {
+        acc[key] = initialData[key];
+        return acc;
+      }, {} as Record<string, any>),
+      timestamp: Date.now()
+    });
+    
     setFormState({
       data: initialData,
       errors: {},
@@ -429,8 +448,13 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       isDirty: false
     });
     
-    // Permitir actualizaciones después de 2000ms (tiempo suficiente para que React complete todos los re-renders y re-mounts)
-    // PERO mantener el timestamp por 5 segundos para el bloqueo específico de paisid
+    console.log('[useTableCRUD] formState establecido, programando desbloqueo', {
+      tableName,
+      timestamp: Date.now()
+    });
+    
+    // Reducir tiempo de bloqueo a 500ms (suficiente para que React complete el render inicial)
+    // PERO mantener el timestamp por 3 segundos para el bloqueo específico de paisid
     resetTimeoutRef.current = setTimeout(() => {
       isResettingRef.current = false;
       console.log('[useTableCRUD] Bloqueo de reset levantado (isResettingRef = false)', {
@@ -439,17 +463,17 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
         tiempoTranscurrido: Date.now() - resetTimestamp
       });
       
-      // Mantener el timestamp por 5 segundos más para el bloqueo específico de paisid
+      // Mantener el timestamp por 3 segundos más para el bloqueo específico de paisid
       setTimeout(() => {
         if (resetTimestampRef.current === resetTimestamp) {
           resetTimestampRef.current = null;
-          console.log('[useTableCRUD] Timestamp de reset limpiado después de 5 segundos', {
+          console.log('[useTableCRUD] Timestamp de reset limpiado después de 3 segundos', {
             tableName,
             tiempoTotal: Date.now() - resetTimestamp
           });
         }
-      }, 5000 - 2000); // Limpiar después de 5 segundos totales (3 segundos después de levantar el bloqueo)
-    }, 2000);
+      }, 3000 - 500); // Limpiar después de 3 segundos totales (2.5 segundos después de levantar el bloqueo)
+    }, 500); // Reducido de 2000ms a 500ms
   }, [config, tableName]);
   
   // Exponer resetCounter para usar como key en componentes hijos

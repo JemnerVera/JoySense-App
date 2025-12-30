@@ -733,10 +733,34 @@ export class JoySenseService {
   static async getTableColumns(tableName: TableName | string): Promise<any[]> {
     try {
       const endpoint = `/generic/${tableName}/columns`;
+      console.log('[JoySenseService] Llamando getTableColumns', {
+        tableName,
+        endpoint,
+        timestamp: Date.now()
+      });
+      
       const data = await backendAPI.get(endpoint);
+      
+      console.log('[JoySenseService] Respuesta de getTableColumns', {
+        tableName,
+        endpoint,
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        dataKeys: data ? Object.keys(data) : [],
+        rawData: data,
+        timestamp: Date.now()
+      });
+      
       const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
       
-      return rawColumns.map((col: any) => ({
+      console.log('[JoySenseService] Procesando columnas', {
+        tableName,
+        rawColumnsCount: rawColumns.length,
+        rawColumns: rawColumns,
+        timestamp: Date.now()
+      });
+      
+      const mappedColumns = rawColumns.map((col: any) => ({
         columnName: col.column_name,
         dataType: col.data_type,
         isNullable: col.is_nullable === 'YES',
@@ -744,8 +768,23 @@ export class JoySenseService {
         isIdentity: col.column_default?.includes('nextval') || false,
         isPrimaryKey: false
       }));
+      
+      console.log('[JoySenseService] Columnas mapeadas', {
+        tableName,
+        mappedColumnsCount: mappedColumns.length,
+        mappedColumns: mappedColumns.map((c: any) => c.columnName),
+        timestamp: Date.now()
+      });
+      
+      return mappedColumns;
     } catch (error) {
-      console.error(`Error in getTableColumns for ${tableName}:`, error);
+      console.error(`[JoySenseService] Error in getTableColumns for ${tableName}:`, error);
+      console.error(`[JoySenseService] Error details:`, {
+        tableName,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: Date.now()
+      });
       throw error;
     }
   }

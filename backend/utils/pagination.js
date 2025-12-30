@@ -240,38 +240,71 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
 const metadataCache = new Map();
 
 /**
+ * Limpiar cache de metadatos
+ */
+function clearMetadataCache(tableName = null) {
+  if (tableName) {
+    metadataCache.delete(tableName);
+    logger.info(`🗑️ [clearMetadataCache] Cache limpiado para tabla: ${tableName}`);
+  } else {
+    metadataCache.clear();
+    logger.info(`🗑️ [clearMetadataCache] Cache limpiado completamente`);
+  }
+}
+
+/**
  * Obtener metadatos de tabla
  * Intenta usar RPC primero, si falla usa una query directa para inferir estructura
+ * @param {string} tableName - Nombre de la tabla
+ * @param {object} userSupabase - Cliente de Supabase con token de usuario (para RLS)
  */
-async function getTableMetadata(tableName) {
+async function getTableMetadata(tableName, userSupabase = null) {
+  // Usar el cliente con token de usuario si está disponible, sino usar el base
+  const supabase = userSupabase || baseSupabase;
+  
   if (metadataCache.has(tableName)) {
-    return metadataCache.get(tableName);
+    const cached = metadataCache.get(tableName);
+    const cachedColumnsCount = cached.columns ? (Array.isArray(cached.columns) ? cached.columns.length : 0) : 0;
+    
+    // Si el cache tiene columnas vacías pero la tabla debería tener columnas, limpiar el cache
+    if (cachedColumnsCount === 0) {
+      logger.warn(`⚠️ [getTableMetadata] Cache vacío para: ${tableName}, limpiando cache`);
+      metadataCache.delete(tableName);
+      // Continuar para obtener los datos frescos
+    } else {
+      return cached;
+    }
   }
   
   try {
     // Intentar primero con RPC (la función consulta information_schema, no está afectada por RLS)
-    // La función está en joysense y se accede directamente usando .schema('joysense')
-    const { data: rpcData, error: rpcError } = await baseSupabase
+    // IMPORTANTE: Usar el cliente con token de usuario para que la función pueda verificar autenticación
+    const { data: rpcData, error: rpcError } = await supabase
       .schema('joysense')
       .rpc('fn_get_table_metadata', { tbl_name: tableName });
     
-    // Si RPC funciona y retorna datos, usarlos (incluso si la tabla está vacía, debería retornar columnas)
-    if (!rpcError && rpcData) {
-      // Verificar que tenga la estructura esperada
-      if (rpcData.columns !== undefined) {
-        metadataCache.set(tableName, rpcData);
-        return rpcData;
-      }
+    // Si RPC funciona y retorna datos, usarlos
+    if (!rpcError && rpcData && rpcData.columns !== undefined) {
+      metadataCache.set(tableName, rpcData);
+      return rpcData;
     }
     
-    // Fallback: Obtener una fila para inferir estructura
-    const { data: rows, error: queryError } = await baseSupabase
+    // Si la función RPC falló por permisos, registrar el error
+    if (rpcError && rpcError.code === '42501') {
+      logger.warn(`⚠️ [getTableMetadata] RPC falló por permisos para: ${tableName} - ${rpcError.message}`);
+    }
+    
+    // Fallback: usar query directa si RPC falló
+    // Obtener una fila para inferir estructura
+    // IMPORTANTE: Usar el cliente con token de usuario para que RLS funcione
+    const { data: rows, error: queryError } = await supabase
       .schema(dbSchema)
       .from(tableName)
       .select('*')
       .limit(1);
     
     if (queryError) {
+      logger.warn(`⚠️ [getTableMetadata] Error en query fallback para: ${tableName} - ${queryError.message}`);
       const emptyMetadata = {
         columns: [],
         constraints: [],
@@ -290,6 +323,7 @@ async function getTableMetadata(tableName) {
     
     // Si la tabla está vacía (no hay filas), retornar metadatos vacíos
     if (!firstRow || Object.keys(firstRow).length === 0) {
+      logger.warn(`⚠️ [getTableMetadata] Tabla vacía para: ${tableName}`);
       const emptyMetadata = {
         columns: [],
         constraints: [],
