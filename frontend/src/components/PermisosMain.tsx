@@ -111,6 +111,11 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   const { hasUnsavedChanges: checkUnsavedChanges } = useUnsavedChanges();
   
   const hasUnsavedChanges = useCallback(() => {
+    // Para 'asignar', no verificar cambios sin guardar (permite cambiar libremente)
+    if (activeSubTab === 'asignar') {
+      return false;
+    }
+    
     // Para update, verificar también updateFormData
     if (activeSubTab === 'update') {
       if (!updateFormData || Object.keys(updateFormData).length === 0) {
