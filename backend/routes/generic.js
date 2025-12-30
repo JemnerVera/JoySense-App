@@ -42,7 +42,7 @@ const PK_MAPPING = {
   tipo: 'tipoid',
   metrica: 'metricaid',
   umbral: 'umbralid',
-  alerta: 'uuid_alertaid',
+  alerta: 'alertaid',
   alerta_regla: 'uuid_alerta_reglaid',
   alerta_regla_consolidado: 'uuid_consolidadoid',
   criticidad: 'criticidadid',
@@ -65,8 +65,8 @@ const PK_MAPPING = {
   regla_objeto: 'regla_objetoid',
   regla_perfil: 'regla_perfilid',
   regla_umbral: 'regla_umbralid',
-  sensor_valor: 'id',
-  sensor_valor_error: 'id'
+  sensor_valor: null, // PK compuesta (id_device, fecha)
+  sensor_valor_error: 'sensorvalorerrorid'
 };
 
 // Validar tabla permitida

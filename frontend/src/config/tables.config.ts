@@ -379,13 +379,11 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowInsert: true,
     allowUpdate: true,
     allowDelete: false,
-    sortField: 'grado',
+    sortField: 'criticidad',
     fields: [
       { name: 'criticidadid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'criticidad', label: 'Criticidad', type: 'text', required: true },
-      { name: 'grado', label: 'Grado', type: 'number', required: true },
-      { name: 'frecuencia', label: 'Frecuencia (min)', type: 'number', required: true },
-      { name: 'escalamiento', label: 'Escalamiento (min)', type: 'number', required: true },
+      { name: 'escalamiento', label: 'Escalamiento (horas)', type: 'number', required: true, defaultValue: 2 },
       { name: 'escalon', label: 'Escalón', type: 'number', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
@@ -421,14 +419,14 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     description: 'Alertas generadas por mediciones fuera de umbral',
     icon: '🔔',
     category: 'alertas',
-    primaryKey: 'uuid_alertaid',
+    primaryKey: 'alertaid',
     allowInsert: false,
     allowUpdate: false,
     allowDelete: false,
     sortField: 'fecha',
     sortOrder: 'desc',
     fields: [
-      { name: 'uuid_alertaid', label: 'UUID', type: 'text', readonly: true },
+      { name: 'alertaid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'medicionid', label: 'Medición', type: 'number', readonly: true },
       { name: 'umbralid', label: 'Umbral', type: 'select', foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
       { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
@@ -611,7 +609,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'new_minimo', label: 'Min Nuevo', type: 'number', readonly: true },
       { name: 'old_maximo', label: 'Max Anterior', type: 'number', readonly: true },
       { name: 'new_maximo', label: 'Max Nuevo', type: 'number', readonly: true },
-      { name: 'modified_at', label: 'Fecha', type: 'datetime', readonly: true }
+      { name: 'datemodified', label: 'Fecha', type: 'datetime', readonly: true }
     ]
   },
 
@@ -632,9 +630,10 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'usuarioid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'login', label: 'Login (Email)', type: 'email', required: true },
-      { name: 'password', label: 'Password', type: 'password', required: true },
+      { name: 'password_hash', label: 'Password Hash', type: 'text', required: true, hidden: true },
       { name: 'firstname', label: 'Nombre', type: 'text', required: true },
       { name: 'lastname', label: 'Apellido', type: 'text', required: true },
+      { name: 'useruuid', label: 'UUID Usuario', type: 'text', readonly: true, hidden: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
