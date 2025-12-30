@@ -98,6 +98,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     getPrimaryKeyValue,
     user,
     existingData,
+    relatedData, // Pasar relatedData para que useUpdateForm pueda concatenar código de país
     onSuccess: () => {
       setSelectedRow(null);
       setShowForm(false);

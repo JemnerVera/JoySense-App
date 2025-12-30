@@ -8,6 +8,7 @@ import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { getPrimaryKey } from '../../../../config/tables.config';
 import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
+import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 import { logger } from '../../../../utils/logger';
@@ -124,6 +125,44 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
       getColumnDisplayNameTranslated(columnName, t)
     );
   }, [getColumnDisplayName, t]);
+
+  // Separar código de país del número de celular si viene concatenado (solo para contacto)
+  // Este hook debe estar antes de cualquier early return
+  const processedFormData = useMemo(() => {
+    if (tableName !== 'contacto') return formData;
+    
+    if (!formData.celular) return formData;
+    
+    const celular = formData.celular;
+    // Si el celular ya tiene codigotelefonoid, no hacer nada
+    if (formData.codigotelefonoid) {
+      return formData;
+    }
+    
+    // Intentar extraer el código de país del número
+    // Formato esperado: +51960596666 o 51960596666
+    const codigoMatch = celular.match(/^(\+?\d{1,3})(\d+)$/);
+    if (codigoMatch) {
+      const codigoCompleto = codigoMatch[1].startsWith('+') ? codigoMatch[1] : `+${codigoMatch[1]}`;
+      const numeroCelular = codigoMatch[2];
+      
+      // Buscar el codigotelefonoid que coincida con el código
+      const codigotelefonosData = (relatedData as any)?.codigotelefonosData || [];
+      const codigoEncontrado = codigotelefonosData.find((c: any) => 
+        c.codigotelefono === codigoCompleto
+      );
+      
+      if (codigoEncontrado) {
+        return {
+          ...formData,
+          codigotelefonoid: codigoEncontrado.codigotelefonoid,
+          celular: numeroCelular
+        };
+      }
+    }
+    
+    return formData;
+  }, [formData, relatedData, tableName]);
 
   if (!config) return null;
 
@@ -339,6 +378,26 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
       : [field.foreignKey.labelField];
     return labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
   };
+
+  // Caso especial para contacto: usar ContactoFormFields
+  if (tableName === 'contacto') {
+    return (
+      <ContactoFormFields
+        visibleColumns={visibleColumns}
+        formData={processedFormData}
+        setFormData={(data) => {
+          // Actualizar cada campo individualmente
+          Object.keys(data).forEach(key => {
+            updateFormField(key, data[key]);
+          });
+        }}
+        updateField={updateFormField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+        codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
