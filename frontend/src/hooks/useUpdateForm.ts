@@ -16,6 +16,7 @@ interface UseUpdateFormProps {
   getPrimaryKeyValue: (row: any) => string | Record<string, any>;
   user: any;
   existingData?: any[];
+  relatedData?: any; // Para acceso a codigotelefonosData en caso de contacto
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -41,6 +42,7 @@ export const useUpdateForm = ({
   getPrimaryKeyValue,
   user,
   existingData = [],
+  relatedData,
   onSuccess,
   onCancel
 }: UseUpdateFormProps): UseUpdateFormReturn => {
@@ -180,11 +182,25 @@ export const useUpdateForm = ({
 
     try {
       // Agregar campos de auditoría
-      const dataToUpdate = {
+      let dataToUpdate: Record<string, any> = {
         ...formData,
         usermodifiedid: user?.user_metadata?.usuarioid || 1,
         datemodified: new Date().toISOString()
       };
+
+      // Para contacto: concatenar código de país con número de celular antes de guardar
+      if (tableName === 'contacto' && dataToUpdate.codigotelefonoid && dataToUpdate.celular) {
+        // Obtener el código de país desde codigotelefonosData
+        const codigotelefonosData = (relatedData as any)?.codigotelefonosData || [];
+        const codigoTelefono = codigotelefonosData.find(
+          (codigo: any) => codigo.codigotelefonoid === dataToUpdate.codigotelefonoid
+        );
+        
+        if (codigoTelefono?.codigotelefono) {
+          // Concatenar código de país con número (ej: +51987654321)
+          dataToUpdate.celular = codigoTelefono.codigotelefono + dataToUpdate.celular;
+        }
+      }
 
       const pk = getPrimaryKeyValue(selectedRow);
       const result = await updateRow(pk, dataToUpdate);
@@ -201,7 +217,7 @@ export const useUpdateForm = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedRow, formData, validateFormComplete, updateRow, getPrimaryKeyValue, user, onSuccess]);
+  }, [selectedRow, formData, validateFormComplete, updateRow, getPrimaryKeyValue, user, relatedData, tableName, onSuccess]);
 
   // Manejar cancelación
   const handleCancel = useCallback(() => {
