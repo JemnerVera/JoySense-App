@@ -82,6 +82,18 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 }) => {
   const { t } = useLanguage();
   
+  useEffect(() => {
+    console.log('[NormalInsertForm] Montado/Actualizado', {
+      selectedTable,
+      loading,
+      visibleColumnsCount: visibleColumns?.length || 0,
+      formDataKeys: Object.keys(formData || {}),
+      hasPaisesData: !!paisesData && paisesData.length > 0,
+      hasEmpresasData: !!empresasData && empresasData.length > 0,
+      hasFundosData: !!fundosData && fundosData.length > 0,
+      timestamp: Date.now()
+    });
+  }, [selectedTable, loading, visibleColumns, formData, paisesData, empresasData, fundosData]);
   
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {

@@ -206,6 +206,11 @@ export const useTableDataManagement = () => {
       }
 
       // Limpiar datos y establecer loading inmediatamente (siempre, para asegurar estado limpio)
+      console.log('[useTableDataManagement] Iniciando carga de columnas', {
+        tabla: selectedTable,
+        timestamp: Date.now()
+      });
+      
       setTableData([]);
       setColumns([]);
       setTableColumns([]);
@@ -218,19 +223,42 @@ export const useTableDataManagement = () => {
       
       // Verificar si la llamada fue cancelada antes de hacer la llamada
       if (abortController.signal.aborted) {
+        console.log('[useTableDataManagement] Llamada cancelada antes de getTableColumns', {
+          tabla: selectedTable,
+          timestamp: Date.now()
+        });
         return;
       }
       
+      console.log('[useTableDataManagement] Llamando getTableColumns', {
+        tabla: selectedTable,
+        timestamp: Date.now()
+      });
       const cols = await JoySenseService.getTableColumns(selectedTable);
       
+      console.log('[useTableDataManagement] Columnas recibidas', {
+        tabla: selectedTable,
+        cantidadColumnas: cols?.length || 0,
+        columnas: cols?.map(c => c.columnName) || [],
+        timestamp: Date.now()
+      });
       
       // Verificar si la llamada fue cancelada después de recibir las columnas
       if (abortController.signal.aborted) {
+        console.log('[useTableDataManagement] Llamada cancelada después de getTableColumns', {
+          tabla: selectedTable,
+          timestamp: Date.now()
+        });
         return;
       }
 
       // Verificar que todavía estamos cargando la misma tabla antes de establecer columnas
       if (loadingTableRef.current !== selectedTable) {
+        console.log('[useTableDataManagement] Tabla cambió durante la carga, ignorando columnas', {
+          tablaEsperada: selectedTable,
+          tablaActual: loadingTableRef.current,
+          timestamp: Date.now()
+        });
         return;
       }
       
@@ -238,6 +266,11 @@ export const useTableDataManagement = () => {
       
       // IMPORTANTE: NO resetear loadingTableRef.current hasta después de establecer las columnas
       // para evitar race conditions
+      console.log('[useTableDataManagement] Estableciendo columnas', {
+        tabla: selectedTable,
+        cantidadColumnas: cols?.length || 0,
+        timestamp: Date.now()
+      });
       setColumns(cols || []);
       
       // Resetear la referencia solo después de establecer columnas exitosamente

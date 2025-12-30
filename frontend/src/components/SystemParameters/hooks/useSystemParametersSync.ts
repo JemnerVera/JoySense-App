@@ -169,12 +169,25 @@ export const useSystemParametersSync = ({
   const prevSelectedTableRef = useRef<string>('');
   useEffect(() => {
     if (selectedTable && selectedTable !== prevSelectedTableRef.current) {
+      console.log('[useSystemParametersSync] Cambio de tabla detectado', {
+        tablaAnterior: prevSelectedTableRef.current,
+        tablaNueva: selectedTable,
+        activeSubTab,
+        timestamp: Date.now()
+      });
+      
       // Limpiar datos inmediatamente al cambiar de tabla para evitar mostrar datos incorrectos
       setTableData([]); // Limpiar datos de tabla
       setColumns([]); // Limpiar columnas solo cuando cambia la tabla
       setLoading(true); // Establecer loading
       setMessage(null);
       setSelectedRow(null);
+      
+      console.log('[useSystemParametersSync] Llamando resetForm por cambio de tabla', {
+        tabla: selectedTable,
+        activeSubTab,
+        timestamp: Date.now()
+      });
       resetForm();
       setUpdateFormData({});
       setInsertedRecords([]); // Limpiar registros insertados al cambiar de tabla
@@ -182,6 +195,7 @@ export const useSystemParametersSync = ({
     }
   }, [
     selectedTable,
+    activeSubTab,
     setTableData,
     setColumns,
     setLoading,
@@ -196,11 +210,21 @@ export const useSystemParametersSync = ({
   const prevTableForLoadRef = useRef<string>('');
   useEffect(() => {
     if (selectedTable && selectedTable !== prevTableForLoadRef.current) {
+      console.log('[useSystemParametersSync] Iniciando carga de datos para tabla', {
+        tabla: selectedTable,
+        tablaAnterior: prevTableForLoadRef.current,
+        activeSubTab,
+        timestamp: Date.now()
+      });
       
       // Para StatusTab: usar solo useTableDataManagement (tableData y columns)
       // Para Insert/Update: usar useTableCRUD (tableState.data)
       // SIEMPRE cargar columnas cuando cambia la tabla
       // Las columnas son necesarias para InsertTab y UpdateTab
+      console.log('[useSystemParametersSync] Llamando loadTableData', {
+        tabla: selectedTable,
+        timestamp: Date.now()
+      });
       loadTableData(selectedTable);
       loadRelatedTablesData(); // También cargar cuando cambia la tabla por si acaso
       
@@ -209,17 +233,39 @@ export const useSystemParametersSync = ({
       // Cargar datos con useTableCRUD solo si no estamos en StatusTab
       // (se cargará cuando se cambie a Insert o Update)
       if (activeSubTab !== 'status') {
+        console.log('[useSystemParametersSync] Llamando loadData y loadRelatedData (no es status)', {
+          tabla: selectedTable,
+          activeSubTab,
+          timestamp: Date.now()
+        });
         loadData();
         loadRelatedData();
       }
     }
-  }, [selectedTable, loadTableData, loadRelatedTablesData, loadData, loadRelatedData]); // Removido activeSubTab de dependencias para evitar recargas innecesarias
+  }, [selectedTable, activeSubTab, loadTableData, loadRelatedTablesData, loadData, loadRelatedData]); // Removido activeSubTab de dependencias para evitar recargas innecesarias
 
   // Limpiar formulario, mensaje y registros insertados cuando se cambia de pestaña
+  const resetFormTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     // Si cambiamos de pestaña (cualquier cambio), limpiar el mensaje y registros insertados
     if (activeSubTab !== prevActiveSubTabRef.current) {
+      console.log('[useSystemParametersSync] Cambio de activeSubTab detectado', {
+        subTabAnterior: prevActiveSubTabRef.current,
+        subTabNuevo: activeSubTab,
+        selectedTable,
+        timestamp: Date.now()
+      });
+      
       setMessage(null);
+      
+      // Limpiar timeout anterior si existe para evitar múltiples resets
+      if (resetFormTimeoutRef.current) {
+        clearTimeout(resetFormTimeoutRef.current);
+        console.log('[useSystemParametersSync] Timeout anterior cancelado', {
+          activeSubTab,
+          timestamp: Date.now()
+        });
+      }
       
       // SIEMPRE limpiar el formulario cuando cambiamos de pestaña, independientemente de la dirección
       // Esto asegura que los valores no persistan entre pestañas
@@ -234,9 +280,22 @@ export const useSystemParametersSync = ({
       const isEnteringInsert = activeSubTab === 'insert' && prevActiveSubTabRef.current !== 'insert';
       const isLeavingUpdate = prevActiveSubTabRef.current === 'update' && activeSubTab !== 'update';
       
+      console.log('[useSystemParametersSync] Evaluación de reset', {
+        shouldResetForm,
+        isEnteringInsert,
+        isLeavingUpdate,
+        activeSubTab,
+        prevActiveSubTab: prevActiveSubTabRef.current,
+        timestamp: Date.now()
+      });
+      
       // CRÍTICO: Si estamos saliendo de UPDATE, siempre resetear ANTES de cualquier otra cosa
       // Esto previene que los datos de UPDATE persistan cuando volvemos a INSERT
       if (isLeavingUpdate) {
+        console.log('[useSystemParametersSync] Reset inmediato por salir de update', {
+          activeSubTab,
+          timestamp: Date.now()
+        });
         resetForm(); // Resetear inmediatamente al salir de update
         setUpdateFormData({}); // Limpiar datos de actualización
       }
@@ -247,15 +306,29 @@ export const useSystemParametersSync = ({
           setInsertedRecords([]);
         }
         
-        // Si no se reseteó ya (por isLeavingUpdate), resetear ahora
+        // Si no se reseteó ya (por isLeavingUpdate), resetear con un pequeño delay para evitar múltiples resets
         if (!isLeavingUpdate) {
-          resetForm();
+          console.log('[useSystemParametersSync] Programando reset con delay de 100ms', {
+            activeSubTab,
+            shouldResetForm,
+            isEnteringInsert,
+            timestamp: Date.now()
+          });
+          // Usar un pequeño delay para evitar múltiples resets cuando cambia selectedTable y activeSubTab al mismo tiempo
+          resetFormTimeoutRef.current = setTimeout(() => {
+            console.log('[useSystemParametersSync] Ejecutando reset programado', {
+              activeSubTab,
+              timestamp: Date.now()
+            });
+            resetForm();
+            resetFormTimeoutRef.current = null;
+          }, 100); // Delay de 100ms para agrupar múltiples cambios
         }
       }
     }
     prevActiveSubTabRef.current = activeSubTab;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSubTab]); // Removido formState.data de dependencias para evitar ejecuciones múltiples
+  }, [activeSubTab, selectedTable]); // Agregado selectedTable para logs
 
   // Recargar datos cuando se cambia a la pestaña de Estado
   useEffect(() => {

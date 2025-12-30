@@ -114,14 +114,19 @@ router.get('/:table/columns', async (req, res) => {
   const { table } = req.params;
   
   if (!isTableAllowed(table)) {
+    logger.warn(`⚠️ [GET /${table}/columns] Tabla no permitida: ${table}`);
     return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
   
   try {
-    const metadata = await getTableMetadata(table);
-    res.json(metadata.columns || []);
+    // Pasar el cliente de Supabase con token de usuario para que RLS funcione
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata(table, userSupabase);
+    const columns = metadata.columns || [];
+    
+    res.json(columns);
   } catch (error) {
-    logger.warn(`⚠️ Error en GET /${table}/columns: ${error.message}. Retornando columnas vacías.`);
+    logger.error(`❌ [GET /${table}/columns] Error: ${error.message}`);
     res.json([]);
   }
 });
