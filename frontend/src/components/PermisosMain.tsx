@@ -30,15 +30,19 @@ import { TableName, PRIMARY_KEY_MAP } from '../types';
 // ============================================================================
 
 interface PermisosMainProps {
+  selectedTable?: string;
+  onTableSelect?: (table: string) => void;
   activeSubTab?: 'status' | 'insert' | 'update' | 'asignar';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
+  themeColor?: 'purple';
 }
 
 export interface PermisosMainRef {
   hasUnsavedChanges: () => boolean;
   handleTabChange: (tab: 'status' | 'insert' | 'update' | 'asignar') => void;
   handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'asignar') => void;
+  handleTableChange?: (table: string) => void;
 }
 
 interface Message {
@@ -51,16 +55,29 @@ interface Message {
 // ============================================================================
 
 const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
+  selectedTable: propSelectedTable,
+  onTableSelect,
   activeSubTab: propActiveSubTab = 'status',
   onSubTabChange,
-  onFormDataChange
+  onFormDataChange,
+  themeColor = 'purple'
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showModal } = useModal();
 
-  // Tabla fija para permisos
-  const selectedTable = 'permiso';
+  // Estado local para la tabla seleccionada
+  const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || 'permiso');
+  
+  // Sincronizar con prop
+  useEffect(() => {
+    if (propSelectedTable) {
+      setSelectedTable(propSelectedTable);
+    }
+  }, [propSelectedTable]);
+  
+  // Determinar si la tabla actual es 'permiso' (para mostrar tab 'asignar')
+  const isPermisoTable = selectedTable === 'permiso';
 
   // Estado local - usar propActiveSubTab directamente, no estado local
   const activeSubTab = propActiveSubTab;
@@ -158,12 +175,26 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   }, [activeSubTab, resetForm, setTableData, onSubTabChange]);
 
   // Exponer métodos al padre mediante ref
+  // Handler para cambio de tabla
+  const handleTableChange = useCallback((table: string) => {
+    setSelectedTable(table);
+    onTableSelect?.(table);
+    // Resetear a status cuando cambia la tabla
+    onSubTabChange?.('status');
+    resetForm();
+    setTableData([]);
+    setUpdateFormData({});
+    setMessage(null);
+    setSelectedRow(null);
+  }, [onTableSelect, onSubTabChange, resetForm, setTableData]);
+
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasUnsavedChanges(),
     handleTabChange: (tab: 'status' | 'insert' | 'update' | 'asignar') => {
       onSubTabChange?.(tab);
     },
-    handleSubTabChangeFromProtectedButton
+    handleSubTabChangeFromProtectedButton,
+    handleTableChange
   }));
 
   // Cargar datos relacionados al montar
@@ -449,6 +480,10 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         );
       
       case 'asignar':
+        // Solo mostrar 'asignar' si la tabla es 'permiso'
+        if (!isPermisoTable) {
+          return null;
+        }
         return (
           <AsignarPermisosTab
             perfilesData={perfilesData}

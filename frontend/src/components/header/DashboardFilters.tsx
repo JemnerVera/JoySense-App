@@ -327,7 +327,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           selectedValue={selectedEntidad?.entidad}
           placeholder="Entidad"
           className="w-full"
-          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider"
+          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-amber-700 dark:text-amber-600 font-mono tracking-wider"
           dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar"
         >
           {loadingEntidades ? (
@@ -342,7 +342,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 onClick={() => handleEntidadSelect(entidad)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedEntidad?.entidadid === entidad.entidadid
-                    ? 'bg-green-500 text-white' 
+                    ? 'bg-amber-800 text-white' 
                     : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800'
                 }`}
               >
@@ -367,7 +367,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           selectedValue={selectedUbicacion?.ubicacion}
           placeholder="Ubicación"
           className="w-full"
-          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider"
+          buttonClassName="min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-amber-700 dark:text-amber-600 font-mono tracking-wider"
           dropdownClassName="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar"
         >
           {loadingUbicaciones ? (
@@ -382,7 +382,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                 onClick={() => handleUbicacionSelect(ubicacion)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors font-mono tracking-wider ${
                   selectedUbicacion?.ubicacionid === ubicacion.ubicacionid
-                    ? 'bg-green-500 text-white' 
+                    ? 'bg-amber-800 text-white' 
                     : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-800'
                 }`}
               >
@@ -404,7 +404,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
             disabled={!fundoSeleccionado}
             className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider ${
-              startDate && endDate ? 'border-green-500' : ''
+              startDate && endDate ? 'border-amber-800' : ''
             }`}
           >
             <div className="flex items-center space-x-2 min-w-0 flex-1">

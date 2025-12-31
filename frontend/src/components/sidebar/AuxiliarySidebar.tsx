@@ -1,6 +1,12 @@
 import React from 'react';
 import ParametersSidebar from './ParametersSidebar';
 import ParametersOperationsSidebar from './ParametersOperationsSidebar';
+import GeografiaSidebar from './GeografiaSidebar';
+import GeografiaOperationsSidebar from './GeografiaOperationsSidebar';
+import ParametrosSidebar from './ParametrosSidebar';
+import ParametrosOperationsSidebar from './ParametrosOperationsSidebar';
+import TablaSidebar from './TablaSidebar';
+import TablaOperationsSidebar from './TablaOperationsSidebar';
 import PermisosSidebar from './PermisosSidebar';
 import PermisosOperationsSidebar from './PermisosOperationsSidebar';
 import AlertasSidebar from './AlertasSidebar';
@@ -91,11 +97,119 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   ];
 
   // Determinar qué sidebar auxiliar mostrar
+  const isGeografia = activeTab === 'geografia' || activeTab.startsWith('geografia-');
+  const isParametros = activeTab === 'parametros' || activeTab.startsWith('parametros-');
+  const isTabla = activeTab === 'tabla' || activeTab.startsWith('tabla-');
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
   const isPermisos = activeTab === 'permisos' || activeTab.startsWith('permisos-');
   const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
   const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
   const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
+
+  if (isGeografia) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <GeografiaOperationsSidebar
+          selectedTable={selectedTable || ''}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <GeografiaSidebar
+        selectedTable={selectedTable || ''}
+        onTableSelect={onTableSelect || (() => {})}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+        onSubTabChange={onSubTabChange || (() => {})}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
+        massiveFormData={massiveFormData}
+      />
+    );
+  }
+
+  if (isParametros) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <ParametrosOperationsSidebar
+          selectedTable={selectedTable || ''}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <ParametrosSidebar
+        selectedTable={selectedTable || ''}
+        onTableSelect={onTableSelect || (() => {})}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+        onSubTabChange={onSubTabChange || (() => {})}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
+        massiveFormData={massiveFormData}
+      />
+    );
+  }
+
+  if (isTabla) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <TablaOperationsSidebar
+          selectedTable={selectedTable || ''}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <TablaSidebar
+        selectedTable={selectedTable || ''}
+        onTableSelect={onTableSelect || (() => {})}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+        onSubTabChange={onSubTabChange || (() => {})}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
+        massiveFormData={massiveFormData}
+      />
+    );
+  }
 
   if (isParameters) {
     // Si showThirdLevel es true, solo renderizar el tercer sidebar
@@ -186,14 +300,16 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
       return (
         <PermisosSidebar
+          selectedTable={selectedTable || (activeTab.startsWith('permisos-') ? activeTab.replace('permisos-', '') : 'permiso')}
+          onTableSelect={onTableSelect || ((table: string) => onTabChange?.(`permisos-${table}`))}
           activeSubTab={permisosSubTab || (activeSubTab as 'status' | 'insert' | 'update' | 'asignar') || 'status'}
           onSubTabChange={onPermisosSubTabChange || ((onSubTabChange as ((subTab: 'status' | 'insert' | 'update' | 'asignar') => void)) || (() => {}))}
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-      />
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+        />
     );
   }
 
@@ -226,7 +342,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         onMouseLeave={onMouseLeave}
         title={t('tabs.reports')}
         icon={reportesIcon}
-        color="green"
+        color="brown"
       >
         {/* Subpestañas de reportes */}
         <div className="py-4">
@@ -243,7 +359,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${
                   isActive
-                    ? "bg-green-600 text-white"
+                    ? "bg-amber-800 text-white"
                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                 }`}
               >
@@ -280,7 +396,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         onMouseLeave={onMouseLeave}
         title={t('tabs.reports')}
         icon={reportesIcon}
-        color="green"
+        color="brown"
       >
         {/* Subpestañas de reportes */}
         <div className="py-4">
@@ -297,7 +413,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${
                   isActive
-                    ? "bg-green-600 text-white"
+                    ? "bg-amber-800 text-white"
                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                 }`}
               >

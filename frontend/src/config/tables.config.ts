@@ -895,3 +895,94 @@ export const TABLE_CATEGORIES = {
   sistema: { name: 'Sistema', icon: '⚙️' }
 } as const;
 
+/**
+ * Obtener tablas de GEOGRAFÍA
+ * Incluye: pais, empresa, fundo, ubicacion, entidad, entidad_localizacion
+ * NOTA: localizacion y nodo son dispositivos, no geografía
+ */
+export function getGeografiaTables(): TableConfig[] {
+  const geografiaTableNames: TableName[] = [
+    'pais',
+    'empresa',
+    'fundo',
+    'ubicacion',
+    'entidad',
+    'entidad_localizacion'
+  ];
+  return geografiaTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de PARÁMETROS
+ * Incluye: origen, fuente, criticidad, tipo, umbral
+ * NOTA: asociacion es dispositivo, no parámetro
+ */
+export function getParametrosTables(): TableConfig[] {
+  const parametrosTableNames: TableName[] = [
+    'origen',
+    'fuente',
+    'criticidad',
+    'tipo',
+    'umbral'
+  ];
+  return parametrosTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de PERMISOS
+ * Incluye: permiso, usuario, perfil, usuarioperfil, contacto, correo
+ */
+export function getPermisosTables(): TableConfig[] {
+  const permisosTableNames: TableName[] = [
+    'permiso',
+    'usuario',
+    'perfil',
+    'usuarioperfil',
+    'contacto',
+    'correo'
+  ];
+  return permisosTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de TABLA (resto de tablas)
+ * Incluye: dispositivos (metrica, sensor, metricasensor, nodo, localizacion, asociacion)
+ * Excluye: mediciones, alertas, permisos, usuarios, tipo_mensaje, codigotelefono (auxiliar)
+ */
+export function getTablaTables(): TableConfig[] {
+  const geografiaTableNames: TableName[] = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
+  const parametrosTableNames: TableName[] = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
+  const permisosTableNames: TableName[] = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
+  
+  // Tablas de mediciones a excluir
+  const medicionesTableNames: TableName[] = ['medicion', 'sensor_valor', 'sensor_valor_error'];
+  
+  // Tablas de alertas a excluir
+  const alertasTableNames: TableName[] = [
+    'alerta',
+    'alerta_regla',
+    'alerta_regla_consolidado',
+    'mensaje',
+    'regla',
+    'regla_perfil',
+    'regla_umbral',
+    'regla_objeto'
+  ];
+  
+  // Tablas de sistema a excluir
+  const sistemaExcludedTableNames: TableName[] = ['tipo_mensaje', 'codigotelefono'];
+  
+  const excludedTables = [
+    ...geografiaTableNames,
+    ...parametrosTableNames,
+    ...permisosTableNames,
+    ...medicionesTableNames,
+    ...alertasTableNames,
+    ...sistemaExcludedTableNames
+  ];
+  
+  return Object.values(TABLES_CONFIG).filter(
+    table => !excludedTables.includes(table.name as TableName)
+  );
+}
+

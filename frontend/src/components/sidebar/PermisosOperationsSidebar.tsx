@@ -33,9 +33,9 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
 
   // Determinar qué tabla está seleccionada basándose en activeTab
   const getSelectedTable = () => {
-    if (activeTab.startsWith('permisos-permiso')) return 'permiso';
-    if (activeTab.startsWith('permisos-origen')) return 'origen';
-    if (activeTab.startsWith('permisos-fuente')) return 'fuente';
+    if (activeTab.startsWith('permisos-')) {
+      return activeTab.replace('permisos-', '');
+    }
     return 'permiso'; // Default
   };
 
@@ -43,16 +43,15 @@ const PermisosOperationsSidebar: React.FC<PermisosOperationsSidebarProps> = ({
 
   // Determinar el título según la tabla seleccionada
   const getTitle = () => {
-    switch (selectedTable) {
-      case 'permiso':
-        return t('parameters.tables.geography_permission');
-      case 'origen':
-        return t('parameters.tables.origin');
-      case 'fuente':
-        return t('parameters.tables.source');
-      default:
-        return t('parameters.tables.geography_permission');
-    }
+    const tableTitles: Record<string, string> = {
+      'permiso': t('parameters.tables.geography_permission') || 'PERMISO',
+      'usuario': 'USUARIO',
+      'perfil': 'PERFIL',
+      'usuarioperfil': 'PERFIL DE USUARIO',
+      'contacto': 'CONTACTO',
+      'correo': 'CORREO'
+    };
+    return tableTitles[selectedTable] || selectedTable.toUpperCase();
   };
   
   // Operaciones disponibles para permisos

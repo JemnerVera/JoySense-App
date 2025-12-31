@@ -80,7 +80,7 @@ export const useSidebar = (initialOpen: boolean = false, activeTab?: string) => 
     
     // Colores por pestaña
     const colorMap: { [key: string]: string } = {
-      'reportes': 'bg-green-500',
+      'reportes': 'bg-amber-800',
       'parameters': 'bg-blue-500',
       'configuration': 'bg-gray-500'
     };

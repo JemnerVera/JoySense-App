@@ -13,7 +13,10 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   // Función para determinar si hay sidebar auxiliar
   const hasAuxiliarySidebar = useCallback((tab?: string) => {
     if (!tab) return false;
-    return tab === 'parameters' || tab.startsWith('parameters-') || 
+    return tab === 'geografia' || tab.startsWith('geografia-') ||
+           tab === 'parametros' || tab.startsWith('parametros-') ||
+           tab === 'tabla' || tab.startsWith('tabla-') ||
+           tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
            tab === 'permisos' || tab.startsWith('permisos-') ||
            tab === 'alertas' || tab.startsWith('alertas-');

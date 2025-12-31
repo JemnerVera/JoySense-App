@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, GeografiaMainLazyWithBoundary, ParametrosMainLazyWithBoundary, TablaMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
@@ -71,6 +71,28 @@ const AppContentInternal: React.FC = () => {
 
   // Ref para SystemParameters
   const systemParametersRef = useRef<{ 
+    handleTableChange: (table: string) => void; 
+    hasUnsavedChanges: () => boolean; 
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  }>(null);
+
+  // Refs para los nuevos componentes principales
+  const geografiaMainRef = useRef<{ 
+    handleTableChange: (table: string) => void; 
+    hasUnsavedChanges: () => boolean; 
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  }>(null);
+
+  const parametrosMainRef = useRef<{ 
+    handleTableChange: (table: string) => void; 
+    hasUnsavedChanges: () => boolean; 
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  }>(null);
+
+  const tablaMainRef = useRef<{ 
     handleTableChange: (table: string) => void; 
     hasUnsavedChanges: () => boolean; 
     handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
@@ -379,12 +401,26 @@ const AppContentInternal: React.FC = () => {
   };
 
   const handleTableSelect = (table: string) => {
-    
     // Cambio directo sin validación (la validación se hace en ProtectedParameterButton)
     setSelectedTable(table);
     setActiveSubTab('status');
+    
+    // Determinar a qué sección pertenece la tabla
+    const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
+    const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
+    const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
+    
     startTransition(() => {
-      setActiveTab(`parameters-${table}`);
+      if (geografiaTables.includes(table)) {
+        setActiveTab(`geografia-${table}`);
+      } else if (parametrosTables.includes(table)) {
+        setActiveTab(`parametros-${table}`);
+      } else if (permisosTables.includes(table)) {
+        setActiveTab(`permisos-${table}`);
+      } else {
+        // Resto de tablas van a 'tabla'
+        setActiveTab(`tabla-${table}`);
+      }
     });
   };
 
@@ -438,7 +474,64 @@ const AppContentInternal: React.FC = () => {
   };
 
   const renderContent = () => {
-    // Manejar sub-rutas de configuración (parámetros del sistema)
+    // Manejar sub-rutas de GEOGRAFÍA
+    if (activeTab.startsWith('geografia-')) {
+      const geografiaTab = activeTab.replace('geografia-', '');
+      return (
+        <GeografiaMainLazyWithBoundary 
+          ref={geografiaMainRef}
+          selectedTable={geografiaTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          themeColor="blue"
+        />
+      );
+    }
+
+    // Manejar sub-rutas de PARÁMETROS
+    if (activeTab.startsWith('parametros-')) {
+      const parametrosTab = activeTab.replace('parametros-', '');
+      return (
+        <ParametrosMainLazyWithBoundary 
+          ref={parametrosMainRef}
+          selectedTable={parametrosTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          themeColor="orange"
+        />
+      );
+    }
+
+    // Manejar sub-rutas de TABLA
+    if (activeTab.startsWith('tabla-')) {
+      const tablaTab = activeTab.replace('tabla-', '');
+      return (
+        <TablaMainLazyWithBoundary 
+          ref={tablaMainRef}
+          selectedTable={tablaTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          themeColor="green"
+        />
+      );
+    }
+
+    // Manejar sub-rutas de configuración (parámetros del sistema) - mantener para compatibilidad
     if (activeTab.startsWith('parameters-')) {
       const parameterTab = activeTab.replace('parameters-', '');
       return (
@@ -696,10 +789,16 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
-    if (activeTab === 'permisos-permiso') {
+    // Manejar todas las tablas de PERMISOS
+    if (activeTab.startsWith('permisos-')) {
+      const permisosTable = activeTab.replace('permisos-', '');
       return (
         <PermisosMain
           ref={permisosMainRef}
+          selectedTable={permisosTable}
+          onTableSelect={(table) => {
+            setActiveTab(`permisos-${table}`);
+          }}
           activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'asignar'}
           onSubTabChange={(tab) => {
             setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
@@ -709,15 +808,15 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
-    // Manejar sub-rutas de PERMISOS (origen, fuente)
-    if (activeTab.startsWith('permisos-')) {
-      const permisosTable = activeTab.replace('permisos-', '');
+    // Manejar sub-rutas de PARÁMETROS (origen, fuente)
+    if (activeTab.startsWith('parametros-')) {
+      const parametrosTable = activeTab.replace('parametros-', '');
       // Solo mostrar SystemParameters para origen y fuente
-      if (permisosTable === 'origen' || permisosTable === 'fuente') {
+      if (parametrosTable === 'origen' || parametrosTable === 'fuente') {
         return (
           <SystemParametersWithSuspense 
             ref={systemParametersRef}
-            selectedTable={permisosTable}
+            selectedTable={parametrosTable}
             onTableSelect={handleTableSelect}
             activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
             onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
@@ -727,7 +826,7 @@ const AppContentInternal: React.FC = () => {
             onFormDataChange={handleFormDataChange}
             onMassiveFormDataChange={handleMassiveFormDataChange}
             clearFormData={clearFormData}
-            themeColor="purple"
+            themeColor="orange"
           />
         );
       }
@@ -776,17 +875,25 @@ const AppContentInternal: React.FC = () => {
 
   // Determinar el tema según la pestaña activa
   const getThemeClass = () => {
-    if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
+    if (activeTab === 'geografia' || activeTab?.startsWith('geografia-')) {
+      return 'theme-blue';
+    } else if (activeTab === 'parametros' || activeTab?.startsWith('parametros-')) {
+      return 'theme-orange';
+    } else if (activeTab === 'tabla' || activeTab?.startsWith('tabla-')) {
+      return 'theme-green';
+    } else if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
       return 'theme-orange';
     } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
-      return 'theme-blue';
+      return 'theme-gray';
     } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
       return 'theme-purple';
     } else if (activeTab === 'alertas' || activeTab?.startsWith('alertas-')) {
       return 'theme-red';
+    } else if (activeTab === 'reportes' || activeTab?.startsWith('reportes-')) {
+      return 'theme-brown';
     } else {
-      // Reportes/Dashboard - verde por defecto
-      return 'theme-green';
+      // Por defecto
+      return 'theme-gray';
     }
   };
 
@@ -805,10 +912,10 @@ const AppContentInternal: React.FC = () => {
           authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
               selectedTable={selectedTable}
               onTableSelect={handleTableSelect}
-          activeSubTab={activeTab === 'permisos-permiso' ? activeSubTab : (activeSubTab === 'asignar' ? 'status' : activeSubTab)}
+          activeSubTab={activeTab.startsWith('permisos-') ? activeSubTab : (activeSubTab === 'asignar' ? 'status' : activeSubTab)}
           onSubTabChange={(tab) => {
-            if (activeTab === 'permisos-permiso') {
-              // Para permisos-permiso, permitir todos los tabs incluyendo 'asignar'
+            if (activeTab.startsWith('permisos-')) {
+              // Para todas las tablas de permisos, permitir todos los tabs incluyendo 'asignar'
               setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
             } else if (tab !== 'asignar') {
               handleSubTabChange(tab);
@@ -821,21 +928,12 @@ const AppContentInternal: React.FC = () => {
           massiveFormData={currentMassiveFormData}
           onPermisosSubTabChangeFromProtectedButton={
             // Pasar la función según el tab activo
-            activeTab === 'permisos-permiso'
+            activeTab.startsWith('permisos-')
               ? permisosMainRef.current?.handleSubTabChangeFromProtectedButton
                 ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
                     // Filtrar 'massive' ya que PermisosMain no lo soporta
                     if (tab !== 'massive') {
                       permisosMainRef.current?.handleSubTabChangeFromProtectedButton?.(tab as 'status' | 'insert' | 'update' | 'asignar');
-                    }
-                  }
-                : undefined
-              : (activeTab.startsWith('permisos-origen') || activeTab.startsWith('permisos-fuente'))
-              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton 
-                ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
-                    // Filtrar 'asignar' ya que SystemParameters no lo soporta
-                    if (tab !== 'asignar') {
-                      systemParametersRef.current?.handleSubTabChangeFromProtectedButton?.(tab as 'status' | 'insert' | 'update' | 'massive');
                     }
                   }
                 : undefined
@@ -859,29 +957,92 @@ const AppContentInternal: React.FC = () => {
                 : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                 ? 'border-red-500 dark:border-red-500'
                 : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
+                ? 'border-amber-800 dark:border-amber-800'
+                : activeTab === 'geografia' || activeTab?.startsWith('geografia-')
+                ? 'border-blue-500 dark:border-blue-500'
+                : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
+                ? 'border-orange-500 dark:border-orange-500'
+                : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
                 ? 'border-green-500 dark:border-green-500'
                 : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                 ? 'border-orange-500 dark:border-orange-500'
                 : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                ? 'border-blue-500 dark:border-blue-500'
+                ? 'border-gray-500 dark:border-gray-500'
                 : 'border-gray-200 dark:border-neutral-700'
             }`}>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
                   JOYSENSE APP / <span className={
-                    activeTab === 'parameters' || activeTab?.startsWith('parameters-')
+                    activeTab === 'geografia' || activeTab?.startsWith('geografia-')
+                      ? 'text-blue-500' // Azul para Geografía
+                      : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
                       ? 'text-orange-500' // Naranja para Parámetros
+                      : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
+                      ? 'text-green-500' // Verde para Tabla
+                      : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
+                      ? 'text-orange-500' // Naranja para Parámetros (legacy)
                       : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
-                      ? 'text-green-500' // Verde para Reportes
+                      ? 'text-amber-700' // Marrón para Reportes
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                      ? 'text-blue-500' // Azul para Configuración
+                      ? 'text-gray-500' // Gris claro para Configuración
                       : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
                       ? 'text-purple-500' // Púrpura para Permisos
                       : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                       ? 'text-red-500' // Rojo para Alertas
-                      : 'text-orange-500' // Naranja por defecto
+                      : 'text-gray-500' // Gris por defecto
                   }>
-                    {activeTab === 'parameters' || activeTab?.startsWith('parameters-')
+                    {activeTab === 'geografia' || activeTab?.startsWith('geografia-')
+                      ? (() => {
+                          let breadcrumb = 'GEOGRAFÍA';
+                          if (selectedTable) {
+                            breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
+                          }
+                          if (activeSubTab) {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update'),
+                              'massive': t('subtabs.massive')
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
+                      ? (() => {
+                          let breadcrumb = 'PARÁMETROS';
+                          if (selectedTable) {
+                            breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
+                          }
+                          if (activeSubTab) {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update'),
+                              'massive': t('subtabs.massive')
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
+                      ? (() => {
+                          let breadcrumb = 'TABLA';
+                          if (selectedTable) {
+                            breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
+                          }
+                          if (activeSubTab) {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update'),
+                              'massive': t('subtabs.massive')
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? (() => {
                           let breadcrumb = t('tabs.parameters');
                           if (selectedTable) {
@@ -928,17 +1089,33 @@ const AppContentInternal: React.FC = () => {
                           let breadcrumb = `${t('tabs.permissions').toUpperCase()}`;
                           if (activeTab.startsWith('permisos-')) {
                             const permisosTable = activeTab.replace('permisos-', '');
-                            if (permisosTable === 'permiso') {
-                              breadcrumb += ` / ${t('parameters.tables.geography_permission').toUpperCase()}`;
-                              if (activeSubTab) {
-                                const subTabNames: { [key: string]: string } = {
-                                  'status': t('subtabs.status'),
-                                  'insert': t('subtabs.insert'),
-                                  'update': t('subtabs.update')
-                                };
-                                breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
-                              }
-                            } else if (permisosTable === 'origen') {
+                            const tableNames: Record<string, string> = {
+                              'permiso': t('parameters.tables.geography_permission') || 'PERMISO',
+                              'usuario': 'USUARIO',
+                              'perfil': 'PERFIL',
+                              'usuarioperfil': 'PERFIL DE USUARIO',
+                              'contacto': 'CONTACTO',
+                              'correo': 'CORREO'
+                            };
+                            breadcrumb += ` / ${tableNames[permisosTable]?.toUpperCase() || permisosTable.toUpperCase()}`;
+                            if (activeSubTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update'),
+                                'asignar': 'ASIGNAR'
+                              };
+                              breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                            }
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
+                      ? (() => {
+                          let breadcrumb = `${t('tabs.parameters')?.toUpperCase() || 'PARÁMETROS'}`;
+                          if (activeTab.startsWith('parametros-')) {
+                            const parametrosTable = activeTab.replace('parametros-', '');
+                            if (parametrosTable === 'origen') {
                               breadcrumb += ` / ${t('parameters.tables.origin').toUpperCase()}`;
                               if (activeSubTab) {
                                 const subTabNames: { [key: string]: string } = {
@@ -948,7 +1125,7 @@ const AppContentInternal: React.FC = () => {
                                 };
                                 breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                               }
-                            } else if (permisosTable === 'fuente') {
+                            } else if (parametrosTable === 'fuente') {
                               breadcrumb += ` / ${t('parameters.tables.source').toUpperCase()}`;
                               if (activeSubTab) {
                                 const subTabNames: { [key: string]: string } = {

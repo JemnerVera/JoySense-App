@@ -61,7 +61,7 @@ const ReportesDashboardSidebar: React.FC<ReportesDashboardSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="DASHBOARD"
       icon={dashboardIcon}
-      color="green"
+      color="brown"
       collapsedText="..."
     >
       {/* Tabs del Dashboard */}
@@ -78,7 +78,7 @@ const ReportesDashboardSidebar: React.FC<ReportesDashboardSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-green-600 text-white"
+                      ? "bg-amber-800 text-white"
                       : "text-gray-600 dark:text-neutral-400 hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
                   }`}
                 >

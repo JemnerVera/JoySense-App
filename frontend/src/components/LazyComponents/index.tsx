@@ -16,6 +16,27 @@ const SystemParametersLazy = lazy(() =>
   })
 );
 
+// Lazy load GeografiaMain component
+const GeografiaMainLazy = lazy(() => 
+  import('../GeografiaMain').then(module => {
+    return { default: module.default };
+  })
+);
+
+// Lazy load ParametrosMain component
+const ParametrosMainLazy = lazy(() => 
+  import('../ParametrosMain').then(module => {
+    return { default: module.default };
+  })
+);
+
+// Lazy load TablaMain component
+const TablaMainLazy = lazy(() => 
+  import('../TablaMain').then(module => {
+    return { default: module.default };
+  })
+);
+
 // Lazy load Configuration component (placeholder)
 const ConfigurationLazy = lazy(() => 
   Promise.resolve({
@@ -196,6 +217,30 @@ export const SystemParametersLazyWithBoundary = React.forwardRef<any, any>((prop
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
       <SystemParametersLazy {...props} ref={ref} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+));
+
+export const GeografiaMainLazyWithBoundary = React.forwardRef<any, any>((props, ref) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <GeografiaMainLazy {...props} ref={ref} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+));
+
+export const ParametrosMainLazyWithBoundary = React.forwardRef<any, any>((props, ref) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <ParametrosMainLazy {...props} ref={ref} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+));
+
+export const TablaMainLazyWithBoundary = React.forwardRef<any, any>((props, ref) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <TablaMainLazy {...props} ref={ref} />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 ));

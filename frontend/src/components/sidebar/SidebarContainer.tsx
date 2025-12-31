@@ -87,8 +87,13 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para parámetros (solo cuando hay tabla seleccionada) */}
-      {hasAuxiliarySidebar(activeTab) && (activeTab === 'parameters' || activeTab.startsWith('parameters-')) && selectedTable && (
+      {/* Tercer sidebar para geografía, parámetros, tabla y parameters (solo cuando hay tabla seleccionada) */}
+      {hasAuxiliarySidebar(activeTab) && (
+        (activeTab === 'geografia' || activeTab.startsWith('geografia-') ||
+         activeTab === 'parametros' || activeTab.startsWith('parametros-') ||
+         activeTab === 'tabla' || activeTab.startsWith('tabla-') ||
+         activeTab === 'parameters' || activeTab.startsWith('parameters-')
+        ) && selectedTable && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
@@ -108,7 +113,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             showThirdLevel={true}
           />
         </div>
-      )}
+      ))}
 
       {/* Segundo sidebar para permisos (PERMISO, ORIGEN, FUENTE) */}
       {(() => {
@@ -138,9 +143,10 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para permisos (ESTADO, CREAR, ACTUALIZAR) - cuando se selecciona permiso, origen o fuente */}
+      {/* Tercer sidebar para permisos (ESTADO, CREAR, ACTUALIZAR, ASIGNAR) - cuando se selecciona cualquier tabla de permisos */}
       {(() => {
-        const shouldShow = (activeTab === 'permisos-permiso' || activeTab === 'permisos-origen' || activeTab === 'permisos-fuente') && hasAuxiliarySidebar(activeTab);
+        const permisosTable = activeTab.startsWith('permisos-') ? activeTab.replace('permisos-', '') : null;
+        const shouldShow = permisosTable && hasAuxiliarySidebar(activeTab);
         return shouldShow;
       })() && (
         <div className="flex-shrink-0 z-30">

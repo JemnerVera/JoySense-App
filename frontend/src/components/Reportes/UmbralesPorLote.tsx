@@ -254,7 +254,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Combobox Fundo - Selección Múltiple */}
           <div className="relative">
-            <label className="block text-sm font-medium text-green-500 mb-2 font-mono tracking-wider">
+            <label className="block text-sm font-medium text-amber-700 mb-2 font-mono tracking-wider">
               FUNDO
             </label>
             <button
@@ -263,7 +263,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                 setIsFundoDropdownOpen(!isFundoDropdownOpen);
                 setIsMetricaDropdownOpen(false);
               }}
-              className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-left flex items-center justify-between hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+              className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-amber-800 focus:border-amber-800 text-gray-900 dark:text-white font-mono text-left flex items-center justify-between hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
             >
               <span>
                 {selectedFundos.length === 0
@@ -282,7 +282,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                   onClick={handleSelectAllFundos}
                   className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors font-mono border-b border-gray-200 dark:border-neutral-600 ${
                     selectedFundos.length === fundos.length
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-amber-800 text-white'
                       : 'text-gray-900 dark:text-white'
                   }`}
                 >
@@ -294,7 +294,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                     onClick={() => handleFundoToggle(fundo.fundoid)}
                     className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors font-mono flex items-center gap-2 ${
                       selectedFundos.includes(fundo.fundoid)
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-amber-800 text-white'
                         : 'text-gray-900 dark:text-white'
                     }`}
                   >
@@ -304,7 +304,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                         : 'border-gray-400 dark:border-gray-500'
                     }`}>
                       {selectedFundos.includes(fundo.fundoid) && (
-                        <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-3 h-3 text-amber-700" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -318,7 +318,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
 
           {/* Combobox Métrica */}
           <div className="relative">
-            <label className="block text-sm font-medium text-green-500 mb-2 font-mono tracking-wider">
+            <label className="block text-sm font-medium text-amber-700 mb-2 font-mono tracking-wider">
               MÉTRICA
             </label>
             <button
@@ -327,7 +327,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                 setIsMetricaDropdownOpen(!isMetricaDropdownOpen);
                 setIsFundoDropdownOpen(false);
               }}
-              className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-left flex items-center justify-between hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+              className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-amber-800 focus:border-amber-800 text-gray-900 dark:text-white font-mono text-left flex items-center justify-between hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
             >
               <span>{selectedMetrica ? metricas.find(m => m.metricaid === selectedMetrica)?.metrica || 'Seleccionar métrica' : 'Seleccionar métrica'}</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,7 +345,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                     }}
                     className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors font-mono ${
                       selectedMetrica === metrica.metricaid
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-amber-800 text-white'
                         : 'text-gray-900 dark:text-white'
                     }`}
                   >
@@ -358,17 +358,17 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
 
           {/* Orden - Toggle Switch */}
           <div>
-            <label className="block text-sm font-medium text-green-500 mb-2 font-mono tracking-wider">
+            <label className="block text-sm font-medium text-amber-700 mb-2 font-mono tracking-wider">
               ORDEN
             </label>
             <div className="relative w-full max-w-[120px]">
               <button
                 type="button"
                 onClick={() => setOrden(orden === 'desc' ? 'asc' : 'desc')}
-                className="relative w-full h-9 bg-gray-200 dark:bg-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                className="relative w-full h-9 bg-gray-200 dark:bg-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-800 transition-colors"
               >
                 <div
-                  className={`absolute top-0.5 left-0.5 w-[calc(50%-0.125rem)] h-8 bg-green-500 rounded-md transition-all duration-300 ease-in-out ${
+                  className={`absolute top-0.5 left-0.5 w-[calc(50%-0.125rem)] h-8 bg-amber-800 rounded-md transition-all duration-300 ease-in-out ${
                     orden === 'asc' ? 'translate-x-full' : 'translate-x-0'
                   }`}
                 />
@@ -401,7 +401,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
           <div className="mb-4 flex justify-end">
             <button
               onClick={handleOpenComparison}
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-mono text-sm transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-lg font-mono text-sm transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -415,7 +415,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-800 mx-auto mb-2"></div>
               <p className="text-gray-600 dark:text-gray-400 font-mono">Cargando datos...</p>
             </div>
           </div>
@@ -498,7 +498,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                             onMouseDown={(e) => {
                               e.stopPropagation();
                             }}
-                            className="w-4 h-4 text-green-500 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
+                            className="w-4 h-4 text-amber-700 border-gray-300 rounded focus:ring-amber-800 cursor-pointer"
                           />
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
