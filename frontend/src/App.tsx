@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, GeografiaMainLazyWithBoundary, ParametrosMainLazyWithBoundary, TablaMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, GeografiaMainLazyWithBoundary, ParametrosMainLazyWithBoundary, TablaMainLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
@@ -93,6 +93,13 @@ const AppContentInternal: React.FC = () => {
   }>(null);
 
   const tablaMainRef = useRef<{ 
+    handleTableChange: (table: string) => void; 
+    hasUnsavedChanges: () => boolean; 
+    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
+  }>(null);
+
+  const notificacionesMainRef = useRef<{ 
     handleTableChange: (table: string) => void; 
     hasUnsavedChanges: () => boolean; 
     handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
@@ -409,6 +416,7 @@ const AppContentInternal: React.FC = () => {
     const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
     const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
     const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
+    const notificacionesTables = ['canal', 'usuario_canal'];
     
     startTransition(() => {
       if (geografiaTables.includes(table)) {
@@ -417,6 +425,8 @@ const AppContentInternal: React.FC = () => {
         setActiveTab(`parametros-${table}`);
       } else if (permisosTables.includes(table)) {
         setActiveTab(`permisos-${table}`);
+      } else if (notificacionesTables.includes(table)) {
+        setActiveTab(`notificaciones-${table}`);
       } else {
         // Resto de tablas van a 'tabla'
         setActiveTab(`tabla-${table}`);
@@ -527,6 +537,25 @@ const AppContentInternal: React.FC = () => {
           onFormDataChange={handleFormDataChange}
           onMassiveFormDataChange={handleMassiveFormDataChange}
           themeColor="green"
+        />
+      );
+    }
+
+    // Manejar sub-rutas de NOTIFICACIONES
+    if (activeTab.startsWith('notificaciones-')) {
+      const notificacionesTab = activeTab.replace('notificaciones-', '');
+      return (
+        <NotificacionesMainLazyWithBoundary 
+          ref={notificacionesMainRef}
+          selectedTable={notificacionesTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          themeColor="cyan"
         />
       );
     }
@@ -881,6 +910,8 @@ const AppContentInternal: React.FC = () => {
       return 'theme-orange';
     } else if (activeTab === 'tabla' || activeTab?.startsWith('tabla-')) {
       return 'theme-green';
+    } else if (activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')) {
+      return 'theme-cyan';
     } else if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
       return 'theme-orange';
     } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
@@ -964,6 +995,8 @@ const AppContentInternal: React.FC = () => {
                 ? 'border-orange-500 dark:border-orange-500'
                 : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
                 ? 'border-green-500 dark:border-green-500'
+                : activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')
+                ? 'border-cyan-500 dark:border-cyan-500'
                 : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                 ? 'border-orange-500 dark:border-orange-500'
                 : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
@@ -979,6 +1012,8 @@ const AppContentInternal: React.FC = () => {
                       ? 'text-orange-500' // Naranja para Parámetros
                       : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
                       ? 'text-green-500' // Verde para Tabla
+                      : activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')
+                      ? 'text-cyan-500' // Cyan para Notificaciones
                       : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? 'text-orange-500' // Naranja para Parámetros (legacy)
                       : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
@@ -1028,6 +1063,23 @@ const AppContentInternal: React.FC = () => {
                       : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
                       ? (() => {
                           let breadcrumb = 'TABLA';
+                          if (selectedTable) {
+                            breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
+                          }
+                          if (activeSubTab) {
+                            const subTabNames: { [key: string]: string } = {
+                              'status': t('subtabs.status'),
+                              'insert': t('subtabs.insert'),
+                              'update': t('subtabs.update'),
+                              'massive': t('subtabs.massive')
+                            };
+                            breadcrumb += ` / ${subTabNames[activeSubTab] || activeSubTab.toUpperCase()}`;
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')
+                      ? (() => {
+                          let breadcrumb = 'NOTIFICACIONES';
                           if (selectedTable) {
                             breadcrumb += ` / ${getTableNameInSpanish(selectedTable)}`;
                           }

@@ -661,7 +661,8 @@ export type TableName =
   | 'criticidad' | 'umbral' | 'alerta' | 'alerta_regla' | 'alerta_regla_consolidado' | 'mensaje' | 'audit_log_umbral'
   | 'regla' | 'regla_objeto' | 'regla_perfil' | 'regla_umbral'
   | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
-  | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje'; // Nuevo sistema de permisos
+  | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje' // Nuevo sistema de permisos
+  | 'canal' | 'usuario_canal'; // Sistema de notificaciones
 
 // Mapeo de PK por tabla
 export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
@@ -701,5 +702,7 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   permiso: 'permisoid', // Nuevo sistema de permisos
   fuente: 'fuenteid',
   origen: 'origenid',
-  tipo_mensaje: 'tipo_mensajeid'
+  tipo_mensaje: 'tipo_mensajeid',
+  canal: 'canalid', // Sistema de notificaciones
+  usuario_canal: 'usuario_canalid'
 };

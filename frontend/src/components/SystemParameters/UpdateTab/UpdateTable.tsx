@@ -17,7 +17,7 @@ interface UpdateTableProps {
   selectedRow: any | null;
   onRowClick: (row: any) => void;
   loading?: boolean;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
   tableName?: string;
 }
 
@@ -241,6 +241,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                       ? 'bg-green-100 dark:bg-green-900/20'
                       : themeColor === 'purple'
                       ? 'bg-purple-100 dark:bg-purple-900/20'
+                      : themeColor === 'cyan'
+                      ? 'bg-cyan-100 dark:bg-cyan-900/20'
                       : 'bg-orange-100 dark:bg-orange-900/20'
                     : 'bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'
                   }
@@ -260,6 +262,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                           ? 'text-green-500 focus:ring-green-500 dark:focus:ring-green-600'
                           : themeColor === 'purple'
                           ? 'text-purple-500 focus:ring-purple-500 dark:focus:ring-purple-600'
+                          : themeColor === 'cyan'
+                          ? 'text-cyan-500 focus:ring-cyan-500 dark:focus:ring-cyan-600'
                           : 'text-orange-500 focus:ring-orange-500 dark:focus:ring-orange-600'
                       }`}
                     />

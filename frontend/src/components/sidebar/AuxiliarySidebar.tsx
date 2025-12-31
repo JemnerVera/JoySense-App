@@ -9,6 +9,8 @@ import TablaSidebar from './TablaSidebar';
 import TablaOperationsSidebar from './TablaOperationsSidebar';
 import PermisosSidebar from './PermisosSidebar';
 import PermisosOperationsSidebar from './PermisosOperationsSidebar';
+import NotificacionesSidebar from './NotificacionesSidebar';
+import NotificacionesOperationsSidebar from './NotificacionesOperationsSidebar';
 import AlertasSidebar from './AlertasSidebar';
 import ReglaOperationsSidebar from './ReglaOperationsSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
@@ -100,6 +102,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const isGeografia = activeTab === 'geografia' || activeTab.startsWith('geografia-');
   const isParametros = activeTab === 'parametros' || activeTab.startsWith('parametros-');
   const isTabla = activeTab === 'tabla' || activeTab.startsWith('tabla-');
+  const isNotificaciones = activeTab === 'notificaciones' || activeTab.startsWith('notificaciones-');
   const isParameters = activeTab === 'parameters' || activeTab.startsWith('parameters-');
   const isPermisos = activeTab === 'permisos' || activeTab.startsWith('permisos-');
   const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
@@ -197,6 +200,41 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Si no es showThirdLevel, renderizar solo el segundo sidebar
     return (
       <TablaSidebar
+        selectedTable={selectedTable || ''}
+        onTableSelect={onTableSelect || (() => {})}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+        onSubTabChange={onSubTabChange || (() => {})}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
+        massiveFormData={massiveFormData}
+      />
+    );
+  }
+
+  if (isNotificaciones) {
+    // Si showThirdLevel es true, solo renderizar el tercer sidebar
+    if (showThirdLevel) {
+      return (
+        <NotificacionesOperationsSidebar
+          selectedTable={selectedTable || ''}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si no es showThirdLevel, renderizar solo el segundo sidebar
+    return (
+      <NotificacionesSidebar
         selectedTable={selectedTable || ''}
         onTableSelect={onTableSelect || (() => {})}
         activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}

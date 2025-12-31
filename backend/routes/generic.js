@@ -26,7 +26,8 @@ const ALLOWED_TABLES = [
   'contacto', 'correo', 'codigotelefono',
   'mensaje', 'asociacion',
   'permiso', 'fuente', 'origen', 'tipo_mensaje', // Nuevo sistema de permisos
-  'sensor_valor', 'sensor_valor_error'
+  'sensor_valor', 'sensor_valor_error',
+  'canal', 'usuario_canal' // Sistema de notificaciones
 ];
 
 // Mapeo de PK por tabla
@@ -66,7 +67,9 @@ const PK_MAPPING = {
   regla_perfil: 'regla_perfilid',
   regla_umbral: 'regla_umbralid',
   sensor_valor: null, // PK compuesta (id_device, fecha)
-  sensor_valor_error: 'sensorvalorerrorid'
+  sensor_valor_error: 'sensorvalorerrorid',
+  canal: 'canalid', // Sistema de notificaciones
+  usuario_canal: 'usuario_canalid'
 };
 
 // Validar tabla permitida

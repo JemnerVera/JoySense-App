@@ -37,6 +37,13 @@ const TablaMainLazy = lazy(() =>
   })
 );
 
+// Lazy load NotificacionesMain component
+const NotificacionesMainLazy = lazy(() => 
+  import('../NotificacionesMain').then(module => {
+    return { default: module.default };
+  })
+);
+
 // Lazy load Configuration component (placeholder)
 const ConfigurationLazy = lazy(() => 
   Promise.resolve({
@@ -241,6 +248,14 @@ export const TablaMainLazyWithBoundary = React.forwardRef<any, any>((props, ref)
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
       <TablaMainLazy {...props} ref={ref} />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+));
+
+export const NotificacionesMainLazyWithBoundary = React.forwardRef<any, any>((props, ref) => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <NotificacionesMainLazy {...props} ref={ref} />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 ));
