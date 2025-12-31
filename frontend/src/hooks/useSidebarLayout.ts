@@ -16,6 +16,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     return tab === 'geografia' || tab.startsWith('geografia-') ||
            tab === 'parametros' || tab.startsWith('parametros-') ||
            tab === 'tabla' || tab.startsWith('tabla-') ||
+           tab === 'notificaciones' || tab.startsWith('notificaciones-') ||
            tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
            tab === 'permisos' || tab.startsWith('permisos-') ||

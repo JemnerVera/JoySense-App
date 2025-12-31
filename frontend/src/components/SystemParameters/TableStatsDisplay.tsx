@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface TableStatsDisplayProps {
   tableData: any[];
   userData?: any[];
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
 export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }: TableStatsDisplayProps) {
@@ -43,6 +43,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
       case 'blue': return 'text-blue-500';
       case 'green': return 'text-green-500';
       case 'purple': return 'text-purple-500';
+      case 'cyan': return 'text-cyan-500';
       default: return 'text-orange-500';
     }
   };

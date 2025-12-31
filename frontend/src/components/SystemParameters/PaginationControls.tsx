@@ -4,7 +4,7 @@ interface PaginationControlsProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   showPagination?: boolean;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
 export function PaginationControls({ 
@@ -22,6 +22,7 @@ export function PaginationControls({
       case 'blue': return 'hover:bg-blue-100 dark:hover:bg-blue-900/20 hover:border-blue-400';
       case 'green': return 'hover:bg-green-100 dark:hover:bg-green-900/20 hover:border-green-400';
       case 'purple': return 'hover:bg-purple-100 dark:hover:bg-purple-900/20 hover:border-purple-400';
+      case 'cyan': return 'hover:bg-cyan-100 dark:hover:bg-cyan-900/20 hover:border-cyan-400';
       default: return 'hover:bg-orange-100 dark:hover:bg-orange-900/20 hover:border-orange-400';
     }
   };
@@ -32,6 +33,7 @@ export function PaginationControls({
       case 'blue': return 'border-blue-300 dark:border-blue-700';
       case 'green': return 'border-green-300 dark:border-green-700';
       case 'purple': return 'border-purple-300 dark:border-purple-700';
+      case 'cyan': return 'border-cyan-300 dark:border-cyan-700';
       default: return 'border-orange-300 dark:border-orange-700';
     }
   };

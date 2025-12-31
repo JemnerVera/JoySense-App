@@ -87,11 +87,12 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para geografía, parámetros, tabla y parameters (solo cuando hay tabla seleccionada) */}
+      {/* Tercer sidebar para geografía, parámetros, tabla, notificaciones y parameters (solo cuando hay tabla seleccionada) */}
       {hasAuxiliarySidebar(activeTab) && (
         (activeTab === 'geografia' || activeTab.startsWith('geografia-') ||
          activeTab === 'parametros' || activeTab.startsWith('parametros-') ||
          activeTab === 'tabla' || activeTab.startsWith('tabla-') ||
+         activeTab === 'notificaciones' || activeTab.startsWith('notificaciones-') ||
          activeTab === 'parameters' || activeTab.startsWith('parameters-')
         ) && selectedTable && (
         <div className="flex-shrink-0 z-30">

@@ -7,7 +7,7 @@ interface BaseAuxiliarySidebarProps {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
-  color?: 'orange' | 'green' | 'blue' | 'gray' | 'red' | 'purple' | 'brown';
+  color?: 'orange' | 'green' | 'blue' | 'gray' | 'red' | 'purple' | 'brown' | 'cyan';
   collapsedText?: string; // Texto personalizado cuando está colapsado
 }
 
@@ -35,6 +35,7 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
           <h3 className={`font-bold text-sm tracking-wider ${
             color === 'green' ? 'text-green-500' :
             color === 'blue' ? 'text-blue-500' :
+            color === 'cyan' ? 'text-cyan-500' :
             color === 'gray' ? 'text-gray-500' :
             color === 'red' ? 'text-red-500' :
             color === 'purple' ? 'text-purple-500' :

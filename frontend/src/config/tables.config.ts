@@ -731,6 +731,43 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
+  canal: {
+    name: 'canal',
+    displayName: 'Canal',
+    description: 'Canales de comunicación (WhatsApp, Email, SMS, etc.)',
+    icon: '📡',
+    category: 'sistema',
+    primaryKey: 'canalid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    sortField: 'canal',
+    fields: [
+      { name: 'canalid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'canal', label: 'Canal', type: 'text', required: true, validation: { minLength: 1, maxLength: 50 } },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  usuario_canal: {
+    name: 'usuario_canal',
+    displayName: 'Usuario Canal',
+    description: 'Relación entre usuarios y canales de comunicación',
+    icon: '🔗',
+    category: 'usuarios',
+    primaryKey: 'usuario_canalid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    fields: [
+      { name: 'usuario_canalid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: ['firstname', 'lastname'] } },
+      { name: 'canalid', label: 'Canal', type: 'select', required: true, foreignKey: { table: 'canal', valueField: 'canalid', labelField: 'canal' } },
+      { name: 'identificador', label: 'Identificador', type: 'text', required: true, validation: { minLength: 1, maxLength: 254 } },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
   permiso: {
     name: 'permiso',
     displayName: 'Permisos',
@@ -942,6 +979,18 @@ export function getPermisosTables(): TableConfig[] {
     'correo'
   ];
   return permisosTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de NOTIFICACIONES
+ * Incluye: canal, usuario_canal
+ */
+export function getNotificacionesTables(): TableConfig[] {
+  const notificacionesTableNames: TableName[] = [
+    'canal',
+    'usuario_canal'
+  ];
+  return notificacionesTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
 }
 
 /**

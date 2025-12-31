@@ -21,7 +21,7 @@ interface StatusTabProps {
   userData?: any[];
   loading?: boolean;
   onRowClick?: (row: any) => void;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
 export const StatusTab: React.FC<StatusTabProps> = ({

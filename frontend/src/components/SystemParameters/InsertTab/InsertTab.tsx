@@ -69,7 +69,7 @@ interface InsertTabProps {
   onPasteFromClipboard?: () => void;
   onReplicateClick?: () => void;
   // Tema de color
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
   // Key para forzar re-mount
   resetKey?: string;
 }

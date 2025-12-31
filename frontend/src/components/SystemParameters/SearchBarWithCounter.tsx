@@ -7,7 +7,7 @@ interface SearchBarWithCounterProps {
   filteredCount: number;
   totalCount: number;
   placeholder?: string;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
 export function SearchBarWithCounter({ 
@@ -31,6 +31,7 @@ export function SearchBarWithCounter({
       case 'blue': return 'focus:ring-blue-500 focus:border-blue-500';
       case 'green': return 'focus:ring-green-500 focus:border-green-500';
       case 'purple': return 'focus:ring-purple-500 focus:border-purple-500';
+      case 'cyan': return 'focus:ring-cyan-500 focus:border-cyan-500';
       default: return 'focus:ring-orange-500 focus:border-orange-500';
     }
   };

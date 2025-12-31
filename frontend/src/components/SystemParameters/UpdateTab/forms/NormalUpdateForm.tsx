@@ -53,7 +53,7 @@ interface NormalUpdateFormProps {
   getColumnDisplayName?: (columnName: string) => string;
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   tableName?: string;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
 export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
@@ -107,6 +107,13 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         hover: 'hover:bg-purple-600',
         focus: 'focus:ring-purple-500',
         border: 'border-purple-500'
+      },
+      cyan: {
+        text: 'text-cyan-500',
+        bg: 'bg-cyan-500',
+        hover: 'hover:bg-cyan-600',
+        focus: 'focus:ring-cyan-500',
+        border: 'border-cyan-500'
       }
     };
     return colors[themeColor]?.[type] || colors.orange[type];
