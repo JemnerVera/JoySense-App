@@ -839,7 +839,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                     disabled={loading}
                     className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm uppercase ${
                       selectedMetric === metric.dataKey
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-amber-800 text-white'
                         : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
@@ -910,7 +910,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }}
                           max={tempEndDate || detailedEndDate || undefined}
                           disabled={loading}
-                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-800 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                           style={{
                             colorScheme: 'dark',
                             WebkitAppearance: 'none'
@@ -929,7 +929,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }}
                           min={tempStartDate || detailedStartDate || undefined}
                           disabled={loading}
-                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-800 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                           style={{
                             colorScheme: 'dark',
                             WebkitAppearance: 'none'
@@ -1082,7 +1082,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }
                         }}
                         disabled={loadingComparisonData}
-                        className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
+                        className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-amber-800 focus:border-amber-800 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
                         style={{
                           scrollbarWidth: 'thin',
                           scrollbarColor: '#22c55e #d1d5db'
@@ -1127,7 +1127,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                     return (
                       <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                         <div className="text-center">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-800 mx-auto mb-4"></div>
                           <div className="text-gray-600 dark:text-neutral-400 text-lg font-mono">
                             Cargando datos...
                           </div>
@@ -1314,7 +1314,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                                             }
                                             setVisibleTipos(newVisibleTipos);
                                           }}
-                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-amber-700 focus:ring-amber-800"
                                         />
                                         <div 
                                           className="w-4 h-0.5" 
@@ -1358,7 +1358,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                                             }
                                             setVisibleTipos(newVisibleTipos);
                                           }}
-                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-amber-700 focus:ring-amber-800"
                                         />
                                         <div 
                                           className="w-4 h-0.5 border-dashed border-t-2" 
@@ -1392,7 +1392,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                                         }
                                         setVisibleTipos(newVisibleTipos);
                                       }}
-                                      className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                      className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-amber-700 focus:ring-amber-800"
                                     />
                                     <div 
                                       className="w-4 h-0.5" 
@@ -1460,7 +1460,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                   
                   return (
                     <div key={loteId} className="space-y-4">
-                      <h3 className="text-xl font-bold text-green-600 dark:text-green-400 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
+                      <h3 className="text-xl font-bold text-amber-700 dark:text-amber-600 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
                         {loteName}
                       </h3>
                       {Object.keys(loteRecommendations).map(tipoidStr => {

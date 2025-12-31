@@ -14,14 +14,14 @@
   background: #404040; /* neutral-700 para modo oscuro */
 }
 
-/* Scrollbar Verde (Reportes/Dashboard) - Por defecto */
+/* Scrollbar Marrón (Reportes/Dashboard) - Por defecto */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #22c55e; /* green-500 */
+  background: #92400e; /* amber-800 - marrón */
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #16a34a; /* green-600 */
+  background: #78350f; /* amber-900 - marrón oscuro */
 }
 
 /* Scrollbar Naranja (Parámetros) */
@@ -64,14 +64,44 @@
   background: #9333ea; /* purple-600 */
 }
 
-/* Para Firefox - Verde (por defecto) */
+/* Scrollbar Marrón (Reportes) */
+.theme-brown .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #92400e; /* amber-800 - más marrón */
+  border-radius: 3px;
+}
+
+.theme-brown .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #78350f; /* amber-900 - más marrón oscuro */
+}
+
+/* Scrollbar Gris claro (Configuración) */
+.theme-gray .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b7280; /* gray-500 */
+  border-radius: 3px;
+}
+
+.theme-gray .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4b5563; /* gray-600 */
+}
+
+/* Scrollbar Verde (TABLA) */
+.theme-green .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #22c55e; /* green-500 */
+  border-radius: 3px;
+}
+
+.theme-green .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #16a34a; /* green-600 */
+}
+
+/* Para Firefox - Marrón (por defecto - Reportes) */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+  scrollbar-color: #92400e #d1d5db; /* amber-800 gray-300 */
 }
 
 .dark .custom-scrollbar {
-  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
+  scrollbar-color: #92400e #404040; /* amber-800 neutral-700 */
 }
 
 /* Para Firefox - Naranja (Parámetros) */
@@ -108,6 +138,33 @@
 
 .dark .theme-purple .custom-scrollbar {
   scrollbar-color: #a855f7 #404040; /* purple-500 neutral-700 */
+}
+
+/* Para Firefox - Marrón (Reportes) */
+.theme-brown .custom-scrollbar {
+  scrollbar-color: #92400e #d1d5db; /* amber-800 gray-300 */
+}
+
+.dark .theme-brown .custom-scrollbar {
+  scrollbar-color: #92400e #404040; /* amber-800 neutral-700 */
+}
+
+/* Para Firefox - Gris claro (Configuración) */
+.theme-gray .custom-scrollbar {
+  scrollbar-color: #6b7280 #d1d5db; /* gray-500 gray-300 */
+}
+
+.dark .theme-gray .custom-scrollbar {
+  scrollbar-color: #6b7280 #404040; /* gray-500 neutral-700 */
+}
+
+/* Para Firefox - Verde (TABLA) */
+.theme-green .custom-scrollbar {
+  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+}
+
+.dark .theme-green .custom-scrollbar {
+  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
 }
 
 /* Ocultar scrollbar cuando está colapsado */
@@ -152,7 +209,7 @@
   @apply text-gray-600 dark:text-gray-300;
 }
 
-/* Scrollbar personalizado para Dashboard - Estilo Verde */
+/* Scrollbar personalizado para Dashboard - Estilo Marrón (Reportes) */
 .dashboard-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -167,32 +224,32 @@
 }
 
 .dashboard-scrollbar::-webkit-scrollbar-thumb {
-  background: #22c55e; /* green-500 */
+  background: #92400e; /* amber-800 - marrón */
   border-radius: 3px;
 }
 
 .dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #16a34a; /* green-600 */
+  background: #78350f; /* amber-900 - marrón oscuro */
 }
 
 /* Para Firefox */
 .dashboard-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+  scrollbar-color: #92400e #d1d5db; /* amber-800 gray-300 */
 }
 
 .dark .dashboard-scrollbar {
-  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
+  scrollbar-color: #92400e #404040; /* amber-800 neutral-700 */
 }
 
 /* Estilos específicos para select elements con dashboard-scrollbar */
 select.dashboard-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #22c55e #d1d5db; /* green-500 gray-300 */
+  scrollbar-color: #92400e #d1d5db; /* amber-800 gray-300 */
 }
 
 .dark select.dashboard-scrollbar {
-  scrollbar-color: #22c55e #404040; /* green-500 neutral-700 */
+  scrollbar-color: #92400e #404040; /* amber-800 neutral-700 */
 }
 
 /* Para WebKit (Chrome, Safari, Edge) - select elements */
@@ -210,10 +267,10 @@ select.dashboard-scrollbar::-webkit-scrollbar-track {
 }
 
 select.dashboard-scrollbar::-webkit-scrollbar-thumb {
-  background: #22c55e; /* green-500 */
+  background: #92400e; /* amber-800 - marrón */
   border-radius: 3px;
 }
 
 select.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #16a34a; /* green-600 */
+  background: #78350f; /* amber-900 - marrón oscuro */
 }

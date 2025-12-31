@@ -1,70 +1,40 @@
 /**
  * PermisosSidebar - Segundo sidebar para la pestaña Permisos
- * Muestra "GESTIÓN DE PERMISOS" y futuras opciones
+ * Muestra todas las tablas de permisos y usuarios
  */
 
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getPermisosTables } from '../../config/tables.config';
 
 interface PermisosSidebarProps {
+  selectedTable: string;
+  onTableSelect: (table: string) => void;
+  activeSubTab?: 'status' | 'insert' | 'update' | 'asignar';
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  activeSubTab?: 'status' | 'insert' | 'update' | 'asignar';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }
 
 const PermisosSidebar: React.FC<PermisosSidebarProps> = ({
+  selectedTable,
+  onTableSelect,
+  activeSubTab,
+  onSubTabChange,
   isExpanded,
   onMouseEnter,
   onMouseLeave,
-  activeSubTab,
-  onSubTabChange,
   activeTab,
   onTabChange
 }) => {
   const { t } = useLanguage();
 
-  // Logs para debugging
-  console.log('[PermisosSidebar] Props recibidas:', {
-    activeTab,
-    isExpanded,
-    activeSubTab
-  });
-
-  // Opciones de gestión de permisos
-  const permisosOptions = [
-    {
-      id: 'permiso',
-      label: t('parameters.tables.geography_permission') || 'PERMISO',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      )
-    },
-    {
-      id: 'origen',
-      label: t('parameters.tables.origin') || 'ORIGEN',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    },
-    {
-      id: 'fuente',
-      label: t('parameters.tables.source') || 'FUENTE',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
-    }
-  ];
+  // Obtener las tablas de PERMISOS
+  const permisosTables = getPermisosTables();
 
   // Icono para el sidebar de permisos
   const permisosIcon = (
@@ -72,6 +42,47 @@ const PermisosSidebar: React.FC<PermisosSidebarProps> = ({
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
     </svg>
   );
+
+  // Función para obtener icono SVG minimalista
+  const getTableIcon = (tableName: string) => {
+    const iconMap: Record<string, JSX.Element> = {
+      permiso: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
+      usuario: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      perfil: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+      usuarioperfil: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      contacto: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+      ),
+      correo: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      )
+    };
+    return iconMap[tableName] || (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    );
+  };
 
   return (
     <BaseAuxiliarySidebar
@@ -83,51 +94,38 @@ const PermisosSidebar: React.FC<PermisosSidebarProps> = ({
       color="purple"
       collapsedText="PERM"
     >
-      {/* Opciones de gestión de permisos */}
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
           <nav className="space-y-2">
-            {(() => {
-              console.log('[PermisosSidebar] Renderizando opciones:', {
-                activeTab,
-                isExpanded,
-                activeSubTab,
-                permisosOptionsCount: permisosOptions.length,
-                permisosOptions: permisosOptions.map(o => ({ id: o.id, label: o.label }))
-              });
-              return permisosOptions.map((option) => {
-                const isActive = activeTab === `permisos-${option.id}` || (activeTab === 'permisos' && option.id === 'permiso');
-                console.log(`[PermisosSidebar] Opción ${option.id}:`, {
-                  optionId: option.id,
-                  optionLabel: option.label,
-                  activeTab,
-                  expectedTab: `permisos-${option.id}`,
-                  isActive,
-                  condition1: activeTab === `permisos-${option.id}`,
-                  condition2: activeTab === 'permisos' && option.id === 'permiso'
-                });
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => onTabChange?.(`permisos-${option.id}`)}
-                    className={`w-full flex items-center p-3 rounded transition-colors ${
-                      isExpanded ? 'gap-3' : 'justify-center'
-                    } ${
-                      isActive
-                        ? "bg-purple-600 text-white"
-                        : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      {option.icon}
-                    </div>
-                    {isExpanded && (
-                      <span className="text-sm font-medium tracking-wider">{option.label.toUpperCase()}</span>
-                    )}
+            {permisosTables.map((table) => {
+              const tableName = table.name;
+              const isActive = selectedTable === tableName || activeTab === `permisos-${tableName}`;
+              return (
+                <button
+                  key={tableName}
+                  onClick={() => {
+                    onTableSelect(tableName);
+                    onTabChange?.(`permisos-${tableName}`);
+                  }}
+                  className={`w-full flex items-center p-3 rounded transition-colors ${
+                    isExpanded ? 'gap-3' : 'justify-center'
+                  } ${
+                    isActive
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  <div className="flex-shrink-0">
+                    {getTableIcon(tableName)}
+                  </div>
+                  {isExpanded && (
+                    <span className="text-sm font-medium tracking-wider">
+                      {(table.displayName || tableName).toUpperCase()}
+                    </span>
+                  )}
                 </button>
-                );
-              });
-            })()}
+              );
+            })}
           </nav>
         </div>
       </div>
