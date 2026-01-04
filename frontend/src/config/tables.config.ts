@@ -413,26 +413,6 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
-  alerta: {
-    name: 'alerta',
-    displayName: 'Alerta',
-    description: 'Alertas generadas por mediciones fuera de umbral',
-    icon: '🔔',
-    category: 'alertas',
-    primaryKey: 'alertaid',
-    allowInsert: false,
-    allowUpdate: false,
-    allowDelete: false,
-    sortField: 'fecha',
-    sortOrder: 'desc',
-    fields: [
-      { name: 'alertaid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'medicionid', label: 'Medición', type: 'number', readonly: true },
-      { name: 'umbralid', label: 'Umbral', type: 'select', foreignKey: { table: 'umbral', valueField: 'umbralid', labelField: 'umbral' } },
-      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
-      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
-    ]
-  },
 
   alerta_regla: {
     name: 'alerta_regla',
@@ -484,25 +464,6 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
-  mensaje: {
-    name: 'mensaje',
-    displayName: 'Mensaje',
-    description: 'Mensajes de notificación enviados',
-    icon: '✉️',
-    category: 'alertas',
-    primaryKey: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],
-    allowInsert: false,
-    allowUpdate: false,
-    allowDelete: false,
-    fields: [
-      { name: 'uuid_origen', label: 'UUID Origen', type: 'text', readonly: true },
-      { name: 'contactoid', label: 'Contacto', type: 'select', readonly: true, foreignKey: { table: 'contacto', valueField: 'contactoid', labelField: 'celular' } },
-      { name: 'tipo_mensajeid', label: 'Tipo Mensaje', type: 'select', readonly: true, foreignKey: { table: 'tipo_mensaje', valueField: 'tipo_mensajeid', labelField: 'tipo_mensaje' } },
-      { name: 'mensaje', label: 'Mensaje', type: 'textarea', readonly: true },
-      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
-      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
-    ]
-  },
 
   // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
   
@@ -1008,10 +969,8 @@ export function getTablaTables(): TableConfig[] {
   
   // Tablas de alertas a excluir
   const alertasTableNames: TableName[] = [
-    'alerta',
     'alerta_regla',
     'alerta_regla_consolidado',
-    'mensaje',
     'regla',
     'regla_perfil',
     'regla_umbral',

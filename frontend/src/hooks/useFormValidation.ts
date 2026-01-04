@@ -136,10 +136,10 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return reglaUmbrales.some((ru: any) => ru.umbralid === id);
             
           case 'criticidad':
-            // Nota: umbral ya no tiene criticidadid según el schema actual
-            // Solo verificar alertas que puedan tener criticidadid
-            const alertas = await JoySenseService.getTableData('alerta');
-            return alertas.some((alerta: any) => alerta.criticidadid === id);
+            // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+            // Verificar si hay reglas que usen esta criticidad
+            const reglas = await JoySenseService.getTableData('regla');
+            return reglas.some((regla: any) => regla.criticidadid === id);
             
           case 'medio':
             // Verificar si hay contactos que referencian este medio

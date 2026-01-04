@@ -92,11 +92,13 @@ const MensajesDashboard: React.FC = () => {
         criticidadesData,
         medicionesData
       ] = await Promise.all([
-        JoySenseService.getTableData('mensaje', 1000),
+        // ⚠️ Actualizado: Las tablas 'mensaje' y 'alerta' fueron eliminadas en SCHEMA_04.01.2025
+        // Usar 'msg_outbox' y 'alerta_regla' en su lugar
+        JoySenseService.getTableData('msg_outbox', 1000),
         JoySenseService.getTableData('contacto', 1000),
         JoySenseService.getTableData('medio', 1000),
         JoySenseService.getTableData('usuario', 1000),
-        JoySenseService.getTableData('alerta', 1000),
+        JoySenseService.getTableData('alerta_regla', 1000),
         JoySenseService.getTableData('umbral', 1000),
         JoySenseService.getTableData('criticidad', 1000),
         JoySenseService.getTableData('medicion', 1000)

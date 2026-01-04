@@ -286,20 +286,40 @@ export interface Umbral {
 }
 
 /**
- * Alerta - NUEVO MODELO
+ * @deprecated Tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+ * Usar 'alerta_regla' en su lugar
+ */
+// export interface Alerta {
+//   uuid_alertaid: string;
+//   medicionid: number;
+//   umbralid: number;
+//   fecha: string;
+//   statusid: number;
+//   usercreatedid: number;
+//   datecreated: string;
+//   // Relaciones
+//   medicion?: Medicion;
+//   umbral?: Umbral;
+// }
+
+/**
+ * AlertaRegla - NUEVO MODELO (reemplaza 'alerta')
  * PK es UUID ahora
  */
-export interface Alerta {
-  uuid_alertaid: string;
-  medicionid: number;
-  umbralid: number;
+export interface AlertaRegla {
+  uuid_alerta_reglaid: string;
+  reglaid: number;
+  localizacionid: number;
+  medicionid?: number;
   fecha: string;
+  valor?: number;
   statusid: number;
   usercreatedid: number;
   datecreated: string;
   // Relaciones
+  regla?: Regla;
+  localizacion?: Localizacion;
   medicion?: Medicion;
-  umbral?: Umbral;
 }
 
 /**
@@ -328,21 +348,21 @@ export interface AlertaConsolidado {
 }
 
 /**
- * Mensaje - NUEVO MODELO
- * PK compuesta: (uuid_origen, contactoid)
+ * @deprecated Tabla 'mensaje' fue eliminada en SCHEMA_04.01.2025
+ * Usar 'mensaje_bolsa', 'mensaje_destino' y 'msg_outbox' en su lugar
  */
-export interface Mensaje {
-  uuid_origen: string;
-  contactoid: number;
-  tipo_origen: 'ALERTA_FRECUENCIA' | 'ALERTA_ESCALAMIENTO' | string;
-  mensaje: string;
-  fecha: string;
-  statusid: number;
-  usercreatedid: number;
-  datecreated: string;
-  // Relación
-  contacto?: Contacto;
-}
+// export interface Mensaje {
+//   uuid_origen: string;
+//   contactoid: number;
+//   tipo_origen: 'ALERTA_FRECUENCIA' | 'ALERTA_ESCALAMIENTO' | string;
+//   mensaje: string;
+//   fecha: string;
+//   statusid: number;
+//   usercreatedid: number;
+//   datecreated: string;
+//   // Relación
+//   contacto?: Contacto;
+// }
 
 // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
 
@@ -658,7 +678,7 @@ export type TableName =
   | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
-  | 'criticidad' | 'umbral' | 'alerta' | 'alerta_regla' | 'alerta_regla_consolidado' | 'mensaje' | 'audit_log_umbral'
+  | 'criticidad' | 'umbral' | 'alerta_regla' | 'alerta_regla_consolidado' | 'audit_log_umbral'
   | 'regla' | 'regla_objeto' | 'regla_perfil' | 'regla_umbral'
   | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
   | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje' // Nuevo sistema de permisos
@@ -684,10 +704,8 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   sensor_valor_error: 'sensorvalorerrorid',
   criticidad: 'criticidadid',
   umbral: 'umbralid',
-  alerta: 'alertaid',
   alerta_regla: 'uuid_alerta_reglaid',
   alerta_regla_consolidado: 'uuid_consolidadoid',
-  mensaje: ['uuid_origen', 'contactoid', 'tipo_mensajeid'],
   audit_log_umbral: 'auditid',
   regla: 'reglaid',
   regla_objeto: 'regla_objetoid',

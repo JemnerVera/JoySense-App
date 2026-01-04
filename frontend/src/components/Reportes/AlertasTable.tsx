@@ -55,9 +55,10 @@ const AlertasTable: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Usar paginación del servidor en lugar de cargar todas las alertas
+      // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+      // Usar 'alerta_regla' en su lugar
       startTransition(() => {
-        JoySenseService.getTableDataPaginated('alerta', {
+        JoySenseService.getTableDataPaginated('alerta_regla', {
           page,
           pageSize: itemsPerPage,
           sortBy: 'datecreated',

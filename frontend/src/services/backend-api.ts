@@ -1,6 +1,6 @@
 import { 
   Pais, Empresa, Fundo, Ubicacion, Localizacion, Medicion, Metrica,
-  Nodo, Sensor, Tipo, Umbral, Alerta, AlertaConsolidado, Usuario,
+  Nodo, Sensor, Tipo, Umbral, AlertaRegla, AlertaConsolidado, Usuario,
   Contacto, Correo, Criticidad, CodigoTelefono, TableName, PaginatedResponse
 } from '../types';
 
@@ -461,21 +461,25 @@ export class JoySenseService {
     }
   }
 
+  // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+  // Usar 'alerta_regla' en su lugar
   static async getAlertas(filters?: {
-    umbralId?: number;
+    reglaId?: number;
+    localizacionId?: number;
     startDate?: string;
     endDate?: string;
     limit?: number;
-  }): Promise<Alerta[]> {
+  }): Promise<AlertaRegla[]> {
     try {
       const params = new URLSearchParams();
-      if (filters?.umbralId) params.append('umbralid', filters.umbralId.toString());
+      if (filters?.reglaId) params.append('reglaid', filters.reglaId.toString());
+      if (filters?.localizacionId) params.append('localizacionid', filters.localizacionId.toString());
       if (filters?.startDate) params.append('startDate', filters.startDate);
       if (filters?.endDate) params.append('endDate', filters.endDate);
       if (filters?.limit) params.append('limit', filters.limit.toString());
       
       const queryString = params.toString();
-      const endpoint = `/alertas/alerta${queryString ? '?' + queryString : ''}`;
+      const endpoint = `/alertas/alerta_regla${queryString ? '?' + queryString : ''}`;
       const data = await backendAPI.get(endpoint);
       return data || [];
     } catch (error) {
