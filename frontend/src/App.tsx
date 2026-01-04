@@ -842,6 +842,41 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
+    // Manejar sub-rutas de CONFIGURACIÓN - USUARIOS
+    if (activeTab.startsWith('configuracion-usuarios')) {
+      // Extraer el nombre de la tabla (ej: 'configuracion-usuarios-usuario' -> 'usuario')
+      const usuariosTab = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '');
+      console.log('[App] configuracion-usuarios:', { activeTab, usuariosTab, selectedTable });
+      
+      // Si no hay tabla seleccionada, mostrar mensaje
+      if (!usuariosTab || usuariosTab === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-purple-500 mb-4 font-mono tracking-wider">USUARIOS</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      // Usar SystemParameters para las tablas de usuarios
+      return (
+        <SystemParametersWithSuspense 
+          ref={systemParametersRef}
+          selectedTable={usuariosTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          activeTab={activeTab}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          clearFormData={clearFormData}
+        />
+      );
+    }
+
     // Manejar sub-rutas de CONFIGURACIÓN - PARAMETROS GEO
     if (activeTab.startsWith('configuracion-parametros-geo')) {
       // Extraer el nombre de la tabla (ej: 'configuracion-parametros-geo-pais' -> 'pais')
