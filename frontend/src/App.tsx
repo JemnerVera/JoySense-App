@@ -19,6 +19,9 @@ import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
 import ReglasMain from './components/ReglasMain';
 import AlertasTableMain from './components/AlertasTableMain';
+import ReportesAdminMain, { ReportesAdminMainRef } from './components/ReportesAdminMain';
+import AgrupacionMain, { AgrupacionMainRef } from './components/AgrupacionMain';
+import AjustesMain, { AjustesMainRef } from './components/AjustesMain';
 import { JoySenseService } from './services/backend-api';
 import { Pais, Empresa } from './types';
 // import { SkipLink } from './components/Accessibility';
@@ -108,6 +111,12 @@ const AppContentInternal: React.FC = () => {
   
   // Ref para PermisosMain
   const permisosMainRef = useRef<PermisosMainRef | null>(null);
+  // Ref para ReportesAdminMain
+  const reportesAdminMainRef = useRef<ReportesAdminMainRef | null>(null);
+  // Ref para AgrupacionMain
+  const agrupacionMainRef = useRef<AgrupacionMainRef | null>(null);
+  // Ref para AjustesMain
+  const ajustesMainRef = useRef<AjustesMainRef | null>(null);
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -208,6 +217,96 @@ const AppContentInternal: React.FC = () => {
       setDashboardSubTab('mapeo');
     }
   }, [activeTab]);
+
+  // Sincronizar selectedTable con activeTab para diferentes secciones
+  useEffect(() => {
+    // Extraer tabla de activeTab para diferentes secciones
+    if (activeTab.startsWith('geografia-')) {
+      const table = activeTab.replace('geografia-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab.startsWith('parametros-')) {
+      const table = activeTab.replace('parametros-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab.startsWith('tabla-')) {
+      const table = activeTab.replace('tabla-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab.startsWith('notificaciones-')) {
+      const table = activeTab.replace('notificaciones-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab.startsWith('configuracion-dispositivos-')) {
+      const table = activeTab.replace('configuracion-dispositivos-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab === 'configuracion-dispositivos') {
+      // Si solo es 'configuracion-dispositivos' sin tabla, limpiar selectedTable
+      if (selectedTable) {
+        setSelectedTable('');
+      }
+    } else if (activeTab.startsWith('configuracion-usuarios-')) {
+      const table = activeTab.replace('configuracion-usuarios-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab === 'configuracion-usuarios') {
+      // Si solo es 'configuracion-usuarios' sin tabla, limpiar selectedTable
+      if (selectedTable) {
+        setSelectedTable('');
+      }
+    } else if (activeTab.startsWith('configuracion-parametros-geo-')) {
+      const table = activeTab.replace('configuracion-parametros-geo-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab === 'configuracion-parametros-geo') {
+      // Si solo es 'configuracion-parametros-geo' sin tabla, limpiar selectedTable
+      if (selectedTable) {
+        setSelectedTable('');
+      }
+    } else if (activeTab.startsWith('configuracion-notificaciones-')) {
+      // Caso especial: si es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
+      // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
+      if (activeTab === 'configuracion-notificaciones-regla') {
+        // Si selectedTable es una tabla de regla válida (regla, regla_perfil, regla_umbral), mantenerla
+        // Esto permite que cuando se hace clic en REGLA desde ReglaSidebar, se muestre el contenido principal
+        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
+          // Mantener selectedTable para mostrar el contenido principal o ReglaOperationsSidebar
+          console.log('[App] useEffect - Manteniendo selectedTable (tabla de regla válida):', selectedTable);
+        } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_perfil' && selectedTable !== 'regla_umbral') {
+          // Limpiar selectedTable si no es una tabla de regla válida
+          console.log('[App] useEffect - Limpiando selectedTable porque no es una tabla de regla válida:', selectedTable);
+          setSelectedTable('');
+        } else {
+          // Si selectedTable está vacío, mantenerlo vacío para mostrar ReglaSidebar
+          console.log('[App] useEffect - Manteniendo selectedTable vacío para mostrar ReglaSidebar');
+        }
+      } else {
+        // Para otras tablas de notificaciones, establecer selectedTable normalmente
+        const table = activeTab.replace('configuracion-notificaciones-', '');
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
+      }
+    } else if (activeTab === 'configuracion-notificaciones') {
+      // Si solo es 'configuracion-notificaciones' sin tabla, limpiar selectedTable
+      if (selectedTable) {
+        setSelectedTable('');
+      }
+    } else if (activeTab.startsWith('permisos-')) {
+      const table = activeTab.replace('permisos-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    }
+  }, [activeTab, selectedTable]);
 
   // Sincronizar activeSubTab con activeTab para tablas de alertas
   // NO procesar si es de permisos-permiso, ya que permisos maneja su propio estado
@@ -409,26 +508,145 @@ const AppContentInternal: React.FC = () => {
 
   const handleTableSelect = (table: string) => {
     // Cambio directo sin validación (la validación se hace en ProtectedParameterButton)
-    setSelectedTable(table);
     setActiveSubTab('status');
     
     // Determinar a qué sección pertenece la tabla
     const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
     const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
     const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
-    const notificacionesTables = ['canal', 'usuario_canal'];
+    const dispositivosTables = ['tipo', 'metrica', 'sensor', 'metricasensor'];
+    const usuariosTables = ['usuario', 'correo', 'codigotelefono', 'contacto', 'perfil', 'usuarioperfil', 'usuario_canal'];
+    const parametrosGeoTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion', 'asociacion'];
+    const notificacionesTables = ['criticidad', 'umbral', 'regla', 'regla_objeto'];
     
     startTransition(() => {
-      if (geografiaTables.includes(table)) {
+      // PRIORIDAD: Verificar primero el contexto actual (activeTab) para determinar la sección
+      // Esto evita conflictos cuando una tabla está en múltiples listas (ej: 'tipo' está en parametrosTables y dispositivosTables)
+      if (activeTab.startsWith('configuracion-dispositivos') && dispositivosTables.includes(table)) {
+        // Tabla de dispositivos seleccionada desde DispositivosSidebar
+        setSelectedTable(table);
+        setActiveTab(`configuracion-dispositivos-${table}`);
+      } else if (activeTab.startsWith('configuracion-usuarios') && usuariosTables.includes(table)) {
+        // Tabla de usuarios seleccionada desde UsuariosSidebar
+        setSelectedTable(table);
+        setActiveTab(`configuracion-usuarios-${table}`);
+      } else if (activeTab.startsWith('configuracion-parametros-geo') && parametrosGeoTables.includes(table)) {
+        // Tabla de parámetros geo seleccionada desde ParametrosGeoSidebar
+        setSelectedTable(table);
+        setActiveTab(`configuracion-parametros-geo-${table}`);
+      } else if (activeTab.startsWith('configuracion-notificaciones') && notificacionesTables.includes(table)) {
+        // Tabla de notificaciones seleccionada desde NotificacionesSidebar
+        // Manejar caso especial de REGLA
+        if (table === 'regla') {
+          setSelectedTable('');
+          setActiveTab('configuracion-notificaciones-regla');
+          setActiveSubTab('status');
+        } else {
+          setSelectedTable(table);
+          setActiveTab(`configuracion-notificaciones-${table}`);
+          setActiveSubTab('status');
+        }
+      } else if (table === 'entidad' || table === 'entidad_localizacion') {
+        // Tablas de agrupación
+        setSelectedTable(table);
+        setActiveTab(`agrupacion-${table}`);
+      } else if (geografiaTables.includes(table)) {
+        setSelectedTable(table);
         setActiveTab(`geografia-${table}`);
+      } else if (dispositivosTables.includes(table)) {
+        // Tabla de dispositivos (sin contexto previo)
+        setSelectedTable(table);
+        setActiveTab(`configuracion-dispositivos-${table}`);
+      } else if (usuariosTables.includes(table)) {
+        // Tabla de usuarios (sin contexto previo)
+        setSelectedTable(table);
+        setActiveTab(`configuracion-usuarios-${table}`);
+      } else if (parametrosGeoTables.includes(table)) {
+        // Tabla de parámetros geo (sin contexto previo)
+        setSelectedTable(table);
+        setActiveTab(`configuracion-parametros-geo-${table}`);
       } else if (parametrosTables.includes(table)) {
+        // Tablas de parámetros (solo si NO está en dispositivosTables)
+        setSelectedTable(table);
         setActiveTab(`parametros-${table}`);
       } else if (permisosTables.includes(table)) {
+        setSelectedTable(table);
         setActiveTab(`permisos-${table}`);
       } else if (notificacionesTables.includes(table)) {
-        setActiveTab(`notificaciones-${table}`);
+        // Tabla de notificaciones (sin contexto previo o desde otro lugar)
+        if (table === 'regla') {
+          setSelectedTable('');
+          setActiveTab('configuracion-notificaciones-regla');
+          setActiveSubTab('status');
+        } else {
+          setSelectedTable(table);
+          setActiveTab(`configuracion-notificaciones-${table}`);
+          setActiveSubTab('status');
+        }
+      } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral') {
+        // Tablas de regla seleccionadas desde ReglaSidebar
+        console.log('[App] handleTableSelect - Tabla de regla seleccionada:', {
+          table,
+          activeTab,
+          currentSelectedTable: selectedTable,
+          willSetSelectedTable: table,
+          willKeepActiveTab: activeTab.startsWith('configuracion-notificaciones-regla')
+        });
+        
+        // Si es 'regla', establecer selectedTable para mostrar el contenido principal
+        // Si es 'regla_perfil' o 'regla_umbral', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
+        setSelectedTable(table);
+        setActiveSubTab('status'); // Resetear a status cuando cambia la tabla
+        
+        // Si ya estamos en configuracion-notificaciones-regla, mantener el contexto
+        if (activeTab.startsWith('configuracion-notificaciones-regla')) {
+          // Mantener activeTab como está, solo establecer selectedTable
+          console.log('[App] handleTableSelect - Manteniendo activeTab, estableciendo selectedTable:', table);
+        } else {
+          setActiveTab(`configuracion-notificaciones-regla-${table}`);
+          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-notificaciones-regla-${table}`);
+        }
+      } else if (table === 'permisos-geo' || table === 'permisos-conf') {
+        // Tipos de permisos seleccionados desde PermisosTipoSidebar
+        console.log('[App] handleTableSelect - Tipo de permisos seleccionado:', {
+          table,
+          activeTab,
+          currentSelectedTable: selectedTable
+        });
+        
+        setSelectedTable(table);
+        setActiveSubTab('status'); // Resetear a status cuando cambia el tipo
+        
+        // Si ya estamos en configuracion-permisos, mantener el contexto
+        if (activeTab.startsWith('configuracion-permisos')) {
+          setActiveTab(`configuracion-permisos-${table}`);
+          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-permisos-${table}`);
+        } else {
+          setActiveTab(`configuracion-permisos-${table}`);
+          console.log('[App] handleTableSelect - Estableciendo activeTab a:', `configuracion-permisos-${table}`);
+        }
+      } else if (['sensor_valor_error', 'audit_log_umbral', 'msg_outbox', 'auth_outbox'].includes(table)) {
+        // Tablas de reportes administrativos
+        console.log('[App] handleTableSelect - Tabla de reportes administrativos seleccionada:', {
+          table,
+          activeTab,
+          currentSelectedTable: selectedTable
+        });
+        
+        setSelectedTable(table);
+        setActiveSubTab('status'); // Solo status para reportes administrativos
+        
+        // Si ya estamos en configuracion-reportes-administrador, mantener el contexto
+        if (activeTab.startsWith('configuracion-reportes-administrador')) {
+          setActiveTab(`configuracion-reportes-administrador-${table}`);
+          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-reportes-administrador-${table}`);
+        } else {
+          setActiveTab(`configuracion-reportes-administrador-${table}`);
+          console.log('[App] handleTableSelect - Estableciendo activeTab a:', `configuracion-reportes-administrador-${table}`);
+        }
       } else {
         // Resto de tablas van a 'tabla'
+        setSelectedTable(table);
         setActiveTab(`tabla-${table}`);
       }
     });
@@ -436,6 +654,15 @@ const AppContentInternal: React.FC = () => {
 
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => {
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
+    
+    // Si estamos en una tabla de regla, actualizar el activeTab para incluir la operación
+    if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+      const reglaTableMatch = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/);
+      if (reglaTableMatch && (subTab === 'status' || subTab === 'insert')) {
+        const reglaTable = reglaTableMatch[1];
+        setActiveTab(`configuracion-notificaciones-regla-${reglaTable}-${subTab}`);
+      }
+    }
   };
 
   // Handler para cambiar el subTab del Dashboard
@@ -560,6 +787,41 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
+    // Manejar sub-rutas de CONFIGURACIÓN - DISPOSITIVOS
+    if (activeTab.startsWith('configuracion-dispositivos')) {
+      // Extraer el nombre de la tabla (ej: 'configuracion-dispositivos-tipo' -> 'tipo')
+      const dispositivosTab = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '');
+      console.log('[App] configuracion-dispositivos:', { activeTab, dispositivosTab, selectedTable });
+      
+      // Si no hay tabla seleccionada, mostrar mensaje
+      if (!dispositivosTab || dispositivosTab === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">DISPOSITIVOS</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      // Usar SystemParameters para las tablas de dispositivos (tipo, metrica, sensor, metricasensor)
+      return (
+        <SystemParametersWithSuspense 
+          ref={systemParametersRef}
+          selectedTable={dispositivosTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          activeTab={activeTab}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          clearFormData={clearFormData}
+        />
+      );
+    }
+
     // Manejar sub-rutas de configuración (parámetros del sistema) - mantener para compatibilidad
     if (activeTab.startsWith('parameters-')) {
       const parameterTab = activeTab.replace('parameters-', '');
@@ -576,6 +838,232 @@ const AppContentInternal: React.FC = () => {
           onFormDataChange={handleFormDataChange}
           onMassiveFormDataChange={handleMassiveFormDataChange}
           clearFormData={clearFormData}
+        />
+      );
+    }
+
+    // Manejar sub-rutas de CONFIGURACIÓN - PARAMETROS GEO
+    if (activeTab.startsWith('configuracion-parametros-geo')) {
+      // Extraer el nombre de la tabla (ej: 'configuracion-parametros-geo-pais' -> 'pais')
+      const parametrosGeoTab = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '');
+      console.log('[App] configuracion-parametros-geo:', { activeTab, parametrosGeoTab, selectedTable });
+      
+      // Si no hay tabla seleccionada, mostrar mensaje
+      if (!parametrosGeoTab || parametrosGeoTab === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">PARAMETROS GEO</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      // Usar SystemParameters para las tablas de parámetros geo
+      return (
+        <SystemParametersWithSuspense 
+          ref={systemParametersRef}
+          selectedTable={parametrosGeoTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          activeTab={activeTab}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          clearFormData={clearFormData}
+        />
+      );
+    }
+
+    // Manejar sub-rutas de CONFIGURACIÓN - NOTIFICACIONES
+    if (activeTab.startsWith('configuracion-notificaciones')) {
+      // Caso especial: REGLA (configuracion-notificaciones-regla o configuracion-notificaciones-regla-[tabla])
+      if (activeTab.startsWith('configuracion-notificaciones-regla')) {
+        // Extraer el nombre de la tabla de regla (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
+        // Si activeTab no tiene sufijo, usar selectedTable si es una tabla de regla válida
+        let reglaTab = activeTab.replace('configuracion-notificaciones-regla', '').replace(/^-/, '');
+        if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
+          reglaTab = selectedTable;
+        }
+        console.log('[App] configuracion-notificaciones-regla:', { activeTab, reglaTab, selectedTable });
+        
+        // Si no hay tabla seleccionada, mostrar mensaje
+        if (!reglaTab || reglaTab === '') {
+          return (
+            <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-cyan-500 mb-4 font-mono tracking-wider">REGLA</h2>
+                <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+              </div>
+            </div>
+          );
+        }
+        
+        // Extraer la operación si existe (ej: 'configuracion-notificaciones-regla-regla-status' -> 'status')
+        const parts = reglaTab.split('-');
+        const reglaTableName = parts[0]; // regla, regla_perfil, regla_umbral
+        const reglaOperation = parts[1]; // status, insert (opcional)
+        
+        // Si hay una operación, actualizar activeSubTab
+        if (reglaOperation && (reglaOperation === 'status' || reglaOperation === 'insert')) {
+          setActiveSubTab(reglaOperation);
+        }
+        
+        // Usar SystemParameters para las tablas de regla
+        return (
+          <SystemParametersWithSuspense 
+            ref={systemParametersRef}
+            selectedTable={reglaTableName}
+            onTableSelect={handleTableSelect}
+            activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+            onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+              handleSubTabChange(tab);
+            }}
+            activeTab={activeTab}
+            onFormDataChange={handleFormDataChange}
+            onMassiveFormDataChange={handleMassiveFormDataChange}
+            clearFormData={clearFormData}
+          />
+        );
+      }
+      
+      // Otras tablas de notificaciones (criticidad, umbral, regla_objeto)
+      // Extraer el nombre de la tabla (ej: 'configuracion-notificaciones-criticidad' -> 'criticidad')
+      const notificacionesTab = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '');
+      console.log('[App] configuracion-notificaciones:', { activeTab, notificacionesTab, selectedTable });
+      
+      // Si no hay tabla seleccionada, mostrar mensaje
+      if (!notificacionesTab || notificacionesTab === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-cyan-500 mb-4 font-mono tracking-wider">NOTIFICACIONES</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      // Usar SystemParameters para las tablas de notificaciones
+      return (
+        <SystemParametersWithSuspense 
+          ref={systemParametersRef}
+          selectedTable={notificacionesTab}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
+            handleSubTabChange(tab);
+          }}
+          activeTab={activeTab}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+          clearFormData={clearFormData}
+        />
+      );
+    }
+
+    // Manejar configuracion-permisos
+    if (activeTab.startsWith('configuracion-permisos')) {
+      // Extraer el tipo de permisos (permisos-geo o permisos-conf)
+      const permisosTipo = activeTab.replace('configuracion-permisos-', '');
+      
+      // Si no hay tipo seleccionado, mostrar mensaje
+      if (!permisosTipo || permisosTipo === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-purple-500 mb-4 font-mono tracking-wider">PERMISOS</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona un tipo de permisos del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      
+      // Si hay tipo seleccionado, mostrar PermisosMain con la tabla 'permiso'
+      // El filtro por origen se manejará dentro de PermisosMain
+      return (
+        <PermisosMain
+          ref={permisosMainRef}
+          selectedTable="permiso"
+          onTableSelect={(table) => {
+            // Mantener el tipo de permisos en el activeTab
+            setActiveTab(`configuracion-permisos-${permisosTipo}`);
+          }}
+          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'asignar'}
+          onSubTabChange={(tab) => {
+            handleSubTabChange(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
+          }}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    // Manejar configuracion-reportes-administrador
+    if (activeTab.startsWith('configuracion-reportes-administrador')) {
+      // Extraer el nombre de la tabla (ej: 'configuracion-reportes-administrador-sensor_valor_error' -> 'sensor_valor_error')
+      const reportesAdminTable = activeTab.replace('configuracion-reportes-administrador-', '');
+      
+      // Si no hay tabla seleccionada, mostrar mensaje
+      if (!reportesAdminTable || reportesAdminTable === '') {
+        return (
+          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-red-500 mb-4 font-mono tracking-wider">REPORTES ADMINISTRADOR</h2>
+              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            </div>
+          </div>
+        );
+      }
+      
+      // Mostrar ReportesAdminMain con la tabla seleccionada (solo modo lectura)
+      return (
+        <ReportesAdminMain
+          ref={reportesAdminMainRef}
+          selectedTable={reportesAdminTable}
+          onTableSelect={(table) => {
+            setActiveTab(`configuracion-reportes-administrador-${table}`);
+          }}
+          activeSubTab="status"
+          onSubTabChange={(tab) => {
+            // Solo permitir 'status' para reportes administrativos
+            if (tab === 'status') {
+              handleSubTabChange('status');
+            }
+          }}
+          onFormDataChange={handleFormDataChange}
+        />
+      );
+    }
+
+    // Manejar agrupacion
+    if (activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-')) {
+      // Extraer el nombre de la tabla (ej: 'agrupacion-entidad' -> 'entidad')
+      const agrupacionTable = activeTab.replace('agrupacion-', '') || 'entidad';
+      
+      // Mostrar AgrupacionMain con la tabla seleccionada
+      return (
+        <AgrupacionMain
+          ref={agrupacionMainRef}
+          selectedTable={agrupacionTable}
+          onTableSelect={(table) => {
+            setActiveTab(`agrupacion-${table}`);
+          }}
+          activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
+          onSubTabChange={(tab) => {
+            handleSubTabChange(tab);
+          }}
+          onFormDataChange={handleFormDataChange}
+          onMassiveFormDataChange={handleMassiveFormDataChange}
+        />
+      );
+    }
+
+    // Manejar ajustes
+    if (activeTab === 'ajustes') {
+      return (
+        <AjustesMain
+          ref={ajustesMainRef}
         />
       );
     }

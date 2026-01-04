@@ -803,6 +803,56 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'tipo_mensaje', label: 'Tipo Mensaje', type: 'text', required: true, validation: { minLength: 1, maxLength: 50 } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
+  },
+
+  // --------------------------------------------------------------------------
+  // REPORTES ADMINISTRADOR (solo lectura)
+  // --------------------------------------------------------------------------
+  msg_outbox: {
+    name: 'msg_outbox',
+    displayName: 'Mensajes Outbox',
+    description: 'Cola de mensajes pendientes de envío',
+    icon: '📤',
+    category: 'sistema',
+    primaryKey: 'msg_outboxid',
+    allowInsert: false,
+    allowUpdate: false,
+    allowDelete: false,
+    fields: [
+      { name: 'msg_outboxid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'mensaje_bolsaid', label: 'Mensaje Bolsa ID', type: 'number', readonly: true },
+      { name: 'usuarioid', label: 'Usuario', type: 'number', readonly: true },
+      { name: 'canalid', label: 'Canal', type: 'number', readonly: true },
+      { name: 'destino', label: 'Destino', type: 'text', readonly: true },
+      { name: 'estado', label: 'Estado', type: 'text', readonly: true },
+      { name: 'attempts', label: 'Intentos', type: 'number', readonly: true },
+      { name: 'next_try_at', label: 'Próximo Intento', type: 'datetime', readonly: true },
+      { name: 'last_error', label: 'Último Error', type: 'text', readonly: true },
+      { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true }
+    ]
+  },
+
+  auth_outbox: {
+    name: 'auth_outbox',
+    displayName: 'Autenticación Outbox',
+    description: 'Cola de códigos de autenticación pendientes',
+    icon: '🔐',
+    category: 'sistema',
+    primaryKey: 'outboxid',
+    allowInsert: false,
+    allowUpdate: false,
+    allowDelete: false,
+    fields: [
+      { name: 'outboxid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'usuarioid', label: 'Usuario', type: 'number', readonly: true },
+      { name: 'email', label: 'Email', type: 'email', readonly: true },
+      { name: 'request_id', label: 'Request ID', type: 'number', readonly: true },
+      { name: 'status', label: 'Estado', type: 'text', readonly: true },
+      { name: 'status_code', label: 'Código Estado', type: 'number', readonly: true },
+      { name: 'timed_out', label: 'Timeout', type: 'boolean', readonly: true },
+      { name: 'error_msg', label: 'Mensaje Error', type: 'text', readonly: true },
+      { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true }
+    ]
   }
 };
 
@@ -944,14 +994,79 @@ export function getPermisosTables(): TableConfig[] {
 
 /**
  * Obtener tablas de NOTIFICACIONES
- * Incluye: canal, usuario_canal
+ * Incluye: criticidad, umbral, regla, regla_objeto
+ * NOTA: canal y usuario_canal ahora están en USUARIOS
+ * NOTA: 'destino' no existe como tabla, se usa 'mensaje_destino' que está en REPORTES ADMINISTRADOR
  */
 export function getNotificacionesTables(): TableConfig[] {
   const notificacionesTableNames: TableName[] = [
-    'canal',
+    'criticidad',
+    'umbral',
+    'regla',
+    'regla_objeto'
+  ];
+  const tables = notificacionesTableNames.map(name => {
+    const config = TABLES_CONFIG[name];
+    if (!config) {
+      console.warn(`[getNotificacionesTables] Tabla '${name}' no encontrada en TABLES_CONFIG`);
+    }
+    return config;
+  }).filter(Boolean) as TableConfig[];
+  
+  console.log('[getNotificacionesTables] Tablas encontradas:', {
+    requested: notificacionesTableNames,
+    found: tables.map(t => t.name),
+    count: tables.length
+  });
+  
+  return tables;
+}
+
+/**
+ * Obtener tablas de DISPOSITIVOS
+ */
+export function getDispositivosTables(): TableConfig[] {
+  const dispositivosTableNames: TableName[] = [
+    'tipo',
+    'metrica',
+    'sensor',
+    'metricasensor'
+  ];
+  return dispositivosTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de USUARIOS
+ * Incluye: usuario, correo, codigotelefono, contacto, perfil, usuarioperfil, usuario_canal
+ */
+export function getUsuariosTables(): TableConfig[] {
+  const usuariosTableNames: TableName[] = [
+    'usuario',
+    'correo',
+    'codigotelefono',
+    'contacto',
+    'perfil',
+    'usuarioperfil',
     'usuario_canal'
   ];
-  return notificacionesTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+  return usuariosTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
+}
+
+/**
+ * Obtener tablas de PARAMETROS GEO
+ * Incluye: pais, empresa, fundo, ubicacion, nodo, localizacion, asociacion
+ */
+export function getParametrosGeoTables(): TableConfig[] {
+  const parametrosGeoTablesNames: TableName[] = [
+    'pais',
+    'empresa',
+    'fundo',
+    'ubicacion',
+    'nodo',
+    'localizacion',
+    'asociacion'
+  ];
+  return parametrosGeoTablesNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
 }
 
 /**

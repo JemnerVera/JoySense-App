@@ -4,9 +4,9 @@ import ProtectedParameterButton from '../ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { getNotificacionesTables } from '../../config/tables.config';
+import { getDispositivosTables } from '../../config/tables.config';
 
-interface NotificacionesSidebarProps {
+interface DispositivosSidebarProps {
   selectedTable: string;
   onTableSelect: (table: string) => void;
   activeSubTab: string;
@@ -19,7 +19,7 @@ interface NotificacionesSidebarProps {
   massiveFormData?: Record<string, any>;
 }
 
-const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
+const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
   selectedTable,
   onTableSelect,
   activeSubTab,
@@ -88,7 +88,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
           setUserPerfilId(userPerfil.perfilid);
         }
       } catch (error) {
-        console.error('[NotificacionesSidebar] Error obteniendo perfil:', error);
+        console.error('[DispositivosSidebar] Error obteniendo perfil:', error);
       } finally {
         setLoadingPerfil(false);
       }
@@ -97,53 +97,30 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
     fetchUserPerfil();
   }, [user]);
 
-  // Obtener las tablas de notificaciones
-  const notificacionesTables = getNotificacionesTables();
-  
-  console.log('[NotificacionesSidebar] Tablas obtenidas:', {
-    count: notificacionesTables.length,
-    tables: notificacionesTables.map(t => t.name),
-    fullTables: notificacionesTables
-  });
-
-  // Mapear nombres de tablas a nombres de visualización
-  const getTableDisplayName = (tableName: string): string => {
-    const displayNameMap: Record<string, string> = {
-      'criticidad': 'CRITICIDAD',
-      'umbral': 'UMBRAL',
-      'regla': 'REGLA',
-      'regla_objeto': 'REGLA_OBJETO'
-    };
-    return displayNameMap[tableName] || tableName.toUpperCase();
-  };
+  // Obtener las tablas de dispositivos
+  const dispositivosTables = getDispositivosTables();
 
   // Mapear tablas a formato de sidebar con iconos
   const getTableIcon = (tableName: string) => {
     const iconMap: Record<string, React.ReactNode> = {
-      'criticidad': (
+      'tipo': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
       ),
-      'umbral': (
+      'metrica': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
-      'regla': (
+      'sensor': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
         </svg>
       ),
-      'destino': (
+      'metricasensor': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      'regla_objeto': (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       )
     };
@@ -154,31 +131,36 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
     );
   };
 
-  const notificacionesIcon = (
+  const dispositivosIcon = (
     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
     </svg>
   );
+
+  console.log('[DispositivosSidebar] Renderizando:', { 
+    selectedTable, 
+    dispositivosTablesCount: dispositivosTables.length,
+    isExpanded 
+  });
 
   return (
     <BaseAuxiliarySidebar
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title="NOTIFICACIONES"
-      icon={notificacionesIcon}
-      color="cyan"
+      title="DISPOSITIVOS"
+      icon={dispositivosIcon}
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
           <nav className="space-y-1">
-            {notificacionesTables.length === 0 ? (
+            {dispositivosTables.length === 0 ? (
               <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
                 <p className="text-sm font-mono">No hay tablas disponibles</p>
-                <p className="text-xs mt-2">Debug: {JSON.stringify({ count: notificacionesTables.length })}</p>
               </div>
             ) : (
-              notificacionesTables.map((table) => {
+              dispositivosTables.map((table) => {
               const isActive = selectedTable === table.name;
               return (
                 <ProtectedParameterButton
@@ -194,7 +176,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >
@@ -202,7 +184,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
                     {getTableIcon(table.name)}
                   </div>
                   {isExpanded && (
-                    <span className="text-sm font-medium tracking-wider">{getTableDisplayName(table.name)}</span>
+                    <span className="text-sm font-medium tracking-wider">{table.displayName.toUpperCase()}</span>
                   )}
                 </ProtectedParameterButton>
               );
@@ -214,5 +196,5 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
   );
 };
 
-export default NotificacionesSidebar;
+export default DispositivosSidebar;
 
