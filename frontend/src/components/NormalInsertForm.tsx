@@ -10,6 +10,7 @@ import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 import { UsuarioFormFields } from './forms/table-specific/UsuarioFormFields';
 import { GeografiaFormFields } from './forms/table-specific/GeografiaFormFields';
 import { ContactoFormFields } from './forms/table-specific/ContactoFormFields';
+import { UsuarioCanalFormFields } from './forms/table-specific/UsuarioCanalFormFields';
 import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
@@ -49,6 +50,10 @@ interface NormalInsertFormProps {
   selectedContactType?: 'phone' | 'email' | null;
   countryCodes?: any[];
   resetContactType?: () => void;
+  // Datos para usuario_canal
+  contactosData?: any[];
+  correosData?: any[];
+  canalesData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
@@ -80,6 +85,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   selectedContactType,
   countryCodes,
   resetContactType,
+  contactosData = [],
+  correosData = [],
+  canalesData = [],
   themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -750,7 +758,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -764,6 +772,19 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 getUniqueOptionsForField={getUniqueOptionsForField}
                 selectedContactType={selectedContactType}
                 countryCodes={countryCodes}
+              />
+            ) : selectedTable === 'usuario_canal' ? (
+              <UsuarioCanalFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                updateField={updateField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                contactosData={contactosData || []}
+                correosData={correosData || []}
+                canalesData={canalesData || []}
+                codigotelefonosData={codigotelefonosData || []}
               />
             ) : (
               renderSpecialLayoutFields()

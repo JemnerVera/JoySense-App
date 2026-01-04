@@ -22,6 +22,7 @@ import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
 import { AsignarPermisosTab } from './Permisos/AsignarPermisosTab';
+import { PermisosSkillTree } from './Permisos/PermisosSkillTree';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 import { TableName, PRIMARY_KEY_MAP } from '../types';
 
@@ -378,6 +379,13 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   const renderContent = () => {
     switch (activeSubTab) {
       case 'status':
+        // Si la tabla es 'permiso', usar la vista de skill tree
+        if (isPermisoTable) {
+          return (
+            <PermisosSkillTree themeColor="purple" />
+          );
+        }
+        // Para otras tablas, usar StatusTab normal
         return (
           <StatusTab
             tableName={selectedTable}

@@ -273,6 +273,15 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
   }
 
+  // Combobox para usuario_canal - usuarioid, canalid
+  if (col.columnName === 'usuarioid' && selectedTable === 'usuario_canal') {
+    return renderSelectField(t('create.select_user') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
+  if (col.columnName === 'canalid' && selectedTable === 'usuario_canal') {
+    return renderSelectField(t('create.select_channel') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
   // Select para umbral - operador (con opciones válidas según constraint)
   if (col.columnName === 'operador' && selectedTable === 'umbral') {
     const operadorOptions = [

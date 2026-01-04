@@ -35,6 +35,7 @@ export const useTableDataManagement = () => {
   const [fuentesData, setFuentesData] = useState<any[]>([]);
   const [correosData, setCorreosData] = useState<any[]>([]);
   const [codigotelefonosData, setCodigotelefonosData] = useState<any[]>([]);
+  const [canalesData, setCanalesData] = useState<any[]>([]);
 
   // Referencias para control de carga
   const loadingTableRef = useRef<string | null>(null);
@@ -84,7 +85,8 @@ export const useTableDataManagement = () => {
         correosResponse,
         codigotelefonosResponse,
         origenesResponse,
-        fuentesResponse
+        fuentesResponse,
+        canalesResponse
       ] = await Promise.all([
         JoySenseService.getTableData('pais', 500),
         JoySenseService.getTableData('empresa', 500),
@@ -106,7 +108,8 @@ export const useTableDataManagement = () => {
         JoySenseService.getTableData('correo', 500),
         JoySenseService.getTableData('codigotelefono', 500),
         JoySenseService.getTableData('origen', 500),
-        JoySenseService.getTableData('fuente', 500)
+        JoySenseService.getTableData('fuente', 500),
+        JoySenseService.getTableData('canal', 500)
       ]);
 
       // Procesar respuestas
@@ -138,6 +141,7 @@ export const useTableDataManagement = () => {
       const codigotelefonos = Array.isArray(codigotelefonosResponse) ? codigotelefonosResponse : ((codigotelefonosResponse as any)?.data || []);
       const origenes = Array.isArray(origenesResponse) ? origenesResponse : ((origenesResponse as any)?.data || []);
       const fuentes = Array.isArray(fuentesResponse) ? fuentesResponse : ((fuentesResponse as any)?.data || []);
+      const canales = Array.isArray(canalesResponse) ? canalesResponse : ((canalesResponse as any)?.data || []);
 
       // Establecer todos los datos
       setPaisesData(paises);
@@ -161,6 +165,7 @@ export const useTableDataManagement = () => {
       setFuentesData(fuentes);
       setCorreosData(correos);
       setCodigotelefonosData(codigotelefonos);
+      setCanalesData(canales);
 
       // const endTime = performance.now(); // Para debugging de performance
     } catch (error) {
@@ -455,6 +460,7 @@ export const useTableDataManagement = () => {
     codigotelefonosData,
     origenesData,
     fuentesData,
+    canalesData,
     
     // Funciones de carga
     loadUserData,

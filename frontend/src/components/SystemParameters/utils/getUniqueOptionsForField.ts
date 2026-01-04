@@ -17,6 +17,7 @@ interface RelatedData {
   userData?: any[];
   sensorsData?: any[];
   codigotelefonosData?: any[];
+  canalesData?: any[];
   [key: string]: any[] | undefined;
 }
 
@@ -65,7 +66,8 @@ export const getUniqueOptionsForField = ({
     'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
     'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] },
     'sensorid': { table: 'sensorsData', key: 'sensorid', label: 'sensorid' },
-    'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: ['codigotelefono', 'paistelefono'] }
+    'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: ['codigotelefono', 'paistelefono'] },
+    'canalid': { table: 'canalesData', key: 'canalid', label: 'canal' }
   };
 
   const mapping = fieldToTableMap[columnName];

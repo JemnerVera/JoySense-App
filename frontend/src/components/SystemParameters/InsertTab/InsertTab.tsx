@@ -42,6 +42,9 @@ interface InsertTabProps {
     perfilesData?: any[];
     userData?: any[];
     codigotelefonosData?: any[];
+    contactosData?: any[];
+    correosData?: any[];
+    canalesData?: any[];
   };
   // Columnas visibles
   visibleColumns?: any[];
@@ -163,6 +166,9 @@ export const InsertTab: React.FC<InsertTabProps> = ({
         empresasData={relatedData.empresasData}
         fundosData={relatedData.fundosData}
         codigotelefonosData={relatedData.codigotelefonosData}
+        contactosData={relatedData.contactosData}
+        correosData={relatedData.correosData}
+        canalesData={relatedData.canalesData}
         selectedContactType={selectedContactType}
         countryCodes={countryCodes}
         resetContactType={resetContactType}
