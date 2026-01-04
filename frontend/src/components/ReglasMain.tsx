@@ -20,6 +20,7 @@ import { MessageDisplay } from './SystemParameters/MessageDisplay';
 import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
 import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
+import { ReglasSankeyDiagram } from './Reglas/ReglasSankeyDiagram';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 
 // ============================================================================
@@ -302,17 +303,9 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   const renderContent = () => {
     switch (activeSubTab) {
       case 'status':
+        // Mostrar diagrama Sankey en lugar de tabla para regla
         return (
-          <StatusTab
-            tableName={selectedTable}
-            tableData={tableData}
-            columns={columns.filter(col => col.columnName !== 'reglaid')}
-            relatedData={relatedData}
-            userData={userData}
-            loading={tableDataLoading}
-            onRowClick={handleRowSelect}
-            themeColor="red"
-          />
+          <ReglasSankeyDiagram themeColor="red" />
         );
       
       case 'insert':

@@ -9,6 +9,7 @@ import { getColumnDisplayNameTranslated } from '../../../../utils/systemParamete
 import { getPrimaryKey } from '../../../../config/tables.config';
 import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
 import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
+import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 import { logger } from '../../../../utils/logger';
@@ -401,6 +402,29 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         updateField={updateFormField}
         getThemeColor={getThemeColor}
         getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+        codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+      />
+    );
+  }
+
+  // Caso especial para usuario_canal: usar UsuarioCanalFormFields
+  if (tableName === 'usuario_canal') {
+    return (
+      <UsuarioCanalFormFields
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={(data) => {
+          // Actualizar cada campo individualmente
+          Object.keys(data).forEach(key => {
+            updateFormField(key, data[key]);
+          });
+        }}
+        updateField={updateFormField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+        contactosData={(relatedData as any)?.contactosData || []}
+        correosData={(relatedData as any)?.correosData || []}
+        canalesData={(relatedData as any)?.canalesData || []}
         codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
       />
     );
