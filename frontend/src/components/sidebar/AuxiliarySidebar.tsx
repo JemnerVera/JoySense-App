@@ -415,13 +415,20 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   }
 
   // USUARIOS - Sidebar Auxiliar 2 y 3 (similar a DISPOSITIVOS)
+  // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ACTUALIZAR)
+  // Sidebar 3 = Tablas (USUARIO, CORREO, etc.)
   if (isUsuarios && !forceConfiguracionSidebar) {
     // Extraer la tabla del activeTab si no está en selectedTable
     const extractedTable = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
     
-    // Si showThirdLevel es true, renderizar el tercer sidebar (operaciones)
-    if (showThirdLevel) {
+    // Si showThirdLevel es false Y hay una tabla seleccionada, renderizar el segundo sidebar (operaciones)
+    if (!showThirdLevel && finalSelectedTable && finalSelectedTable !== '') {
+      console.log('[AuxiliarySidebar] ✅ Renderizando UsuariosOperationsSidebar (Sidebar 2 - Operaciones):', {
+        showThirdLevel,
+        finalSelectedTable,
+        activeTab
+      });
       return (
         <UsuariosOperationsSidebar
           selectedTable={finalSelectedTable}
@@ -437,9 +444,14 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
 
-    // Si no es showThirdLevel, renderizar el segundo sidebar (tablas)
-    // Solo si NO hay tabla seleccionada
-    if (!finalSelectedTable || finalSelectedTable === '' || activeTab === 'configuracion-usuarios') {
+    // Si showThirdLevel es true, renderizar el tercer sidebar (tablas)
+    // El Sidebar 3 siempre se muestra cuando estamos en usuarios, incluso si hay una tabla seleccionada
+    if (showThirdLevel) {
+      console.log('[AuxiliarySidebar] ✅ Renderizando UsuariosSidebar (Sidebar 3 - Tablas):', {
+        showThirdLevel,
+        finalSelectedTable,
+        activeTab
+      });
       return (
         <UsuariosSidebar
           selectedTable={finalSelectedTable}
@@ -456,18 +468,24 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
     
-    // Si hay tabla seleccionada pero showThirdLevel es false, no renderizar nada aquí
     return null;
   }
 
   // PARAMETROS GEO - Sidebar Auxiliar 2 y 3 (similar a DISPOSITIVOS y USUARIOS)
+  // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ACTUALIZAR)
+  // Sidebar 3 = Tablas (PAIS, EMPRESA, etc.)
   if (isParametrosGeo && !forceConfiguracionSidebar) {
     // Extraer la tabla del activeTab si no está en selectedTable
     const extractedTable = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
     
-    // Si showThirdLevel es true, renderizar el tercer sidebar (operaciones)
-    if (showThirdLevel) {
+    // Si showThirdLevel es false Y hay una tabla seleccionada, renderizar el segundo sidebar (operaciones)
+    if (!showThirdLevel && finalSelectedTable && finalSelectedTable !== '') {
+      console.log('[AuxiliarySidebar] ✅ Renderizando ParametrosGeoOperationsSidebar (Sidebar 2 - Operaciones):', {
+        showThirdLevel,
+        finalSelectedTable,
+        activeTab
+      });
       return (
         <ParametrosGeoOperationsSidebar
           selectedTable={finalSelectedTable}
@@ -483,9 +501,14 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
 
-    // Si no es showThirdLevel, renderizar el segundo sidebar (tablas)
-    // Solo si NO hay tabla seleccionada
-    if (!finalSelectedTable || finalSelectedTable === '' || activeTab === 'configuracion-parametros-geo') {
+    // Si showThirdLevel es true, renderizar el tercer sidebar (tablas)
+    // El Sidebar 3 siempre se muestra cuando estamos en parametros-geo, incluso si hay una tabla seleccionada
+    if (showThirdLevel) {
+      console.log('[AuxiliarySidebar] ✅ Renderizando ParametrosGeoSidebar (Sidebar 3 - Tablas):', {
+        showThirdLevel,
+        finalSelectedTable,
+        activeTab
+      });
       return (
         <ParametrosGeoSidebar
           selectedTable={finalSelectedTable}
@@ -502,7 +525,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
     
-    // Si hay tabla seleccionada pero showThirdLevel es false, no renderizar nada aquí
     return null;
   }
 
@@ -609,16 +631,23 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     );
   }
 
-  // PERMISOS - Sidebar Auxiliar 2 y 3 (debe ir antes de isPermisos para que tenga prioridad)
+  // PERMISOS - Sidebar Auxiliar 2 y 3 (similar a DISPOSITIVOS, USUARIOS, PARAMETROS GEO, NOTIFICACIONES)
+  // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ASIGNAR)
+  // Sidebar 3 = Tipos (PERMISOS GEO, PERMISOS CONF)
   // PERO: si forceConfiguracionSidebar es true, saltar este bloque para renderizar ConfiguracionSidebar
   if (isPermisosConfig && !forceConfiguracionSidebar) {
-    // Si showThirdLevel es true, renderizar el tercer sidebar (operaciones)
-    if (showThirdLevel || isPermisosTipoSelected) {
-      // Extraer el tipo de permisos (permisos-geo o permisos-conf)
-      const permisosTipo = activeTab.startsWith('configuracion-permisos-permisos-') 
-        ? activeTab.replace('configuracion-permisos-permisos-', 'permisos-')
-        : selectedTable || 'permisos-geo';
-      
+    // Extraer el tipo de permisos (permisos-geo o permisos-conf)
+    const permisosTipo = activeTab.startsWith('configuracion-permisos-permisos-') 
+      ? activeTab.replace('configuracion-permisos-permisos-', 'permisos-')
+      : selectedTable || '';
+    
+    // Si showThirdLevel es false Y hay un tipo seleccionado, renderizar el segundo sidebar (operaciones)
+    if (!showThirdLevel && permisosTipo && permisosTipo !== '' && isPermisosTipoSelected) {
+      console.log('[AuxiliarySidebar] ✅ Renderizando PermisosTipoOperationsSidebar (Sidebar 2 - Operaciones):', {
+        showThirdLevel,
+        permisosTipo,
+        activeTab
+      });
       return (
         <PermisosTipoOperationsSidebar
           selectedTipo={permisosTipo}
@@ -627,8 +656,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
             if (onSubTabChange) {
               // Convertir 'asignar' a un tipo compatible si es necesario
               if (subTab === 'asignar') {
-                // Para asignar, podemos mantenerlo o convertirlo según sea necesario
-                // Por ahora, lo pasamos como 'update' para compatibilidad
                 onSubTabChange('update' as 'status' | 'insert' | 'update' | 'massive');
               } else {
                 onSubTabChange(subTab as 'status' | 'insert' | 'update' | 'massive');
@@ -645,12 +672,18 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
 
-    // Si no es showThirdLevel, renderizar el segundo sidebar (tipos: PERMISOS GEO, PERMISOS CONF)
+    // Si showThirdLevel es true, renderizar el tercer sidebar (tipos)
+    // El Sidebar 3 siempre se muestra cuando estamos en permisos, incluso si hay un tipo seleccionado
+    if (showThirdLevel || !isPermisosTipoSelected) {
+      console.log('[AuxiliarySidebar] ✅ Renderizando PermisosTipoSidebar (Sidebar 3 - Tipos):', {
+        showThirdLevel,
+        permisosTipo,
+        activeTab,
+        isPermisosTipoSelected
+      });
       return (
         <PermisosTipoSidebar
-          selectedTipo={selectedTable || (activeTab.startsWith('configuracion-permisos-permisos-') 
-            ? activeTab.replace('configuracion-permisos-permisos-', 'permisos-')
-            : '')}
+          selectedTipo={permisosTipo}
           onTipoSelect={onTableSelect || (() => {})}
           activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'asignar' | 'massive') || 'status'}
           onSubTabChange={(subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
@@ -666,6 +699,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
           massiveFormData={massiveFormData}
         />
       );
+    }
+    
+    return null;
   }
 
   if (isPermisos) {
@@ -866,16 +902,26 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   }
 
   // NOTIFICACIONES - Sidebar Auxiliar 2 y 3 (similar a DISPOSITIVOS, USUARIOS y PARAMETROS GEO)
-  if (isNotificacionesConfig && !forceConfiguracionSidebar) {
+  // NOTIFICACIONES - Sidebar Auxiliar 2 y 3 (similar a DISPOSITIVOS, USUARIOS, PARAMETROS GEO)
+  // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ACTUALIZAR)
+  // Sidebar 3 = Tablas (CRITICIDAD, UMBRAL, REGLA, REGLA_OBJETO)
+  // NOTA: REGLA tiene un caso especial con Sidebar 4, pero la lógica base es la misma
+  if (isNotificacionesConfig && !forceConfiguracionSidebar && !isReglaNotificaciones) {
     console.log('[AuxiliarySidebar] Renderizando NOTIFICACIONES:', { 
       isNotificacionesConfig, 
       forceConfiguracionSidebar, 
       showThirdLevel,
-      selectedTable 
+      selectedTable,
+      isReglaNotificaciones
     });
     
-    // Si showThirdLevel es true, renderizar el tercer sidebar (operaciones)
-    if (showThirdLevel) {
+    // Si showThirdLevel es false Y hay una tabla seleccionada, renderizar el segundo sidebar (operaciones)
+    if (!showThirdLevel && selectedTable && selectedTable !== '' && selectedTable !== 'regla') {
+      console.log('[AuxiliarySidebar] ✅ Renderizando NotificacionesOperationsSidebar (Sidebar 2 - Operaciones):', {
+        showThirdLevel,
+        selectedTable,
+        activeTab
+      });
       return (
         <NotificacionesOperationsSidebar
           selectedTable={selectedTable || ''}
@@ -891,21 +937,31 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
 
-    // Si no es showThirdLevel, renderizar el segundo sidebar (tablas)
-    return (
-      <NotificacionesSidebar
-        selectedTable={selectedTable || ''}
-        onTableSelect={onTableSelect || (() => {})}
-        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-        onSubTabChange={onSubTabChange || (() => {})}
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        formData={formData}
-        multipleData={multipleData}
-        massiveFormData={massiveFormData}
-      />
-    );
+    // Si showThirdLevel es true, renderizar el tercer sidebar (tablas)
+    // El Sidebar 3 siempre se muestra cuando estamos en notificaciones, incluso si hay una tabla seleccionada
+    if (showThirdLevel) {
+      console.log('[AuxiliarySidebar] ✅ Renderizando NotificacionesSidebar (Sidebar 3 - Tablas):', {
+        showThirdLevel,
+        selectedTable,
+        activeTab
+      });
+      return (
+        <NotificacionesSidebar
+          selectedTable={selectedTable || ''}
+          onTableSelect={onTableSelect || (() => {})}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+    
+    return null;
   }
 
   // REPORTES ADMINISTRADOR - Sidebar Auxiliar 2 (debe ir antes de CONFIGURACIÓN para que tenga prioridad)
