@@ -197,8 +197,11 @@ export const checkUmbralDependencies = async (umbralid: number): Promise<boolean
     const hasReglaUmbrales = reglaUmbrales.some(reglaUmbral => reglaUmbral.umbralid === umbralid);
     if (hasReglaUmbrales) return true;
     
-    const alertas = await JoySenseService.getTableData('alerta');
-    const hasAlertas = alertas.some(alerta => alerta.umbralid === umbralid);
+    // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+    // Nota: alerta_regla no tiene umbralid directamente, se relaciona a través de regla_umbral
+    // Por ahora, solo verificamos regla_umbral
+    const alertas = await JoySenseService.getTableData('alerta_regla');
+    const hasAlertas = false; // alerta_regla no tiene umbralid directo
     return hasAlertas;
   } catch (error) {
     logger.error('Error checking umbral dependencies:', error);
@@ -314,11 +317,11 @@ export const validateCriticidadUpdate = async (
 
 export const checkCriticidadDependencies = async (criticidadid: number): Promise<boolean> => {
   try {
-    // Nota: umbral ya no tiene criticidadid según el schema actual
-    // Solo verificar alertas que puedan tener criticidadid
-    const alertas = await JoySenseService.getTableData('alerta');
-    const hasAlertas = alertas.some(alerta => alerta.criticidadid === criticidadid);
-    return hasAlertas;
+    // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+    // Verificar si hay reglas que usen esta criticidad
+    const reglas = await JoySenseService.getTableData('regla');
+    const hasReglas = reglas.some(regla => regla.criticidadid === criticidadid);
+    return hasReglas;
   } catch (error) {
     logger.error('Error checking criticidad dependencies:', error);
     return false;

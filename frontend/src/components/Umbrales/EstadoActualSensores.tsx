@@ -76,7 +76,8 @@ const useSensorData = () => {
         JoySenseService.getTableData('umbral', 1000).then(data => {
           return data;
         }),
-        JoySenseService.getTableData('alerta', 1000).then(data => {
+        // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+        JoySenseService.getTableData('alerta_regla', 1000).then(data => {
           return data;
         }),
         JoySenseService.getTableData('medicion', 1000).then(data => {

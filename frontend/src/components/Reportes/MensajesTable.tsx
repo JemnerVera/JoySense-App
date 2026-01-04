@@ -40,9 +40,11 @@ const MensajesTable: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Usar paginación del servidor en lugar de cargar todos los mensajes
+      // ⚠️ TODO: Actualizar para usar el nuevo sistema de mensajes (mensaje_bolsa, mensaje_destino, msg_outbox)
+      // La tabla 'mensaje' fue eliminada en SCHEMA_04.01.2025
+      // Por ahora, usar 'msg_outbox' como reemplazo temporal
       startTransition(() => {
-        JoySenseService.getTableDataPaginated('mensaje', {
+        JoySenseService.getTableDataPaginated('msg_outbox', {
           page,
           pageSize: itemsPerPage,
           sortBy: 'datecreated',

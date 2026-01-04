@@ -20,11 +20,11 @@ const ALLOWED_TABLES = [
   'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion', 
   'entidad', 'entidad_localizacion',
   'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
-  'umbral', 'alerta', 'alerta_regla', 'alerta_regla_consolidado', 'criticidad',
+  'umbral', 'alerta_regla', 'alerta_regla_consolidado', 'criticidad',
   'audit_log_umbral', 'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
   'usuario', 'perfil', 'usuarioperfil', 
   'contacto', 'correo', 'codigotelefono',
-  'mensaje', 'asociacion',
+  'asociacion',
   'permiso', 'fuente', 'origen', 'tipo_mensaje', // Nuevo sistema de permisos
   'sensor_valor', 'sensor_valor_error',
   'canal', 'usuario_canal' // Sistema de notificaciones
@@ -43,7 +43,6 @@ const PK_MAPPING = {
   tipo: 'tipoid',
   metrica: 'metricaid',
   umbral: 'umbralid',
-  alerta: 'alertaid',
   alerta_regla: 'uuid_alerta_reglaid',
   alerta_regla_consolidado: 'uuid_consolidadoid',
   criticidad: 'criticidadid',
@@ -52,7 +51,6 @@ const PK_MAPPING = {
   contacto: 'contactoid',
   correo: 'correoid',
   codigotelefono: 'codigotelefonoid',
-  mensaje: null, // PK compuesta
   asociacion: 'asociacionid',
   permiso: 'permisoid', // Nuevo sistema de permisos
   fuente: 'fuenteid',

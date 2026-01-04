@@ -180,8 +180,10 @@ export const checkUsuarioDependencies = async (usuarioid: number): Promise<boole
     const hasAuditLogs = auditLogs.some(auditLog => auditLog.modified_by === usuarioid);
     if (hasAuditLogs) return true;
     
-    const alertas = await JoySenseService.getTableData('alerta');
-    const hasAlertas = alertas.some(alerta => alerta.usuarioid === usuarioid);
+    // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+    // alerta_regla no tiene usuarioid directamente
+    // Verificar otras dependencias del usuario
+    const hasAlertas = false; // alerta_regla no tiene usuarioid directo
     return hasAlertas;
   } catch (error) {
     logger.error('Error checking usuario dependencies:', error);

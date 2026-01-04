@@ -55,7 +55,8 @@ const AlertasDashboard: React.FC = () => {
       setError(null);
 
 
-      // Cargar datos reales de alertas y tablas relacionadas
+      // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
+      // Usar 'alerta_regla' en su lugar
       const [
         alertasData,
         umbralesData,
@@ -66,7 +67,7 @@ const AlertasDashboard: React.FC = () => {
         ubicacionesData,
         criticidadesData
       ] = await Promise.all([
-        JoySenseService.getTableData('alerta', 1000),
+        JoySenseService.getTableData('alerta_regla', 1000),
         JoySenseService.getTableData('umbral', 1000),
         JoySenseService.getTableData('medicion', 1000),
         JoySenseService.getTableData('nodo', 1000),
