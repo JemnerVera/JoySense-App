@@ -6,10 +6,11 @@ interface ReglaOperationsSidebarProps {
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
-  activeSubTab: 'status' | 'insert' | 'update';
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  activeSubTab: 'status' | 'insert';
+  onSubTabChange?: (subTab: 'status' | 'insert') => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  selectedTable?: string;
 }
 
 const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
@@ -19,11 +20,19 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
   activeSubTab,
   onSubTabChange,
   activeTab,
-  onTabChange
+  onTabChange,
+  selectedTable
 }) => {
   const { t } = useLanguage();
   
-  // Operaciones disponibles: ESTADO, CREAR, ACTUALIZAR
+  console.log('[ReglaOperationsSidebar] Renderizando:', {
+    selectedTable,
+    activeTab,
+    activeSubTab,
+    isExpanded
+  });
+  
+  // Operaciones disponibles: ESTADO, CREAR (según nueva estructura)
   const operations = [
     {
       id: 'status' as const,
@@ -42,15 +51,6 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
       )
-    },
-    {
-      id: 'update' as const,
-      label: t('parameters.operations.update'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      )
     }
   ];
 
@@ -62,10 +62,23 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     </svg>
   );
 
-  // Determinar qué tabla está activa basándome en activeTab
+  // Determinar qué tabla está activa basándome en selectedTable o activeTab
   const getCurrentTablePrefix = (): string => {
-    if (!activeTab) return 'alertas-regla';
+    // Si tenemos selectedTable, usarlo directamente
+    if (selectedTable) {
+      return `configuracion-notificaciones-regla-${selectedTable}`;
+    }
     
+    // Si no, intentar extraer de activeTab
+    if (!activeTab) return 'configuracion-notificaciones-regla-regla';
+    
+    // Buscar el patrón configuracion-notificaciones-regla-[tabla]
+    const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/);
+    if (match) {
+      return `configuracion-notificaciones-regla-${match[1]}`;
+    }
+    
+    // Fallback para compatibilidad con sistema antiguo
     if (activeTab.startsWith('alertas-regla_objeto')) {
       return 'alertas-regla_objeto';
     }
@@ -75,31 +88,37 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     if (activeTab.startsWith('alertas-regla_perfil')) {
       return 'alertas-regla_perfil';
     }
-    if (activeTab.startsWith('alertas-alerta_regla')) {
-      return 'alertas-alerta_regla';
-    }
-    // Por defecto, regla (sin guion bajo)
-    return 'alertas-regla';
+    
+    // Por defecto
+    return 'configuracion-notificaciones-regla-regla';
   };
 
   // Obtener el título dinámico según la tabla activa
   const getTitle = (): string => {
-    if (!activeTab) return t('alerts.rule');
+    const tableName = selectedTable || (activeTab?.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/)?.[1]);
     
-    if (activeTab.startsWith('alertas-regla_objeto')) {
+    if (tableName === 'regla_perfil') {
+      return 'REGLA_PERFIL';
+    }
+    if (tableName === 'regla_umbral') {
+      return 'REGLA_UMBRAL';
+    }
+    if (tableName === 'regla') {
+      return 'REGLA';
+    }
+    
+    // Fallback para compatibilidad
+    if (activeTab?.startsWith('alertas-regla_objeto')) {
       return t('alerts.rule_object');
     }
-    if (activeTab.startsWith('alertas-regla_umbral')) {
+    if (activeTab?.startsWith('alertas-regla_umbral')) {
       return t('alerts.rule_threshold');
     }
-    if (activeTab.startsWith('alertas-regla_perfil')) {
+    if (activeTab?.startsWith('alertas-regla_perfil')) {
       return t('alerts.rule_profile');
     }
-    if (activeTab.startsWith('alertas-alerta_regla')) {
-      return t('alerts.rule_alert');
-    }
-    // Por defecto, regla
-    return t('alerts.rule');
+    
+    return 'REGLA';
   };
 
   const currentTablePrefix = getCurrentTablePrefix();

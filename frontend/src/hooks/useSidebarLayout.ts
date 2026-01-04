@@ -20,7 +20,10 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
            tab === 'parameters' || tab.startsWith('parameters-') || 
            tab === 'reportes' || tab.startsWith('reportes-') ||
            tab === 'permisos' || tab.startsWith('permisos-') ||
-           tab === 'alertas' || tab.startsWith('alertas-');
+           tab === 'alertas' || tab.startsWith('alertas-') ||
+           tab === 'configuracion' || tab.startsWith('configuracion-') ||
+           tab === 'agrupacion' || tab.startsWith('agrupacion-');
+           // Nota: 'ajustes' no tiene sidebar auxiliar
   }, []);
 
   // Efecto para manejar el estado inicial

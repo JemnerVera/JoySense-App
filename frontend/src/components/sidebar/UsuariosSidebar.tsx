@@ -4,9 +4,9 @@ import ProtectedParameterButton from '../ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { getNotificacionesTables } from '../../config/tables.config';
+import { getUsuariosTables } from '../../config/tables.config';
 
-interface NotificacionesSidebarProps {
+interface UsuariosSidebarProps {
   selectedTable: string;
   onTableSelect: (table: string) => void;
   activeSubTab: string;
@@ -19,7 +19,7 @@ interface NotificacionesSidebarProps {
   massiveFormData?: Record<string, any>;
 }
 
-const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
+const UsuariosSidebar: React.FC<UsuariosSidebarProps> = ({
   selectedTable,
   onTableSelect,
   activeSubTab,
@@ -88,7 +88,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
           setUserPerfilId(userPerfil.perfilid);
         }
       } catch (error) {
-        console.error('[NotificacionesSidebar] Error obteniendo perfil:', error);
+        console.error('[UsuariosSidebar] Error obteniendo perfil:', error);
       } finally {
         setLoadingPerfil(false);
       }
@@ -97,22 +97,19 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
     fetchUserPerfil();
   }, [user]);
 
-  // Obtener las tablas de notificaciones
-  const notificacionesTables = getNotificacionesTables();
-  
-  console.log('[NotificacionesSidebar] Tablas obtenidas:', {
-    count: notificacionesTables.length,
-    tables: notificacionesTables.map(t => t.name),
-    fullTables: notificacionesTables
-  });
+  // Obtener las tablas de usuarios
+  const usuariosTables = getUsuariosTables();
 
   // Mapear nombres de tablas a nombres de visualización
   const getTableDisplayName = (tableName: string): string => {
     const displayNameMap: Record<string, string> = {
-      'criticidad': 'CRITICIDAD',
-      'umbral': 'UMBRAL',
-      'regla': 'REGLA',
-      'regla_objeto': 'REGLA_OBJETO'
+      'usuario': 'USUARIO',
+      'correo': 'CORREO',
+      'codigotelefono': 'CODIGO TELEFONO',
+      'contacto': 'CELULAR (CONTACTO)',
+      'perfil': 'PERFIL',
+      'usuarioperfil': 'ASIGNAR PERFILES (PERFIL USUARIO)',
+      'usuario_canal': 'MEDIO NOTIFICACION (USUARIO_CANAL)'
     };
     return displayNameMap[tableName] || tableName.toUpperCase();
   };
@@ -120,30 +117,39 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
   // Mapear tablas a formato de sidebar con iconos
   const getTableIcon = (tableName: string) => {
     const iconMap: Record<string, React.ReactNode> = {
-      'criticidad': (
+      'usuario': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
-      'umbral': (
+      'correo': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      'regla': (
+      'codigotelefono': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
       ),
-      'destino': (
+      'contacto': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
       ),
-      'regla_objeto': (
+      'perfil': (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+      'usuarioperfil': (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      'usuario_canal': (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
       )
     };
@@ -154,59 +160,65 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
     );
   };
 
-  const notificacionesIcon = (
+  const usuariosIcon = (
     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
     </svg>
   );
+
+  console.log('[UsuariosSidebar] Renderizando:', { 
+    selectedTable, 
+    usuariosTablesCount: usuariosTables.length,
+    isExpanded 
+  });
 
   return (
     <BaseAuxiliarySidebar
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title="NOTIFICACIONES"
-      icon={notificacionesIcon}
-      color="cyan"
+      title="USUARIOS"
+      icon={usuariosIcon}
+      color="purple"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
           <nav className="space-y-1">
-            {notificacionesTables.length === 0 ? (
+            {usuariosTables.length === 0 ? (
               <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
                 <p className="text-sm font-mono">No hay tablas disponibles</p>
-                <p className="text-xs mt-2">Debug: {JSON.stringify({ count: notificacionesTables.length })}</p>
               </div>
             ) : (
-              notificacionesTables.map((table) => {
-              const isActive = selectedTable === table.name;
-              return (
-                <ProtectedParameterButton
-                  key={table.name}
-                  targetTable={table.name}
-                  currentTable={selectedTable}
-                  activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
-                  formData={formData}
-                  multipleData={multipleData}
-                  massiveFormData={massiveFormData}
-                  onTableChange={onTableSelect}
-                  className={`w-full flex items-center p-3 rounded transition-colors ${
-                    isExpanded ? 'gap-3' : 'justify-center'
-                  } ${
-                    isActive
-                      ? "bg-cyan-500 text-white"
-                      : "text-neutral-400 hover:text-white hover:bg-neutral-800"
-                  }`}
-                >
-                  <div className="flex-shrink-0">
-                    {getTableIcon(table.name)}
-                  </div>
-                  {isExpanded && (
-                    <span className="text-sm font-medium tracking-wider">{getTableDisplayName(table.name)}</span>
-                  )}
-                </ProtectedParameterButton>
-              );
-            }))}
+              usuariosTables.map((table) => {
+                const isActive = selectedTable === table.name;
+                return (
+                  <ProtectedParameterButton
+                    key={table.name}
+                    targetTable={table.name}
+                    currentTable={selectedTable}
+                    activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'massive'}
+                    formData={formData}
+                    multipleData={multipleData}
+                    massiveFormData={massiveFormData}
+                    onTableChange={onTableSelect}
+                    className={`w-full flex items-center p-3 rounded transition-colors ${
+                      isExpanded ? 'gap-3' : 'justify-center'
+                    } ${
+                      isActive
+                        ? "bg-purple-500 text-white"
+                        : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      {getTableIcon(table.name)}
+                    </div>
+                    {isExpanded && (
+                      <span className="text-sm font-medium tracking-wider">{getTableDisplayName(table.name)}</span>
+                    )}
+                  </ProtectedParameterButton>
+                );
+              })
+            )}
           </nav>
         </div>
       </div>
@@ -214,5 +226,5 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
   );
 };
 
-export default NotificacionesSidebar;
+export default UsuariosSidebar;
 
