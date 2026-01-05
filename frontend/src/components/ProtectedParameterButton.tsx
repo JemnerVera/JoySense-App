@@ -36,18 +36,8 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('[ProtectedParameterButton] handleClick:', {
-      targetTable,
-      currentTable,
-      activeSubTab,
-      isModalOpen,
-      formDataKeys: Object.keys(formData),
-      multipleDataLength: multipleData.length
-    });
-
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
-      console.log('[ProtectedParameterButton] Modal ya abierto, retornando');
       return;
     }
 
@@ -58,15 +48,8 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
 
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, currentTable, activeSubTab, multipleData, massiveFormData);
-    console.log('[ProtectedParameterButton] hasChanges:', {
-      hasChanges,
-      currentTable,
-      targetTable,
-      activeSubTab
-    });
     
     if (hasChanges) {
-      console.log('[ProtectedParameterButton] Mostrando modal de confirmación');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar el parámetro
       showModal(
@@ -75,29 +58,18 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
         targetTable,
         () => {
           setIsModalOpen(false);
-          console.log('[ProtectedParameterButton] Modal confirmado, llamando onTableChange:', targetTable);
           // Solo cambiar el parámetro DESPUÉS de confirmar
           onTableChange(targetTable);
         },
         () => {
           setIsModalOpen(false);
-          console.log('[ProtectedParameterButton] Modal cancelado');
           // No hacer nada, quedarse en el parámetro actual
         }
       );
     } else {
       // No hay cambios, proceder normalmente
-      console.log('[ProtectedParameterButton] Sin cambios, llamando onTableChange directamente:', {
-        targetTable,
-        currentTable,
-        hasOnTableChange: !!onTableChange,
-        onTableChangeType: typeof onTableChange
-      });
       if (onTableChange) {
         onTableChange(targetTable);
-        console.log('[ProtectedParameterButton] onTableChange llamado exitosamente');
-      } else {
-        console.error('[ProtectedParameterButton] ERROR: onTableChange no está definido');
       }
     }
   };

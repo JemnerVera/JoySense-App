@@ -137,11 +137,6 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
     </svg>
   );
 
-  console.log('[DispositivosSidebar] Renderizando:', { 
-    selectedTable, 
-    dispositivosTablesCount: dispositivosTables.length,
-    isExpanded 
-  });
 
   return (
     <BaseAuxiliarySidebar

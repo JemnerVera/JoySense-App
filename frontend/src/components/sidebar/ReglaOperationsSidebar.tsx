@@ -25,13 +25,6 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   
-  console.log('[ReglaOperationsSidebar] Renderizando:', {
-    selectedTable,
-    activeTab,
-    activeSubTab,
-    isExpanded
-  });
-  
   // Operaciones disponibles: ESTADO, CREAR (según nueva estructura)
   const operations = [
     {
@@ -130,7 +123,7 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title={getTitle()}
       icon={operationsIcon}
-      color="red"
+      color="orange"
       collapsedText="..."
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
@@ -150,7 +143,7 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-red-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
                   }`}
                 >
