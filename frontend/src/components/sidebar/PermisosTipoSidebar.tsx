@@ -72,7 +72,7 @@ const PermisosTipoSidebar: React.FC<PermisosTipoSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="PERMISOS"
       icon={permisosIcon}
-      color="purple"
+      color="orange"
       collapsedText="PERM"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
@@ -96,7 +96,7 @@ const PermisosTipoSidebar: React.FC<PermisosTipoSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-purple-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >

@@ -30,7 +30,6 @@ const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
     },
     handleTableChange: (table: string) => {
       // No aplica para ajustes
-      console.log('[AjustesMain] handleTableChange llamado con:', table);
     }
   }));
 

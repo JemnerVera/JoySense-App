@@ -88,7 +88,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
       onMouseLeave={onMouseLeave}
       title={getTitle()}
       icon={operationsIcon}
-      color="purple"
+      color="orange"
       collapsedText="..."
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
@@ -116,7 +116,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-purple-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >

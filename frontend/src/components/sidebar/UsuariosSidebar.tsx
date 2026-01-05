@@ -166,11 +166,6 @@ const UsuariosSidebar: React.FC<UsuariosSidebarProps> = ({
     </svg>
   );
 
-  console.log('[UsuariosSidebar] Renderizando:', { 
-    selectedTable, 
-    usuariosTablesCount: usuariosTables.length,
-    isExpanded 
-  });
 
   return (
     <BaseAuxiliarySidebar
@@ -179,7 +174,7 @@ const UsuariosSidebar: React.FC<UsuariosSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="USUARIOS"
       icon={usuariosIcon}
-      color="purple"
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -205,7 +200,7 @@ const UsuariosSidebar: React.FC<UsuariosSidebarProps> = ({
                       isExpanded ? 'gap-3' : 'justify-center'
                     } ${
                       isActive
-                        ? "bg-purple-500 text-white"
+                        ? "bg-orange-500 text-white"
                         : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                     }`}
                   >

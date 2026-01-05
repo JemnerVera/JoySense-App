@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, GeografiaMainLazyWithBoundary, ParametrosMainLazyWithBoundary, TablaMainLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
@@ -80,27 +80,6 @@ const AppContentInternal: React.FC = () => {
     handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   }>(null);
 
-  // Refs para los nuevos componentes principales
-  const geografiaMainRef = useRef<{ 
-    handleTableChange: (table: string) => void; 
-    hasUnsavedChanges: () => boolean; 
-    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-  }>(null);
-
-  const parametrosMainRef = useRef<{ 
-    handleTableChange: (table: string) => void; 
-    hasUnsavedChanges: () => boolean; 
-    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-  }>(null);
-
-  const tablaMainRef = useRef<{ 
-    handleTableChange: (table: string) => void; 
-    hasUnsavedChanges: () => boolean; 
-    handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-    handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
-  }>(null);
 
   const notificacionesMainRef = useRef<{ 
     handleTableChange: (table: string) => void; 
@@ -279,14 +258,9 @@ const AppContentInternal: React.FC = () => {
         // Esto permite que cuando se hace clic en REGLA desde ReglaSidebar, se muestre el contenido principal
         if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
           // Mantener selectedTable para mostrar el contenido principal o ReglaOperationsSidebar
-          console.log('[App] useEffect - Manteniendo selectedTable (tabla de regla válida):', selectedTable);
         } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_perfil' && selectedTable !== 'regla_umbral') {
           // Limpiar selectedTable si no es una tabla de regla válida
-          console.log('[App] useEffect - Limpiando selectedTable porque no es una tabla de regla válida:', selectedTable);
           setSelectedTable('');
-        } else {
-          // Si selectedTable está vacío, mantenerlo vacío para mostrar ReglaSidebar
-          console.log('[App] useEffect - Manteniendo selectedTable vacío para mostrar ReglaSidebar');
         }
       } else {
         // Para otras tablas de notificaciones, establecer selectedTable normalmente
@@ -475,8 +449,6 @@ const AppContentInternal: React.FC = () => {
 
 // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
-    console.log('[App] handleTabChange llamado:', { tab, activeTab });
-    
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
       setActiveSubTab('status');
@@ -503,7 +475,6 @@ const AppContentInternal: React.FC = () => {
     // Navegación simple sin interceptores
     setActiveTab(tab);
     setShowWelcomeIntegrated(false);
-    console.log('[App] activeTab actualizado a:', tab);
   };
 
   const handleTableSelect = (table: string) => {
@@ -585,65 +556,25 @@ const AppContentInternal: React.FC = () => {
         }
       } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral') {
         // Tablas de regla seleccionadas desde ReglaSidebar
-        console.log('[App] handleTableSelect - Tabla de regla seleccionada:', {
-          table,
-          activeTab,
-          currentSelectedTable: selectedTable,
-          willSetSelectedTable: table,
-          willKeepActiveTab: activeTab.startsWith('configuracion-notificaciones-regla')
-        });
-        
         // Si es 'regla', establecer selectedTable para mostrar el contenido principal
         // Si es 'regla_perfil' o 'regla_umbral', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
         setSelectedTable(table);
         setActiveSubTab('status'); // Resetear a status cuando cambia la tabla
         
         // Si ya estamos en configuracion-notificaciones-regla, mantener el contexto
-        if (activeTab.startsWith('configuracion-notificaciones-regla')) {
-          // Mantener activeTab como está, solo establecer selectedTable
-          console.log('[App] handleTableSelect - Manteniendo activeTab, estableciendo selectedTable:', table);
-        } else {
+        if (!activeTab.startsWith('configuracion-notificaciones-regla')) {
           setActiveTab(`configuracion-notificaciones-regla-${table}`);
-          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-notificaciones-regla-${table}`);
         }
       } else if (table === 'permisos-geo' || table === 'permisos-conf') {
         // Tipos de permisos seleccionados desde PermisosTipoSidebar
-        console.log('[App] handleTableSelect - Tipo de permisos seleccionado:', {
-          table,
-          activeTab,
-          currentSelectedTable: selectedTable
-        });
-        
         setSelectedTable(table);
         setActiveSubTab('status'); // Resetear a status cuando cambia el tipo
-        
-        // Si ya estamos en configuracion-permisos, mantener el contexto
-        if (activeTab.startsWith('configuracion-permisos')) {
-          setActiveTab(`configuracion-permisos-${table}`);
-          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-permisos-${table}`);
-        } else {
-          setActiveTab(`configuracion-permisos-${table}`);
-          console.log('[App] handleTableSelect - Estableciendo activeTab a:', `configuracion-permisos-${table}`);
-        }
+        setActiveTab(`configuracion-permisos-${table}`);
       } else if (['sensor_valor_error', 'audit_log_umbral', 'msg_outbox', 'auth_outbox'].includes(table)) {
         // Tablas de reportes administrativos
-        console.log('[App] handleTableSelect - Tabla de reportes administrativos seleccionada:', {
-          table,
-          activeTab,
-          currentSelectedTable: selectedTable
-        });
-        
         setSelectedTable(table);
         setActiveSubTab('status'); // Solo status para reportes administrativos
-        
-        // Si ya estamos en configuracion-reportes-administrador, mantener el contexto
-        if (activeTab.startsWith('configuracion-reportes-administrador')) {
-          setActiveTab(`configuracion-reportes-administrador-${table}`);
-          console.log('[App] handleTableSelect - Cambiando activeTab a:', `configuracion-reportes-administrador-${table}`);
-        } else {
-          setActiveTab(`configuracion-reportes-administrador-${table}`);
-          console.log('[App] handleTableSelect - Estableciendo activeTab a:', `configuracion-reportes-administrador-${table}`);
-        }
+        setActiveTab(`configuracion-reportes-administrador-${table}`);
       } else {
         // Resto de tablas van a 'tabla'
         setSelectedTable(table);
@@ -711,62 +642,6 @@ const AppContentInternal: React.FC = () => {
   };
 
   const renderContent = () => {
-    // Manejar sub-rutas de GEOGRAFÍA
-    if (activeTab.startsWith('geografia-')) {
-      const geografiaTab = activeTab.replace('geografia-', '');
-      return (
-        <GeografiaMainLazyWithBoundary 
-          ref={geografiaMainRef}
-          selectedTable={geografiaTab}
-          onTableSelect={handleTableSelect}
-          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
-          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
-            handleSubTabChange(tab);
-          }}
-          onFormDataChange={handleFormDataChange}
-          onMassiveFormDataChange={handleMassiveFormDataChange}
-          themeColor="blue"
-        />
-      );
-    }
-
-    // Manejar sub-rutas de PARÁMETROS
-    if (activeTab.startsWith('parametros-')) {
-      const parametrosTab = activeTab.replace('parametros-', '');
-      return (
-        <ParametrosMainLazyWithBoundary 
-          ref={parametrosMainRef}
-          selectedTable={parametrosTab}
-          onTableSelect={handleTableSelect}
-          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
-          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
-            handleSubTabChange(tab);
-          }}
-          onFormDataChange={handleFormDataChange}
-          onMassiveFormDataChange={handleMassiveFormDataChange}
-          themeColor="orange"
-        />
-      );
-    }
-
-    // Manejar sub-rutas de TABLA
-    if (activeTab.startsWith('tabla-')) {
-      const tablaTab = activeTab.replace('tabla-', '');
-      return (
-        <TablaMainLazyWithBoundary 
-          ref={tablaMainRef}
-          selectedTable={tablaTab}
-          onTableSelect={handleTableSelect}
-          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'massive'}
-          onSubTabChange={(tab: 'status' | 'insert' | 'update' | 'massive') => {
-            handleSubTabChange(tab);
-          }}
-          onFormDataChange={handleFormDataChange}
-          onMassiveFormDataChange={handleMassiveFormDataChange}
-          themeColor="green"
-        />
-      );
-    }
 
     // Manejar sub-rutas de NOTIFICACIONES
     if (activeTab.startsWith('notificaciones-')) {
@@ -791,7 +666,6 @@ const AppContentInternal: React.FC = () => {
     if (activeTab.startsWith('configuracion-dispositivos')) {
       // Extraer el nombre de la tabla (ej: 'configuracion-dispositivos-tipo' -> 'tipo')
       const dispositivosTab = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '');
-      console.log('[App] configuracion-dispositivos:', { activeTab, dispositivosTab, selectedTable });
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!dispositivosTab || dispositivosTab === '') {
@@ -846,7 +720,6 @@ const AppContentInternal: React.FC = () => {
     if (activeTab.startsWith('configuracion-usuarios')) {
       // Extraer el nombre de la tabla (ej: 'configuracion-usuarios-usuario' -> 'usuario')
       const usuariosTab = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '');
-      console.log('[App] configuracion-usuarios:', { activeTab, usuariosTab, selectedTable });
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!usuariosTab || usuariosTab === '') {
@@ -881,7 +754,6 @@ const AppContentInternal: React.FC = () => {
     if (activeTab.startsWith('configuracion-parametros-geo')) {
       // Extraer el nombre de la tabla (ej: 'configuracion-parametros-geo-pais' -> 'pais')
       const parametrosGeoTab = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '');
-      console.log('[App] configuracion-parametros-geo:', { activeTab, parametrosGeoTab, selectedTable });
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!parametrosGeoTab || parametrosGeoTab === '') {
@@ -922,7 +794,6 @@ const AppContentInternal: React.FC = () => {
         if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
           reglaTab = selectedTable;
         }
-        console.log('[App] configuracion-notificaciones-regla:', { activeTab, reglaTab, selectedTable });
         
         // Si no hay tabla seleccionada, mostrar mensaje
         if (!reglaTab || reglaTab === '') {
@@ -967,7 +838,6 @@ const AppContentInternal: React.FC = () => {
       // Otras tablas de notificaciones (criticidad, umbral, regla_objeto)
       // Extraer el nombre de la tabla (ej: 'configuracion-notificaciones-criticidad' -> 'criticidad')
       const notificacionesTab = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '');
-      console.log('[App] configuracion-notificaciones:', { activeTab, notificacionesTab, selectedTable });
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!notificacionesTab || notificacionesTab === '') {

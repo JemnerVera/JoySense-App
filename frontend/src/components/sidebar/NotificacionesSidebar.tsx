@@ -99,12 +99,6 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
 
   // Obtener las tablas de notificaciones
   const notificacionesTables = getNotificacionesTables();
-  
-  console.log('[NotificacionesSidebar] Tablas obtenidas:', {
-    count: notificacionesTables.length,
-    tables: notificacionesTables.map(t => t.name),
-    fullTables: notificacionesTables
-  });
 
   // Mapear nombres de tablas a nombres de visualización
   const getTableDisplayName = (tableName: string): string => {
@@ -167,7 +161,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="NOTIFICACIONES"
       icon={notificacionesIcon}
-      color="cyan"
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -194,7 +188,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >

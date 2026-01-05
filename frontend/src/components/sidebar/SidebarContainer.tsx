@@ -127,14 +127,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                            activeTab.startsWith('configuracion-notificaciones') || 
                            activeTab.startsWith('configuracion-permisos') || 
                            activeTab.startsWith('configuracion-reportes-administrador');
-        console.log('[SidebarContainer] 🔍 CONFIGURACIÓN (Sidebar 1):', {
-          activeTab,
-          isConfiguracion,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab),
-          shouldShow,
-          forceConfig,
-          'Z-INDEX': 'z-20'
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -173,13 +165,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             // Extraer tabla del activeTab: 'configuracion-dispositivos-tipo' -> 'tipo'
             const extractedTable = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '') || '';
             dispositivosTable = selectedTable || extractedTable;
-            console.log('[SidebarContainer] DISPOSITIVOS Sidebar 3:', {
-              activeTab,
-              selectedTable,
-              extractedTable,
-              dispositivosTable,
-              shouldShow: dispositivosTable && dispositivosTable !== ''
-            });
           }
           if (isUsuarios) {
             const extractedTable = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '') || '';
@@ -204,13 +189,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             // Para PERMISOS: SIEMPRE mostrar Sidebar 3 (tipos) cuando estamos en permisos
             (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
           );
-          console.log('[SidebarContainer] 🔍 SIDEBAR 3 (Tablas):', {
-            activeTab,
-            isDispositivos,
-            dispositivosTable,
-            shouldShow,
-            condition: isDispositivos && hasAuxiliarySidebar(activeTab)
-          });
           return shouldShow && (
             <div className="flex-shrink-0 z-30">
               <AuxiliarySidebar
@@ -285,13 +263,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         const shouldShow = isPermisos && 
                           isPermisosTipoSelected &&
                           hasAuxiliarySidebar(activeTab);
-        console.log('[SidebarContainer] PERMISOS Sidebar 2 (Operaciones):', {
-          activeTab,
-          isPermisos,
-          isPermisosTipoSelected,
-          shouldShow,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -328,14 +299,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                           dispositivosTable && 
                           dispositivosTable !== '' && 
                           activeTab !== 'configuracion-dispositivos';
-        console.log('[SidebarContainer] DISPOSITIVOS Sidebar 2 (Operaciones):', {
-          activeTab,
-          selectedTable,
-          dispositivosTable,
-          shouldShow,
-          isDispositivos,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -372,14 +335,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                           usuariosTable && 
                           usuariosTable !== '' && 
                           activeTab !== 'configuracion-usuarios';
-        console.log('[SidebarContainer] USUARIOS Sidebar 2 (Operaciones):', {
-          activeTab,
-          selectedTable,
-          usuariosTable,
-          shouldShow,
-          isUsuarios,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -416,14 +371,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                           parametrosGeoTable && 
                           parametrosGeoTable !== '' && 
                           activeTab !== 'configuracion-parametros-geo';
-        console.log('[SidebarContainer] PARAMETROS GEO Sidebar 2 (Operaciones):', {
-          activeTab,
-          selectedTable,
-          parametrosGeoTable,
-          shouldShow,
-          isParametrosGeo,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -462,14 +409,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                           notificacionesTable !== '' && 
                           notificacionesTable !== 'regla' &&
                           activeTab !== 'configuracion-notificaciones';
-        console.log('[SidebarContainer] NOTIFICACIONES Sidebar 2 (Operaciones):', {
-          isNotificaciones,
-          isReglaNotificaciones,
-          notificacionesTable,
-          shouldShow,
-          activeTab,
-          selectedTable
-        });
         return shouldShow;
       })() && (
             <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -509,13 +448,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         );
         // Mostrar Sidebar 3 solo si estamos en REGLA y NO hay una tabla seleccionada
         const shouldShow = isReglaNotificaciones && !isReglaTableSelected && hasAuxiliarySidebar(activeTab);
-        console.log('[SidebarContainer] REGLA (Sidebar 3):', {
-          isReglaNotificaciones,
-          isReglaTableSelected,
-          shouldShow,
-          activeTab,
-          selectedTable
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-30`}>
@@ -553,21 +485,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         );
         const hasAux = hasAuxiliarySidebar(activeTab);
         const shouldShow = isReglaTableSelected && hasAux;
-        console.log('[SidebarContainer] REGLA OPERATIONS (Sidebar 4):', {
-          isReglaNotificaciones,
-          isReglaTableSelected,
-          hasAux,
-          shouldShow,
-          selectedTable,
-          activeTab
-        });
-        console.log('[SidebarContainer] REGLA OPERATIONS - Renderizando Sidebar 4:', {
-          shouldShow,
-          selectedTable,
-          activeTab,
-          isReglaTableSelected,
-          hasAux
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-40`}>

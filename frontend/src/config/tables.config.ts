@@ -1013,11 +1013,6 @@ export function getNotificacionesTables(): TableConfig[] {
     return config;
   }).filter(Boolean) as TableConfig[];
   
-  console.log('[getNotificacionesTables] Tablas encontradas:', {
-    requested: notificacionesTableNames,
-    found: tables.map(t => t.name),
-    count: tables.length
-  });
   
   return tables;
 }

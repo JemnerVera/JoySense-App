@@ -33,12 +33,6 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
   const { t } = useLanguage();
   const { user } = useAuth();
   
-  console.log('[ReglaSidebar] Props recibidas:', {
-    selectedTable,
-    hasOnTableSelect: !!onTableSelect,
-    onTableSelectType: typeof onTableSelect,
-    activeSubTab
-  });
   const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
   const [loadingPerfil, setLoadingPerfil] = useState(true);
 
@@ -142,12 +136,6 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
     </svg>
   );
 
-  console.log('[ReglaSidebar] Renderizando:', { 
-    selectedTable, 
-    reglaTablesCount: reglaTables.length,
-    isExpanded 
-  });
-
   return (
     <BaseAuxiliarySidebar
       isExpanded={isExpanded}
@@ -168,18 +156,8 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
               reglaTables.map((table) => {
                 const isActive = selectedTable === table.name;
                 const handleTableChange = (tableName: string) => {
-                  console.log('[ReglaSidebar] onTableChange llamado:', { 
-                    tableName, 
-                    selectedTable, 
-                    hasOnTableSelect: !!onTableSelect,
-                    onTableSelectType: typeof onTableSelect,
-                    willCall: onTableSelect 
-                  });
                   if (onTableSelect) {
                     onTableSelect(tableName);
-                    console.log('[ReglaSidebar] onTableSelect llamado exitosamente');
-                  } else {
-                    console.error('[ReglaSidebar] ERROR: onTableSelect no está definido');
                   }
                 };
                 return (

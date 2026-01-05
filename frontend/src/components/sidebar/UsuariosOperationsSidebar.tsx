@@ -31,27 +31,58 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
   const config = getTableConfig(selectedTable);
 
   // Operaciones disponibles según la tabla
-  const getAvailableOperations = (): Array<{ id: 'status' | 'insert' | 'update' | 'massive'; label: string; icon: string }> => {
-    const baseOperations: Array<{ id: 'status' | 'insert' | 'update' | 'massive'; label: string; icon: string }> = [
-      { id: 'status', label: t('subtabs.status'), icon: '📊' }
-    ];
-
-    if (config?.allowInsert) {
-      baseOperations.push({ id: 'insert', label: t('subtabs.insert'), icon: '➕' });
+  const getAllOperations = (): Array<{
+    id: 'status' | 'insert' | 'update' | 'massive';
+    label: string;
+    icon: React.ReactNode;
+  }> => [
+    {
+      id: 'status',
+      label: t('parameters.operations.status'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    },
+    {
+      id: 'insert',
+      label: t('parameters.operations.create'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      )
+    },
+    {
+      id: 'update',
+      label: t('parameters.operations.update'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      )
+    },
+    {
+      id: 'massive',
+      label: t('parameters.operations.massive'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      )
     }
+  ];
 
-    if (config?.allowUpdate) {
-      baseOperations.push({ id: 'update', label: t('subtabs.update'), icon: '✏️' });
-    }
+  const allOperations = getAllOperations();
 
-    if (config?.allowMassive) {
-      baseOperations.push({ id: 'massive', label: t('subtabs.massive'), icon: '📦' });
-    }
-
-    return baseOperations;
-  };
-
-  const operations = getAvailableOperations();
+  // Filtrar operaciones según permisos de la tabla
+  const availableOperations = allOperations.filter(op => {
+    if (op.id === 'insert' && !config?.allowInsert) return false;
+    if (op.id === 'update' && !config?.allowUpdate) return false;
+    if (op.id === 'massive' && !config?.allowMassive) return false;
+    return true;
+  });
 
   const usuariosIcon = (
     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,14 +95,14 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title={config?.displayName?.toUpperCase() || selectedTable.toUpperCase()}
+      title="OPERACIONES"
       icon={usuariosIcon}
-      color="purple"
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
           <nav className="space-y-1">
-            {operations.map((operation) => {
+            {availableOperations.map((operation) => {
               const isActive = activeSubTab === operation.id;
               return (
                 <ProtectedSubTabButton
@@ -91,12 +122,12 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
                     isExpanded ? 'gap-3' : 'justify-center'
                   } ${
                     isActive
-                      ? "bg-purple-500 text-white"
+                      ? "bg-orange-500 text-white"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >
                   <div className="flex-shrink-0">
-                    <span className="text-lg">{operation.icon}</span>
+                    {operation.icon}
                   </div>
                   {isExpanded && (
                     <span className="text-sm font-medium tracking-wider">{operation.label.toUpperCase()}</span>

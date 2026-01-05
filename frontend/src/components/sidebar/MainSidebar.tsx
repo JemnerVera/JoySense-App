@@ -139,13 +139,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       }
     ];
 
-    console.log('[MainSidebar] mainTabs construido:', { 
-      tabsCount: tabs.length, 
-      tabIds: tabs.map(t => t.id),
-      loadingPerfil,
-      userPerfilId,
-      hasPermisosTab: tabs.some(t => t.id === 'permisos')
-    });
     return tabs;
   }, [loadingPerfil, userPerfilId, t]);
 
@@ -213,7 +206,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               <button
                 key={tab.id}
                 onClick={() => {
-                  console.log('[MainSidebar] Click en pestaña:', { tabId: tab.id, tabLabel: tab.label });
                   onTabChange(tab.id);
                 }}
                 className={`w-full flex items-center p-3 rounded transition-colors ${

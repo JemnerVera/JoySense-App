@@ -167,11 +167,6 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
     </svg>
   );
 
-  console.log('[ParametrosGeoSidebar] Renderizando:', { 
-    selectedTable, 
-    parametrosGeoTablesCount: parametrosGeoTables.length,
-    isExpanded 
-  });
 
   return (
     <BaseAuxiliarySidebar
@@ -180,7 +175,7 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="PARAMETROS GEO"
       icon={parametrosGeoIcon}
-      color="blue"
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -206,7 +201,7 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
                       isExpanded ? 'gap-3' : 'justify-center'
                     } ${
                       isActive
-                        ? "bg-blue-500 text-white"
+                        ? "bg-orange-500 text-white"
                         : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                     }`}
                   >
