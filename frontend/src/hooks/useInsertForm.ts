@@ -401,22 +401,18 @@ export const useInsertForm = ({
       if (tableName === 'usuario' && formData.empresas_ids !== undefined) {
         if (Array.isArray(formData.empresas_ids) && formData.empresas_ids.length > 0) {
           filteredData.empresas_ids = formData.empresas_ids
-          logger.debug('[useInsertForm] empresas_ids agregado a filteredData para usuario:', {
-            empresas_ids: formData.empresas_ids,
-            count: formData.empresas_ids.length
-          })
-        } else {
-          logger.warn('[useInsertForm] empresas_ids está presente pero está vacío o no es un array:', {
-            empresas_ids: formData.empresas_ids,
-            type: typeof formData.empresas_ids,
-            isArray: Array.isArray(formData.empresas_ids)
-          })
         }
       }
       
       // También incluir is_default_empresa si existe
       if (tableName === 'usuario' && formData.is_default_empresa !== undefined) {
         filteredData.is_default_empresa = formData.is_default_empresa
+      }
+      
+      // Caso especial para tabla 'usuario': incluir password aunque no esté en la configuración
+      // porque password_hash está oculto y password es el campo que el usuario ingresa
+      if (tableName === 'usuario' && formData.password !== undefined && formData.password !== null && formData.password !== '') {
+        filteredData.password = formData.password
       }
       
       // Agregar campos de auditoría
