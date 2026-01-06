@@ -668,7 +668,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'contactoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: ['firstname', 'lastname'] } },
-      { name: 'codigotelefonoid', label: 'Código País', type: 'select', required: true, foreignKey: { table: 'codigotelefono', valueField: 'codigotelefonoid', labelField: ['codigotelefono', 'paistelefono'] } },
+      { name: 'codigotelefonoid', label: 'Código País', type: 'select', required: true, foreignKey: { table: 'codigotelefono', valueField: 'codigotelefonoid', labelField: ['paistelefono'] } },
       { name: 'celular', label: 'Celular', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]

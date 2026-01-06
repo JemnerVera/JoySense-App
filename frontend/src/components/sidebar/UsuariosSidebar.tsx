@@ -106,10 +106,10 @@ const UsuariosSidebar: React.FC<UsuariosSidebarProps> = ({
       'usuario': 'USUARIO',
       'correo': 'CORREO',
       'codigotelefono': 'CODIGO TELEFONO',
-      'contacto': 'CELULAR (CONTACTO)',
+      'contacto': 'CELULAR',
       'perfil': 'PERFIL',
-      'usuarioperfil': 'ASIGNAR PERFILES (PERFIL USUARIO)',
-      'usuario_canal': 'MEDIO NOTIFICACION (USUARIO_CANAL)'
+      'usuarioperfil': 'ASIGNAR PERFILES',
+      'usuario_canal': 'MEDIO NOTIFICACION'
     };
     return displayNameMap[tableName] || tableName.toUpperCase();
   };

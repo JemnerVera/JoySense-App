@@ -66,7 +66,7 @@ export const getUniqueOptionsForField = ({
     'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
     'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] },
     'sensorid': { table: 'sensorsData', key: 'sensorid', label: 'sensorid' },
-    'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: ['codigotelefono', 'paistelefono'] },
+    'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: 'paistelefono' },
     'canalid': { table: 'canalesData', key: 'canalid', label: 'canal' }
   };
 
@@ -94,15 +94,8 @@ export const getUniqueOptionsForField = ({
   return activeData.map((item: any) => {
     let label = '';
     if (Array.isArray(mapping.label)) {
-      // Para codigotelefonoid, mostrar "código - país"
-      if (columnName === 'codigotelefonoid') {
-        const codigo = item[mapping.label[0]] || '';
-        const pais = item[mapping.label[1]] || '';
-        label = codigo && pais ? `${codigo} - ${pais}` : codigo || pais || '';
-      } else {
-        // Para otros campos con múltiples labels, concatenar con espacio
-        label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
-      }
+      // Para otros campos con múltiples labels, concatenar con espacio
+      label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
     } else {
       // Para sensorid, mostrar solo el ID ya que no hay campo descriptivo
       if (mapping.label === 'sensorid') {
