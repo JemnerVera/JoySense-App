@@ -40,17 +40,6 @@ export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
           label: e.empresa || `Empresa ${e.empresaid}`
         }));
 
-  // Logs para diagnosticar
-  console.log('🔍 [UsuarioFormFields] formData recibido:', {
-    formData_keys: Object.keys(formData),
-    formData_empresas_ids: formData.empresas_ids,
-    formData_empresas_ids_type: typeof formData.empresas_ids,
-    formData_empresas_ids_isArray: Array.isArray(formData.empresas_ids),
-    formData_empresas_ids_length: Array.isArray(formData.empresas_ids) ? formData.empresas_ids.length : 'N/A',
-    empresaOptions_count: empresaOptions.length,
-    empresaOptions_first3: empresaOptions.slice(0, 3).map(opt => ({ value: opt.value, valueType: typeof opt.value, label: opt.label }))
-  });
-  
   // Asegurar que empresas_ids sea un array y convertir a números para comparación
   const empresasIds = Array.isArray(formData.empresas_ids) 
     ? formData.empresas_ids.map(id => Number(id))

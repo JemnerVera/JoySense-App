@@ -391,7 +391,6 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
 export const getDisplayValue = (row: any, columnName: string, relatedData: RelatedData = {}): string => {
   // Validar que row no sea null o undefined
   if (!row) {
-    console.warn('⚠️ getDisplayValue: row is null or undefined');
     return 'N/A';
   }
 
@@ -574,7 +573,6 @@ export const formatDate = (dateString: string): string => {
       minute: '2-digit'
     });
   } catch (error) {
-    console.warn('⚠️ formatDate: Error formatting date:', dateString, error);
     return dateString;
   }
 };

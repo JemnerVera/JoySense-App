@@ -161,11 +161,6 @@ router.post('/:table', async (req, res) => {
         empresasIdsToAssociate = dataToInsert.empresas_ids;
         isDefaultEmpresaToAssociate = dataToInsert.is_default_empresa || null;
         
-        logger.info('🔍 [POST /usuario] Variables guardadas:', {
-          empresasIdsToAssociate,
-          isDefaultEmpresaToAssociate
-        });
-        
         // Remover empresas_ids del dataToInsert para que no se intente insertar en la tabla usuario
         delete dataToInsert.empresas_ids;
         delete dataToInsert.is_default_empresa;
@@ -216,7 +211,6 @@ router.post('/:table', async (req, res) => {
         dataToInsert.statusid = 0; // Temporalmente inactivo
         req._usuario_temporal_inactivo = true;
         req._usuario_statusid_original = originalStatusid !== undefined ? originalStatusid : 1;
-        logger.info(`🔧 [POST /usuario] Usuario se creará como INACTIVO temporalmente para asignar empresas primero`);
       }
       
       // NOTA: La sincronización con Supabase Auth se realiza automáticamente después del INSERT
@@ -243,8 +237,6 @@ router.post('/:table', async (req, res) => {
       const newUsuario = data[0];
       if (newUsuario.usuarioid) {
         try {
-          logger.info(`🔄 Sincronizando usuario ${newUsuario.usuarioid} con Supabase Auth (desde generic route)...`);
-          
           // Llamar a fn_sync_usuario_con_auth_wait según recomendación del DBA
           // IMPORTANTE: Especificar schema joysense explícitamente
           const { data: syncResult, error: syncError } = await userSupabase
@@ -256,12 +248,7 @@ router.post('/:table', async (req, res) => {
             });
           
           if (syncError) {
-            logger.error(`❌ [POST /usuario] Error en fn_sync_usuario_con_auth_wait:`, {
-              message: syncError.message,
-              code: syncError.code,
-              details: syncError.details,
-              hint: syncError.hint
-            });
+            logger.error(`❌ [POST /usuario] Error en fn_sync_usuario_con_auth_wait:`, syncError.message);
           }
 
           if (syncResult && !syncError) {
@@ -275,9 +262,6 @@ router.post('/:table', async (req, res) => {
               .single();
 
             if (!updateError && updatedData) {
-              logger.info(`✅ Usuario sincronizado exitosamente. useruuid: ${syncResult}`);
-              logger.info('   Usando funciones del DBA: fn_sync_usuario_con_auth_wait actualiza useruuid y password automáticamente');
-              
               // Agregar estado de sincronización a la respuesta
               data[0] = {
                 ...updatedData,
@@ -285,7 +269,6 @@ router.post('/:table', async (req, res) => {
                 syncMessage: 'Usuario creado y sincronizado exitosamente'
               };
             } else {
-              logger.warn('⚠️ Usuario sincronizado pero no se pudo obtener datos actualizados:', updateError);
               // Agregar estado pendiente
               data[0] = {
                 ...data[0],
@@ -295,12 +278,6 @@ router.post('/:table', async (req, res) => {
             }
           } else {
             // Si retorna NULL o hay error, agregar estado pendiente
-            logger.warn('⚠️ Usuario creado pero sincronización pendiente:', {
-              usuarioid: newUsuario.usuarioid,
-              login: newUsuario.login,
-              error: syncError ? syncError.message : 'Retornó NULL (puede ser normal si pg_net tarda)'
-            });
-            
             // Agregar estado pendiente para que frontend pueda reintentar
             data[0] = {
               ...data[0],
@@ -358,7 +335,6 @@ router.post('/:table', async (req, res) => {
                   empresasConError.push({ empresaid, error: rpcError.message });
                 } else {
                   empresasAsignadas++;
-                  logger.debug(`✅ [POST /usuario] Empresa ${empresaid} asignada exitosamente (is_default: ${isDefault})`);
                 }
               } catch (empresaErr) {
                 logger.error(`❌ [POST /usuario] Excepción al asignar empresa ${empresaid}:`, empresaErr.message);
@@ -368,7 +344,6 @@ router.post('/:table', async (req, res) => {
             
             // Reportar resultados
             if (empresasConError.length === 0) {
-              logger.info(`✅ [POST /usuario] Todas las empresas (${empresasAsignadas}) asignadas exitosamente al usuario ${newUsuario.usuarioid}`);
               data[0].empresas_insertadas = empresasAsignadas;
               data[0].empresas_ids = empresasIdsToAssociate;
               data[0].empresas_status = 'success';
@@ -386,7 +361,6 @@ router.post('/:table', async (req, res) => {
                     logger.error(`❌ [POST /usuario] Error activando usuario después de asignar empresas:`, errorActivar.message);
                     data[0].empresas_warning = 'Empresas asignadas pero error al activar usuario';
                   } else {
-                    logger.info(`✅ [POST /usuario] Usuario ${newUsuario.usuarioid} activado exitosamente después de asignar empresas`);
                     // Actualizar el statusid en la respuesta
                     data[0].statusid = req._usuario_statusid_original;
                   }
@@ -396,7 +370,6 @@ router.post('/:table', async (req, res) => {
                 }
               }
             } else if (empresasAsignadas > 0) {
-              logger.warn(`⚠️ [POST /usuario] Algunas empresas asignadas (${empresasAsignadas}/${empresasIdsToAssociate.length}), ${empresasConError.length} con error`);
               data[0].empresas_insertadas = empresasAsignadas;
               data[0].empresas_ids = empresasIdsToAssociate;
               data[0].empresas_status = 'partial';
@@ -412,20 +385,16 @@ router.post('/:table', async (req, res) => {
                     .eq('usuarioid', newUsuario.usuarioid);
                   
                   if (!errorActivar) {
-                    logger.info(`✅ [POST /usuario] Usuario ${newUsuario.usuarioid} activado después de asignar ${empresasAsignadas} empresa(s)`);
                     data[0].statusid = req._usuario_statusid_original;
                   }
                 } catch (activarErr) {
-                  logger.warn(`⚠️ [POST /usuario] No se pudo activar usuario:`, activarErr.message);
+                  // Silencioso: no loguear si no se puede activar
                 }
               }
             } else {
-              logger.error(`❌ [POST /usuario] Todas las empresas fallaron al asignarse`);
               data[0].empresas_error = `Error al asignar todas las empresas: ${empresasConError.map(e => e.error).join('; ')}`;
               data[0].empresas_status = 'error';
               data[0].empresas_errores = empresasConError;
-              // Si no se asignó ninguna empresa, dejar el usuario inactivo
-              logger.warn(`⚠️ [POST /usuario] Usuario ${newUsuario.usuarioid} permanece inactivo porque no se asignaron empresas`);
             }
           } catch (empresasErr) {
             logger.error('❌ [POST /usuario] Error general asociando empresas (usuario se creó igualmente):', empresasErr.message);
@@ -577,7 +546,6 @@ router.put('/:table/:id', async (req, res) => {
               throw errorDesactivar;
             }
             
-            logger.info(`✅ [PUT /usuario] ${empresasADesactivar.length} empresa(s) desactivada(s) para usuario ${usuarioid}`);
           }
           
           // 4. Activar/crear empresas nuevas usando fn_asignar_empresa_a_usuario
@@ -607,7 +575,6 @@ router.put('/:table/:id', async (req, res) => {
                 empresasConError.push({ empresaid, error: rpcError.message });
               } else {
                 empresasAsignadas++;
-                logger.debug(`✅ [PUT /usuario] Empresa ${empresaid} asignada/actualizada exitosamente (is_default: ${isDefault})`);
               }
             } catch (empresaErr) {
               logger.error(`❌ [PUT /usuario] Excepción al asignar empresa ${empresaid}:`, empresaErr.message);
@@ -617,20 +584,17 @@ router.put('/:table/:id', async (req, res) => {
           
           // 5. Reportar resultados
           if (empresasConError.length === 0) {
-            logger.info(`✅ [PUT /usuario] Empresas actualizadas exitosamente para el usuario ${usuarioid} (${empresasAsignadas} activadas, ${empresasADesactivar.length} desactivadas)`);
             data[0].empresas_activadas = empresasAsignadas;
             data[0].empresas_desactivadas = empresasADesactivar.length;
             data[0].empresas_ids = empresasIdsToUpdate;
             data[0].empresas_status = 'success';
           } else if (empresasAsignadas > 0) {
-            logger.warn(`⚠️ [PUT /usuario] Algunas empresas actualizadas (${empresasAsignadas}/${empresasIdsToUpdate.length}), ${empresasConError.length} con error`);
             data[0].empresas_activadas = empresasAsignadas;
             data[0].empresas_desactivadas = empresasADesactivar.length;
             data[0].empresas_ids = empresasIdsToUpdate;
             data[0].empresas_status = 'partial';
             data[0].empresas_errores = empresasConError;
           } else {
-            logger.error(`❌ [PUT /usuario] Todas las empresas fallaron al actualizarse`);
             data[0].empresas_error = `Error al actualizar todas las empresas: ${empresasConError.map(e => e.error).join('; ')}`;
             data[0].empresas_status = 'error';
             data[0].empresas_errores = empresasConError;
@@ -942,7 +906,6 @@ async function runTableDiagnostics() {
 
 router.get('/meta/diagnostics', async (req, res) => {
   try {
-    logger.info('🔍 Iniciando diagnóstico de tablas (endpoint)...');
     const diagnostics = await runTableDiagnostics();
     res.json(diagnostics);
   } catch (error) {
