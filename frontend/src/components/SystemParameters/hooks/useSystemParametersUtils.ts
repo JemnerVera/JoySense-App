@@ -60,18 +60,13 @@ export const useSystemParametersUtils = ({
         filteredData = filteredData.filter((n: any) => nodoIds.has(n.nodoid));
       }
 
+      // NOTA: La tabla 'tipo' NO tiene campo 'entidadid' según SCHEMA_05.01.2026.sql
+      // Por lo tanto, NO filtramos tipos por entidadid
+      // Si se necesita filtrar tipos, debe hacerse a través de otra relación (ej: sensor -> tipo)
       if (field === 'tipoid' && filters.entidadid) {
-        filteredData = filteredData.filter((t: any) => t.entidadid === parseInt(filters.entidadid));
-        
-        if (filters.nodoids) {
-          // Filtrar por nodos específicos a través de sensores
-          const nodoIdsArray = filters.nodoids.split(',').map((id: string) => parseInt(id.trim()));
-          const sensores = (relatedDataForStatus.nodosData || []).filter((n: any) => 
-            nodoIdsArray.includes(n.nodoid)
-          );
-          // En un caso real, necesitarías consultar la tabla sensor para obtener los tipoid
-          // Por ahora, asumimos que todos los tipos de la entidad son válidos
-        }
+        // La tabla tipo NO tiene entidadid, así que ignoramos este filtro
+        // Si en el futuro se necesita filtrar, se debe hacer a través de sensores
+        console.warn('⚠️ [useSystemParametersUtils] Se intentó filtrar tipos por entidadid, pero la tabla tipo no tiene ese campo');
       }
 
       if (field === 'metricaid' && filters.nodoids) {

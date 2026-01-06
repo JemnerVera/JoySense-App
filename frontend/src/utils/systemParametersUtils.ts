@@ -638,8 +638,11 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'sensor':
-      if (!data.nodoid || !data.tipoid) {
-        return 'Nodo y tipo son obligatorios';
+      if (!data.sensorid) {
+        return 'El ID del sensor es obligatorio';
+      }
+      if (!data.tipoid) {
+        return 'El tipo es obligatorio';
       }
       break;
     

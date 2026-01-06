@@ -27,6 +27,13 @@ Error Handling and Validation
   - Implement proper error logging and user-friendly error messages.
   - Consider using custom error types or error factories for consistent error handling.
   - Always validate data from Supabase before processing.
+  - **CRITICAL: Parallel Data Loading Resilience**:
+    - When loading multiple data sources in parallel (e.g., Promise.all), ensure that if one source fails, the others continue to load successfully.
+    - Use Promise.allSettled() or individual try-catch blocks for independent data sources that may fail.
+    - Never use Promise.all() for data sources that can fail independently - this causes all requests to fail if one fails.
+    - Create helper functions (e.g., safeLoad) that wrap individual data loading calls with error handling, returning empty arrays or default values on failure.
+    - Log errors for failed data sources but continue processing successful ones.
+    - Example pattern: Separate problematic tables (with known issues like RLS recursion) into Promise.allSettled(), while critical tables load in Promise.all() with individual error handling.
 
 React/TypeScript
 - Use functional components and TypeScript interfaces.
@@ -103,6 +110,11 @@ Data Fetching and State Management
 - Use Supabase for real-time data synchronization.
 - Cache frequently accessed data appropriately.
 - Use the established service patterns in services/ directory.
+- **Parallel Data Loading**: When loading multiple related tables (e.g., in loadRelatedTablesData):
+  - Separate tables with known issues (RLS recursion, errors) using Promise.allSettled() to prevent cascading failures.
+  - Use individual error handling (safeLoad pattern) for each data source to ensure resilience.
+  - Critical data sources (like tipos for sensor forms) should always load even if other tables fail.
+  - Never let one failing table prevent other tables from loading successfully.
 
 Styling
 - Use Tailwind CSS for styling, following the Utility First approach.

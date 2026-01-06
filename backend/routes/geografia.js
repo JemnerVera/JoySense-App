@@ -161,13 +161,14 @@ router.get('/fundo', async (req, res) => {
     // DEBUG: Log detallado
     logger.info(`🔍 [GET /fundo] Schema: ${dbSchema}, EmpresaId: ${empresaId || 'ninguno'}`);
     logger.info(`🔍 [GET /fundo] Usando token de usuario: ${userSupabase !== baseSupabase ? 'SÍ' : 'NO'}`);
+    logger.info(`🔍 [GET /fundo] Cliente: ${userSupabase === baseSupabase ? 'baseSupabase (service_role)' : 'userSupabase (token usuario)'}`);
     
-    // Usar Supabase API con joins anidados
-    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    // CORRECCIÓN: Evitar joins anidados que pueden causar recursión infinita en RLS
+    // Hacer consulta simple solo de fundo, sin joins anidados
     let query = userSupabase
       .schema(dbSchema)
       .from('fundo')
-      .select('*, empresa:empresaid(empresaid, empresa, empresabrev, paisid, pais:paisid(paisid, pais, paisabrev))');
+      .select('*'); // Solo seleccionar campos de fundo, sin joins
     
     if (empresaId) {
       query = query.eq('empresaid', empresaId);
@@ -175,23 +176,37 @@ router.get('/fundo', async (req, res) => {
     
     query = query.order('fundoid', { ascending: true });
     
+    logger.info(`🔍 [GET /fundo] Ejecutando consulta sin joins anidados para evitar recursión RLS`);
+    logger.info(`🔍 [GET /fundo] Query construido, ejecutando...`);
+    
+    const startTime = Date.now();
     const { data, error } = await query;
+    const duration = Date.now() - startTime;
+    
+    logger.info(`🔍 [GET /fundo] Consulta completada en ${duration}ms`);
     
     if (error) {
-      logger.error(`❌ [GET /fundo] Error: ${error.message}`);
+      logger.error(`❌ [GET /fundo] Error después de ${duration}ms: ${error.message}`);
       logger.error(`❌ [GET /fundo] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
+      logger.error(`❌ [GET /fundo] Stack: ${error.stack || 'N/A'}`);
       throw error;
     }
     
-    // Transformar datos para mantener formato compatible
+    // Si necesitamos datos de empresa, hacer consulta separada (sin joins anidados)
+    // Esto evita que las políticas RLS se activen de manera recursiva
     const transformed = (data || []).map(fundo => ({
       ...fundo,
-      empresa: fundo.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null
+      // No incluir empresa aquí para evitar recursión
+      // Si se necesita empresa, se puede hacer una consulta separada
+      empresa: null
     }));
+    
+    logger.info(`✅ [GET /fundo] Consulta exitosa, ${transformed.length} registros en ${duration}ms`);
     
     res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /fundo:', error);
+    logger.error('Error completo:', JSON.stringify(error, null, 2));
     res.status(500).json({ error: error.message });
   }
 });
@@ -242,12 +257,17 @@ router.get('/ubicacion', async (req, res) => {
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    // Usar Supabase API con joins anidados
-    // IMPORTANTE: Usar .schema() explícitamente porque las tablas están en 'joysense'
+    
+    logger.info(`🔍 [GET /ubicacion] Schema: ${dbSchema}, FundoId: ${fundoId || 'ninguno'}`);
+    logger.info(`🔍 [GET /ubicacion] Usando token de usuario: ${userSupabase !== baseSupabase ? 'SÍ' : 'NO'}`);
+    logger.info(`🔍 [GET /ubicacion] Cliente: ${userSupabase === baseSupabase ? 'baseSupabase (service_role)' : 'userSupabase (token usuario)'}`);
+    
+    // CORRECCIÓN: Evitar joins anidados que pueden causar recursión infinita en RLS
+    // Hacer consulta simple solo de ubicacion, sin joins anidados
     let query = userSupabase
       .schema(dbSchema)
       .from('ubicacion')
-      .select('*, fundo:fundoid(fundoid, fundo, fundoabrev, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais)))');
+      .select('*'); // Solo seleccionar campos de ubicacion, sin joins para evitar recursión RLS
     
     if (fundoId) {
       query = query.eq('fundoid', fundoId);
@@ -255,15 +275,30 @@ router.get('/ubicacion', async (req, res) => {
     
     query = query.order('ubicacionid', { ascending: true });
     
+    logger.info(`🔍 [GET /ubicacion] Ejecutando consulta sin joins anidados para evitar recursión RLS`);
+    logger.info(`🔍 [GET /ubicacion] Query construido, ejecutando...`);
+    
+    const startTime = Date.now();
     const { data, error } = await query;
+    const duration = Date.now() - startTime;
     
-    if (error) throw error;
+    logger.info(`🔍 [GET /ubicacion] Consulta completada en ${duration}ms`);
     
-    // Transformar datos para mantener formato compatible
+    if (error) {
+      logger.error(`❌ [GET /ubicacion] Error después de ${duration}ms: ${error.message}`);
+      logger.error(`❌ [GET /ubicacion] Code: ${error.code || 'N/A'}, Details: ${error.details || 'N/A'}, Hint: ${error.hint || 'N/A'}`);
+      logger.error(`❌ [GET /ubicacion] Stack: ${error.stack || 'N/A'}`);
+      throw error;
+    }
+    
+    // No incluir fundo aquí para evitar recursión
+    // Si se necesita fundo, se puede hacer una consulta separada
     const transformed = (data || []).map(ubic => ({
       ...ubic,
-      fundo: ubic.fundo ? (Array.isArray(ubic.fundo) ? ubic.fundo[0] : ubic.fundo) : null
+      fundo: null
     }));
+    
+    logger.info(`✅ [GET /ubicacion] Consulta exitosa, ${transformed.length} registros en ${duration}ms`);
     
     res.json(transformed);
   } catch (error) {
