@@ -174,6 +174,54 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_boss'));
   }
 
+  // Combobox para perfil - is_admin_global (TRUE/FALSE)
+  if (col.columnName === 'is_admin_global' && selectedTable === 'perfil') {
+    const adminGlobalOptions = [
+      { value: 'true', label: 'TRUE' },
+      { value: 'false', label: 'FALSE' }
+    ];
+    
+    // Convertir valor booleano a string para el componente
+    // Por defecto debe ser 'false' si no hay valor
+    let currentValue: string | null = null;
+    if (value === true || value === 'true' || value === 1 || value === '1') {
+      currentValue = 'true';
+    } else if (value === false || value === 'false' || value === 0 || value === '0') {
+      currentValue = 'false';
+    } else {
+      // Si no hay valor, usar 'false' por defecto
+      currentValue = 'false';
+      // Asegurar que el valor inicial sea false si no está definido
+      if (formData[col.columnName] === undefined || formData[col.columnName] === null || formData[col.columnName] === '') {
+        setFormData({
+          ...formData,
+          [col.columnName]: false
+        });
+      }
+    }
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={currentValue}
+          onChange={(newValue) => {
+            // Convertir string de vuelta a booleano
+            const boolValue = newValue === 'true' || newValue === 1 || newValue === '1';
+            setFormData({
+              ...formData,
+              [col.columnName]: boolValue
+            });
+          }}
+          options={adminGlobalOptions}
+          placeholder="SELECCIONAR"
+        />
+      </div>
+    );
+  }
+
   // Combobox para contacto - usuarioid, codigotelefonoid
   if (col.columnName === 'usuarioid' && selectedTable === 'contacto') {
     return renderSelectField(t('create.user'));

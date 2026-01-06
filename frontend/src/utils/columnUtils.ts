@@ -38,7 +38,7 @@ export const filterColumnsByTable = (
     'audit_log_umbral': ['auditid', 'umbralid', 'old_minimo', 'new_minimo', 'old_maximo', 'new_maximo', 'accion', 'usermodifiedid', 'datemodified'],
     'criticidad': ['criticidad', 'escalamiento', 'escalon', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'usuario': ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'perfil': ['perfil', 'nivel', 'jefeid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'perfil': ['perfil', 'nivel', 'jefeid', 'is_admin_global', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'usuarioperfil': ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'mensaje': ['uuid_origen', 'contactoid', 'tipo_mensajeid', 'mensaje', 'fecha', 'statusid', 'usercreatedid', 'datecreated'],
     'alerta': ['alertaid', 'medicionid', 'umbralid', 'fecha', 'statusid', 'usercreatedid', 'datecreated'],

@@ -21,6 +21,7 @@ export interface TableFieldConfig {
     valueField: string;
     labelField: string | string[];
   };
+  options?: Array<{ value: any; label: string }>;
   defaultValue?: any;
   validation?: {
     min?: number;
@@ -615,6 +616,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'perfil', label: 'Perfil', type: 'text', required: true },
       { name: 'nivel', label: 'Nivel', type: 'number', required: true },
       { name: 'jefeid', label: 'Jefe', type: 'select', foreignKey: { table: 'perfil', valueField: 'perfilid', labelField: 'perfil' } },
+      { name: 'is_admin_global', label: 'ES ADMIN GLOBAL?', type: 'select', defaultValue: false, options: [{ value: true, label: 'TRUE' }, { value: false, label: 'FALSE' }] },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
