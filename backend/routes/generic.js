@@ -22,7 +22,7 @@ const ALLOWED_TABLES = [
   'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
   'umbral', 'alerta_regla', 'alerta_regla_consolidado', 'criticidad',
   'audit_log_umbral', 'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
-  'usuario', 'perfil', 'usuarioperfil', 
+  'usuario', 'perfil', 'usuarioperfil', 'usuario_empresa', // usuario_empresa agregado para consultas
   'contacto', 'correo', 'codigotelefono',
   'asociacion',
   'permiso', 'fuente', 'origen', 'tipo_mensaje', // Nuevo sistema de permisos
@@ -69,6 +69,7 @@ const PK_MAPPING = {
   sensor_valor_error: 'sensorvalorerrorid',
   canal: 'canalid', // Sistema de notificaciones
   usuario_canal: 'usuario_canalid',
+  usuario_empresa: null, // PK compuesta (usuarioid, empresaid)
   msg_outbox: 'msg_outboxid', // Reportes administrativos
   auth_outbox: 'outboxid' // Reportes administrativos
 };
@@ -150,7 +151,59 @@ router.post('/:table', async (req, res) => {
     // Preparar datos para inserción
     let dataToInsert = { ...req.body };
     
+    // Log inicial para debug
+    if (table === 'usuario') {
+      logger.info('🔍 [POST /usuario] Request recibido:', {
+        bodyKeys: Object.keys(req.body),
+        bodyEmpresasIds: req.body.empresas_ids,
+        bodyEmpresasIdsType: typeof req.body.empresas_ids,
+        bodyEmpresasIdsIsArray: Array.isArray(req.body.empresas_ids),
+        bodyEmpresasIdsLength: Array.isArray(req.body.empresas_ids) ? req.body.empresas_ids.length : 'N/A',
+        dataToInsertKeys: Object.keys(dataToInsert),
+        dataToInsertEmpresasIds: dataToInsert.empresas_ids
+      });
+    }
+    
       // Lógica especial para tabla 'usuario'
+      // Si viene empresas_ids, primero crear el usuario normalmente, luego asociar empresas
+      let empresasIdsToAssociate = null;
+      let isDefaultEmpresaToAssociate = null;
+      
+      if (table === 'usuario' && dataToInsert.empresas_ids && Array.isArray(dataToInsert.empresas_ids) && dataToInsert.empresas_ids.length > 0) {
+        logger.info('🔍 [POST /usuario] Detectado empresas_ids en request:', {
+          empresas_ids: dataToInsert.empresas_ids,
+          count: dataToInsert.empresas_ids.length,
+          is_default_empresa: dataToInsert.is_default_empresa
+        });
+        
+        // Guardar empresas_ids para usar después de crear el usuario
+        empresasIdsToAssociate = dataToInsert.empresas_ids;
+        isDefaultEmpresaToAssociate = dataToInsert.is_default_empresa || null;
+        
+        logger.info('🔍 [POST /usuario] Variables guardadas:', {
+          empresasIdsToAssociate,
+          isDefaultEmpresaToAssociate
+        });
+        
+        // Remover empresas_ids del dataToInsert para que no se intente insertar en la tabla usuario
+        delete dataToInsert.empresas_ids;
+        delete dataToInsert.is_default_empresa;
+        
+        logger.info('🔍 [POST /usuario] empresas_ids removidos de dataToInsert, guardados para asociar después', {
+          dataToInsertKeysAfterDelete: Object.keys(dataToInsert),
+          empresasIdsToAssociateStillExists: empresasIdsToAssociate !== null
+        });
+      } else if (table === 'usuario') {
+        logger.warn('⚠️ [POST /usuario] NO se detectaron empresas_ids o están vacíos:', {
+          hasEmpresasIds: !!dataToInsert.empresas_ids,
+          empresasIdsType: typeof dataToInsert.empresas_ids,
+          empresasIdsIsArray: Array.isArray(dataToInsert.empresas_ids),
+          empresasIdsValue: dataToInsert.empresas_ids,
+          empresasIdsLength: Array.isArray(dataToInsert.empresas_ids) ? dataToInsert.empresas_ids.length : 'N/A'
+        });
+      }
+      
+      // Lógica especial para tabla 'usuario' (sin empresas_ids - comportamiento legacy)
       // IMPORTANTE: Después de insertar, se sincroniza automáticamente con Supabase Auth
       // usando fn_sync_usuario_con_auth_wait (ver código más abajo)
       if (table === 'usuario') {
@@ -258,6 +311,128 @@ router.post('/:table', async (req, res) => {
               useruuid: null
             };
           }
+          
+          // ====================================================================
+          // ASOCIAR EMPRESAS AL USUARIO (si se proporcionaron empresas_ids)
+          // ====================================================================
+          logger.info('🔍 [POST /usuario] Verificando empresasIdsToAssociate antes de asociar:', {
+            empresasIdsToAssociate,
+            isArray: Array.isArray(empresasIdsToAssociate),
+            length: Array.isArray(empresasIdsToAssociate) ? empresasIdsToAssociate.length : 'N/A',
+            isNull: empresasIdsToAssociate === null,
+            isUndefined: empresasIdsToAssociate === undefined
+          });
+          
+          if (empresasIdsToAssociate && Array.isArray(empresasIdsToAssociate) && empresasIdsToAssociate.length > 0) {
+            try {
+              logger.info(`🔗 [POST /usuario] Iniciando asociación de empresas al usuario ${newUsuario.usuarioid}...`, {
+                usuarioid: newUsuario.usuarioid,
+                empresas_ids: empresasIdsToAssociate,
+                count: empresasIdsToAssociate.length,
+                is_default_empresa: isDefaultEmpresaToAssociate
+              });
+              
+              // Obtener usercreatedid correcto (debe ser integer, no UUID)
+              // Primero intentar desde user_metadata
+              let usercreatedid = req.user?.user_metadata?.usuarioid;
+              
+              // Si no está en user_metadata, buscar en la tabla usuario usando el useruuid
+              if (!usercreatedid && req.user?.id) {
+                try {
+                  const { data: usuarioData, error: usuarioError } = await userSupabase
+                    .schema(dbSchema)
+                    .from('usuario')
+                    .select('usuarioid')
+                    .eq('useruuid', req.user.id)
+                    .single();
+                  
+                  if (!usuarioError && usuarioData) {
+                    usercreatedid = usuarioData.usuarioid;
+                    logger.info(`🔍 [POST /usuario] usuarioid obtenido de tabla usuario: ${usercreatedid}`);
+                  }
+                } catch (err) {
+                  logger.warn(`⚠️ [POST /usuario] Error obteniendo usuarioid de tabla: ${err.message}`);
+                }
+              }
+              
+              // Fallback a 1 si no se pudo obtener
+              if (!usercreatedid || isNaN(parseInt(usercreatedid))) {
+                usercreatedid = 1;
+                logger.warn(`⚠️ [POST /usuario] Usando usercreatedid por defecto: ${usercreatedid}`);
+              } else {
+                usercreatedid = parseInt(usercreatedid);
+              }
+              
+              logger.info(`🔗 [POST /usuario] Llamando a fn_asociar_empresas_a_usuario con:`, {
+                p_usuarioid: newUsuario.usuarioid,
+                p_empresas_ids: empresasIdsToAssociate,
+                p_usercreatedid: usercreatedid,
+                p_usercreatedidType: typeof usercreatedid,
+                p_is_default_empresa: isDefaultEmpresaToAssociate
+              });
+              
+              // Llamar a la función RPC para asociar empresas
+              const { data: rpcResult, error: rpcError } = await userSupabase
+                .schema('joysense')
+                .rpc('fn_asociar_empresas_a_usuario', {
+                  p_usuarioid: newUsuario.usuarioid,
+                  p_empresas_ids: empresasIdsToAssociate,
+                  p_usercreatedid: usercreatedid,
+                  p_is_default_empresa: isDefaultEmpresaToAssociate
+                });
+              
+              logger.info(`🔗 [POST /usuario] Respuesta de fn_asociar_empresas_a_usuario:`, {
+                rpcResult,
+                rpcError: rpcError ? {
+                  message: rpcError.message,
+                  code: rpcError.code,
+                  details: rpcError.details,
+                  hint: rpcError.hint
+                } : null
+              });
+              
+              if (rpcError) {
+                logger.error(`❌ [POST /usuario] Error en fn_asociar_empresas_a_usuario:`, {
+                  message: rpcError.message,
+                  code: rpcError.code,
+                  details: rpcError.details,
+                  hint: rpcError.hint,
+                  fullError: rpcError
+                });
+                // No fallar la creación del usuario, solo loguear el error
+                data[0].empresas_error = rpcError.message;
+                data[0].empresas_status = 'error';
+              } else if (rpcResult) {
+                logger.info(`✅ [POST /usuario] Empresas asociadas exitosamente:`, {
+                  usuarioid: newUsuario.usuarioid,
+                  empresas_insertadas: rpcResult.empresas_insertadas,
+                  empresas_ids: rpcResult.empresas_ids,
+                  is_default_empresa: rpcResult.is_default_empresa,
+                  status: rpcResult.status,
+                  message: rpcResult.message
+                });
+                data[0].empresas_insertadas = rpcResult.empresas_insertadas;
+                data[0].empresas_ids = rpcResult.empresas_ids;
+                data[0].empresas_status = 'success';
+              } else {
+                logger.warn(`⚠️ [POST /usuario] fn_asociar_empresas_a_usuario retornó NULL o vacío`);
+                data[0].empresas_status = 'warning';
+                data[0].empresas_message = 'La función no retornó resultado';
+              }
+            } catch (empresasErr) {
+              logger.error('❌ [POST /usuario] Error asociando empresas (usuario se creó igualmente):', {
+                error: empresasErr.message,
+                stack: empresasErr.stack,
+                usuarioid: newUsuario.usuarioid,
+                empresas_ids: empresasIdsToAssociate
+              });
+              data[0].empresas_error = empresasErr.message;
+              data[0].empresas_status = 'error';
+            }
+          } else {
+            logger.info(`ℹ️ [POST /usuario] No hay empresas para asociar (empresasIdsToAssociate es null o vacío)`);
+          }
+          
         } catch (syncErr) {
           // Log error pero no fallar la creación - el trigger seguirá intentando sincronizar
           logger.error('❌ Error en sincronización automática (usuario se creó igualmente):', syncErr);
@@ -270,6 +445,9 @@ router.post('/:table', async (req, res) => {
             syncError: syncErr.message
           };
         }
+      } else {
+        // Si no es usuario o no hay usuarioid, verificar si hay empresas para asociar
+        logger.info(`ℹ️ [POST /${table}] No es tabla usuario o no hay usuarioid, saltando asociación de empresas`);
       }
     }
     
@@ -312,6 +490,28 @@ router.put('/:table/:id', async (req, res) => {
     let dataToUpdate = { ...req.body };
     
     // Lógica especial para tabla 'usuario'
+    // Si viene empresas_ids, guardarlo para actualizar después
+    let empresasIdsToUpdate = null;
+    let isDefaultEmpresaToUpdate = null;
+    
+    if (table === 'usuario' && dataToUpdate.empresas_ids !== undefined) {
+      logger.info('🔍 [PUT /usuario] Detectado empresas_ids en actualización:', {
+        usuarioid: id,
+        empresas_ids: dataToUpdate.empresas_ids,
+        isArray: Array.isArray(dataToUpdate.empresas_ids),
+        count: Array.isArray(dataToUpdate.empresas_ids) ? dataToUpdate.empresas_ids.length : 'N/A',
+        is_default_empresa: dataToUpdate.is_default_empresa
+      });
+      
+      // Guardar empresas_ids para usar después de actualizar el usuario
+      empresasIdsToUpdate = Array.isArray(dataToUpdate.empresas_ids) ? dataToUpdate.empresas_ids : null;
+      isDefaultEmpresaToUpdate = dataToUpdate.is_default_empresa || null;
+      
+      // Remover empresas_ids del dataToUpdate para que no se intente actualizar en la tabla usuario
+      delete dataToUpdate.empresas_ids;
+      delete dataToUpdate.is_default_empresa;
+    }
+    
     if (table === 'usuario') {
       // Si viene 'password' en lugar de 'password_hash', hashearlo
       if (dataToUpdate.password !== undefined) {
@@ -344,6 +544,124 @@ router.put('/:table/:id', async (req, res) => {
       if (error.detail) logger.error(`   Detalle: ${error.detail}`);
       if (error.hint) logger.error(`   Hint: ${error.hint}`);
       throw error;
+    }
+    
+    // ========================================================================
+    // ACTUALIZAR EMPRESAS DEL USUARIO (si se proporcionaron empresas_ids)
+    // ========================================================================
+    if (table === 'usuario' && data && data[0] && empresasIdsToUpdate !== null) {
+      try {
+        const usuarioid = parseInt(id);
+        if (isNaN(usuarioid)) {
+          logger.warn(`⚠️ [PUT /usuario] ID inválido para actualizar empresas: ${id}`);
+        } else {
+          logger.info(`🔗 [PUT /usuario] Iniciando actualización de empresas del usuario ${usuarioid}...`, {
+            usuarioid,
+            empresas_ids: empresasIdsToUpdate,
+            count: Array.isArray(empresasIdsToUpdate) ? empresasIdsToUpdate.length : 'N/A',
+            is_default_empresa: isDefaultEmpresaToUpdate
+          });
+          
+          // Obtener usercreatedid correcto (debe ser integer, no UUID)
+          let usercreatedid = req.user?.user_metadata?.usuarioid;
+          
+          // Si no está en user_metadata, buscar en la tabla usuario usando el useruuid
+          if (!usercreatedid && req.user?.id) {
+            try {
+              const { data: usuarioData, error: usuarioError } = await userSupabase
+                .schema(dbSchema)
+                .from('usuario')
+                .select('usuarioid')
+                .eq('useruuid', req.user.id)
+                .single();
+              
+              if (!usuarioError && usuarioData) {
+                usercreatedid = usuarioData.usuarioid;
+                logger.info(`🔍 [PUT /usuario] usuarioid obtenido de tabla usuario: ${usercreatedid}`);
+              }
+            } catch (err) {
+              logger.warn(`⚠️ [PUT /usuario] Error obteniendo usuarioid de tabla: ${err.message}`);
+            }
+          }
+          
+          // Fallback a 1 si no se pudo obtener
+          if (!usercreatedid || isNaN(parseInt(usercreatedid))) {
+            usercreatedid = 1;
+            logger.warn(`⚠️ [PUT /usuario] Usando usercreatedid por defecto: ${usercreatedid}`);
+          } else {
+            usercreatedid = parseInt(usercreatedid);
+          }
+          
+          logger.info(`🔗 [PUT /usuario] Llamando a fn_actualizar_empresas_de_usuario con:`, {
+            p_usuarioid: usuarioid,
+            p_empresas_ids: empresasIdsToUpdate,
+            p_usercreatedid: usercreatedid,
+            p_usercreatedidType: typeof usercreatedid,
+            p_is_default_empresa: isDefaultEmpresaToUpdate
+          });
+          
+          // Llamar a la función RPC para actualizar empresas
+          const { data: rpcResult, error: rpcError } = await userSupabase
+            .schema('joysense')
+            .rpc('fn_actualizar_empresas_de_usuario', {
+              p_usuarioid: usuarioid,
+              p_empresas_ids: empresasIdsToUpdate,
+              p_usercreatedid: usercreatedid,
+              p_is_default_empresa: isDefaultEmpresaToUpdate,
+              p_desactivar_no_incluidas: true
+            });
+          
+          logger.info(`🔗 [PUT /usuario] Respuesta de fn_actualizar_empresas_de_usuario:`, {
+            rpcResult,
+            rpcError: rpcError ? {
+              message: rpcError.message,
+              code: rpcError.code,
+              details: rpcError.details,
+              hint: rpcError.hint
+            } : null
+          });
+          
+          if (rpcError) {
+            logger.error(`❌ [PUT /usuario] Error en fn_actualizar_empresas_de_usuario:`, {
+              message: rpcError.message,
+              code: rpcError.code,
+              details: rpcError.details,
+              hint: rpcError.hint,
+              fullError: rpcError
+            });
+            // No fallar la actualización del usuario, solo loguear el error
+            data[0].empresas_error = rpcError.message;
+            data[0].empresas_status = 'error';
+          } else if (rpcResult) {
+            logger.info(`✅ [PUT /usuario] Empresas actualizadas exitosamente:`, {
+              usuarioid,
+              empresas_activadas: rpcResult.empresas_activadas,
+              empresas_desactivadas: rpcResult.empresas_desactivadas,
+              empresas_ids: rpcResult.empresas_ids,
+              is_default_empresa: rpcResult.is_default_empresa,
+              status: rpcResult.status,
+              message: rpcResult.message
+            });
+            data[0].empresas_activadas = rpcResult.empresas_activadas;
+            data[0].empresas_desactivadas = rpcResult.empresas_desactivadas;
+            data[0].empresas_ids = rpcResult.empresas_ids;
+            data[0].empresas_status = 'success';
+          } else {
+            logger.warn(`⚠️ [PUT /usuario] fn_actualizar_empresas_de_usuario retornó NULL o vacío`);
+            data[0].empresas_status = 'warning';
+            data[0].empresas_message = 'La función no retornó resultado';
+          }
+        }
+      } catch (empresasErr) {
+        logger.error('❌ [PUT /usuario] Error actualizando empresas (usuario se actualizó igualmente):', {
+          error: empresasErr.message,
+          stack: empresasErr.stack,
+          usuarioid: id,
+          empresas_ids: empresasIdsToUpdate
+        });
+        data[0].empresas_error = empresasErr.message;
+        data[0].empresas_status = 'error';
+      }
     }
     
     // Limpiar cache de metadata

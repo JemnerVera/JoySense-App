@@ -58,8 +58,83 @@ export const useUpdateForm = ({
     if (selectedRow) {
       // Guardar datos originales para validación
       setOriginalData({ ...selectedRow });
-      // Cargar datos al formulario
-      setFormData({ ...selectedRow });
+      
+      // Para tabla 'usuario', cargar empresas asociadas
+      if (tableName === 'usuario' && selectedRow.usuarioid) {
+        const loadUsuarioEmpresas = async () => {
+          try {
+            // usuario_empresa no está en ALLOWED_TABLES, usar backend directamente
+            // El backend tiene acceso a todas las tablas, así que usamos una consulta directa
+            const { backendAPI } = await import('../services/backend-api');
+            const { supabaseAuth } = await import('../services/supabase-auth');
+            
+            // Obtener token de sesión
+            const { data: { session } } = await supabaseAuth.auth.getSession();
+            const token = session?.access_token || null;
+            
+            // Usar endpoint genérico con filtro por usuarioid
+            // Nota: Esto requiere que el backend permita filtros en query params
+            const response = await backendAPI.get(
+              `/generic/usuario_empresa?usuarioid=${selectedRow.usuarioid}&limit=1000`,
+              token || undefined
+            );
+            
+            const usuarioEmpresasArray = Array.isArray(response) 
+              ? response 
+              : (response?.data || []);
+            
+            logger.debug('[useUpdateForm] Respuesta de backend usuario_empresa:', {
+              response_type: typeof response,
+              response_isArray: Array.isArray(response),
+              data_length: usuarioEmpresasArray.length,
+              data_first3: usuarioEmpresasArray.slice(0, 3)
+            });
+            
+            // Filtrar empresas activas del usuario (ya están filtradas por usuarioid en la query)
+            const empresasActivas = usuarioEmpresasArray
+              .filter((ue: any) => ue.statusid === 1)
+              .map((ue: any) => ue.empresaid);
+            
+            // Encontrar la empresa predeterminada
+            const empresaDefault = usuarioEmpresasArray.find(
+              (ue: any) => ue.is_default === true && ue.statusid === 1
+            );
+            
+            // Cargar datos al formulario incluyendo empresas
+            const formDataWithEmpresas = {
+              ...selectedRow,
+              empresas_ids: empresasActivas,
+              is_default_empresa: empresaDefault?.empresaid || null
+            };
+            
+            logger.debug('[useUpdateForm] Empresas cargadas para usuario:', {
+              usuarioid: selectedRow.usuarioid,
+              empresas_ids: empresasActivas,
+              empresas_ids_type: typeof empresasActivas[0],
+              empresas_ids_length: empresasActivas.length,
+              is_default_empresa: empresaDefault?.empresaid,
+              formDataWithEmpresas_keys: Object.keys(formDataWithEmpresas),
+              formDataWithEmpresas_empresas_ids: formDataWithEmpresas.empresas_ids,
+              formDataWithEmpresas_empresas_ids_type: typeof formDataWithEmpresas.empresas_ids,
+              formDataWithEmpresas_empresas_ids_isArray: Array.isArray(formDataWithEmpresas.empresas_ids)
+            });
+            
+            setFormData(formDataWithEmpresas);
+            
+            logger.debug('[useUpdateForm] formData actualizado con empresas');
+          } catch (error) {
+            logger.error('[useUpdateForm] Error cargando empresas del usuario:', error);
+            // Si falla, cargar sin empresas
+            setFormData({ ...selectedRow });
+          }
+        };
+        
+        loadUsuarioEmpresas();
+      } else {
+        // Para otras tablas, cargar normalmente
+        setFormData({ ...selectedRow });
+      }
+      
       // Limpiar errores
       setFormErrors({});
     } else {
@@ -68,7 +143,7 @@ export const useUpdateForm = ({
       setFormErrors({});
       setOriginalData({});
     }
-  }, [selectedRow]);
+  }, [selectedRow, tableName]);
 
   // Actualizar campo del formulario
   const updateFormField = useCallback((field: string, value: any) => {
@@ -200,6 +275,27 @@ export const useUpdateForm = ({
           // Concatenar código de país con número (ej: +51987654321)
           dataToUpdate.celular = codigoTelefono.codigotelefono + dataToUpdate.celular;
         }
+      }
+      
+      // Caso especial para tabla 'usuario': incluir empresas_ids aunque no esté en la configuración
+      // porque no es un campo de la tabla, sino un campo especial para la lógica de negocio
+      if (tableName === 'usuario' && formData.empresas_ids !== undefined) {
+        if (Array.isArray(formData.empresas_ids) && formData.empresas_ids.length > 0) {
+          dataToUpdate.empresas_ids = formData.empresas_ids;
+          logger.debug('[useUpdateForm] empresas_ids agregado a dataToUpdate para usuario:', {
+            empresas_ids: formData.empresas_ids,
+            count: formData.empresas_ids.length
+          });
+        } else {
+          // Si está vacío, enviar array vacío para desactivar todas las empresas
+          dataToUpdate.empresas_ids = [];
+          logger.debug('[useUpdateForm] empresas_ids vacío, se desactivarán todas las empresas');
+        }
+      }
+      
+      // También incluir is_default_empresa si existe
+      if (tableName === 'usuario' && formData.is_default_empresa !== undefined) {
+        dataToUpdate.is_default_empresa = formData.is_default_empresa;
       }
 
       const pk = getPrimaryKeyValue(selectedRow);

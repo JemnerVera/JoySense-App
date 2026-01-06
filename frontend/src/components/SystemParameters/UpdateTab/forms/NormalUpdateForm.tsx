@@ -10,6 +10,7 @@ import { getPrimaryKey } from '../../../../config/tables.config';
 import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
 import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
+import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 import { logger } from '../../../../utils/logger';
@@ -403,6 +404,69 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         getThemeColor={getThemeColor}
         getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
         codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+      />
+    );
+  }
+
+  // Caso especial para usuario: usar UsuarioFormFields
+  if (tableName === 'usuario') {
+    // Función helper para renderizar campos (similar a renderField pero adaptada para UPDATE)
+    const renderFieldForUpdate = (col: any) => {
+      const field = config?.fields.find(f => f.name === col.columnName);
+      if (!field) return null;
+      
+      const fieldValue = formData[col.columnName];
+      const displayName = getColumnDisplayNameHelper(col.columnName);
+      const isPrimaryKey = primaryKeyFields.includes(col.columnName);
+      const isReadonly = field.readonly || isPrimaryKey || isConstrainedField(col.columnName);
+      
+      if (isReadonly) {
+        return (
+          <div key={col.columnName} className="mb-4">
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+              {isPrimaryKey && <span className="mr-1">🔒</span>}
+              {displayName.toUpperCase()}
+            </label>
+            <input
+              type="text"
+              value={fieldValue != null ? String(fieldValue) : ''}
+              readOnly
+              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+            />
+          </div>
+        );
+      }
+      
+      // Campo editable normal
+      return (
+        <div key={col.columnName} className="mb-4">
+          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+            {displayName.toUpperCase()}{field.required ? '*' : ''}
+          </label>
+          <input
+            type={field.type === 'number' ? 'number' : 'text'}
+            value={fieldValue != null ? String(fieldValue) : ''}
+            onChange={(e) => updateFormField(col.columnName, field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)}
+            className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 ${getThemeColor('focus')}`}
+          />
+        </div>
+      );
+    };
+    
+    return (
+      <UsuarioFormFields
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={(data) => {
+          // Actualizar cada campo individualmente
+          Object.keys(data).forEach(key => {
+            updateFormField(key, data[key]);
+          });
+        }}
+        renderField={renderFieldForUpdate}
+        getThemeColor={getThemeColor}
+        empresasData={(relatedData as any)?.empresasData || []}
+        getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
       />
     );
   }

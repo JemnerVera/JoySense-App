@@ -40,28 +40,88 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
     if (disabled) return;
     
     const currentValue = value || [];
-    const isSelected = currentValue.includes(optionValue);
+    // Convertir a números para comparación
+    const currentValueNumbers = currentValue.map(v => Number(v));
+    const optionValueNumber = Number(optionValue);
+    const isSelected = currentValueNumbers.includes(optionValueNumber);
     
     if (isSelected) {
-      onChange(currentValue.filter(v => v !== optionValue));
+      onChange(currentValue.filter(v => Number(v) !== optionValueNumber));
     } else {
-      onChange([...currentValue, optionValue]);
+      onChange([...currentValue, optionValueNumber]);
     }
   };
 
+  // Logs para diagnosticar
+  console.log('🔍 [MultiSelectWithPlaceholder] Props recibidas:', {
+    value,
+    value_type: typeof value,
+    value_isArray: Array.isArray(value),
+    value_length: Array.isArray(value) ? value.length : 'N/A',
+    value_first3: Array.isArray(value) ? value.slice(0, 3) : 'N/A',
+    options_count: options.length,
+    options_first3: options.slice(0, 3).map(opt => ({ value: opt.value, valueType: typeof opt.value, label: opt.label })),
+    placeholder
+  });
+  
   // Obtener labels de las opciones seleccionadas
+  // Comparar convirtiendo ambos valores a números
   const selectedLabels = options
-    .filter(opt => value.includes(opt.value))
+    .filter(opt => {
+      const optValue = Number(opt.value);
+      const valueNumbers = value.map(v => Number(v));
+      const isSelected = valueNumbers.includes(optValue);
+      if (isSelected) {
+        console.log('✅ [MultiSelectWithPlaceholder] Opción seleccionada encontrada:', { label: opt.label, optValue, valueNumbers });
+      }
+      return isSelected;
+    })
     .map(opt => opt.label);
 
+  console.log('🔍 [MultiSelectWithPlaceholder] selectedLabels:', {
+    selectedLabels,
+    count: selectedLabels.length
+  });
+
   const displayText = selectedLabels.length > 0 
-    ? selectedLabels.join(', ')
+    ? selectedLabels.join(', ') 
     : placeholder.toUpperCase();
+  
+  console.log('🔍 [MultiSelectWithPlaceholder] displayText:', displayText);
 
   // Filtrar opciones basado en el término de búsqueda
   const filteredOptions = options.filter(option =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Ordenar opciones: primero las seleccionadas, luego las no seleccionadas
+  // Comparar convirtiendo ambos valores a números
+  const valueNumbers = value.map(v => Number(v));
+  console.log('🔍 [MultiSelectWithPlaceholder] Ordenando opciones con valueNumbers:', valueNumbers);
+  
+  const sortedOptions = [...filteredOptions].sort((a, b) => {
+    const aValue = Number(a.value);
+    const bValue = Number(b.value);
+    const aSelected = valueNumbers.includes(aValue);
+    const bSelected = valueNumbers.includes(bValue);
+    
+    // Si ambas están seleccionadas o ninguna, mantener orden original
+    if (aSelected === bSelected) {
+      return 0;
+    }
+    
+    // Si solo una está seleccionada, la seleccionada va primero
+    return aSelected ? -1 : 1;
+  });
+  
+  console.log('🔍 [MultiSelectWithPlaceholder] sortedOptions:', {
+    total: sortedOptions.length,
+    first3: sortedOptions.slice(0, 3).map(opt => ({ 
+      label: opt.label, 
+      value: opt.value, 
+      isSelected: valueNumbers.includes(Number(opt.value))
+    }))
+  });
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -91,9 +151,10 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
           
           {/* Lista de opciones */}
           <div className="max-h-48 overflow-y-auto custom-scrollbar">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
-                const isSelected = value.includes(option.value);
+            {sortedOptions.length > 0 ? (
+              sortedOptions.map((option) => {
+                const optionValue = Number(option.value);
+                const isSelected = value.some(v => Number(v) === optionValue);
                 return (
                   <div
                     key={option.value}

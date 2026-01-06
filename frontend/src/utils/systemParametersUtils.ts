@@ -671,8 +671,15 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'usuario':
-      if (!data.login || !data.email) {
-        return 'Login y email son obligatorios';
+      if (!data.login) {
+        return 'El login es obligatorio';
+      }
+      if (!data.firstname || !data.lastname) {
+        return 'Nombre y apellido son obligatorios';
+      }
+      // Validar que se hayan seleccionado empresas
+      if (!data.empresas_ids || !Array.isArray(data.empresas_ids) || data.empresas_ids.length === 0) {
+        return 'Debe seleccionar al menos una empresa';
       }
       break;
     
