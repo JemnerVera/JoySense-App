@@ -7,6 +7,8 @@ interface SelectWithPlaceholderProps {
   placeholder: string;
   className?: string;
   disabled?: boolean;
+  themeColor?: 'orange' | 'purple' | 'blue' | 'green' | 'red' | 'cyan';
+  dropdownWidth?: string;
   renderSelectedLabel?: (label: string) => React.ReactNode;
 }
 
@@ -17,6 +19,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   placeholder,
   className = "w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 dark:text-white text-base font-mono",
   disabled = false,
+  themeColor = 'purple',
+  dropdownWidth,
   renderSelectedLabel
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -195,7 +199,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       </div>
       
       {isOpen && !disabled && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-64 overflow-hidden">
+        <div className={`absolute z-[9999] ${dropdownWidth || 'w-full'} mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-64 overflow-hidden`}>
           {/* Barra de búsqueda */}
           <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
             <input
@@ -203,7 +207,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className={`w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 ${themeColor === 'orange' ? 'focus:ring-orange-500' : 'focus:ring-purple-500'}`}
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -222,13 +226,13 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                     onClick={() => handleOptionClick(option.value)}
                     className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
                       selectedOption?.value === option.value 
-                        ? 'bg-purple-600' 
+                        ? (themeColor === 'orange' ? 'bg-orange-600' : 'bg-purple-600')
                         : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
                     }`}
                   >
                     {labelParts ? (
                       <span>
-                        <span className={selectedOption?.value === option.value ? 'text-white' : 'text-purple-500'}>{labelParts[0]}</span>
+                        <span className={selectedOption?.value === option.value ? 'text-white' : (themeColor === 'orange' ? 'text-orange-500' : 'text-purple-500')}>{labelParts[0]}</span>
                         <span> - {labelParts[1]}</span>
                       </span>
                     ) : (

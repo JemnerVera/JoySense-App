@@ -57,9 +57,9 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
         </label>
         {/* Input combinado estilo e-commerce */}
         <div className="flex items-center border border-neutral-600 rounded-lg bg-neutral-700 focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition-all overflow-visible h-[42px]">
-          {/* Código de País - Parte izquierda */}
+          {/* Código de País - Parte izquierda (más angosto para el código) */}
           <div className="flex items-center flex-shrink-0 border-r border-neutral-600 relative z-10">
-            <div className="w-20 min-w-[80px]">
+            <div className="w-20 min-w-[80px] max-w-[80px]">
               <SelectWithPlaceholder
                 value={formData.codigotelefonoid || ''}
                 onChange={(value) => {
@@ -69,17 +69,23 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
                 placeholder="PAIS"
                 disabled={!formData.usuarioid || formData.usuarioid === 0 || formData.usuarioid === ''}
                 className="w-full px-2 py-2 bg-transparent border-0 text-white font-mono text-sm focus:ring-0 focus:outline-none h-[42px]"
+                themeColor="orange"
                 renderSelectedLabel={(label) => {
-                  // Si el label contiene " - ", extraer solo el código y mostrarlo en paréntesis
-                  if (label && label.includes(' - ')) {
-                    const [codigo] = label.split(' - ');
-                    return (
-                      <span className="text-orange-500">({codigo})</span>
+                  // Buscar el código telefónico en codigotelefonosData basándose en el codigotelefonoid seleccionado
+                  if (formData.codigotelefonoid && codigotelefonosData && codigotelefonosData.length > 0) {
+                    const codigoTelefono = codigotelefonosData.find(
+                      (c: any) => c.codigotelefonoid === formData.codigotelefonoid
                     );
+                    if (codigoTelefono?.codigotelefono) {
+                      return (
+                        <span className="text-orange-500">({codigoTelefono.codigotelefono})</span>
+                      );
+                    }
                   }
-                  // Si no tiene " - ", asumir que es solo el código
-                  return label ? <span className="text-orange-500">({label})</span> : label;
+                  // Si no se encuentra el código, mostrar solo el label (nombre del país)
+                  return label || '';
                 }}
+                dropdownWidth="w-40 min-w-[160px]"
               />
             </div>
           </div>

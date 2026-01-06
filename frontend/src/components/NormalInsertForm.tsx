@@ -774,6 +774,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 getUniqueOptionsForField={getUniqueOptionsForField}
                 selectedContactType={selectedContactType}
                 countryCodes={countryCodes}
+                codigotelefonosData={codigotelefonosData}
               />
             ) : selectedTable === 'usuario_canal' ? (
               <UsuarioCanalFormFields
