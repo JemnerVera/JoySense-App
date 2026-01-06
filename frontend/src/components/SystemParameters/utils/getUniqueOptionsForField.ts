@@ -18,6 +18,7 @@ interface RelatedData {
   sensorsData?: any[];
   codigotelefonosData?: any[];
   canalesData?: any[];
+  contactosData?: any[];
   [key: string]: any[] | undefined;
 }
 
@@ -49,6 +50,32 @@ export const getUniqueOptionsForField = ({
         if (nivelA !== nivelB) return nivelA - nivelB;
         return a.label.localeCompare(b.label);
       });
+  }
+
+  // Caso especial para usuarioid en tabla contacto: solo mostrar usuarios que NO tienen contacto
+  if (columnName === 'usuarioid' && selectedTable === 'contacto') {
+    const usuarios = relatedDataForStatus.userData || [];
+    const contactos = relatedDataForStatus.contactosData || [];
+    
+    // Obtener IDs de usuarios que ya tienen contacto (activo o inactivo)
+    const usuariosConContacto = new Set(
+      contactos.map((c: any) => Number(c.usuarioid))
+    );
+    
+    // Filtrar usuarios que NO tienen contacto
+    const usuariosSinContacto = usuarios.filter((u: any) => {
+      const usuarioidNum = Number(u.usuarioid);
+      return !usuariosConContacto.has(usuarioidNum);
+    });
+    
+    return usuariosSinContacto.map((item: any) => {
+      const labelFields = ['firstname', 'lastname'];
+      const label = labelFields.map(l => item[l]).filter(Boolean).join(' ');
+      return {
+        value: item.usuarioid,
+        label: label || `Usuario ${item.usuarioid}`
+      };
+    });
   }
   
   // Mapeo de campos a tablas relacionadas

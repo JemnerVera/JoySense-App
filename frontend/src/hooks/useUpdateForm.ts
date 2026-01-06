@@ -272,8 +272,12 @@ export const useUpdateForm = ({
         );
         
         if (codigoTelefono?.codigotelefono) {
-          // Concatenar código de país con número (ej: +51987654321)
-          dataToUpdate.celular = codigoTelefono.codigotelefono + dataToUpdate.celular;
+          // Verificar si el celular ya tiene el código concatenado (empieza con +)
+          const celularActual = String(dataToUpdate.celular);
+          if (!celularActual.startsWith('+') && !celularActual.startsWith(codigoTelefono.codigotelefono)) {
+            // Solo concatenar si no tiene el código ya
+            dataToUpdate.celular = codigoTelefono.codigotelefono + dataToUpdate.celular;
+          }
         }
       }
       

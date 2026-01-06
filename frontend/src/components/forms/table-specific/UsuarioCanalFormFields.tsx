@@ -51,15 +51,19 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
   // Buscar contacto o correo del usuario seleccionado
   const contactoUsuario = useMemo(() => {
     if (!formData.usuarioid) return null;
+    // Convertir ambos a número para comparación correcta (usuarioid puede ser bigint en BD)
+    const usuarioidNum = Number(formData.usuarioid);
     return contactosData.find((c: any) => 
-      c.usuarioid === formData.usuarioid && c.statusid === 1
-    );
+      Number(c.usuarioid) === usuarioidNum && c.statusid === 1
+    ) || null;
   }, [formData.usuarioid, contactosData]);
 
   const correoUsuario = useMemo(() => {
     if (!formData.usuarioid) return null;
+    // Convertir ambos a número para comparación correcta (usuarioid puede ser bigint en BD)
+    const usuarioidNum = Number(formData.usuarioid);
     return correosData.find((c: any) => 
-      c.usuarioid === formData.usuarioid && c.statusid === 1
+      Number(c.usuarioid) === usuarioidNum && c.statusid === 1
     );
   }, [formData.usuarioid, correosData]);
 
@@ -177,7 +181,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             value={formData.canalid || ''}
             onChange={(value) => updateField('canalid', value)}
             options={getUniqueOptionsForField('canalid')}
-            placeholder={`${t('create.select_channel') || 'SELECCIONAR CANAL'}...`}
+            placeholder="SELECCIONAR CANAL"
             className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${getThemeColor('focus')} focus:border-${getThemeColor('border')} text-gray-800 dark:text-white text-base font-mono`}
           />
         </div>

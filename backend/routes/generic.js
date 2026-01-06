@@ -208,6 +208,17 @@ router.post('/:table', async (req, res) => {
       // Guardar el password en texto plano en req para usarlo después en la sincronización
       req.tempPlainPassword = plainPassword;
       
+      // IMPORTANTE: Si se van a asignar empresas, crear el usuario como INACTIVO temporalmente
+      // para evitar que el trigger ck_usuario_activo_tiene_empresa falle antes de asignar empresas
+      // Luego lo activaremos después de asignar las empresas
+      if (empresasIdsToAssociate && Array.isArray(empresasIdsToAssociate) && empresasIdsToAssociate.length > 0) {
+        const originalStatusid = dataToInsert.statusid;
+        dataToInsert.statusid = 0; // Temporalmente inactivo
+        req._usuario_temporal_inactivo = true;
+        req._usuario_statusid_original = originalStatusid !== undefined ? originalStatusid : 1;
+        logger.info(`🔧 [POST /usuario] Usuario se creará como INACTIVO temporalmente para asignar empresas primero`);
+      }
+      
       // NOTA: La sincronización con Supabase Auth se realiza automáticamente después del INSERT
       // Ver código de sincronización más abajo
     }
@@ -316,66 +327,112 @@ router.post('/:table', async (req, res) => {
         // ASOCIAR EMPRESAS AL USUARIO (si se proporcionaron empresas_ids)
         // IMPORTANTE: Esto se hace DESPUÉS de la sincronización para no interferir
         // Tiene su propio try-catch para que errores aquí no afecten la sincronización
+        // NUEVO: Usa fn_asignar_empresa_a_usuario (una empresa a la vez) según diseño del DBA
         // ====================================================================
         if (empresasIdsToAssociate && Array.isArray(empresasIdsToAssociate) && empresasIdsToAssociate.length > 0) {
           try {
-            // Obtener usercreatedid correcto (debe ser integer, no UUID)
-            // Primero intentar desde user_metadata
-            let usercreatedid = req.user?.user_metadata?.usuarioid;
+            let empresasAsignadas = 0;
+            let empresasConError = [];
             
-            // Si no está en user_metadata, buscar en la tabla usuario usando el useruuid
-            if (!usercreatedid && req.user?.id) {
+            // Iterar sobre cada empresa y asignarla individualmente
+            for (let i = 0; i < empresasIdsToAssociate.length; i++) {
+              const empresaid = empresasIdsToAssociate[i];
+              
+              // Determinar si es la empresa por defecto:
+              // - Si no se especificó is_default_empresa, la primera será default
+              // - Si se especificó, solo esa será default
+              const isDefault = (i === 0 && !isDefaultEmpresaToAssociate) || 
+                                (empresaid === isDefaultEmpresaToAssociate);
+              
               try {
-                const { data: usuarioData, error: usuarioError } = await userSupabase
-                  .schema(dbSchema)
-                  .from('usuario')
-                  .select('usuarioid')
-                  .eq('useruuid', req.user.id)
-                  .single();
+                const { error: rpcError } = await userSupabase
+                  .schema('joysense')
+                  .rpc('fn_asignar_empresa_a_usuario', {
+                    p_usuarioid: newUsuario.usuarioid,
+                    p_empresaid: empresaid,
+                    p_is_default: isDefault
+                  });
                 
-                if (!usuarioError && usuarioData) {
-                  usercreatedid = usuarioData.usuarioid;
+                if (rpcError) {
+                  logger.error(`❌ [POST /usuario] Error asignando empresa ${empresaid}:`, rpcError.message);
+                  empresasConError.push({ empresaid, error: rpcError.message });
+                } else {
+                  empresasAsignadas++;
+                  logger.debug(`✅ [POST /usuario] Empresa ${empresaid} asignada exitosamente (is_default: ${isDefault})`);
                 }
-              } catch (err) {
-                logger.warn(`⚠️ [POST /usuario] Error obteniendo usuarioid de tabla: ${err.message}`);
+              } catch (empresaErr) {
+                logger.error(`❌ [POST /usuario] Excepción al asignar empresa ${empresaid}:`, empresaErr.message);
+                empresasConError.push({ empresaid, error: empresaErr.message });
               }
             }
             
-            // Fallback a 1 si no se pudo obtener
-            if (!usercreatedid || isNaN(parseInt(usercreatedid))) {
-              usercreatedid = 1;
-            } else {
-              usercreatedid = parseInt(usercreatedid);
-            }
-            
-            // Llamar a la función RPC para asociar empresas
-            const { data: rpcResult, error: rpcError } = await userSupabase
-              .schema('joysense')
-              .rpc('fn_asociar_empresas_a_usuario', {
-                p_usuarioid: newUsuario.usuarioid,
-                p_empresas_ids: empresasIdsToAssociate,
-                p_usercreatedid: usercreatedid,
-                p_is_default_empresa: isDefaultEmpresaToAssociate
-              });
-            
-            if (rpcError) {
-              logger.error(`❌ [POST /usuario] Error en fn_asociar_empresas_a_usuario:`, rpcError.message);
-              data[0].empresas_error = rpcError.message;
-              data[0].empresas_status = 'error';
-            } else if (rpcResult) {
-              logger.info(`✅ [POST /usuario] Empresas asociadas exitosamente al usuario ${newUsuario.usuarioid}`);
-              data[0].empresas_insertadas = rpcResult.empresas_insertadas;
-              data[0].empresas_ids = rpcResult.empresas_ids;
+            // Reportar resultados
+            if (empresasConError.length === 0) {
+              logger.info(`✅ [POST /usuario] Todas las empresas (${empresasAsignadas}) asignadas exitosamente al usuario ${newUsuario.usuarioid}`);
+              data[0].empresas_insertadas = empresasAsignadas;
+              data[0].empresas_ids = empresasIdsToAssociate;
               data[0].empresas_status = 'success';
+              
+              // Si el usuario fue creado como inactivo temporalmente, activarlo ahora que tiene empresas
+              if (req._usuario_temporal_inactivo && empresasAsignadas > 0) {
+                try {
+                  const { error: errorActivar } = await userSupabase
+                    .schema(dbSchema)
+                    .from('usuario')
+                    .update({ statusid: req._usuario_statusid_original })
+                    .eq('usuarioid', newUsuario.usuarioid);
+                  
+                  if (errorActivar) {
+                    logger.error(`❌ [POST /usuario] Error activando usuario después de asignar empresas:`, errorActivar.message);
+                    data[0].empresas_warning = 'Empresas asignadas pero error al activar usuario';
+                  } else {
+                    logger.info(`✅ [POST /usuario] Usuario ${newUsuario.usuarioid} activado exitosamente después de asignar empresas`);
+                    // Actualizar el statusid en la respuesta
+                    data[0].statusid = req._usuario_statusid_original;
+                  }
+                } catch (activarErr) {
+                  logger.error(`❌ [POST /usuario] Excepción al activar usuario:`, activarErr.message);
+                  data[0].empresas_warning = 'Empresas asignadas pero error al activar usuario';
+                }
+              }
+            } else if (empresasAsignadas > 0) {
+              logger.warn(`⚠️ [POST /usuario] Algunas empresas asignadas (${empresasAsignadas}/${empresasIdsToAssociate.length}), ${empresasConError.length} con error`);
+              data[0].empresas_insertadas = empresasAsignadas;
+              data[0].empresas_ids = empresasIdsToAssociate;
+              data[0].empresas_status = 'partial';
+              data[0].empresas_errores = empresasConError;
+              
+              // Si al menos una empresa se asignó, intentar activar el usuario
+              if (req._usuario_temporal_inactivo) {
+                try {
+                  const { error: errorActivar } = await userSupabase
+                    .schema(dbSchema)
+                    .from('usuario')
+                    .update({ statusid: req._usuario_statusid_original })
+                    .eq('usuarioid', newUsuario.usuarioid);
+                  
+                  if (!errorActivar) {
+                    logger.info(`✅ [POST /usuario] Usuario ${newUsuario.usuarioid} activado después de asignar ${empresasAsignadas} empresa(s)`);
+                    data[0].statusid = req._usuario_statusid_original;
+                  }
+                } catch (activarErr) {
+                  logger.warn(`⚠️ [POST /usuario] No se pudo activar usuario:`, activarErr.message);
+                }
+              }
             } else {
-              logger.warn(`⚠️ [POST /usuario] fn_asociar_empresas_a_usuario retornó NULL o vacío`);
-              data[0].empresas_status = 'warning';
-              data[0].empresas_message = 'La función no retornó resultado';
+              logger.error(`❌ [POST /usuario] Todas las empresas fallaron al asignarse`);
+              data[0].empresas_error = `Error al asignar todas las empresas: ${empresasConError.map(e => e.error).join('; ')}`;
+              data[0].empresas_status = 'error';
+              data[0].empresas_errores = empresasConError;
+              // Si no se asignó ninguna empresa, dejar el usuario inactivo
+              logger.warn(`⚠️ [POST /usuario] Usuario ${newUsuario.usuarioid} permanece inactivo porque no se asignaron empresas`);
             }
           } catch (empresasErr) {
-            logger.error('❌ [POST /usuario] Error asociando empresas (usuario se creó igualmente):', empresasErr.message);
+            logger.error('❌ [POST /usuario] Error general asociando empresas (usuario se creó igualmente):', empresasErr.message);
             data[0].empresas_error = empresasErr.message;
             data[0].empresas_status = 'error';
+            // Si hubo error general, dejar el usuario inactivo
+            logger.warn(`⚠️ [POST /usuario] Usuario ${newUsuario.usuarioid} permanece inactivo debido a error al asignar empresas`);
           }
         }
       } else {
@@ -472,6 +529,7 @@ router.put('/:table/:id', async (req, res) => {
     
     // ========================================================================
     // ACTUALIZAR EMPRESAS DEL USUARIO (si se proporcionaron empresas_ids)
+    // NUEVO: Usa fn_asignar_empresa_a_usuario + lógica de desactivación según diseño del DBA
     // ========================================================================
     if (table === 'usuario' && data && data[0] && empresasIdsToUpdate !== null) {
       try {
@@ -479,59 +537,103 @@ router.put('/:table/:id', async (req, res) => {
         if (isNaN(usuarioid)) {
           logger.warn(`⚠️ [PUT /usuario] ID inválido para actualizar empresas: ${id}`);
         } else {
-          // Obtener usercreatedid correcto (debe ser integer, no UUID)
-          let usercreatedid = req.user?.user_metadata?.usuarioid;
+          // 1. Obtener empresas actuales del usuario (solo activas)
+          const { data: empresasActuales, error: errorEmpresasActuales } = await userSupabase
+            .schema(dbSchema)
+            .from('usuario_empresa')
+            .select('empresaid, is_default, statusid')
+            .eq('usuarioid', usuarioid);
           
-          // Si no está en user_metadata, buscar en la tabla usuario usando el useruuid
-          if (!usercreatedid && req.user?.id) {
+          if (errorEmpresasActuales) {
+            logger.error(`❌ [PUT /usuario] Error obteniendo empresas actuales:`, errorEmpresasActuales.message);
+            throw errorEmpresasActuales;
+          }
+          
+          const empresasActualesIds = (empresasActuales || [])
+            .filter(e => e.statusid === 1)
+            .map(e => e.empresaid);
+          
+          // 2. Determinar empresas a desactivar (están en actuales pero no en la nueva lista)
+          const empresasADesactivar = empresasActualesIds.filter(
+            id => !empresasIdsToUpdate.includes(id)
+          );
+          
+          // 3. Desactivar empresas que ya no están en la lista
+          if (empresasADesactivar.length > 0) {
+            const { error: errorDesactivar } = await userSupabase
+              .schema(dbSchema)
+              .from('usuario_empresa')
+              .update({ 
+                statusid: 0, 
+                is_default: false,
+                usermodifiedid: req.user?.user_metadata?.usuarioid || 1,
+                datemodified: new Date().toISOString()
+              })
+              .eq('usuarioid', usuarioid)
+              .in('empresaid', empresasADesactivar);
+            
+            if (errorDesactivar) {
+              logger.error(`❌ [PUT /usuario] Error desactivando empresas:`, errorDesactivar.message);
+              throw errorDesactivar;
+            }
+            
+            logger.info(`✅ [PUT /usuario] ${empresasADesactivar.length} empresa(s) desactivada(s) para usuario ${usuarioid}`);
+          }
+          
+          // 4. Activar/crear empresas nuevas usando fn_asignar_empresa_a_usuario
+          let empresasAsignadas = 0;
+          let empresasConError = [];
+          
+          for (let i = 0; i < empresasIdsToUpdate.length; i++) {
+            const empresaid = empresasIdsToUpdate[i];
+            
+            // Determinar si es la empresa por defecto:
+            // - Si no se especificó is_default_empresa, la primera será default
+            // - Si se especificó, solo esa será default
+            const isDefault = (i === 0 && !isDefaultEmpresaToUpdate) || 
+                              (empresaid === isDefaultEmpresaToUpdate);
+            
             try {
-              const { data: usuarioData, error: usuarioError } = await userSupabase
-                .schema(dbSchema)
-                .from('usuario')
-                .select('usuarioid')
-                .eq('useruuid', req.user.id)
-                .single();
+              const { error: rpcError } = await userSupabase
+                .schema('joysense')
+                .rpc('fn_asignar_empresa_a_usuario', {
+                  p_usuarioid: usuarioid,
+                  p_empresaid: empresaid,
+                  p_is_default: isDefault
+                });
               
-              if (!usuarioError && usuarioData) {
-                usercreatedid = usuarioData.usuarioid;
+              if (rpcError) {
+                logger.error(`❌ [PUT /usuario] Error asignando empresa ${empresaid}:`, rpcError.message);
+                empresasConError.push({ empresaid, error: rpcError.message });
+              } else {
+                empresasAsignadas++;
+                logger.debug(`✅ [PUT /usuario] Empresa ${empresaid} asignada/actualizada exitosamente (is_default: ${isDefault})`);
               }
-            } catch (err) {
-              logger.warn(`⚠️ [PUT /usuario] Error obteniendo usuarioid de tabla: ${err.message}`);
+            } catch (empresaErr) {
+              logger.error(`❌ [PUT /usuario] Excepción al asignar empresa ${empresaid}:`, empresaErr.message);
+              empresasConError.push({ empresaid, error: empresaErr.message });
             }
           }
           
-          // Fallback a 1 si no se pudo obtener
-          if (!usercreatedid || isNaN(parseInt(usercreatedid))) {
-            usercreatedid = 1;
-          } else {
-            usercreatedid = parseInt(usercreatedid);
-          }
-          
-          // Llamar a la función RPC para actualizar empresas
-          const { data: rpcResult, error: rpcError } = await userSupabase
-            .schema('joysense')
-            .rpc('fn_actualizar_empresas_de_usuario', {
-              p_usuarioid: usuarioid,
-              p_empresas_ids: empresasIdsToUpdate,
-              p_usercreatedid: usercreatedid,
-              p_is_default_empresa: isDefaultEmpresaToUpdate,
-              p_desactivar_no_incluidas: true
-            });
-          
-          if (rpcError) {
-            logger.error(`❌ [PUT /usuario] Error en fn_actualizar_empresas_de_usuario:`, rpcError.message);
-            data[0].empresas_error = rpcError.message;
-            data[0].empresas_status = 'error';
-          } else if (rpcResult) {
-            logger.info(`✅ [PUT /usuario] Empresas actualizadas exitosamente para el usuario ${usuarioid}`);
-            data[0].empresas_activadas = rpcResult.empresas_activadas;
-            data[0].empresas_desactivadas = rpcResult.empresas_desactivadas;
-            data[0].empresas_ids = rpcResult.empresas_ids;
+          // 5. Reportar resultados
+          if (empresasConError.length === 0) {
+            logger.info(`✅ [PUT /usuario] Empresas actualizadas exitosamente para el usuario ${usuarioid} (${empresasAsignadas} activadas, ${empresasADesactivar.length} desactivadas)`);
+            data[0].empresas_activadas = empresasAsignadas;
+            data[0].empresas_desactivadas = empresasADesactivar.length;
+            data[0].empresas_ids = empresasIdsToUpdate;
             data[0].empresas_status = 'success';
+          } else if (empresasAsignadas > 0) {
+            logger.warn(`⚠️ [PUT /usuario] Algunas empresas actualizadas (${empresasAsignadas}/${empresasIdsToUpdate.length}), ${empresasConError.length} con error`);
+            data[0].empresas_activadas = empresasAsignadas;
+            data[0].empresas_desactivadas = empresasADesactivar.length;
+            data[0].empresas_ids = empresasIdsToUpdate;
+            data[0].empresas_status = 'partial';
+            data[0].empresas_errores = empresasConError;
           } else {
-            logger.warn(`⚠️ [PUT /usuario] fn_actualizar_empresas_de_usuario retornó NULL o vacío`);
-            data[0].empresas_status = 'warning';
-            data[0].empresas_message = 'La función no retornó resultado';
+            logger.error(`❌ [PUT /usuario] Todas las empresas fallaron al actualizarse`);
+            data[0].empresas_error = `Error al actualizar todas las empresas: ${empresasConError.map(e => e.error).join('; ')}`;
+            data[0].empresas_status = 'error';
+            data[0].empresas_errores = empresasConError;
           }
         }
       } catch (empresasErr) {

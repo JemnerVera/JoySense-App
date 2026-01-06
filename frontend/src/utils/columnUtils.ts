@@ -55,6 +55,7 @@ export const filterColumnsByTable = (
     'correo': ['correoid', 'usuarioid', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'codigotelefono': ['codigotelefonoid', 'codigotelefono', 'paistelefono', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'tipo_mensaje': ['tipo_mensajeid', 'tipo_mensaje', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'usuario_canal': ['usuario_canalid', 'usuarioid', 'canalid', 'identificador', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
   };
 
   // Caso especial para nodo - ya no tiene campos obsoletos (deveui, appeui, appkey, atpin)
