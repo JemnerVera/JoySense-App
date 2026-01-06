@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import MultiSelectWithPlaceholder from '../../MultiSelectWithPlaceholder';
 
 interface UsuarioFormFieldsProps {
   visibleColumns: any[];
@@ -12,6 +13,8 @@ interface UsuarioFormFieldsProps {
   setFormData: (data: Record<string, any>) => void;
   renderField: (col: any) => React.ReactNode;
   getThemeColor: (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => string;
+  empresasData?: any[];
+  getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
 }
 
 export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
@@ -19,11 +22,72 @@ export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
   formData,
   setFormData,
   renderField,
-  getThemeColor
+  getThemeColor,
+  empresasData = [],
+  getUniqueOptionsForField
 }) => {
   const { t } = useLanguage();
 
   const result: React.ReactNode[] = [];
+
+  // Obtener opciones de empresas
+  const empresaOptions = getUniqueOptionsForField 
+    ? getUniqueOptionsForField('empresaid')
+    : empresasData
+        .filter((e: any) => e.statusid === 1)
+        .map((e: any) => ({
+          value: e.empresaid,
+          label: e.empresa || `Empresa ${e.empresaid}`
+        }));
+
+  // Logs para diagnosticar
+  console.log('🔍 [UsuarioFormFields] formData recibido:', {
+    formData_keys: Object.keys(formData),
+    formData_empresas_ids: formData.empresas_ids,
+    formData_empresas_ids_type: typeof formData.empresas_ids,
+    formData_empresas_ids_isArray: Array.isArray(formData.empresas_ids),
+    formData_empresas_ids_length: Array.isArray(formData.empresas_ids) ? formData.empresas_ids.length : 'N/A',
+    empresaOptions_count: empresaOptions.length,
+    empresaOptions_first3: empresaOptions.slice(0, 3).map(opt => ({ value: opt.value, valueType: typeof opt.value, label: opt.label }))
+  });
+  
+  // Asegurar que empresas_ids sea un array y convertir a números para comparación
+  const empresasIds = Array.isArray(formData.empresas_ids) 
+    ? formData.empresas_ids.map(id => Number(id))
+    : formData.empresas_ids 
+      ? [Number(formData.empresas_ids)] 
+      : [];
+  
+  console.log('🔍 [UsuarioFormFields] empresasIds procesado:', {
+    empresasIds,
+    empresasIds_type: typeof empresasIds[0],
+    empresasIds_length: empresasIds.length
+  });
+  
+  // Obtener labels de las empresas seleccionadas para el placeholder
+  // Comparar convirtiendo ambos valores a números para evitar problemas de tipo
+  const empresasSeleccionadasLabels = empresaOptions
+    .filter(opt => {
+      const optValue = Number(opt.value);
+      const isIncluded = empresasIds.includes(optValue);
+      if (isIncluded) {
+        console.log('✅ [UsuarioFormFields] Empresa encontrada:', { label: opt.label, optValue, empresasIds });
+      }
+      return isIncluded;
+    })
+    .map(opt => opt.label);
+  
+  console.log('🔍 [UsuarioFormFields] empresasSeleccionadasLabels:', {
+    empresasSeleccionadasLabels,
+    count: empresasSeleccionadasLabels.length
+  });
+  
+  // Placeholder dinámico: mostrar empresas actuales si hay seleccionadas
+  const placeholderText = empresasSeleccionadasLabels.length > 0
+    ? empresasSeleccionadasLabels.join(', ')
+    : 'Seleccione empresas';
+  
+  console.log('🔍 [UsuarioFormFields] placeholderText:', placeholderText);
 
   // Primera fila: Login, Contraseña
   const loginField = visibleColumns.find(c => c.columnName === 'login');
@@ -58,6 +122,29 @@ export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
       {firstnameField && renderField(firstnameField)}
       {lastnameField && renderField(lastnameField)}
       {statusField && renderField(statusField)}
+    </div>
+  );
+
+  // Tercera fila: Empresas (selección múltiple)
+  result.push(
+    <div key="empresas-row" className="mb-6">
+      <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+        EMPRESAS*
+      </label>
+      <MultiSelectWithPlaceholder
+        value={empresasIds}
+        onChange={(value) => setFormData({
+          ...formData,
+          empresas_ids: value
+        })}
+        options={empresaOptions}
+        placeholder={placeholderText}
+        className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500`}
+        disabled={false}
+      />
+      <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+        Seleccione al menos una empresa. El usuario tendrá acceso a las empresas seleccionadas.
+      </p>
     </div>
   );
 

@@ -396,6 +396,29 @@ export const useInsertForm = ({
         }
       })
       
+      // Caso especial para tabla 'usuario': incluir empresas_ids aunque no esté en la configuración
+      // porque no es un campo de la tabla, sino un campo especial para la lógica de negocio
+      if (tableName === 'usuario' && formData.empresas_ids !== undefined) {
+        if (Array.isArray(formData.empresas_ids) && formData.empresas_ids.length > 0) {
+          filteredData.empresas_ids = formData.empresas_ids
+          logger.debug('[useInsertForm] empresas_ids agregado a filteredData para usuario:', {
+            empresas_ids: formData.empresas_ids,
+            count: formData.empresas_ids.length
+          })
+        } else {
+          logger.warn('[useInsertForm] empresas_ids está presente pero está vacío o no es un array:', {
+            empresas_ids: formData.empresas_ids,
+            type: typeof formData.empresas_ids,
+            isArray: Array.isArray(formData.empresas_ids)
+          })
+        }
+      }
+      
+      // También incluir is_default_empresa si existe
+      if (tableName === 'usuario' && formData.is_default_empresa !== undefined) {
+        filteredData.is_default_empresa = formData.is_default_empresa
+      }
+      
       // Agregar campos de auditoría
       // DIAGNÓSTICO: Log del objeto user completo para ver su estructura
       logger.debug('[useInsertForm] Objeto user completo:', {
@@ -453,7 +476,11 @@ export const useInsertForm = ({
         tableName,
         usercreatedid: dataToInsert.usercreatedid,
         usermodifiedid: dataToInsert.usermodifiedid,
-        dataKeys: Object.keys(dataToInsert)
+        dataKeys: Object.keys(dataToInsert),
+        empresas_ids: dataToInsert.empresas_ids,
+        empresas_idsType: typeof dataToInsert.empresas_ids,
+        empresas_idsIsArray: Array.isArray(dataToInsert.empresas_ids),
+        fullDataToInsert: tableName === 'usuario' ? dataToInsert : 'hidden'
       })
 
       const result = await insertRow(dataToInsert)
