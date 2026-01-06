@@ -171,13 +171,31 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     }, 500);
   };
 
-  const selectedOption = options.find(option => 
-    (value !== null && value !== undefined && value !== 0) && (
-      option.value === value || 
-      option.value === value?.toString() || 
-      option.value?.toString() === value?.toString()
-    )
-  );
+  const selectedOption = options.find(option => {
+    // Manejar comparación de valores, incluyendo strings 'true' y 'false'
+    if (value === null || value === undefined) {
+      return false;
+    }
+    // Comparar directamente
+    if (option.value === value) {
+      return true;
+    }
+    // Comparar como strings
+    if (String(option.value) === String(value)) {
+      return true;
+    }
+    // Comparar valores booleanos convertidos a strings
+    // value es string | number | null, nunca boolean
+    const optionStr = String(option.value);
+    const valueStr = String(value);
+    if ((optionStr === 'true' || option.value === true) && (valueStr === 'true' || value === 1 || valueStr === '1')) {
+      return true;
+    }
+    if ((optionStr === 'false' || option.value === false) && (valueStr === 'false' || value === 0 || valueStr === '0')) {
+      return true;
+    }
+    return false;
+  });
 
   // Filtrar opciones basado en el término de búsqueda
   const filteredOptions = options.filter(option =>

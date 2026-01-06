@@ -569,6 +569,42 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   options={getUniqueOptionsForField(field.name)}
                   placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
                 />
+              ) : field.name === 'is_admin_global' && tableName === 'perfil' ? (
+                // Caso especial para is_admin_global en perfil: dropdown con TRUE/FALSE
+                (() => {
+                  const fieldValue = formData[field.name];
+                  // Convertir valor booleano a string para el componente
+                  // Por defecto debe ser 'false' si no hay valor
+                  let currentValue: string | null = null;
+                  if (fieldValue === true || fieldValue === 'true' || fieldValue === 1 || fieldValue === '1') {
+                    currentValue = 'true';
+                  } else if (fieldValue === false || fieldValue === 'false' || fieldValue === 0 || fieldValue === '0') {
+                    currentValue = 'false';
+                  } else {
+                    // Si no hay valor, usar 'false' por defecto
+                    currentValue = 'false';
+                    // Asegurar que el valor inicial sea false si no está definido
+                    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+                      updateFormField(field.name, false);
+                    }
+                  }
+                  
+                  return (
+                    <SelectWithPlaceholder
+                      value={currentValue}
+                      onChange={(newValue) => {
+                        // Convertir string de vuelta a booleano
+                        const boolValue = newValue === 'true' || newValue === 1 || newValue === '1';
+                        updateFormField(field.name, boolValue);
+                      }}
+                      options={[
+                        { value: 'true', label: 'TRUE' },
+                        { value: 'false', label: 'FALSE' }
+                      ]}
+                      placeholder="SELECCIONAR"
+                    />
+                  );
+                })()
               ) : field.foreignKey && isConstrained ? (
                 // Campo foreign key con constraint: mostrar como SelectWithPlaceholder disabled con valor actual
                 (() => {

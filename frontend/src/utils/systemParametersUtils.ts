@@ -198,6 +198,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'paisabrev': t('table_headers.abbreviation'),
     'empresabrev': t('table_headers.abbreviation'),
     'empresaabrev': t('table_headers.abbreviation'),
+    'is_admin_global': 'ES ADMIN GLOBAL?',
     'farmabrev': t('table_headers.abbreviation'),
     'fundoabrev': t('table_headers.abbreviation'),
     'ubicacionabrev': t('table_headers.abbreviation'),
