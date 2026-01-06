@@ -194,6 +194,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'perfilid': t('table_headers.profile'),
     'umbralid': t('table_headers.threshold'),
     'usuarioid': t('table_headers.user'),
+    'canalid': 'Canal',
     'medioid': t('table_headers.medium'),
     'paisabrev': t('table_headers.abbreviation'),
     'empresabrev': t('table_headers.abbreviation'),
@@ -395,7 +396,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
   }
 
   // Mapeo de campos de ID a sus tablas relacionadas y campos de nombre
-  const idToNameMapping: Record<string, { table: string; nameField: string }> = {
+  const idToNameMapping: Record<string, { table: string; nameField: string | string[] }> = {
     'paisid': { table: 'pais', nameField: 'pais' },
     'empresaid': { table: 'empresa', nameField: 'empresa' },
     'fundoid': { table: 'fundo', nameField: 'fundo' },
@@ -409,7 +410,8 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'criticidadid': { table: 'criticidad', nameField: 'criticidad' },
     'perfilid': { table: 'perfil', nameField: 'perfil' },
     'umbralid': { table: 'umbral', nameField: 'umbral' },
-    'usuarioid': { table: 'usuario', nameField: 'login' },
+    'usuarioid': { table: 'usuario', nameField: ['firstname', 'lastname'] }, // Cambiar a nombre completo
+    'canalid': { table: 'canal', nameField: 'canal' }, // Agregar canalid
     'medioid': { table: 'medio', nameField: 'nombre' },
     'old_criticidadid': { table: 'criticidad', nameField: 'criticidad' },
     'new_criticidadid': { table: 'criticidad', nameField: 'criticidad' },
@@ -430,8 +432,18 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     if (nestedObject) {
       // Si es un array (Supabase puede retornar arrays), tomar el primer elemento
       const nested = Array.isArray(nestedObject) ? nestedObject[0] : nestedObject;
-      if (nested && nested[mapping.nameField]) {
-        return nested[mapping.nameField];
+      if (nested) {
+        // Manejar nameField como string o array
+        if (Array.isArray(mapping.nameField)) {
+          const displayValue = mapping.nameField
+            .map(field => nested[field])
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+          if (displayValue) return displayValue;
+        } else if (nested[mapping.nameField]) {
+          return nested[mapping.nameField];
+        }
       }
     }
     
@@ -471,7 +483,18 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
       });
 
       if (relatedItem) {
-        const displayValue = relatedItem[mapping.nameField] || idValue.toString();
+        // Manejar nameField como string o array
+        let displayValue: string;
+        if (Array.isArray(mapping.nameField)) {
+          // Para arrays (ej: ['firstname', 'lastname']), concatenar los valores
+          displayValue = mapping.nameField
+            .map(field => relatedItem[field])
+            .filter(Boolean)
+            .join(' ')
+            .trim() || idValue.toString();
+        } else {
+          displayValue = relatedItem[mapping.nameField] || idValue.toString();
+        }
         // Cachear solo si es diferente al ID (optimización de memoria)
         if (displayValue !== idValue.toString()) {
           displayValueCache.set(cacheKey, displayValue);

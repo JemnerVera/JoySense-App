@@ -457,14 +457,13 @@ export const useInsertForm = ({
         );
         
         if (codigoTelefono?.codigotelefono) {
-          // Concatenar código de país con número (ej: +51987654321)
-          const celularCompleto = codigoTelefono.codigotelefono + dataToInsert.celular;
-          dataToInsert.celular = celularCompleto;
-          logger.debug('[useInsertForm] Celular concatenado:', {
-            codigo: codigoTelefono.codigotelefono,
-            numero: filteredData.celular,
-            completo: celularCompleto
-          });
+          // Verificar si el celular ya tiene el código concatenado (empieza con +)
+          const celularActual = String(dataToInsert.celular);
+          if (!celularActual.startsWith('+') && !celularActual.startsWith(codigoTelefono.codigotelefono)) {
+            // Solo concatenar si no tiene el código ya
+            const celularCompleto = codigoTelefono.codigotelefono + dataToInsert.celular;
+            dataToInsert.celular = celularCompleto;
+          }
         }
       }
       
