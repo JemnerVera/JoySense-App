@@ -58,36 +58,19 @@ export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
       ? [Number(formData.empresas_ids)] 
       : [];
   
-  console.log('🔍 [UsuarioFormFields] empresasIds procesado:', {
-    empresasIds,
-    empresasIds_type: typeof empresasIds[0],
-    empresasIds_length: empresasIds.length
-  });
-  
   // Obtener labels de las empresas seleccionadas para el placeholder
   // Comparar convirtiendo ambos valores a números para evitar problemas de tipo
   const empresasSeleccionadasLabels = empresaOptions
     .filter(opt => {
       const optValue = Number(opt.value);
-      const isIncluded = empresasIds.includes(optValue);
-      if (isIncluded) {
-        console.log('✅ [UsuarioFormFields] Empresa encontrada:', { label: opt.label, optValue, empresasIds });
-      }
-      return isIncluded;
+      return empresasIds.includes(optValue);
     })
     .map(opt => opt.label);
-  
-  console.log('🔍 [UsuarioFormFields] empresasSeleccionadasLabels:', {
-    empresasSeleccionadasLabels,
-    count: empresasSeleccionadasLabels.length
-  });
   
   // Placeholder dinámico: mostrar empresas actuales si hay seleccionadas
   const placeholderText = empresasSeleccionadasLabels.length > 0
     ? empresasSeleccionadasLabels.join(', ')
     : 'Seleccione empresas';
-  
-  console.log('🔍 [UsuarioFormFields] placeholderText:', placeholderText);
 
   // Primera fila: Login, Contraseña
   const loginField = visibleColumns.find(c => c.columnName === 'login');
