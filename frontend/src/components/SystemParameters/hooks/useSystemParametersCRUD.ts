@@ -196,7 +196,7 @@ export const useSystemParametersCRUD = ({
         loadTableData(selectedTable);
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable || '')) {
+      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica'].includes(selectedTable || '')) {
         loadRelatedTablesData();
       }
     } else {
@@ -298,7 +298,7 @@ export const useSystemParametersCRUD = ({
         loadTableData(selectedTable);
       }
       // Recargar datos relacionados si se actualizó en una tabla que afecta a otras
-      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+      if (['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica'].includes(selectedTable)) {
         loadRelatedTablesData();
       }
     } else {

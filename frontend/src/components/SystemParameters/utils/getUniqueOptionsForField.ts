@@ -71,12 +71,27 @@ export const getUniqueOptionsForField = ({
   };
 
   const mapping = fieldToTableMap[columnName];
-  if (!mapping) return [];
+  if (!mapping) {
+    return [];
+  }
 
   const data = relatedDataForStatus[mapping.table as keyof typeof relatedDataForStatus] as any[];
-  if (!data) return [];
+  if (!data) {
+    return [];
+  }
 
-  return data.map((item: any) => {
+  // Filtrar por statusid = 1 (activos) para campos de selección
+  // Esto asegura que solo se muestren opciones activas en los dropdowns
+  const activeData = data.filter((item: any) => {
+    // Para campos que tienen statusid, solo mostrar activos
+    if (item.statusid !== undefined) {
+      return item.statusid === 1;
+    }
+    // Si no tiene statusid, incluir todos
+    return true;
+  });
+
+  return activeData.map((item: any) => {
     let label = '';
     if (Array.isArray(mapping.label)) {
       // Para codigotelefonoid, mostrar "código - país"

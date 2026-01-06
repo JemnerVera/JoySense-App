@@ -62,16 +62,29 @@ export const useTableDataManagement = () => {
    */
   const loadRelatedTablesData = useCallback(async () => {
     try {
-      // const startTime = performance.now(); // Para debugging de performance
+      // Helper para manejar errores individuales sin afectar otras cargas
+      const safeLoad = async (tableName: string, limit?: number) => {
+        try {
+          return await JoySenseService.getTableData(tableName, limit);
+        } catch (error) {
+          console.error(`⚠️ [loadRelatedTablesData] Error cargando ${tableName} (continuando con otras tablas):`, error);
+          return []; // Retornar array vacío en caso de error
+        }
+      };
 
+      // Cargar tablas problemáticas (con error recursivo) por separado para que no afecten a las demás
+      const [ubicacionesResponse, localizacionesResponse, nodosResponse] = await Promise.allSettled([
+        safeLoad('ubicacion', 500),
+        safeLoad('localizacion', 500),
+        safeLoad('nodo', 500)
+      ]);
+
+      // Cargar el resto de las tablas (incluyendo tipos que es crítico)
       const [
         paisesResponse,
         empresasResponse,
         fundosResponse,
-        ubicacionesResponse,
-        localizacionesResponse,
         entidadesResponse,
-        nodosResponse,
         tiposResponse,
         metricasResponse,
         criticidadesResponse,
@@ -88,31 +101,39 @@ export const useTableDataManagement = () => {
         fuentesResponse,
         canalesResponse
       ] = await Promise.all([
-        JoySenseService.getTableData('pais', 500),
-        JoySenseService.getTableData('empresa', 500),
-        JoySenseService.getTableData('fundo', 500),
-        JoySenseService.getTableData('ubicacion', 500),
-        JoySenseService.getTableData('localizacion', 500),
-        JoySenseService.getTableData('entidad', 500),
-        JoySenseService.getTableData('nodo', 500),
-        JoySenseService.getTableData('tipo', 500),
-        JoySenseService.getTableData('metrica', 500),
-        JoySenseService.getTableData('criticidad', 500),
-        JoySenseService.getTableData('perfil', 500),
-        JoySenseService.getTableData('umbral', 500),
-        JoySenseService.getTableData('regla', 500),
-        JoySenseService.getTableData('usuario', 500),
-        JoySenseService.getTableData('sensor', 500),
-        JoySenseService.getTableData('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
-        JoySenseService.getTableData('contacto', 500),
-        JoySenseService.getTableData('correo', 500),
-        JoySenseService.getTableData('codigotelefono', 500),
-        JoySenseService.getTableData('origen', 500),
-        JoySenseService.getTableData('fuente', 500),
-        JoySenseService.getTableData('canal', 500)
+        safeLoad('pais', 500),
+        safeLoad('empresa', 500),
+        safeLoad('fundo', 500),
+        safeLoad('entidad', 500),
+        safeLoad('tipo', 500), // CRÍTICO: tipos debe cargarse
+        safeLoad('metrica', 500),
+        safeLoad('criticidad', 500),
+        safeLoad('perfil', 500),
+        safeLoad('umbral', 500),
+        safeLoad('regla', 500),
+        safeLoad('usuario', 500),
+        safeLoad('sensor', 500),
+        safeLoad('metricasensor', 2000), // Límite razonable para evitar cargar miles de registros
+        safeLoad('contacto', 500),
+        safeLoad('correo', 500),
+        safeLoad('codigotelefono', 500),
+        safeLoad('origen', 500),
+        safeLoad('fuente', 500),
+        safeLoad('canal', 500)
       ]);
 
-      // Procesar respuestas
+      // Procesar respuestas de tablas problemáticas
+      const ubicaciones = ubicacionesResponse.status === 'fulfilled' 
+        ? (Array.isArray(ubicacionesResponse.value) ? ubicacionesResponse.value : ((ubicacionesResponse.value as any)?.data || []))
+        : [];
+      const localizaciones = localizacionesResponse.status === 'fulfilled'
+        ? (Array.isArray(localizacionesResponse.value) ? localizacionesResponse.value : ((localizacionesResponse.value as any)?.data || []))
+        : [];
+      const nodos = nodosResponse.status === 'fulfilled'
+        ? (Array.isArray(nodosResponse.value) ? nodosResponse.value : ((nodosResponse.value as any)?.data || []))
+        : [];
+
+      // Procesar respuestas - manejar tanto arrays directos como objetos con { data, pagination }
       const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
       const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
       const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
@@ -123,11 +144,29 @@ export const useTableDataManagement = () => {
         paisid: fundo.empresa?.paisid || null
       }));
 
-      const ubicaciones = Array.isArray(ubicacionesResponse) ? ubicacionesResponse : ((ubicacionesResponse as any)?.data || []);
-      const localizaciones = Array.isArray(localizacionesResponse) ? localizacionesResponse : ((localizacionesResponse as any)?.data || []);
+      // ubicaciones, localizaciones y nodos ya fueron procesados arriba con Promise.allSettled
       const entidades = Array.isArray(entidadesResponse) ? entidadesResponse : ((entidadesResponse as any)?.data || []);
-      const nodos = Array.isArray(nodosResponse) ? nodosResponse : ((nodosResponse as any)?.data || []);
-      const tipos = Array.isArray(tiposResponse) ? tiposResponse : ((tiposResponse as any)?.data || []);
+      
+      // Procesar tipos con manejo especial de errores
+      let tipos: any[] = [];
+      try {
+        if (Array.isArray(tiposResponse)) {
+          tipos = tiposResponse;
+        } else if (tiposResponse && typeof tiposResponse === 'object') {
+          // Puede ser { data: [...], pagination: {...} } o { error: ... }
+          if ((tiposResponse as any).data) {
+            tipos = Array.isArray((tiposResponse as any).data) ? (tiposResponse as any).data : [];
+          } else if ((tiposResponse as any).error) {
+            console.error('❌ [loadRelatedTablesData] Error en respuesta de tipos:', (tiposResponse as any).error);
+            tipos = [];
+          } else {
+            tipos = [];
+          }
+        }
+      } catch (error) {
+        console.error('❌ [loadRelatedTablesData] Error procesando tiposResponse:', error);
+        tipos = [];
+      }
       const metricas = Array.isArray(metricasResponse) ? metricasResponse : ((metricasResponse as any)?.data || []);
       const criticidades = Array.isArray(criticidadesResponse) ? criticidadesResponse : ((criticidadesResponse as any)?.data || []);
       const perfiles = Array.isArray(perfilesResponse) ? perfilesResponse : ((perfilesResponse as any)?.data || []);
@@ -169,7 +208,7 @@ export const useTableDataManagement = () => {
 
       // const endTime = performance.now(); // Para debugging de performance
     } catch (error) {
-      console.error('Error loading related tables data:', error);
+      console.error('❌ [loadRelatedTablesData] Error loading related tables data:', error);
     }
   }, []);
 

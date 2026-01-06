@@ -162,6 +162,34 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setLoading // Para establecer loading inmediatamente
   } = useTableDataManagement();
 
+  // Cargar datos relacionados al montar el componente
+  useEffect(() => {
+    console.log('🔄 [SystemParameters] Cargando datos relacionados al montar...');
+    loadRelatedTablesData();
+  }, [loadRelatedTablesData]);
+
+  // Recargar datos relacionados cuando se selecciona una tabla que los necesita
+  // Esto asegura que los datos estén disponibles incluso si el componente ya estaba montado
+  useEffect(() => {
+    if (selectedTable && ['sensor', 'tipo', 'metrica', 'nodo'].includes(selectedTable)) {
+      // Verificar si tiposData está vacío y recargar si es necesario
+      if (selectedTable === 'sensor' && (!tiposData || tiposData.length === 0)) {
+        loadRelatedTablesData().catch(err => {
+          console.error('❌ [SystemParameters] Error al recargar datos relacionados:', err);
+        });
+      }
+    }
+  }, [selectedTable, tiposData, loadRelatedTablesData]);
+
+  // También recargar cuando se cambia a la pestaña 'insert' si tiposData está vacío
+  useEffect(() => {
+    if (activeSubTab === 'insert' && selectedTable === 'sensor' && (!tiposData || tiposData.length === 0)) {
+      loadRelatedTablesData().catch(err => {
+        console.error('❌ [SystemParameters] Error al recargar datos relacionados en insert:', err);
+      });
+    }
+  }, [activeSubTab, selectedTable, tiposData, loadRelatedTablesData]);
+
   // Hook para formulario de inserción (estado completamente aislado de UPDATE)
   // IMPORTANTE: Debe ir después de useTableDataManagement para tener acceso a codigotelefonosData
   const insertForm = useInsertForm({
@@ -175,7 +203,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         loadTableData(selectedTable)
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion'].includes(selectedTable)) {
+      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica'].includes(selectedTable)) {
         loadRelatedTablesData()
       }
     },
@@ -234,16 +262,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       }
       
       // También excluir la clave primaria de la tabla SOLO si es auto-incremental
-      // (es decir, si NO es una foreign key requerida)
+      // (es decir, si NO es una foreign key requerida Y está marcada como hidden)
       const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
       if (primaryKey) {
         const primaryKeyFields = Array.isArray(primaryKey) ? primaryKey : [primaryKey];
         if (primaryKeyFields.includes(col.columnName)) {
           // Verificar si el campo de clave primaria es una foreign key
           const fieldConfig = config?.fields.find(f => f.name === col.columnName);
-          // Si NO es foreign key, entonces es auto-incremental y debe excluirse
-          // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
-          if (!fieldConfig?.foreignKey) {
+          // Si NO es foreign key Y está marcado como hidden, entonces es auto-incremental y debe excluirse
+          // Si ES foreign key O NO está hidden, NO debe excluirse porque el usuario debe ingresarlo/seleccionarlo
+          if (!fieldConfig?.foreignKey && fieldConfig?.hidden) {
             continue;
           }
         }
@@ -1042,7 +1070,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
                     
                     // Excluir la clave primaria de la tabla SOLO si es auto-incremental
-                    // (es decir, si NO es una foreign key requerida)
+                    // (es decir, si NO es una foreign key requerida Y está marcada como hidden)
                     const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
                     if (primaryKey) {
                       const config = getTableConfig(selectedTable as TableName);
@@ -1051,9 +1079,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                       primaryKeyFields.forEach(pk => {
                         // Verificar si el campo de clave primaria es una foreign key
                         const fieldConfig = config?.fields.find(f => f.name === pk);
-                        // Si NO es foreign key, entonces es auto-incremental y debe excluirse
-                        // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
-                        if (!fieldConfig?.foreignKey) {
+                        // Si NO es foreign key Y está marcado como hidden, entonces es auto-incremental y debe excluirse
+                        // Si ES foreign key O NO está hidden, NO debe excluirse porque el usuario debe ingresarlo/seleccionarlo
+                        if (!fieldConfig?.foreignKey && fieldConfig?.hidden) {
                           excludedFields.push(pk);
                         }
                       });
