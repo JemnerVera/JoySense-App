@@ -29,6 +29,10 @@ declare module '@supabase/supabase-js' {
     single: () => Promise<{ data: any; error: any }>;
   }
 
+  export interface RpcBuilder {
+    rpc: (functionName: string, params?: Record<string, any>) => Promise<{ data: any; error: any }>;
+  }
+
   export interface SupabaseClient {
     auth: {
       signInWithPassword: (credentials: { email: string; password: string }) => Promise<AuthResponse>;
@@ -38,6 +42,7 @@ declare module '@supabase/supabase-js' {
       getUser: () => Promise<{ data: { user: User | null }; error: any }>;
     };
     from: (table: string) => QueryBuilder;
+    schema: (schema: string) => RpcBuilder;
   }
 
   export function createClient(url: string, key: string): SupabaseClient;

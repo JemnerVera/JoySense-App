@@ -1,11 +1,13 @@
 /**
  * PermisosTipoOperationsSidebar - Sidebar Auxiliar 3 para PERMISOS
  * Muestra ESTADO, CREAR, ASIGNAR (por ORIGEN)
+ * Filtra pestañas según permisos del usuario: ESTADO=puede_ver, CREAR=puede_insertar
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useUserPermissions } from '../../hooks/useUserPermissions';
 
 interface PermisosTipoOperationsSidebarProps {
   selectedTipo: string;
@@ -17,6 +19,7 @@ interface PermisosTipoOperationsSidebarProps {
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
+  selectedTable?: string; // Tabla actual para verificar permisos
 }
 
 const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps> = ({
@@ -28,9 +31,20 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
   onMouseLeave,
   formData = {},
   multipleData = [],
-  massiveFormData = {}
+  massiveFormData = {},
+  selectedTable = 'permiso' // Por defecto 'permiso' para la tabla de permisos
 }) => {
   const { t } = useLanguage();
+
+  // Obtener permisos del usuario para la tabla actual
+  // El hook funciona con cualquier tabla (geografía o configuración)
+  // Si selectedTable es 'permiso' o no está definido, verificamos permisos sobre 'permiso'
+  // Si selectedTable es otra tabla (pais, empresa, etc.), verificamos permisos sobre esa tabla
+  const { permissions, loading: permissionsLoading } = useUserPermissions({
+    tableName: selectedTable || 'permiso',
+    origenid: null, // Se determinará automáticamente según el tipo de tabla
+    fuenteid: null // Se determinará automáticamente según el nombre de la tabla
+  });
 
   // Determinar el título según el tipo seleccionado
   const getTitle = () => {
@@ -43,10 +57,11 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
   };
 
   // Operaciones disponibles: ESTADO, CREAR, ASIGNAR
-  const operations = [
+  const allOperations = [
     {
       id: 'status' as const,
       label: t('subtabs.status') || 'ESTADO',
+      requiredPermission: 'ver' as const,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -56,6 +71,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
     {
       id: 'insert' as const,
       label: t('subtabs.insert') || 'CREAR',
+      requiredPermission: 'insertar' as const,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -65,6 +81,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
     {
       id: 'asignar' as const,
       label: 'ASIGNAR',
+      requiredPermission: null, // ASIGNAR siempre está disponible (es para administradores)
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -72,6 +89,52 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
       )
     }
   ];
+
+  // Filtrar operaciones según permisos del usuario
+  const operations = useMemo(() => {
+    console.log('🔍 [PermisosTipoOperationsSidebar] Filtrando operaciones', {
+      selectedTable,
+      selectedTipo,
+      permissionsLoading,
+      permissions,
+      totalOperations: allOperations.length
+    });
+
+    const filtered = allOperations.filter(op => {
+      const operationId = op.id;
+      
+      // ASIGNAR siempre está disponible
+      if (operationId === 'asignar') {
+        console.log('✅ [PermisosTipoOperationsSidebar] Operación permitida (ASIGNAR siempre disponible):', operationId);
+        return true;
+      }
+      
+      // Si aún se están cargando permisos, mostrar todas las pestañas
+      if (permissionsLoading) {
+        console.log('⏳ [PermisosTipoOperationsSidebar] Permisos cargando, mostrando operación:', operationId);
+        return true;
+      }
+      
+      // Verificar permiso requerido (solo cuando ya se cargaron)
+      if (op.requiredPermission === 'ver') {
+        const hasPermission = permissions.puede_ver;
+        console.log(hasPermission ? '✅' : '❌', '[PermisosTipoOperationsSidebar] Operación', operationId, hasPermission ? 'permitida' : 'filtrada (sin permiso ver)');
+        return hasPermission;
+      }
+      if (op.requiredPermission === 'insertar') {
+        const hasPermission = permissions.puede_insertar;
+        console.log(hasPermission ? '✅' : '❌', '[PermisosTipoOperationsSidebar] Operación', operationId, hasPermission ? 'permitida' : 'filtrada (sin permiso insertar)');
+        return hasPermission;
+      }
+      
+      // Si no tiene permiso requerido, está permitida
+      console.log('✅ [PermisosTipoOperationsSidebar] Operación permitida (sin permiso requerido):', operationId);
+      return true;
+    });
+
+    console.log('📋 [PermisosTipoOperationsSidebar] Operaciones disponibles:', filtered.length, filtered.map(op => op.id));
+    return filtered;
+  }, [permissions, permissionsLoading, allOperations, selectedTable, selectedTipo]);
 
   const operationsIcon = (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

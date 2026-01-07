@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import ProtectedSubTabButton from '../ProtectedSubTabButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTableConfig } from '../../config/tables.config';
+import { useUserPermissions } from '../../hooks/useUserPermissions';
 
 interface UsuariosOperationsSidebarProps {
   isExpanded: boolean;
@@ -30,15 +31,24 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
   const { t } = useLanguage();
   const config = getTableConfig(selectedTable);
 
+  // Obtener permisos del usuario para la tabla actual
+  const { permissions, loading: permissionsLoading } = useUserPermissions({
+    tableName: selectedTable,
+    origenid: null, // Se determinará automáticamente
+    fuenteid: null // Se determinará automáticamente
+  });
+
   // Operaciones disponibles según la tabla
   const getAllOperations = (): Array<{
     id: 'status' | 'insert' | 'update' | 'massive';
     label: string;
     icon: React.ReactNode;
+    requiredPermission?: 'ver' | 'insertar' | 'actualizar';
   }> => [
     {
       id: 'status',
       label: t('parameters.operations.status'),
+      requiredPermission: 'ver',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -48,6 +58,7 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
     {
       id: 'insert',
       label: t('parameters.operations.create'),
+      requiredPermission: 'insertar',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -57,6 +68,7 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
     {
       id: 'update',
       label: t('parameters.operations.update'),
+      requiredPermission: 'actualizar',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -66,6 +78,7 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
     {
       id: 'massive',
       label: t('parameters.operations.massive'),
+      requiredPermission: 'insertar', // Operaciones masivas requieren insertar
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -76,13 +89,58 @@ const UsuariosOperationsSidebar: React.FC<UsuariosOperationsSidebarProps> = ({
 
   const allOperations = getAllOperations();
 
-  // Filtrar operaciones según permisos de la tabla
-  const availableOperations = allOperations.filter(op => {
-    if (op.id === 'insert' && !config?.allowInsert) return false;
-    if (op.id === 'update' && !config?.allowUpdate) return false;
-    if (op.id === 'massive' && !config?.allowMassive) return false;
-    return true;
-  });
+  // Filtrar operaciones según permisos de la tabla y permisos del usuario
+  const availableOperations = useMemo(() => {
+    console.log('🔍 [UsuariosOperationsSidebar] Filtrando operaciones', {
+      selectedTable,
+      permissionsLoading,
+      permissions,
+      totalOperations: allOperations.length,
+      config: { allowInsert: config?.allowInsert, allowUpdate: config?.allowUpdate, allowMassive: config?.allowMassive }
+    });
+
+    const filtered = allOperations.filter(op => {
+      // Verificar permisos de configuración de la tabla
+      if (op.id === 'insert' && !config?.allowInsert) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (config):', op.id);
+        return false;
+      }
+      if (op.id === 'update' && !config?.allowUpdate) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (config):', op.id);
+        return false;
+      }
+      if (op.id === 'massive' && !config?.allowMassive) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (config):', op.id);
+        return false;
+      }
+      
+      // Si aún se están cargando permisos, mostrar todas las pestañas permitidas por configuración
+      if (permissionsLoading) {
+        console.log('⏳ [UsuariosOperationsSidebar] Permisos cargando, mostrando operación:', op.id);
+        return true;
+      }
+      
+      // Verificar permisos del usuario (solo cuando ya se cargaron)
+      if (op.requiredPermission === 'ver' && !permissions.puede_ver) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (sin permiso ver):', op.id);
+        return false;
+      }
+      if (op.requiredPermission === 'insertar' && !permissions.puede_insertar) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (sin permiso insertar):', op.id);
+        return false;
+      }
+      if (op.requiredPermission === 'actualizar' && !permissions.puede_actualizar) {
+        console.log('❌ [UsuariosOperationsSidebar] Operación filtrada (sin permiso actualizar):', op.id);
+        return false;
+      }
+      
+      console.log('✅ [UsuariosOperationsSidebar] Operación permitida:', op.id);
+      return true;
+    });
+
+    console.log('📋 [UsuariosOperationsSidebar] Operaciones disponibles:', filtered.length, filtered.map(op => op.id));
+    return filtered;
+  }, [allOperations, config, permissions, permissionsLoading, selectedTable]);
 
   const usuariosIcon = (
     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

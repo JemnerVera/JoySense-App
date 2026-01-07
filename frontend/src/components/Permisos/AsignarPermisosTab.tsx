@@ -11,6 +11,14 @@ import { JoySenseService } from '../../services/backend-api';
 import { MessageDisplay } from '../SystemParameters/MessageDisplay';
 import MultiSelectWithPlaceholder from '../MultiSelectWithPlaceholder';
 import SelectWithPlaceholder from '../SelectWithPlaceholder';
+import { 
+  getGeografiaLevelOrder, 
+  areFuentesConsecutive, 
+  getChildObjects,
+  getObjectHierarchy,
+  filterObjectsByParentHierarchy,
+  FUENTE_TO_LEVEL
+} from '../../utils/geografiaHierarchy';
 
 // ============================================================================
 // INTERFACES
@@ -24,6 +32,8 @@ interface AsignarPermisosTabProps {
   empresasData?: any[];
   fundosData?: any[];
   ubicacionesData?: any[];
+  nodosData?: any[];
+  localizacionesData?: any[];
   permisosTipo?: 'permisos-geo' | 'permisos-conf';
   onSuccess?: () => void;
 }
@@ -33,7 +43,6 @@ interface PermisoMatrix {
     puede_ver: boolean;
     puede_insertar: boolean;
     puede_actualizar: boolean;
-    puede_eliminar: boolean;
   };
 }
 
@@ -47,7 +56,7 @@ interface TabConfig {
   fuenteNombre: string;
 }
 
-type GeografiaLevel = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | null;
+type GeografiaLevel = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'nodo' | 'localizacion' | null;
 
 // ============================================================================
 // COMPONENT
@@ -61,6 +70,8 @@ export function AsignarPermisosTab({
   empresasData = [],
   fundosData = [],
   ubicacionesData = [],
+  nodosData = [],
+  localizacionesData = [],
   permisosTipo,
   onSuccess
 }: AsignarPermisosTabProps) {
@@ -194,6 +205,8 @@ export function AsignarPermisosTab({
       else if (fuenteName === 'empresa') setGeografiaLevel('empresa');
       else if (fuenteName === 'fundo') setGeografiaLevel('fundo');
       else if (fuenteName === 'ubicacion') setGeografiaLevel('ubicacion');
+      else if (fuenteName === 'nodo') setGeografiaLevel('nodo');
+      else if (fuenteName === 'localizacion') setGeografiaLevel('localizacion');
       else setGeografiaLevel(null);
     } 
     // Si es TABLA, cargar datos de la tabla
@@ -221,6 +234,7 @@ export function AsignarPermisosTab({
   }, [activeTabConfig, origenesData, fuentesData, tablaData, loadingTablaData]);
 
   // Cargar permisos existentes cuando cambia la pestaña activa
+  // También cargar permisos de niveles superiores para filtrar objetos
   useEffect(() => {
     if (!activeTabConfig) {
       setExistingPermisos([]);
@@ -232,6 +246,8 @@ export function AsignarPermisosTab({
       try {
         // Cargar todos los permisos que coincidan con la combinación
         const allPermisos = await JoySenseService.getTableData('permiso', 10000);
+        
+        // Filtrar permisos del nivel actual
         const filtered = Array.isArray(allPermisos) 
           ? allPermisos.filter((p: any) => 
               p.perfilid === activeTabConfig.perfilid &&
@@ -240,6 +256,33 @@ export function AsignarPermisosTab({
               p.statusid === 1
             )
           : [];
+
+        // Si es geografía, también cargar permisos de niveles superiores para filtrar
+        if (geografiaLevel) {
+          const currentOrder = getGeografiaLevelOrder(geografiaLevel);
+          const parentLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion']
+            .filter(level => getGeografiaLevelOrder(level) < currentOrder);
+
+          parentLevels.forEach(parentLevel => {
+            const parentFuente = fuentesData.find(f => 
+              f.fuente?.toLowerCase() === parentLevel.toLowerCase()
+            );
+
+            if (parentFuente) {
+              const parentPermisos = allPermisos.filter((p: any) => 
+                p.perfilid === activeTabConfig.perfilid &&
+                p.origenid === activeTabConfig.origenid &&
+                p.fuenteid === parentFuente.fuenteid &&
+                p.objetoid !== null &&
+                p.statusid === 1
+              );
+
+              // Agregar permisos padre a la lista (solo para referencia, no se muestran en la matriz)
+              filtered.push(...parentPermisos);
+            }
+          });
+        }
+
         setExistingPermisos(filtered);
       } catch (error) {
         setExistingPermisos([]);
@@ -249,7 +292,44 @@ export function AsignarPermisosTab({
     };
 
     loadExistingPermisos();
-  }, [activeTabConfig]);
+  }, [activeTabConfig, geografiaLevel, fuentesData]);
+
+  // Detectar permisos padre existentes para filtrar objetos
+  const parentPermisos = useMemo(() => {
+    if (!activeTabConfig || !geografiaLevel) return [];
+
+    const currentOrder = getGeografiaLevelOrder(geografiaLevel);
+    const parentLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion']
+      .filter(level => getGeografiaLevelOrder(level) < currentOrder);
+
+    const parentPermisosList: Array<{ level: string; objetoid: number; fuenteid: number }> = [];
+
+    parentLevels.forEach(parentLevel => {
+      const parentFuente = fuentesData.find(f => 
+        f.fuente?.toLowerCase() === parentLevel.toLowerCase()
+      );
+
+      if (parentFuente) {
+        const permisosPadre = existingPermisos.filter((p: any) => 
+          p.perfilid === activeTabConfig.perfilid &&
+          p.origenid === activeTabConfig.origenid &&
+          p.fuenteid === parentFuente.fuenteid &&
+          p.objetoid !== null &&
+          p.statusid === 1
+        );
+
+        permisosPadre.forEach((p: any) => {
+          parentPermisosList.push({
+            level: parentLevel,
+            objetoid: p.objetoid,
+            fuenteid: parentFuente.fuenteid
+          });
+        });
+      }
+    });
+
+    return parentPermisosList;
+  }, [activeTabConfig, geografiaLevel, existingPermisos, fuentesData]);
 
   // Cargar objetos según el tipo de origen (GEOGRAFÍA o TABLA)
   const objetosData = useMemo(() => {
@@ -257,34 +337,112 @@ export function AsignarPermisosTab({
 
     // Si es geografía, usar datos geográficos
     if (geografiaLevel) {
+      let objetos: Array<{ id: number; nombre: string; objetoid: number }> = [];
+
       switch (geografiaLevel) {
         case 'pais':
-          return paisesData.map(p => ({
+          objetos = paisesData.map(p => ({
             id: p.paisid,
             nombre: p.pais || `País ${p.paisid}`,
             objetoid: p.paisid
           }));
+          break;
         case 'empresa':
-          return empresasData.map(e => ({
+          objetos = empresasData.map(e => ({
             id: e.empresaid,
             nombre: e.empresa || `Empresa ${e.empresaid}`,
             objetoid: e.empresaid
           }));
+          break;
         case 'fundo':
-          return fundosData.map(f => ({
+          objetos = fundosData.map(f => ({
             id: f.fundoid,
             nombre: f.fundo || `Fundo ${f.fundoid}`,
             objetoid: f.fundoid
           }));
+          break;
         case 'ubicacion':
-          return ubicacionesData.map(u => ({
+          objetos = ubicacionesData.map(u => ({
             id: u.ubicacionid,
             nombre: u.ubicacion || `Ubicación ${u.ubicacionid}`,
             objetoid: u.ubicacionid
           }));
+          break;
+        case 'nodo':
+          objetos = nodosData.map(n => ({
+            id: n.nodoid,
+            nombre: n.nodo || `Nodo ${n.nodoid}`,
+            objetoid: n.nodoid
+          }));
+          break;
+        case 'localizacion':
+          objetos = localizacionesData.map(l => ({
+            id: l.localizacionid,
+            nombre: l.localizacion || `Localización ${l.localizacionid}`,
+            objetoid: l.localizacionid
+          }));
+          break;
         default:
           return [];
       }
+
+      // Filtrar objetos según permisos padre existentes
+      if (parentPermisos.length > 0) {
+        // Si hay permisos padre, solo mostrar objetos que pertenecen a esos padres
+        const filteredObjetos = objetos.filter(obj => {
+          return parentPermisos.some(parentPermiso => {
+            // Obtener la jerarquía del permiso padre
+            const parentHierarchy = getObjectHierarchy(
+              parentPermiso.level,
+              parentPermiso.objetoid,
+              {
+                paisesData,
+                empresasData,
+                fundosData,
+                ubicacionesData,
+                nodosData,
+                localizacionesData
+              }
+            );
+
+            // Verificar si el objeto pertenece a la jerarquía del padre
+            switch (geografiaLevel) {
+              case 'empresa':
+                return parentHierarchy.paisid ? 
+                  objetos.find(o => o.objetoid === obj.objetoid)?.id && 
+                  empresasData.find(e => e.empresaid === obj.objetoid)?.paisid === parentHierarchy.paisid
+                  : true;
+              
+              case 'fundo':
+                return parentHierarchy.empresaid ? 
+                  fundosData.find(f => f.fundoid === obj.objetoid)?.empresaid === parentHierarchy.empresaid
+                  : true;
+              
+              case 'ubicacion':
+                return parentHierarchy.fundoid ? 
+                  ubicacionesData.find(u => u.ubicacionid === obj.objetoid)?.fundoid === parentHierarchy.fundoid
+                  : true;
+              
+              case 'nodo':
+                return parentHierarchy.ubicacionid ? 
+                  nodosData.find(n => n.nodoid === obj.objetoid)?.ubicacionid === parentHierarchy.ubicacionid
+                  : true;
+              
+              case 'localizacion':
+                return parentHierarchy.nodoid ? 
+                  localizacionesData.find(l => l.localizacionid === obj.objetoid)?.nodoid === parentHierarchy.nodoid
+                  : true;
+              
+              default:
+                return true;
+            }
+          });
+        });
+
+        return filteredObjetos;
+      }
+
+      return objetos;
     }
     
     // Si es TABLA, usar datos cargados dinámicamente
@@ -318,7 +476,7 @@ export function AsignarPermisosTab({
     }
 
     return [];
-  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, tablaData, fuenteNombre, activeTabConfig]);
+  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, tablaData, fuenteNombre, activeTabConfig, parentPermisos, existingPermisos, fuentesData]);
 
   // Inicializar matriz de permisos cuando cambian los objetos o los permisos existentes
   useEffect(() => {
@@ -335,8 +493,7 @@ export function AsignarPermisosTab({
         newMatrix[obj.objetoid] = {
           puede_ver: existingPermiso?.puede_ver || false,
           puede_insertar: existingPermiso?.puede_insertar || false,
-          puede_actualizar: existingPermiso?.puede_actualizar || false,
-          puede_eliminar: existingPermiso?.puede_eliminar || false
+          puede_actualizar: existingPermiso?.puede_actualizar || false
         };
       });
       
@@ -388,7 +545,7 @@ export function AsignarPermisosTab({
 
     // Verificar que al menos un permiso esté seleccionado
     const hasAnyPermission = Object.values(permisoMatrix).some(p => 
-      p.puede_ver || p.puede_insertar || p.puede_actualizar || p.puede_eliminar
+      p.puede_ver || p.puede_insertar || p.puede_actualizar
     );
 
     if (!hasAnyPermission) {
@@ -403,58 +560,173 @@ export function AsignarPermisosTab({
       const userId = user?.user_metadata?.usuarioid || 1;
       const now = new Date().toISOString();
 
+      // Verificar si todos los objetos tienen todos los permisos marcados (usar objetoid=null)
+      const allObjectsHaveAllPermissions = objetosData.every(obj => {
+        const permisos = permisoMatrix[obj.objetoid];
+        return permisos?.puede_ver && permisos?.puede_insertar && 
+               permisos?.puede_actualizar;
+      });
+
       // Crear array de permisos a insertar/actualizar
       const permisosToUpsert: any[] = [];
 
-      objetosData.forEach(obj => {
-        const permisos = permisoMatrix[obj.objetoid];
-        
-        // Buscar permiso existente
-        const existingPermiso = existingPermisos.find((p: any) => 
-          p.objetoid === obj.objetoid || (p.objetoid === null && obj.objetoid === null)
+      // Si todos los objetos tienen todos los permisos, crear permiso global (objetoid=null)
+      if (allObjectsHaveAllPermissions && objetosData.length > 0) {
+        const firstPermisos = permisoMatrix[objetosData[0].objetoid];
+        const existingGlobalPermiso = existingPermisos.find((p: any) => 
+          p.objetoid === null
         );
-        
-        // Solo crear/actualizar permiso si al menos uno está activo
-        if (permisos.puede_ver || permisos.puede_insertar || permisos.puede_actualizar || permisos.puede_eliminar) {
-          if (existingPermiso) {
-            // Actualizar permiso existente
-            permisosToUpsert.push({
-              ...existingPermiso,
-              puede_ver: permisos.puede_ver,
-              puede_insertar: permisos.puede_insertar,
-              puede_actualizar: permisos.puede_actualizar,
-              puede_eliminar: permisos.puede_eliminar,
-              usermodifiedid: userId,
-              datemodified: now
-            });
-          } else {
-            // Crear nuevo permiso
+
+        if (existingGlobalPermiso) {
+          permisosToUpsert.push({
+            ...existingGlobalPermiso,
+            puede_ver: firstPermisos.puede_ver,
+            puede_insertar: firstPermisos.puede_insertar,
+            puede_actualizar: firstPermisos.puede_actualizar,
+            usermodifiedid: userId,
+            datemodified: now
+          });
+        } else {
             permisosToUpsert.push({
               perfilid: activeTabConfig.perfilid,
               origenid: activeTabConfig.origenid,
               fuenteid: activeTabConfig.fuenteid,
-              objetoid: obj.objetoid,
-              puede_ver: permisos.puede_ver,
-              puede_insertar: permisos.puede_insertar,
-              puede_actualizar: permisos.puede_actualizar,
-              puede_eliminar: permisos.puede_eliminar,
+              objetoid: null, // Permiso global
+              puede_ver: firstPermisos.puede_ver,
+              puede_insertar: firstPermisos.puede_insertar,
+              puede_actualizar: firstPermisos.puede_actualizar,
               statusid: 1,
               usercreatedid: userId,
               datecreated: now,
               usermodifiedid: userId,
               datemodified: now
             });
-          }
-        } else if (existingPermiso) {
-          // Si no hay permisos activos pero existe un permiso, desactivarlo
-          permisosToUpsert.push({
-            ...existingPermiso,
-            statusid: 0,
-            usermodifiedid: userId,
-            datemodified: now
-          });
         }
-      });
+      } else {
+        // Crear permisos específicos para cada objeto
+        objetosData.forEach(obj => {
+          const permisos = permisoMatrix[obj.objetoid];
+          
+          // Buscar permiso existente
+          const existingPermiso = existingPermisos.find((p: any) => 
+            p.objetoid === obj.objetoid
+          );
+          
+          // Solo crear/actualizar permiso si al menos uno está activo
+          if (permisos.puede_ver || permisos.puede_insertar || permisos.puede_actualizar) {
+            if (existingPermiso) {
+              // Actualizar permiso existente
+              permisosToUpsert.push({
+                ...existingPermiso,
+                puede_ver: permisos.puede_ver,
+                puede_insertar: permisos.puede_insertar,
+                puede_actualizar: permisos.puede_actualizar,
+                usermodifiedid: userId,
+                datemodified: now
+              });
+            } else {
+              // Crear nuevo permiso
+              permisosToUpsert.push({
+                perfilid: activeTabConfig.perfilid,
+                origenid: activeTabConfig.origenid,
+                fuenteid: activeTabConfig.fuenteid,
+                objetoid: obj.objetoid,
+                puede_ver: permisos.puede_ver,
+                puede_insertar: permisos.puede_insertar,
+                puede_actualizar: permisos.puede_actualizar,
+                statusid: 1,
+                usercreatedid: userId,
+                datecreated: now,
+                usermodifiedid: userId,
+                datemodified: now
+              });
+            }
+          } else if (existingPermiso) {
+            // Si no hay permisos activos pero existe un permiso, desactivarlo
+            permisosToUpsert.push({
+              ...existingPermiso,
+              statusid: 0,
+              usermodifiedid: userId,
+              datemodified: now
+            });
+          }
+        });
+      }
+
+      // IMPLEMENTAR CASCADA AUTOMÁTICA para geografía
+      // Si estamos en un nivel superior de geografía, crear permisos para niveles inferiores
+      if (geografiaLevel && !allObjectsHaveAllPermissions) {
+        const lowerLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion']
+          .filter(level => getGeografiaLevelOrder(level) > getGeografiaLevelOrder(geografiaLevel));
+
+        // Para cada objeto seleccionado, crear permisos para sus hijos
+        objetosData.forEach(obj => {
+          const permisos = permisoMatrix[obj.objetoid];
+          
+          // Solo crear cascada si el objeto tiene al menos un permiso activo
+          if (!permisos || (!permisos.puede_ver && !permisos.puede_insertar && 
+              !permisos.puede_actualizar)) {
+            return;
+          }
+
+          // Crear permisos para cada nivel inferior
+          lowerLevels.forEach(lowerLevel => {
+            const childObjects = getChildObjects(geografiaLevel, obj.objetoid, lowerLevel, {
+              paisesData,
+              empresasData,
+              fundosData,
+              ubicacionesData,
+              nodosData,
+              localizacionesData
+            });
+
+            // Obtener el fuenteid del nivel inferior
+            const lowerFuente = fuentesData.find(f => 
+              f.fuente?.toLowerCase() === lowerLevel.toLowerCase()
+            );
+
+            if (lowerFuente && childObjects.length > 0) {
+              childObjects.forEach(childObj => {
+                // Obtener el ID del objeto hijo según el nivel
+                let childObjetoid: number | null = null;
+                if (lowerLevel === 'empresa') childObjetoid = childObj.empresaid;
+                else if (lowerLevel === 'fundo') childObjetoid = childObj.fundoid;
+                else if (lowerLevel === 'ubicacion') childObjetoid = childObj.ubicacionid;
+                else if (lowerLevel === 'nodo') childObjetoid = childObj.nodoid;
+                else if (lowerLevel === 'localizacion') childObjetoid = childObj.localizacionid;
+                
+                if (!childObjetoid) return;
+                
+                // Verificar si ya existe un permiso para este objeto hijo
+                const existingChildPermiso = existingPermisos.find((p: any) => 
+                  p.perfilid === activeTabConfig.perfilid &&
+                  p.origenid === activeTabConfig.origenid &&
+                  p.fuenteid === lowerFuente.fuenteid &&
+                  p.objetoid === childObjetoid
+                );
+
+                if (!existingChildPermiso) {
+                  // Crear permiso para el objeto hijo con los mismos permisos del padre
+                  permisosToUpsert.push({
+                    perfilid: activeTabConfig.perfilid,
+                    origenid: activeTabConfig.origenid,
+                    fuenteid: lowerFuente.fuenteid,
+                    objetoid: childObjetoid,
+                    puede_ver: permisos.puede_ver,
+                    puede_insertar: permisos.puede_insertar,
+                    puede_actualizar: permisos.puede_actualizar,
+                    statusid: 1,
+                    usercreatedid: userId,
+                    datecreated: now,
+                    usermodifiedid: userId,
+                    datemodified: now
+                  });
+                }
+              });
+            }
+          });
+        });
+      }
 
       // Insertar/actualizar permisos
       const results = await Promise.all(
@@ -532,29 +804,78 @@ export function AsignarPermisosTab({
     }));
   }, [origenesData, permisosTipo]);
 
-  // Opciones de fuentes (filtradas por origen si está seleccionado)
+  // Opciones de fuentes (filtradas por origen si está seleccionado y ordenadas por jerarquía)
   const fuenteOptions = useMemo(() => {
     if (!selectedOrigen) return [];
 
     const origen = origenesData.find(o => o.origenid === selectedOrigen);
     const origenName = origen?.origen?.toLowerCase() || '';
 
-    return fuentesData
-      .filter(f => {
-        const fuenteName = f.fuente?.toLowerCase() || '';
-        // Normalizar: 'geografía' o 'geografia' (con o sin tilde)
-        if (origenName === 'geografía' || origenName === 'geografia') {
-          return ['pais', 'empresa', 'fundo', 'ubicacion'].includes(fuenteName);
-        } else if (origenName === 'tabla') {
-          return !['pais', 'empresa', 'fundo', 'ubicacion'].includes(fuenteName);
-        }
-        return true;
-      })
-      .map(f => ({
-        value: f.fuenteid,
-        label: f.fuente || `Fuente ${f.fuenteid}`
-      }));
+    const filtered = fuentesData.filter(f => {
+      const fuenteName = f.fuente?.toLowerCase() || '';
+      // Normalizar: 'geografía' o 'geografia' (con o sin tilde)
+      if (origenName === 'geografía' || origenName === 'geografia') {
+        return ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'].includes(fuenteName);
+      } else if (origenName === 'tabla') {
+        return !['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'].includes(fuenteName);
+      }
+      return true;
+    });
+
+    // Ordenar por jerarquía geográfica
+    const geografiaFuentes = filtered.filter(f => {
+      const fuenteName = f.fuente?.toLowerCase() || '';
+      return ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'].includes(fuenteName);
+    });
+    
+    const otrasFuentes = filtered.filter(f => {
+      const fuenteName = f.fuente?.toLowerCase() || '';
+      return !['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'].includes(fuenteName);
+    });
+
+    // Ordenar fuentes geográficas por jerarquía
+    const geografiaOrdenadas = geografiaFuentes.sort((a, b) => {
+      const levelA = FUENTE_TO_LEVEL[a.fuente?.toLowerCase() || ''] || '';
+      const levelB = FUENTE_TO_LEVEL[b.fuente?.toLowerCase() || ''] || '';
+      return getGeografiaLevelOrder(levelA) - getGeografiaLevelOrder(levelB);
+    });
+
+    // Combinar: primero geografía ordenada, luego otras fuentes
+    return [...geografiaOrdenadas, ...otrasFuentes].map(f => ({
+      value: f.fuenteid,
+      label: f.fuente || `Fuente ${f.fuenteid}`
+    }));
   }, [fuentesData, selectedOrigen, origenesData]);
+
+  // Validar que las fuentes seleccionadas sean consecutivas
+  useEffect(() => {
+    if (selectedFuentes.length === 0 || !selectedOrigen) return;
+
+    const origen = origenesData.find(o => o.origenid === selectedOrigen);
+    const origenName = origen?.origen?.toLowerCase() || '';
+
+    // Solo validar si es geografía
+    if (origenName === 'geografía' || origenName === 'geografia') {
+      const fuenteNames = selectedFuentes
+        .map(fuenteid => {
+          const fuente = fuentesData.find(f => f.fuenteid === fuenteid);
+          return fuente?.fuente?.toLowerCase() || '';
+        })
+        .filter(Boolean);
+
+      const validation = areFuentesConsecutive(fuenteNames);
+      
+      if (!validation.valid) {
+        setMessage({
+          type: 'warning',
+          text: validation.message || 'Las fuentes seleccionadas deben ser consecutivas en la jerarquía'
+        });
+      } else if (message?.type === 'warning' && message.text?.includes('consecutivas')) {
+        // Limpiar el mensaje de advertencia si ahora es válido
+        setMessage(null);
+      }
+    }
+  }, [selectedFuentes, selectedOrigen, origenesData, fuentesData, message]);
 
   return (
     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 300px)', paddingBottom: '200px' }}>
@@ -686,17 +1007,6 @@ export function AsignarPermisosTab({
                           </button>
                         </div>
                       </th>
-                      <th className="border border-neutral-700 px-4 py-3 text-center text-neutral-300 font-semibold">
-                        <div className="flex flex-col items-center">
-                          <span>PUEDE ELIMINAR</span>
-                          <button
-                            onClick={() => handleSelectAllColumn('puede_eliminar')}
-                            className="text-xs text-orange-400 hover:text-orange-300 mt-1"
-                          >
-                            (Todos)
-                          </button>
-                        </div>
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -726,14 +1036,6 @@ export function AsignarPermisosTab({
                             type="checkbox"
                             checked={permisoMatrix[obj.objetoid]?.puede_actualizar || false}
                             onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_actualizar')}
-                            className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
-                          />
-                        </td>
-                        <td className="border border-neutral-700 px-4 py-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={permisoMatrix[obj.objetoid]?.puede_eliminar || false}
-                            onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_eliminar')}
                             className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                           />
                         </td>

@@ -370,8 +370,8 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     );
   }
 
-  // Campos booleanos (puede_ver, puede_insertar, puede_actualizar, puede_eliminar)
-  if (['puede_ver', 'puede_insertar', 'puede_actualizar', 'puede_eliminar'].includes(col.columnName)) {
+  // Campos booleanos (puede_ver, puede_insertar, puede_actualizar)
+  if (['puede_ver', 'puede_insertar', 'puede_actualizar'].includes(col.columnName)) {
     return (
       <div key={col.columnName} className="mb-4">
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>

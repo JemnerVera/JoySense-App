@@ -339,6 +339,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
           formData={formData}
           multipleData={multipleData}
           massiveFormData={massiveFormData}
+          selectedTable={selectedTable || 'permiso'}
         />
       );
     }
