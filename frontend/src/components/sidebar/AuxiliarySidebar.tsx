@@ -27,7 +27,8 @@ interface AuxiliarySidebarProps {
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
-  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
+  // onSubTabChange se usa en múltiples secciones; para PERMISOS también debe aceptar 'asignar'
+  onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
   dashboardSubTab?: 'mapeo' | 'metrica' | 'umbrales';
   onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
@@ -320,22 +321,17 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     const permisosTipo = activeTab.startsWith('configuracion-permisos-permisos-') 
       ? activeTab.replace('configuracion-permisos-permisos-', 'permisos-')
       : selectedTable || '';
-    
+
     // Si showThirdLevel es false Y hay un tipo seleccionado, renderizar el segundo sidebar (operaciones)
     if (!showThirdLevel && permisosTipo && permisosTipo !== '' && isPermisosTipoSelected) {
       return (
         <PermisosTipoOperationsSidebar
           selectedTipo={permisosTipo}
-          activeSubTab={(activeSubTab === 'asignar' ? 'status' : (activeSubTab as 'status' | 'insert' | 'asignar')) || 'status'}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'asignar') || 'status'}
           onSubTabChange={(subTab: 'status' | 'insert' | 'asignar') => {
-            if (onSubTabChange) {
-              // Convertir 'asignar' a un tipo compatible si es necesario
-              if (subTab === 'asignar') {
-                onSubTabChange('update' as 'status' | 'insert' | 'update' | 'massive');
-              } else {
-                onSubTabChange(subTab as 'status' | 'insert' | 'update' | 'massive');
-              }
-            }
+            if (!onSubTabChange) return;
+            // Pasar el subTab real al padre (incluyendo 'asignar')
+            onSubTabChange(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
           }}
           isExpanded={isExpanded}
           onMouseEnter={onMouseEnter}

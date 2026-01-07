@@ -5,7 +5,6 @@
 
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
-import ProtectedSubTabButton from '../ProtectedSubTabButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PermisosTipoOperationsSidebarProps {
@@ -89,7 +88,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
       title={getTitle()}
       icon={operationsIcon}
       color="orange"
-      collapsedText="..."
+      collapsedText="App"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -97,20 +96,12 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
             {operations.map((operation) => {
               const isActive = activeSubTab === operation.id;
               return (
-                <ProtectedSubTabButton
+                <button
                   key={operation.id}
-                  targetTab={operation.id}
-                  currentTab={activeSubTab}
-                  selectedTable={selectedTipo}
-                  formData={formData}
-                  multipleData={multipleData}
-                  massiveFormData={massiveFormData}
-                  onTabChange={(tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
-                    // Solo procesar los tabs que son válidos para permisos
-                    if (tab === 'status' || tab === 'insert' || tab === 'asignar') {
-                      onSubTabChange(tab as 'status' | 'insert' | 'asignar');
-                    }
-                    // Ignorar 'update' y 'massive' ya que no son válidos para permisos en este contexto
+                  type="button"
+                  onClick={() => {
+                    // Cambiar directamente el subtab sin protección de cambios (flujo especial de PERMISOS)
+                    onSubTabChange(operation.id);
                   }}
                   className={`w-full flex items-center p-3 rounded transition-colors ${
                     isExpanded ? 'gap-3' : 'justify-center'
@@ -126,7 +117,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
                   {isExpanded && (
                     <span className="text-sm font-medium tracking-wider">{operation.label.toUpperCase()}</span>
                   )}
-                </ProtectedSubTabButton>
+                </button>
               );
             })}
           </nav>

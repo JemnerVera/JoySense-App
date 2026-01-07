@@ -30,7 +30,8 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
       onMouseLeave={onMouseLeave}
     >
       {/* Título - Tactical Style */}
-      <div className="h-12 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 px-2 flex-shrink-0">
+      {/* Altura alineada con el header del sidebar principal (h-16) para consistencia visual */}
+      <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 px-2 flex-shrink-0">
         {isExpanded ? (
           <h3 className={`font-bold text-xs tracking-wider text-center ${
             color === 'green' ? 'text-green-500' :
