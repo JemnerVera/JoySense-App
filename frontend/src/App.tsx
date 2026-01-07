@@ -508,7 +508,7 @@ const AppContentInternal: React.FC = () => {
     const dispositivosTables = ['tipo', 'metrica', 'sensor', 'metricasensor'];
     const usuariosTables = ['usuario', 'correo', 'codigotelefono', 'contacto', 'perfil', 'usuarioperfil', 'usuario_canal'];
     const parametrosGeoTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion', 'asociacion'];
-    const notificacionesTables = ['criticidad', 'umbral', 'regla', 'regla_objeto'];
+    const notificacionesTables = ['criticidad', 'umbral', 'regla'];
     
     startTransition(() => {
       // PRIORIDAD: Verificar primero el contexto actual (activeTab) para determinar la sección
@@ -582,10 +582,10 @@ const AppContentInternal: React.FC = () => {
           setActiveTab(`configuracion-notificaciones-${table}`);
           setActiveSubTab('status');
         }
-      } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral') {
+      } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
         // Tablas de regla seleccionadas desde ReglaSidebar
         // Si es 'regla', establecer selectedTable para mostrar el contenido principal
-        // Si es 'regla_perfil' o 'regla_umbral', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
+        // Si es 'regla_perfil', 'regla_umbral' o 'regla_objeto', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
         setSelectedTable(table);
         setActiveSubTab('status'); // Resetear a status cuando cambia la tabla
         
@@ -847,7 +847,7 @@ const AppContentInternal: React.FC = () => {
         }
         
         // Si reglaTab está vacío pero tenemos selectedTable válido, usarlo
-        if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
+        if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
           reglaTab = selectedTable;
         }
         

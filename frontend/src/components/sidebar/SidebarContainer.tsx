@@ -151,33 +151,21 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar Aux 2: NOTIFICACIONES, DISPOSITIVOS, USUARIOS, etc. (visible cuando hay una subsección seleccionada) */}
+      {/* Sidebar Aux 2: NOTIFICACIONES (NotificacionesSidebar) - SIEMPRE visible cuando estamos en NOTIFICACIONES */}
       {(() => {
-        const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-');
-        const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab);
-        const computedSelectedTable = (() => {
-          // Para NOTIFICACIONES: si estamos en REGLA, usar 'regla' como tabla seleccionada para mostrar NotificacionesSidebar
-          if (activeTab.startsWith('configuracion-notificaciones-regla')) {
-            return 'regla';
-          }
-          return selectedTable;
-        })();
+        const isNotificaciones = activeTab.startsWith('configuracion-notificaciones');
+        // Sidebar Aux 2 debe SIEMPRE mostrarse cuando estamos en NOTIFICACIONES (los sidebars se acumulan)
+        const shouldShow = isNotificaciones && hasAuxiliarySidebar(activeTab);
         return shouldShow;
       })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
+        <div className="flex-shrink-0 z-20">
           <AuxiliarySidebar
             isExpanded={auxiliarySidebarExpanded}
             onMouseEnter={handleAuxiliarySidebarMouseEnter}
             onMouseLeave={handleAuxiliarySidebarMouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
-            selectedTable={(() => {
-              // Para NOTIFICACIONES: si estamos en REGLA, usar 'regla' como tabla seleccionada para mostrar NotificacionesSidebar
-              if (activeTab.startsWith('configuracion-notificaciones-regla')) {
-                return 'regla';
-              }
-              return selectedTable;
-            })()}
+            selectedTable={selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '')}
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
@@ -189,91 +177,120 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             massiveFormData={massiveFormData}
             showThirdLevel={false}
             forceConfiguracionSidebar={false}
+            isSidebarAux3={false}
           />
         </div>
       )}
 
       {/* Tercer sidebar para geografía, parámetros, tabla, notificaciones, parameters y dispositivos (solo cuando hay tabla seleccionada) */}
-      {hasAuxiliarySidebar(activeTab) && (
-        (() => {
-          const isDispositivos = activeTab.startsWith('configuracion-dispositivos');
-          const isUsuarios = activeTab.startsWith('configuracion-usuarios');
-          const isParametrosGeo = activeTab.startsWith('configuracion-parametros-geo');
-          // Extraer la tabla del activeTab si no está en selectedTable para dispositivos, usuarios y parametros-geo
-          let dispositivosTable = '';
-          let usuariosTable = '';
-          let parametrosGeoTable = '';
-          if (isDispositivos) {
-            // Extraer tabla del activeTab: 'configuracion-dispositivos-tipo' -> 'tipo'
-            const extractedTable = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '') || '';
-            dispositivosTable = selectedTable || extractedTable;
-          }
-          if (isUsuarios) {
-            const extractedTable = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '') || '';
-            usuariosTable = selectedTable || extractedTable;
-          }
-          if (isParametrosGeo) {
-            const extractedTable = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '') || '';
-            parametrosGeoTable = selectedTable || extractedTable;
-          }
-          const shouldShow = (
-            activeTab === 'geografia' || activeTab.startsWith('geografia-') ||
-            activeTab === 'parametros' || activeTab.startsWith('parametros-') ||
-            activeTab === 'tabla' || activeTab.startsWith('tabla-') ||
-            activeTab === 'notificaciones' || activeTab.startsWith('notificaciones-') ||
-            activeTab === 'parameters' || activeTab.startsWith('parameters-') ||
-            // Para DISPOSITIVOS, USUARIOS y PARAMETROS GEO: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en esas secciones
-            (isDispositivos && hasAuxiliarySidebar(activeTab)) ||
-            (isUsuarios && hasAuxiliarySidebar(activeTab)) ||
-            (isParametrosGeo && hasAuxiliarySidebar(activeTab)) ||
-            // Para NOTIFICACIONES: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en notificaciones (incluyendo REGLA)
-            (activeTab.startsWith('configuracion-notificaciones') && hasAuxiliarySidebar(activeTab)) ||
-            // Para PERMISOS: SIEMPRE mostrar Sidebar 3 (tipos) cuando estamos en permisos
-            (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
-          );
-          const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-          return shouldShow && (
-            <div className="flex-shrink-0 z-30">
-              <AuxiliarySidebar
-                isExpanded={auxiliarySidebarExpanded}
-                onMouseEnter={handleAuxiliarySidebarMouseEnter}
-                onMouseLeave={handleAuxiliarySidebarMouseLeave}
-                activeTab={activeTab}
-                onTabChange={onTabChange}
-                selectedTable={(() => {
-                  // Para NOTIFICACIONES: extraer tabla si no está en selectedTable
-                  // Si estamos en REGLA, NO usar 'regla' aquí, dejar que AuxiliarySidebar lo maneje
-                  if (activeTab.startsWith('configuracion-notificaciones')) {
-                    if (!activeTab.startsWith('configuracion-notificaciones-regla')) {
-                      const notificacionesTable = selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '');
-                      if (notificacionesTable && notificacionesTable !== '') return notificacionesTable;
-                    }
-                    // Si estamos en REGLA, pasar selectedTable tal cual (puede ser 'regla' o una tabla específica)
-                    return selectedTable || '';
+      {(() => {
+        const isDispositivos = activeTab.startsWith('configuracion-dispositivos');
+        const isUsuarios = activeTab.startsWith('configuracion-usuarios');
+        const isParametrosGeo = activeTab.startsWith('configuracion-parametros-geo');
+        const isNotificaciones = activeTab.startsWith('configuracion-notificaciones');
+        const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
+        
+        // Para NOTIFICACIONES: Extraer la tabla seleccionada
+        let notificacionesTable = '';
+        if (isNotificaciones) {
+          const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
+          notificacionesTable = selectedTable || extractedTable;
+        }
+        
+        // Para NOTIFICACIONES: Mostrar Sidebar 3 cuando hay una tabla seleccionada (CRITICIDAD, UMBRAL, o REGLA)
+        // CRITICIDAD y UMBRAL mostrarán NotificacionesOperationsSidebar (showThirdLevel=false)
+        // REGLA mostrará ReglaSidebar (showThirdLevel=true)
+        const shouldShowNotificaciones = isNotificaciones && 
+                                        hasAuxiliarySidebar(activeTab) && 
+                                        notificacionesTable && 
+                                        notificacionesTable !== '';
+        
+        const shouldShow = hasAuxiliarySidebar(activeTab) && (
+          activeTab === 'geografia' || activeTab.startsWith('geografia-') ||
+          activeTab === 'parametros' || activeTab.startsWith('parametros-') ||
+          activeTab === 'tabla' || activeTab.startsWith('tabla-') ||
+          activeTab === 'notificaciones' || activeTab.startsWith('notificaciones-') ||
+          activeTab === 'parameters' || activeTab.startsWith('parameters-') ||
+          // Para DISPOSITIVOS, USUARIOS y PARAMETROS GEO: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en esas secciones
+          (isDispositivos && hasAuxiliarySidebar(activeTab)) ||
+          (isUsuarios && hasAuxiliarySidebar(activeTab)) ||
+          (isParametrosGeo && hasAuxiliarySidebar(activeTab)) ||
+          // Para NOTIFICACIONES: Mostrar Sidebar 3 cuando hay una tabla seleccionada (CRITICIDAD, UMBRAL, o REGLA)
+          shouldShowNotificaciones ||
+          // Para PERMISOS: SIEMPRE mostrar Sidebar 3 (tipos) cuando estamos en permisos
+          (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
+        );
+        
+        // Extraer la tabla del activeTab si no está en selectedTable para dispositivos, usuarios y parametros-geo
+        let dispositivosTable = '';
+        let usuariosTable = '';
+        let parametrosGeoTable = '';
+        if (isDispositivos) {
+          // Extraer tabla del activeTab: 'configuracion-dispositivos-tipo' -> 'tipo'
+          const extractedTable = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '') || '';
+          dispositivosTable = selectedTable || extractedTable;
+        }
+        if (isUsuarios) {
+          const extractedTable = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '') || '';
+          usuariosTable = selectedTable || extractedTable;
+        }
+        if (isParametrosGeo) {
+          const extractedTable = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '') || '';
+          parametrosGeoTable = selectedTable || extractedTable;
+        }
+        
+        // Para NOTIFICACIONES: 
+        // - showThirdLevel=true cuando estamos en REGLA (para mostrar ReglaSidebar)
+        // - showThirdLevel=false cuando estamos en CRITICIDAD o UMBRAL (para mostrar NotificacionesOperationsSidebar)
+        // Para otras secciones, usar showThirdLevel=true por defecto
+        const showThirdLevelValue = isNotificaciones ? isReglaNotificaciones : true;
+        if (!shouldShow) {
+          return null;
+        }
+        
+        return (
+          <div className="flex-shrink-0 z-30">
+            <AuxiliarySidebar
+              isExpanded={auxiliarySidebarExpanded}
+              onMouseEnter={handleAuxiliarySidebarMouseEnter}
+              onMouseLeave={handleAuxiliarySidebarMouseLeave}
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              selectedTable={(() => {
+                // Para NOTIFICACIONES: extraer tabla si no está en selectedTable
+                // Si estamos en REGLA, NO usar 'regla' aquí, dejar que AuxiliarySidebar lo maneje
+                if (activeTab.startsWith('configuracion-notificaciones')) {
+                  if (!activeTab.startsWith('configuracion-notificaciones-regla')) {
+                    const notificacionesTable = selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '');
+                    if (notificacionesTable && notificacionesTable !== '') return notificacionesTable;
                   }
-                  // Para PERMISOS: extraer tipo si no está en selectedTable
-                  if (activeTab.startsWith('configuracion-permisos-permisos-')) {
-                    const permisosTipo = activeTab.replace('configuracion-permisos-permisos-', 'permisos-') || selectedTable || '';
-                    if (permisosTipo && permisosTipo !== '') return permisosTipo;
-                  }
-                  // Para DISPOSITIVOS, USUARIOS, PARAMETROS GEO
-                  return selectedTable || dispositivosTable || usuariosTable || parametrosGeoTable || '';
-                })()}
-                onTableSelect={onTableSelect}
-                activeSubTab={activeSubTab}
-                onSubTabChange={onSubTabChange}
-                dashboardSubTab={dashboardSubTab}
-                onDashboardSubTabChange={onDashboardSubTabChange}
-                formData={formData}
-                multipleData={multipleData}
-                massiveFormData={massiveFormData}
-                showThirdLevel={true}
-                forceConfiguracionSidebar={false}
-              />
-            </div>
-          );
-        })()
-      )}
+                  // Si estamos en REGLA, pasar selectedTable tal cual (puede ser 'regla' o una tabla específica)
+                  return selectedTable || '';
+                }
+                // Para PERMISOS: extraer tipo si no está en selectedTable
+                if (activeTab.startsWith('configuracion-permisos-permisos-')) {
+                  const permisosTipo = activeTab.replace('configuracion-permisos-permisos-', 'permisos-') || selectedTable || '';
+                  if (permisosTipo && permisosTipo !== '') return permisosTipo;
+                }
+                // Para DISPOSITIVOS, USUARIOS, PARAMETROS GEO
+                return selectedTable || dispositivosTable || usuariosTable || parametrosGeoTable || '';
+              })()}
+              onTableSelect={onTableSelect}
+              activeSubTab={activeSubTab}
+              onSubTabChange={onSubTabChange}
+              dashboardSubTab={dashboardSubTab}
+              onDashboardSubTabChange={onDashboardSubTabChange}
+              formData={formData}
+              multipleData={multipleData}
+              massiveFormData={massiveFormData}
+              showThirdLevel={showThirdLevelValue}
+              forceConfiguracionSidebar={false}
+              isSidebarAux3={!!(isNotificaciones && shouldShowNotificaciones)}
+            />
+          </div>
+        );
+      })()
+      }
 
       {/* Sidebar auxiliar para REPORTES ADMINISTRADOR (cuando está en configuracion-reportes-administrador, mostrar a la derecha del ConfiguracionSidebar) */}
       {(() => {
@@ -448,45 +465,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para NOTIFICACIONES - Sidebar 2 (Operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {/* Solo mostrar cuando hay una tabla seleccionada (excepto REGLA que tiene su propia lógica) */}
-      {(() => {
-        const isNotificaciones = activeTab.startsWith('configuracion-notificaciones');
-        const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-        // Solo mostrar Sidebar 2 (operaciones) cuando hay una tabla seleccionada y NO estamos en REGLA
-        const notificacionesTable = selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '');
-        const shouldShow = isNotificaciones && 
-                          !isReglaNotificaciones &&
-                          hasAuxiliarySidebar(activeTab) && 
-                          notificacionesTable && 
-                          notificacionesTable !== '' && 
-                          notificacionesTable !== 'regla' &&
-                          activeTab !== 'configuracion-notificaciones';
-        return shouldShow;
-      })() && (
-            <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
-          <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            selectedTable={selectedTable}
-            onTableSelect={onTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
-            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
-            dashboardSubTab={dashboardSubTab}
-            onDashboardSubTabChange={onDashboardSubTabChange}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-            showThirdLevel={false}
-            forceConfiguracionSidebar={false}
-          />
-        </div>
-      )}
-
       {/* Sidebar auxiliar para REGLA OPERATIONS (Sidebar Auxiliar 4) - cuando se selecciona una tabla de regla específica */}
       {(() => {
         const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
@@ -496,13 +474,15 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
         const check2 = activeTab.includes('-regla_perfil-');
         const check3 = activeTab.includes('-regla_umbral-');
-        const check4 = activeTab === 'configuracion-notificaciones-regla-regla';
-        const check5 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
-        const check6 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
-        const check7 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral');
-        const check8 = (selectedTable === 'regla' && activeTab !== 'configuracion-notificaciones-regla');
+        const check4 = activeTab.includes('-regla_objeto-');
+        const check5 = activeTab === 'configuracion-notificaciones-regla-regla';
+        const check6 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
+        const check7 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
+        const check8 = activeTab === 'configuracion-notificaciones-regla-regla_objeto';
+        const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto');
+        const check10 = (selectedTable === 'regla' && activeTab !== 'configuracion-notificaciones-regla');
         const isReglaTableSelected = isReglaNotificaciones && (
-          check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8
+          check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8 || check9 || check10
         );
         const hasAux = hasAuxiliarySidebar(activeTab);
         const shouldShow = isReglaTableSelected && hasAux;
