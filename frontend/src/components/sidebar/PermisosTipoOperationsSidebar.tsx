@@ -92,47 +92,31 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
 
   // Filtrar operaciones según permisos del usuario
   const operations = useMemo(() => {
-    console.log('🔍 [PermisosTipoOperationsSidebar] Filtrando operaciones', {
-      selectedTable,
-      selectedTipo,
-      permissionsLoading,
-      permissions,
-      totalOperations: allOperations.length
-    });
-
     const filtered = allOperations.filter(op => {
       const operationId = op.id;
       
       // ASIGNAR siempre está disponible
       if (operationId === 'asignar') {
-        console.log('✅ [PermisosTipoOperationsSidebar] Operación permitida (ASIGNAR siempre disponible):', operationId);
         return true;
       }
       
       // Si aún se están cargando permisos, mostrar todas las pestañas
       if (permissionsLoading) {
-        console.log('⏳ [PermisosTipoOperationsSidebar] Permisos cargando, mostrando operación:', operationId);
         return true;
       }
       
       // Verificar permiso requerido (solo cuando ya se cargaron)
       if (op.requiredPermission === 'ver') {
-        const hasPermission = permissions.puede_ver;
-        console.log(hasPermission ? '✅' : '❌', '[PermisosTipoOperationsSidebar] Operación', operationId, hasPermission ? 'permitida' : 'filtrada (sin permiso ver)');
-        return hasPermission;
+        return permissions.puede_ver;
       }
       if (op.requiredPermission === 'insertar') {
-        const hasPermission = permissions.puede_insertar;
-        console.log(hasPermission ? '✅' : '❌', '[PermisosTipoOperationsSidebar] Operación', operationId, hasPermission ? 'permitida' : 'filtrada (sin permiso insertar)');
-        return hasPermission;
+        return permissions.puede_insertar;
       }
       
       // Si no tiene permiso requerido, está permitida
-      console.log('✅ [PermisosTipoOperationsSidebar] Operación permitida (sin permiso requerido):', operationId);
       return true;
     });
 
-    console.log('📋 [PermisosTipoOperationsSidebar] Operaciones disponibles:', filtered.length, filtered.map(op => op.id));
     return filtered;
   }, [permissions, permissionsLoading, allOperations, selectedTable, selectedTipo]);
 

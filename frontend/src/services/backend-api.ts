@@ -703,7 +703,6 @@ export class JoySenseService {
         return null;
       }
 
-      console.log('✅ [getCurrentUsuarioid] RPC retornó:', data);
       return data || null;
     } catch (error) {
       console.error('❌ Error in getCurrentUsuarioid:', error);
@@ -729,7 +728,6 @@ export class JoySenseService {
         return null;
       }
 
-      console.log('✅ [getCurrentPerfilid] RPC retornó:', data);
       return data || null;
     } catch (error) {
       console.error('❌ Error in getCurrentPerfilid:', error);
@@ -759,7 +757,6 @@ export class JoySenseService {
         return null;
       }
 
-      console.log('✅ [getUserPermissions] RPC retornó:', data);
       return data || null;
     } catch (error) {
       console.error('❌ Error in getUserPermissions:', error);
@@ -820,32 +817,9 @@ export class JoySenseService {
   static async getTableColumns(tableName: TableName | string): Promise<any[]> {
     try {
       const endpoint = `/generic/${tableName}/columns`;
-      console.log('[JoySenseService] Llamando getTableColumns', {
-        tableName,
-        endpoint,
-        timestamp: Date.now()
-      });
-      
       const data = await backendAPI.get(endpoint);
       
-      console.log('[JoySenseService] Respuesta de getTableColumns', {
-        tableName,
-        endpoint,
-        dataType: typeof data,
-        isArray: Array.isArray(data),
-        dataKeys: data ? Object.keys(data) : [],
-        rawData: data,
-        timestamp: Date.now()
-      });
-      
       const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
-      
-      console.log('[JoySenseService] Procesando columnas', {
-        tableName,
-        rawColumnsCount: rawColumns.length,
-        rawColumns: rawColumns,
-        timestamp: Date.now()
-      });
       
       const mappedColumns = rawColumns.map((col: any) => ({
         columnName: col.column_name,
@@ -855,13 +829,6 @@ export class JoySenseService {
         isIdentity: col.column_default?.includes('nextval') || false,
         isPrimaryKey: false
       }));
-      
-      console.log('[JoySenseService] Columnas mapeadas', {
-        tableName,
-        mappedColumnsCount: mappedColumns.length,
-        mappedColumns: mappedColumns.map((c: any) => c.columnName),
-        timestamp: Date.now()
-      });
       
       return mappedColumns;
     } catch (error) {
