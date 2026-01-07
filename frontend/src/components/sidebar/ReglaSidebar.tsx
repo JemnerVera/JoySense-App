@@ -156,12 +156,8 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
               reglaTables.map((table) => {
                 const isActive = selectedTable === table.name;
                 const handleTableChange = (tableName: string) => {
-                  console.log('[ReglaSidebar] Tabla seleccionada:', { tableName, selectedTable, activeSubTab, onTableSelect: !!onTableSelect });
                   if (onTableSelect) {
-                    console.log('[ReglaSidebar] Llamando a onTableSelect con:', tableName);
                     onTableSelect(tableName);
-                  } else {
-                    console.warn('[ReglaSidebar] onTableSelect no está definido');
                   }
                 };
                 return (

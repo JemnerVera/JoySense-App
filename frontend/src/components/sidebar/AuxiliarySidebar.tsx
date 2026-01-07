@@ -134,15 +134,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const isReglaTableSelected = isReglaNotificaciones && (
     check1 || check2 || check3 || check4 || check5 || check6 || check7
   );
-  console.log('[AuxiliarySidebar] Regla check:', { 
-    isReglaNotificaciones, 
-    selectedTable, 
-    activeTab, 
-    isReglaTableSelected,
-    checks: { check1, check2, check3, check4, check5, check6, check7 },
-    showThirdLevel,
-    forceConfiguracionSidebar
-  });
 
   // AGRUPACION - Sidebar Principal (debe ir antes de otros para que tenga prioridad)
   if (isAgrupacion) {
@@ -512,17 +503,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Extraer la tabla del activeTab si no está en selectedTable
     const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
-    console.log('[AuxiliarySidebar] NOTIFICACIONES - Entrando:', {
-      isNotificacionesConfig,
-      forceConfiguracionSidebar,
-      activeTab,
-      selectedTable,
-      extractedTable,
-      finalSelectedTable,
-      isReglaNotificaciones,
-      isReglaTableSelected,
-      showThirdLevel
-    });
     
     // CORRECCIÓN: 
     // Sidebar Aux 2 (showThirdLevel=false) = Tablas (CRITICIDAD, UMBRAL, REGLA, REGLA_OBJETO) = NotificacionesSidebar
@@ -531,14 +511,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     
     // Si showThirdLevel es false, renderizar Sidebar Aux 2 (NotificacionesSidebar con CRITICIDAD, UMBRAL, REGLA, REGLA_OBJETO)
     if (!showThirdLevel) {
-      console.log('[AuxiliarySidebar] NOTIFICACIONES - showThirdLevel=false:', {
-        isReglaNotificaciones,
-        finalSelectedTable,
-        selectedTable
-      });
       // Si estamos en REGLA, mostrar NotificacionesSidebar (Sidebar Aux 2) con REGLA seleccionado
       if (isReglaNotificaciones) {
-        console.log('[AuxiliarySidebar] NOTIFICACIONES - Renderizando NotificacionesSidebar (Sidebar Aux 2) con REGLA seleccionado');
         return (
           <NotificacionesSidebar
             selectedTable="regla"
@@ -574,7 +548,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       }
       
       // Si no hay tabla seleccionada, mostrar NotificacionesSidebar (Sidebar Aux 2)
-      console.log('[AuxiliarySidebar] NOTIFICACIONES - Renderizando NotificacionesSidebar (Sidebar Aux 2) sin tabla seleccionada, finalSelectedTable:', finalSelectedTable);
       return (
         <NotificacionesSidebar
           selectedTable={finalSelectedTable}
@@ -594,12 +567,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Si showThirdLevel es true, renderizar Sidebar Aux 3 (ReglaSidebar con REGLA, REGLA_PERFIL, REGLA_UMBRAL)
     // Solo cuando estamos en REGLA
     if (showThirdLevel) {
-      console.log('[AuxiliarySidebar] NOTIFICACIONES - showThirdLevel=true:', {
-        isReglaNotificaciones,
-        isReglaTableSelected,
-        selectedTable,
-        activeTab
-      });
       // Si estamos en REGLA, mostrar ReglaSidebar (Sidebar Aux 3)
       // IMPORTANTE: Siempre mostrar ReglaSidebar cuando estamos en REGLA, incluso si hay una tabla seleccionada
       // Esto permite que el usuario pueda cambiar de tabla y ver todas las opciones disponibles
@@ -616,7 +583,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         
         // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL
         // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa
-        console.log('[AuxiliarySidebar] NOTIFICACIONES - Renderizando ReglaSidebar (Sidebar Aux 3), reglaTableToSelect:', reglaTableToSelect);
         return (
           <ReglaSidebar
             selectedTable={reglaTableToSelect || selectedTable || ''}

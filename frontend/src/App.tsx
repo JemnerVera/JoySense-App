@@ -255,11 +255,9 @@ const AppContentInternal: React.FC = () => {
       if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
         // Extraer la tabla de regla del activeTab (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
         const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-        console.log('[App] useEffect - Regla table extraída:', { activeTab, reglaTable, selectedTable });
         if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral')) {
           // Establecer selectedTable a la tabla de regla extraída
           if (reglaTable !== selectedTable) {
-            console.log('[App] useEffect - Estableciendo selectedTable a:', reglaTable);
             setSelectedTable(reglaTable);
           }
         }
@@ -586,7 +584,6 @@ const AppContentInternal: React.FC = () => {
         }
       } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral') {
         // Tablas de regla seleccionadas desde ReglaSidebar
-        console.log('[App] Tabla de regla seleccionada desde ReglaSidebar:', { table, activeTab, selectedTable });
         // Si es 'regla', establecer selectedTable para mostrar el contenido principal
         // Si es 'regla_perfil' o 'regla_umbral', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
         setSelectedTable(table);
@@ -595,7 +592,6 @@ const AppContentInternal: React.FC = () => {
         // Siempre actualizar activeTab para incluir la tabla seleccionada
         // Esto asegura que ReglaOperationsSidebar se muestre correctamente
         const newActiveTab = `configuracion-notificaciones-regla-${table}`;
-        console.log('[App] Actualizando activeTab a:', newActiveTab);
         setActiveTab(newActiveTab);
       } else if (table === 'permisos-geo' || table === 'permisos-conf') {
         // Tipos de permisos seleccionados desde PermisosTipoSidebar
@@ -855,7 +851,6 @@ const AppContentInternal: React.FC = () => {
           reglaTab = selectedTable;
         }
         
-        console.log('[App] Regla tab extraída:', { activeTab, reglaTab, selectedTable });
         
         // Si no hay tabla seleccionada, mostrar mensaje
         if (!reglaTab || reglaTab === '') {

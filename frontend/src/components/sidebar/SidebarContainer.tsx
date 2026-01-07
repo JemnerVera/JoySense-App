@@ -129,13 +129,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         const selectedSection = activeTab.startsWith('configuracion-') 
           ? activeTab.replace('configuracion-', '').split('-')[0] 
           : '';
-        console.log('[SidebarContainer] Sidebar Aux 1 (CONFIGURACIÓN):', {
-          isConfiguracion,
-          shouldShow,
-          activeTab,
-          selectedSection,
-          hasAux: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
@@ -169,14 +162,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
           }
           return selectedTable;
         })();
-        console.log('[SidebarContainer] Sidebar Aux 2 (SUBSECCIONES):', {
-          isConfiguracion,
-          shouldShow,
-          activeTab,
-          selectedTable,
-          computedSelectedTable,
-          hasAux: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -247,16 +232,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
           );
           const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-          console.log('[SidebarContainer] Sidebar Aux 3 (TABLAS):', {
-            shouldShow,
-            activeTab,
-            selectedTable,
-            isReglaNotificaciones,
-            hasAux: hasAuxiliarySidebar(activeTab),
-            isDispositivos,
-            isUsuarios,
-            isParametrosGeo
-          });
           return shouldShow && (
             <div className="flex-shrink-0 z-30">
               <AuxiliarySidebar
@@ -531,23 +506,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         );
         const hasAux = hasAuxiliarySidebar(activeTab);
         const shouldShow = isReglaTableSelected && hasAux;
-        console.log('[SidebarContainer] Sidebar Aux 4 (REGLA OPERATIONS):', {
-          isReglaNotificaciones,
-          activeTab,
-          selectedTable,
-          isReglaTableSelected,
-          checks: { check1, check2, check3, check4, check5, check6, check7, check8 },
-          hasAux,
-          shouldShow
-        });
-        console.log('[SidebarContainer] ReglaOperationsSidebar check:', { 
-          isReglaNotificaciones, 
-          selectedTable, 
-          activeTab, 
-          isReglaTableSelected, 
-          hasAux, 
-          shouldShow 
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-40`}>
