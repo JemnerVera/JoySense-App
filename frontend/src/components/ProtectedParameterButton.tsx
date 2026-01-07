@@ -36,8 +36,17 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    console.log('[ProtectedParameterButton] Click detectado:', { 
+      targetTable, 
+      currentTable, 
+      activeSubTab, 
+      isModalOpen,
+      hasOnTableChange: !!onTableChange 
+    });
+
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
+      console.log('[ProtectedParameterButton] Modal ya abierto, ignorando click');
       return;
     }
 
@@ -47,7 +56,12 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     }
 
     // Verificar si hay cambios sin guardar
-    const hasChanges = hasSignificantChanges(formData, currentTable, activeSubTab, multipleData, massiveFormData);
+    // IMPORTANTE: Si currentTable está vacío, no hay cambios que verificar
+    const hasChanges = currentTable && currentTable !== '' 
+      ? hasSignificantChanges(formData, currentTable, activeSubTab, multipleData, massiveFormData)
+      : false;
+    
+    console.log('[ProtectedParameterButton] Resultado de verificación de cambios:', { hasChanges, currentTable, targetTable });
     
     if (hasChanges) {
       setIsModalOpen(true);
@@ -68,8 +82,11 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
       );
     } else {
       // No hay cambios, proceder normalmente
+      console.log('[ProtectedParameterButton] No hay cambios, llamando a onTableChange con:', targetTable);
       if (onTableChange) {
         onTableChange(targetTable);
+      } else {
+        console.warn('[ProtectedParameterButton] onTableChange no está definido');
       }
     }
   };

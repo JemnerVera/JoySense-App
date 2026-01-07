@@ -251,9 +251,21 @@ const AppContentInternal: React.FC = () => {
         setSelectedTable('');
       }
     } else if (activeTab.startsWith('configuracion-notificaciones-')) {
-      // Caso especial: si es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
-      // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
-      if (activeTab === 'configuracion-notificaciones-regla') {
+      // Caso especial: REGLA tiene un flujo especial con Sidebar 3 y 4
+      if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+        // Extraer la tabla de regla del activeTab (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
+        const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
+        console.log('[App] useEffect - Regla table extraída:', { activeTab, reglaTable, selectedTable });
+        if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral')) {
+          // Establecer selectedTable a la tabla de regla extraída
+          if (reglaTable !== selectedTable) {
+            console.log('[App] useEffect - Estableciendo selectedTable a:', reglaTable);
+            setSelectedTable(reglaTable);
+          }
+        }
+      } else if (activeTab === 'configuracion-notificaciones-regla') {
+        // Si solo es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
+        // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
         // Si selectedTable es una tabla de regla válida (regla, regla_perfil, regla_umbral), mantenerla
         // Esto permite que cuando se hace clic en REGLA desde ReglaSidebar, se muestre el contenido principal
         if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
@@ -518,7 +530,15 @@ const AppContentInternal: React.FC = () => {
       } else if (activeTab.startsWith('configuracion-notificaciones') && notificacionesTables.includes(table)) {
         // Tabla de notificaciones seleccionada desde NotificacionesSidebar
         // Manejar caso especial de REGLA
-        if (table === 'regla') {
+        // IMPORTANTE: Si ya estamos en 'configuracion-notificaciones-regla' y se selecciona 'regla' desde ReglaSidebar,
+        // actualizar a 'configuracion-notificaciones-regla-regla' para mostrar el contenido
+        if (table === 'regla' && activeTab.startsWith('configuracion-notificaciones-regla')) {
+          // Ya estamos en REGLA, actualizar para mostrar el contenido de la tabla 'regla'
+          setSelectedTable('regla');
+          setActiveTab('configuracion-notificaciones-regla-regla');
+          setActiveSubTab('status');
+        } else if (table === 'regla') {
+          // Primera vez que se selecciona REGLA desde NotificacionesSidebar
           setSelectedTable('');
           setActiveTab('configuracion-notificaciones-regla');
           setActiveSubTab('status');
@@ -566,15 +586,17 @@ const AppContentInternal: React.FC = () => {
         }
       } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral') {
         // Tablas de regla seleccionadas desde ReglaSidebar
+        console.log('[App] Tabla de regla seleccionada desde ReglaSidebar:', { table, activeTab, selectedTable });
         // Si es 'regla', establecer selectedTable para mostrar el contenido principal
         // Si es 'regla_perfil' o 'regla_umbral', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
         setSelectedTable(table);
         setActiveSubTab('status'); // Resetear a status cuando cambia la tabla
         
-        // Si ya estamos en configuracion-notificaciones-regla, mantener el contexto
-        if (!activeTab.startsWith('configuracion-notificaciones-regla')) {
-          setActiveTab(`configuracion-notificaciones-regla-${table}`);
-        }
+        // Siempre actualizar activeTab para incluir la tabla seleccionada
+        // Esto asegura que ReglaOperationsSidebar se muestre correctamente
+        const newActiveTab = `configuracion-notificaciones-regla-${table}`;
+        console.log('[App] Actualizando activeTab a:', newActiveTab);
+        setActiveTab(newActiveTab);
       } else if (table === 'permisos-geo' || table === 'permisos-conf') {
         // Tipos de permisos seleccionados desde PermisosTipoSidebar
         setSelectedTable(table);
@@ -819,11 +841,21 @@ const AppContentInternal: React.FC = () => {
       // Caso especial: REGLA (configuracion-notificaciones-regla o configuracion-notificaciones-regla-[tabla])
       if (activeTab.startsWith('configuracion-notificaciones-regla')) {
         // Extraer el nombre de la tabla de regla (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
-        // Si activeTab no tiene sufijo, usar selectedTable si es una tabla de regla válida
-        let reglaTab = activeTab.replace('configuracion-notificaciones-regla', '').replace(/^-/, '');
+        // Primero intentar extraer del activeTab
+        let reglaTab = '';
+        if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+          // Extraer todo después de 'configuracion-notificaciones-regla-'
+          const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
+          // Tomar solo la primera parte (antes de cualquier guión adicional, como 'status' o 'insert')
+          reglaTab = afterRegla.split('-')[0];
+        }
+        
+        // Si reglaTab está vacío pero tenemos selectedTable válido, usarlo
         if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
           reglaTab = selectedTable;
         }
+        
+        console.log('[App] Regla tab extraída:', { activeTab, reglaTab, selectedTable });
         
         // Si no hay tabla seleccionada, mostrar mensaje
         if (!reglaTab || reglaTab === '') {
@@ -1402,6 +1434,14 @@ const AppContentInternal: React.FC = () => {
                     }
                   }
                 : undefined
+              : undefined
+          }
+          onSubTabChangeFromProtectedButton={
+            // Pasar la función según el tab activo
+            activeTab.startsWith('configuracion-dispositivos') || activeTab.startsWith('configuracion-usuarios') || activeTab.startsWith('configuracion-parametros-geo')
+              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton
+              : activeTab.startsWith('notificaciones-') || activeTab.startsWith('configuracion-notificaciones')
+              ? notificacionesMainRef.current?.handleSubTabChangeFromProtectedButton
               : undefined
           }
         />

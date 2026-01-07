@@ -4,7 +4,7 @@ import ProtectedSubTabButton from '../ProtectedSubTabButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTableConfig } from '../../config/tables.config';
 
-interface DispositivosOperationsSidebarProps {
+interface NotificacionesOperationsSidebarProps {
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -17,7 +17,7 @@ interface DispositivosOperationsSidebarProps {
   massiveFormData?: Record<string, any>;
 }
 
-const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps> = ({
+const NotificacionesOperationsSidebar: React.FC<NotificacionesOperationsSidebarProps> = ({
   isExpanded,
   onMouseEnter,
   onMouseLeave,
@@ -149,5 +149,5 @@ const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps
   );
 };
 
-export default DispositivosOperationsSidebar;
+export default NotificacionesOperationsSidebar;
 

@@ -143,7 +143,7 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
       onMouseLeave={onMouseLeave}
       title="REGLA"
       icon={reglaIcon}
-      color="cyan"
+      color="orange"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -156,8 +156,12 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
               reglaTables.map((table) => {
                 const isActive = selectedTable === table.name;
                 const handleTableChange = (tableName: string) => {
+                  console.log('[ReglaSidebar] Tabla seleccionada:', { tableName, selectedTable, activeSubTab, onTableSelect: !!onTableSelect });
                   if (onTableSelect) {
+                    console.log('[ReglaSidebar] Llamando a onTableSelect con:', tableName);
                     onTableSelect(tableName);
+                  } else {
+                    console.warn('[ReglaSidebar] onTableSelect no está definido');
                   }
                 };
                 return (
@@ -174,7 +178,7 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
                       isExpanded ? 'gap-3' : 'justify-center'
                     } ${
                       isActive
-                        ? "bg-cyan-500 text-white"
+                        ? "bg-orange-500 text-white"
                         : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                     }`}
                   >
