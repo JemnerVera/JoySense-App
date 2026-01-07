@@ -92,6 +92,7 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
       title="CONFIGURACIÓN"
       icon={configuracionIcon}
       color="orange"
+      collapsedText="Joy"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">

@@ -150,6 +150,7 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
       title="REGLA"
       icon={reglaIcon}
       color="orange"
+      collapsedText="App"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">

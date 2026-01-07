@@ -182,7 +182,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           <div className="flex items-center space-x-3">
             <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
             <img src="/Logo - texto.png" alt="JoySense" className="h-6 w-auto" />
-            <h1 className="text-lg font-bold text-orange-500 font-mono tracking-wider ml-2">JOYSENSE</h1>
           </div>
         ) : (
           <div className="flex justify-center">

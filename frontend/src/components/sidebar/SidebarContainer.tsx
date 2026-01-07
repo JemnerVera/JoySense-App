@@ -123,21 +123,24 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
 
       {/* Sidebar Aux 1: CONFIGURACIÓN (SIEMPRE visible cuando está en configuracion o sus subsecciones) */}
       {(() => {
-        const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-');
-        const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab);
-        // Extraer la sección seleccionada (dispositivos, usuarios, notificaciones, etc.)
-        const selectedSection = activeTab.startsWith('configuracion-') 
-          ? activeTab.replace('configuracion-', '').split('-')[0] 
-          : '';
-        return shouldShow;
+        const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-')
+        const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab)
+        return shouldShow
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
           <ConfiguracionSidebar
             selectedSection={(() => {
-              const section = activeTab.startsWith('configuracion-') 
-                ? activeTab.replace('configuracion-', '').split('-')[0] 
-                : '';
-              return section;
+              if (!activeTab.startsWith('configuracion-')) return ''
+
+              const rest = activeTab.replace('configuracion-', '')
+              const parts = rest.split('-')
+
+              // Manejar secciones compuestas como 'parametros-geo' y 'reportes-administrador'
+              if (parts[0] === 'parametros' && parts[1] === 'geo') return 'parametros-geo'
+              if (parts[0] === 'reportes' && parts[1] === 'administrador') return 'reportes-administrador'
+
+              // Para secciones simples como 'dispositivos', 'usuarios', 'notificaciones', 'permisos'
+              return parts[0] || ''
             })()}
             onSectionSelect={(section) => {
               if (onTabChange) {
