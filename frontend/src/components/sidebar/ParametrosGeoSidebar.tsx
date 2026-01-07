@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import ProtectedParameterButton from '../ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -33,72 +33,59 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
-  const [loadingPerfil, setLoadingPerfil] = useState(true);
-
-  // Obtener el perfil del usuario actual
-  useEffect(() => {
-    const fetchUserPerfil = async () => {
-      if (!user) {
-        setLoadingPerfil(false);
-        return;
-      }
-
-      try {
-        let usuarioid = user.user_metadata?.usuarioid;
-        
-        if (!usuarioid) {
-          const usuariosData = await JoySenseService.getTableData('usuario', 100);
-          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
-          
-          if (user.id) {
-            const usuarioByUuid = usuarios.find((u: any) => 
-              u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase()
-            );
-            if (usuarioByUuid?.usuarioid) {
-              usuarioid = usuarioByUuid.usuarioid;
-            }
-          }
-          
-          if (!usuarioid && user.email) {
-            const usuarioByEmail = usuarios.find((u: any) => 
-              u.login && u.login.toLowerCase() === user.email.toLowerCase()
-            );
-            if (usuarioByEmail?.usuarioid) {
-              usuarioid = usuarioByEmail.usuarioid;
-            }
-          }
-          
-          if (!usuarioid) {
-            setLoadingPerfil(false);
-            return;
-          }
-        }
-
-        const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
-        const usuarioperfilArray = Array.isArray(usuarioperfilData) 
-          ? usuarioperfilData 
-          : (usuarioperfilData as any)?.data || [];
-        
-        const userPerfil = usuarioperfilArray.find((up: any) => 
-          up.usuarioid === usuarioid && up.statusid === 1
-        );
-        
-        if (userPerfil) {
-          setUserPerfilId(userPerfil.perfilid);
-        }
-      } catch (error) {
-        console.error('[ParametrosGeoSidebar] Error obteniendo perfil:', error);
-      } finally {
-        setLoadingPerfil(false);
-      }
-    };
-
-    fetchUserPerfil();
-  }, [user]);
 
   // Obtener las tablas de parámetros geo
-  const parametrosGeoTables = getParametrosGeoTables();
+  const allParametrosGeoTables = getParametrosGeoTables();
+  
+  // Obtener nombres de tablas para verificar permisos
+  const tableNames = allParametrosGeoTables.map(table => table.name);
+  
+  // Estado para almacenar permisos individuales de cada tabla
+  const [tablePermissionsMap, setTablePermissionsMap] = useState<Record<string, boolean>>({});
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
+  
+  // Verificar permisos individuales para cada tabla
+  useEffect(() => {
+    const checkTablePermissions = async () => {
+      if (!user) {
+        setLoadingPermissions(false);
+        return;
+      }
+      
+      const permissions: Record<string, boolean> = {};
+      
+      // Verificar permisos para cada tabla
+      await Promise.all(
+        tableNames.map(async (tableName) => {
+          try {
+            const perms = await JoySenseService.getUserPermissions(tableName);
+            permissions[tableName] = perms?.puede_ver === true;
+          } catch (error) {
+            console.error(`[ParametrosGeoSidebar] Error verificando permisos para ${tableName}:`, error);
+            permissions[tableName] = false;
+          }
+        })
+      );
+      
+      setTablePermissionsMap(permissions);
+      setLoadingPermissions(false);
+    };
+    
+    checkTablePermissions();
+  }, [user, tableNames.join(',')]);
+  
+  // Filtrar tablas basándose en permisos
+  const parametrosGeoTables = useMemo(() => {
+    // Si aún se están cargando permisos, mostrar todas las tablas (evita parpadeo)
+    if (loadingPermissions) {
+      return allParametrosGeoTables;
+    }
+    
+    // Filtrar solo las tablas que el usuario puede ver
+    return allParametrosGeoTables.filter(table => {
+      return tablePermissionsMap[table.name] === true;
+    });
+  }, [allParametrosGeoTables, tablePermissionsMap, loadingPermissions]);
 
   // Mapear nombres de tablas a nombres de visualización
   const getTableDisplayName = (tableName: string): string => {

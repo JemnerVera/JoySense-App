@@ -3,6 +3,7 @@ import SidebarFilters from '../SidebarFilters';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
+import { useUserPermissions } from '../../hooks/useUserPermissions';
 
 interface MainSidebarProps {
   isExpanded: boolean;
@@ -22,75 +23,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   authToken
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
-  const [loadingPerfil, setLoadingPerfil] = useState(true);
-
-  // Obtener el perfil del usuario actual
-  useEffect(() => {
-    const fetchUserPerfil = async () => {
-      if (!user) {
-        setLoadingPerfil(false);
-        return;
-      }
-
-      try {
-        // Intentar obtener usuarioid de user_metadata primero
-        let usuarioid = user.user_metadata?.usuarioid;
-        
-        // Si no está en user_metadata, buscar en la tabla usuario
-        if (!usuarioid) {
-          const usuariosData = await JoySenseService.getTableData('usuario', 100);
-          const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
-          
-          // Buscar por useruuid primero (más preciso - coincide con user.id de Supabase Auth)
-          if (user.id) {
-            const usuarioByUuid = usuarios.find((u: any) => 
-              u.useruuid && String(u.useruuid).toLowerCase() === String(user.id).toLowerCase()
-            );
-            if (usuarioByUuid?.usuarioid) {
-              usuarioid = usuarioByUuid.usuarioid;
-            }
-          }
-          
-          // Si no se encuentra por UUID, buscar por email/login
-          if (!usuarioid && user.email) {
-            const usuarioByEmail = usuarios.find((u: any) => 
-              u.login && u.login.toLowerCase() === user.email.toLowerCase()
-            );
-            if (usuarioByEmail?.usuarioid) {
-              usuarioid = usuarioByEmail.usuarioid;
-            }
-          }
-          
-          if (!usuarioid) {
-            setLoadingPerfil(false);
-            return;
-          }
-        }
-
-        // Buscar perfil en usuarioperfil
-        const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 100);
-        const usuarioperfilArray = Array.isArray(usuarioperfilData) 
-          ? usuarioperfilData 
-          : (usuarioperfilData as any)?.data || [];
-        
-        const userPerfil = usuarioperfilArray.find((up: any) => 
-          up.usuarioid === usuarioid && up.statusid === 1
-        );
-        
-        if (userPerfil) {
-          setUserPerfilId(userPerfil.perfilid);
-        }
-      } catch (error) {
-        console.error('[MainSidebar] Error obteniendo perfil:', error);
-      } finally {
-        setLoadingPerfil(false);
-      }
-    };
-
-    fetchUserPerfil();
-  }, [user]);
+  
+  // Verificar permisos para AGRUPACIÓN (necesita permiso para 'entidad')
+  const { permissions: agrupacionPermissions, loading: agrupacionLoading } = useUserPermissions({
+    tableName: 'entidad'
+  });
 
   // Construir el array de pestañas de forma inmutable
   // NUEVA ESTRUCTURA: Solo 4 pestañas principales
@@ -104,7 +41,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         ),
-        color: 'blue'
+        color: 'blue',
+        requiresPermission: false // Reportes siempre visible
       },
       {
         id: 'agrupacion',
@@ -114,7 +52,9 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         ),
-        color: 'green'
+        color: 'green',
+        requiresPermission: true,
+        requiredTable: 'entidad'
       },
       {
         id: 'configuracion',
@@ -125,7 +65,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
-        color: 'orange'
+        color: 'orange',
+        requiresPermission: false // Configuración siempre visible (se filtra por secciones internas)
       },
       {
         id: 'ajustes',
@@ -135,12 +76,26 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
         ),
-        color: 'gray'
+        color: 'gray',
+        requiresPermission: false // Ajustes siempre visible
       }
     ];
 
-    return tabs;
-  }, [loadingPerfil, userPerfilId, t]);
+    // Filtrar pestañas basándose en permisos
+    return tabs.filter(tab => {
+      if (!tab.requiresPermission) return true;
+      
+      // Si requiere permiso y aún se están cargando, mostrar la pestaña (evita parpadeo)
+      if (agrupacionLoading) return true;
+      
+      // Si requiere permiso para 'entidad', verificar que tenga puede_ver
+      if (tab.id === 'agrupacion' && tab.requiredTable === 'entidad') {
+        return agrupacionPermissions.puede_ver;
+      }
+      
+      return true;
+    });
+  }, [t, agrupacionPermissions.puede_ver, agrupacionLoading]);
 
   const getTabColor = (color: string) => {
     switch (color) {

@@ -39,13 +39,6 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
   });
 
   // Log cuando permissionsLoading cambia
-  useEffect(() => {
-    console.log('🔄 [ParametrosGeoOperationsSidebar] permissionsLoading cambió:', { 
-      permissionsLoading, 
-      permissions, 
-      selectedTable 
-    });
-  }, [permissionsLoading, permissions, selectedTable]);
 
   // Operaciones disponibles según la tabla
   const getAllOperations = (): Array<{
@@ -100,54 +93,37 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
 
   // Filtrar operaciones según permisos de la tabla y permisos del usuario
   const availableOperations = useMemo(() => {
-    console.log('🔍 [ParametrosGeoOperationsSidebar] Filtrando operaciones', {
-      selectedTable,
-      permissionsLoading,
-      permissions,
-      totalOperations: allOperations.length,
-      config: { allowInsert: config?.allowInsert, allowUpdate: config?.allowUpdate, allowMassive: config?.allowMassive }
-    });
-
     const filtered = allOperations.filter(op => {
       // Verificar permisos de configuración de la tabla
       if (op.id === 'insert' && !config?.allowInsert) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (config):', op.id);
         return false;
       }
       if (op.id === 'update' && !config?.allowUpdate) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (config):', op.id);
         return false;
       }
       if (op.id === 'massive' && !config?.allowMassive) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (config):', op.id);
         return false;
       }
       
       // Si aún se están cargando permisos, mostrar todas las pestañas permitidas por configuración
       if (permissionsLoading) {
-        console.log('⏳ [ParametrosGeoOperationsSidebar] Permisos cargando, mostrando operación:', op.id);
         return true;
       }
       
       // Verificar permisos del usuario (solo cuando ya se cargaron)
       if (op.requiredPermission === 'ver' && !permissions.puede_ver) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (sin permiso ver):', op.id);
         return false;
       }
       if (op.requiredPermission === 'insertar' && !permissions.puede_insertar) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (sin permiso insertar):', op.id);
         return false;
       }
       if (op.requiredPermission === 'actualizar' && !permissions.puede_actualizar) {
-        console.log('❌ [ParametrosGeoOperationsSidebar] Operación filtrada (sin permiso actualizar):', op.id);
         return false;
       }
       
-      console.log('✅ [ParametrosGeoOperationsSidebar] Operación permitida:', op.id);
       return true;
     });
 
-    console.log('📋 [ParametrosGeoOperationsSidebar] Operaciones disponibles:', filtered.length, filtered.map(op => op.id));
     return filtered;
   }, [allOperations, config, permissions, permissionsLoading, selectedTable]);
 
