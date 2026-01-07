@@ -109,7 +109,7 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
       'ubicacion': 'UBICACION',
       'nodo': 'NODO',
       'localizacion': 'LOCALIZACION',
-      'asociacion': 'EQUIVALENCIA (ASOCIACION)'
+      'asociacion': 'EQUIVALENCIA'
     };
     return displayNameMap[tableName] || tableName.toUpperCase();
   };
@@ -176,6 +176,7 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
       title="PARAMETROS GEO"
       icon={parametrosGeoIcon}
       color="orange"
+      collapsedText="Sense"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">

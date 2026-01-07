@@ -24,15 +24,15 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
   return (
     <div 
       className={`bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full flex flex-col flex-shrink-0 ${
-        isExpanded ? 'w-64' : 'w-16'
+        isExpanded ? 'w-56' : 'w-14'
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Título - Tactical Style */}
-      <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 p-4 flex-shrink-0">
+      <div className="h-12 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 px-2 flex-shrink-0">
         {isExpanded ? (
-          <h3 className={`font-bold text-sm tracking-wider ${
+          <h3 className={`font-bold text-xs tracking-wider text-center ${
             color === 'green' ? 'text-green-500' :
             color === 'blue' ? 'text-blue-500' :
             color === 'cyan' ? 'text-cyan-500' :
@@ -45,11 +45,11 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
         ) : (
           <div className="flex items-center justify-center text-gray-800 dark:text-white">
             {collapsedText ? (
-              <div className="text-lg font-bold">{collapsedText}</div>
+              <div className="text-sm font-bold text-center leading-tight">{collapsedText}</div>
             ) : (
               <div className="flex flex-col items-center justify-center">
-                <div className="text-xs font-bold tracking-wider">Joy</div>
-                <div className="text-xs font-bold tracking-wider">Sense</div>
+                <div className="text-[10px] font-bold tracking-wider">Joy</div>
+                <div className="text-[10px] font-bold tracking-wider">Sense</div>
               </div>
             )}
           </div>

@@ -146,6 +146,7 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
       title="DISPOSITIVOS"
       icon={dispositivosIcon}
       color="orange"
+      collapsedText="Sense"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">

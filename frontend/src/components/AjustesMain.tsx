@@ -38,11 +38,8 @@ const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
-          ⚙️ {t('configuration.title') || 'AJUSTES'}
+          {t('configuration.title') || 'AJUSTES'}
         </h1>
-        <p className="text-sm text-gray-600 dark:text-neutral-400 font-mono mt-2">
-          {t('configuration.description') || 'Configura tus preferencias de idioma, tema y otras opciones'}
-        </p>
       </div>
 
       {/* Contenido principal */}

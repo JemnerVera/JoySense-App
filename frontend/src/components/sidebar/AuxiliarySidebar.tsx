@@ -573,8 +573,8 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
           if (parts.length > 1) {
             reglaTableToSelect = parts[1].split('-')[0] || '';
           }
-        }
-        
+    }
+
         // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO
         // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa
     return (
