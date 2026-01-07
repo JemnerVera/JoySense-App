@@ -37,6 +37,7 @@ interface PermisosMainProps {
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
   themeColor?: 'purple';
+  permisosTipo?: 'permisos-geo' | 'permisos-conf';
 }
 
 export interface PermisosMainRef {
@@ -61,7 +62,8 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   activeSubTab: propActiveSubTab = 'status',
   onSubTabChange,
   onFormDataChange,
-  themeColor = 'purple'
+  themeColor = 'purple',
+  permisosTipo
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -215,6 +217,9 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     // Para 'asignar' no necesitamos cargar datos de la tabla, solo los relacionados
   }, [activeSubTab, loadTableData, selectedTable]);
 
+  // Ref para rastrear si ya se preseleccionó el origen en CREAR
+  const origenPreseleccionadoEnCrearRef = useRef<number | null>(null);
+
   // Limpiar datos solo cuando cambia a 'insert' (pero mantener las columnas)
   useEffect(() => {
     if (activeSubTab === 'insert') {
@@ -225,8 +230,45 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       setSelectedRow(null);
       setUpdateFormData({});
       resetForm();
+      origenPreseleccionadoEnCrearRef.current = null;
     }
   }, [activeSubTab, setTableData, setLoading, resetForm]);
+
+  // Preseleccionar origen en CREAR según el tipo de permisos (después del reset)
+  useEffect(() => {
+    if (activeSubTab !== 'insert' || selectedTable !== 'permiso' || !permisosTipo || !origenesData.length) {
+      return;
+    }
+
+    // Buscar el origen esperado (case insensitive, con o sin tilde)
+    const origenEncontrado = origenesData.find(o => {
+      const nombre = (o.origen || '').toUpperCase().trim();
+      if (permisosTipo === 'permisos-geo') {
+        return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
+      } else {
+        return nombre === 'TABLA';
+      }
+    });
+
+    if (origenEncontrado) {
+      const origenId = origenEncontrado.origenid;
+      
+      // Solo preseleccionar si el origen actual no coincide con el esperado
+      if (formState.data.origenid !== origenId && origenPreseleccionadoEnCrearRef.current !== origenId) {
+        origenPreseleccionadoEnCrearRef.current = origenId;
+        // Usar setFormData para preservar los otros campos del formulario y establecer el origen
+        // Usar un delay para asegurar que el reset haya terminado
+        const timeoutId = setTimeout(() => {
+          setFormData({
+            ...formState.data,
+            origenid: origenId
+          });
+        }, 400);
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [activeSubTab, selectedTable, permisosTipo, origenesData, formState.data, setFormData]);
 
   // Handler para cambio de subTab (ya no se usa, se maneja desde el sidebar)
   // Se mantiene por compatibilidad pero no se usa directamente
@@ -324,7 +366,21 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       return [];
     }
 
-    return relatedTable.map((item: any) => {
+    // Filtrar opciones de origen según el tipo de permisos
+    let filteredTable = relatedTable;
+    if (columnName === 'origenid' && permisosTipo && selectedTable === 'permiso') {
+      filteredTable = relatedTable.filter((item: any) => {
+        const nombre = (item.origen || '').toUpperCase().trim();
+        if (permisosTipo === 'permisos-geo') {
+          return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
+        } else if (permisosTipo === 'permisos-conf') {
+          return nombre === 'TABLA';
+        }
+        return true;
+      });
+    }
+
+    return filteredTable.map((item: any) => {
       const value = item[columnName] || item[`${columnName.replace('id', '')}id`];
       let label = '';
       
@@ -348,7 +404,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       
       return { value, label };
     });
-  }, [crudRelatedData]);
+  }, [crudRelatedData, permisosTipo, selectedTable]);
 
   // Construir relatedData para StatusTab y UpdateTab
   const relatedData = useMemo(() => ({
@@ -435,7 +491,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
               getColumnDisplayNameTranslated(columnName, t)
             }
             getUniqueOptionsForField={getUniqueOptionsForField}
-            themeColor="purple"
+            themeColor="orange"
           />
         );
       
@@ -482,7 +538,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             onFormDataChange={(formData: Record<string, any>) => {
               setUpdateFormData(formData);
             }}
-            themeColor="purple"
+            themeColor="orange"
           />
         );
       
@@ -500,6 +556,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             empresasData={empresasData}
             fundosData={fundosData}
             ubicacionesData={ubicacionesData}
+            permisosTipo={permisosTipo}
             onSuccess={() => {
               loadTableData(selectedTable);
               setMessage({ type: 'success', text: 'Permisos asignados correctamente' });
