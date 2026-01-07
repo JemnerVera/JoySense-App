@@ -963,6 +963,7 @@ const AppContentInternal: React.FC = () => {
             handleSubTabChange(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
           }}
           onFormDataChange={handleFormDataChange}
+          permisosTipo={permisosTipo as 'permisos-geo' | 'permisos-conf'}
         />
       );
     }

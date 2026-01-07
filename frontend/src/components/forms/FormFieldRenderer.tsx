@@ -67,7 +67,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   }
 
   // Helper para renderizar un campo de selección
-  const renderSelectField = (placeholder: string, useUpdateField: boolean = false) => {
+  const renderSelectField = (placeholder: string, useUpdateField: boolean = false, allowExternalChange: boolean = false) => {
     const options = getUniqueOptionsForField(col.columnName);
     return (
       <div key={col.columnName} className="mb-4">
@@ -89,6 +89,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           }}
           options={options}
           placeholder={placeholder}
+          allowExternalChange={allowExternalChange}
         />
       </div>
     );
@@ -237,7 +238,8 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   }
 
   if (col.columnName === 'origenid' && selectedTable === 'permiso') {
-    return renderSelectField(t('create.select_origin') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+    // Permitir cambios externos para origenid en permiso (preselección automática)
+    return renderSelectField(t('create.select_origin') || `${t('buttons.select')} ${displayName.toUpperCase()}`, false, true);
   }
 
   if (col.columnName === 'fuenteid' && selectedTable === 'permiso') {

@@ -4,7 +4,7 @@
  * mediante una matriz tipo Power BI con pestañas para cada combinación
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
@@ -24,6 +24,7 @@ interface AsignarPermisosTabProps {
   empresasData?: any[];
   fundosData?: any[];
   ubicacionesData?: any[];
+  permisosTipo?: 'permisos-geo' | 'permisos-conf';
   onSuccess?: () => void;
 }
 
@@ -60,14 +61,36 @@ export function AsignarPermisosTab({
   empresasData = [],
   fundosData = [],
   ubicacionesData = [],
+  permisosTipo,
   onSuccess
 }: AsignarPermisosTabProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
 
+  // Función helper para obtener el origen inicial según el tipo de permisos
+  const getInitialOrigen = useCallback((): number | null => {
+    if (!permisosTipo || !origenesData.length) {
+      return null;
+    }
+
+    // Buscar el origen esperado (case insensitive, con o sin tilde)
+    const origenEncontrado = origenesData.find(o => {
+      const nombre = (o.origen || '').toUpperCase().trim();
+      if (permisosTipo === 'permisos-geo') {
+        return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
+      } else {
+        return nombre === 'TABLA';
+      }
+    });
+
+    return origenEncontrado ? origenEncontrado.origenid : null;
+  }, [permisosTipo, origenesData]);
+
+  // Inicializar el estado directamente con el valor correcto
+  const [selectedOrigen, setSelectedOrigen] = useState<number | null>(() => getInitialOrigen());
+  
   // Estados
   const [selectedPerfiles, setSelectedPerfiles] = useState<number[]>([]);
-  const [selectedOrigen, setSelectedOrigen] = useState<number | null>(null);
   const [selectedFuentes, setSelectedFuentes] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null); // Formato: "perfilid-origenid-fuenteid"
   const [geografiaLevel, setGeografiaLevel] = useState<GeografiaLevel>(null);
@@ -81,6 +104,20 @@ export function AsignarPermisosTab({
   const [tablaData, setTablaData] = useState<Record<number, any[]>>({}); // Múltiples fuentes pueden tener datos
   const [loadingTablaData, setLoadingTablaData] = useState<Record<number, boolean>>({});
   const [fuenteNombre, setFuenteNombre] = useState<string | null>(null);
+
+  // Actualizar el origen cuando cambia el tipo de permisos o los datos de origen
+  useEffect(() => {
+    const nuevoOrigen = getInitialOrigen();
+    if (nuevoOrigen !== null) {
+      // Solo actualizar si el origen actual es diferente al esperado
+      setSelectedOrigen(prev => {
+        if (prev !== nuevoOrigen) {
+          return nuevoOrigen;
+        }
+        return prev;
+      });
+    }
+  }, [permisosTipo, origenesData, getInitialOrigen]); // Removido selectedOrigen de dependencias
 
   // Generar pestañas basadas en las selecciones
   const tabs = useMemo(() => {
@@ -170,7 +207,6 @@ export function AsignarPermisosTab({
             const data = await JoySenseService.getTableData(fuenteName, 1000);
             setTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: Array.isArray(data) ? data : [] }));
           } catch (error) {
-            console.error(`Error cargando datos de tabla ${fuenteName}:`, error);
             setTablaData(prev => ({ ...prev, [activeTabConfig.fuenteid]: [] }));
             setMessage({ type: 'error', text: `Error al cargar datos de ${fuenteName}` });
           } finally {
@@ -206,7 +242,6 @@ export function AsignarPermisosTab({
           : [];
         setExistingPermisos(filtered);
       } catch (error) {
-        console.error('Error cargando permisos existentes:', error);
         setExistingPermisos([]);
       } finally {
         setLoadingPermisos(false);
@@ -477,11 +512,25 @@ export function AsignarPermisosTab({
   }, [perfilesData]);
 
   const origenOptions = useMemo(() => {
-    return origenesData.map(o => ({
+    // Filtrar opciones de origen según el tipo de permisos
+    let filteredOrigenes = origenesData;
+    if (permisosTipo) {
+      filteredOrigenes = origenesData.filter(o => {
+        const nombre = (o.origen || '').toUpperCase().trim();
+        if (permisosTipo === 'permisos-geo') {
+          return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
+        } else if (permisosTipo === 'permisos-conf') {
+          return nombre === 'TABLA';
+        }
+        return true;
+      });
+    }
+    
+    return filteredOrigenes.map(o => ({
       value: o.origenid,
       label: o.origen || `Origen ${o.origenid}`
     }));
-  }, [origenesData]);
+  }, [origenesData, permisosTipo]);
 
   // Opciones de fuentes (filtradas por origen si está seleccionado)
   const fuenteOptions = useMemo(() => {
@@ -522,7 +571,7 @@ export function AsignarPermisosTab({
               onChange={setSelectedPerfiles}
               options={perfilOptions}
               placeholder="Seleccione perfiles"
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
               disabled={false}
             />
           </div>
@@ -532,13 +581,16 @@ export function AsignarPermisosTab({
             <SelectWithPlaceholder
               value={selectedOrigen || null}
               onChange={(value) => {
-                setSelectedOrigen(value ? Number(value) : null);
+                const newValue = value ? Number(value) : null;
+                setSelectedOrigen(newValue);
                 setSelectedFuentes([]); // Reset fuentes cuando cambia origen
               }}
               options={origenOptions}
               placeholder="Seleccione un origen"
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-mono"
               disabled={false}
+              allowExternalChange={true}
+              themeColor="orange"
             />
           </div>
 
@@ -549,7 +601,7 @@ export function AsignarPermisosTab({
               onChange={setSelectedFuentes}
               options={fuenteOptions}
               placeholder={selectedOrigen ? 'Seleccione fuentes' : 'Seleccione origen primero'}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedOrigen || fuenteOptions.length === 0}
             />
           </div>
@@ -569,7 +621,7 @@ export function AsignarPermisosTab({
                     onClick={() => setActiveTab(tab.key)}
                     className={`px-4 py-2 rounded-lg font-mono text-sm transition-colors ${
                       activeTab === tab.key
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-orange-600 text-white'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
                   >
@@ -606,7 +658,7 @@ export function AsignarPermisosTab({
                           <span>PUEDE VER</span>
                           <button
                             onClick={() => handleSelectAllColumn('puede_ver')}
-                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                            className="text-xs text-orange-400 hover:text-orange-300 mt-1"
                           >
                             (Todos)
                           </button>
@@ -617,7 +669,7 @@ export function AsignarPermisosTab({
                           <span>PUEDE INSERTAR</span>
                           <button
                             onClick={() => handleSelectAllColumn('puede_insertar')}
-                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                            className="text-xs text-orange-400 hover:text-orange-300 mt-1"
                           >
                             (Todos)
                           </button>
@@ -628,7 +680,7 @@ export function AsignarPermisosTab({
                           <span>PUEDE ACTUALIZAR</span>
                           <button
                             onClick={() => handleSelectAllColumn('puede_actualizar')}
-                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                            className="text-xs text-orange-400 hover:text-orange-300 mt-1"
                           >
                             (Todos)
                           </button>
@@ -639,7 +691,7 @@ export function AsignarPermisosTab({
                           <span>PUEDE ELIMINAR</span>
                           <button
                             onClick={() => handleSelectAllColumn('puede_eliminar')}
-                            className="text-xs text-purple-400 hover:text-purple-300 mt-1"
+                            className="text-xs text-orange-400 hover:text-orange-300 mt-1"
                           >
                             (Todos)
                           </button>
@@ -658,7 +710,7 @@ export function AsignarPermisosTab({
                             type="checkbox"
                             checked={permisoMatrix[obj.objetoid]?.puede_ver || false}
                             onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_ver')}
-                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                            className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                           />
                         </td>
                         <td className="border border-neutral-700 px-4 py-3 text-center">
@@ -666,7 +718,7 @@ export function AsignarPermisosTab({
                             type="checkbox"
                             checked={permisoMatrix[obj.objetoid]?.puede_insertar || false}
                             onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_insertar')}
-                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                            className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                           />
                         </td>
                         <td className="border border-neutral-700 px-4 py-3 text-center">
@@ -674,7 +726,7 @@ export function AsignarPermisosTab({
                             type="checkbox"
                             checked={permisoMatrix[obj.objetoid]?.puede_actualizar || false}
                             onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_actualizar')}
-                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                            className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                           />
                         </td>
                         <td className="border border-neutral-700 px-4 py-3 text-center">
@@ -682,7 +734,7 @@ export function AsignarPermisosTab({
                             type="checkbox"
                             checked={permisoMatrix[obj.objetoid]?.puede_eliminar || false}
                             onChange={() => handlePermisoToggle(String(obj.objetoid), 'puede_eliminar')}
-                            className="w-5 h-5 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                            className="w-5 h-5 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                           />
                         </td>
                       </tr>
@@ -696,7 +748,7 @@ export function AsignarPermisosTab({
                 <button
                   onClick={handleGuardar}
                   disabled={loading}
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Guardando...' : 'Guardar Permisos'}
                 </button>

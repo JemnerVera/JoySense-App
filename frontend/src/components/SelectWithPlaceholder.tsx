@@ -10,6 +10,7 @@ interface SelectWithPlaceholderProps {
   themeColor?: 'orange' | 'purple' | 'blue' | 'green' | 'red' | 'cyan';
   dropdownWidth?: string;
   renderSelectedLabel?: (label: string) => React.ReactNode;
+  allowExternalChange?: boolean; // Permite cambios externos sin revertir
 }
 
 const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
@@ -21,7 +22,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   disabled = false,
   themeColor = 'purple',
   dropdownWidth,
-  renderSelectedLabel
+  renderSelectedLabel,
+  allowExternalChange = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,51 +50,17 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       // probablemente es una interacción real, incluso si el dropdown ya se cerró
       const isActuallyUserInteraction = wasUserInteraction;
       
-      // Solo resetear el flag si definitivamente NO fue una interacción (ni flag ni dropdown abierto)
-      if (!wasUserInteraction && !isOpen) {
-        // No es una interacción del usuario
-      } else if (wasUserInteraction && !isOpen) {
-        // El flag dice que fue una interacción, pero el dropdown está cerrado
-        // Esto es normal después de hacer click - confiar en el flag
-        console.log('[SelectWithPlaceholder] Interacción detectada por flag aunque dropdown cerrado (normal después de click)', {
-          previous: previousValueRef.current,
-          current: value,
-          placeholder,
-          isOpen
-        });
-      }
-      
-      console.log('[SelectWithPlaceholder] Value cambió desde fuera:', {
-        previous: previousValueRef.current,
-        current: value,
-        placeholder,
-        wasUserInteraction,
-        isOpen,
-        isActuallyUserInteraction,
-        previousWasEmpty,
-        currentIsEmpty,
-        isReset: previousWasEmpty && !currentIsEmpty && !isActuallyUserInteraction
-      });
-      
       // Si el valor cambió desde empty a un valor Y NO fue una interacción real del usuario, es un problema
       // PERO solo revertir si estamos SEGUROS de que no fue una interacción del usuario
       // No revertir si el flag indica que fue una interacción (incluso si el dropdown está cerrado)
-      if (previousWasEmpty && !currentIsEmpty && !isActuallyUserInteraction) {
+      // O si allowExternalChange está habilitado (permite cambios externos intencionales)
+      if (previousWasEmpty && !currentIsEmpty && !isActuallyUserInteraction && !allowExternalChange) {
         // Verificar si estamos en medio de una reversión para evitar loops
         if (isRevertingRef.current) {
           // Ya estamos revirtiendo, no hacer nada más
           return;
         }
         
-        console.warn('[SelectWithPlaceholder] ⚠️ Valor restaurado incorrectamente después de reset! Revirtiendo cambio.', {
-          previous: previousValueRef.current,
-          current: value,
-          placeholder,
-          wasUserInteraction,
-          isOpen,
-          isActuallyUserInteraction,
-          stackTrace: new Error().stack
-        });
         // Marcar que estamos revirtiendo para evitar loops
         isRevertingRef.current = true;
         // NO actualizar previousValueRef aún - lo haremos después de revertir
@@ -141,14 +109,12 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     // CRÍTICO: Verificar que esto es realmente un click del usuario
     // Si el dropdown no está abierto, NO es una interacción del usuario
     if (!isOpen) {
-      console.warn('[SelectWithPlaceholder] handleOptionClick llamado cuando dropdown está cerrado - ignorando completamente');
       return;
     }
     
     // Verificar que el valor realmente cambió ANTES de marcar como interacción del usuario
     const valueChanged = optionValue !== value && String(optionValue || '') !== String(value || '');
     if (!valueChanged) {
-      console.warn('[SelectWithPlaceholder] handleOptionClick llamado pero el valor no cambió - ignorando');
       setIsOpen(false);
       setSearchTerm('');
       return;
