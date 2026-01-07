@@ -958,7 +958,7 @@ const AppContentInternal: React.FC = () => {
             // Mantener el tipo de permisos en el activeTab
             setActiveTab(`configuracion-permisos-${permisosTipo}`);
           }}
-          activeSubTab={(activeSubTab === 'asignar' ? 'status' : activeSubTab) as 'status' | 'insert' | 'update' | 'asignar'}
+          activeSubTab={activeSubTab as 'status' | 'insert' | 'update' | 'asignar'}
           onSubTabChange={(tab) => {
             handleSubTabChange(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
           }}
@@ -1400,14 +1400,18 @@ const AppContentInternal: React.FC = () => {
         <SidebarContainer
           showWelcome={showWelcomeIntegrated}
           activeTab={activeTab}
-              onTabChange={handleTabChange}
+          onTabChange={handleTabChange}
           authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
-              selectedTable={selectedTable}
-              onTableSelect={handleTableSelect}
-          activeSubTab={activeTab.startsWith('permisos-') ? activeSubTab : (activeSubTab === 'asignar' ? 'status' : activeSubTab)}
+          selectedTable={selectedTable}
+          onTableSelect={handleTableSelect}
+          activeSubTab={(
+            activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-')
+              ? activeSubTab
+              : (activeSubTab === 'asignar' ? 'status' : activeSubTab)
+          )}
           onSubTabChange={(tab) => {
-            if (activeTab.startsWith('permisos-')) {
-              // Para todas las tablas de permisos, permitir todos los tabs incluyendo 'asignar'
+            if (activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-')) {
+              // Para todas las vistas de permisos (dashboard y configuración), permitir todos los tabs incluyendo 'asignar'
               setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
             } else if (tab !== 'asignar') {
               handleSubTabChange(tab);
@@ -1419,8 +1423,8 @@ const AppContentInternal: React.FC = () => {
           multipleData={currentMultipleData}
           massiveFormData={currentMassiveFormData}
           onPermisosSubTabChangeFromProtectedButton={
-            // Pasar la función según el tab activo
-            activeTab.startsWith('permisos-')
+            // Pasar la función según el tab activo (permisos dashboard o configuración)
+            (activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-'))
               ? permisosMainRef.current?.handleSubTabChangeFromProtectedButton
                 ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
                     // Filtrar 'massive' ya que PermisosMain no lo soporta

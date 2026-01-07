@@ -124,7 +124,7 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
       title={getTitle()}
       icon={operationsIcon}
       color="orange"
-      collapsedText="..."
+      collapsedText="App"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">

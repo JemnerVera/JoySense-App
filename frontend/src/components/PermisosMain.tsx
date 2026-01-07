@@ -210,7 +210,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   // Para 'insert' también necesitamos cargar las columnas (aunque no los datos)
   useEffect(() => {
     if (activeSubTab === 'status' || activeSubTab === 'update' || activeSubTab === 'insert') {
-      console.log('[PermisosMain] Cargando datos/columnas para subTab:', activeSubTab);
       loadTableData(selectedTable);
     }
     // Para 'asignar' no necesitamos cargar datos de la tabla, solo los relacionados
