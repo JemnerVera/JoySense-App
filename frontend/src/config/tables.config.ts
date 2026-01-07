@@ -750,7 +750,6 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'puede_ver', label: 'Puede Ver', type: 'boolean', defaultValue: false },
       { name: 'puede_insertar', label: 'Puede Insertar', type: 'boolean', defaultValue: false },
       { name: 'puede_actualizar', label: 'Puede Actualizar', type: 'boolean', defaultValue: false },
-      { name: 'puede_eliminar', label: 'Puede Eliminar', type: 'boolean', defaultValue: false },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },

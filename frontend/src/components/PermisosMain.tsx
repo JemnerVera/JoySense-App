@@ -117,6 +117,8 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     empresasData,
     fundosData,
     ubicacionesData,
+    nodosData,
+    localizacionesData,
     perfilesData,
     origenesData,
     fuentesData,
@@ -556,6 +558,8 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             empresasData={empresasData}
             fundosData={fundosData}
             ubicacionesData={ubicacionesData}
+            nodosData={nodosData}
+            localizacionesData={localizacionesData}
             permisosTipo={permisosTipo}
             onSuccess={() => {
               loadTableData(selectedTable);

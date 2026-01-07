@@ -543,7 +543,6 @@ export interface Permiso {
   puede_ver: boolean;
   puede_insertar: boolean;
   puede_actualizar: boolean;
-  puede_eliminar: boolean;
   statusid: number;
   usercreatedid: number;
   usermodifiedid: number;

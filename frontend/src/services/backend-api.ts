@@ -684,6 +684,89 @@ export class JoySenseService {
     }
   }
 
+  /**
+   * Obtiene el usuarioid del usuario actual usando la función RPC
+   * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
+   */
+  static async getCurrentUsuarioid(): Promise<number | null> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      // Llamar a la función RPC directamente desde Supabase
+      // La función está en el schema 'joysense' y usa auth.uid() internamente
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_usuarioid_current_user');
+
+      if (error) {
+        console.error('❌ Error calling fn_get_usuarioid_current_user:', error);
+        return null;
+      }
+
+      console.log('✅ [getCurrentUsuarioid] RPC retornó:', data);
+      return data || null;
+    } catch (error) {
+      console.error('❌ Error in getCurrentUsuarioid:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtiene el perfilid del usuario actual usando la función RPC
+   * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
+   */
+  static async getCurrentPerfilid(): Promise<number | null> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      // Llamar a la función RPC directamente desde Supabase
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_perfilid_current_user');
+
+      if (error) {
+        console.error('❌ Error calling fn_get_perfilid_current_user:', error);
+        return null;
+      }
+
+      console.log('✅ [getCurrentPerfilid] RPC retornó:', data);
+      return data || null;
+    } catch (error) {
+      console.error('❌ Error in getCurrentPerfilid:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtiene los permisos del usuario actual para una tabla específica usando la función RPC
+   * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
+   */
+  static async getUserPermissions(tableName: string): Promise<{
+    puede_ver: boolean;
+    puede_insertar: boolean;
+    puede_actualizar: boolean;
+  } | null> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      // Llamar a la función RPC directamente desde Supabase
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_user_permissions', { p_table_name: tableName });
+
+      if (error) {
+        console.error('❌ Error calling fn_get_user_permissions:', error);
+        return null;
+      }
+
+      console.log('✅ [getUserPermissions] RPC retornó:', data);
+      return data || null;
+    } catch (error) {
+      console.error('❌ Error in getUserPermissions:', error);
+      return null;
+    }
+  }
+
   static async getTableDataPaginated(
     tableName: TableName | string,
     options: {
