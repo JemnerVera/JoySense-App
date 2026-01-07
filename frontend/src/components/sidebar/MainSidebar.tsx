@@ -104,7 +104,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         ),
-        color: 'brown'
+        color: 'blue'
       },
       {
         id: 'agrupacion',
@@ -114,7 +114,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         ),
-        color: 'blue'
+        color: 'green'
       },
       {
         id: 'configuracion',
@@ -176,12 +176,13 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Logo - Tactical Style */}
+      {/* Logo y Título - Tactical Style */}
       <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 p-4">
         {isExpanded ? (
           <div className="flex items-center space-x-3">
             <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
             <img src="/Logo - texto.png" alt="JoySense" className="h-6 w-auto" />
+            <h1 className="text-lg font-bold text-orange-500 font-mono tracking-wider ml-2">JOYSENSE</h1>
           </div>
         ) : (
           <div className="flex justify-center">

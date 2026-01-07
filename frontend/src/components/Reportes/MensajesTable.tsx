@@ -172,7 +172,7 @@ const MensajesTable: React.FC = () => {
       <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-green-500 font-mono tracking-wider">
+        <h2 className="text-2xl font-bold text-blue-500 font-mono tracking-wider">
           {t('reports.messages.title')}
         </h2>
           <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
@@ -185,12 +185,12 @@ const MensajesTable: React.FC = () => {
         <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-300 dark:border-neutral-700">
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.message_id')}</th>
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.contact')}</th>
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.message')}</th>
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.date')}</th>
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
-                <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.status')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.message_id')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.contact')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.message')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.date')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
+                <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.status')}</th>
               </tr>
             </thead>
           <tbody>

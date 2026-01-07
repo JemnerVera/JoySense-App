@@ -276,7 +276,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   return (
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-amber-700 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
+        <h3 className="text-lg font-bold text-blue-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
 
         <div className="flex items-center gap-3">
           {/* Botón de cancelar selección - Al costado izquierdo del searchbar */}
@@ -329,7 +329,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
               placeholder={t('dashboard.search_node_placeholder')}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-800 focus:border-amber-800 font-mono text-sm"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-mono text-sm"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <svg className="w-4 h-4 text-gray-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +343,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
             <div className="absolute z-50 w-full mt-1 bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar">
               {loading ? (
                 <div className="px-4 py-3 text-center text-gray-600 dark:text-neutral-400">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-800 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                 </div>
               ) : error ? (
                 <div className="px-4 py-3 text-red-400">{error}</div>

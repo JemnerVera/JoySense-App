@@ -274,6 +274,16 @@ const AppContentInternal: React.FC = () => {
       if (selectedTable) {
         setSelectedTable('');
       }
+    } else if (activeTab.startsWith('configuracion-permisos-')) {
+      const table = activeTab.replace('configuracion-permisos-', '');
+      if (table && table !== selectedTable) {
+        setSelectedTable(table);
+      }
+    } else if (activeTab === 'configuracion-permisos') {
+      // Si solo es 'configuracion-permisos' sin tipo, limpiar selectedTable
+      if (selectedTable) {
+        setSelectedTable('');
+      }
     } else if (activeTab.startsWith('permisos-')) {
       const table = activeTab.replace('permisos-', '');
       if (table && table !== selectedTable) {
@@ -662,6 +672,20 @@ const AppContentInternal: React.FC = () => {
       );
     }
 
+    // Manejar CONFIGURACIÓN principal (sin subsección)
+    if (activeTab === 'configuracion') {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <div className="text-center">
+            <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">{t('welcome.subtitle')}</h2>
+              <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">{t('welcome.instruction')}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Manejar sub-rutas de CONFIGURACIÓN - DISPOSITIVOS
     if (activeTab.startsWith('configuracion-dispositivos')) {
       // Extraer el nombre de la tabla (ej: 'configuracion-dispositivos-tipo' -> 'tipo')
@@ -670,10 +694,12 @@ const AppContentInternal: React.FC = () => {
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!dispositivosTab || dispositivosTab === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">DISPOSITIVOS</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">DISPOSITIVOS</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -724,10 +750,12 @@ const AppContentInternal: React.FC = () => {
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!usuariosTab || usuariosTab === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-purple-500 mb-4 font-mono tracking-wider">USUARIOS</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">USUARIOS</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -758,10 +786,12 @@ const AppContentInternal: React.FC = () => {
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!parametrosGeoTab || parametrosGeoTab === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">PARAMETROS GEO</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">PARAMETROS GEO</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -798,10 +828,12 @@ const AppContentInternal: React.FC = () => {
         // Si no hay tabla seleccionada, mostrar mensaje
         if (!reglaTab || reglaTab === '') {
           return (
-            <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold text-cyan-500 mb-4 font-mono tracking-wider">REGLA</h2>
-                <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="text-center">
+                <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                  <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REGLA</h2>
+                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                </div>
               </div>
             </div>
           );
@@ -842,10 +874,12 @@ const AppContentInternal: React.FC = () => {
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!notificacionesTab || notificacionesTab === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-cyan-500 mb-4 font-mono tracking-wider">NOTIFICACIONES</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">NOTIFICACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -871,15 +905,17 @@ const AppContentInternal: React.FC = () => {
     // Manejar configuracion-permisos
     if (activeTab.startsWith('configuracion-permisos')) {
       // Extraer el tipo de permisos (permisos-geo o permisos-conf)
-      const permisosTipo = activeTab.replace('configuracion-permisos-', '');
+      const permisosTipo = activeTab.replace('configuracion-permisos', '').replace(/^-/, '');
       
       // Si no hay tipo seleccionado, mostrar mensaje
       if (!permisosTipo || permisosTipo === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-purple-500 mb-4 font-mono tracking-wider">PERMISOS</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona un tipo de permisos del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">PERMISOS</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -912,10 +948,12 @@ const AppContentInternal: React.FC = () => {
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!reportesAdminTable || reportesAdminTable === '') {
         return (
-          <div className="p-6 bg-white dark:bg-neutral-900 min-h-screen">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-red-500 mb-4 font-mono tracking-wider">REPORTES ADMINISTRADOR</h2>
-              <p className="text-gray-600 dark:text-neutral-400 font-mono">Selecciona una tabla del sidebar</p>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES ADMINISTRADOR</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
             </div>
           </div>
         );
@@ -944,7 +982,10 @@ const AppContentInternal: React.FC = () => {
     // Manejar agrupacion
     if (activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-')) {
       // Extraer el nombre de la tabla (ej: 'agrupacion-entidad' -> 'entidad')
-      const agrupacionTable = activeTab.replace('agrupacion-', '') || 'entidad';
+      // Si activeTab es exactamente 'agrupacion', usar 'entidad' por defecto
+      const agrupacionTable = activeTab === 'agrupacion' 
+        ? 'entidad' 
+        : (activeTab.replace('agrupacion-', '') || 'entidad');
       
       // Mostrar AgrupacionMain con la tabla seleccionada
       return (
@@ -1078,7 +1119,7 @@ const AppContentInternal: React.FC = () => {
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="text-center">
             <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">{t('tabs.reports')}</h2>
+              <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">{t('tabs.reports')}</h2>
               <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">{t('forms.select_subtab')}</p>
             </div>
           </div>
@@ -1381,7 +1422,7 @@ const AppContentInternal: React.FC = () => {
                 : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
                 ? 'border-red-500 dark:border-red-500'
                 : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
-                ? 'border-amber-800 dark:border-amber-800'
+                ? 'border-blue-600 dark:border-blue-600'
                 : activeTab === 'geografia' || activeTab?.startsWith('geografia-')
                 ? 'border-blue-500 dark:border-blue-500'
                 : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
@@ -1410,7 +1451,7 @@ const AppContentInternal: React.FC = () => {
                       : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
                       ? 'text-orange-500' // Naranja para Parámetros (legacy)
                       : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
-                      ? 'text-amber-700' // Marrón para Reportes
+                      ? 'text-blue-500' // Azul para Reportes
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
                       ? 'text-gray-500' // Gris claro para Configuración
                       : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
