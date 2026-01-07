@@ -6,7 +6,6 @@ import ReglaSidebar from './ReglaSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
 import ReportesDashboardSidebar from './ReportesDashboardSidebar';
-import ConfiguracionSidebar from './ConfiguracionSidebar';
 import DispositivosSidebar from './DispositivosSidebar';
 import DispositivosOperationsSidebar from './DispositivosOperationsSidebar';
 import UsuariosSidebar from './UsuariosSidebar';
@@ -43,6 +42,7 @@ interface AuxiliarySidebarProps {
   reglaSubTab?: 'status' | 'insert' | 'update';
   forceConfiguracionSidebar?: boolean; // Forzar renderizado de ConfiguracionSidebar incluso si isDispositivos es true
   onReglaSubTabChange?: (subTab: 'status' | 'insert' | 'update') => void;
+  isSidebarAux3?: boolean; // Indica si estamos en Sidebar Aux 3 (para NOTIFICACIONES)
 }
 
 const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
@@ -64,6 +64,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   showDashboardThirdLevel = false,
   permisosSubTab,
   onPermisosSubTabChange,
+  isSidebarAux3 = false,
   onPermisosSubTabChangeFromProtectedButton,
   onSubTabChangeFromProtectedButton,
   reglaSubTab,
@@ -127,12 +128,14 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
   const check2 = activeTab.includes('-regla_perfil-');
   const check3 = activeTab.includes('-regla_umbral-');
-  const check4 = activeTab === 'configuracion-notificaciones-regla-regla';
-  const check5 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
-  const check6 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
-  const check7 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral');
+  const check4 = activeTab.includes('-regla_objeto-');
+  const check5 = activeTab === 'configuracion-notificaciones-regla-regla';
+  const check6 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
+  const check7 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
+  const check8 = activeTab === 'configuracion-notificaciones-regla-regla_objeto';
+  const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto');
   const isReglaTableSelected = isReglaNotificaciones && (
-    check1 || check2 || check3 || check4 || check5 || check6 || check7
+    check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8 || check9
   );
 
   // AGRUPACION - Sidebar Principal (debe ir antes de otros para que tenga prioridad)
@@ -504,33 +507,22 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
     
+    // CORRECCIÓN: Verificar si estamos en REGLA
+    const isInReglaSection = activeTab === 'configuracion-notificaciones-regla' || 
+                             activeTab.startsWith('configuracion-notificaciones-regla-');
+    
     // CORRECCIÓN: 
     // Sidebar Aux 2 (showThirdLevel=false) = Tablas (CRITICIDAD, UMBRAL, REGLA, REGLA_OBJETO) = NotificacionesSidebar
-    // Sidebar Aux 3 (showThirdLevel=true) = Tablas de regla (REGLA, REGLA_PERFIL, REGLA_UMBRAL) = ReglaSidebar (solo cuando estamos en REGLA)
+    // Sidebar Aux 3 (showThirdLevel=true) = Tablas de regla (REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO) = ReglaSidebar (solo cuando estamos en REGLA)
     // Sidebar Aux 4 = Operaciones (ESTADO, CREAR) = ReglaOperationsSidebar (solo cuando se selecciona una tabla de regla)
     
-    // Si showThirdLevel es false, renderizar Sidebar Aux 2 (NotificacionesSidebar con CRITICIDAD, UMBRAL, REGLA, REGLA_OBJETO)
+    // LÓGICA PARA NOTIFICACIONES (IGUAL A DISPOSITIVOS):
+    // Sidebar Aux 2 (isSidebarAux3=false): SIEMPRE mostrar TABLAS (NotificacionesSidebar)
+    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=false): OPERACIONES (NotificacionesOperationsSidebar)
+    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=true): REGLA (ReglaSidebar)
     if (!showThirdLevel) {
-      // Si estamos en REGLA, mostrar NotificacionesSidebar (Sidebar Aux 2) con REGLA seleccionado
-      if (isReglaNotificaciones) {
-        return (
-          <NotificacionesSidebar
-            selectedTable="regla"
-            onTableSelect={onTableSelect || (() => {})}
-            activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-            onSubTabChange={onSubTabChange || (() => {})}
-            isExpanded={isExpanded}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-          />
-        );
-      }
-      
-      // Para otras tablas de notificaciones (CRITICIDAD, UMBRAL, REGLA_OBJETO), mostrar operaciones
-      if (finalSelectedTable && finalSelectedTable !== '' && finalSelectedTable !== 'regla') {
+      // Sidebar Aux 3: Mostrar OPERACIONES cuando hay tabla seleccionada (igual que DISPOSITIVOS)
+      if (isSidebarAux3 && finalSelectedTable && finalSelectedTable !== '' && finalSelectedTable !== 'regla' && !isInReglaSection) {
         return (
           <NotificacionesOperationsSidebar
             selectedTable={finalSelectedTable}
@@ -547,10 +539,11 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         );
       }
       
-      // Si no hay tabla seleccionada, mostrar NotificacionesSidebar (Sidebar Aux 2)
+      // Sidebar Aux 2: SIEMPRE mostrar TABLAS (NotificacionesSidebar)
+      const tableToSelect = isInReglaSection ? 'regla' : finalSelectedTable;
       return (
         <NotificacionesSidebar
-          selectedTable={finalSelectedTable}
+          selectedTable={tableToSelect}
           onTableSelect={onTableSelect || (() => {})}
           activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
           onSubTabChange={onSubTabChange || (() => {})}
@@ -564,9 +557,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       );
     }
 
-    // Si showThirdLevel es true, renderizar Sidebar Aux 3 (ReglaSidebar con REGLA, REGLA_PERFIL, REGLA_UMBRAL)
+    // Si showThirdLevel es true, renderizar Sidebar Aux 3 (ReglaSidebar con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO)
     // Solo cuando estamos en REGLA
     if (showThirdLevel) {
+      
       // Si estamos en REGLA, mostrar ReglaSidebar (Sidebar Aux 3)
       // IMPORTANTE: Siempre mostrar ReglaSidebar cuando estamos en REGLA, incluso si hay una tabla seleccionada
       // Esto permite que el usuario pueda cambiar de tabla y ver todas las opciones disponibles
@@ -581,24 +575,24 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
           }
         }
         
-        // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL
+        // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO
         // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa
-        return (
-          <ReglaSidebar
+    return (
+      <ReglaSidebar
             selectedTable={reglaTableToSelect || selectedTable || ''}
-            onTableSelect={onTableSelect || (() => {})}
-            activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-            onSubTabChange={onSubTabChange || (() => {})}
-            isExpanded={isExpanded}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-          />
-        );
-      }
-      
+        onTableSelect={onTableSelect || (() => {})}
+        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+        onSubTabChange={onSubTabChange || (() => {})}
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        formData={formData}
+        multipleData={multipleData}
+        massiveFormData={massiveFormData}
+      />
+    );
+  }
+
       // Para otras tablas de notificaciones, no debería llegar aquí con showThirdLevel=true
       // Pero por si acaso, mostrar NotificacionesSidebar
       return (
@@ -640,28 +634,13 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     );
   }
 
-  // CONFIGURACIÓN - Sidebar Auxiliar 1 (siempre mostrar cuando está en configuracion o sus subsecciones)
-  // NOTA: Cuando isDispositivos, isUsuarios, isParametrosGeo o isNotificacionesConfig es true y forceConfiguracionSidebar es true, este sidebar se renderiza primero
-  const shouldShowConfiguracion = isConfiguracion && (forceConfiguracionSidebar || (!isDispositivos && !isUsuarios && !isParametrosGeo && !isNotificacionesConfig && !isReportesAdmin));
-  if (shouldShowConfiguracion) {
-    // Extraer la sección seleccionada (dispositivos, usuarios, etc.)
-    const selectedSection = activeTab.startsWith('configuracion-') 
-      ? activeTab.replace('configuracion-', '').split('-')[0] 
-      : '';
-    
-    return (
-      <ConfiguracionSidebar
-        selectedSection={selectedSection}
-        onSectionSelect={(section) => {
-          if (onTabChange) {
-            onTabChange(`configuracion-${section}`);
-          }
-        }}
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      />
-    );
+  // CONFIGURACIÓN - Sidebar Auxiliar 1
+  // NOTA: ConfiguracionSidebar ahora se renderiza explícitamente en SidebarContainer (Sidebar Aux 1)
+  // Por lo tanto, NO debemos renderizarlo aquí para evitar duplicación
+  // Si estamos en configuración pero no en ninguna subsección específica, no renderizar nada
+  // (el SidebarContainer manejará el renderizado de ConfiguracionSidebar)
+  if (isConfiguracion && !isDispositivos && !isUsuarios && !isParametrosGeo && !isNotificacionesConfig && !isPermisosConfig && !isReportesAdmin) {
+    return null;
   }
 
   return null;

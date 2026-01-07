@@ -31,6 +31,11 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
   multipleData = [],
   massiveFormData = {}
 }) => {
+  console.log('[NotificacionesSidebar] Renderizando:', {
+    selectedTable,
+    isExpanded,
+    activeSubTab
+  });
   const { t } = useLanguage();
   const { user } = useAuth();
   const [userPerfilId, setUserPerfilId] = useState<number | null>(null);
@@ -99,14 +104,19 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
 
   // Obtener las tablas de notificaciones
   const notificacionesTables = getNotificacionesTables();
+  console.log('[NotificacionesSidebar] Tablas obtenidas:', {
+    count: notificacionesTables.length,
+    tables: notificacionesTables.map(t => t.name),
+    selectedTable,
+    isExpanded
+  });
 
   // Mapear nombres de tablas a nombres de visualización
   const getTableDisplayName = (tableName: string): string => {
     const displayNameMap: Record<string, string> = {
       'criticidad': 'CRITICIDAD',
       'umbral': 'UMBRAL',
-      'regla': 'REGLA',
-      'regla_objeto': 'REGLA_OBJETO'
+      'regla': 'REGLA'
     };
     return displayNameMap[tableName] || tableName.toUpperCase();
   };
@@ -134,11 +144,6 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-      ),
-      'regla_objeto': (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-        </svg>
       )
     };
     return iconMap[tableName] || (
@@ -153,6 +158,13 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   );
+
+  console.log('[NotificacionesSidebar] Renderizando BaseAuxiliarySidebar:', {
+    isExpanded,
+    selectedTable,
+    activeSubTab,
+    tablesCount: notificacionesTables.length
+  });
 
   return (
     <BaseAuxiliarySidebar
