@@ -113,7 +113,7 @@ const AlertasTable: React.FC = () => {
     switch (statusid) {
       case 1:
         return (
-            <span className="px-2 py-1 text-xs font-bold rounded-full bg-green-900 text-green-300 border border-green-700 font-mono tracking-wider">
+            <span className="px-2 py-1 text-xs font-bold rounded-full bg-blue-900 text-blue-300 border border-blue-700 font-mono tracking-wider">
               {t('status.active')}
             </span>
         );
@@ -187,7 +187,7 @@ const AlertasTable: React.FC = () => {
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-green-500 font-mono tracking-wider">
+        <h2 className="text-2xl font-bold text-blue-500 font-mono tracking-wider">
           {t('reports.alerts.title')}
         </h2>
         <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
@@ -200,12 +200,12 @@ const AlertasTable: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-300 dark:border-neutral-700">
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.threshold')}</th>
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.measurement')}</th>
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
-              <th className="text-left py-3 px-4 font-bold text-green-500 font-mono tracking-wider">{t('reports.table.status')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.threshold')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.measurement')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.creation_date')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.status')}</th>
             </tr>
           </thead>
           <tbody>
