@@ -11,6 +11,7 @@ interface ProtectedSubTabButtonProps {
   multipleData: any[];
   massiveFormData?: Record<string, any>;
   onTabChange: (tab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
+  onTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
   className?: string;
   onClick?: () => void;
 }
@@ -24,6 +25,7 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
   multipleData,
   massiveFormData = {},
   onTabChange,
+  onTabChangeFromProtectedButton,
   className,
   onClick
 }) => {
@@ -36,9 +38,21 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    console.log('[ProtectedSubTabButton] Click detectado', {
+      currentTab,
+      targetTab,
+      selectedTable,
+      isModalOpen,
+      formDataKeys: Object.keys(formData),
+      formDataValues: Object.entries(formData).filter(([k, v]) => {
+        const val = v;
+        return val !== null && val !== undefined && val !== '' && val !== 0 && val !== 1;
+      }).map(([k, v]) => `${k}: ${v}`)
+    });
 
     // Si el modal ya está abierto, no hacer nada
     if (isModalOpen) {
+      console.log('[ProtectedSubTabButton] Modal ya está abierto, ignorando click');
       return;
     }
 
@@ -50,7 +64,15 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
     // Verificar si hay cambios sin guardar
     const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData, massiveFormData);
     
+    console.log('[ProtectedSubTabButton] Resultado de detección de cambios', {
+      hasChanges,
+      selectedTable,
+      currentTab,
+      targetTab
+    });
+    
     if (hasChanges) {
+      console.log('[ProtectedSubTabButton] Mostrando modal de confirmación');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar la pestaña
       showModal(
@@ -58,18 +80,35 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
         currentTab,
         targetTab,
         () => {
+          console.log('[ProtectedSubTabButton] Modal confirmado, cambiando a tab:', targetTab);
           setIsModalOpen(false);
-          // Solo cambiar la pestaña DESPUÉS de confirmar
-          onTabChange(targetTab);
+          // IMPORTANTE: Si hay onTabChangeFromProtectedButton, usarlo en lugar de onTabChange
+          // Esto evita que handleSubTabChangeInternal muestre el modal de nuevo
+          if (onTabChangeFromProtectedButton) {
+            console.log('[ProtectedSubTabButton] Usando onTabChangeFromProtectedButton');
+            onTabChangeFromProtectedButton(targetTab);
+          } else {
+            console.log('[ProtectedSubTabButton] Usando onTabChange (fallback)');
+            // Solo cambiar la pestaña DESPUÉS de confirmar
+            onTabChange(targetTab);
+          }
         },
         () => {
+          console.log('[ProtectedSubTabButton] Modal cancelado');
           setIsModalOpen(false);
           // No hacer nada, quedarse en la pestaña actual
         }
       );
     } else {
+      console.log('[ProtectedSubTabButton] No hay cambios, procediendo con cambio de tab');
       // No hay cambios, proceder normalmente
-      onTabChange(targetTab);
+      // IMPORTANTE: Si hay onTabChangeFromProtectedButton, usarlo en lugar de onTabChange
+      if (onTabChangeFromProtectedButton) {
+        console.log('[ProtectedSubTabButton] Usando onTabChangeFromProtectedButton (sin cambios)');
+        onTabChangeFromProtectedButton(targetTab);
+      } else {
+        onTabChange(targetTab);
+      }
     }
   };
 

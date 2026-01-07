@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { getTableConfig } from '../config/tables.config';
 
 export const useSimpleChangeDetection = () => {
   const hasSignificantChanges = useCallback((
@@ -129,17 +130,47 @@ export const useSimpleChangeDetection = () => {
         
         // Numbers: debe ser un número válido y diferente de 0 (a menos que sea un ID válido)
         // Para foreign keys, 0 generalmente significa "no seleccionado", así que no cuenta como cambio
+        // IMPORTANTE: Excluir valores por defecto de la tabla (ej: escalamiento = 2 en criticidad)
         if (typeof value === 'number') {
+          // PRIMERO: Verificar si es un valor por defecto de la tabla (antes de cualquier otra verificación)
+          const config = getTableConfig(selectedTable);
+          if (config) {
+            const fieldConfig = config.fields.find(f => f.name === key);
+            if (fieldConfig && fieldConfig.defaultValue !== undefined && value === fieldConfig.defaultValue) {
+              // Es un valor por defecto, no contar como cambio
+              console.log(`⚠️ [useSimpleChangeDetection] Ignorando valor por defecto: ${key} = ${value} (defaultValue: ${fieldConfig.defaultValue})`);
+              return;
+            }
+          }
+          
           // Si el campo termina en 'id', es un foreign key
           if (key.endsWith('id')) {
-            // En formularios de inserción, cualquier foreign key seleccionada (> 0) cuenta como cambio
-            // porque el usuario la seleccionó manualmente en un combobox
-            if (activeSubTab === 'insert') {
-              if (value > 0 && value !== null && value !== undefined) {
-                changes.push(key);
-                console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key (insert): ${key} = ${value}`);
-              }
-            } else {
+              // En formularios de inserción, verificar si hay datos relacionados ingresados
+              // Solo considerar cambio si hay datos de texto o boolean ingresados por el usuario
+              if (activeSubTab === 'insert') {
+                // Verificar si hay datos en los campos relacionados (no foreign keys)
+                // Si todos los campos de texto están vacíos, probablemente es un valor por defecto
+                const hasRelatedData = Object.keys(formData).some(otherKey => {
+                  if (otherKey === key || otherKey.endsWith('id') || alwaysExcludedFields.includes(otherKey)) {
+                    return false;
+                  }
+                  const otherValue = formData[otherKey];
+                  if (typeof otherValue === 'string' && otherValue.trim() !== '') {
+                    return true;
+                  }
+                  if (typeof otherValue === 'boolean' && otherValue === true) {
+                    return true;
+                  }
+                  return false;
+                });
+                
+                if (hasRelatedData && value > 0 && value !== null && value !== undefined) {
+                  changes.push(key);
+                  console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key (insert): ${key} = ${value} (hay datos relacionados)`);
+                } else if (value > 0 && value !== null && value !== undefined) {
+                  console.log(`⚠️ [useSimpleChangeDetection] Foreign key ${key} = ${value} pero no hay datos relacionados, ignorando como valor por defecto`);
+                }
+              } else {
               // Para otras pestañas (update, etc.), verificar si hay datos relacionados
               // Solo considerar cambio si es > 0 Y hay datos relacionados ingresados
               // Por ejemplo, si paisid > 0 pero pais y paisabrev están vacíos, es un valor por defecto
@@ -173,8 +204,19 @@ export const useSimpleChangeDetection = () => {
             }
             return;
           }
-          // Para otros números, cualquier valor válido cuenta
+          // Para otros números, verificar si es un valor por defecto antes de contar como cambio
+          // Si no es un valor por defecto y es válido, contar como cambio
           if (value !== null && value !== undefined && value !== 0) {
+            // Verificar nuevamente si es un valor por defecto (por si acaso no se detectó antes)
+            const config = getTableConfig(selectedTable);
+            if (config) {
+              const fieldConfig = config.fields.find(f => f.name === key);
+              if (fieldConfig && fieldConfig.defaultValue !== undefined && value === fieldConfig.defaultValue) {
+                // Es un valor por defecto, no contar como cambio
+                console.log(`⚠️ [useSimpleChangeDetection] Ignorando valor por defecto en número: ${key} = ${value} (defaultValue: ${fieldConfig.defaultValue})`);
+                return;
+              }
+            }
             changes.push(key);
             if (process.env.NODE_ENV === 'development') {
               console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo number: ${key} = ${value}`);

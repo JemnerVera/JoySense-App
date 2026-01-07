@@ -562,18 +562,28 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
 
   // handleSubTabChange interno que verifica cambios sin guardar
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
+    console.log('[NotificacionesMain] handleSubTabChangeInternal llamado', {
+      from: activeSubTab,
+      to: tab,
+      changeFromProtectedButton: changeFromProtectedButtonRef.current,
+      isProcessing: isProcessingTabChangeRef.current
+    });
+    
     // Si ya estamos en el tab objetivo, no hacer nada
     if (tab === activeSubTab) {
+      console.log('[NotificacionesMain] Ya estamos en el tab objetivo, ignorando');
       return;
     }
     
     // Si ya hay un cambio de tab en proceso, ignorar esta llamada
     if (isProcessingTabChangeRef.current) {
+      console.log('[NotificacionesMain] Cambio de tab en proceso, ignorando');
       return;
     }
     
     // Si el cambio viene de ProtectedSubTabButton (ya validado), proceder sin validar de nuevo
     if (changeFromProtectedButtonRef.current) {
+      console.log('[NotificacionesMain] Cambio viene de ProtectedSubTabButton, procediendo sin validar');
       changeFromProtectedButtonRef.current = false;
       // Marcar para saltar la próxima sincronización y evitar que useSystemParametersSync procese el cambio
       skipNextSyncRef.current = true;
@@ -600,7 +610,15 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     }
     
     // Verificar si hay cambios sin guardar antes de cambiar de pestaña
-    if (activeSubTab === 'insert') {
+    // IMPORTANTE: Si el cambio viene de ProtectedSubTabButton, ya se validó y mostró el modal allí
+    // No mostrar el modal de nuevo aquí para evitar duplicación
+    if (activeSubTab === 'insert' && !changeFromProtectedButtonRef.current) {
+      console.log('[NotificacionesMain] Verificando cambios en INSERT', {
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab
+      });
+      
       // Verificar con hasUnsavedChanges para detectar cambios reales
       const hasChanges = hasUnsavedChanges({
         formData: insertForm?.formData || {},
@@ -608,8 +626,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         activeSubTab
       });
       
+      console.log('[NotificacionesMain] Resultado de hasUnsavedChanges:', hasChanges);
+      
       // Si hay cambios, mostrar modal de confirmación
       if (hasChanges) {
+        console.log('[NotificacionesMain] Mostrando modal de confirmación desde handleSubTabChangeInternal');
         // Activar guard para prevenir múltiples llamadas
         isProcessingTabChangeRef.current = true;
         
@@ -676,7 +697,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         );
         return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
       }
-    } else if (activeSubTab === 'update') {
+    } else if (activeSubTab === 'update' && !changeFromProtectedButtonRef.current) {
       // Para update: verificar si hay cambios o si el formulario está abierto
       // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
       if (updateFormData && Object.keys(updateFormData).length > 0) {

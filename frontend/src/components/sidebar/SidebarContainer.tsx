@@ -3,6 +3,7 @@ import { useSidebarLayout } from '../../hooks/useSidebarLayout';
 import MainSidebar from './MainSidebar';
 import AuxiliarySidebar from './AuxiliarySidebar';
 import ReglaOperationsSidebar from './ReglaOperationsSidebar';
+import ConfiguracionSidebar from './ConfiguracionSidebar';
 
 interface SidebarContainerProps {
   showWelcome: boolean;
@@ -19,6 +20,7 @@ interface SidebarContainerProps {
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
   onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void;
+  onSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({
@@ -35,7 +37,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   formData = {},
   multipleData = [],
   massiveFormData = {},
-  onPermisosSubTabChangeFromProtectedButton
+  onPermisosSubTabChangeFromProtectedButton,
+  onSubTabChangeFromProtectedButton
 }) => {
   const {
     mainSidebarExpanded,
@@ -81,6 +84,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -106,6 +110,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -116,17 +121,62 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para CONFIGURACIÓN (SIEMPRE PRIMERO cuando está en configuracion o sus subsecciones) */}
-      {/* IMPORTANTE: Este debe renderizarse ANTES del Sidebar 3 para evitar que ParametersSidebar se renderice */}
+      {/* Sidebar Aux 1: CONFIGURACIÓN (SIEMPRE visible cuando está en configuracion o sus subsecciones) */}
       {(() => {
         const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-');
         const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab);
-        const forceConfig = activeTab.startsWith('configuracion-dispositivos') || 
-                           activeTab.startsWith('configuracion-usuarios') || 
-                           activeTab.startsWith('configuracion-parametros-geo') || 
-                           activeTab.startsWith('configuracion-notificaciones') || 
-                           activeTab.startsWith('configuracion-permisos') || 
-                           activeTab.startsWith('configuracion-reportes-administrador');
+        // Extraer la sección seleccionada (dispositivos, usuarios, notificaciones, etc.)
+        const selectedSection = activeTab.startsWith('configuracion-') 
+          ? activeTab.replace('configuracion-', '').split('-')[0] 
+          : '';
+        console.log('[SidebarContainer] Sidebar Aux 1 (CONFIGURACIÓN):', {
+          isConfiguracion,
+          shouldShow,
+          activeTab,
+          selectedSection,
+          hasAux: hasAuxiliarySidebar(activeTab)
+        });
+        return shouldShow;
+      })() && (
+        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
+          <ConfiguracionSidebar
+            selectedSection={(() => {
+              const section = activeTab.startsWith('configuracion-') 
+                ? activeTab.replace('configuracion-', '').split('-')[0] 
+                : '';
+              return section;
+            })()}
+            onSectionSelect={(section) => {
+              if (onTabChange) {
+                onTabChange(`configuracion-${section}`);
+              }
+            }}
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+          />
+        </div>
+      )}
+
+      {/* Sidebar Aux 2: NOTIFICACIONES, DISPOSITIVOS, USUARIOS, etc. (visible cuando hay una subsección seleccionada) */}
+      {(() => {
+        const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-');
+        const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab);
+        const computedSelectedTable = (() => {
+          // Para NOTIFICACIONES: si estamos en REGLA, usar 'regla' como tabla seleccionada para mostrar NotificacionesSidebar
+          if (activeTab.startsWith('configuracion-notificaciones-regla')) {
+            return 'regla';
+          }
+          return selectedTable;
+        })();
+        console.log('[SidebarContainer] Sidebar Aux 2 (SUBSECCIONES):', {
+          isConfiguracion,
+          shouldShow,
+          activeTab,
+          selectedTable,
+          computedSelectedTable,
+          hasAux: hasAuxiliarySidebar(activeTab)
+        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
@@ -136,17 +186,24 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onMouseLeave={handleAuxiliarySidebarMouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
-            selectedTable={selectedTable}
+            selectedTable={(() => {
+              // Para NOTIFICACIONES: si estamos en REGLA, usar 'regla' como tabla seleccionada para mostrar NotificacionesSidebar
+              if (activeTab.startsWith('configuracion-notificaciones-regla')) {
+                return 'regla';
+              }
+              return selectedTable;
+            })()}
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
             multipleData={multipleData}
             massiveFormData={massiveFormData}
             showThirdLevel={false}
-            forceConfiguracionSidebar={activeTab.startsWith('configuracion-dispositivos') || activeTab.startsWith('configuracion-usuarios') || activeTab.startsWith('configuracion-parametros-geo') || activeTab.startsWith('configuracion-notificaciones') || activeTab.startsWith('configuracion-permisos') || activeTab.startsWith('configuracion-reportes-administrador')}
+            forceConfiguracionSidebar={false}
           />
         </div>
       )}
@@ -184,11 +241,22 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             (isDispositivos && hasAuxiliarySidebar(activeTab)) ||
             (isUsuarios && hasAuxiliarySidebar(activeTab)) ||
             (isParametrosGeo && hasAuxiliarySidebar(activeTab)) ||
-            // Para NOTIFICACIONES: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en notificaciones (excepto REGLA que tiene su propia lógica)
-            (activeTab.startsWith('configuracion-notificaciones') && !activeTab.startsWith('configuracion-notificaciones-regla') && hasAuxiliarySidebar(activeTab)) ||
+            // Para NOTIFICACIONES: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en notificaciones (incluyendo REGLA)
+            (activeTab.startsWith('configuracion-notificaciones') && hasAuxiliarySidebar(activeTab)) ||
             // Para PERMISOS: SIEMPRE mostrar Sidebar 3 (tipos) cuando estamos en permisos
             (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
           );
+          const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
+          console.log('[SidebarContainer] Sidebar Aux 3 (TABLAS):', {
+            shouldShow,
+            activeTab,
+            selectedTable,
+            isReglaNotificaciones,
+            hasAux: hasAuxiliarySidebar(activeTab),
+            isDispositivos,
+            isUsuarios,
+            isParametrosGeo
+          });
           return shouldShow && (
             <div className="flex-shrink-0 z-30">
               <AuxiliarySidebar
@@ -199,9 +267,14 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                 onTabChange={onTabChange}
                 selectedTable={(() => {
                   // Para NOTIFICACIONES: extraer tabla si no está en selectedTable
-                  if (activeTab.startsWith('configuracion-notificaciones') && !activeTab.startsWith('configuracion-notificaciones-regla')) {
-                    const notificacionesTable = selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '');
-                    if (notificacionesTable && notificacionesTable !== '') return notificacionesTable;
+                  // Si estamos en REGLA, NO usar 'regla' aquí, dejar que AuxiliarySidebar lo maneje
+                  if (activeTab.startsWith('configuracion-notificaciones')) {
+                    if (!activeTab.startsWith('configuracion-notificaciones-regla')) {
+                      const notificacionesTable = selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '');
+                      if (notificacionesTable && notificacionesTable !== '') return notificacionesTable;
+                    }
+                    // Si estamos en REGLA, pasar selectedTable tal cual (puede ser 'regla' o una tabla específica)
+                    return selectedTable || '';
                   }
                   // Para PERMISOS: extraer tipo si no está en selectedTable
                   if (activeTab.startsWith('configuracion-permisos-permisos-')) {
@@ -243,6 +316,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -276,6 +350,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -312,6 +387,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -348,6 +424,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -384,6 +461,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -422,45 +500,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
-            dashboardSubTab={dashboardSubTab}
-            onDashboardSubTabChange={onDashboardSubTabChange}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-            showThirdLevel={false}
-            forceConfiguracionSidebar={false}
-          />
-        </div>
-      )}
-
-      {/* Sidebar auxiliar para REGLA (Sidebar Auxiliar 3) - cuando está en configuracion-notificaciones-regla sin tabla seleccionada */}
-      {(() => {
-        const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-        // Verificar si se ha seleccionado una tabla de regla (regla, regla_perfil, regla_umbral)
-        // NOTA: No usar activeTab.includes('-regla-') sin verificar porque 'configuracion-notificaciones-regla' incluye 'regla' pero no tiene guion después
-        const isReglaTableSelected = isReglaNotificaciones && (
-          selectedTable === 'regla' ||
-          selectedTable === 'regla_perfil' || 
-          selectedTable === 'regla_umbral' ||
-          (activeTab.includes('-regla-') && !activeTab.endsWith('-regla')) ||
-          activeTab.includes('-regla_perfil-') ||
-          activeTab.includes('-regla_umbral-')
-        );
-        // Mostrar Sidebar 3 solo si estamos en REGLA y NO hay una tabla seleccionada
-        const shouldShow = isReglaNotificaciones && !isReglaTableSelected && hasAuxiliarySidebar(activeTab);
-        return shouldShow;
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-30`}>
-          <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            selectedTable={selectedTable || ''}
-            onTableSelect={onTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -475,16 +515,39 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {/* Sidebar auxiliar para REGLA OPERATIONS (Sidebar Auxiliar 4) - cuando se selecciona una tabla de regla específica */}
       {(() => {
         const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-        // Verificar si se ha seleccionado una tabla de regla específica (regla_perfil, regla_umbral)
-        // NOTA: 'regla' no cuenta como tabla seleccionada porque es el selector principal
+        // Verificar si se ha seleccionado una tabla de regla específica
+        // IMPORTANTE: No confundir 'regla' en selectedTable (que viene del Sidebar 2) con una tabla específica seleccionada
+        // Solo considerar que hay una tabla seleccionada si activeTab incluye el nombre de la tabla específica
+        const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
+        const check2 = activeTab.includes('-regla_perfil-');
+        const check3 = activeTab.includes('-regla_umbral-');
+        const check4 = activeTab === 'configuracion-notificaciones-regla-regla';
+        const check5 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
+        const check6 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
+        const check7 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral');
+        const check8 = (selectedTable === 'regla' && activeTab !== 'configuracion-notificaciones-regla');
         const isReglaTableSelected = isReglaNotificaciones && (
-          selectedTable === 'regla_perfil' || 
-          selectedTable === 'regla_umbral' ||
-          activeTab.includes('-regla_perfil-') ||
-          activeTab.includes('-regla_umbral-')
+          check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8
         );
         const hasAux = hasAuxiliarySidebar(activeTab);
         const shouldShow = isReglaTableSelected && hasAux;
+        console.log('[SidebarContainer] Sidebar Aux 4 (REGLA OPERATIONS):', {
+          isReglaNotificaciones,
+          activeTab,
+          selectedTable,
+          isReglaTableSelected,
+          checks: { check1, check2, check3, check4, check5, check6, check7, check8 },
+          hasAux,
+          shouldShow
+        });
+        console.log('[SidebarContainer] ReglaOperationsSidebar check:', { 
+          isReglaNotificaciones, 
+          selectedTable, 
+          activeTab, 
+          isReglaTableSelected, 
+          hasAux, 
+          shouldShow 
+        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-40`}>
@@ -521,6 +584,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -550,6 +614,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -582,6 +647,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
@@ -607,6 +673,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
             dashboardSubTab={dashboardSubTab}
             onDashboardSubTabChange={onDashboardSubTabChange}
             formData={formData}
