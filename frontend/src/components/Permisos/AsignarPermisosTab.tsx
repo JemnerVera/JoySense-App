@@ -19,6 +19,8 @@ import {
   filterObjectsByParentHierarchy,
   FUENTE_TO_LEVEL
 } from '../../utils/geografiaHierarchy';
+import { useUserGeographyPermissions } from '../../hooks/useUserGeographyPermissions';
+import { filterObjectsByUserPermissions, userCanAssignPermissionToObject } from '../../utils/permissionValidation';
 
 // ============================================================================
 // INTERFACES
@@ -77,6 +79,16 @@ export function AsignarPermisosTab({
 }: AsignarPermisosTabProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  
+  // Obtener permisos del usuario actual para todos los niveles geográficos
+  const { permissions: userGeographyPermissions, loading: loadingUserPermissions } = 
+    useUserGeographyPermissions();
+  
+  // Opciones de cascade
+  const [cascadeOptions, setCascadeOptions] = useState({
+    enabled: false,
+    fromRoot: false, // true = desde inicio, false = desde nivel actual
+  });
 
   // Función helper para obtener el origen inicial según el tipo de permisos
   const getInitialOrigen = useCallback((): number | null => {
@@ -333,7 +345,7 @@ export function AsignarPermisosTab({
 
   // Cargar objetos según el tipo de origen (GEOGRAFÍA o TABLA)
   const objetosData = useMemo(() => {
-    if (!activeTabConfig) return [];
+    if (!activeTabConfig || loadingUserPermissions) return [];
 
     // Si es geografía, usar datos geográficos
     if (geografiaLevel) {
@@ -386,63 +398,27 @@ export function AsignarPermisosTab({
           return [];
       }
 
-      // Filtrar objetos según permisos padre existentes
-      if (parentPermisos.length > 0) {
-        // Si hay permisos padre, solo mostrar objetos que pertenecen a esos padres
-        const filteredObjetos = objetos.filter(obj => {
-          return parentPermisos.some(parentPermiso => {
-            // Obtener la jerarquía del permiso padre
-            const parentHierarchy = getObjectHierarchy(
-              parentPermiso.level,
-              parentPermiso.objetoid,
-              {
-                paisesData,
-                empresasData,
-                fundosData,
-                ubicacionesData,
-                nodosData,
-                localizacionesData
-              }
-            );
-
-            // Verificar si el objeto pertenece a la jerarquía del padre
-            switch (geografiaLevel) {
-              case 'empresa':
-                return parentHierarchy.paisid ? 
-                  objetos.find(o => o.objetoid === obj.objetoid)?.id && 
-                  empresasData.find(e => e.empresaid === obj.objetoid)?.paisid === parentHierarchy.paisid
-                  : true;
-              
-              case 'fundo':
-                return parentHierarchy.empresaid ? 
-                  fundosData.find(f => f.fundoid === obj.objetoid)?.empresaid === parentHierarchy.empresaid
-                  : true;
-              
-              case 'ubicacion':
-                return parentHierarchy.fundoid ? 
-                  ubicacionesData.find(u => u.ubicacionid === obj.objetoid)?.fundoid === parentHierarchy.fundoid
-                  : true;
-              
-              case 'nodo':
-                return parentHierarchy.ubicacionid ? 
-                  nodosData.find(n => n.nodoid === obj.objetoid)?.ubicacionid === parentHierarchy.ubicacionid
-                  : true;
-              
-              case 'localizacion':
-                return parentHierarchy.nodoid ? 
-                  localizacionesData.find(l => l.localizacionid === obj.objetoid)?.nodoid === parentHierarchy.nodoid
-                  : true;
-              
-              default:
-                return true;
-            }
-          });
-        });
-
-        return filteredObjetos;
+      // Filtrar objetos según permisos del usuario y jerarquía de permisos padre
+      if (userGeographyPermissions[geografiaLevel]?.puede_ver) {
+        const filtered = filterObjectsByUserPermissions(
+          objetos,
+          geografiaLevel,
+          userGeographyPermissions,
+          parentPermisos,
+          {
+            paisesData,
+            empresasData,
+            fundosData,
+            ubicacionesData,
+            nodosData,
+            localizacionesData
+          }
+        );
+        return filtered;
       }
 
-      return objetos;
+      // Si el usuario no tiene permiso para este nivel, no mostrar nada
+      return [];
     }
     
     // Si es TABLA, usar datos cargados dinámicamente
@@ -476,7 +452,23 @@ export function AsignarPermisosTab({
     }
 
     return [];
-  }, [geografiaLevel, paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, tablaData, fuenteNombre, activeTabConfig, parentPermisos, existingPermisos, fuentesData]);
+  }, [
+    geografiaLevel, 
+    paisesData, 
+    empresasData, 
+    fundosData, 
+    ubicacionesData, 
+    nodosData, 
+    localizacionesData, 
+    tablaData, 
+    fuenteNombre, 
+    activeTabConfig, 
+    parentPermisos, 
+    existingPermisos, 
+    fuentesData,
+    userGeographyPermissions,
+    loadingUserPermissions
+  ]);
 
   // Inicializar matriz de permisos cuando cambian los objetos o los permisos existentes
   useEffect(() => {
@@ -531,6 +523,264 @@ export function AsignarPermisosTab({
     });
   }, []);
 
+  // Funciones helper para cascade
+  const createCascadeFromCurrent = async (
+    objetosData: Array<{ id: number; nombre: string; objetoid: number }>,
+    permisoMatrix: PermisoMatrix,
+    geografiaLevel: GeografiaLevel,
+    activeTabConfig: TabConfig,
+    userGeographyPermissions: Record<string, { allowedObjects: number[]; puede_ver: boolean; puede_insertar?: boolean; puede_actualizar?: boolean }>,
+    existingPermisos: any[],
+    fuentesData: any[],
+    permisosToUpsert: any[],
+    userId: number,
+    now: string,
+    data: {
+      paisesData?: any[];
+      empresasData?: any[];
+      fundosData?: any[];
+      ubicacionesData?: any[];
+      nodosData?: any[];
+      localizacionesData?: any[];
+    }
+  ) => {
+    if (!geografiaLevel) return;
+
+    const lowerLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion']
+      .filter(level => getGeografiaLevelOrder(level) > getGeografiaLevelOrder(geografiaLevel));
+
+    // Para cada objeto seleccionado, crear permisos para sus hijos
+    objetosData.forEach(obj => {
+      const permisos = permisoMatrix[obj.objetoid];
+      
+      // Solo crear cascada si el objeto tiene al menos un permiso activo
+      if (!permisos || (!permisos.puede_ver && !permisos.puede_insertar && !permisos.puede_actualizar)) {
+        return;
+      }
+
+      // Crear permisos para cada nivel inferior
+      lowerLevels.forEach(lowerLevel => {
+        // Verificar que el usuario tenga permiso para este nivel
+        if (!userGeographyPermissions[lowerLevel]?.puede_ver) {
+          return; // Usuario no tiene permiso para este nivel, saltar
+        }
+
+        const childObjects = getChildObjects(geografiaLevel, obj.objetoid, lowerLevel, data);
+
+        // Obtener el fuenteid del nivel inferior
+        const lowerFuente = fuentesData.find(f => 
+          f.fuente?.toLowerCase() === lowerLevel.toLowerCase()
+        );
+
+        if (lowerFuente && childObjects.length > 0) {
+          childObjects.forEach(childObj => {
+            // Obtener el ID del objeto hijo según el nivel
+            let childObjetoid: number | null = null;
+            if (lowerLevel === 'empresa') childObjetoid = childObj.empresaid;
+            else if (lowerLevel === 'fundo') childObjetoid = childObj.fundoid;
+            else if (lowerLevel === 'ubicacion') childObjetoid = childObj.ubicacionid;
+            else if (lowerLevel === 'nodo') childObjetoid = childObj.nodoid;
+            else if (lowerLevel === 'localizacion') childObjetoid = childObj.localizacionid;
+            
+            if (!childObjetoid) return;
+            
+            // Verificar que el usuario puede asignar permiso a este objeto hijo
+            if (!userCanAssignPermissionToObject(childObjetoid, lowerLevel, userGeographyPermissions)) {
+              return; // Usuario no tiene permiso para este objeto, saltar
+            }
+            
+            // Verificar si ya existe un permiso para este objeto hijo
+            const existingChildPermiso = existingPermisos.find((p: any) => 
+              p.perfilid === activeTabConfig.perfilid &&
+              p.origenid === activeTabConfig.origenid &&
+              p.fuenteid === lowerFuente.fuenteid &&
+              p.objetoid === childObjetoid
+            );
+
+            if (!existingChildPermiso) {
+              // Crear permiso para el objeto hijo con los mismos permisos del padre
+              permisosToUpsert.push({
+                perfilid: activeTabConfig.perfilid,
+                origenid: activeTabConfig.origenid,
+                fuenteid: lowerFuente.fuenteid,
+                objetoid: childObjetoid,
+                puede_ver: permisos.puede_ver,
+                puede_insertar: permisos.puede_insertar,
+                puede_actualizar: permisos.puede_actualizar,
+                statusid: 1,
+                usercreatedid: userId,
+                datecreated: now,
+                usermodifiedid: userId,
+                datemodified: now
+              });
+            }
+          });
+        }
+      });
+    });
+  };
+
+  const createCascadeFromRoot = async (
+    objetosData: Array<{ id: number; nombre: string; objetoid: number }>,
+    permisoMatrix: PermisoMatrix,
+    geografiaLevel: GeografiaLevel,
+    activeTabConfig: TabConfig,
+    userGeographyPermissions: Record<string, { allowedObjects: number[]; puede_ver: boolean; puede_insertar?: boolean; puede_actualizar?: boolean }>,
+    existingPermisos: any[],
+    fuentesData: any[],
+    permisosToUpsert: any[],
+    userId: number,
+    now: string,
+    data: {
+      paisesData?: any[];
+      empresasData?: any[];
+      fundosData?: any[];
+      ubicacionesData?: any[];
+      nodosData?: any[];
+      localizacionesData?: any[];
+    }
+  ) => {
+    if (!geografiaLevel) return;
+
+    // Obtener la jerarquía completa desde pais hacia abajo
+    const allLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'];
+    const currentLevelOrder = getGeografiaLevelOrder(geografiaLevel);
+
+    // Para cada objeto seleccionado
+    objetosData.forEach(obj => {
+      const permisos = permisoMatrix[obj.objetoid];
+      
+      // Solo crear cascada si el objeto tiene al menos un permiso activo
+      if (!permisos || (!permisos.puede_ver && !permisos.puede_insertar && !permisos.puede_actualizar)) {
+        return;
+      }
+
+      // Obtener la jerarquía completa del objeto actual
+      const objectHierarchy = getObjectHierarchy(geografiaLevel, obj.objetoid, data);
+
+      // Crear permisos desde pais hacia abajo hasta el nivel actual
+      for (let i = 0; i < currentLevelOrder; i++) {
+        const level = allLevels[i];
+        const levelOrder = getGeografiaLevelOrder(level);
+
+        // Verificar que el usuario tenga permiso para este nivel
+        if (!userGeographyPermissions[level]?.puede_ver) {
+          continue; // Usuario no tiene permiso para este nivel, saltar
+        }
+
+        // Obtener el objetoid del nivel en la jerarquía
+        let levelObjetoid: number | null = null;
+        switch (level) {
+          case 'pais': levelObjetoid = objectHierarchy.paisid || null; break;
+          case 'empresa': levelObjetoid = objectHierarchy.empresaid || null; break;
+          case 'fundo': levelObjetoid = objectHierarchy.fundoid || null; break;
+          case 'ubicacion': levelObjetoid = objectHierarchy.ubicacionid || null; break;
+          case 'nodo': levelObjetoid = objectHierarchy.nodoid || null; break;
+          case 'localizacion': levelObjetoid = objectHierarchy.localizacionid || null; break;
+        }
+
+        if (!levelObjetoid) continue;
+
+        // Verificar que el usuario puede asignar permiso a este objeto
+        if (!userCanAssignPermissionToObject(levelObjetoid, level, userGeographyPermissions)) {
+          continue; // Usuario no tiene permiso para este objeto, saltar
+        }
+
+        // Obtener el fuenteid del nivel
+        const levelFuente = fuentesData.find(f => 
+          f.fuente?.toLowerCase() === level.toLowerCase()
+        );
+
+        if (!levelFuente) continue;
+
+        // Verificar si ya existe un permiso para este objeto
+        const existingPermiso = existingPermisos.find((p: any) => 
+          p.perfilid === activeTabConfig.perfilid &&
+          p.origenid === activeTabConfig.origenid &&
+          p.fuenteid === levelFuente.fuenteid &&
+          p.objetoid === levelObjetoid
+        );
+
+        if (!existingPermiso) {
+          // Crear permiso para este nivel con los mismos permisos del objeto seleccionado
+          permisosToUpsert.push({
+            perfilid: activeTabConfig.perfilid,
+            origenid: activeTabConfig.origenid,
+            fuenteid: levelFuente.fuenteid,
+            objetoid: levelObjetoid,
+            puede_ver: permisos.puede_ver,
+            puede_insertar: permisos.puede_insertar,
+            puede_actualizar: permisos.puede_actualizar,
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          });
+        }
+      }
+
+      // También crear cascade para niveles inferiores (si aplica)
+      const lowerLevels = allLevels.filter(level => 
+        getGeografiaLevelOrder(level) > currentLevelOrder
+      );
+
+      for (const lowerLevel of lowerLevels) {
+        // Verificar que el usuario tenga permiso para este nivel
+        if (!userGeographyPermissions[lowerLevel]?.puede_ver) {
+          continue;
+        }
+
+        const childObjects = getChildObjects(geografiaLevel, obj.objetoid, lowerLevel, data);
+        const lowerFuente = fuentesData.find(f => 
+          f.fuente?.toLowerCase() === lowerLevel.toLowerCase()
+        );
+
+        if (lowerFuente && childObjects.length > 0) {
+          childObjects.forEach(childObj => {
+            let childObjetoid: number | null = null;
+            if (lowerLevel === 'empresa') childObjetoid = childObj.empresaid;
+            else if (lowerLevel === 'fundo') childObjetoid = childObj.fundoid;
+            else if (lowerLevel === 'ubicacion') childObjetoid = childObj.ubicacionid;
+            else if (lowerLevel === 'nodo') childObjetoid = childObj.nodoid;
+            else if (lowerLevel === 'localizacion') childObjetoid = childObj.localizacionid;
+            
+            if (!childObjetoid) return;
+            
+            // Verificar que el usuario puede asignar permiso a este objeto hijo
+            if (!userCanAssignPermissionToObject(childObjetoid, lowerLevel, userGeographyPermissions)) {
+              return;
+            }
+            
+            const existingChildPermiso = existingPermisos.find((p: any) => 
+              p.perfilid === activeTabConfig.perfilid &&
+              p.origenid === activeTabConfig.origenid &&
+              p.fuenteid === lowerFuente.fuenteid &&
+              p.objetoid === childObjetoid
+            );
+
+            if (!existingChildPermiso) {
+              permisosToUpsert.push({
+                perfilid: activeTabConfig.perfilid,
+                origenid: activeTabConfig.origenid,
+                fuenteid: lowerFuente.fuenteid,
+                objetoid: childObjetoid,
+                puede_ver: permisos.puede_ver,
+                puede_insertar: permisos.puede_insertar,
+                puede_actualizar: permisos.puede_actualizar,
+                statusid: 1,
+                usercreatedid: userId,
+                datecreated: now,
+                usermodifiedid: userId,
+                datemodified: now
+              });
+            }
+          });
+        }
+      }
+    });
+  };
+
   // Guardar permisos
   const handleGuardar = useCallback(async () => {
     if (!activeTabConfig) {
@@ -561,7 +811,7 @@ export function AsignarPermisosTab({
       const now = new Date().toISOString();
 
       // Verificar si todos los objetos tienen todos los permisos marcados (usar objetoid=null)
-      const allObjectsHaveAllPermissions = objetosData.every(obj => {
+      const allObjectsHaveAllPermissions = objetosData.every((obj: { id: number; nombre: string; objetoid: number }) => {
         const permisos = permisoMatrix[obj.objetoid];
         return permisos?.puede_ver && permisos?.puede_insertar && 
                permisos?.puede_actualizar;
@@ -653,79 +903,54 @@ export function AsignarPermisosTab({
         });
       }
 
-      // IMPLEMENTAR CASCADA AUTOMÁTICA para geografía
-      // Si estamos en un nivel superior de geografía, crear permisos para niveles inferiores
-      if (geografiaLevel && !allObjectsHaveAllPermissions) {
-        const lowerLevels = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion']
-          .filter(level => getGeografiaLevelOrder(level) > getGeografiaLevelOrder(geografiaLevel));
-
-        // Para cada objeto seleccionado, crear permisos para sus hijos
-        objetosData.forEach(obj => {
-          const permisos = permisoMatrix[obj.objetoid];
-          
-          // Solo crear cascada si el objeto tiene al menos un permiso activo
-          if (!permisos || (!permisos.puede_ver && !permisos.puede_insertar && 
-              !permisos.puede_actualizar)) {
-            return;
-          }
-
-          // Crear permisos para cada nivel inferior
-          lowerLevels.forEach(lowerLevel => {
-            const childObjects = getChildObjects(geografiaLevel, obj.objetoid, lowerLevel, {
+      // CASCADA MEJORADA para geografía
+      // Solo si está habilitado y no todos los objetos tienen todos los permisos
+      if (geografiaLevel && cascadeOptions.enabled && !allObjectsHaveAllPermissions) {
+        if (cascadeOptions.fromRoot) {
+          // Cascade desde el inicio de la jerarquía (desde pais hacia abajo)
+          await createCascadeFromRoot(
+            objetosData as Array<{ id: number; nombre: string; objetoid: number }>,
+            permisoMatrix,
+            geografiaLevel,
+            activeTabConfig,
+            userGeographyPermissions,
+            existingPermisos,
+            fuentesData,
+            permisosToUpsert,
+            userId,
+            now,
+            {
               paisesData,
               empresasData,
               fundosData,
               ubicacionesData,
               nodosData,
               localizacionesData
-            });
-
-            // Obtener el fuenteid del nivel inferior
-            const lowerFuente = fuentesData.find(f => 
-              f.fuente?.toLowerCase() === lowerLevel.toLowerCase()
-            );
-
-            if (lowerFuente && childObjects.length > 0) {
-              childObjects.forEach(childObj => {
-                // Obtener el ID del objeto hijo según el nivel
-                let childObjetoid: number | null = null;
-                if (lowerLevel === 'empresa') childObjetoid = childObj.empresaid;
-                else if (lowerLevel === 'fundo') childObjetoid = childObj.fundoid;
-                else if (lowerLevel === 'ubicacion') childObjetoid = childObj.ubicacionid;
-                else if (lowerLevel === 'nodo') childObjetoid = childObj.nodoid;
-                else if (lowerLevel === 'localizacion') childObjetoid = childObj.localizacionid;
-                
-                if (!childObjetoid) return;
-                
-                // Verificar si ya existe un permiso para este objeto hijo
-                const existingChildPermiso = existingPermisos.find((p: any) => 
-                  p.perfilid === activeTabConfig.perfilid &&
-                  p.origenid === activeTabConfig.origenid &&
-                  p.fuenteid === lowerFuente.fuenteid &&
-                  p.objetoid === childObjetoid
-                );
-
-                if (!existingChildPermiso) {
-                  // Crear permiso para el objeto hijo con los mismos permisos del padre
-                  permisosToUpsert.push({
-                    perfilid: activeTabConfig.perfilid,
-                    origenid: activeTabConfig.origenid,
-                    fuenteid: lowerFuente.fuenteid,
-                    objetoid: childObjetoid,
-                    puede_ver: permisos.puede_ver,
-                    puede_insertar: permisos.puede_insertar,
-                    puede_actualizar: permisos.puede_actualizar,
-                    statusid: 1,
-                    usercreatedid: userId,
-                    datecreated: now,
-                    usermodifiedid: userId,
-                    datemodified: now
-                  });
-                }
-              });
             }
-          });
-        });
+          );
+        } else {
+          // Cascade desde el nivel actual (solo niveles inferiores)
+          await createCascadeFromCurrent(
+            objetosData as Array<{ id: number; nombre: string; objetoid: number }>,
+            permisoMatrix,
+            geografiaLevel,
+            activeTabConfig,
+            userGeographyPermissions,
+            existingPermisos,
+            fuentesData,
+            permisosToUpsert,
+            userId,
+            now,
+            {
+              paisesData,
+              empresasData,
+              fundosData,
+              ubicacionesData,
+              nodosData,
+              localizacionesData
+            }
+          );
+        }
       }
 
       // Insertar/actualizar permisos
@@ -773,7 +998,24 @@ export function AsignarPermisosTab({
     } finally {
       setLoading(false);
     }
-  }, [activeTabConfig, objetosData, permisoMatrix, existingPermisos, user, onSuccess]);
+  }, [
+    activeTabConfig, 
+    objetosData, 
+    permisoMatrix, 
+    existingPermisos, 
+    user, 
+    onSuccess,
+    cascadeOptions,
+    userGeographyPermissions,
+    geografiaLevel,
+    fuentesData,
+    paisesData,
+    empresasData,
+    fundosData,
+    ubicacionesData,
+    nodosData,
+    localizacionesData
+  ]);
 
   // Opciones para los dropdowns
   const perfilOptions = useMemo(() => {
@@ -929,6 +1171,42 @@ export function AsignarPermisosTab({
         </div>
       </div>
 
+      {/* Opciones de Cascade - Solo mostrar si es geografía */}
+      {activeTabConfig && geografiaLevel && objetosData.length > 0 && (
+        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-neutral-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cascadeOptions.enabled}
+                onChange={(e) => setCascadeOptions(prev => ({ ...prev, enabled: e.target.checked }))}
+                className="w-4 h-4 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
+              />
+              <span className="font-mono text-sm">Habilitar cascade</span>
+            </label>
+
+            {cascadeOptions.enabled && (
+              <label className="flex items-center gap-2 text-neutral-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={cascadeOptions.fromRoot}
+                  onChange={(e) => setCascadeOptions(prev => ({ ...prev, fromRoot: e.target.checked }))}
+                  className="w-4 h-4 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
+                />
+                <span className="font-mono text-sm">Cascade desde inicio de jerarquía</span>
+              </label>
+            )}
+          </div>
+          {cascadeOptions.enabled && (
+            <p className="text-xs text-neutral-400 mt-2 ml-6">
+              {cascadeOptions.fromRoot 
+                ? 'Se crearán permisos desde el nivel más alto (pais) hacia abajo para todos los objetos seleccionados'
+                : 'Se crearán permisos solo para los niveles inferiores al nivel actual'}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Matriz de Permisos */}
       {activeTabConfig && ((geografiaLevel || (tablaData[activeTabConfig.fuenteid] && tablaData[activeTabConfig.fuenteid].length > 0 && fuenteNombre)) && objetosData.length > 0) && (
         <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 flex-1 flex flex-col min-h-0">
@@ -1010,10 +1288,24 @@ export function AsignarPermisosTab({
                     </tr>
                   </thead>
                   <tbody>
-                    {objetosData.map(obj => (
-                      <tr key={obj.id} className="hover:bg-neutral-800">
+                    {objetosData.map(obj => {
+                      // Verificar si el objeto ya tiene permiso asignado
+                      const existingPermiso = existingPermisos.find((p: any) => 
+                        p.objetoid === obj.objetoid && p.statusid === 1
+                      );
+                      const hasExistingPermission = !!existingPermiso;
+                      
+                      return (
+                      <tr key={obj.id} className={`hover:bg-neutral-800 ${hasExistingPermission ? 'bg-neutral-800/50' : ''}`}>
                         <td className="border border-neutral-700 px-4 py-3 text-neutral-300 sticky left-0 bg-neutral-900 z-10">
-                          {obj.nombre}
+                          <div className="flex items-center gap-2">
+                            {hasExistingPermission && (
+                              <span className="text-xs text-orange-400" title="Ya tiene permiso asignado">
+                                ✓
+                              </span>
+                            )}
+                            {obj.nombre}
+                          </div>
                         </td>
                         <td className="border border-neutral-700 px-4 py-3 text-center">
                           <input
@@ -1040,7 +1332,8 @@ export function AsignarPermisosTab({
                           />
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
