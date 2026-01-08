@@ -194,12 +194,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
-    // Si hay un nodo seleccionado, no requerir ubicacionId (podemos usar nodoid directamente)
+    // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
-    const hasRequiredFilters = filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true)
+    const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
+    
+    console.log('[DEBUG] ModernDashboard.loadMediciones: Verificando filtros requeridos', {
+      hasSelectedNode: !!selectedNode,
+      selectedNodeId: selectedNode?.nodoid,
+      filtersEntidadId: filters.entidadId,
+      filtersUbicacionId: filters.ubicacionId,
+      requiresUbicacionId,
+      hasRequiredFilters
+    })
     
     if (!hasRequiredFilters) {
+      console.log('[DEBUG] ModernDashboard.loadMediciones: Filtros requeridos no cumplidos, no cargando mediciones')
       setMediciones([])
       setLoading(false)
       return
@@ -227,11 +237,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     currentRequestNodeIdRef.current = thisNodeId
 
     try {
+      console.log('[DEBUG] ModernDashboard.loadMediciones: Iniciando carga de mediciones', {
+        selectedNodeId: selectedNode?.nodoid,
+        thisNodeId,
+        thisRequestKey
+      })
+      
       // Si hay un nodo seleccionado, buscar todas las mediciones disponibles para ese nodo
       // Si no hay nodo seleccionado, limitar a las últimas 6 horas
       let allData: any[] = []
       
       if (selectedNode) {
+        console.log('[DEBUG] ModernDashboard.loadMediciones: Nodo seleccionado, cargando mediciones para nodoid:', selectedNode.nodoid)
+        
         // ESTRATEGIA PROGRESIVA: Empezar con rango pequeño y expandir si no hay datos
         // Esto evita timeouts en el backend cuando hay muchos datos antiguos
         const now = new Date()
@@ -264,6 +282,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const startDateStr = formatDate(startDate)
           const endDateStr = formatDate(endDate)
           
+          console.log(`[DEBUG] ModernDashboard.loadMediciones: Intentando rango ${range.label}`, {
+            startDate: startDateStr,
+            endDate: endDateStr,
+            limit: range.limit,
+            nodoid: selectedNode.nodoid
+          })
+          
           try {
             const data = await JoySenseService.getMediciones({
               nodoid: selectedNode.nodoid,
@@ -272,15 +297,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               limit: range.limit
             })
             
+            console.log(`[DEBUG] ModernDashboard.loadMediciones: Respuesta recibida para rango ${range.label}`, {
+              dataType: typeof data,
+              isArray: Array.isArray(data),
+              length: Array.isArray(data) ? data.length : (data ? 1 : 0)
+            })
+            
             // Asegurar que data es un array
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
             
             if (dataArray.length > 0) {
+              console.log(`[DEBUG] ModernDashboard.loadMediciones: ✓ Datos encontrados en rango ${range.label}, cantidad: ${dataArray.length}`)
               allData = dataArray
               foundDataInRange = true
               break
+            } else {
+              console.log(`[DEBUG] ModernDashboard.loadMediciones: ✗ No hay datos en rango ${range.label}, intentando siguiente rango`)
             }
           } catch (error: any) {
+            console.error(`[DEBUG] ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
             // Si es timeout o error 500, continuar con el siguiente rango
             // Los errores 500 pueden ser timeouts del backend, así que intentamos rangos más pequeños
             const isTimeoutOr500 = error.message?.includes('timeout') || 
@@ -404,8 +439,26 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       // Transformar datos para agregar campos legacy
-      setMediciones(transformMedicionData(sortedData))
+      const transformed = transformMedicionData(sortedData)
+      
+      console.log('[DEBUG] ModernDashboard.loadMediciones: Datos transformados', {
+        sortedDataLength: sortedData.length,
+        transformedLength: transformed.length,
+        selectedNodeId: selectedNode?.nodoid,
+        firstMedicion: transformed.length > 0 ? {
+          medicionid: transformed[0].medicionid,
+          metricaid: transformed[0].metricaid,
+          nodoid: transformed[0].nodoid,
+          fecha: transformed[0].fecha,
+          medicion: transformed[0].medicion,
+          hasLocalizacion: !!transformed[0].localizacion,
+          metricName: transformed[0].localizacion?.metrica?.metrica
+        } : null
+      })
+      
+      setMediciones(transformed)
       setError(null) // Limpiar cualquier error previo
+      console.log('[DEBUG] ModernDashboard.loadMediciones: Mediciones actualizadas en estado, cantidad:', transformed.length)
     } catch (err: any) {
       // Verificar si esta petición sigue siendo válida antes de manejar el error
       if (currentRequestKeyRef.current !== thisRequestKey) {
@@ -457,12 +510,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
-    // Si hay un nodo seleccionado, no requerir ubicacionId (lo obtenemos del nodo)
+    // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
-    const hasRequiredFilters = filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true)
+    const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
+    
+    console.log('[DEBUG] ModernDashboard.useEffect: Verificando si cargar mediciones', {
+      hasSelectedNode: !!selectedNode,
+      selectedNodeId: selectedNode?.nodoid,
+      filtersEntidadId: filters.entidadId,
+      filtersUbicacionId: filters.ubicacionId,
+      hasRequiredFilters
+    })
     
     if (!hasRequiredFilters) {
+      console.log('[DEBUG] ModernDashboard.useEffect: Filtros requeridos no cumplidos, no cargando mediciones')
       // Si no hay filtros y hay un nodo seleccionado, limpiar mediciones para evitar mostrar datos del nodo anterior
       if (selectedNode) {
         setMediciones([])
@@ -1279,13 +1341,40 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
-    if (!mediciones.length || !tipos.length) {
+    if (!mediciones.length || !tipos.length || !selectedNode) {
       return []
     }
 
-    // Filtrar mediciones para esta métrica específica
-    const metricId = getMetricIdFromDataKey(dataKey)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Filtrar mediciones del nodo seleccionado
+    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode.nodoid)
+    
+    // Buscar mediciones que coincidan con el dataKey por nombre de métrica
+    const metricMediciones = nodeMediciones.filter(m => {
+      // Limpiar espacios, saltos de línea y caracteres especiales
+      const rawMetricName = m.localizacion?.metrica?.metrica || ''
+      const metricName = rawMetricName
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ')
+        .trim()
+        .toLowerCase()
+      
+      if (dataKey === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true
+      
+      if (dataKey === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true
+      
+      if (dataKey === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true
+      
+      return false
+    })
     
     if (!metricMediciones.length) {
       return []
@@ -1733,18 +1822,38 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }
 
   const getCurrentValue = (dataKey: string) => {
-    if (!mediciones.length) return 0
+    if (!mediciones.length || !selectedNode) return 0
     
-    // Filtrar mediciones para esta métrica específica
-    const metricId = getMetricIdFromDataKey(dataKey)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Filtrar mediciones del nodo seleccionado
+    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode.nodoid)
     
-    if (!metricMediciones.length) {
+    // Buscar mediciones que coincidan con el dataKey por nombre de métrica
+    const matchingMediciones = nodeMediciones.filter(m => {
+      const metricName = m.localizacion?.metrica?.metrica?.toLowerCase() || ''
+      
+      if (dataKey === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true
+      
+      if (dataKey === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true
+      
+      if (dataKey === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true
+      
+      return false
+    })
+    
+    if (!matchingMediciones.length) {
       return 0
     }
     
     // Obtener la medición más reciente
-    const latest = metricMediciones.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
+    const latest = matchingMediciones.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
     const value = latest ? latest.medicion || 0 : 0
     return value
   }
@@ -1833,30 +1942,205 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // chartData se calcula por métrica individualmente
 
-  // Memoizar métricas disponibles (solo las 3 principales)
-  const availableMetrics = getTranslatedMetrics
+  // Obtener métricas únicas que tienen datos en las mediciones
+  const metricsWithData = useMemo(() => {
+    console.log('[DEBUG] ModernDashboard.metricsWithData: Calculando métricas con datos', {
+      medicionesLength: mediciones.length,
+      hasSelectedNode: !!selectedNode,
+      selectedNodeId: selectedNode?.nodoid
+    })
+    
+    if (!mediciones.length || !selectedNode) {
+      console.log('[DEBUG] ModernDashboard.metricsWithData: No hay mediciones o nodo seleccionado, retornando Set vacío')
+      return new Set<number>()
+    }
+    
+    // Obtener todos los metricaid únicos de las mediciones del nodo seleccionado
+    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode.nodoid)
+    const uniqueMetricIds = new Set<number>(
+      nodeMediciones
+        .map(m => m.metricaid)
+        .filter(id => id != null && id > 0)
+    )
+    
+    // También obtener información de las métricas desde los datos expandidos
+    const metricInfo = nodeMediciones
+      .filter(m => m.metricaid != null && m.metricaid > 0)
+      .map(m => ({
+        metricaid: m.metricaid,
+        metricName: m.localizacion?.metrica?.metrica || '',
+        unidad: m.localizacion?.metrica?.unidad || ''
+      }))
+      .filter((m, index, self) => 
+        index === self.findIndex(t => t.metricaid === m.metricaid)
+      )
+    
+    console.log('[DEBUG] ModernDashboard.metricsWithData: Métricas encontradas:', {
+      totalMediciones: mediciones.length,
+      nodeMediciones: nodeMediciones.length,
+      uniqueMetricIds: Array.from(uniqueMetricIds),
+      metricInfo: metricInfo,
+      selectedNodeId: selectedNode.nodoid
+    })
+    
+    return uniqueMetricIds
+  }, [mediciones, selectedNode?.nodoid])
+
+  // Mapeo de nombres de métricas a IDs (dinámico basado en datos reales)
+  const getMetricIdFromName = useCallback((metricName: string): number | null => {
+    if (!mediciones.length) return null
+    
+    // Buscar en las mediciones una que tenga el nombre de métrica coincidente
+    const medicionWithMetric = mediciones.find(m => 
+      m.localizacion?.metrica?.metrica?.toLowerCase().includes(metricName.toLowerCase()) ||
+      m.localizacion?.metrica?.metrica === metricName
+    )
+    
+    if (medicionWithMetric) {
+      return medicionWithMetric.metricaid
+    }
+    
+    // Fallback al mapeo hardcodeado si no se encuentra
+    return getMetricIdFromDataKey(metricName)
+  }, [mediciones])
+
+  // Filtrar métricas disponibles para mostrar solo las que tienen datos
+  const availableMetrics = useMemo(() => {
+    console.log('[DEBUG] ModernDashboard.availableMetrics: Calculando métricas disponibles', {
+      hasSelectedNode: !!selectedNode,
+      metricsWithDataSize: metricsWithData.size,
+      metricsWithData: Array.from(metricsWithData),
+      medicionesLength: mediciones.length,
+      selectedNodeId: selectedNode?.nodoid
+    })
+    
+    if (!selectedNode) {
+      console.log('[DEBUG] ModernDashboard.availableMetrics: No hay nodo seleccionado, retornando []')
+      return []
+    }
+    
+    if (metricsWithData.size === 0) {
+      console.log('[DEBUG] ModernDashboard.availableMetrics: No hay métricas con datos, retornando []')
+      return []
+    }
+    
+    // Filtrar las métricas traducidas para mostrar solo las que tienen datos
+    const filtered = getTranslatedMetrics.filter(metric => {
+      // Buscar si hay alguna medición con una métrica que coincida con el nombre
+      const hasData = Array.from(metricsWithData).some(metricaId => {
+        // Buscar una medición con este metricaid y verificar si el nombre coincide
+        const medicion = mediciones.find(m => 
+          m.metricaid === metricaId && 
+          m.nodoid === selectedNode.nodoid
+        )
+        
+        if (!medicion) {
+          console.log(`[DEBUG] ModernDashboard.availableMetrics: No se encontró medición para metricaId ${metricaId} y nodo ${selectedNode.nodoid}`)
+          return false
+        }
+        
+        // Obtener el nombre de la métrica desde los datos expandidos o inferirlo
+        // Limpiar espacios, saltos de línea y caracteres especiales
+        const rawMetricName = medicion.localizacion?.metrica?.metrica || ''
+        const metricName = rawMetricName
+          .replace(/\r\n/g, ' ')
+          .replace(/\n/g, ' ')
+          .replace(/\r/g, ' ')
+          .trim()
+          .toLowerCase()
+        
+        console.log(`[DEBUG] ModernDashboard.availableMetrics: Verificando métrica ${metric.id} con nombre original "${rawMetricName}" -> limpio "${metricName}" (metricaId: ${metricaId})`)
+        
+        // Mapear nombres comunes (más flexible para manejar variaciones)
+        if (metric.id === 'temperatura' && (
+          metricName.includes('temperatura') || 
+          metricName.includes('temp')
+        )) {
+          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          return true
+        }
+        
+        if (metric.id === 'humedad' && (
+          metricName.includes('humedad') || 
+          metricName.includes('humidity')
+        )) {
+          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          return true
+        }
+        
+        if (metric.id === 'conductividad' && (
+          metricName.includes('conductividad') || 
+          metricName.includes('electroconductividad') ||
+          metricName.includes('conductivity')
+        )) {
+          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          return true
+        }
+        
+        return false
+      })
+      
+      console.log(`[DEBUG] ModernDashboard.availableMetrics: Métrica ${metric.id} tiene datos: ${hasData}`)
+      return hasData
+    })
+    
+    console.log('[DEBUG] ModernDashboard.availableMetrics: Métricas filtradas:', {
+      total: getTranslatedMetrics.length,
+      filtradas: filtered.length,
+      metricas: filtered.map(m => m.id)
+    })
+    
+    return filtered
+  }, [getTranslatedMetrics, metricsWithData, mediciones, selectedNode])
 
   // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
   // Los datos se cargan en rangos de 1, 7, 14, 30 días, así que consideramos "recientes" los últimos 30 días
   const hasMetricData = useCallback((dataKey: string) => {
-    if (!mediciones.length) {
+    if (!mediciones.length || !selectedNode) {
       return false
     }
     
-    const metricId = getMetricIdFromDataKey(dataKey)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Buscar métricas que coincidan con el dataKey
+    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode.nodoid)
     
-    if (!metricMediciones.length) {
+    // Buscar por nombre de métrica en los datos expandidos
+    const matchingMediciones = nodeMediciones.filter(m => {
+      // Limpiar espacios, saltos de línea y caracteres especiales
+      const rawMetricName = m.localizacion?.metrica?.metrica || ''
+      const metricName = rawMetricName
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ')
+        .trim()
+        .toLowerCase()
+      
+      if (dataKey === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true
+      
+      if (dataKey === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true
+      
+      if (dataKey === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true
+      
+      return false
+    })
+    
+    if (!matchingMediciones.length) {
       return false
     }
     
     // Verificar si hay datos recientes (últimos 30 días)
-    // Esto coincide con los rangos que se cargan (1, 7, 14, 30 días)
     const now = new Date()
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     
     // Ordenar por fecha descendente (más recientes primero)
-    const sortedMediciones = [...metricMediciones].sort((a, b) => 
+    const sortedMediciones = [...matchingMediciones].sort((a, b) => 
       new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
     )
     
@@ -1864,15 +2148,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const mostRecentDate = new Date(sortedMediciones[0].fecha)
     const hasRecentData = mostRecentDate >= thirtyDaysAgo
     
-    // Si hay datos recientes (últimos 30 días), considerarlos válidos
-    // Esto permite mostrar gráficos incluso si los datos no son de las últimas 24 horas exactas
-    if (hasRecentData) {
-      return true
-    }
-    
-    // Si no hay datos en los últimos 30 días, el nodo no tiene datos recientes
-    return false
-  }, [mediciones])
+    return hasRecentData
+  }, [mediciones, selectedNode])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar">
@@ -1894,7 +2171,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           selectedEntidadId={filters.entidadId}
           selectedUbicacionId={filters.ubicacionId}
           onNodeSelect={(nodeData) => {
-            setSelectedNode(nodeData)
+            console.log('[DEBUG] ModernDashboard.onNodeSelect: Actualizando selectedNode:', {
+              nodoid: nodeData?.nodoid,
+              nodo: nodeData?.nodo,
+              timestamp: new Date().toISOString()
+            });
+            try {
+              setSelectedNode(nodeData)
+              console.log('[DEBUG] ModernDashboard.onNodeSelect: setSelectedNode llamado exitosamente');
+            } catch (error) {
+              console.error('[DEBUG] ModernDashboard.onNodeSelect: Error al actualizar selectedNode:', error);
+            }
           }}
           onFiltersUpdate={(newFilters) => {
             onFiltersChange({

@@ -166,6 +166,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
         // Obtener nodos con GPS para filtrar solo ubicaciones que tienen nodos con coordenadas
         try {
+          // Verificar que el token esté disponible antes de llamar
+          const { supabaseAuth } = await import('../../services/supabase-auth');
+          const { data: { session } } = await supabaseAuth.auth.getSession();
+          if (!session?.access_token) {
+            console.warn('[DEBUG] DashboardFilters: No hay token de sesión, saltando filtro de nodos con GPS');
+          }
           const nodosConGPS = await JoySenseService.getNodosConLocalizacion();
 
           // Extraer ubicaciones únicas que tienen nodos con GPS

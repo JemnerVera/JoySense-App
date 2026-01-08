@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -179,7 +179,26 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
   const markerRefs = useRef<Map<number, L.Marker>>(new Map())
 
-  const nodesWithGPS = nodes.filter(n => n.latitud != null && n.longitud != null && !isNaN(n.latitud) && !isNaN(n.longitud))
+  // Usar useMemo para evitar recalcular en cada render
+  const nodesWithGPS = useMemo(() => {
+    return nodes.filter(n => {
+      const lat = typeof n.latitud === 'string' ? parseFloat(n.latitud) : n.latitud;
+      const lng = typeof n.longitud === 'string' ? parseFloat(n.longitud) : n.longitud;
+      const isValid = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+      return isValid;
+    });
+  }, [nodes])
+  
+  // Log solo cuando cambian los nodos (usando useEffect para evitar loops)
+  useEffect(() => {
+    if (nodes.length > 0) {
+      console.log('[DEBUG] InteractiveMap: Filtrado de nodos:', {
+        totalNodes: nodes.length,
+        nodesWithGPS: nodesWithGPS.length,
+        selectedNodeId: selectedNode?.nodoid || null
+      });
+    }
+  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid]);
 
   // Función para abrir el popup del nodo seleccionado
   const openSelectedNodePopup = () => {
@@ -212,31 +231,46 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }, [selectedNode])
 
   // Calcular centro del mapa basado en el nodo seleccionado o en los nodos disponibles
+  const previousCenterRef = useRef<[number, number] | null>(null);
+  
   useEffect(() => {
     // Si hay un nodo seleccionado con coordenadas válidas, usar ese como centro
     if (selectedNode && selectedNode.latitud != null && selectedNode.longitud != null) {
-      const lat = selectedNode.latitud
-      const lng = selectedNode.longitud
+      const lat = typeof selectedNode.latitud === 'string' ? parseFloat(selectedNode.latitud) : selectedNode.latitud;
+      const lng = typeof selectedNode.longitud === 'string' ? parseFloat(selectedNode.longitud) : selectedNode.longitud;
       if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        setMapCenter([lat, lng])
-        return
+        const newCenter: [number, number] = [lat, lng];
+        // Solo actualizar si el centro realmente cambió
+        const prev = previousCenterRef.current;
+        if (!prev || prev[0] !== newCenter[0] || prev[1] !== newCenter[1]) {
+          setMapCenter(newCenter);
+          previousCenterRef.current = newCenter;
+        }
+        return;
       }
     }
     
     // Si no hay nodo seleccionado, calcular centro basado en todos los nodos disponibles
-    if (nodes.length > 0) {
-      const nodesWithValidCoords = nodes.filter(n => 
-        n.latitud != null && n.longitud != null && 
-        !isNaN(n.latitud) && !isNaN(n.longitud) && 
-        n.latitud !== 0 && n.longitud !== 0
-      )
-      if (nodesWithValidCoords.length > 0) {
-        const avgLat = nodesWithValidCoords.reduce((sum, node) => sum + node.latitud, 0) / nodesWithValidCoords.length
-        const avgLng = nodesWithValidCoords.reduce((sum, node) => sum + node.longitud, 0) / nodesWithValidCoords.length
-      setMapCenter([avgLat, avgLng])
+    if (nodesWithGPS.length > 0) {
+      const coords = nodesWithGPS.map(n => {
+        const lat = typeof n.latitud === 'string' ? parseFloat(n.latitud) : (n.latitud || 0);
+        const lng = typeof n.longitud === 'string' ? parseFloat(n.longitud) : (n.longitud || 0);
+        return { lat, lng };
+      }).filter(c => !isNaN(c.lat) && !isNaN(c.lng) && c.lat !== 0 && c.lng !== 0);
+      
+      if (coords.length > 0) {
+        const avgLat = coords.reduce((sum, c) => sum + c.lat, 0) / coords.length;
+        const avgLng = coords.reduce((sum, c) => sum + c.lng, 0) / coords.length;
+        const newCenter: [number, number] = [avgLat, avgLng];
+        // Solo actualizar si el centro realmente cambió
+        const prev = previousCenterRef.current;
+        if (!prev || prev[0] !== newCenter[0] || prev[1] !== newCenter[1]) {
+          setMapCenter(newCenter);
+          previousCenterRef.current = newCenter;
+        }
       }
     }
-  }, [selectedNode?.nodoid, nodes])
+  }, [selectedNode?.nodoid, nodesWithGPS.length])
 
   if (loading) {
     return (
@@ -249,7 +283,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     )
   }
 
-  if (nodes.length === 0) {
+  if (nodesWithGPS.length === 0) {
     return (
       <div className="bg-neutral-700 rounded-lg p-4 h-96 flex items-center justify-center">
         <div className="text-center text-neutral-400">
@@ -369,12 +403,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         
         <MapController selectedNode={selectedNode} onAnimationComplete={openSelectedNodePopup} />
         
-        {nodes
-          .filter(node => {
-            const hasValidCoords = node.latitud != null && node.longitud != null && !isNaN(node.latitud) && !isNaN(node.longitud)
-            return hasValidCoords
-          })
-          .map((node) => (
+        {nodesWithGPS.map((node) => {
+          const lat = typeof node.latitud === 'string' ? parseFloat(node.latitud) : (node.latitud || 0);
+          const lng = typeof node.longitud === 'string' ? parseFloat(node.longitud) : (node.longitud || 0);
+          return (
           <Marker
             key={node.nodoid}
               ref={(ref) => {
@@ -384,10 +416,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   markerRefs.current.delete(node.nodoid)
                 }
               }}
-            position={[node.latitud, node.longitud]}
+            position={[lat, lng]}
             icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
             eventHandlers={{
-              click: () => onNodeSelect(node)
+              click: (e) => {
+                console.log('[DEBUG] InteractiveMap: Click en Marker del nodo:', {
+                  nodoid: node.nodoid,
+                  nodo: node.nodo,
+                  lat,
+                  lng,
+                  timestamp: new Date().toISOString()
+                });
+                e.originalEvent.stopPropagation();
+                try {
+                  onNodeSelect(node);
+                  console.log('[DEBUG] InteractiveMap: onNodeSelect llamado exitosamente');
+                } catch (error) {
+                  console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect:', error);
+                }
+              }
             }}
           >
             <Popup>
@@ -403,7 +450,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   <div className="mt-2 pt-2 border-t border-neutral-600">
                     <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
                     <div className="text-xs text-neutral-400">
-                      {node.latitud}, {node.longitud}
+                      {lat.toFixed(6)}, {lng.toFixed(6)}
                     </div>
                   </div>
                   {/* Indicador de datos */}
@@ -415,10 +462,32 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     </div>
                   )}
                 </div>
+                <div className="mt-3 pt-2 border-t border-neutral-600">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('[DEBUG] InteractiveMap: Botón seleccionar nodo clickeado:', {
+                        nodoid: node.nodoid,
+                        nodo: node.nodo,
+                        timestamp: new Date().toISOString()
+                      });
+                      try {
+                        onNodeSelect(node);
+                        console.log('[DEBUG] InteractiveMap: onNodeSelect llamado desde botón exitosamente');
+                      } catch (error) {
+                        console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect desde botón:', error);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    {selectedNode?.nodoid === node.nodoid ? '✓ Seleccionado' : 'Seleccionar Nodo'}
+                  </button>
+                </div>
               </div>
             </Popup>
           </Marker>
-        ))}
+          );
+        })}
       </MapContainer>
     </div>
   )
