@@ -155,6 +155,7 @@ router.get('/mediciones', async (req, res) => {
     // Usar Supabase API con joins anidados
     // NOTA: localizacion no tiene FK directa a metrica, la relación es a través de metricasensor
     // Por ahora, no hacemos join a metrica desde localizacion, la obtendremos por separado si es necesario
+    // Tampoco podemos hacer join directo a sensor desde localizacion, lo obtendremos por separado
     let query = userSupabase
       .schema(dbSchema)
       .from('medicion')
@@ -250,16 +251,49 @@ router.get('/mediciones', async (req, res) => {
       }
     }
     
-    // Transformar datos para mantener formato compatible y agregar métricas
+    // Obtener sensores por separado (para obtener tipoid)
+    const sensorIds = [...new Set(
+      (data || [])
+        .map(m => {
+          const loc = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+          return loc?.sensorid;
+        })
+        .filter(id => id != null)
+    )];
+    
+    let sensoresMap = new Map();
+    if (sensorIds.length > 0) {
+      logger.info(`[DEBUG] GET /mediciones: Obteniendo sensores para IDs:`, sensorIds);
+      
+      const { data: sensores, error: senError } = await userSupabase
+        .schema(dbSchema)
+        .from('sensor')
+        .select('sensorid, tipoid')
+        .in('sensorid', sensorIds)
+        .eq('statusid', 1);
+      
+      if (senError) {
+        logger.error(`[DEBUG] GET /mediciones: Error obteniendo sensores:`, senError);
+      } else {
+        (sensores || []).forEach(s => {
+          sensoresMap.set(s.sensorid, s);
+        });
+        logger.info(`[DEBUG] GET /mediciones: Sensores obtenidos: ${sensoresMap.size}`);
+      }
+    }
+    
+    // Transformar datos para mantener formato compatible y agregar métricas y sensores
     const transformed = (data || []).map(m => {
       const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
       const metrica = localizacion?.metricaid ? metricasMap.get(localizacion.metricaid) : null;
+      const sensor = localizacion?.sensorid ? sensoresMap.get(localizacion.sensorid) : null;
       
       return {
         ...m,
         localizacion: localizacion ? {
           ...localizacion,
-          metrica: metrica
+          metrica: metrica,
+          sensor: sensor
         } : null
       };
     });
