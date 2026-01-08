@@ -147,6 +147,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   ], [t])
   
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
+  // Mediciones usadas exclusivamente para el análisis detallado (modal grande)
+  const [detailedMediciones, setDetailedMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [entidades, setEntidades] = useState<any[]>([])
@@ -598,15 +600,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones para el análisis detallado con rango de fechas específico
   const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
+    console.log('[DEBUG] loadMedicionesForDetailedAnalysis: Iniciando carga', {
+      startDateStr,
+      endDateStr,
+      hasEntidadId: !!filters.entidadId,
+      entidadId: filters.entidadId,
+      hasSelectedNode: !!selectedNode,
+      nodoid: selectedNode?.nodoid,
+      signalAborted: signal?.aborted
+    })
+    
     // Cuando hay un nodo seleccionado, no requerir ubicacionId (el nodoid es suficiente)
     // El backend puede filtrar directamente por nodoid sin necesidad de ubicacionId
     if (!filters.entidadId || !selectedNode) {
+      console.warn('[DEBUG] loadMedicionesForDetailedAnalysis: Faltan datos requeridos', {
+        hasEntidadId: !!filters.entidadId,
+        hasSelectedNode: !!selectedNode
+      })
       setLoadingDetailedData(false)
       return
     }
 
     // Si el request fue cancelado, no continuar
     if (signal?.aborted) {
+      console.log('[DEBUG] loadMedicionesForDetailedAnalysis: Request cancelado')
       setLoadingDetailedData(false)
       return
     }
@@ -615,21 +632,30 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     try {
       const formatDate = (dateStr: string, isEnd: boolean = false) => {
-        const date = new Date(dateStr)
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
+        // IMPORTANTE: Parsear la fecha como fecha local, no UTC
+        // dateStr viene en formato 'YYYY-MM-DD', necesitamos parsearlo correctamente
+        const [year, month, day] = dateStr.split('-').map(Number)
+        // Crear fecha en zona horaria local
+        const date = new Date(year, month - 1, day)
+        
+        const yearStr = String(date.getFullYear())
+        const monthStr = String(date.getMonth() + 1).padStart(2, '0')
+        const dayStr = String(date.getDate()).padStart(2, '0')
         if (isEnd) {
-          return `${year}-${month}-${day} 23:59:59`
+          return `${yearStr}-${monthStr}-${dayStr} 23:59:59`
         }
-        return `${year}-${month}-${day} 00:00:00`
+        return `${yearStr}-${monthStr}-${dayStr} 00:00:00`
       }
 
       const startDateFormatted = formatDate(startDateStr, false)
       const endDateFormatted = formatDate(endDateStr, true)
 
-      const startDate = new Date(startDateStr + 'T00:00:00')
-      const endDate = new Date(endDateStr + 'T23:59:59')
+      // IMPORTANTE: Crear fechas en zona horaria local para evitar problemas de UTC
+      const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number)
+      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      
+      const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number)
+      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
       // ESTRATEGIA DESHABILITADA: No usar estrategia sin filtro de fecha para evitar timeouts
@@ -726,6 +752,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         }
         
         try {
+          console.log('[DEBUG] loadMedicionesForDetailedAnalysis: Llamando getMediciones', {
+            entidadId: filters.entidadId,
+            nodoid: selectedNode.nodoid,
+            startDate: startDateFormatted,
+            endDate: endDateFormatted,
+            limit: maxLimit
+          })
+          
           const response = await JoySenseService.getMediciones({
             entidadId: filters.entidadId,
             nodoid: selectedNode.nodoid,
@@ -735,6 +769,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           })
           
           filteredData = Array.isArray(response) ? response : []
+          
+          console.log('[DEBUG] loadMedicionesForDetailedAnalysis: Respuesta recibida', {
+            isArray: Array.isArray(response),
+            length: filteredData.length,
+            firstItem: filteredData[0],
+            lastItem: filteredData[filteredData.length - 1]
+          })
         } catch (error: any) {
           // Si hay un error (como timeout 500), NO intentar estrategia sin filtro de fecha
           if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
@@ -765,28 +806,28 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
       
-      // Actualizar mediciones con los nuevos datos
-      // IMPORTANTE: Para el análisis detallado, reemplazar completamente las mediciones del rango
-      // Esto asegura que siempre tengamos los datos correctos para el intervalo seleccionado
-      setMediciones(prevMediciones => {
-        // Filtrar mediciones existentes que no estén en el rango de fechas del modal
-        const medicionesFueraDelRango = prevMediciones.filter(m => {
-          const medicionDate = new Date(m.fecha)
-          const startDate = new Date(startDateStr + 'T00:00:00')
-          const endDate = new Date(endDateStr + 'T23:59:59')
-          return medicionDate < startDate || medicionDate > endDate
-        })
-        
-        // Combinar mediciones fuera del rango con las nuevas mediciones del rango (ya ordenadas)
-        const combinedMediciones = [...medicionesFueraDelRango, ...sortedFilteredData]
-        
-        // Eliminar duplicados basándose en medicionid
-        const uniqueMediciones = combinedMediciones.filter((medicion, index, self) =>
-          index === self.findIndex(m => m.medicionid === medicion.medicionid)
-        )
-        
-        return uniqueMediciones
+      // CRÍTICO: Transformar los datos para asegurar que nodoid, tipoid, metricaid estén disponibles directamente
+      // Esto es necesario porque el backend devuelve estos campos anidados en localizacion
+      const transformedData = transformMedicionData(sortedFilteredData)
+      
+      // Actualizar mediciones para el análisis detallado
+      // IMPORTANTE: NO tocar las mediciones globales del dashboard
+      // Detailed usa su propio estado (detailedMediciones) para no interferir con los minigráficos
+      console.log('[DEBUG] loadMedicionesForDetailedAnalysis: Actualizando detailedMediciones', {
+        sortedFilteredDataLength: sortedFilteredData.length,
+        transformedDataLength: transformedData.length,
+        firstDate: transformedData[0]?.fecha,
+        lastDate: transformedData[transformedData.length - 1]?.fecha,
+        sampleMedicion: transformedData[0] ? {
+          medicionid: transformedData[0].medicionid,
+          nodoid: transformedData[0].nodoid,
+          tipoid: transformedData[0].tipoid,
+          metricaid: transformedData[0].metricaid,
+          hasLocalizacion: !!transformedData[0].localizacion
+        } : null
       })
+      
+      setDetailedMediciones(transformedData)
     } catch (err: any) {
       // Ignorar errores de cancelación
       if (err.name === 'AbortError' || signal?.aborted) {
@@ -1084,8 +1125,36 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Obtener tipos disponibles de las mediciones
-    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Para el análisis detallado, priorizar detailedMediciones si existen
+    const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+    
+    // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
+    const metricMediciones = dataSource.filter(m => {
+      const rawMetricName = m.localizacion?.metrica?.metrica || ''
+      const metricName = rawMetricName
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ')
+        .trim()
+        .toLowerCase()
+      
+      if (selectedDetailedMetric === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true
+      
+      if (selectedDetailedMetric === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true
+      
+      if (selectedDetailedMetric === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true
+      
+      return false
+    })
+    
     const tiposDisponibles = new Set<string>()
     
     metricMediciones.forEach(m => {
@@ -1097,7 +1166,32 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Si hay nodo de comparación, agregar también sus tipos
     if (comparisonNode && comparisonMediciones.length > 0) {
-      const comparisonMetricMediciones = comparisonMediciones.filter(m => m.metricaid === metricId)
+      const comparisonMetricMediciones = comparisonMediciones.filter(m => {
+        const rawMetricName = m.localizacion?.metrica?.metrica || ''
+        const metricName = rawMetricName
+          .replace(/\r\n/g, ' ')
+          .replace(/\n/g, ' ')
+          .replace(/\r/g, ' ')
+          .trim()
+          .toLowerCase()
+        
+        if (selectedDetailedMetric === 'temperatura' && (
+          metricName.includes('temperatura') || metricName.includes('temp')
+        )) return true
+        
+        if (selectedDetailedMetric === 'humedad' && (
+          metricName.includes('humedad') || metricName.includes('humidity')
+        )) return true
+        
+        if (selectedDetailedMetric === 'conductividad' && (
+          metricName.includes('conductividad') || 
+          metricName.includes('electroconductividad') ||
+          metricName.includes('conductivity')
+        )) return true
+        
+        return false
+      })
+      
       comparisonMetricMediciones.forEach(m => {
         const tipo = tipos.find(t => t.tipoid === m.tipoid)
         if (tipo) {
@@ -1106,11 +1200,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
     }
     
+    console.log('[DEBUG] Inicializando visibleTipos', {
+      dataSource: detailedMediciones.length > 0 ? 'detailedMediciones' : 'mediciones',
+      detailedMedicionesLength: detailedMediciones.length,
+      medicionesLength: mediciones.length,
+      metricMedicionesLength: metricMediciones.length,
+      tiposDisponibles: Array.from(tiposDisponibles),
+      selectedDetailedMetric
+    })
+    
     // Si visibleTipos está vacío o no contiene todos los tipos actuales, inicializar
     if (visibleTipos.size === 0 || !Array.from(tiposDisponibles).every(tipo => visibleTipos.has(tipo))) {
       setVisibleTipos(new Set(tiposDisponibles))
     }
-  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, comparisonMediciones, tipos])
+  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos])
 
   // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
   useEffect(() => {
@@ -1341,12 +1444,37 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
-    if (!mediciones.length || !tipos.length || !selectedNode) {
+    // Fuente de datos: para el análisis detallado usar detailedMediciones si existen,
+    // para el resto de vistas usar mediciones globales
+    const sourceMediciones = useCustomRange && detailedMediciones.length > 0
+      ? detailedMediciones
+      : mediciones
+
+    if (!sourceMediciones.length || !tipos.length || !selectedNode) {
+      if (useCustomRange) {
+        console.log('[DEBUG] processChartData: No hay datos base', {
+          medicionesLength: sourceMediciones.length,
+          tiposLength: tipos.length,
+          hasSelectedNode: !!selectedNode,
+          useCustomRange,
+          detailedStartDate,
+          detailedEndDate
+        })
+      }
       return []
     }
 
     // Filtrar mediciones del nodo seleccionado
-    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode.nodoid)
+    const nodeMediciones = sourceMediciones.filter(m => m.nodoid === selectedNode.nodoid)
+    
+    if (useCustomRange) {
+      console.log('[DEBUG] processChartData: Filtrando por nodo', {
+        totalMediciones: sourceMediciones.length,
+        nodeMediciones: nodeMediciones.length,
+        nodoid: selectedNode.nodoid,
+        dataKey
+      })
+    }
     
     // Buscar mediciones que coincidan con el dataKey por nombre de métrica
     const metricMediciones = nodeMediciones.filter(m => {
@@ -1377,6 +1505,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     })
     
     if (!metricMediciones.length) {
+      if (useCustomRange) {
+        console.log('[DEBUG] processChartData: No hay mediciones para la métrica', {
+          dataKey,
+          nodeMediciones: nodeMediciones.length,
+          sampleMetricNames: nodeMediciones.slice(0, 3).map(m => m.localizacion?.metrica?.metrica)
+        })
+      }
       return []
     }
 
@@ -1393,12 +1528,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     if (useCustomRange && detailedStartDate && detailedEndDate) {
       // Usar rango personalizado de fechas del modal de detalle
-      const startDate = new Date(detailedStartDate + 'T00:00:00')
-      const endDate = new Date(detailedEndDate + 'T23:59:59')
+      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+      const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      
+      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+      
+      console.log('[DEBUG] processChartData: Filtrando por rango personalizado', {
+        detailedStartDate,
+        detailedEndDate,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        startDateLocal: startDate.toLocaleString(),
+        endDateLocal: endDate.toLocaleString(),
+        sortedMedicionesBeforeFilter: sortedMediciones.length,
+        firstMedicionDate: sortedMediciones[0]?.fecha,
+        lastMedicionDate: sortedMediciones[sortedMediciones.length - 1]?.fecha
+      })
       
       filteredMediciones = sortedMediciones.filter(m => {
         const medicionDate = new Date(m.fecha)
         return medicionDate >= startDate && medicionDate <= endDate
+      })
+      
+      console.log('[DEBUG] processChartData: Después de filtrar por rango', {
+        filteredMediciones: filteredMediciones.length,
+        firstFilteredDate: filteredMediciones[0]?.fecha,
+        lastFilteredDate: filteredMediciones[filteredMediciones.length - 1]?.fecha
       })
       
       // Determinar si es un rango de días (más de 1 día)
@@ -1519,6 +1676,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const tiposEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.tipoid).filter((id): id is number => id !== undefined && id !== null)))
     const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
     
+    if (useCustomRange) {
+      console.log('[DEBUG] processChartData: Agrupando datos para gráfico detallado', {
+        medicionesParaProcesar: medicionesParaProcesar.length,
+        tiposEnMediciones: tiposEnMediciones.length,
+        tiposIds: tiposEnMediciones,
+        sampleMediciones: medicionesParaProcesar.slice(0, 3).map(m => ({
+          fecha: m.fecha,
+          medicion: m.medicion,
+          tipoid: m.tipoid,
+          nodoid: m.nodoid
+        }))
+      })
+    }
+    
     // Inicializar datos para cada tipo
     tiposEnMediciones.forEach(tipoid => {
       datosPorTipo[tipoid] = []
@@ -1532,10 +1703,32 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
     const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
     
+    if (useCustomRange) {
+      console.log('[DEBUG] processChartData: Granularidad seleccionada', {
+        useMinutes,
+        useHours,
+        useDays,
+        isDateRange,
+        hoursSpan,
+        daysSpan,
+        totalMediciones: medicionesParaProcesar.length
+      })
+    }
+    
     // Agrupar mediciones por tipo y tiempo (usar datos muestreados si aplica)
+    let medicionesSinTipoid = 0
     medicionesParaProcesar.forEach(medicion => {
       // Filtrar mediciones sin tipoid válido
       if (medicion.tipoid === undefined || medicion.tipoid === null) {
+        medicionesSinTipoid++
+        if (useCustomRange && medicionesSinTipoid <= 3) {
+          console.warn('[DEBUG] processChartData: Medición sin tipoid válido', {
+            medicionid: medicion.medicionid,
+            fecha: medicion.fecha,
+            medicion: medicion.medicion,
+            tipoid: medicion.tipoid
+          })
+        }
         return
       }
       
@@ -1591,10 +1784,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     })
     
+    if (useCustomRange && medicionesSinTipoid > 0) {
+      console.warn('[DEBUG] processChartData: Mediciones sin tipoid', {
+        totalSinTipoid: medicionesSinTipoid,
+        totalMediciones: medicionesParaProcesar.length
+      })
+    }
+    
     // Ordenar los datos de cada tipo por timestamp antes de crear la estructura final
     tiposEnMediciones.forEach(tipoid => {
       if (datosPorTipo[tipoid]) {
         datosPorTipo[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
+        
+        if (useCustomRange) {
+          console.log('[DEBUG] processChartData: Datos agrupados por tipo', {
+            tipoid,
+            puntos: datosPorTipo[tipoid].length,
+            primerPunto: datosPorTipo[tipoid][0],
+            ultimoPunto: datosPorTipo[tipoid][datosPorTipo[tipoid].length - 1]
+          })
+        }
+        
         // Verificar si hay gaps significativos en los datos
         if (datosPorTipo[tipoid].length > 1) {
           for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
@@ -1614,10 +1824,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Verificar si después de agrupar tenemos muy pocos puntos por tipo
     // Si hay muy pocos puntos, intentar usar granularidad más fina o mostrar todos los datos disponibles
-    if (!useCustomRange && filteredMediciones.length > 0) {
+    // IMPORTANTE: Aplicar esta lógica también cuando useCustomRange es true
+    if (filteredMediciones.length > 0) {
       const tiposConPocosPuntos = tiposEnMediciones.filter(tipoid => 
         datosPorTipo[tipoid] && datosPorTipo[tipoid].length <= 2
       )
+      
+      if (useCustomRange) {
+        console.log('[DEBUG] processChartData: Verificando puntos por tipo', {
+          tiposConPocosPuntos: tiposConPocosPuntos.length,
+          totalTipos: tiposEnMediciones.length,
+          puntosPorTipo: tiposEnMediciones.map(tipoid => ({
+            tipoid,
+            puntos: datosPorTipo[tipoid]?.length || 0
+          }))
+        })
+      }
       
       if (tiposConPocosPuntos.length === tiposEnMediciones.length && tiposEnMediciones.length > 0) {
         // Todos los tipos tienen 2 o menos puntos después de agrupar
@@ -1809,6 +2031,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     })
     
+    if (useCustomRange) {
+      console.log('[DEBUG] processChartData: Estructura final de datos para gráfico', {
+        totalPuntos: result.length,
+        tiposEnMediciones: tiposEnMediciones.length,
+        puntosPorTipo: tiposEnMediciones.map(tipoid => ({
+          tipoid,
+          tipo: tipos.find(t => t.tipoid === tipoid)?.tipo || `Tipo ${tipoid}`,
+          puntos: datosPorTipo[tipoid]?.length || 0
+        })),
+        primerosPuntos: result.slice(0, 3),
+        ultimosPuntos: result.slice(-3),
+        allTimesLength: allTimes.length,
+        samplePointKeys: result.length > 0 ? Object.keys(result[0] || {}) : [],
+        tiposNombres: tiposEnMediciones.map(tipoid => tipos.find(t => t.tipoid === tipoid)?.tipo || `Tipo ${tipoid}`)
+      })
+    }
+    
     return result
   }
 
@@ -1880,6 +2119,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para abrir análisis detallado de una métrica específica
   const openDetailedAnalysis = (metric: MetricConfig) => {
+    console.log('[DEBUG] openDetailedAnalysis: Abriendo modal para métrica', {
+      metricDataKey: metric.dataKey,
+      metricTitle: metric.title,
+      medicionesLength: mediciones.length,
+      selectedNode: selectedNode?.nodoid
+    })
+    
     setSelectedMetricForAnalysis(metric)
     setSelectedDetailedMetric(metric.dataKey)
     
@@ -1889,33 +2135,74 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setLoadingComparisonData(false)
     
     // Obtener la última fecha disponible de los datos para esta métrica
-    const metricId = getMetricIdFromDataKey(metric.dataKey)
-    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
+    // Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
+    const nodeMediciones = mediciones.filter(m => m.nodoid === selectedNode?.nodoid)
+    const metricMediciones = nodeMediciones.filter(m => {
+      const rawMetricName = m.localizacion?.metrica?.metrica || ''
+      const metricName = rawMetricName
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ')
+        .trim()
+        .toLowerCase()
+      
+      if (metric.dataKey === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true
+      
+      if (metric.dataKey === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true
+      
+      if (metric.dataKey === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true
+      
+      return false
+    })
+    
+    console.log('[DEBUG] openDetailedAnalysis: Mediciones encontradas para métrica', {
+      nodeMedicionesLength: nodeMediciones.length,
+      metricMedicionesLength: metricMediciones.length,
+      sampleMetricNames: nodeMediciones.slice(0, 3).map(m => m.localizacion?.metrica?.metrica)
+    })
     
     let endDate: Date
     let startDate: Date
     
     if (metricMediciones.length > 0) {
-      // Encontrar la última fecha disponible
+      // Encontrar la primera y última fecha disponible para usar el rango completo de datos
       const sortedMediciones = [...metricMediciones].sort((a, b) => 
-        new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
       )
-      const lastAvailableDate = new Date(sortedMediciones[0].fecha)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0) // Normalizar a inicio del día
-      lastAvailableDate.setHours(0, 0, 0, 0) // Normalizar a inicio del día
+      const firstAvailableDate = new Date(sortedMediciones[0].fecha)
+      const lastAvailableDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
       
-      // Si la última fecha disponible es anterior a hoy, usar esa fecha como punto de partida
-      if (lastAvailableDate < today) {
-        // Usar la última fecha disponible como fecha final
+      // Normalizar fechas a inicio del día
+      firstAvailableDate.setHours(0, 0, 0, 0)
+      lastAvailableDate.setHours(23, 59, 59, 999)
+      
+      // Usar el rango completo de datos disponibles, pero con un mínimo de 1 día
+      const daysDiff = (lastAvailableDate.getTime() - firstAvailableDate.getTime()) / (1000 * 3600 * 24)
+      
+      if (daysDiff < 1) {
+        // Si todos los datos están en el mismo día, mostrar ese día completo
+        startDate = new Date(firstAvailableDate)
         endDate = new Date(lastAvailableDate)
-        // Un día antes de la última fecha disponible
-        startDate = new Date(lastAvailableDate.getTime() - 24 * 60 * 60 * 1000)
       } else {
-        // Si hay datos de hoy o más recientes, usar el comportamiento normal
-        endDate = new Date()
-        startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
+        // Si hay datos en múltiples días, usar el rango completo
+        startDate = new Date(firstAvailableDate)
+        endDate = new Date(lastAvailableDate)
       }
+      
+      console.log('[DEBUG] openDetailedAnalysis: Rango de fechas calculado desde datos', {
+        firstAvailableDate: firstAvailableDate.toISOString(),
+        lastAvailableDate: lastAvailableDate.toISOString(),
+        daysDiff,
+        metricMedicionesLength: metricMediciones.length
+      })
     } else {
       // Si no hay datos, usar el comportamiento por defecto (hoy - 1 día)
       endDate = new Date()
@@ -3529,6 +3816,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           ? Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
                           : [])
                       
+                      console.log('[DEBUG] Renderizando gráfico detallado', {
+                        chartDataLength: chartData.length,
+                        finalChartDataLength: finalChartData.length,
+                        tipoKeysBeforeFilter: tipoKeys,
+                        tipoKeysLength: tipoKeys.length,
+                        visibleTipos: Array.from(visibleTipos),
+                        visibleTiposSize: visibleTipos.size,
+                        sampleChartDataPoint: chartData[0],
+                        sampleFinalChartDataPoint: finalChartData[0],
+                        allKeysInChartData: chartData.length > 0 ? Object.keys(chartData[0] || {}) : [],
+                        allKeysInFinalChartData: finalChartData.length > 0 ? Object.keys(finalChartData[0] || {}) : []
+                      })
+                      
                       // Si se aplicaron umbrales, filtrar solo los tipos seleccionados
                       if (umbralAplicado && umbralNodoSeleccionado) {
                         const tiposValidos = umbralTiposSeleccionados.length > 0 
@@ -3541,6 +3841,36 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           tipoKeys = tipoKeys.filter(key => nombresTipos.includes(key))
                         }
                       }
+                      
+                      // Filtrar tipoKeys por visibleTipos ANTES de renderizar
+                      // IMPORTANTE: Si visibleTipos está vacío pero hay tipoKeys, usar todos los tipoKeys
+                      const filteredTipoKeys = tipoKeys.filter(tipoKey => {
+                        // Si se aplicaron umbrales, mostrar solo los tipos seleccionados
+                        if (umbralAplicado && umbralNodoSeleccionado) {
+                          const tiposValidos = umbralTiposSeleccionados.length > 0 
+                            ? umbralTiposSeleccionados 
+                            : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
+                          
+                          if (tiposValidos.length > 0) {
+                            const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
+                            const nombresTipos = tiposSeleccionados.map(t => t.tipo)
+                            return nombresTipos.includes(tipoKey)
+                          }
+                        }
+                        // Si visibleTipos está vacío, mostrar todos los tipoKeys disponibles
+                        if (visibleTipos.size === 0) {
+                          return true
+                        }
+                        return visibleTipos.has(tipoKey)
+                      })
+                      
+                      console.log('[DEBUG] TipoKeys filtrados para renderizar', {
+                        tipoKeysOriginal: tipoKeys,
+                        filteredTipoKeys,
+                        visibleTipos: Array.from(visibleTipos),
+                        umbralAplicado,
+                        tiposDisponibles: tipos.map(t => t.tipo)
+                      })
                       
                       const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                       const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
@@ -3665,23 +3995,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   )
                                 )}
                                 {/* Líneas del nodo principal */}
-                                {tipoKeys
-                                  .filter(tipoKey => {
-                                    // Si se aplicaron umbrales, mostrar solo los tipos seleccionados
-                                    if (umbralAplicado && umbralNodoSeleccionado) {
-                                      const tiposValidos = umbralTiposSeleccionados.length > 0 
-                                        ? umbralTiposSeleccionados 
-                                        : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
-                                      
-                                      if (tiposValidos.length > 0) {
-                                        const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
-                                        const nombresTipos = tiposSeleccionados.map(t => t.tipo)
-                                        return nombresTipos.includes(tipoKey)
-                                      }
-                                    }
-                                    return visibleTipos.has(tipoKey)
-                                  })
-                                  .map((tipoKey, index) => {
+                                {filteredTipoKeys.length > 0 ? (
+                                  filteredTipoKeys.map((tipoKey, index) => {
                                     // Recalcular el índice basado en la posición original en tipoKeys
                                     const originalIndex = tipoKeys.indexOf(tipoKey)
                                     const strokeColor = colors[originalIndex % colors.length]
@@ -3720,7 +4035,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                         animationDuration={300}
                                       />
                                     )
-                                  })}
+                                  })
+                                ) : (() => {
+                                  console.warn('[DEBUG] No hay tipoKeys filtrados para renderizar', {
+                                    tipoKeys,
+                                    filteredTipoKeys,
+                                    visibleTipos: Array.from(visibleTipos),
+                                    chartDataSample: chartData[0],
+                                    finalChartDataSample: finalChartData[0]
+                                  })
+                                  return null
+                                })()}
                                 {/* Líneas del nodo de comparación (con estilo punteado) */}
                                 {comparisonKeys.length > 0 ? (
                                   comparisonKeys
