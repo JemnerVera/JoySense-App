@@ -125,6 +125,8 @@ router.get('/mediciones', async (req, res) => {
     
     // Si hay nodoid, obtener localizaciones de ese nodo
     if (nodoid) {
+      logger.info(`[DEBUG] GET /mediciones: Buscando localizaciones para nodoid: ${nodoid}`);
+      
       const { data: localizaciones, error: locError } = await userSupabase
         .schema(dbSchema)
         .from('localizacion')
@@ -132,15 +134,27 @@ router.get('/mediciones', async (req, res) => {
         .eq('nodoid', nodoid)
         .eq('statusid', 1);
       
-      if (locError) throw locError;
+      if (locError) {
+        logger.error(`[DEBUG] GET /mediciones: Error obteniendo localizaciones:`, locError);
+        throw locError;
+      }
+      
       locIds = (localizaciones || []).map(l => l.localizacionid);
       
+      logger.info(`[DEBUG] GET /mediciones: Localizaciones encontradas para nodoid ${nodoid}:`, {
+        cantidad: locIds.length,
+        localizacionIds: locIds
+      });
+      
       if (locIds.length === 0) {
+        logger.warn(`[DEBUG] GET /mediciones: No se encontraron localizaciones para nodoid ${nodoid}`);
         return res.json([]);
       }
     }
     
     // Usar Supabase API con joins anidados
+    // NOTA: localizacion no tiene FK directa a metrica, la relación es a través de metricasensor
+    // Por ahora, no hacemos join a metrica desde localizacion, la obtendremos por separado si es necesario
     let query = userSupabase
       .schema(dbSchema)
       .from('medicion')
@@ -151,39 +165,106 @@ router.get('/mediciones', async (req, res) => {
           localizacion,
           nodoid,
           metricaid,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
+          sensorid,
+          nodo:nodoid(nodoid, nodo)
         )
       `);
     
     if (nodoid && locIds.length > 0) {
       query = query.in('localizacionid', locIds);
+      logger.info(`[DEBUG] GET /mediciones: Filtrando por localizacionid IN [${locIds.join(', ')}]`);
     } else if (localizacionId) {
       query = query.eq('localizacionid', localizacionId);
+      logger.info(`[DEBUG] GET /mediciones: Filtrando por localizacionid = ${localizacionId}`);
     }
     
     if (startDate) {
       query = query.gte('fecha', startDate);
+      logger.info(`[DEBUG] GET /mediciones: Filtrando por fecha >= ${startDate}`);
     }
     if (endDate) {
       query = query.lte('fecha', endDate);
+      logger.info(`[DEBUG] GET /mediciones: Filtrando por fecha <= ${endDate}`);
     }
     
     query = query.order('fecha', { ascending: false });
     
     if (!getAll) {
       query = query.limit(parseInt(limit));
+      logger.info(`[DEBUG] GET /mediciones: Limitando a ${limit} registros`);
     }
+    
+    logger.info(`[DEBUG] GET /mediciones: Ejecutando query final con parámetros:`, {
+      nodoid: nodoid || null,
+      localizacionIds: locIds.length > 0 ? locIds : null,
+      localizacionId: localizacionId || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      limit: getAll ? 'all' : limit
+    });
     
     const { data, error } = await query;
     
-    if (error) throw error;
+    if (error) {
+      logger.error(`[DEBUG] GET /mediciones: Error en query:`, error);
+      throw error;
+    }
     
-    // Transformar datos para mantener formato compatible
-    const transformed = (data || []).map(m => ({
-      ...m,
-      localizacion: m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
-    }));
+    logger.info(`[DEBUG] GET /mediciones: Query exitosa, cantidad de resultados: ${(data || []).length}`);
+    if ((data || []).length > 0) {
+      logger.info(`[DEBUG] GET /mediciones: Primera medición sample:`, {
+        medicionid: data[0].medicionid,
+        localizacionid: data[0].localizacionid,
+        fecha: data[0].fecha,
+        medicion: data[0].medicion,
+        hasLocalizacion: !!data[0].localizacion,
+        metricaid: data[0].localizacion?.metricaid
+      });
+    }
+    
+    // Obtener métricas por separado (ya que la relación es a través de metricasensor)
+    const metricaIds = [...new Set(
+      (data || [])
+        .map(m => m.localizacion?.metricaid)
+        .filter(id => id != null)
+    )];
+    
+    let metricasMap = new Map();
+    if (metricaIds.length > 0) {
+      logger.info(`[DEBUG] GET /mediciones: Obteniendo métricas para IDs:`, metricaIds);
+      
+      const { data: metricas, error: metError } = await userSupabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+      
+      if (metError) {
+        logger.error(`[DEBUG] GET /mediciones: Error obteniendo métricas:`, metError);
+      } else {
+        (metricas || []).forEach(m => {
+          metricasMap.set(m.metricaid, m);
+        });
+        logger.info(`[DEBUG] GET /mediciones: Métricas obtenidas: ${metricasMap.size}`);
+      }
+    }
+    
+    // Transformar datos para mantener formato compatible y agregar métricas
+    const transformed = (data || []).map(m => {
+      const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+      const metrica = localizacion?.metricaid ? metricasMap.get(localizacion.metricaid) : null;
+      
+      return {
+        ...m,
+        localizacion: localizacion ? {
+          ...localizacion,
+          metrica: metrica
+        } : null
+      };
+    });
+    
+    logger.info(`[DEBUG] GET /mediciones: Datos transformados, cantidad: ${transformed.length}`);
     
     res.json(transformed);
   } catch (error) {

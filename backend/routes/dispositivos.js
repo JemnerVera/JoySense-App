@@ -694,8 +694,57 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Usar Supabase API con joins anidados profundos
-    const { data, error } = await userSupabase
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Iniciando consulta con schema: ${dbSchema}`);
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Usando userSupabase: ${!!userSupabase}, tiene token: ${!!req.supabase}`);
+    
+    // Verificar si el usuario está autenticado
+    if (req.supabase) {
+      const { data: { user }, error: userError } = await req.supabase.auth.getUser();
+      logger.info(`[DEBUG] GET /nodos-con-localizacion: Usuario autenticado: ${user?.id || 'NO'}, email: ${user?.email || 'NO'}`);
+      if (userError) {
+        logger.error(`[DEBUG] GET /nodos-con-localizacion: Error obteniendo usuario:`, userError);
+      }
+    }
+    
+    // Primero, verificar si hay localizaciones sin filtros
+    const { data: allLocalizaciones, error: allError } = await userSupabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, latitud, longitud, statusid, nodoid')
+      .limit(10);
+    
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Total localizaciones (sin filtros): ${(allLocalizaciones || []).length}`);
+    if ((allLocalizaciones || []).length > 0) {
+      logger.info(`[DEBUG] GET /nodos-con-localizacion: Sample sin filtros:`, JSON.stringify(allLocalizaciones[0]));
+    }
+    if (allError) {
+      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en consulta sin filtros:`, JSON.stringify({
+        code: allError.code,
+        message: allError.message,
+        details: allError.details,
+        hint: allError.hint
+      }));
+    }
+    
+    // También probar con una consulta más simple a otra tabla para verificar conectividad
+    const { data: nodosTest, error: nodosError } = await userSupabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select('nodoid, nodo')
+      .limit(5);
+    
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Test nodos (para verificar RLS): ${(nodosTest || []).length} nodos`);
+    if (nodosError) {
+      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en test nodos:`, JSON.stringify({
+        code: nodosError.code,
+        message: nodosError.message,
+        details: nodosError.details
+      }));
+    }
+    
+    // Paso 1: Obtener localizaciones con nodos y coordenadas
+    // Nota: localizacion tiene FK compuesta (sensorid, metricaid) -> metricasensor, no directa a metrica
+    const { data: localizaciones, error: locError } = await userSupabase
       .schema(dbSchema)
       .from('localizacion')
       .select(`
@@ -704,35 +753,136 @@ router.get('/nodos-con-localizacion', async (req, res) => {
         latitud,
         longitud,
         referencia,
+        nodoid,
+        sensorid,
+        metricaid,
         nodo:nodoid(
           nodoid,
           nodo,
           descripcion,
+          ubicacionid,
           ubicacion:ubicacionid(
             ubicacionid,
             ubicacion,
-            fundo:fundoid(fundoid, fundo)
+            fundoid,
+            fundo:fundoid(
+              fundoid,
+              fundo,
+              fundoabrev,
+              empresaid,
+              empresa:empresaid(
+                empresaid,
+                empresa,
+                empresabrev,
+                paisid,
+                pais:paisid(
+                  paisid,
+                  pais,
+                  paisabrev
+                )
+              )
+            )
           )
-        ),
-        metrica:metricaid(metricaid, metrica, unidad)
+        )
       `)
       .not('latitud', 'is', null)
       .not('longitud', 'is', null)
       .eq('statusid', 1)
       .limit(parseInt(limit));
     
-    if (error) throw error;
+    if (locError) {
+      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en consulta principal:`, locError);
+      throw locError;
+    }
     
-    // Transformar datos para mantener formato compatible
-    const transformed = (data || []).map(l => ({
-      localizacionid: l.localizacionid,
-      localizacion: l.localizacion,
-      latitud: l.latitud,
-      longitud: l.longitud,
-      referencia: l.referencia,
-      nodo: l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null,
-      metrica: l.metrica ? (Array.isArray(l.metrica) ? l.metrica[0] : l.metrica) : null
-    }));
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Se obtuvieron ${(localizaciones || []).length} localizaciones`);
+    if ((localizaciones || []).length > 0) {
+      logger.info(`[DEBUG] Primera localizacion sample:`, JSON.stringify({
+        localizacionid: localizaciones[0].localizacionid,
+        latitud: localizaciones[0].latitud,
+        longitud: localizaciones[0].longitud,
+        tieneNodo: !!localizaciones[0].nodo,
+        nodoid: localizaciones[0].nodo?.nodoid
+      }));
+    }
+    
+    // Paso 1.5: Obtener métricas por separado (ya que la relación es a través de metricasensor)
+    const metricaIds = [...new Set((localizaciones || []).map(l => l.metricaid).filter(id => id != null))];
+    let metricasMap = new Map();
+    if (metricaIds.length > 0) {
+      const { data: metricas, error: metError } = await userSupabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+      
+      if (metError) throw metError;
+      
+      (metricas || []).forEach(m => {
+        metricasMap.set(m.metricaid, m);
+      });
+    }
+    
+    // Paso 2: Obtener entidades por localizacionid desde entidad_localizacion
+    const localizacionIds = (localizaciones || []).map(l => l.localizacionid);
+    
+    let entidadesMap = new Map();
+    if (localizacionIds.length > 0) {
+      const { data: entidadLocalizaciones, error: elError } = await userSupabase
+        .schema(dbSchema)
+        .from('entidad_localizacion')
+        .select(`
+          localizacionid,
+          entidad:entidadid(
+            entidadid,
+            entidad
+          )
+        `)
+        .in('localizacionid', localizacionIds)
+        .eq('statusid', 1);
+      
+      if (elError) throw elError;
+      
+      // Crear mapa de localizacionid -> entidad
+      (entidadLocalizaciones || []).forEach(el => {
+        const entidad = el.entidad ? (Array.isArray(el.entidad) ? el.entidad[0] : el.entidad) : null;
+        if (entidad) {
+          entidadesMap.set(el.localizacionid, entidad);
+        }
+      });
+    }
+    
+    // Paso 3: Combinar datos
+    const transformed = (localizaciones || []).map(l => {
+      const nodo = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
+      const metrica = metricasMap.get(l.metricaid) || null;
+      const entidad = entidadesMap.get(l.localizacionid) || null;
+      
+      return {
+        localizacionid: l.localizacionid,
+        localizacion: l.localizacion,
+        latitud: l.latitud,
+        longitud: l.longitud,
+        referencia: l.referencia,
+        nodo: nodo ? {
+          ...nodo,
+          entidad: entidad
+        } : null,
+        metrica: metrica
+      };
+    });
+    
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Retornando ${transformed.length} localizaciones transformadas`);
+    if (transformed.length > 0) {
+      logger.info(`[DEBUG] Primera transformada sample:`, JSON.stringify({
+        localizacionid: transformed[0].localizacionid,
+        latitud: transformed[0].latitud,
+        longitud: transformed[0].longitud,
+        tieneNodo: !!transformed[0].nodo,
+        nodoid: transformed[0].nodo?.nodoid
+      }));
+    }
     
     res.json(transformed);
   } catch (error) {

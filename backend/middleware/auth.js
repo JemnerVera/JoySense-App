@@ -78,12 +78,22 @@ async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    logger.info(`[DEBUG] optionalAuth: No hay header Authorization, usando cliente base`);
     req.user = null;
     req.supabase = baseSupabase; // Usar cliente base sin autenticación
     return next();
   }
 
   const token = authHeader.substring(7);
+  
+  if (!token || token.length === 0) {
+    logger.warn(`[DEBUG] optionalAuth: Token vacío después de extraer Bearer`);
+    req.user = null;
+    req.supabase = baseSupabase;
+    return next();
+  }
+  
+  logger.info(`[DEBUG] optionalAuth: Token recibido, longitud: ${token.length}`);
   
   try {
     // Crear cliente de Supabase con el token del usuario
@@ -109,6 +119,8 @@ async function optionalAuth(req, res, next) {
       req.supabase = baseSupabase; // Usar cliente base sin autenticación
       return next();
     }
+    
+    logger.info(`[DEBUG] optionalAuth: Usuario autenticado correctamente: ${user.id}, email: ${user.email}`);
     
     // IMPORTANTE: Para que RLS funcione, el token debe estar en cada request
     // El cliente ya está configurado con global.headers, así que debería funcionar

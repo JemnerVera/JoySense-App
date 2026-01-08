@@ -370,8 +370,104 @@ export class JoySenseService {
 
   static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
     try {
-      const data = await backendAPI.get(`/dispositivos/nodo?withLocalizacion=true&limit=${limit}`);
-      return data || [];
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      if (!token) {
+        console.warn('[DEBUG] getNodosConLocalizacion: No hay token de sesión disponible');
+      } else {
+        console.log('[DEBUG] getNodosConLocalizacion: Token presente, longitud:', token.length);
+      }
+      
+      const data = await backendAPI.get(`/dispositivos/nodos-con-localizacion?limit=${limit}`, token || undefined);
+      
+      // Solo log cuando hay datos para evitar spam
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('[DEBUG] getNodosConLocalizacion: Datos recibidos del backend:', {
+        esArray: Array.isArray(data),
+        cantidad: Array.isArray(data) ? data.length : 0,
+        primerItem: Array.isArray(data) && data.length > 0 ? {
+          localizacionid: data[0].localizacionid,
+          latitud: data[0].latitud,
+          longitud: data[0].longitud,
+          tieneNodo: !!data[0].nodo,
+          nodoid: data[0].nodo?.nodoid
+        } : null
+        });
+      }
+      
+      // Transformar datos de localizacion a formato NodeData
+      // El backend retorna localizacion con nodo dentro, necesitamos transformarlo
+      if (!Array.isArray(data)) {
+        console.warn('[DEBUG] getNodosConLocalizacion: data no es un array, retornando []');
+        return [];
+      }
+      
+      // Agrupar por nodoid para evitar duplicados
+      const nodesMap = new Map<number, any>();
+      
+      data.forEach((localizacion: any) => {
+        if (!localizacion.nodo) return;
+        
+        const nodoid = localizacion.nodo.nodoid;
+        
+        // Si ya existe el nodo, solo agregar si tiene mejores coordenadas o más información
+        if (!nodesMap.has(nodoid)) {
+          const nodo = localizacion.nodo;
+          const ubicacion = nodo.ubicacion || {};
+          const fundo = ubicacion.fundo || {};
+          
+          nodesMap.set(nodoid, {
+            nodoid: nodoid,
+            nodo: nodo.nodo || `Nodo ${nodoid}`,
+            deveui: nodo.deveui || `rs485-ls-${nodoid}`, // Fallback si no hay deveui
+            ubicacionid: ubicacion.ubicacionid || 0,
+            latitud: typeof localizacion.latitud === 'string' ? parseFloat(localizacion.latitud) : (localizacion.latitud || 0),
+            longitud: typeof localizacion.longitud === 'string' ? parseFloat(localizacion.longitud) : (localizacion.longitud || 0),
+            referencia: localizacion.referencia || '',
+            ubicacion: {
+              ubicacion: ubicacion.ubicacion || '',
+              ubicacionabrev: '', // No existe en schema actual
+              fundoid: fundo.fundoid || 0,
+              fundo: {
+                fundo: fundo.fundo || '',
+                fundoabrev: fundo.fundoabrev || '',
+                empresa: fundo.empresa || {
+                  empresaid: null,
+                  empresa: '',
+                  empresabrev: '',
+                  pais: {
+                    paisid: null,
+                    pais: '',
+                    paisabrev: ''
+                  }
+                }
+              }
+            },
+            entidad: nodo.entidad || {
+              entidadid: 0,
+              entidad: 'Arándano' // Fallback
+            }
+          });
+        }
+      });
+      
+      const result = Array.from(nodesMap.values());
+      console.log('[DEBUG] getNodosConLocalizacion: Nodos transformados:', {
+        cantidad: result.length,
+        primerNodo: result.length > 0 ? {
+          nodoid: result[0].nodoid,
+          nodo: result[0].nodo,
+          latitud: result[0].latitud,
+          longitud: result[0].longitud,
+          tipoLatitud: typeof result[0].latitud,
+          tipoLongitud: typeof result[0].longitud
+        } : null
+      });
+      
+      return result;
     } catch (error) {
       console.error('Error in getNodosConLocalizacion:', error);
       throw error;
@@ -398,6 +494,17 @@ export class JoySenseService {
     countOnly?: boolean;
   }): Promise<Medicion[] | { count: number }> {
     try {
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      if (!token) {
+        console.warn('[DEBUG] getMediciones: No hay token de sesión disponible');
+      } else {
+        console.log('[DEBUG] getMediciones: Token presente, longitud:', token.length);
+      }
+      
       const params = new URLSearchParams();
       
       if (filters.localizacionId) params.append('localizacionid', filters.localizacionId.toString());
@@ -419,7 +526,14 @@ export class JoySenseService {
         endpoint = `/mediciones/mediciones?${params.toString()}`;
       }
       
-      const data = await backendAPI.get(endpoint);
+      console.log('[DEBUG] getMediciones: Llamando endpoint:', endpoint, {
+        nodoid: filters.nodoid,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        limit: filters.limit
+      });
+      
+      const data = await backendAPI.get(endpoint, token || undefined);
 
       if (filters.countOnly) return data || { count: 0 };
       
