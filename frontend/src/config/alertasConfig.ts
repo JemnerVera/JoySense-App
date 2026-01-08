@@ -3,7 +3,8 @@ export const ALERTAS_CONFIG = {
   // Valores por defecto para los filtros
   DEFAULT_FILTERS: {
     CRITICIDAD: 'todas',
-    UBICACION: 'todas'
+    UBICACION: 'todas',
+    LOCALIZACION: 'todas'
   },
   
   // Configuración del sidebar
@@ -28,15 +29,19 @@ export const ALERTAS_CONFIG = {
 export interface AlertasFilterState {
   filtroCriticidad: string;
   filtroUbicacion: string;
+  filtroLocalizacion: string;
   criticidadesDisponibles: string[];
   ubicacionesDisponibles: string[];
+  localizacionesDisponibles: string[];
 }
 
 export interface AlertasFilterActions {
   setFiltroCriticidad: (value: string) => void;
   setFiltroUbicacion: (value: string) => void;
+  setFiltroLocalizacion: (value: string) => void;
   setCriticidadesDisponibles: (value: string[]) => void;
   setUbicacionesDisponibles: (value: string[]) => void;
+  setLocalizacionesDisponibles: (value: string[]) => void;
 }
 
 export type AlertasFilterContextType = AlertasFilterState & AlertasFilterActions;

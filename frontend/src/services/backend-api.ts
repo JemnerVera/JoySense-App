@@ -307,7 +307,26 @@ export class JoySenseService {
 
   static async getMetricas(): Promise<Metrica[]> {
     try {
-      const data = await backendAPI.get('/dispositivos/metrica');
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      if (!token) {
+        console.warn('[DEBUG] getMetricas: No hay token de sesión disponible');
+      } else {
+        console.log('[DEBUG] getMetricas: Token presente, longitud:', token.length);
+      }
+      
+      // Usar /metricas en lugar de /metrica porque devuelve un array directo
+      const data = await backendAPI.get('/dispositivos/metricas', token || undefined);
+      
+      console.log('[DEBUG] getMetricas: Datos recibidos', {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 0,
+        sampleMetrica: Array.isArray(data) && data.length > 0 ? data[0] : null
+      });
+      
       return data || [];
     } catch (error) {
       console.error('Error in getMetricas:', error);
@@ -577,6 +596,41 @@ export class JoySenseService {
 
   // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
   // Usar 'alerta_regla' en su lugar
+  static async getAlertasRegla(params?: {
+    page?: number;
+    pageSize?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<PaginatedResponse<any> | any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+      const data = await backendAPI.get(`/alertas/alerta_regla?${queryParams.toString()}`, token || undefined);
+      
+      // Si tiene paginación, retornar como PaginatedResponse
+      if (data.pagination) {
+        return {
+          data: Array.isArray(data.data) ? data.data : [],
+          pagination: data.pagination
+        };
+      }
+      
+      // Si no tiene paginación, retornar como array
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getAlertasRegla:', error);
+      throw error;
+    }
+  }
+
   static async getAlertas(filters?: {
     reglaId?: number;
     localizacionId?: number;
@@ -1068,13 +1122,24 @@ export class JoySenseService {
     endDate?: string;
   }): Promise<any[]> {
     try {
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      if (!token) {
+        console.warn('[DEBUG] getUltimasMedicionesPorLote: No hay token de sesión disponible');
+      } else {
+        console.log('[DEBUG] getUltimasMedicionesPorLote: Token presente, longitud:', token.length);
+      }
+      
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
       queryParams.append('metricaId', params.metricaId.toString());
       if (params.startDate) queryParams.append('startDate', params.startDate);
       if (params.endDate) queryParams.append('endDate', params.endDate);
 
-      const data = await backendAPI.get(`/mediciones/ultimas-mediciones-por-lote?${queryParams.toString()}`);
+      const data = await backendAPI.get(`/mediciones/ultimas-mediciones-por-lote?${queryParams.toString()}`, token || undefined);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in getUltimasMedicionesPorLote:', error);
@@ -1087,11 +1152,35 @@ export class JoySenseService {
     metricaId?: number;
   }): Promise<any[]> {
     try {
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      if (!token) {
+        console.warn('[DEBUG] getUmbralesPorLote: No hay token de sesión disponible');
+      } else {
+        console.log('[DEBUG] getUmbralesPorLote: Token presente, longitud:', token.length);
+      }
+      
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
       if (params.metricaId) queryParams.append('metricaId', params.metricaId.toString());
 
-      const data = await backendAPI.get(`/alertas/umbrales-por-lote?${queryParams.toString()}`);
+      console.log('[DEBUG] getUmbralesPorLote: Llamando endpoint', {
+        fundoIds: params.fundoIds,
+        metricaId: params.metricaId,
+        endpoint: `/alertas/umbrales-por-lote?${queryParams.toString()}`
+      });
+
+      const data = await backendAPI.get(`/alertas/umbrales-por-lote?${queryParams.toString()}`, token || undefined);
+      
+      console.log('[DEBUG] getUmbralesPorLote: Datos recibidos', {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 0,
+        sample: Array.isArray(data) && data.length > 0 ? data[0] : null
+      });
+      
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in getUmbralesPorLote:', error);

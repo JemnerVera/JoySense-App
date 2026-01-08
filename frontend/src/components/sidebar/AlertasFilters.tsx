@@ -22,12 +22,15 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
     setFiltroCriticidad,
     filtroUbicacion = ALERTAS_CONFIG.DEFAULT_FILTERS.UBICACION,
     setFiltroUbicacion,
+    filtroLocalizacion = ALERTAS_CONFIG.DEFAULT_FILTERS.LOCALIZACION || 'todas',
+    setFiltroLocalizacion,
     criticidadesDisponibles = [],
-    ubicacionesDisponibles = []
+    ubicacionesDisponibles = [],
+    localizacionesDisponibles = []
   } = alertasFilter;
 
   // Verificar que las funciones estén disponibles
-  if (!setFiltroCriticidad || !setFiltroUbicacion) {
+  if (!setFiltroCriticidad || !setFiltroUbicacion || !setFiltroLocalizacion) {
     return null;
   }
 
@@ -74,6 +77,27 @@ const AlertasFilters: React.FC<AlertasFiltersProps> = ({ isExpanded }) => {
           {Array.isArray(ubicacionesDisponibles) && ubicacionesDisponibles.map(ubicacion => (
             <option key={ubicacion} value={ubicacion} className={ALERTAS_CONFIG.STYLES.FILTER_OPTION}>
               {ubicacion}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Filtro de Localización */}
+      <div className="mb-4">
+        <label className={ALERTAS_CONFIG.STYLES.FILTER_LABEL}>
+          {t('alerts.filters.localization') || 'Localización'}
+        </label>
+        <select
+          value={filtroLocalizacion}
+          onChange={(e) => setFiltroLocalizacion(e.target.value)}
+          className={ALERTAS_CONFIG.STYLES.FILTER_SELECT}
+        >
+          <option value={ALERTAS_CONFIG.DEFAULT_FILTERS.LOCALIZACION || 'todas'}>
+            {t('alerts.filters.all')}
+          </option>
+          {Array.isArray(localizacionesDisponibles) && localizacionesDisponibles.map(localizacion => (
+            <option key={localizacion} value={localizacion} className={ALERTAS_CONFIG.STYLES.FILTER_OPTION}>
+              {localizacion}
             </option>
           ))}
         </select>

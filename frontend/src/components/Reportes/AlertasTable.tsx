@@ -1,49 +1,82 @@
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, useEffect, startTransition, useMemo } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAlertasFilter } from '../../contexts/AlertasFilterContext';
+import { ALERTAS_CONFIG } from '../../config/alertasConfig';
 
 interface AlertaData {
-  alertaid: number;
-  umbralid: number;
-  medicionid: number;
+  alertaid: string; // UUID de alerta_regla
+  uuid_alerta_reglaid: string;
+  reglaid: number;
+  localizacionid: number;
+  medicionid?: number;
   fecha: string;
+  valor?: number; // Valor que activó la alerta
+  statusid: number;
   usercreatedid: number;
   datecreated: string;
-  statusid: number;
-  // Campos relacionados (se obtendrán de joins)
+  // Relaciones
+  regla?: {
+    reglaid: number;
+    nombre: string;
+    prioridad: number;
+  };
+  localizacion?: {
+    localizacionid: number;
+    localizacion: string;
+    nodoid: number;
+    metricaid: number;
+    sensorid: number;
+    nodo?: {
+      nodoid: number;
+      nodo: string;
+      ubicacionid: number;
+      ubicacion?: {
+        ubicacionid: number;
+        ubicacion: string;
+      };
+    };
+  };
+  medicion?: {
+    medicionid: number;
+    medicion: number;
+    fecha: string;
+  };
   umbral?: {
     umbralid: number;
     umbral: string;
     minimo: number;
     maximo: number;
-    nodoid: number;
-    tipoid: number;
-    metricaid: number;
-    ubicacionid: number;
-    criticidadid: number;
+    estandar?: number;
+    operador: string;
+    inversion: boolean;
+    metricaid?: number;
+    criticidad?: {
+      criticidadid: number;
+      criticidad: string;
+      grado: number;
+    } | string | null;
   };
-  medicion?: {
-    medicionid: number;
-    valor: number;
-    fecha: string;
-    nodoid: number;
-    tipoid: number;
-    metricaid: number;
-  };
-  nodo?: string;
-  metrica?: string;
-  tipo?: string;
-  criticidad?: string;
-  ubicacion?: string;
+  // Campos calculados
+  umbral_intervalo?: string; // "minimo - maximo"
   valor_medido?: number;
   umbral_minimo?: number;
   umbral_maximo?: number;
-  mensaje?: string;
 }
 
 const AlertasTable: React.FC = () => {
   const { t } = useLanguage();
+  const {
+    filtroCriticidad,
+    filtroUbicacion,
+    filtroLocalizacion,
+    setCriticidadesDisponibles,
+    setUbicacionesDisponibles,
+    setLocalizacionesDisponibles
+  } = useAlertasFilter();
+  
   const [alertas, setAlertas] = useState<AlertaData[]>([]);
+  const [allAlertas, setAllAlertas] = useState<AlertaData[]>([]); // Todas las alertas sin filtrar
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,30 +88,63 @@ const AlertasTable: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // ⚠️ Actualizado: La tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
-      // Usar 'alerta_regla' en su lugar
+      // Usar el nuevo endpoint específico para alerta_regla que incluye todas las relaciones
+      // Cargar todas las alertas (sin paginación) para poder filtrar y obtener opciones disponibles
       startTransition(() => {
-        JoySenseService.getTableDataPaginated('alerta_regla', {
-          page,
-          pageSize: itemsPerPage,
-          sortBy: 'datecreated',
-          sortOrder: 'desc'
+        JoySenseService.getAlertasRegla({
+          page: 1,
+          pageSize: 10000 // Cargar todas para filtrar
         })
           .then(result => {
-            if (result.pagination) {
-              // Respuesta con paginación
-              setAlertas(Array.isArray(result.data) ? result.data : []);
-              setTotalRecords(result.pagination.total);
-            } else {
-              // Modo legacy (fallback)
-              const data = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-              setAlertas(data);
-              setTotalRecords(data.length);
+            let allData: AlertaData[] = [];
+            if (result && typeof result === 'object' && 'pagination' in result) {
+              allData = Array.isArray(result.data) ? result.data : [];
+            } else if (Array.isArray(result)) {
+              allData = result;
+            }
+            
+            setAllAlertas(allData);
+            
+            // Extraer opciones disponibles para los filtros
+            const criticidades = new Set<string>();
+            const ubicaciones = new Set<string>();
+            const localizaciones = new Set<string>();
+            
+            allData.forEach(alerta => {
+              // Criticidad desde umbral
+              if (alerta.umbral?.criticidad) {
+                const criticidad = typeof alerta.umbral.criticidad === 'string' 
+                  ? alerta.umbral.criticidad 
+                  : (alerta.umbral.criticidad as any)?.criticidad;
+                if (criticidad) criticidades.add(criticidad);
+              }
+              
+              // Ubicación desde localizacion -> nodo -> ubicacion
+              if (alerta.localizacion?.nodo?.ubicacion?.ubicacion) {
+                ubicaciones.add(alerta.localizacion.nodo.ubicacion.ubicacion);
+              }
+              
+              // Localización
+              if (alerta.localizacion?.localizacion) {
+                localizaciones.add(alerta.localizacion.localizacion);
+              }
+            });
+            
+            // Actualizar opciones disponibles en el contexto
+            if (setCriticidadesDisponibles) {
+              setCriticidadesDisponibles(Array.from(criticidades).sort());
+            }
+            if (setUbicacionesDisponibles) {
+              setUbicacionesDisponibles(Array.from(ubicaciones).sort());
+            }
+            if (setLocalizacionesDisponibles) {
+              setLocalizacionesDisponibles(Array.from(localizaciones).sort());
             }
           })
           .catch(err => {
             console.error('Error cargando alertas:', err);
             setError('Error al cargar las alertas');
+            setAllAlertas([]);
             setAlertas([]);
             setTotalRecords(0);
           })
@@ -92,10 +158,68 @@ const AlertasTable: React.FC = () => {
       setLoading(false);
     }
   };
+  
+  // Filtrar alertas según los filtros seleccionados
+  const filteredAlertas = useMemo(() => {
+    let filtered = [...allAlertas];
+    
+    // Filtrar por criticidad
+    if (filtroCriticidad && filtroCriticidad !== 'todas' && filtroCriticidad !== ALERTAS_CONFIG.DEFAULT_FILTERS.CRITICIDAD) {
+      filtered = filtered.filter(alerta => {
+        const criticidad = alerta.umbral?.criticidad;
+        const criticidadNombre = typeof criticidad === 'string' 
+          ? criticidad 
+          : (criticidad as any)?.criticidad;
+        return criticidadNombre === filtroCriticidad;
+      });
+    }
+    
+    // Filtrar por ubicación
+    if (filtroUbicacion && filtroUbicacion !== 'todas' && filtroUbicacion !== ALERTAS_CONFIG.DEFAULT_FILTERS.UBICACION) {
+      filtered = filtered.filter(alerta => {
+        const ubicacion = alerta.localizacion?.nodo?.ubicacion?.ubicacion;
+        return ubicacion === filtroUbicacion;
+      });
+    }
+    
+    // Filtrar por localización
+    if (filtroLocalizacion && filtroLocalizacion !== 'todas') {
+      filtered = filtered.filter(alerta => {
+        const localizacion = alerta.localizacion?.localizacion;
+        return localizacion === filtroLocalizacion;
+      });
+    }
+    
+    return filtered;
+  }, [allAlertas, filtroCriticidad, filtroUbicacion, filtroLocalizacion]);
+  
+  // Aplicar paginación a las alertas filtradas
+  const paginatedAlertas = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAlertas.slice(startIndex, endIndex);
+  }, [filteredAlertas, currentPage, itemsPerPage]);
+  
+  // Actualizar alertas y total cuando cambian los filtros
+  useEffect(() => {
+    setAlertas(paginatedAlertas);
+    setTotalRecords(filteredAlertas.length);
+    // Si la página actual está fuera del rango, volver a la página 1
+    if (currentPage > 1 && paginatedAlertas.length === 0) {
+      setCurrentPage(1);
+    }
+  }, [paginatedAlertas, filteredAlertas.length, currentPage]);
 
   useEffect(() => {
     loadAlertas(currentPage);
   }, [currentPage]);
+  
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [filtroCriticidad, filtroUbicacion, filtroLocalizacion]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -210,16 +334,37 @@ const AlertasTable: React.FC = () => {
           </thead>
           <tbody>
             {alertas.map((alerta) => (
-              <tr key={alerta.alertaid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
-                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">{alerta.alertaid}</td>
+              <tr key={alerta.uuid_alerta_reglaid || alerta.alertaid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
-                  {alerta.umbral?.umbral || `Umbral ${alerta.umbralid}`}
+                  {alerta.uuid_alerta_reglaid ? alerta.uuid_alerta_reglaid.substring(0, 8) : alerta.alertaid}
                 </td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
-                  {alerta.medicion ? 
-                    `Valor: ${alerta.medicion.valor}` : 
-                    `Medición ${alerta.medicionid}`
-                  }
+                  {alerta.umbral ? (
+                    <div>
+                      <div className="font-semibold">{alerta.umbral.umbral}</div>
+                      <div className="text-xs text-gray-600 dark:text-neutral-400">
+                        Intervalo: {alerta.umbral_intervalo || `${alerta.umbral.minimo} - ${alerta.umbral.maximo}`}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 dark:text-neutral-500">Sin umbral</span>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
+                  {alerta.valor != null ? (
+                    <div>
+                      <div className="font-semibold">{alerta.valor.toFixed(2)}</div>
+                      {alerta.medicion && (
+                        <div className="text-xs text-gray-600 dark:text-neutral-400">
+                          Medición {alerta.medicionid}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 dark:text-neutral-500">
+                      {alerta.medicionid ? `Medición ${alerta.medicionid}` : 'Sin medición'}
+                    </span>
+                  )}
                 </td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {formatDate(alerta.fecha)}
