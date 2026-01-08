@@ -240,19 +240,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
 
   const handleMapNodeClick = (node: NodeData) => {
-    console.log('[DEBUG] NodeSelector.handleMapNodeClick: Nodo seleccionado desde mapa:', {
-      nodoid: node.nodoid,
-      nodo: node.nodo,
-      ubicacionid: node.ubicacionid,
-      timestamp: new Date().toISOString()
-    });
     try {
       setSelectedNode(node)
-      console.log('[DEBUG] NodeSelector.handleMapNodeClick: setSelectedNode llamado');
       onNodeSelect(node)
-      console.log('[DEBUG] NodeSelector.handleMapNodeClick: onNodeSelect llamado');
     } catch (error) {
-      console.error('[DEBUG] NodeSelector.handleMapNodeClick: Error al seleccionar nodo:', error);
+      console.error('Error al seleccionar nodo:', error);
     }
 
     // Actualizar el ref de última ubicación procesada
