@@ -192,11 +192,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Log solo cuando cambian los nodos (usando useEffect para evitar loops)
   useEffect(() => {
     if (nodes.length > 0) {
-      console.log('[DEBUG] InteractiveMap: Filtrado de nodos:', {
-        totalNodes: nodes.length,
-        nodesWithGPS: nodesWithGPS.length,
-        selectedNodeId: selectedNode?.nodoid || null
-      });
     }
   }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid]);
 
@@ -420,17 +415,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
             eventHandlers={{
               click: (e) => {
-                console.log('[DEBUG] InteractiveMap: Click en Marker del nodo:', {
-                  nodoid: node.nodoid,
-                  nodo: node.nodo,
-                  lat,
-                  lng,
-                  timestamp: new Date().toISOString()
-                });
                 e.originalEvent.stopPropagation();
                 try {
                   onNodeSelect(node);
-                  console.log('[DEBUG] InteractiveMap: onNodeSelect llamado exitosamente');
                 } catch (error) {
                   console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect:', error);
                 }
@@ -466,14 +453,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('[DEBUG] InteractiveMap: Botón seleccionar nodo clickeado:', {
-                        nodoid: node.nodoid,
-                        nodo: node.nodo,
-                        timestamp: new Date().toISOString()
-                      });
                       try {
                         onNodeSelect(node);
-                        console.log('[DEBUG] InteractiveMap: onNodeSelect llamado desde botón exitosamente');
                       } catch (error) {
                         console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect desde botón:', error);
                       }
