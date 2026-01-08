@@ -113,7 +113,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
   const getActiveTabColor = (color: string) => {
     switch (color) {
-      case 'green': return 'bg-green-600';
+      case 'green': return 'bg-green-500';
       case 'blue': return 'bg-blue-600';
       case 'orange': return 'bg-orange-500';
       case 'red': return 'bg-red-500';

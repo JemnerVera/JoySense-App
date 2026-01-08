@@ -16,6 +16,7 @@ import PermisosTipoSidebar from './PermisosTipoSidebar';
 import PermisosTipoOperationsSidebar from './PermisosTipoOperationsSidebar';
 import ReportesAdminSidebar from './ReportesAdminSidebar';
 import AgrupacionSidebar from './AgrupacionSidebar';
+import AgrupacionOperationsSidebar from './AgrupacionOperationsSidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AuxiliarySidebarProps {
@@ -139,28 +140,66 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8 || check9
   );
 
-  // AGRUPACION - Sidebar Principal (debe ir antes de otros para que tenga prioridad)
+  // AGRUPACION - Sidebar Auxiliar 1 y 2 (similar a DISPOSITIVOS, USUARIOS, PARAMETROS GEO)
   if (isAgrupacion) {
-    // Si activeTab es exactamente 'agrupacion', usar 'entidad' por defecto
-    // Si activeTab es 'agrupacion-entidad', extraer 'entidad'
+    // Extraer la tabla del activeTab
     const agrupacionTable = activeTab === 'agrupacion' 
       ? 'entidad' 
       : (activeTab.replace('agrupacion-', '') || selectedTable || 'entidad');
     
-    return (
-      <AgrupacionSidebar
-        selectedTable={agrupacionTable}
-        onTableSelect={onTableSelect || (() => {})}
-        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-        onSubTabChange={onSubTabChange || (() => {})}
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        formData={formData}
-        multipleData={multipleData}
-        massiveFormData={massiveFormData}
-      />
-    );
+    // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ACTUALIZAR)
+    // Sidebar 3 = Tablas (ENTIDAD, LOCALIZACIÓN DE ENTIDAD)
+    // Si showThirdLevel es false, renderizar el segundo sidebar (operaciones)
+    if (!showThirdLevel && agrupacionTable && agrupacionTable !== '') {
+      console.log('[DEBUG] AuxiliarySidebar: Mostrando AgrupacionOperationsSidebar', {
+        agrupacionTable,
+        activeTab,
+        showThirdLevel
+      });
+      return (
+        <AgrupacionOperationsSidebar
+          selectedTable={agrupacionTable}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+
+    // Si showThirdLevel es true, renderizar el tercer sidebar (tablas)
+    // El Sidebar 3 siempre se muestra cuando estamos en agrupacion, incluso si hay una tabla seleccionada
+    // Esto permite que el usuario pueda cambiar de tabla
+    if (showThirdLevel) {
+      console.log('[DEBUG] AuxiliarySidebar: Mostrando AgrupacionSidebar', {
+        agrupacionTable,
+        activeTab,
+        showThirdLevel
+      });
+      return (
+        <AgrupacionSidebar
+          selectedTable={agrupacionTable}
+          onTableSelect={onTableSelect || (() => {})}
+          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
+          onSubTabChange={onSubTabChange || (() => {})}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          formData={formData}
+          multipleData={multipleData}
+          massiveFormData={massiveFormData}
+        />
+      );
+    }
+    
+    // Si hay tabla seleccionada pero showThirdLevel es false, no renderizar nada aquí
+    // (el Sidebar 2 se renderizará en la sección anterior)
+    return null;
   }
 
 

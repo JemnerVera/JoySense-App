@@ -94,33 +94,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para AGRUPACION (cuando está en agrupacion, mostrar a la derecha del MainSidebar) */}
-      {(() => {
-        const shouldShow = (activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-')) && hasAuxiliarySidebar(activeTab);
-        return shouldShow;
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
-          <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            selectedTable={selectedTable}
-            onTableSelect={onTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
-            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
-            dashboardSubTab={dashboardSubTab}
-            onDashboardSubTabChange={onDashboardSubTabChange}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-            showThirdLevel={false}
-          />
-        </div>
-      )}
-
       {/* Sidebar Aux 1: CONFIGURACIÓN (SIEMPRE visible cuando está en configuracion o sus subsecciones) */}
       {(() => {
         const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-')
@@ -208,26 +181,30 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                                         notificacionesTable && 
                                         notificacionesTable !== '';
         
+        const isAgrupacion = activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-');
+        
         const shouldShow = hasAuxiliarySidebar(activeTab) && (
           activeTab === 'geografia' || activeTab.startsWith('geografia-') ||
           activeTab === 'parametros' || activeTab.startsWith('parametros-') ||
           activeTab === 'tabla' || activeTab.startsWith('tabla-') ||
           activeTab === 'notificaciones' || activeTab.startsWith('notificaciones-') ||
           activeTab === 'parameters' || activeTab.startsWith('parameters-') ||
-          // Para DISPOSITIVOS, USUARIOS y PARAMETROS GEO: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en esas secciones
+          // Para DISPOSITIVOS, USUARIOS, PARAMETROS GEO y AGRUPACIÓN: SIEMPRE mostrar Sidebar 3 (tablas) cuando estamos en esas secciones
           (isDispositivos && hasAuxiliarySidebar(activeTab)) ||
           (isUsuarios && hasAuxiliarySidebar(activeTab)) ||
           (isParametrosGeo && hasAuxiliarySidebar(activeTab)) ||
+          (isAgrupacion && hasAuxiliarySidebar(activeTab)) ||
           // Para NOTIFICACIONES: Mostrar Sidebar 3 cuando hay una tabla seleccionada (CRITICIDAD, UMBRAL, o REGLA)
           shouldShowNotificaciones ||
           // Para PERMISOS: SIEMPRE mostrar Sidebar 3 (tipos) cuando estamos en permisos
           (activeTab.startsWith('configuracion-permisos') && hasAuxiliarySidebar(activeTab))
         );
         
-        // Extraer la tabla del activeTab si no está en selectedTable para dispositivos, usuarios y parametros-geo
+        // Extraer la tabla del activeTab si no está en selectedTable para dispositivos, usuarios, parametros-geo y agrupacion
         let dispositivosTable = '';
         let usuariosTable = '';
         let parametrosGeoTable = '';
+        let agrupacionTable = '';
         if (isDispositivos) {
           // Extraer tabla del activeTab: 'configuracion-dispositivos-tipo' -> 'tipo'
           const extractedTable = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '') || '';
@@ -240,6 +217,12 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         if (isParametrosGeo) {
           const extractedTable = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '') || '';
           parametrosGeoTable = selectedTable || extractedTable;
+        }
+        if (isAgrupacion) {
+          // Extraer tabla del activeTab: 'agrupacion-entidad' -> 'entidad'
+          agrupacionTable = activeTab === 'agrupacion' 
+            ? 'entidad' 
+            : (activeTab.replace('agrupacion-', '') || selectedTable || 'entidad');
         }
         
         // Para NOTIFICACIONES: 
@@ -275,8 +258,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                   const permisosTipo = activeTab.replace('configuracion-permisos-permisos-', 'permisos-') || selectedTable || '';
                   if (permisosTipo && permisosTipo !== '') return permisosTipo;
                 }
-                // Para DISPOSITIVOS, USUARIOS, PARAMETROS GEO
-                return selectedTable || dispositivosTable || usuariosTable || parametrosGeoTable || '';
+                // Para DISPOSITIVOS, USUARIOS, PARAMETROS GEO, AGRUPACIÓN
+                return selectedTable || dispositivosTable || usuariosTable || parametrosGeoTable || agrupacionTable || '';
               })()}
               onTableSelect={onTableSelect}
               activeSubTab={activeSubTab}
@@ -342,6 +325,57 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showThirdLevel={false}
+            forceConfiguracionSidebar={false}
+          />
+        </div>
+      )}
+
+      {/* Sidebar auxiliar para AGRUPACIÓN - Sidebar 2 (Operaciones: ESTADO, CREAR, ACTUALIZAR) */}
+      {/* Solo mostrar cuando hay una tabla seleccionada */}
+      {(() => {
+        const isAgrupacion = activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-');
+        // Extraer la tabla del activeTab
+        const agrupacionTable = activeTab === 'agrupacion' 
+          ? 'entidad' 
+          : (activeTab.replace('agrupacion-', '') || selectedTable || '');
+        // Solo mostrar Sidebar 2 (operaciones) cuando hay una tabla seleccionada
+        const shouldShow = isAgrupacion && 
+                          hasAuxiliarySidebar(activeTab) && 
+                          agrupacionTable && 
+                          agrupacionTable !== '' && 
+                          activeTab !== 'agrupacion';
+        console.log('[DEBUG] SidebarContainer: Verificando Sidebar 2 (Operaciones) para AGRUPACIÓN', {
+          isAgrupacion,
+          activeTab,
+          agrupacionTable,
+          shouldShow,
+          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
+        });
+        return shouldShow;
+      })() && (
+        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
+          <AuxiliarySidebar
+            isExpanded={auxiliarySidebarExpanded}
+            onMouseEnter={handleAuxiliarySidebarMouseEnter}
+            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={(() => {
+              const agrupacionTable = activeTab === 'agrupacion' 
+                ? 'entidad' 
+                : (activeTab.replace('agrupacion-', '') || selectedTable || '');
+              return agrupacionTable;
+            })()}
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
