@@ -46,14 +46,25 @@ interface MedicionData {
 
 // Helper para transformar datos del backend al formato MedicionData con campos legacy
 function transformMedicionData(data: any[]): MedicionData[] {
-  return data.map(m => ({
-    ...m,
-    // Extraer campos desde localizacion si existen
-    metricaid: m.metricaid ?? m.localizacion?.metricaid ?? 0,
-    nodoid: m.nodoid ?? m.localizacion?.nodoid ?? 0,
-    tipoid: m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0,
-    ubicacionid: m.ubicacionid ?? m.localizacion?.nodo?.ubicacionid ?? 0
-  }))
+  return data.map(m => {
+    // CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
+    const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
+    const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null
+    
+    return {
+      ...m,
+      // Normalizar localizacion para que no sea un array
+      localizacion: localizacion ? {
+        ...localizacion,
+        sensor: sensor
+      } : null,
+      // Extraer campos desde localizacion si existen
+      metricaid: m.metricaid ?? localizacion?.metricaid ?? 0,
+      nodoid: m.nodoid ?? localizacion?.nodoid ?? 0,
+      tipoid: m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0,
+      ubicacionid: m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0
+    }
+  })
 }
 
 interface MetricConfig {
@@ -888,23 +899,38 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     setLoadingComparisonData(true)
+    
+    console.log('[DEBUG] loadComparisonMediciones: Iniciando carga', {
+      comparisonNodeNodoid: comparisonNode?.nodoid,
+      detailedStartDate,
+      detailedEndDate
+    })
+    
     try {
+      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
       const formatDate = (dateStr: string, isEnd: boolean = false) => {
-        const date = new Date(dateStr)
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
+        const [year, month, day] = dateStr.split('-').map(Number)
+        // Crear fecha en zona horaria local
+        const date = new Date(year, month - 1, day)
+        
+        const yearStr = String(date.getFullYear())
+        const monthStr = String(date.getMonth() + 1).padStart(2, '0')
+        const dayStr = String(date.getDate()).padStart(2, '0')
         if (isEnd) {
-          return `${year}-${month}-${day} 23:59:59`
+          return `${yearStr}-${monthStr}-${dayStr} 23:59:59`
         }
-        return `${year}-${month}-${day} 00:00:00`
+        return `${yearStr}-${monthStr}-${dayStr} 00:00:00`
       }
 
       const startDateFormatted = formatDate(detailedStartDate, false)
       const endDateFormatted = formatDate(detailedEndDate, true)
 
-      const startDate = new Date(detailedStartDate + 'T00:00:00')
-      const endDate = new Date(detailedEndDate + 'T23:59:59')
+      // IMPORTANTE: Crear fechas en zona horaria local para cálculo de días
+      const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      
+      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
       // OPTIMIZACIÓN: Usar límites más pequeños para comparación (no necesita tanta precisión)
@@ -926,6 +952,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         maxLimit = 5000
       }
       
+      console.log('[DEBUG] loadComparisonMediciones: Llamando getMediciones', {
+        nodoid: comparisonNode.nodoid,
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        getAll: useGetAll,
+        limit: !useGetAll ? maxLimit : undefined
+      })
+      
       // Usar nodoid directamente (más eficiente que filtrar por entidadId y ubicacionId)
       const comparisonData = await JoySenseService.getMediciones({
         nodoid: comparisonNode.nodoid,
@@ -933,6 +967,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         endDate: endDateFormatted,
         getAll: useGetAll,
         limit: !useGetAll ? maxLimit : undefined
+      })
+      
+      console.log('[DEBUG] loadComparisonMediciones: Respuesta recibida', {
+        isArray: Array.isArray(comparisonData),
+        length: Array.isArray(comparisonData) ? comparisonData.length : 0,
+        firstItem: Array.isArray(comparisonData) ? comparisonData[0] : null
       })
 
       if (!Array.isArray(comparisonData)) {
@@ -945,10 +985,24 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
       
-      // Transformar datos para agregar campos legacy
-      setComparisonMediciones(transformMedicionData(sortedComparisonData))
+      // CRÍTICO: Transformar datos para agregar campos legacy (nodoid, tipoid, metricaid)
+      const transformedData = transformMedicionData(sortedComparisonData)
+      
+      console.log('[DEBUG] loadComparisonMediciones: Datos transformados', {
+        originalLength: sortedComparisonData.length,
+        transformedLength: transformedData.length,
+        sampleMedicion: transformedData[0] ? {
+          medicionid: transformedData[0].medicionid,
+          nodoid: transformedData[0].nodoid,
+          tipoid: transformedData[0].tipoid,
+          metricaid: transformedData[0].metricaid
+        } : null
+      })
+      
+      setComparisonMediciones(transformedData)
     } catch (err: any) {
       console.error('❌ Error cargando datos de comparación:', err)
+      setComparisonMediciones([])
     } finally {
       setLoadingComparisonData(false)
     }
@@ -956,35 +1010,116 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para analizar fluctuación y recomendar umbrales
   const analyzeFluctuationAndRecommendThresholds = useCallback(() => {
-    if (!mediciones.length || !tipos.length || !detailedStartDate || !detailedEndDate) {
+    // CRÍTICO: Usar detailedMediciones cuando esté disponible (para el modal detallado)
+    const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+    
+    if (!dataSource.length || !tipos.length || !detailedStartDate || !detailedEndDate) {
+      console.warn('[DEBUG] analyzeFluctuationAndRecommendThresholds: Faltan datos', {
+        dataSourceLength: dataSource.length,
+        tiposLength: tipos.length,
+        detailedStartDate,
+        detailedEndDate
+      })
       return
     }
 
-    const startDate = new Date(detailedStartDate + 'T00:00:00')
-    const endDate = new Date(detailedEndDate + 'T23:59:59')
-    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+    // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+    const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+    
+    const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+    
+    console.log('[DEBUG] analyzeFluctuationAndRecommendThresholds: Iniciando análisis', {
+      dataSource: detailedMediciones.length > 0 ? 'detailedMediciones' : 'mediciones',
+      dataSourceLength: dataSource.length,
+      detailedMedicionesLength: detailedMediciones.length,
+      medicionesLength: mediciones.length,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      selectedDetailedMetric
+    })
     
     // Función auxiliar para calcular recomendaciones de un conjunto de mediciones
     const calculateRecommendations = (medicionesData: any[]): { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } => {
+      // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
       const filteredMediciones = medicionesData.filter(m => {
         const medicionDate = new Date(m.fecha)
-        return medicionDate >= startDate && medicionDate <= endDate && m.metricaid === metricId
+        const isInDateRange = medicionDate >= startDate && medicionDate <= endDate
+        
+        // Filtrar por nombre de métrica dinámicamente
+        const rawMetricName = m.localizacion?.metrica?.metrica || ''
+        const metricName = rawMetricName
+          .replace(/\r\n/g, ' ')
+          .replace(/\n/g, ' ')
+          .replace(/\r/g, ' ')
+          .trim()
+          .toLowerCase()
+        
+        let matchesMetric = false
+        if (selectedDetailedMetric === 'temperatura' && (
+          metricName.includes('temperatura') || metricName.includes('temp')
+        )) matchesMetric = true
+        
+        if (selectedDetailedMetric === 'humedad' && (
+          metricName.includes('humedad') || metricName.includes('humidity')
+        )) matchesMetric = true
+        
+        if (selectedDetailedMetric === 'conductividad' && (
+          metricName.includes('conductividad') || 
+          metricName.includes('electroconductividad') ||
+          metricName.includes('conductivity')
+        )) matchesMetric = true
+        
+        return isInDateRange && matchesMetric
       })
 
       if (filteredMediciones.length === 0) {
         return {}
       }
 
+      console.log('[DEBUG] calculateRecommendations: Después de filtrar', {
+        filteredMedicionesLength: filteredMediciones.length,
+        sampleMediciones: filteredMediciones.slice(0, 3).map(m => ({
+          medicionid: m.medicionid,
+          tipoid: m.tipoid,
+          medicion: m.medicion,
+          hasSensor: !!m.localizacion?.sensor,
+          sensorTipoid: m.localizacion?.sensor?.tipoid
+        }))
+      })
+      
       // Agrupar por tipo de sensor
       const medicionesPorTipo: { [tipoid: number]: number[] } = {}
       
       filteredMediciones.forEach(m => {
-        if (!medicionesPorTipo[m.tipoid]) {
-          medicionesPorTipo[m.tipoid] = []
+        // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
+        const tipoid = m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0
+        
+        if (!tipoid || tipoid === 0) {
+          console.warn('[DEBUG] calculateRecommendations: Medición sin tipoid válido', {
+            medicionid: m.medicionid,
+            tipoid: m.tipoid,
+            sensorTipoid: m.localizacion?.sensor?.tipoid,
+            localizacion: m.localizacion
+          })
+          return
+        }
+        
+        if (!medicionesPorTipo[tipoid]) {
+          medicionesPorTipo[tipoid] = []
         }
         if (m.medicion != null && !isNaN(m.medicion)) {
-          medicionesPorTipo[m.tipoid].push(m.medicion)
+          medicionesPorTipo[tipoid].push(m.medicion)
         }
+      })
+      
+      console.log('[DEBUG] calculateRecommendations: Agrupado por tipo', {
+        tiposEncontrados: Object.keys(medicionesPorTipo),
+        puntosPorTipo: Object.keys(medicionesPorTipo).map(tipoid => ({
+          tipoid: parseInt(tipoid),
+          cantidad: medicionesPorTipo[parseInt(tipoid)].length
+        }))
       })
 
       // Calcular estadísticas y recomendar umbrales para cada tipo
@@ -1023,7 +1158,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     // Calcular recomendaciones para el nodo principal
-    const mainNodeRecommendations = calculateRecommendations(mediciones)
+    const mainNodeRecommendations = calculateRecommendations(dataSource)
+    
+    console.log('[DEBUG] analyzeFluctuationAndRecommendThresholds: Recomendaciones calculadas', {
+      mainNodeRecommendations,
+      tipoids: Object.keys(mainNodeRecommendations)
+    })
     
     if (Object.keys(mainNodeRecommendations).length === 0) {
       showWarning(
@@ -1047,7 +1187,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     setThresholdRecommendations(allRecommendations)
     setShowThresholdModal(true)
-  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode, showWarning])
+  }, [mediciones, detailedMediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode, showWarning])
 
 
   // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
@@ -3331,7 +3471,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         <div className="h-8 flex items-center">
                           <button
                             onClick={analyzeFluctuationAndRecommendThresholds}
-                            disabled={loadingDetailedData || !mediciones.length}
+                            disabled={loadingDetailedData || (!mediciones.length && !detailedMediciones.length)}
                             className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3482,13 +3622,52 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // para asegurar que las claves de tiempo coincidan perfectamente
                       const processComparisonData = (comparisonData: MedicionData[], dataKey: string): any[] => {
                         if (!comparisonData.length || !tipos.length) {
+                          console.log('[DEBUG] processComparisonData: No hay datos base', {
+                            comparisonDataLength: comparisonData.length,
+                            tiposLength: tipos.length
+                          })
                           return []
                         }
                         
-                        const metricId = getMetricIdFromDataKey(dataKey)
-                        const metricMediciones = comparisonData.filter(m => m.metricaid === metricId)
+                        // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
+                        const metricMediciones = comparisonData.filter(m => {
+                          const rawMetricName = m.localizacion?.metrica?.metrica || ''
+                          const metricName = rawMetricName
+                            .replace(/\r\n/g, ' ')
+                            .replace(/\n/g, ' ')
+                            .replace(/\r/g, ' ')
+                            .trim()
+                            .toLowerCase()
+                          
+                          if (dataKey === 'temperatura' && (
+                            metricName.includes('temperatura') || metricName.includes('temp')
+                          )) return true
+                          
+                          if (dataKey === 'humedad' && (
+                            metricName.includes('humedad') || metricName.includes('humidity')
+                          )) return true
+                          
+                          if (dataKey === 'conductividad' && (
+                            metricName.includes('conductividad') || 
+                            metricName.includes('electroconductividad') ||
+                            metricName.includes('conductivity')
+                          )) return true
+                          
+                          return false
+                        })
+                        
+                        console.log('[DEBUG] processComparisonData: Filtrando por métrica', {
+                          comparisonDataLength: comparisonData.length,
+                          metricMedicionesLength: metricMediciones.length,
+                          dataKey
+                        })
                         
                         if (!metricMediciones.length) {
+                          console.warn('[DEBUG] processComparisonData: No hay mediciones para la métrica', {
+                            dataKey,
+                            comparisonDataLength: comparisonData.length,
+                            sampleMetricNames: comparisonData.slice(0, 3).map(m => m.localizacion?.metrica?.metrica)
+                          })
                           return []
                         }
                         
@@ -3499,11 +3678,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           .map(({ fechaParsed, ...m }) => m)
                         
                         if (!detailedStartDate || !detailedEndDate) {
+                          console.warn('[DEBUG] processComparisonData: Faltan fechas', {
+                            detailedStartDate,
+                            detailedEndDate
+                          })
                           return []
                         }
                         
-                        const startDate = new Date(detailedStartDate + 'T00:00:00')
-                        const endDate = new Date(detailedEndDate + 'T23:59:59')
+                        // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+                        const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+                        const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+                        
+                        const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+                        const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
                         
                         const filteredMediciones = sortedMediciones.filter(m => {
                           const medicionDate = new Date(m.fecha)
