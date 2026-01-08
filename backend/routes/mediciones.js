@@ -522,6 +522,7 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
     const localizacionIds = localizaciones.map(l => l.localizacionid);
     
     // Paso 4: Obtener mediciones con joins
+    // NOTA: Similar a /mediciones, no podemos hacer join directo a sensor desde localizacion
     let medicionQuery = userSupabase
       .schema(dbSchema)
       .from('medicion')
@@ -530,8 +531,10 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
         localizacion:localizacionid(
           localizacionid,
           localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
+          nodoid,
+          metricaid,
+          sensorid,
+          nodo:nodoid(nodoid, nodo, ubicacionid)
         )
       `)
       .in('localizacionid', localizacionIds);
@@ -549,11 +552,73 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
     
     if (medicionError) throw medicionError;
     
-    // Transformar datos para mantener formato compatible
-    const transformed = (mediciones || []).map(m => ({
-      ...m,
-      localizacion: m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
-    }));
+    // Obtener métricas por separado (ya que la relación es a través de metricasensor)
+    const metricaIds = [...new Set(
+      (mediciones || [])
+        .map(m => {
+          const loc = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+          return loc?.metricaid;
+        })
+        .filter(id => id != null)
+    )];
+    
+    let metricasMap = new Map();
+    if (metricaIds.length > 0) {
+      const { data: metricas, error: metError } = await userSupabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+      
+      if (!metError && metricas) {
+        metricas.forEach(m => {
+          metricasMap.set(m.metricaid, m);
+        });
+      }
+    }
+    
+    // Obtener sensores por separado (para obtener tipoid)
+    const sensorIds = [...new Set(
+      (mediciones || [])
+        .map(m => {
+          const loc = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+          return loc?.sensorid;
+        })
+        .filter(id => id != null)
+    )];
+    
+    let sensoresMap = new Map();
+    if (sensorIds.length > 0) {
+      const { data: sensores, error: senError } = await userSupabase
+        .schema(dbSchema)
+        .from('sensor')
+        .select('sensorid, tipoid')
+        .in('sensorid', sensorIds)
+        .eq('statusid', 1);
+      
+      if (!senError && sensores) {
+        sensores.forEach(s => {
+          sensoresMap.set(s.sensorid, s);
+        });
+      }
+    }
+    
+    // Transformar datos para mantener formato compatible y agregar métricas y sensores
+    const transformed = (mediciones || []).map(m => {
+      const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+      const metrica = localizacion?.metricaid ? metricasMap.get(localizacion.metricaid) : null;
+      const sensor = localizacion?.sensorid ? sensoresMap.get(localizacion.sensorid) : null;
+      
+      return {
+        ...m,
+        localizacion: localizacion ? {
+          ...localizacion,
+          metrica: metrica,
+          sensor: sensor
+        } : null
+      };
+    });
     
     res.json(transformed);
   } catch (error) {

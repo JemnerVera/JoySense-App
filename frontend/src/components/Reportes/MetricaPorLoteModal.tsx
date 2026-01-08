@@ -32,8 +32,10 @@ interface MedicionData {
     localizacion: string;
     nodoid: number;
     metricaid: number;
-    nodo?: { nodoid: number; nodo: string };
+    sensorid?: number;
+    nodo?: { nodoid: number; nodo: string; ubicacionid?: number };
     metrica?: { metricaid: number; metrica: string; unidad: string };
+    sensor?: { sensorid: number; tipoid: number };
   };
   // Campos legacy para compatibilidad - usados para indexación
   ubicacionid: number;
@@ -43,15 +45,27 @@ interface MedicionData {
 }
 
 // Helper para transformar datos del backend al formato MedicionData con campos legacy
+// CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
 function transformMedicionData(data: any[]): MedicionData[] {
-  return data.map(m => ({
-    ...m,
-    // Extraer campos desde localizacion si existen
-    metricaid: m.metricaid ?? m.localizacion?.metricaid ?? 0,
-    nodoid: m.nodoid ?? m.localizacion?.nodoid ?? 0,
-    tipoid: m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0,
-    ubicacionid: m.ubicacionid ?? m.localizacion?.nodo?.ubicacionid ?? 0
-  }));
+  return data.map(m => {
+    // CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
+    const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
+    const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null
+    
+    return {
+      ...m,
+      // Normalizar localizacion para que no sea un array
+      localizacion: localizacion ? {
+        ...localizacion,
+        sensor: sensor
+      } : null,
+      // Extraer campos desde localizacion si existen
+      metricaid: m.metricaid ?? localizacion?.metricaid ?? 0,
+      nodoid: m.nodoid ?? localizacion?.nodoid ?? 0,
+      tipoid: m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0,
+      ubicacionid: m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0
+    }
+  })
 }
 
 // Configuración de métricas
@@ -138,7 +152,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     // Agrupar por fecha y tipo con granularidad adaptativa
     const dataByTimeAndTipo = new Map<string, { [tipoid: number]: { sum: number; count: number; timestamp: number } }>();
 
-    medicionesFiltradas.forEach((medicion) => {
+      medicionesFiltradas.forEach((medicion) => {
       const fechaObj = new Date(medicion.fecha);
       let timeKey: string;
       
@@ -165,19 +179,22 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       const timeData = dataByTimeAndTipo.get(timeKey)!;
       const timestamp = fechaObj.getTime();
       
+      // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
+      const tipoid = medicion.tipoid ?? medicion.localizacion?.sensor?.tipoid ?? 0
+      
       // Filtrar mediciones sin tipoid válido
-      if (medicion.tipoid === undefined || medicion.tipoid === null) {
+      if (tipoid === undefined || tipoid === null || tipoid === 0) {
         return;
       }
       
-      if (!timeData[medicion.tipoid]) {
-        timeData[medicion.tipoid] = { sum: 0, count: 0, timestamp };
+      if (!timeData[tipoid]) {
+        timeData[tipoid] = { sum: 0, count: 0, timestamp };
       }
       
-      timeData[medicion.tipoid].sum += parseFloat(medicion.medicion.toString());
-      timeData[medicion.tipoid].count += 1;
-      if (timestamp > timeData[medicion.tipoid].timestamp) {
-        timeData[medicion.tipoid].timestamp = timestamp;
+      timeData[tipoid].sum += parseFloat(medicion.medicion.toString());
+      timeData[tipoid].count += 1;
+      if (timestamp > timeData[tipoid].timestamp) {
+        timeData[tipoid].timestamp = timestamp;
       }
     });
 
@@ -276,9 +293,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     setError(null);
 
     try {
+      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+      const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+      const startDateObj = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      
+      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+      const endDateObj = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+      
       // Calcular diferencia de días para determinar estrategia de carga
-      const startDateObj = new Date(detailedStartDate + 'T00:00:00');
-      const endDateObj = new Date(detailedEndDate + 'T23:59:59');
       const daysDiff = (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24);
       
       // Estrategia de carga similar a ModernDashboard
@@ -313,14 +335,19 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         return;
       }
 
-      // Ordenar por fecha ascendente
-      const medicionesFiltradas = Array.isArray(medicionesData)
-        ? medicionesData
-            .filter((m: any) => m.tipoid && m.medicion != null && !isNaN(m.medicion))
-            .map((m: any) => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
-            .sort((a: any, b: any) => a.fechaParsed - b.fechaParsed)
-            .map(({ fechaParsed, ...m }: any) => m)
-        : [];
+      // CRÍTICO: Transformar datos para asegurar que tipoid, nodoid, metricaid estén disponibles
+      const transformedData = transformMedicionData(Array.isArray(medicionesData) ? medicionesData : [])
+      
+      // Ordenar por fecha ascendente y filtrar
+      const medicionesFiltradas = transformedData
+        .filter((m: any) => {
+          // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
+          const tipoid = m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0
+          return tipoid !== 0 && m.medicion != null && !isNaN(m.medicion)
+        })
+        .map((m: any) => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
+        .sort((a: any, b: any) => a.fechaParsed - b.fechaParsed)
+        .map(({ fechaParsed, ...m }: any) => m)
 
       setMediciones(medicionesFiltradas);
 
@@ -332,7 +359,12 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       }
 
       // Obtener tipos únicos en los datos
-      const tiposUnicos = Array.from(new Set(medicionesFiltradas.map((m: any) => m.tipoid).filter(Boolean)));
+      const tiposUnicos = Array.from(new Set(
+        medicionesFiltradas.map((m: any) => {
+          // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
+          return m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0
+        }).filter((id): id is number => id !== undefined && id !== null && id !== 0)
+      ))
       setTiposEnDatos(tiposUnicos);
 
       // Procesar datos para el gráfico
@@ -359,8 +391,13 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
     setLoadingComparisonData(true);
     try {
-      const startDateObj = new Date(detailedStartDate + 'T00:00:00');
-      const endDateObj = new Date(detailedEndDate + 'T23:59:59');
+      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+      const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+      const startDateObj = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      
+      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+      const endDateObj = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+      
       const daysDiff = (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24);
       
       let maxLimit = 20000;
@@ -394,13 +431,15 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         return;
       }
 
-      const sortedComparisonData = comparisonData
+      // CRÍTICO: Transformar datos primero para asegurar que tipoid esté disponible
+      const transformedComparisonData = transformMedicionData(Array.isArray(comparisonData) ? comparisonData : [])
+      
+      const sortedComparisonData = transformedComparisonData
         .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m);
       
-      // Transformar datos para agregar campos legacy
-      setComparisonMediciones(transformMedicionData(sortedComparisonData));
+      setComparisonMediciones(sortedComparisonData);
     } catch (err: any) {
       console.error('❌ Error cargando datos de comparación:', err);
     } finally {
@@ -414,15 +453,45 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return;
     }
 
-    const startDate = new Date(detailedStartDate + 'T00:00:00');
-    const endDate = new Date(detailedEndDate + 'T23:59:59');
-    const currentMetricId = getMetricIdFromDataKey(selectedMetric);
+    // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
+    const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
     
+    const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+    
+    // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
     // Función auxiliar para calcular recomendaciones
     const calculateRecommendations = (medicionesData: MedicionData[]): { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } => {
       const filteredMediciones = medicionesData.filter(m => {
-        const medicionDate = new Date(m.fecha);
-        return medicionDate >= startDate && medicionDate <= endDate && m.metricaid === currentMetricId;
+        const medicionDate = new Date(m.fecha)
+        const isInDateRange = medicionDate >= startDate && medicionDate <= endDate
+        
+        // Filtrar por nombre de métrica dinámicamente
+        const rawMetricName = m.localizacion?.metrica?.metrica || ''
+        const metricName = rawMetricName
+          .replace(/\r\n/g, ' ')
+          .replace(/\n/g, ' ')
+          .replace(/\r/g, ' ')
+          .trim()
+          .toLowerCase()
+        
+        let matchesMetric = false
+        if (selectedMetric === 'temperatura' && (
+          metricName.includes('temperatura') || metricName.includes('temp')
+        )) matchesMetric = true
+        
+        if (selectedMetric === 'humedad' && (
+          metricName.includes('humedad') || metricName.includes('humidity')
+        )) matchesMetric = true
+        
+        if (selectedMetric === 'conductividad' && (
+          metricName.includes('conductividad') || 
+          metricName.includes('electroconductividad') ||
+          metricName.includes('conductivity')
+        )) matchesMetric = true
+        
+        return isInDateRange && matchesMetric
       });
 
       if (filteredMediciones.length === 0) {

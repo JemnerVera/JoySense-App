@@ -880,6 +880,348 @@ router.get('/alerta/columns', async (req, res) => {
 });
 
 // ============================================================================
+// ALERTA_REGLA
+// ============================================================================
+
+router.get('/alerta_regla', async (req, res) => {
+  try {
+    const { startDate, endDate, limit = 100, page = 1, pageSize = 20 } = req.query;
+    
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    
+    // Paso 1: Obtener alerta_regla (sin joins directos para evitar errores PGRST200)
+    let query = userSupabase
+      .schema(dbSchema)
+      .from('alerta_regla')
+      .select('*');
+    
+    if (startDate) {
+      query = query.gte('fecha', startDate);
+    }
+    if (endDate) {
+      query = query.lte('fecha', endDate);
+    }
+    
+    query = query.order('fecha', { ascending: false });
+    
+    // Aplicar paginación si se proporciona
+    if (page && pageSize) {
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+      query = query.range(offset, offset + parseInt(pageSize) - 1);
+    } else {
+      query = query.limit(parseInt(limit));
+    }
+    
+    const { data: alertasRegla, error: alertasError } = await query;
+    
+    if (alertasError) {
+      logger.error('[DEBUG] GET /alerta_regla: Error obteniendo alerta_regla', alertasError);
+      throw alertasError;
+    }
+    
+    if (!alertasRegla || alertasRegla.length === 0) {
+      return res.json({
+        data: [],
+        pagination: page && pageSize ? {
+          page: parseInt(page),
+          pageSize: parseInt(pageSize),
+          total: 0,
+          totalPages: 0
+        } : null
+      });
+    }
+    
+    logger.info('[DEBUG] GET /alerta_regla: Alertas obtenidas', {
+      alertasCount: alertasRegla.length,
+      sampleAlerta: alertasRegla[0]
+    });
+    
+    // Paso 2: Obtener reglaids, localizacionids, medicionids únicos
+    const reglaIds = [...new Set(alertasRegla.map(a => a.reglaid).filter(id => id != null))];
+    const localizacionIds = [...new Set(alertasRegla.map(a => a.localizacionid).filter(id => id != null))];
+    const medicionIds = [...new Set(alertasRegla.map(a => a.medicionid).filter(id => id != null))];
+    
+    // Paso 3: Obtener reglas
+    let reglasMap = new Map();
+    if (reglaIds.length > 0) {
+      const { data: reglas, error: reglasError } = await userSupabase
+        .schema(dbSchema)
+        .from('regla')
+        .select('reglaid, nombre, prioridad')
+        .in('reglaid', reglaIds)
+        .eq('statusid', 1);
+      
+      if (!reglasError && reglas) {
+        reglas.forEach(r => {
+          reglasMap.set(r.reglaid, r);
+        });
+      }
+    }
+    
+    // Paso 4: Obtener localizaciones
+    let localizacionesMap = new Map();
+    if (localizacionIds.length > 0) {
+      const { data: localizaciones, error: localizacionesError } = await userSupabase
+        .schema(dbSchema)
+        .from('localizacion')
+        .select('localizacionid, localizacion, nodoid, metricaid, sensorid')
+        .in('localizacionid', localizacionIds)
+        .eq('statusid', 1);
+      
+      if (!localizacionesError && localizaciones) {
+        localizaciones.forEach(l => {
+          localizacionesMap.set(l.localizacionid, l);
+        });
+      }
+    }
+    
+    // Paso 5: Obtener mediciones
+    let medicionesMap = new Map();
+    if (medicionIds.length > 0) {
+      const { data: mediciones, error: medicionesError } = await userSupabase
+        .schema(dbSchema)
+        .from('medicion')
+        .select('medicionid, medicion, fecha')
+        .in('medicionid', medicionIds);
+      
+      if (!medicionesError && mediciones) {
+        mediciones.forEach(m => {
+          medicionesMap.set(m.medicionid, m);
+        });
+      }
+    }
+    
+    // Paso 6: Obtener regla_umbral para estas reglas
+    const { data: reglasUmbrales, error: reglasUmbralesError } = await userSupabase
+      .schema(dbSchema)
+      .from('regla_umbral')
+      .select('reglaid, umbralid')
+      .in('reglaid', reglaIds)
+      .eq('statusid', 1);
+    
+    if (reglasUmbralesError) {
+      logger.error('[DEBUG] GET /alerta_regla: Error obteniendo regla_umbral', reglasUmbralesError);
+      throw reglasUmbralesError;
+    }
+    
+    // Paso 7: Obtener umbralids únicos
+    const umbralIds = [...new Set(reglasUmbrales?.map(ru => ru.umbralid).filter(id => id != null) || [])];
+    
+    // Paso 8: Obtener umbrales con criticidad
+    let umbralesMap = new Map();
+    if (umbralIds.length > 0) {
+      const { data: umbrales, error: umbralesError } = await userSupabase
+        .schema(dbSchema)
+        .from('umbral')
+        .select('umbralid, umbral, minimo, maximo, estandar, operador, inversion, metricaid, criticidadid')
+        .in('umbralid', umbralIds)
+        .eq('statusid', 1);
+      
+      if (!umbralesError && umbrales) {
+        // Obtener criticidadids únicos
+        const criticidadIds = [...new Set(umbrales.map(u => u.criticidadid).filter(id => id != null))];
+        
+        // Obtener criticidades
+        let criticidadesMap = new Map();
+        if (criticidadIds.length > 0) {
+          const { data: criticidades, error: criticidadesError } = await userSupabase
+            .schema(dbSchema)
+            .from('criticidad')
+            .select('criticidadid, criticidad, grado')
+            .in('criticidadid', criticidadIds)
+            .eq('statusid', 1);
+          
+          if (!criticidadesError && criticidades) {
+            criticidades.forEach(c => {
+              criticidadesMap.set(c.criticidadid, c);
+            });
+          }
+        }
+        
+        // Combinar umbrales con criticidades
+        umbrales.forEach(u => {
+          const criticidad = u.criticidadid ? (criticidadesMap.get(u.criticidadid) || null) : null;
+          umbralesMap.set(u.umbralid, {
+            ...u,
+            criticidad: criticidad
+          });
+        });
+      }
+    }
+    
+    // Paso 8b: Obtener nodos para las localizaciones
+    const nodoIds = [...new Set(Array.from(localizacionesMap.values()).map(l => l.nodoid).filter(id => id != null))];
+    let nodosMap = new Map();
+    if (nodoIds.length > 0) {
+      const { data: nodos, error: nodosError } = await userSupabase
+        .schema(dbSchema)
+        .from('nodo')
+        .select('nodoid, nodo, ubicacionid')
+        .in('nodoid', nodoIds)
+        .eq('statusid', 1);
+      
+      if (!nodosError && nodos) {
+        // Obtener ubicacionids únicos
+        const ubicacionIds = [...new Set(nodos.map(n => n.ubicacionid).filter(id => id != null))];
+        
+        // Obtener ubicaciones
+        let ubicacionesMap = new Map();
+        if (ubicacionIds.length > 0) {
+          const { data: ubicaciones, error: ubicacionesError } = await userSupabase
+            .schema(dbSchema)
+            .from('ubicacion')
+            .select('ubicacionid, ubicacion')
+            .in('ubicacionid', ubicacionIds)
+            .eq('statusid', 1);
+          
+          if (!ubicacionesError && ubicaciones) {
+            ubicaciones.forEach(u => {
+              ubicacionesMap.set(u.ubicacionid, u);
+            });
+          }
+        }
+        
+        // Combinar nodos con ubicaciones
+        nodos.forEach(n => {
+          const ubicacion = n.ubicacionid ? (ubicacionesMap.get(n.ubicacionid) || null) : null;
+          nodosMap.set(n.nodoid, {
+            ...n,
+            ubicacion: ubicacion
+          });
+        });
+      }
+    }
+    
+    // Paso 9: Crear mapa de reglaid -> umbrales
+    const reglaUmbralMap = new Map(); // reglaid -> [umbral]
+    if (reglasUmbrales) {
+      reglasUmbrales.forEach(ru => {
+        const umbral = umbralesMap.get(ru.umbralid);
+        if (umbral) {
+          if (!reglaUmbralMap.has(ru.reglaid)) {
+            reglaUmbralMap.set(ru.reglaid, []);
+          }
+          reglaUmbralMap.get(ru.reglaid).push(umbral);
+        }
+      });
+    }
+    
+    // Paso 10: Obtener total para paginación
+    let total = 0;
+    if (page && pageSize) {
+      const countQuery = userSupabase
+        .schema(dbSchema)
+        .from('alerta_regla')
+        .select('uuid_alerta_reglaid', { count: 'exact', head: true });
+      
+      if (startDate) {
+        countQuery.gte('fecha', startDate);
+      }
+      if (endDate) {
+        countQuery.lte('fecha', endDate);
+      }
+      
+      const { count, error: countError } = await countQuery;
+      if (!countError && count != null) {
+        total = count;
+      }
+    }
+    
+    // Paso 11: Transformar datos
+    const transformed = alertasRegla.map(ar => {
+      const regla = reglasMap.get(ar.reglaid) || null;
+      const localizacionRaw = localizacionesMap.get(ar.localizacionid) || null;
+      const medicion = ar.medicionid ? (medicionesMap.get(ar.medicionid) || null) : null;
+      
+      // Obtener nodo para la localización
+      const nodo = localizacionRaw?.nodoid ? (nodosMap.get(localizacionRaw.nodoid) || null) : null;
+      
+      // Combinar localización con nodo
+      const localizacion = localizacionRaw ? {
+        ...localizacionRaw,
+        nodo: nodo
+      } : null;
+      
+      // Obtener umbrales de la regla (puede haber múltiples umbrales por regla)
+      const umbralesDeRegla = regla ? (reglaUmbralMap.get(regla.reglaid) || []) : [];
+      
+      // Para compatibilidad con el frontend, usar el primer umbral o crear uno genérico
+      const umbralPrincipal = umbralesDeRegla.length > 0 ? umbralesDeRegla[0] : null;
+      
+      return {
+        // Campos principales
+        alertaid: ar.uuid_alerta_reglaid, // Usar UUID como ID
+        uuid_alerta_reglaid: ar.uuid_alerta_reglaid,
+        reglaid: ar.reglaid,
+        localizacionid: ar.localizacionid,
+        medicionid: ar.medicionid,
+        fecha: ar.fecha,
+        valor: ar.valor, // Valor que activó la alerta
+        statusid: ar.statusid,
+        usercreatedid: ar.usercreatedid,
+        datecreated: ar.datecreated,
+        
+        // Relaciones
+        regla: regla,
+        localizacion: localizacion,
+        medicion: medicion,
+        
+        // Umbral (usar el primero si hay múltiples)
+        umbral: umbralPrincipal ? {
+          umbralid: umbralPrincipal.umbralid,
+          umbral: umbralPrincipal.umbral,
+          minimo: umbralPrincipal.minimo,
+          maximo: umbralPrincipal.maximo,
+          estandar: umbralPrincipal.estandar,
+          operador: umbralPrincipal.operador,
+          inversion: umbralPrincipal.inversion,
+          metricaid: umbralPrincipal.metricaid,
+          criticidad: umbralPrincipal.criticidad
+        } : null,
+        
+        // Todos los umbrales de la regla (por si se necesitan)
+        umbrales: umbralesDeRegla,
+        
+        // Campos calculados para facilitar el acceso
+        umbral_intervalo: umbralPrincipal ? `${umbralPrincipal.minimo} - ${umbralPrincipal.maximo}` : null,
+        valor_medido: ar.valor,
+        umbral_minimo: umbralPrincipal?.minimo || null,
+        umbral_maximo: umbralPrincipal?.maximo || null
+      };
+    });
+    
+    // Respuesta con paginación si se solicitó
+    if (page && pageSize) {
+      return res.json({
+        data: transformed,
+        pagination: {
+          page: parseInt(page),
+          pageSize: parseInt(pageSize),
+          total: total,
+          totalPages: Math.ceil(total / parseInt(pageSize))
+        }
+      });
+    } else {
+      return res.json(transformed);
+    }
+  } catch (error) {
+    logger.error('Error en GET /alerta_regla:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/alerta_regla/columns', async (req, res) => {
+  try {
+    const metadata = await getTableMetadata('alerta_regla');
+    res.json(metadata.columns);
+  } catch (error) {
+    logger.error('Error en GET /alerta_regla/columns:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // ALERTACONSOLIDADO
 // ============================================================================
 

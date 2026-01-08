@@ -68,8 +68,16 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
       }
 
       try {
+        // Usar getTableData para obtener ubicaciones directamente
         const ubicacionesData = await JoySenseService.getTableData('ubicacion', 1000);
         const ubicacionesFiltradas = ubicacionesData.filter((u: any) => selectedFundos.includes(u.fundoid));
+        
+        console.log('[DEBUG] loadUbicaciones: Ubicaciones cargadas', {
+          totalUbicaciones: ubicacionesData?.length || 0,
+          ubicacionesFiltradas: ubicacionesFiltradas?.length || 0,
+          selectedFundos
+        });
+        
         setUbicaciones(ubicacionesFiltradas);
       } catch (err: any) {
         console.error('Error cargando ubicaciones:', err);
@@ -97,6 +105,13 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         metricaId: selectedMetrica
       });
 
+      console.log('[DEBUG] calcularUmbralesPorLote: Umbrales recibidos', {
+        umbralesLength: umbrales?.length || 0,
+        sampleUmbral: umbrales?.[0],
+        selectedFundos,
+        selectedMetrica
+      });
+
       // Agrupar por ubicación
       const loteMap = new Map<number, { 
         ubicacion: string; 
@@ -105,10 +120,18 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
       }>();
 
       umbrales.forEach((umbral: any) => {
-        const ubicacionId = umbral.ubicacionid;
-        const tipoid = umbral.tipoid;
+        // Obtener ubicacionid desde múltiples fuentes posibles
+        const ubicacionId = umbral.ubicacionid || umbral.localizacion?.nodo?.ubicacionid || null;
+        // Obtener tipoid desde múltiples fuentes posibles
+        const tipoid = umbral.tipoid || umbral.localizacion?.sensor?.tipoid || null;
 
         if (!ubicacionId || !tipoid) {
+          console.warn('[DEBUG] calcularUmbralesPorLote: Umbral sin ubicacionid o tipoid', {
+            umbralid: umbral.umbralid,
+            ubicacionid: ubicacionId,
+            tipoid: tipoid,
+            umbral: umbral
+          });
           return;
         }
 
@@ -122,13 +145,24 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         }
 
         const lote = loteMap.get(ubicacionId)!;
-        lote.umbralCount = Math.max(lote.umbralCount, umbral.umbralCount || 0);
+        // Contar umbrales por ubicación (incrementar contador)
+        lote.umbralCount = lote.umbralCount + 1;
         lote.umbralesPorTipo[tipoid] = {
           minimo: umbral.minimo,
           maximo: umbral.maximo,
           umbral: umbral.umbral,
           criticidadid: umbral.criticidadid
         };
+      });
+
+      console.log('[DEBUG] calcularUmbralesPorLote: Lotes agrupados', {
+        lotesCount: loteMap.size,
+        lotes: Array.from(loteMap.entries()).map(([id, data]) => ({
+          ubicacionid: id,
+          ubicacion: data.ubicacion,
+          umbralCount: data.umbralCount,
+          tiposCount: Object.keys(data.umbralesPorTipo).length
+        }))
       });
 
       // Crear array de datos
