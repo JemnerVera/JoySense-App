@@ -367,11 +367,6 @@ const AppContentInternal: React.FC = () => {
           // Usar forma funcional para evitar loops - no incluir activeSubTab en dependencias
           setActiveSubTab((currentSubTab) => {
             if (currentSubTab !== reglaOperation) {
-              console.log('[DEBUG] App.useEffect activeTab: Actualizando activeSubTab para REGLA', {
-                activeTab,
-                reglaOperation,
-                currentActiveSubTab: currentSubTab
-              });
               return reglaOperation;
             }
             return currentSubTab;
@@ -632,12 +627,6 @@ const AppContentInternal: React.FC = () => {
         // IMPORTANTE: Para REGLA, handleTableSelect es la ÚNICA fuente de verdad
         // NO depende del useEffect de sincronización (igual que DISPOSITIVOS pero con 4 niveles)
         
-        console.log('[App.handleTableSelect] Cambio de tabla REGLA', {
-          table,
-          currentSelectedTable: selectedTable,
-          timestamp: Date.now()
-        });
-        
         // CRÍTICO: Establecer el ref ANTES de actualizar cualquier estado
         // Esto asegura que el useEffect vea el ref cuando se ejecute
         tableChangeFromHandlerRef.current = { table, timestamp: Date.now() };
@@ -653,11 +642,6 @@ const AppContentInternal: React.FC = () => {
         // IMPORTANTE: Estos son los únicos lugares donde se actualizan para REGLA
         setSelectedTable(table);
         const newActiveTab = `configuracion-notificaciones-regla-${table}`;
-        console.log('[App.handleTableSelect] Actualizando estados REGLA', {
-          newSelectedTable: table,
-          newActiveTab,
-          timestamp: Date.now()
-        });
         setActiveTab(newActiveTab);
         
         // Limpiar el ref después de un delay para permitir futuros cambios

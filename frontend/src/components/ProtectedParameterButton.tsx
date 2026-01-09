@@ -59,16 +59,8 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
     
     if (isCurrentRegla || isTargetRegla) {
       // Navegación directa para REGLA sin modales
-      console.log('[ProtectedParameterButton] Navegación REGLA directa', {
-        currentTable: effectiveCurrentTable,
-        targetTable,
-        hasOnTableChange: !!onTableChange
-      });
       if (onTableChange) {
-        // Llamar inmediatamente sin ningún delay
         onTableChange(targetTable);
-      } else {
-        console.error('[ProtectedParameterButton] ERROR: onTableChange no está definido para REGLA');
       }
       return;
     }

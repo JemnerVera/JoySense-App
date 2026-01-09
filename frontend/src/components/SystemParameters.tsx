@@ -224,19 +224,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Filtrar columnas duplicadas (basándose en columnName)
   // También filtrar campos ocultos y de solo lectura que no deberían aparecer en formularios
   const uniqueColumns = useMemo(() => {
-    console.log('[SystemParameters] Calculando uniqueColumns', {
-      selectedTable,
-      columnsCount: columns.length,
-      columnsNames: columns.map(c => c.columnName),
-      hasColumns: !!columns && columns.length > 0,
-      timestamp: Date.now()
-    });
-    
     if (!columns || columns.length === 0) {
-      console.log('[SystemParameters] uniqueColumns retornando vacío - no hay columnas', {
-        selectedTable,
-        timestamp: Date.now()
-      });
       return [];
     }
     
@@ -286,13 +274,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     // Debug: mostrar columnas únicas para la tabla perfil
     if (selectedTable === 'perfil') {
     }
-    
-    console.log('[SystemParameters] uniqueColumns calculado', {
-      selectedTable,
-      filteredCount: filtered.length,
-      filteredNames: filtered.map(c => c.columnName),
-      timestamp: Date.now()
-    });
     
     return filtered;
   }, [columns, selectedTable]);
@@ -1047,15 +1028,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 empresaSeleccionada={empresaSeleccionada}
                 fundoSeleccionado={fundoSeleccionado}
                 visibleColumns={(() => {
-                  console.log('[SystemParameters] Calculando visibleColumns para InsertTab', {
-                    selectedTable,
-                    uniqueColumnsCount: uniqueColumns.length,
-                    uniqueColumnsNames: uniqueColumns.map(c => c.columnName),
-                    columnsCount: columns.length,
-                    columnsNames: columns.map(c => c.columnName),
-                    timestamp: Date.now()
-                  });
-                  
                   const filtered = uniqueColumns.filter(col => {
                     // Filtrar campos automáticos que no deben aparecer en formularios
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
@@ -1079,14 +1051,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                     }
                     
                     return !excludedFields.includes(col.columnName);
-                  });
-                  
-                  console.log('[SystemParameters] visibleColumns calculado', {
-                    selectedTable,
-                    filteredCount: filtered.length,
-                    filteredNames: filtered.map(c => c.columnName),
-                    excludedFields: ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'],
-                    timestamp: Date.now()
                   });
                   
                   return filtered;

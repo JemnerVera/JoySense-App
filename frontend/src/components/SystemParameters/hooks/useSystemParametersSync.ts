@@ -101,10 +101,6 @@ export const useSystemParametersSync = ({
       
       // Si la tabla cambió, resetear el formulario inmediatamente para evitar validaciones
       if (tableChanged) {
-        console.log('[useSystemParametersSync] Cambio de propSelectedTable detectado, reseteando formulario', {
-          tablaAnterior: prevPropSelectedTableRef.current || '',
-          tablaNueva: propSelectedTable
-        });
         
         // Marcar que la tabla acaba de cambiar - esto evitará que se valide el cambio de activeSubTab
         tableJustChangedRef.current = true;
@@ -194,12 +190,7 @@ export const useSystemParametersSync = ({
       // Si la tabla acaba de cambiar (marcado por tableJustChangedRef) y el nuevo activeSubTab es 'status',
       // NO validar cambios - esto evita que se muestre el modal cuando se cambia de tabla
       if (tableJustChangedRef.current && propActiveSubTab === 'status') {
-        console.log('[useSystemParametersSync] Cambio de activeSubTab viene de cambio de tabla, saltando validación', {
-          propActiveSubTab,
-          activeSubTab,
-          propSelectedTable,
-          tablaAnterior: prevPropSelectedTableRef.current || ''
-        });
+        // Cambio de activeSubTab viene de cambio de tabla, saltando validación
         setActiveSubTab(propActiveSubTab);
         lastPropActiveSubTabRef.current = propActiveSubTab;
         return;
@@ -251,13 +242,6 @@ export const useSystemParametersSync = ({
     if (selectedTable && selectedTable !== prevSelectedTableRef.current) {
       // Si es una tabla de REGLA, solo actualizar el ref y cargar datos, pero NO resetear formulario
       if (isReglaTable(selectedTable)) {
-        console.log('[useSystemParametersSync] Cambio de tabla REGLA detectado (sin reset)', {
-          tablaAnterior: prevSelectedTableRef.current,
-          tablaNueva: selectedTable,
-          activeSubTab,
-          timestamp: Date.now()
-        });
-        
         // Solo limpiar datos de tabla y columnas, pero NO resetear el formulario
         setTableData([]);
         setColumns([]);
@@ -272,25 +256,12 @@ export const useSystemParametersSync = ({
       }
       
       // Para otras tablas, comportamiento normal
-      console.log('[useSystemParametersSync] Cambio de tabla detectado', {
-        tablaAnterior: prevSelectedTableRef.current,
-        tablaNueva: selectedTable,
-        activeSubTab,
-        timestamp: Date.now()
-      });
-      
       // Limpiar datos inmediatamente al cambiar de tabla para evitar mostrar datos incorrectos
       setTableData([]); // Limpiar datos de tabla
       setColumns([]); // Limpiar columnas solo cuando cambia la tabla
       setLoading(true); // Establecer loading
       setMessage(null);
       setSelectedRow(null);
-      
-      console.log('[useSystemParametersSync] Llamando resetForm por cambio de tabla', {
-        tabla: selectedTable,
-        activeSubTab,
-        timestamp: Date.now()
-      });
       resetForm();
       setUpdateFormData({});
       setInsertedRecords([]); // Limpiar registros insertados al cambiar de tabla
@@ -314,21 +285,10 @@ export const useSystemParametersSync = ({
   const prevTableForLoadRef = useRef<string>('');
   useEffect(() => {
     if (selectedTable && selectedTable !== prevTableForLoadRef.current) {
-      console.log('[useSystemParametersSync] Iniciando carga de datos para tabla', {
-        tabla: selectedTable,
-        tablaAnterior: prevTableForLoadRef.current,
-        activeSubTab,
-        timestamp: Date.now()
-      });
-      
       // Para StatusTab: usar solo useTableDataManagement (tableData y columns)
       // Para Insert/Update: usar useTableCRUD (tableState.data)
       // SIEMPRE cargar columnas cuando cambia la tabla
       // Las columnas son necesarias para InsertTab y UpdateTab
-      console.log('[useSystemParametersSync] Llamando loadTableData', {
-        tabla: selectedTable,
-        timestamp: Date.now()
-      });
       loadTableData(selectedTable);
       loadRelatedTablesData(); // También cargar cuando cambia la tabla por si acaso
       
@@ -337,11 +297,6 @@ export const useSystemParametersSync = ({
       // Cargar datos con useTableCRUD solo si no estamos en StatusTab
       // (se cargará cuando se cambie a Insert o Update)
       if (activeSubTab !== 'status') {
-        console.log('[useSystemParametersSync] Llamando loadData y loadRelatedData (no es status)', {
-          tabla: selectedTable,
-          activeSubTab,
-          timestamp: Date.now()
-        });
         loadData();
         loadRelatedData();
       }
@@ -353,22 +308,12 @@ export const useSystemParametersSync = ({
   useEffect(() => {
     // Si cambiamos de pestaña (cualquier cambio), limpiar el mensaje y registros insertados
     if (activeSubTab !== prevActiveSubTabRef.current) {
-      console.log('[useSystemParametersSync] Cambio de activeSubTab detectado', {
-        subTabAnterior: prevActiveSubTabRef.current,
-        subTabNuevo: activeSubTab,
-        selectedTable,
-        timestamp: Date.now()
-      });
       
       setMessage(null);
       
       // Limpiar timeout anterior si existe para evitar múltiples resets
       if (resetFormTimeoutRef.current) {
         clearTimeout(resetFormTimeoutRef.current);
-        console.log('[useSystemParametersSync] Timeout anterior cancelado', {
-          activeSubTab,
-          timestamp: Date.now()
-        });
       }
       
       // SIEMPRE limpiar el formulario cuando cambiamos de pestaña, independientemente de la dirección
@@ -384,22 +329,9 @@ export const useSystemParametersSync = ({
       const isEnteringInsert = activeSubTab === 'insert' && prevActiveSubTabRef.current !== 'insert';
       const isLeavingUpdate = prevActiveSubTabRef.current === 'update' && activeSubTab !== 'update';
       
-      console.log('[useSystemParametersSync] Evaluación de reset', {
-        shouldResetForm,
-        isEnteringInsert,
-        isLeavingUpdate,
-        activeSubTab,
-        prevActiveSubTab: prevActiveSubTabRef.current,
-        timestamp: Date.now()
-      });
-      
       // CRÍTICO: Si estamos saliendo de UPDATE, siempre resetear ANTES de cualquier otra cosa
       // Esto previene que los datos de UPDATE persistan cuando volvemos a INSERT
       if (isLeavingUpdate) {
-        console.log('[useSystemParametersSync] Reset inmediato por salir de update', {
-          activeSubTab,
-          timestamp: Date.now()
-        });
         resetForm(); // Resetear inmediatamente al salir de update
         setUpdateFormData({}); // Limpiar datos de actualización
       }
@@ -412,18 +344,8 @@ export const useSystemParametersSync = ({
         
         // Si no se reseteó ya (por isLeavingUpdate), resetear con un pequeño delay para evitar múltiples resets
         if (!isLeavingUpdate) {
-          console.log('[useSystemParametersSync] Programando reset con delay de 100ms', {
-            activeSubTab,
-            shouldResetForm,
-            isEnteringInsert,
-            timestamp: Date.now()
-          });
           // Usar un pequeño delay para evitar múltiples resets cuando cambia selectedTable y activeSubTab al mismo tiempo
           resetFormTimeoutRef.current = setTimeout(() => {
-            console.log('[useSystemParametersSync] Ejecutando reset programado', {
-              activeSubTab,
-              timestamp: Date.now()
-            });
             resetForm();
             resetFormTimeoutRef.current = null;
           }, 100); // Delay de 100ms para agrupar múltiples cambios
