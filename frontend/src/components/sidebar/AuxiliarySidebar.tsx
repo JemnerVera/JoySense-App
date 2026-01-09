@@ -143,9 +143,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   // AGRUPACION - Sidebar Auxiliar 1 y 2 (similar a DISPOSITIVOS, USUARIOS, PARAMETROS GEO)
   if (isAgrupacion) {
     // Extraer la tabla del activeTab
+    // Si activeTab es exactamente 'agrupacion', no hay tabla seleccionada (vacío)
     const agrupacionTable = activeTab === 'agrupacion' 
-      ? 'entidad' 
-      : (activeTab.replace('agrupacion-', '') || selectedTable || 'entidad');
+      ? '' 
+      : (activeTab.replace('agrupacion-', '') || selectedTable || '');
     
     // CORRECCIÓN: Sidebar 2 = Operaciones (ESTADO, CREAR, ACTUALIZAR)
     // Sidebar 3 = Tablas (ENTIDAD, LOCALIZACIÓN DE ENTIDAD)

@@ -220,9 +220,10 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         }
         if (isAgrupacion) {
           // Extraer tabla del activeTab: 'agrupacion-entidad' -> 'entidad'
+          // Si activeTab es exactamente 'agrupacion', no hay tabla seleccionada (vacío)
           agrupacionTable = activeTab === 'agrupacion' 
-            ? 'entidad' 
-            : (activeTab.replace('agrupacion-', '') || selectedTable || 'entidad');
+            ? '' 
+            : (activeTab.replace('agrupacion-', '') || selectedTable || '');
         }
         
         // Para NOTIFICACIONES: 
@@ -371,8 +372,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={(() => {
+              // Si activeTab es exactamente 'agrupacion', no hay tabla seleccionada (vacío)
               const agrupacionTable = activeTab === 'agrupacion' 
-                ? 'entidad' 
+                ? '' 
                 : (activeTab.replace('agrupacion-', '') || selectedTable || '');
               return agrupacionTable;
             })()}
