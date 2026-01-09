@@ -350,6 +350,10 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Ref para rastrear si el cambio viene de ProtectedSubTabButton (ya validado)
   const changeFromProtectedButtonRef = useRef<boolean>(false);
   
+  // Ref para rastrear cuando el cambio de tabla viene de ProtectedParameterButton
+  // Esto evita que se valide el cambio de activeSubTab cuando viene de un cambio de tabla
+  const isTableChangeFromProtectedButtonRef = useRef<boolean>(false);
+  
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
     propSelectedTable,
@@ -359,6 +363,12 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     formState,
     setSelectedTable,
     setActiveSubTab: (tab) => {
+      // Si el cambio viene de un cambio de tabla (ProtectedParameterButton), NO validar
+      if (isTableChangeFromProtectedButtonRef.current) {
+        console.log('[SystemParameters] Cambio de subTab viene de cambio de tabla, saltando validación', { tab });
+        setActiveSubTabState(tab);
+        return;
+      }
       // Interceptar para pasar por validación - se usará el ref cuando esté disponible
       handleSubTabChangeInternalRef.current?.(tab);
     },
@@ -524,79 +534,51 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   }, [selectedTable, relatedDataForStatus]);
 
   // Handlers de navegación
+  // IMPORTANTE: Este handler NO debe validar cambios si viene de ProtectedParameterButton
+  // ProtectedParameterButton ya valida y muestra el modal antes de llamar a onTableSelect
+  // Este handler solo se usa internamente o desde TableSelector (que no usa ProtectedParameterButton)
   const handleTableSelect = useCallback((table: string) => {
-    // Verificar si hay cambios sin guardar antes de cambiar de tabla
-    if (selectedTable) {
-      if (activeSubTab === 'insert') {
-        // Verificar con hasUnsavedChanges para detectar cambios reales
-        const hasChanges = hasUnsavedChanges({
-          formData: insertForm?.formData || {},
-          selectedTable,
-          activeSubTab
-        });
-        
-        // Si hay cambios, mostrar confirmación
-        if (hasChanges) {
-          if (!window.confirm('¿Está seguro? Los datos ingresados se perderán.')) {
-            return; // Cancelar cambio de tabla
-          }
-        }
-      } else if (activeSubTab === 'update') {
-        // Para update: verificar si hay cambios o si el formulario está abierto
-        // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
-        if (updateFormData && Object.keys(updateFormData).length > 0) {
-          // Verificar si realmente hay cambios (no es solo el marcador de formulario abierto)
-          const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
-          
-          if (hasRealChanges) {
-            // Obtener nombre de la tabla actual y destino
-            const getTableName = (table: string) => {
-              const config = getTableConfig(table as TableName);
-              return config?.displayName || table;
-            };
-            
-            showModal(
-              'parameter',
-              getTableName(selectedTable),
-              getTableName(table),
-              () => {
-                // Confirmar: proceder con el cambio
-                setSelectedTable(table);
-                onTableSelect?.(table);
-                setActiveSubTabState('status');
-                propOnSubTabChange?.('status');
-                setMessage(null);
-                resetForm();
-                setUpdateFormData({});
-              },
-              () => {
-                // Cancelar: no hacer nada
-              }
-            );
-            return; // Cancelar cambio de tabla (el modal manejará la confirmación)
-          }
-        }
-      }
+    // Si la tabla es la misma, no hacer nada
+    if (table === selectedTable) {
+      return;
     }
     
+    // Marcar que el cambio viene de ProtectedParameterButton (ya validado)
+    // Esto evitará que useSystemParametersSync valide el cambio de activeSubTab
+    isTableChangeFromProtectedButtonRef.current = true;
+    skipNextSyncRef.current = true;
+    
+    // NO validar cambios aquí - ProtectedParameterButton ya lo hace
+    // Limpiar formulario ANTES de actualizar estados para evitar que se detecten cambios
+    resetForm();
+    setUpdateFormData({});
+    setInsertedRecords([]);
+    
+    // Actualizar el estado y llamar al callback del padre
     setSelectedTable(table);
     onTableSelect?.(table);
     setActiveSubTabState('status');
     propOnSubTabChange?.('status');
     setMessage(null);
-    resetForm();
-    setUpdateFormData({}); // Limpiar datos de actualización
-  }, [selectedTable, formState.data, activeSubTab, hasUnsavedChanges, onTableSelect, propOnSubTabChange, resetForm, updateFormData]);
+    
+    // Resetear el ref después de un delay para permitir futuros cambios
+    setTimeout(() => {
+      isTableChangeFromProtectedButtonRef.current = false;
+      skipNextSyncRef.current = false;
+    }, 500);
+  }, [selectedTable, onTableSelect, propOnSubTabChange, resetForm, updateFormData, setInsertedRecords, skipNextSyncRef]);
 
   // handleSubTabChange interno que verifica cambios sin guardar
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
     // Si ya estamos en el tab objetivo, no hacer nada
     if (tab === activeSubTab) {
+      console.log('[SystemParameters] handleSubTabChangeInternal: Ya estamos en el tab objetivo, ignorando', { tab, activeSubTab });
       return;
     }
     
     // Si ya hay un cambio de tab en proceso, ignorar esta llamada
     if (isProcessingTabChangeRef.current) {
+      console.log('[SystemParameters] handleSubTabChangeInternal: Ya hay un cambio en proceso, ignorando', { tab, activeSubTab });
       return;
     }
     

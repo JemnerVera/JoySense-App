@@ -57,44 +57,71 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
 
   // Determinar qué tabla está activa basándome en selectedTable o activeTab
   const getCurrentTablePrefix = (): string => {
-    // Si tenemos selectedTable, usarlo directamente
-    if (selectedTable) {
-      return `configuracion-notificaciones-regla-${selectedTable}`;
+    // PRIORIDAD 1: Usar selectedTable si está disponible (es la fuente más confiable)
+    if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
+      const prefix = `configuracion-notificaciones-regla-${selectedTable}`;
+      console.log('[DEBUG] ReglaOperationsSidebar: Usando selectedTable para currentTablePrefix', {
+        selectedTable,
+        prefix,
+        activeTab
+      });
+      return prefix;
     }
     
-    // Si no, intentar extraer de activeTab
-    if (!activeTab) return 'configuracion-notificaciones-regla-regla';
-    
-    // Buscar el patrón configuracion-notificaciones-regla-[tabla]
-    const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/);
-    if (match) {
-      return `configuracion-notificaciones-regla-${match[1]}`;
+    // PRIORIDAD 2: Intentar extraer de activeTab
+    if (activeTab) {
+      // Buscar el patrón configuracion-notificaciones-regla-[tabla]
+      // Incluir regla, regla_perfil, regla_umbral, y regla_objeto
+      const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/);
+      if (match) {
+        const prefix = `configuracion-notificaciones-regla-${match[1]}`;
+        console.log('[DEBUG] ReglaOperationsSidebar: Tabla encontrada en activeTab', {
+          activeTab,
+          matchedTable: match[1],
+          prefix
+        });
+        return prefix;
+      }
     }
     
     // Fallback para compatibilidad con sistema antiguo
-    if (activeTab.startsWith('alertas-regla_objeto')) {
+    if (activeTab?.startsWith('alertas-regla_objeto')) {
       return 'alertas-regla_objeto';
     }
-    if (activeTab.startsWith('alertas-regla_umbral')) {
+    if (activeTab?.startsWith('alertas-regla_umbral')) {
       return 'alertas-regla_umbral';
     }
-    if (activeTab.startsWith('alertas-regla_perfil')) {
+    if (activeTab?.startsWith('alertas-regla_perfil')) {
       return 'alertas-regla_perfil';
     }
     
     // Por defecto
+    console.warn('[DEBUG] ReglaOperationsSidebar: No se pudo determinar tabla, usando regla por defecto', {
+      selectedTable,
+      activeTab
+    });
     return 'configuracion-notificaciones-regla-regla';
   };
 
   // Obtener el título dinámico según la tabla activa
   const getTitle = (): string => {
-    const tableName = selectedTable || (activeTab?.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/)?.[1]);
+    // Incluir regla_objeto en el regex
+    const tableName = selectedTable || (activeTab?.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/)?.[1]);
+    
+    console.log('[DEBUG] ReglaOperationsSidebar: getTitle', {
+      selectedTable,
+      activeTab,
+      tableName
+    });
     
     if (tableName === 'regla_perfil') {
       return 'REGLA_PERFIL';
     }
     if (tableName === 'regla_umbral') {
       return 'REGLA_UMBRAL';
+    }
+    if (tableName === 'regla_objeto') {
+      return 'REGLA_OBJETO';
     }
     if (tableName === 'regla') {
       return 'REGLA';
@@ -135,9 +162,36 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                 <button
                   key={operation.id}
                   onClick={() => {
+                    // PRIORIDAD: Usar selectedTable si está disponible, ya que es la fuente más confiable
+                    let tableToUse = selectedTable;
+                    
+                    // Si no hay selectedTable, intentar extraer de activeTab
+                    if (!tableToUse && activeTab) {
+                      const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/);
+                      if (match) {
+                        tableToUse = match[1];
+                      }
+                    }
+                    
+                    // Fallback a 'regla' si no se puede determinar
+                    if (!tableToUse || (tableToUse !== 'regla' && tableToUse !== 'regla_perfil' && tableToUse !== 'regla_umbral' && tableToUse !== 'regla_objeto')) {
+                      tableToUse = 'regla';
+                    }
+                    
+                    const currentTablePrefix = `configuracion-notificaciones-regla-${tableToUse}`;
+                    const newTab = `${currentTablePrefix}-${operation.id}`;
+                    
+                    console.log('[DEBUG] ReglaOperationsSidebar: Click en operación', {
+                      operationId: operation.id,
+                      tableToUse,
+                      currentTablePrefix,
+                      newTab,
+                      selectedTable,
+                      activeTab
+                    });
                     onSubTabChange?.(operation.id);
                     // Construir la ruta correcta según la tabla activa
-                    onTabChange?.(`${currentTablePrefix}-${operation.id}`);
+                    onTabChange?.(newTab);
                   }}
                   className={`w-full flex items-center p-3 rounded transition-colors ${
                     isExpanded ? 'gap-3' : 'justify-center'
