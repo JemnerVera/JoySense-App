@@ -27,78 +27,81 @@ const ProtectedParameterButton: React.FC<ProtectedParameterButtonProps> = ({
   className,
   onClick
 }) => {
-  const { showModal } = useModal();
+  const { showModal, modalState } = useModal();
   const { hasSignificantChanges } = useSimpleChangeDetection();
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
     // Prevenir el comportamiento por defecto del botón
     e.preventDefault();
     e.stopPropagation();
 
-
-    // Si el modal ya está abierto, no hacer nada
-    if (isModalOpen) {
-      return;
-    }
-
     // Si hay un onClick personalizado, ejecutarlo primero
     if (onClick) {
       onClick();
     }
 
+    // Verificar si estamos en una tabla de REGLA
+    const isReglaTable = (table: string) => {
+      return table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto';
+    };
+
+    const effectiveCurrentTable = currentTable && currentTable !== '' ? currentTable : '';
+    
+    // Si estamos en la misma tabla, no hacer nada
+    if (effectiveCurrentTable === targetTable) {
+      return;
+    }
+    
+    // CRÍTICO: Para REGLA y sus sub-tablas, NO mostrar modales de alerta
+    // La navegación debe ser directa sin verificar cambios sin guardar
+    const isCurrentRegla = isReglaTable(effectiveCurrentTable);
+    const isTargetRegla = isReglaTable(targetTable);
+    
+    if (isCurrentRegla || isTargetRegla) {
+      // Navegación directa para REGLA sin modales
+      console.log('[ProtectedParameterButton] Navegación REGLA directa', {
+        currentTable: effectiveCurrentTable,
+        targetTable,
+        hasOnTableChange: !!onTableChange
+      });
+      if (onTableChange) {
+        // Llamar inmediatamente sin ningún delay
+        onTableChange(targetTable);
+      } else {
+        console.error('[ProtectedParameterButton] ERROR: onTableChange no está definido para REGLA');
+      }
+      return;
+    }
+    
+    // Para otras tablas, verificar cambios sin guardar normalmente
+    // Si el modal ya está abierto, no hacer nada
+    if (modalState && modalState.isOpen) {
+      return;
+    }
+
     // Verificar si hay cambios sin guardar
-    // IMPORTANTE: Si currentTable está vacío, no hay cambios que verificar
-    const hasChanges = currentTable && currentTable !== '' 
-      ? hasSignificantChanges(formData, currentTable, activeSubTab, multipleData, massiveFormData)
+    const shouldCheckChanges = effectiveCurrentTable !== '' && activeSubTab !== 'status';
+    
+    const hasChanges = shouldCheckChanges
+      ? hasSignificantChanges(formData, effectiveCurrentTable, activeSubTab, multipleData, massiveFormData)
       : false;
     
-    console.log('[DEBUG] ProtectedParameterButton: Verificando cambios', {
-      currentTable,
-      targetTable,
-      activeSubTab,
-      hasChanges,
-      formDataKeys: Object.keys(formData),
-      formDataValues: Object.entries(formData).filter(([k, v]) => {
-        const val = v;
-        return val !== null && val !== undefined && val !== '' && val !== 0 && val !== 1;
-      }).map(([k, v]) => `${k}: ${v}`)
-    });
-    
     if (hasChanges) {
-      setIsModalOpen(true);
-      console.log('[DEBUG] ProtectedParameterButton: Mostrando modal de confirmación', {
-        currentTable,
-        targetTable
-      });
       // Mostrar modal de confirmación SIN cambiar el parámetro
       showModal(
         'parameter',
-        currentTable,
+        effectiveCurrentTable,
         targetTable,
         () => {
-          console.log('[DEBUG] ProtectedParameterButton: Modal confirmado, cambiando tabla', {
-            from: currentTable,
-            to: targetTable
-          });
-          setIsModalOpen(false);
           // Solo cambiar el parámetro DESPUÉS de confirmar
           onTableChange(targetTable);
         },
         () => {
-          console.log('[DEBUG] ProtectedParameterButton: Modal cancelado, manteniendo tabla', {
-            currentTable
-          });
-          setIsModalOpen(false);
           // No hacer nada, quedarse en el parámetro actual
         }
       );
     } else {
       // No hay cambios, proceder normalmente
-      console.log('[DEBUG] ProtectedParameterButton: No hay cambios, cambiando tabla directamente', {
-        from: currentTable,
-        to: targetTable
-      });
       if (onTableChange) {
         onTableChange(targetTable);
       }

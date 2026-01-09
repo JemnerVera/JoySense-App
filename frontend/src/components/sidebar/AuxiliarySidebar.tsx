@@ -152,11 +152,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Sidebar 3 = Tablas (ENTIDAD, LOCALIZACIÓN DE ENTIDAD)
     // Si showThirdLevel es false, renderizar el segundo sidebar (operaciones)
     if (!showThirdLevel && agrupacionTable && agrupacionTable !== '') {
-      console.log('[DEBUG] AuxiliarySidebar: Mostrando AgrupacionOperationsSidebar', {
-        agrupacionTable,
-        activeTab,
-        showThirdLevel
-      });
       return (
         <AgrupacionOperationsSidebar
           selectedTable={agrupacionTable}
@@ -177,11 +172,6 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // El Sidebar 3 siempre se muestra cuando estamos en agrupacion, incluso si hay una tabla seleccionada
     // Esto permite que el usuario pueda cambiar de tabla
     if (showThirdLevel) {
-      console.log('[DEBUG] AuxiliarySidebar: Mostrando AgrupacionSidebar', {
-        agrupacionTable,
-        activeTab,
-        showThirdLevel
-      });
       return (
         <AgrupacionSidebar
           selectedTable={agrupacionTable}
@@ -602,28 +592,30 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       // IMPORTANTE: Siempre mostrar ReglaSidebar cuando estamos en REGLA, incluso si hay una tabla seleccionada
       // Esto permite que el usuario pueda cambiar de tabla y ver todas las opciones disponibles
       if (isReglaNotificaciones) {
-        // Extraer la tabla de regla específica del activeTab si existe
-        // Ej: 'configuracion-notificaciones-regla-regla_perfil' -> 'regla_perfil'
-        // Ej: 'configuracion-notificaciones-regla-regla_objeto-status' -> 'regla_objeto'
-        let reglaTableToSelect = '';
-        if (activeTab.includes('-regla-') && !activeTab.endsWith('-regla')) {
-          const parts = activeTab.split('-regla-');
-          if (parts.length > 1) {
-            // Tomar la primera parte después de '-regla-' y antes del siguiente guión (si existe operación)
-            reglaTableToSelect = parts[1].split('-')[0] || '';
+        // CRÍTICO: Para REGLA, selectedTable del prop es la fuente de verdad
+        // handleTableSelect en App.tsx actualiza selectedTable directamente
+        // NO extraer de activeTab porque puede estar desincronizado
+        const isReglaTable = (table: string) => {
+          return table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto';
+        };
+        
+        // PRIORIDAD 1: Usar selectedTable si es una tabla de regla válida (fuente de verdad)
+        let finalSelectedTable = '';
+        if (selectedTable && isReglaTable(selectedTable)) {
+          finalSelectedTable = selectedTable;
+        } else if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+          // PRIORIDAD 2: Solo extraer de activeTab si selectedTable no está disponible
+          const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
+          if (reglaTable && isReglaTable(reglaTable)) {
+            finalSelectedTable = reglaTable;
           }
         }
-        console.log('[DEBUG] AuxiliarySidebar: Extrayendo tabla de REGLA', {
-          activeTab,
-          reglaTableToSelect,
-          selectedTable
-        });
 
         // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO
         // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa
     return (
       <ReglaSidebar
-            selectedTable={reglaTableToSelect || selectedTable || ''}
+            selectedTable={finalSelectedTable}
         onTableSelect={onTableSelect || (() => {})}
         activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
         onSubTabChange={onSubTabChange || (() => {})}
