@@ -167,7 +167,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 
   // Cargar datos relacionados al montar el componente
   useEffect(() => {
-    console.log('🔄 [SystemParameters] Cargando datos relacionados al montar...');
     loadRelatedTablesData();
   }, [loadRelatedTablesData]);
 
@@ -346,7 +345,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     setActiveSubTab: (tab) => {
       // Si el cambio viene de un cambio de tabla (ProtectedParameterButton), NO validar
       if (isTableChangeFromProtectedButtonRef.current) {
-        console.log('[SystemParameters] Cambio de subTab viene de cambio de tabla, saltando validación', { tab });
         setActiveSubTabState(tab);
         return;
       }
@@ -553,13 +551,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
     // Si ya estamos en el tab objetivo, no hacer nada
     if (tab === activeSubTab) {
-      console.log('[SystemParameters] handleSubTabChangeInternal: Ya estamos en el tab objetivo, ignorando', { tab, activeSubTab });
       return;
     }
     
     // Si ya hay un cambio de tab en proceso, ignorar esta llamada
     if (isProcessingTabChangeRef.current) {
-      console.log('[SystemParameters] handleSubTabChangeInternal: Ya hay un cambio en proceso, ignorando', { tab, activeSubTab });
       return;
     }
     
@@ -618,25 +614,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         const currentTabName = getSubTabName(activeSubTab);
         const targetTabName = getSubTabName(tab);
         
-        console.log('[SystemParameters] Llamando a showModal', {
-          currentTabName,
-          targetTabName,
-          activeSubTab,
-          tab
-        });
-        
         showModal(
           'subtab',
           currentTabName,
           targetTabName,
           () => {
-            console.log('[SystemParameters] Modal confirmado (INSERT -> otro)', {
-              from: activeSubTab,
-              to: tab,
-              skipNextSyncBefore: skipNextSyncRef.current,
-              isProcessingBefore: isProcessingTabChangeRef.current
-            });
-            
             // Confirmar: proceder con el cambio y limpiar formulario
             // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
             skipNextSyncRef.current = true;
@@ -644,13 +626,11 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             insertForm?.resetForm(); // Limpiar formulario usando useInsertForm
             setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
             // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
-            console.log('[SystemParameters] Llamando a propOnSubTabChange con tab:', tab);
             propOnSubTabChange?.(tab);
             setMessage(null);
             setInsertedRecords([]); // Limpiar registros insertados
             // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
             setTimeout(() => {
-              console.log('[SystemParameters] Liberando isProcessingTabChangeRef');
               isProcessingTabChangeRef.current = false;
               // Resetear skipNextSyncRef después de que se haya procesado
               setTimeout(() => {
@@ -992,18 +972,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               />
             )}
             {(() => {
-              if (activeSubTab === 'insert') {
-                console.log('[SystemParameters] Condición para InsertTab', {
-                  activeSubTab,
-                  hasInsertForm: !!insertForm,
-                  selectedTable,
-                  resetKey: getResetKey(),
-                  insertTabKey,
-                  columnsCount: columns.length,
-                  hasConfig: !!config,
-                  timestamp: Date.now()
-                });
-              }
               return null;
             })()}
             {activeSubTab === 'insert' && insertForm && (
