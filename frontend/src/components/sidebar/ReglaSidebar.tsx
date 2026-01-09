@@ -162,11 +162,6 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
             ) : (
               reglaTables.map((table) => {
                 const isActive = selectedTable === table.name;
-                const handleTableChange = (tableName: string) => {
-                  if (onTableSelect) {
-                    onTableSelect(tableName);
-                  }
-                };
                 return (
                   <ProtectedParameterButton
                     key={table.name}
@@ -176,7 +171,7 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
                     formData={formData}
                     multipleData={multipleData}
                     massiveFormData={massiveFormData}
-                    onTableChange={handleTableChange}
+                    onTableChange={onTableSelect}
                     className={`w-full flex items-center p-3 rounded transition-colors ${
                       isExpanded ? 'gap-3' : 'justify-center'
                     } ${

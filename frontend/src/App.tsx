@@ -113,6 +113,10 @@ const AppContentInternal: React.FC = () => {
   const [currentMultipleData, setCurrentMultipleData] = useState<any[]>([]);
   const [currentMassiveFormData, setCurrentMassiveFormData] = useState<Record<string, any>>({});
   const [clearFormData, setClearFormData] = useState<boolean>(false);
+  
+  // Ref para rastrear si el cambio viene de handleTableSelect (para evitar que useEffect lo revierta)
+  // Usar un timestamp para rastrear cuándo se hizo el cambio
+  const tableChangeFromHandlerRef = useRef<{ table: string; timestamp: number } | null>(null);
 
   // Hook para protección de datos (debe estar antes de cualquier return condicional)
   // Hook para protección de datos - DESACTIVADO TEMPORALMENTE
@@ -208,6 +212,12 @@ const AppContentInternal: React.FC = () => {
 
   // Sincronizar selectedTable con activeTab para diferentes secciones
   useEffect(() => {
+    // CRÍTICO: Para REGLA, NUNCA ejecutar este useEffect
+    // handleTableSelect es la única fuente de verdad para REGLA
+    if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+      return;
+    }
+    
     // Extraer tabla de activeTab para diferentes secciones
     if (activeTab.startsWith('geografia-')) {
       const table = activeTab.replace('geografia-', '');
@@ -261,25 +271,13 @@ const AppContentInternal: React.FC = () => {
       }
     } else if (activeTab.startsWith('configuracion-notificaciones-')) {
       // Caso especial: REGLA tiene un flujo especial con Sidebar 3 y 4
+      // SOLUCIÓN RADICAL: Para REGLA, NUNCA sincronizar desde useEffect
+      // handleTableSelect es la ÚNICA fuente de verdad para REGLA
+      // Esto evita TODOS los conflictos con los 4 niveles de sidebars
       if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-        // Extraer la tabla de regla del activeTab (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
-        const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-        console.log('[DEBUG] App.useEffect activeTab: Procesando REGLA', {
-          activeTab,
-          reglaTable,
-          selectedTable
-        });
-        // Incluir regla_objeto en la validación
-        if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
-          // Establecer selectedTable a la tabla de regla extraída
-          if (reglaTable !== selectedTable) {
-            console.log('[DEBUG] App.useEffect activeTab: Actualizando selectedTable', {
-              reglaTable,
-              previousSelectedTable: selectedTable
-            });
-            setSelectedTable(reglaTable);
-          }
-        }
+        // NO HACER NADA - handleTableSelect maneja TODO para REGLA
+        // El useEffect NO debe interferir con REGLA en absoluto
+        return;
       } else if (activeTab === 'configuracion-notificaciones-regla') {
         // Si solo es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
         // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
@@ -631,24 +629,43 @@ const AppContentInternal: React.FC = () => {
         }
       } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
         // Tablas de regla seleccionadas desde ReglaSidebar
-        // Funciona similar a DISPOSITIVOS: actualizar selectedTable y activeTab, resetear activeSubTab
-        console.log('[DEBUG] App.handleTableSelect: Cambiando tabla de REGLA', {
+        // IMPORTANTE: Para REGLA, handleTableSelect es la ÚNICA fuente de verdad
+        // NO depende del useEffect de sincronización (igual que DISPOSITIVOS pero con 4 niveles)
+        
+        console.log('[App.handleTableSelect] Cambio de tabla REGLA', {
           table,
-          previousSelectedTable: selectedTable,
-          previousActiveTab: activeTab
+          currentSelectedTable: selectedTable,
+          timestamp: Date.now()
         });
+        
+        // CRÍTICO: Establecer el ref ANTES de actualizar cualquier estado
+        // Esto asegura que el useEffect vea el ref cuando se ejecute
+        tableChangeFromHandlerRef.current = { table, timestamp: Date.now() };
         
         // Resetear activeSubTab a 'status' cuando cambia la tabla (similar a DISPOSITIVOS)
         setActiveSubTab('status');
         
+        // Limpiar formData cuando cambia la tabla de regla (igual que DISPOSITIVOS)
+        setCurrentFormData({});
+        setCurrentMultipleData([]);
+        
         // Actualizar selectedTable y activeTab simultáneamente
+        // IMPORTANTE: Estos son los únicos lugares donde se actualizan para REGLA
         setSelectedTable(table);
         const newActiveTab = `configuracion-notificaciones-regla-${table}`;
-        console.log('[DEBUG] App.handleTableSelect: Actualizando activeTab para REGLA', {
-          table,
-          newActiveTab
+        console.log('[App.handleTableSelect] Actualizando estados REGLA', {
+          newSelectedTable: table,
+          newActiveTab,
+          timestamp: Date.now()
         });
         setActiveTab(newActiveTab);
+        
+        // Limpiar el ref después de un delay para permitir futuros cambios
+        // IMPORTANTE: El delay debe ser suficiente para que cualquier useEffect pendiente vea el ref
+        // Usar un delay más largo para REGLA debido a los 4 niveles de sidebars
+        setTimeout(() => {
+          tableChangeFromHandlerRef.current = null;
+        }, 3000);
       } else if (table === 'permisos-geo' || table === 'permisos-conf') {
         // Tipos de permisos seleccionados desde PermisosTipoSidebar
         setSelectedTable(table);
@@ -699,22 +716,8 @@ const AppContentInternal: React.FC = () => {
         }
       }
       
-      console.log('[DEBUG] App.handleSubTabChange: Procesando cambio de subTab para REGLA', {
-        activeTab,
-        subTab,
-        selectedTable,
-        selectedTableRef: selectedTableRef.current,
-        reglaTable
-      });
-      
       if (reglaTable && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
         const newActiveTab = `configuracion-notificaciones-regla-${reglaTable}-${subTab}`;
-        console.log('[DEBUG] App.handleSubTabChange: Actualizando activeTab', {
-          reglaTable,
-          subTab,
-          newActiveTab,
-          previousActiveTab: activeTab
-        });
         setActiveTab(newActiveTab);
       }
     }
@@ -932,19 +935,18 @@ const AppContentInternal: React.FC = () => {
     if (activeTab.startsWith('configuracion-notificaciones')) {
       // Caso especial: REGLA (configuracion-notificaciones-regla o configuracion-notificaciones-regla-[tabla])
       if (activeTab.startsWith('configuracion-notificaciones-regla')) {
-        // Extraer el nombre de la tabla de regla (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
-        // Primero intentar extraer del activeTab
+        // Extraer el nombre de la tabla de regla
+        // CRÍTICO: Para REGLA, selectedTable es la fuente de verdad (handleTableSelect lo establece)
+        // Solo usar activeTab como fallback si selectedTable no está disponible
         let reglaTab = '';
-        if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-          // Extraer todo después de 'configuracion-notificaciones-regla-'
-          const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
-          // Tomar solo la primera parte (antes de cualquier guión adicional, como 'status' o 'insert')
-          reglaTab = afterRegla.split('-')[0];
-        }
         
-        // Si reglaTab está vacío pero tenemos selectedTable válido, usarlo
-        if (!reglaTab && selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
+        // PRIORIDAD 1: Usar selectedTable si es una tabla de regla válida
+        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
           reglaTab = selectedTable;
+        } else if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+          // PRIORIDAD 2: Extraer de activeTab solo si selectedTable no está disponible
+          const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
+          reglaTab = afterRegla.split('-')[0];
         }
         
         
@@ -965,7 +967,8 @@ const AppContentInternal: React.FC = () => {
         // Extraer la operación del activeTab completo
         // Formato: 'configuracion-notificaciones-regla-regla_perfil-status'
         // O: 'configuracion-notificaciones-regla-regla_perfil'
-        let reglaTableName = reglaTab; // Por defecto, reglaTab es el nombre de la tabla
+        // CRÍTICO: Usar reglaTab (que viene de selectedTable) como fuente de verdad
+        const reglaTableName = reglaTab; // reglaTab ya viene de selectedTable (fuente de verdad)
         let reglaOperation = '';
         
         // Si activeTab tiene más partes después de la tabla, extraer la operación
@@ -973,25 +976,14 @@ const AppContentInternal: React.FC = () => {
           const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
           const parts = afterRegla.split('-');
           
-          // La primera parte es siempre la tabla (regla, regla_perfil, regla_umbral, regla_objeto)
-          reglaTableName = parts[0];
-          
           // La segunda parte (si existe) es la operación (status, insert)
           if (parts.length > 1) {
             reglaOperation = parts[1];
           }
         }
         
-        console.log('[DEBUG] App.renderContent: Procesando REGLA', {
-          activeTab,
-          reglaTab,
-          reglaTableName,
-          reglaOperation,
-          selectedTable,
-          currentActiveSubTab: activeSubTab
-        });
-        
         // Usar SystemParameters para las tablas de regla
+        // IMPORTANTE: reglaTableName viene de selectedTable (fuente de verdad para REGLA)
         return (
           <SystemParametersWithSuspense 
             ref={systemParametersRef}

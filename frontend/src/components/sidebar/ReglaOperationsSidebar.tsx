@@ -59,28 +59,14 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
   const getCurrentTablePrefix = (): string => {
     // PRIORIDAD 1: Usar selectedTable si está disponible (es la fuente más confiable)
     if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
-      const prefix = `configuracion-notificaciones-regla-${selectedTable}`;
-      console.log('[DEBUG] ReglaOperationsSidebar: Usando selectedTable para currentTablePrefix', {
-        selectedTable,
-        prefix,
-        activeTab
-      });
-      return prefix;
+      return `configuracion-notificaciones-regla-${selectedTable}`;
     }
     
-    // PRIORIDAD 2: Intentar extraer de activeTab
-    if (activeTab) {
-      // Buscar el patrón configuracion-notificaciones-regla-[tabla]
-      // Incluir regla, regla_perfil, regla_umbral, y regla_objeto
-      const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/);
-      if (match) {
-        const prefix = `configuracion-notificaciones-regla-${match[1]}`;
-        console.log('[DEBUG] ReglaOperationsSidebar: Tabla encontrada en activeTab', {
-          activeTab,
-          matchedTable: match[1],
-          prefix
-        });
-        return prefix;
+    // PRIORIDAD 2: Intentar extraer de activeTab usando el mismo método que App.tsx
+    if (activeTab && activeTab.startsWith('configuracion-notificaciones-regla-')) {
+      const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
+      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
+        return `configuracion-notificaciones-regla-${reglaTable}`;
       }
     }
     
@@ -96,23 +82,17 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     }
     
     // Por defecto
-    console.warn('[DEBUG] ReglaOperationsSidebar: No se pudo determinar tabla, usando regla por defecto', {
-      selectedTable,
-      activeTab
-    });
     return 'configuracion-notificaciones-regla-regla';
   };
 
   // Obtener el título dinámico según la tabla activa
   const getTitle = (): string => {
     // Incluir regla_objeto en el regex
-    const tableName = selectedTable || (activeTab?.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/)?.[1]);
-    
-    console.log('[DEBUG] ReglaOperationsSidebar: getTitle', {
-      selectedTable,
-      activeTab,
-      tableName
-    });
+    // Extraer tabla usando el mismo método que App.tsx
+    let tableName = selectedTable;
+    if (!tableName && activeTab && activeTab.startsWith('configuracion-notificaciones-regla-')) {
+      tableName = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
+    }
     
     if (tableName === 'regla_perfil') {
       return 'REGLA_PERFIL';
@@ -165,11 +145,11 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                     // PRIORIDAD: Usar selectedTable si está disponible, ya que es la fuente más confiable
                     let tableToUse = selectedTable;
                     
-                    // Si no hay selectedTable, intentar extraer de activeTab
-                    if (!tableToUse && activeTab) {
-                      const match = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral|_objeto)?)/);
-                      if (match) {
-                        tableToUse = match[1];
+                    // Si no hay selectedTable, intentar extraer de activeTab usando el mismo método que App.tsx
+                    if (!tableToUse && activeTab && activeTab.startsWith('configuracion-notificaciones-regla-')) {
+                      const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
+                      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
+                        tableToUse = reglaTable;
                       }
                     }
                     
@@ -181,14 +161,6 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                     const currentTablePrefix = `configuracion-notificaciones-regla-${tableToUse}`;
                     const newTab = `${currentTablePrefix}-${operation.id}`;
                     
-                    console.log('[DEBUG] ReglaOperationsSidebar: Click en operación', {
-                      operationId: operation.id,
-                      tableToUse,
-                      currentTablePrefix,
-                      newTab,
-                      selectedTable,
-                      activeTab
-                    });
                     onSubTabChange?.(operation.id);
                     // Construir la ruta correcta según la tabla activa
                     onTabChange?.(newTab);

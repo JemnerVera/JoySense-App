@@ -77,6 +77,25 @@ export const useSystemParametersSync = ({
   const tableJustChangedRef = useRef<boolean>(false);
   
   useEffect(() => {
+    // CRÍTICO: Para REGLA y sus sub-tablas, NO sincronizar desde propSelectedTable
+    // handleTableSelect en App.tsx es la única fuente de verdad para REGLA
+    const isReglaTable = (table: string) => {
+      return table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto';
+    };
+    
+    // Si la tabla actual o la nueva es de REGLA, NO hacer nada
+    // El cambio ya fue manejado por handleTableSelect en App.tsx
+    if (propSelectedTable && isReglaTable(propSelectedTable)) {
+      // Para REGLA, solo actualizar el estado interno si es diferente
+      // pero NO resetear el formulario ni hacer validaciones
+      if (propSelectedTable !== selectedTable) {
+        prevPropSelectedTableRef.current = propSelectedTable;
+        setSelectedTable(propSelectedTable);
+      }
+      return;
+    }
+    
+    // Para otras tablas, sincronizar normalmente
     if (propSelectedTable && propSelectedTable !== selectedTable) {
       const tableChanged = propSelectedTable !== prevPropSelectedTableRef.current;
       
@@ -223,7 +242,36 @@ export const useSystemParametersSync = ({
   // PERO NO limpiar columnas si solo cambia activeSubTab
   const prevSelectedTableRef = useRef<string>('');
   useEffect(() => {
+    // CRÍTICO: Para REGLA, NO resetear el formulario ni limpiar datos aquí
+    // El cambio ya fue manejado por handleTableSelect en App.tsx
+    const isReglaTable = (table: string) => {
+      return table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto';
+    };
+    
     if (selectedTable && selectedTable !== prevSelectedTableRef.current) {
+      // Si es una tabla de REGLA, solo actualizar el ref y cargar datos, pero NO resetear formulario
+      if (isReglaTable(selectedTable)) {
+        console.log('[useSystemParametersSync] Cambio de tabla REGLA detectado (sin reset)', {
+          tablaAnterior: prevSelectedTableRef.current,
+          tablaNueva: selectedTable,
+          activeSubTab,
+          timestamp: Date.now()
+        });
+        
+        // Solo limpiar datos de tabla y columnas, pero NO resetear el formulario
+        setTableData([]);
+        setColumns([]);
+        setLoading(true);
+        setMessage(null);
+        setSelectedRow(null);
+        
+        // Cargar datos para la nueva tabla
+        loadTableData(selectedTable);
+        prevSelectedTableRef.current = selectedTable;
+        return;
+      }
+      
+      // Para otras tablas, comportamiento normal
       console.log('[useSystemParametersSync] Cambio de tabla detectado', {
         tablaAnterior: prevSelectedTableRef.current,
         tablaNueva: selectedTable,
@@ -258,7 +306,8 @@ export const useSystemParametersSync = ({
     setSelectedRow,
     resetForm,
     setUpdateFormData,
-    setInsertedRecords
+    setInsertedRecords,
+    loadTableData
   ]);
 
   // Cargar datos cuando cambia la tabla (NO cuando cambia activeSubTab)

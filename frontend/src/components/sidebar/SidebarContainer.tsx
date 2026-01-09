@@ -355,13 +355,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                           agrupacionTable && 
                           agrupacionTable !== '' && 
                           activeTab !== 'agrupacion';
-        console.log('[DEBUG] SidebarContainer: Verificando Sidebar 2 (Operaciones) para AGRUPACIÓN', {
-          isAgrupacion,
-          activeTab,
-          agrupacionTable,
-          shouldShow,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
-        });
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
