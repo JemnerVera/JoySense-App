@@ -604,13 +604,20 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       if (isReglaNotificaciones) {
         // Extraer la tabla de regla específica del activeTab si existe
         // Ej: 'configuracion-notificaciones-regla-regla_perfil' -> 'regla_perfil'
+        // Ej: 'configuracion-notificaciones-regla-regla_objeto-status' -> 'regla_objeto'
         let reglaTableToSelect = '';
         if (activeTab.includes('-regla-') && !activeTab.endsWith('-regla')) {
           const parts = activeTab.split('-regla-');
           if (parts.length > 1) {
+            // Tomar la primera parte después de '-regla-' y antes del siguiente guión (si existe operación)
             reglaTableToSelect = parts[1].split('-')[0] || '';
           }
-    }
+        }
+        console.log('[DEBUG] AuxiliarySidebar: Extrayendo tabla de REGLA', {
+          activeTab,
+          reglaTableToSelect,
+          selectedTable
+        });
 
         // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO
         // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa

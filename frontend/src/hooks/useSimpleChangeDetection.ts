@@ -80,6 +80,14 @@ export const useSimpleChangeDetection = () => {
           return ['criticidad', 'criticidadabrev'];
         case 'status':
           return ['status', 'statusabrev'];
+        case 'regla':
+          return ['nombre', 'prioridad', 'ventana', 'cooldown', 'criticidadid'];
+        case 'regla_perfil':
+          return ['reglaid', 'perfilid'];
+        case 'regla_umbral':
+          return ['reglaid', 'umbralid', 'operador_logico', 'orden'];
+        case 'regla_objeto':
+          return ['reglaid', 'origenid', 'fuenteid', 'objetoid'];
         default:
           return [];
       }
@@ -313,8 +321,15 @@ export const useSimpleChangeDetection = () => {
       hasMassiveFormDataChanges = true;
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Change detection result:', {
+    // Siempre loggear para regla_perfil y regla_objeto para debugging
+    const shouldLog = process.env.NODE_ENV === 'development' || 
+      selectedTable === 'regla_perfil' || 
+      selectedTable === 'regla_objeto' ||
+      selectedTable === 'regla' ||
+      selectedTable === 'regla_umbral';
+    
+    if (shouldLog) {
+      console.log('🔍 [useSimpleChangeDetection] Change detection result:', {
         selectedTable,
         activeSubTab,
         formDataKeys: Object.keys(formData),

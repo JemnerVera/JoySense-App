@@ -63,6 +63,7 @@ export const useSystemParametersSync = ({
   const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
   const onFormDataChangeRef = useRef(onFormDataChange);
   const lastLoadRef = useRef<{ table: string; subTab: string }>({ table: '', subTab: '' });
+  const internalSkipNextSyncRef = skipNextSyncRef || { current: false };
 
   // Actualizar el ref cuando cambie la función
   useEffect(() => {
@@ -70,11 +71,52 @@ export const useSystemParametersSync = ({
   }, [onFormDataChange]);
 
   // Sync selectedTable con prop
+  // Cuando cambia propSelectedTable, también debemos resetear el formulario
+  // para evitar que el cambio de activeSubTab (que viene después) detecte cambios sin guardar
+  const prevPropSelectedTableRef = useRef<string>('');
+  const tableJustChangedRef = useRef<boolean>(false);
+  
   useEffect(() => {
     if (propSelectedTable && propSelectedTable !== selectedTable) {
+      const tableChanged = propSelectedTable !== prevPropSelectedTableRef.current;
+      
+      // Si la tabla cambió, resetear el formulario inmediatamente para evitar validaciones
+      if (tableChanged) {
+        console.log('[useSystemParametersSync] Cambio de propSelectedTable detectado, reseteando formulario', {
+          tablaAnterior: prevPropSelectedTableRef.current || '',
+          tablaNueva: propSelectedTable
+        });
+        
+        // Marcar que la tabla acaba de cambiar - esto evitará que se valide el cambio de activeSubTab
+        tableJustChangedRef.current = true;
+        
+        // IMPORTANTE: Marcar skipNextSyncRef para que el próximo cambio de propActiveSubTab no se valide
+        // Esto es crítico porque App.handleTableSelect resetea activeSubTab a 'status' después de cambiar la tabla
+        if (internalSkipNextSyncRef) {
+          internalSkipNextSyncRef.current = true;
+        }
+        
+        // Resetear formulario inmediatamente
+        resetForm();
+        setUpdateFormData({});
+        setInsertedRecords([]);
+        
+        // Resetear el flag después de un delay para permitir que el cambio de activeSubTab se procese
+        setTimeout(() => {
+          tableJustChangedRef.current = false;
+          // También resetear skipNextSyncRef después de que se procese el cambio de activeSubTab
+          if (internalSkipNextSyncRef) {
+            setTimeout(() => {
+              internalSkipNextSyncRef.current = false;
+            }, 500);
+          }
+        }, 1000);
+      }
+      
+      prevPropSelectedTableRef.current = propSelectedTable;
       setSelectedTable(propSelectedTable);
     }
-  }, [propSelectedTable, selectedTable, setSelectedTable]);
+  }, [propSelectedTable, selectedTable, setSelectedTable, resetForm, setUpdateFormData, setInsertedRecords, internalSkipNextSyncRef]);
 
   // Notificar cambios en formData al componente padre (para protección de datos)
   useEffect(() => {
@@ -106,7 +148,6 @@ export const useSystemParametersSync = ({
   const lastPropActiveSubTabRef = useRef<string>('');
   const lastValidatedTabRef = useRef<string>('');
   const isProcessingSyncRef = useRef<boolean>(false);
-  const internalSkipNextSyncRef = skipNextSyncRef || { current: false };
   
   useEffect(() => {
     // Si se marcó para saltar la próxima sincronización (porque el cambio fue iniciado internamente)
@@ -130,6 +171,20 @@ export const useSystemParametersSync = ({
         propActiveSubTab !== activeSubTab && 
         propActiveSubTab !== lastPropActiveSubTabRef.current &&
         !isProcessingSyncRef.current) {
+      
+      // Si la tabla acaba de cambiar (marcado por tableJustChangedRef) y el nuevo activeSubTab es 'status',
+      // NO validar cambios - esto evita que se muestre el modal cuando se cambia de tabla
+      if (tableJustChangedRef.current && propActiveSubTab === 'status') {
+        console.log('[useSystemParametersSync] Cambio de activeSubTab viene de cambio de tabla, saltando validación', {
+          propActiveSubTab,
+          activeSubTab,
+          propSelectedTable,
+          tablaAnterior: prevPropSelectedTableRef.current || ''
+        });
+        setActiveSubTab(propActiveSubTab);
+        lastPropActiveSubTabRef.current = propActiveSubTab;
+        return;
+      }
       
       // Marcar que estamos procesando para evitar llamadas duplicadas
       isProcessingSyncRef.current = true;
@@ -157,7 +212,7 @@ export const useSystemParametersSync = ({
         isProcessingSyncRef.current = false;
       }, 500);
     }
-  }, [propActiveSubTab, activeSubTab, setActiveSubTab]);
+  }, [propActiveSubTab, activeSubTab, setActiveSubTab, propSelectedTable]);
 
   // Cargar datos relacionados al montar el componente (una sola vez)
   useEffect(() => {

@@ -67,11 +67,11 @@ const AppContentInternal: React.FC = () => {
 
   const { user, loading } = useAuth();
   const { t } = useLanguage();
-  const { } = useFilters();
+  useFilters(); // Usar el hook aunque no necesitemos sus valores
 
   // Preload componentes críticos
   usePreloadCriticalComponents();
-
+  
   // Ref para SystemParameters
   const systemParametersRef = useRef<{ 
     handleTableChange: (table: string) => void; 
@@ -157,6 +157,15 @@ const AppContentInternal: React.FC = () => {
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive' | 'asignar'>('status');
+  
+  // Ref para almacenar el selectedTable más reciente para REGLA
+  // Esto evita problemas de closure cuando handleSubTabChange se llama después de un cambio de tabla
+  const selectedTableRef = useRef<string>(selectedTable);
+  
+  // Actualizar el ref cuando selectedTable cambia
+  useEffect(() => {
+    selectedTableRef.current = selectedTable;
+  }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
   const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica' | 'umbrales'>('mapeo');
@@ -255,20 +264,30 @@ const AppContentInternal: React.FC = () => {
       if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
         // Extraer la tabla de regla del activeTab (ej: 'configuracion-notificaciones-regla-regla' -> 'regla')
         const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-        if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral')) {
+        console.log('[DEBUG] App.useEffect activeTab: Procesando REGLA', {
+          activeTab,
+          reglaTable,
+          selectedTable
+        });
+        // Incluir regla_objeto en la validación
+        if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
           // Establecer selectedTable a la tabla de regla extraída
           if (reglaTable !== selectedTable) {
+            console.log('[DEBUG] App.useEffect activeTab: Actualizando selectedTable', {
+              reglaTable,
+              previousSelectedTable: selectedTable
+            });
             setSelectedTable(reglaTable);
           }
         }
       } else if (activeTab === 'configuracion-notificaciones-regla') {
         // Si solo es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
         // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
-        // Si selectedTable es una tabla de regla válida (regla, regla_perfil, regla_umbral), mantenerla
+        // Si selectedTable es una tabla de regla válida (regla, regla_perfil, regla_umbral, regla_objeto), mantenerla
         // Esto permite que cuando se hace clic en REGLA desde ReglaSidebar, se muestre el contenido principal
-        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral')) {
+        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
           // Mantener selectedTable para mostrar el contenido principal o ReglaOperationsSidebar
-        } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_perfil' && selectedTable !== 'regla_umbral') {
+        } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_perfil' && selectedTable !== 'regla_umbral' && selectedTable !== 'regla_objeto') {
           // Limpiar selectedTable si no es una tabla de regla válida
           setSelectedTable('');
         }
@@ -335,6 +354,34 @@ const AppContentInternal: React.FC = () => {
         setActiveSubTab('status');
       }
     }
+    
+    // Manejar operaciones de REGLA (configuracion-notificaciones-regla-[tabla]-[operacion])
+    // Solo procesar si NO es de alertas (ya se maneja arriba)
+    if (activeTab.startsWith('configuracion-notificaciones-regla-') && !activeTab.startsWith('alertas-')) {
+      // Extraer la operación del activeTab
+      const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
+      const parts = afterRegla.split('-');
+      
+      // Si hay una segunda parte, es la operación (status, insert)
+      if (parts.length > 1) {
+        const reglaOperation = parts[1];
+        if (reglaOperation && (reglaOperation === 'status' || reglaOperation === 'insert')) {
+          // Usar forma funcional para evitar loops - no incluir activeSubTab en dependencias
+          setActiveSubTab((currentSubTab) => {
+            if (currentSubTab !== reglaOperation) {
+              console.log('[DEBUG] App.useEffect activeTab: Actualizando activeSubTab para REGLA', {
+                activeTab,
+                reglaOperation,
+                currentActiveSubTab: currentSubTab
+              });
+              return reglaOperation;
+            }
+            return currentSubTab;
+          });
+        }
+      }
+    }
+    
     // Si es permisos-permiso, NO resetear el activeSubTab aquí - dejarlo que se maneje por el callback onSubTabChange
   }, [activeTab]);
 
@@ -356,7 +403,7 @@ const AppContentInternal: React.FC = () => {
   } = useAppSidebar({ showWelcome: showWelcomeIntegrated, activeTab });
 
   // Hook para el layout del contenido principal
-  const { } = useMainContentLayout({ 
+  useMainContentLayout({ 
     showWelcome: showWelcomeIntegrated, 
     activeTab 
   });
@@ -584,14 +631,23 @@ const AppContentInternal: React.FC = () => {
         }
       } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
         // Tablas de regla seleccionadas desde ReglaSidebar
-        // Si es 'regla', establecer selectedTable para mostrar el contenido principal
-        // Si es 'regla_perfil', 'regla_umbral' o 'regla_objeto', establecer selectedTable para activar ReglaOperationsSidebar (Sidebar 4)
-        setSelectedTable(table);
-        setActiveSubTab('status'); // Resetear a status cuando cambia la tabla
+        // Funciona similar a DISPOSITIVOS: actualizar selectedTable y activeTab, resetear activeSubTab
+        console.log('[DEBUG] App.handleTableSelect: Cambiando tabla de REGLA', {
+          table,
+          previousSelectedTable: selectedTable,
+          previousActiveTab: activeTab
+        });
         
-        // Siempre actualizar activeTab para incluir la tabla seleccionada
-        // Esto asegura que ReglaOperationsSidebar se muestre correctamente
+        // Resetear activeSubTab a 'status' cuando cambia la tabla (similar a DISPOSITIVOS)
+        setActiveSubTab('status');
+        
+        // Actualizar selectedTable y activeTab simultáneamente
+        setSelectedTable(table);
         const newActiveTab = `configuracion-notificaciones-regla-${table}`;
+        console.log('[DEBUG] App.handleTableSelect: Actualizando activeTab para REGLA', {
+          table,
+          newActiveTab
+        });
         setActiveTab(newActiveTab);
       } else if (table === 'permisos-geo' || table === 'permisos-conf') {
         // Tipos de permisos seleccionados desde PermisosTipoSidebar
@@ -615,11 +671,51 @@ const AppContentInternal: React.FC = () => {
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
     
     // Si estamos en una tabla de regla, actualizar el activeTab para incluir la operación
+    // IMPORTANTE: Usar selectedTableRef.current para obtener el valor más reciente
+    // porque selectedTable puede tener el valor del closure anterior cuando se cambia de tabla
     if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-      const reglaTableMatch = activeTab.match(/configuracion-notificaciones-regla-(regla(?:_perfil|_umbral)?)/);
-      if (reglaTableMatch && (subTab === 'status' || subTab === 'insert')) {
-        const reglaTable = reglaTableMatch[1];
-        setActiveTab(`configuracion-notificaciones-regla-${reglaTable}-${subTab}`);
+      // Determinar la tabla de regla: usar selectedTableRef.current si está disponible y es una tabla de regla válida,
+      // de lo contrario extraer de activeTab
+      let reglaTable: string | null = null;
+      
+      // Priorizar selectedTableRef.current (valor más reciente) si es una tabla de regla válida
+      const currentSelectedTable = selectedTableRef.current;
+      if (currentSelectedTable && (currentSelectedTable === 'regla' || currentSelectedTable === 'regla_perfil' || currentSelectedTable === 'regla_umbral' || currentSelectedTable === 'regla_objeto')) {
+        reglaTable = currentSelectedTable;
+      } else {
+        // Fallback: extraer de activeTab
+        // El formato es: 'configuracion-notificaciones-regla-regla_perfil-insert'
+        // Necesitamos extraer todo hasta el primer guion después de 'regla'
+        const reglaPrefix = 'configuracion-notificaciones-regla-';
+        if (activeTab.startsWith(reglaPrefix)) {
+          const afterPrefix = activeTab.substring(reglaPrefix.length);
+          // Dividir por '-' y tomar la primera parte (que es la tabla)
+          const parts = afterPrefix.split('-');
+          const extractedTable = parts[0];
+          // Validar que sea una tabla de regla válida
+          if (extractedTable === 'regla' || extractedTable === 'regla_perfil' || extractedTable === 'regla_umbral' || extractedTable === 'regla_objeto') {
+            reglaTable = extractedTable;
+          }
+        }
+      }
+      
+      console.log('[DEBUG] App.handleSubTabChange: Procesando cambio de subTab para REGLA', {
+        activeTab,
+        subTab,
+        selectedTable,
+        selectedTableRef: selectedTableRef.current,
+        reglaTable
+      });
+      
+      if (reglaTable && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
+        const newActiveTab = `configuracion-notificaciones-regla-${reglaTable}-${subTab}`;
+        console.log('[DEBUG] App.handleSubTabChange: Actualizando activeTab', {
+          reglaTable,
+          subTab,
+          newActiveTab,
+          previousActiveTab: activeTab
+        });
+        setActiveTab(newActiveTab);
       }
     }
   };
@@ -866,15 +962,34 @@ const AppContentInternal: React.FC = () => {
           );
         }
         
-        // Extraer la operación si existe (ej: 'configuracion-notificaciones-regla-regla-status' -> 'status')
-        const parts = reglaTab.split('-');
-        const reglaTableName = parts[0]; // regla, regla_perfil, regla_umbral
-        const reglaOperation = parts[1]; // status, insert (opcional)
+        // Extraer la operación del activeTab completo
+        // Formato: 'configuracion-notificaciones-regla-regla_perfil-status'
+        // O: 'configuracion-notificaciones-regla-regla_perfil'
+        let reglaTableName = reglaTab; // Por defecto, reglaTab es el nombre de la tabla
+        let reglaOperation = '';
         
-        // Si hay una operación, actualizar activeSubTab
-        if (reglaOperation && (reglaOperation === 'status' || reglaOperation === 'insert')) {
-          setActiveSubTab(reglaOperation);
+        // Si activeTab tiene más partes después de la tabla, extraer la operación
+        if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+          const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
+          const parts = afterRegla.split('-');
+          
+          // La primera parte es siempre la tabla (regla, regla_perfil, regla_umbral, regla_objeto)
+          reglaTableName = parts[0];
+          
+          // La segunda parte (si existe) es la operación (status, insert)
+          if (parts.length > 1) {
+            reglaOperation = parts[1];
+          }
         }
+        
+        console.log('[DEBUG] App.renderContent: Procesando REGLA', {
+          activeTab,
+          reglaTab,
+          reglaTableName,
+          reglaOperation,
+          selectedTable,
+          currentActiveSubTab: activeSubTab
+        });
         
         // Usar SystemParameters para las tablas de regla
         return (
