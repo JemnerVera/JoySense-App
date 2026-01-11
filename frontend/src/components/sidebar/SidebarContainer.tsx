@@ -43,11 +43,23 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   const {
     mainSidebarExpanded,
     auxiliarySidebarExpanded,
+    aux1Expanded,
+    aux2Expanded,
+    aux3Expanded,
+    aux4Expanded,
     hasAuxiliarySidebar,
     handleMainSidebarMouseEnter,
     handleMainSidebarMouseLeave,
     handleAuxiliarySidebarMouseEnter,
     handleAuxiliarySidebarMouseLeave,
+    handleAux1MouseEnter,
+    handleAux1MouseLeave,
+    handleAux2MouseEnter,
+    handleAux2MouseLeave,
+    handleAux3MouseEnter,
+    handleAux3MouseLeave,
+    handleAux4MouseEnter,
+    handleAux4MouseLeave,
     handleContentMouseEnter,
     handleContentMouseLeave,
     getMainContentMargin,
@@ -75,9 +87,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
        activeTab !== 'agrupacion' && !activeTab.startsWith('agrupacion-') && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -120,9 +132,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                 onTabChange(`configuracion-${section}`);
               }
             }}
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux1Expanded}
+            onMouseEnter={handleAux1MouseEnter}
+            onMouseLeave={handleAux1MouseLeave}
           />
         </div>
       )}
@@ -136,9 +148,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className="flex-shrink-0 z-20">
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '')}
@@ -238,9 +250,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         return (
           <div className="flex-shrink-0 z-30">
             <AuxiliarySidebar
-              isExpanded={auxiliarySidebarExpanded}
-              onMouseEnter={handleAuxiliarySidebarMouseEnter}
-              onMouseLeave={handleAuxiliarySidebarMouseLeave}
+              isExpanded={aux3Expanded}
+              onMouseEnter={handleAux3MouseEnter}
+              onMouseLeave={handleAux3MouseLeave}
               activeTab={activeTab}
               onTabChange={onTabChange}
               selectedTable={(() => {
@@ -286,9 +298,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -320,9 +332,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -359,9 +371,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={(() => {
@@ -402,9 +414,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -439,9 +451,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -476,9 +488,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -529,9 +541,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
                 onSubTabChange(subTab);
               }
             }) : (() => {})) as ((subTab: 'status' | 'insert') => void)}
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux4Expanded}
+            onMouseEnter={handleAux4MouseEnter}
+            onMouseLeave={handleAux4MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
           />
@@ -545,9 +557,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -575,9 +587,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux3Expanded}
+            onMouseEnter={handleAux3MouseEnter}
+            onMouseLeave={handleAux3MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -608,9 +620,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       ) && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux3Expanded}
+            onMouseEnter={handleAux3MouseEnter}
+            onMouseLeave={handleAux3MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
@@ -634,9 +646,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
-            isExpanded={auxiliarySidebarExpanded}
-            onMouseEnter={handleAuxiliarySidebarMouseEnter}
-            onMouseLeave={handleAuxiliarySidebarMouseLeave}
+            isExpanded={aux3Expanded}
+            onMouseEnter={handleAux3MouseEnter}
+            onMouseLeave={handleAux3MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
             selectedTable={selectedTable}
