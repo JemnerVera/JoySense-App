@@ -38,8 +38,8 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
            tab === 'permisos' || tab.startsWith('permisos-') ||
            tab === 'alertas' || tab.startsWith('alertas-') ||
            tab === 'configuracion' || tab.startsWith('configuracion-') ||
-           tab === 'agrupacion' || tab.startsWith('agrupacion-');
-           // Nota: 'ajustes' no tiene sidebar auxiliar
+           tab === 'agrupacion' || tab.startsWith('agrupacion-') ||
+           tab === 'ajustes' || tab.startsWith('ajustes-');
   }, []);
 
   // Función para limpiar timeout
@@ -68,7 +68,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // Función para colapsar todos los sidebars en cascada inversa
   const collapseAllSidebars = useCallback(() => {
-    console.log('[useSidebarLayout] collapseAllSidebars: Colapsando todos los sidebars en cascada inversa');
     // Limpiar todos los niveles hovered
     hoveredLevelsRef.current.clear();
     hoveredLevelRef.current = null;
@@ -78,19 +77,15 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     // Colapso en cascada inversa: main -> aux1 -> aux2 -> aux3 -> aux4
     setMainSidebarExpanded(false);
     setTimeout(() => {
-      console.log('[useSidebarLayout] collapseAllSidebars: Colapsando aux1');
       setAux1Expanded(false);
     }, 50);
     setTimeout(() => {
-      console.log('[useSidebarLayout] collapseAllSidebars: Colapsando aux2');
       setAux2Expanded(false);
     }, 100);
     setTimeout(() => {
-      console.log('[useSidebarLayout] collapseAllSidebars: Colapsando aux3');
       setAux3Expanded(false);
     }, 150);
     setTimeout(() => {
-      console.log('[useSidebarLayout] collapseAllSidebars: Colapsando aux4');
       setAux4Expanded(false);
     }, 200);
   }, [clearCloseTimeout]);
@@ -98,11 +93,9 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   // Función para programar cierre en cascada inversa
   // EVENTO 3: Colapso en cascada inversa cuando se sale de los sidebars
   const scheduleClose = useCallback((fromLevel: SidebarLevel) => {
-    console.log('[useSidebarLayout] scheduleClose: Programando cierre desde', fromLevel);
     clearCloseTimeout();
     closeTimeoutRef.current = setTimeout(() => {
       const levelToRemove = fromLevel; // Guardar el nivel en una constante para usarlo en el timeout
-      console.log('[useSidebarLayout] scheduleClose: Ejecutando cierre desde', levelToRemove);
       // Remover el nivel del que se salió Y TODOS los niveles más internos del set de niveles hovered
       // Porque si salimos de aux2, también salimos de aux1 y main
       // Orden de más externo a más interno: aux4 > aux3 > aux2 > aux1 > main
@@ -123,12 +116,10 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
       // Remover todos los niveles internos
       levelsToRemove.forEach(level => hoveredLevelsRef.current.delete(level));
       const remainingHoveredLevels = Array.from(hoveredLevelsRef.current);
-      console.log('[useSidebarLayout] scheduleClose: Niveles hovered después de remover', levelToRemove, 'y niveles internos:', remainingHoveredLevels);
       
       // Si no hay ningún nivel siendo hovered, significa que el cursor salió completamente de los sidebars
       // En este caso, colapsar todo en cascada inversa inmediatamente
       if (remainingHoveredLevels.length === 0) {
-        console.log('[useSidebarLayout] scheduleClose: No hay niveles hovered, colapsando todo inmediatamente (cursor salió completamente de los sidebars)');
         collapseAllSidebars();
         return;
       }
@@ -142,7 +133,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         const anySidebarExpanded = mainSidebarExpanded || aux1Expanded || aux2Expanded || aux3Expanded || aux4Expanded;
         
         if (hoveredLevelsRef.current.size === 0) {
-          console.log('[useSidebarLayout] scheduleClose: Verificación final - No hay niveles hovered después de delay, colapsando todo (cursor salió completamente de los sidebars)');
           collapseAllSidebars();
           return;
         }
@@ -150,7 +140,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         // Si hay niveles hovered pero NO hay ningún sidebar expandido, significa que el cursor salió completamente
         // Esto es un fallback para cuando los niveles hovered no se limpian correctamente
         if (!anySidebarExpanded && hoveredLevelsRef.current.size > 0) {
-          console.log('[useSidebarLayout] scheduleClose: Verificación final - Hay niveles hovered pero ningún sidebar expandido, limpiando y colapsando todo (fallback robusto)');
           hoveredLevelsRef.current.clear();
           hoveredLevelRef.current = null;
           collapseAllSidebars();
@@ -176,7 +165,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
                                  maxHoveredLevel === 'main' ? mainSidebarExpanded : false;
         
         if (maxHoveredLevel && !maxLevelExpanded) {
-          console.log('[useSidebarLayout] scheduleClose: Verificación final - Nivel más externo hovered', maxHoveredLevel, 'NO tiene su sidebar expandido, limpiando y colapsando todo (fallback ultra-robusto)');
           hoveredLevelsRef.current.clear();
           hoveredLevelRef.current = null;
           collapseAllSidebars();
@@ -185,22 +173,17 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         
         // Si todavía hay niveles hovered Y hay sidebars expandidos, significa que el cursor realmente está moviéndose entre sidebars
         // En este caso, mantener los sidebars más externos expandidos y colapsar solo los internos que no están hovered
-        console.log('[useSidebarLayout] scheduleClose: Verificación final - Todavía hay', currentHoveredLevels.size, 'niveles hovered:', Array.from(currentHoveredLevels), '- Cursor moviéndose entre sidebars');
         
         // maxHoveredLevel ya fue calculado arriba, reutilizarlo
         if (!maxHoveredLevel) {
-          console.log('[useSidebarLayout] scheduleClose: No hay nivel más externo, colapsando todo');
           collapseAllSidebars();
           return;
         }
-        
-        console.log('[useSidebarLayout] scheduleClose: Nivel más externo hovered:', maxHoveredLevel);
       
         // Colapsar en cascada inversa solo los niveles más internos que el nivel más externo hovered
         // y que no están siendo hovered. Los niveles más externos siempre se mantienen expandidos.
         // Colapso en cascada inversa: main -> aux1 -> aux2 -> aux3 -> aux4
         if (maxHoveredLevel === 'aux4') {
-        console.log('[useSidebarLayout] scheduleClose: aux4 es el más externo hovered, colapsando solo los que no están hovered en cascada inversa');
         // Si aux4 está hovered, colapsar solo los que no están hovered (en cascada inversa)
         if (!currentHoveredLevels.has('main')) {
           setMainSidebarExpanded(false);
@@ -232,7 +215,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
           }
         }
       } else if (maxHoveredLevel === 'aux3') {
-        console.log('[useSidebarLayout] scheduleClose: aux3 es el más externo hovered, manteniendo aux4 y colapsando internos en cascada inversa');
         // Si aux3 es el más externo hovered, mantener aux4 expandido y colapsar los internos en cascada inversa
         setAux4Expanded(true);
         if (!currentHoveredLevels.has('main')) {
@@ -254,7 +236,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
           }
         }
       } else if (maxHoveredLevel === 'aux2') {
-        console.log('[useSidebarLayout] scheduleClose: aux2 es el más externo hovered, manteniendo aux3 y aux4 y colapsando internos en cascada inversa');
         // Si aux2 es el más externo hovered, mantener aux3 y aux4 expandidos
         setAux3Expanded(true);
         setAux4Expanded(true);
@@ -267,7 +248,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
           setAux1Expanded(false);
         }
       } else if (maxHoveredLevel === 'aux1') {
-        console.log('[useSidebarLayout] scheduleClose: aux1 es el más externo hovered, manteniendo aux2, aux3, aux4 y colapsando main');
         // Si aux1 es el más externo hovered, mantener aux2, aux3, aux4 expandidos
         setAux2Expanded(true);
         setAux3Expanded(true);
@@ -276,7 +256,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
           setMainSidebarExpanded(false);
         }
       } else if (maxHoveredLevel === 'main') {
-        console.log('[useSidebarLayout] scheduleClose: main es el más externo hovered, manteniendo todo expandido');
         // Si main es el más externo hovered, mantener todo expandido
         setAux1Expanded(true);
         setAux2Expanded(true);
@@ -286,7 +265,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
       
       // Actualizar hoveredLevelRef al nivel más externo hovered
       hoveredLevelRef.current = maxHoveredLevel;
-      console.log('[useSidebarLayout] scheduleClose: hoveredLevelRef actualizado a', maxHoveredLevel);
       }, 150); // Delay de 150ms para verificar si el cursor realmente está en los sidebars
     }, 200); // Reducido a 200ms para respuesta más rápida
   }, [clearCloseTimeout, collapseAllSidebars]);
@@ -294,7 +272,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   // Función para expandir en cascada (desde el nivel más externo hacia el más interno)
   // EVENTO 2: Expansión en cascada cuando el cursor viene desde la ventana principal hacia los sidebars
   const expandCascade = useCallback((toLevel: SidebarLevel, fromContent: boolean = false) => {
-    console.log('[useSidebarLayout] expandCascade: Expandiendo en cascada hasta', toLevel, 'desde contenido:', fromContent);
     clearCloseTimeout();
     
     // Si viene desde el contenido, activar expansión en cascada
@@ -305,27 +282,22 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     // Agregar el nivel al set de niveles hovered
     hoveredLevelsRef.current.add(toLevel);
     hoveredLevelRef.current = toLevel;
-    console.log('[useSidebarLayout] expandCascade: Niveles hovered actuales', Array.from(hoveredLevelsRef.current), 'desde contenido:', isComingFromContentRef.current);
     
     // Si viene desde el contenido, expandir en cascada desde el nivel más externo hacia el especificado
     if (fromContent || isComingFromContentRef.current) {
       // Expandir desde aux4 hacia el nivel especificado
       if (toLevel === 'aux4') {
-        console.log('[useSidebarLayout] expandCascade: Expandiendo solo aux4 (desde contenido)');
         setAux4Expanded(true);
       } else if (toLevel === 'aux3') {
-        console.log('[useSidebarLayout] expandCascade: Expandiendo aux4 y aux3 (desde contenido)');
         setAux4Expanded(true);
         setTimeout(() => setAux3Expanded(true), 50);
       } else if (toLevel === 'aux2') {
-        console.log('[useSidebarLayout] expandCascade: Expandiendo aux4, aux3 y aux2 (desde contenido)');
         setAux4Expanded(true);
         setTimeout(() => {
           setAux3Expanded(true);
           setTimeout(() => setAux2Expanded(true), 50);
         }, 50);
       } else if (toLevel === 'aux1') {
-        console.log('[useSidebarLayout] expandCascade: Expandiendo aux4, aux3, aux2 y aux1 (desde contenido)');
         setAux4Expanded(true);
         setTimeout(() => {
           setAux3Expanded(true);
@@ -335,7 +307,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
           }, 50);
         }, 50);
       } else if (toLevel === 'main') {
-        console.log('[useSidebarLayout] expandCascade: Expandiendo todos los sidebars (aux4, aux3, aux2, aux1, main) desde contenido');
         setAux4Expanded(true);
         setTimeout(() => {
           setAux3Expanded(true);
@@ -350,7 +321,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
       }
     } else {
       // Si NO viene desde el contenido, expandir directamente sin cascada (click en pestaña)
-      console.log('[useSidebarLayout] expandCascade: Expansión directa (click en pestaña) hasta', toLevel);
       if (toLevel === 'aux4') {
         setAux4Expanded(true);
       } else if (toLevel === 'aux3') {
@@ -377,7 +347,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // Handlers de hover para cada nivel de sidebar
   const handleMainSidebarMouseEnter = useCallback(() => {
-    console.log('[useSidebarLayout] handleMainSidebarMouseEnter: Cursor entró al sidebar principal, desde contenido:', isComingFromContentRef.current);
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('main', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -385,14 +354,12 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade]);
 
   const handleMainSidebarMouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleMainSidebarMouseLeave: Cursor salió del sidebar principal');
     if (activeTab) {
       scheduleClose('main');
     }
   }, [scheduleClose, activeTab]);
 
   const handleAux1MouseEnter = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux1MouseEnter: Cursor entró al sidebar aux1, desde contenido:', isComingFromContentRef.current);
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux1', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -400,14 +367,12 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade]);
 
   const handleAux1MouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux1MouseLeave: Cursor salió del sidebar aux1');
     if (activeTab) {
       scheduleClose('aux1');
     }
   }, [scheduleClose, activeTab]);
 
   const handleAux2MouseEnter = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux2MouseEnter: Cursor entró al sidebar aux2, desde contenido:', isComingFromContentRef.current);
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux2', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -415,14 +380,12 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade]);
 
   const handleAux2MouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux2MouseLeave: Cursor salió del sidebar aux2');
     if (activeTab) {
       scheduleClose('aux2');
     }
   }, [scheduleClose, activeTab]);
 
   const handleAux3MouseEnter = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux3MouseEnter: Cursor entró al sidebar aux3, desde contenido:', isComingFromContentRef.current);
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux3', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -430,14 +393,12 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade]);
 
   const handleAux3MouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux3MouseLeave: Cursor salió del sidebar aux3');
     if (activeTab) {
       scheduleClose('aux3');
     }
   }, [scheduleClose, activeTab]);
 
   const handleAux4MouseEnter = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux4MouseEnter: Cursor entró al sidebar aux4, desde contenido:', isComingFromContentRef.current);
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux4', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -445,7 +406,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade]);
 
   const handleAux4MouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleAux4MouseLeave: Cursor salió del sidebar aux4');
     if (activeTab) {
       scheduleClose('aux4');
     }
@@ -463,7 +423,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   // EVENTO 1: Cuando el cursor entra a la ventana principal, colapsar TODOS los sidebars en cascada inversa
   const handleContentMouseEnter = useCallback(() => {
     if (activeTab) {
-      console.log('[useSidebarLayout] handleContentMouseEnter: Cursor entró al contenido principal, colapsando TODOS los sidebars inmediatamente');
       // Cancelar cualquier timeout de cierre programado
       clearCloseTimeout();
       // Limpiar todos los niveles hovered inmediatamente para evitar que scheduleClose mantenga algunos sidebars expandidos
@@ -480,7 +439,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // EVENTO 2: Cuando el cursor sale del contenido, activar expansión en cascada
   const handleContentMouseLeave = useCallback(() => {
-    console.log('[useSidebarLayout] handleContentMouseLeave: Cursor salió del contenido principal, activando expansión en cascada');
     isComingFromContentRef.current = true;
   }, []);
 

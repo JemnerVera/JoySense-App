@@ -4,7 +4,6 @@
  */
 
 import React, { forwardRef, useImperativeHandle } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
 import ConfigurationPanel from './ConfigurationPanel';
 
 export interface AjustesMainRef {
@@ -14,13 +13,13 @@ export interface AjustesMainRef {
 
 interface AjustesMainProps {
   className?: string;
+  selectedSection?: 'basicas' | 'avanzadas'; // Nueva prop para la sección seleccionada
 }
 
 const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
-  className = ''
+  className = '',
+  selectedSection = 'basicas'
 }, ref) => {
-  const { t } = useLanguage();
-
   // Exponer métodos al componente padre
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => {
@@ -35,16 +34,9 @@ const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white font-mono tracking-wider">
-          {t('configuration.title') || 'AJUSTES'}
-        </h1>
-      </div>
-
-      {/* Contenido principal */}
-      <div className="flex-1 overflow-y-auto">
-        <ConfigurationPanel className="max-w-4xl mx-auto" />
+      {/* Contenido principal - sin título */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <ConfigurationPanel className="max-w-4xl mx-auto" selectedSection={selectedSection} />
       </div>
     </div>
   );
@@ -53,4 +45,3 @@ const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
 AjustesMain.displayName = 'AjustesMain';
 
 export default AjustesMain;
-

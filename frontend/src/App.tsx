@@ -507,7 +507,7 @@ const AppContentInternal: React.FC = () => {
   }
 
 
-// Handlers para cambios de pestaña
+  // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
@@ -1150,10 +1150,29 @@ const AppContentInternal: React.FC = () => {
     }
 
     // Manejar ajustes
-    if (activeTab === 'ajustes') {
+    if (activeTab === 'ajustes' || activeTab.startsWith('ajustes-')) {
+      // Si activeTab es exactamente 'ajustes', mostrar mensaje de selección
+      if (activeTab === 'ajustes') {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-gray-500 mb-4 font-mono tracking-wider">AJUSTES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA TABLA DEL SIDEBAR</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // Extraer la sección (ajustes-basicas o ajustes-avanzadas)
+      const ajustesSection = activeTab.replace('ajustes-', '') || 'basicas';
+      const selectedSection = (ajustesSection === 'avanzadas' ? 'avanzadas' : 'basicas') as 'basicas' | 'avanzadas';
+      
       return (
         <AjustesMain
           ref={ajustesMainRef}
+          selectedSection={selectedSection}
         />
       );
     }
@@ -1938,7 +1957,18 @@ const AppContentInternal: React.FC = () => {
                           return breadcrumb;
                         })()
                       : activeTab === 'ajustes' || activeTab?.startsWith('ajustes-')
-                      ? 'AJUSTES'
+                      ? (() => {
+                          let breadcrumb = 'AJUSTES';
+                          if (activeTab.startsWith('ajustes-')) {
+                            const ajustesSection = activeTab.replace('ajustes-', '');
+                            if (ajustesSection === 'basicas') {
+                              breadcrumb += ' / CONF. BÁSICAS';
+                            } else if (ajustesSection === 'avanzadas') {
+                              breadcrumb += ' / CONF. AVANZADAS';
+                            }
+                          }
+                          return breadcrumb;
+                        })()
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>

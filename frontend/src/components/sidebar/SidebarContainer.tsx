@@ -5,6 +5,7 @@ import MainSidebar from './MainSidebar';
 import AuxiliarySidebar from './AuxiliarySidebar';
 import ReglaOperationsSidebar from './ReglaOperationsSidebar';
 import ConfiguracionSidebar from './ConfiguracionSidebar';
+import AjustesSidebar from './AjustesSidebar';
 
 interface SidebarContainerProps {
   showWelcome: boolean;
@@ -85,10 +86,11 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         />
       </div>
 
-      {/* Sidebar auxiliar (excluir permisos, configuracion y agrupacion - se manejan después) */}
+      {/* Sidebar auxiliar (excluir permisos, configuracion, agrupacion y ajustes - se manejan después) */}
       {hasAuxiliarySidebar(activeTab) && activeTab !== 'permisos' && !activeTab.startsWith('permisos-') && 
        activeTab !== 'configuracion' && !activeTab.startsWith('configuracion-') &&
-       activeTab !== 'agrupacion' && !activeTab.startsWith('agrupacion-') && (
+       activeTab !== 'agrupacion' && !activeTab.startsWith('agrupacion-') &&
+       activeTab !== 'ajustes' && !activeTab.startsWith('ajustes-') && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
             isExpanded={aux2Expanded}
@@ -134,6 +136,31 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onSectionSelect={(section) => {
               if (onTabChange) {
                 onTabChange(`configuracion-${section}`);
+              }
+            }}
+            isExpanded={aux1Expanded}
+            onMouseEnter={handleAux1MouseEnter}
+            onMouseLeave={handleAux1MouseLeave}
+          />
+        </div>
+      )}
+
+      {/* Sidebar Aux 1: AJUSTES (SIEMPRE visible cuando está en ajustes o sus subsecciones) */}
+      {(() => {
+        const isAjustes = activeTab === 'ajustes' || activeTab.startsWith('ajustes-')
+        const shouldShow = isAjustes && hasAuxiliarySidebar(activeTab)
+        return shouldShow
+      })() && (
+        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
+          <AjustesSidebar
+            selectedSection={(() => {
+              if (!activeTab.startsWith('ajustes-')) return 'basicas'
+              const rest = activeTab.replace('ajustes-', '')
+              return (rest === 'avanzadas' ? 'avanzadas' : 'basicas') as 'basicas' | 'avanzadas'
+            })()}
+            onSectionSelect={(section) => {
+              if (onTabChange) {
+                onTabChange(`ajustes-${section}`);
               }
             }}
             isExpanded={aux1Expanded}
