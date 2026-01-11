@@ -15,72 +15,69 @@ export const UserControls: React.FC<UserControlsProps> = ({ activeTab }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Determinar colores según la pestaña activa
+  // Determinar colores según la pestaña principal activa
+  // Las pestañas principales son: reportes (blue), agrupacion (green), configuracion (orange), ajustes (gray)
   const getThemeColors = () => {
-    if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
-      return {
-        gradient: 'from-orange-500 to-orange-600',
-        hoverGradient: 'hover:from-orange-600 hover:to-orange-700',
-        border: 'border-orange-400',
-        text: 'text-orange-500',
-        focusRing: 'focus:ring-orange-500',
-        focusBorder: 'focus:border-orange-500'
-      };
-    } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
-      return {
-        gradient: 'from-blue-500 to-blue-600',
-        hoverGradient: 'hover:from-blue-600 hover:to-blue-700',
-        border: 'border-blue-400',
-        text: 'text-blue-500',
-        focusRing: 'focus:ring-blue-500',
-        focusBorder: 'focus:border-blue-500'
-      };
-    } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
-      return {
-        gradient: 'from-purple-500 to-purple-600',
-        hoverGradient: 'hover:from-purple-600 hover:to-purple-700',
-        border: 'border-purple-400',
-        text: 'text-purple-500',
-        focusRing: 'focus:ring-purple-500',
-        focusBorder: 'focus:border-purple-500'
-      };
-    } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
-      return {
-        gradient: 'from-purple-500 to-purple-600',
-        hoverGradient: 'hover:from-purple-600 hover:to-purple-700',
-        border: 'border-purple-400',
-        text: 'text-purple-500',
-        focusRing: 'focus:ring-purple-500',
-        focusBorder: 'focus:border-purple-500'
-      };
-    } else if (activeTab === 'alertas' || activeTab?.startsWith('alertas-')) {
-      return {
-        gradient: 'from-red-500 to-red-600',
-        hoverGradient: 'hover:from-red-600 hover:to-red-700',
-        border: 'border-red-400',
-        text: 'text-red-500',
-        focusRing: 'focus:ring-red-500',
-        focusBorder: 'focus:border-red-500'
-      };
-    } else if (activeTab === 'reportes' || activeTab?.startsWith('reportes-')) {
-      return {
-        gradient: 'from-green-500 to-green-600',
-        hoverGradient: 'hover:from-green-600 hover:to-green-700',
-        border: 'border-green-400',
-        text: 'text-green-500',
-        focusRing: 'focus:ring-green-500',
-        focusBorder: 'focus:border-green-500'
-      };
-    } else {
-      // Dashboard - verde por defecto
-      return {
-        gradient: 'from-green-500 to-green-600',
-        hoverGradient: 'hover:from-green-600 hover:to-green-700',
-        border: 'border-green-400',
-        text: 'text-green-500',
-        focusRing: 'focus:ring-green-500',
-        focusBorder: 'focus:border-green-500'
-      };
+    // Determinar la pestaña principal basándose en activeTab
+    let mainTabColor = 'blue'; // Por defecto: reportes
+    
+    if (activeTab === 'reportes' || activeTab?.startsWith('reportes-')) {
+      mainTabColor = 'blue';
+    } else if (activeTab === 'agrupacion' || activeTab?.startsWith('agrupacion-')) {
+      mainTabColor = 'green';
+    } else if (activeTab === 'configuracion' || activeTab?.startsWith('configuracion-')) {
+      mainTabColor = 'orange';
+    } else if (activeTab === 'ajustes' || activeTab?.startsWith('ajustes-')) {
+      mainTabColor = 'gray';
+    }
+    
+    // Retornar colores según la pestaña principal
+    switch (mainTabColor) {
+      case 'blue':
+        return {
+          gradient: 'from-blue-500 to-blue-600',
+          hoverGradient: 'hover:from-blue-600 hover:to-blue-700',
+          border: 'border-blue-400',
+          text: 'text-blue-500',
+          focusRing: 'focus:ring-blue-500',
+          focusBorder: 'focus:border-blue-500'
+        };
+      case 'green':
+        return {
+          gradient: 'from-green-500 to-green-600',
+          hoverGradient: 'hover:from-green-600 hover:to-green-700',
+          border: 'border-green-400',
+          text: 'text-green-500',
+          focusRing: 'focus:ring-green-500',
+          focusBorder: 'focus:border-green-500'
+        };
+      case 'orange':
+        return {
+          gradient: 'from-orange-500 to-orange-600',
+          hoverGradient: 'hover:from-orange-600 hover:to-orange-700',
+          border: 'border-orange-400',
+          text: 'text-orange-500',
+          focusRing: 'focus:ring-orange-500',
+          focusBorder: 'focus:border-orange-500'
+        };
+      case 'gray':
+        return {
+          gradient: 'from-gray-500 to-gray-600',
+          hoverGradient: 'hover:from-gray-600 hover:to-gray-700',
+          border: 'border-gray-400',
+          text: 'text-gray-500',
+          focusRing: 'focus:ring-gray-500',
+          focusBorder: 'focus:border-gray-500'
+        };
+      default:
+        return {
+          gradient: 'from-blue-500 to-blue-600',
+          hoverGradient: 'hover:from-blue-600 hover:to-blue-700',
+          border: 'border-blue-400',
+          text: 'text-blue-500',
+          focusRing: 'focus:ring-blue-500',
+          focusBorder: 'focus:border-blue-500'
+        };
     }
   };
 

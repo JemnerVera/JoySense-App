@@ -1558,48 +1558,19 @@ const AppContentInternal: React.FC = () => {
         {!showWelcomeIntegrated && (
           <div className="flex-shrink-0">
             {/* Tactical Header */}
-            <div className={`h-16 bg-white dark:bg-neutral-800 border-b flex items-center justify-between px-6 ${
-              activeTab === 'permisos' || activeTab?.startsWith('permisos-')
-                ? 'border-purple-500 dark:border-purple-500'
-                : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
-                ? 'border-red-500 dark:border-red-500'
-                : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
-                ? 'border-blue-600 dark:border-blue-600'
-                : activeTab === 'geografia' || activeTab?.startsWith('geografia-')
-                ? 'border-blue-500 dark:border-blue-500'
-                : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
-                ? 'border-orange-500 dark:border-orange-500'
-                : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
-                ? 'border-green-500 dark:border-green-500'
-                : activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')
-                ? 'border-cyan-500 dark:border-cyan-500'
-                : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
-                ? 'border-orange-500 dark:border-orange-500'
-                : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                ? 'border-gray-500 dark:border-gray-500'
-                : 'border-gray-200 dark:border-neutral-700'
-            }`}>
+            <div className="h-16 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-6">
               <div className="flex items-center gap-4">
-                <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-                  JOYSENSE APP / <span className={
-                    activeTab === 'geografia' || activeTab?.startsWith('geografia-')
-                      ? 'text-blue-500' // Azul para Geografía
-                      : activeTab === 'parametros' || activeTab?.startsWith('parametros-')
-                      ? 'text-orange-500' // Naranja para Parámetros
-                      : activeTab === 'tabla' || activeTab?.startsWith('tabla-')
-                      ? 'text-green-500' // Verde para Tabla
-                      : activeTab === 'notificaciones' || activeTab?.startsWith('notificaciones-')
-                      ? 'text-cyan-500' // Cyan para Notificaciones
-                      : activeTab === 'parameters' || activeTab?.startsWith('parameters-')
-                      ? 'text-orange-500' // Naranja para Parámetros (legacy)
-                      : activeTab === 'reportes' || activeTab?.startsWith('reportes-')
+                <div className="text-sm font-mono">
+                  <span className={
+                    // Determinar color según la pestaña principal
+                    activeTab === 'reportes' || activeTab?.startsWith('reportes-')
                       ? 'text-blue-500' // Azul para Reportes
-                      : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
-                      ? 'text-gray-500' // Gris claro para Configuración
-                      : activeTab === 'permisos' || activeTab?.startsWith('permisos-')
-                      ? 'text-purple-500' // Púrpura para Permisos
-                      : activeTab === 'alertas' || activeTab?.startsWith('alertas-')
-                      ? 'text-red-500' // Rojo para Alertas
+                      : activeTab === 'agrupacion' || activeTab?.startsWith('agrupacion-')
+                      ? 'text-green-500' // Verde para Agrupación
+                      : activeTab === 'configuracion' || activeTab?.startsWith('configuracion-')
+                      ? 'text-orange-500' // Naranja para Configuración
+                      : activeTab === 'ajustes' || activeTab?.startsWith('ajustes-')
+                      ? 'text-gray-500' // Gris para Ajustes
                       : 'text-gray-500' // Gris por defecto
                   }>
                     {activeTab === 'geografia' || activeTab?.startsWith('geografia-')
@@ -1829,6 +1800,131 @@ const AppContentInternal: React.FC = () => {
                           }
                           return breadcrumb;
                         })()
+                      : activeTab === 'agrupacion' || activeTab?.startsWith('agrupacion-')
+                      ? (() => {
+                          let breadcrumb = 'AGRUPACIÓN';
+                          if (activeTab.startsWith('agrupacion-')) {
+                            const agrupacionTable = activeTab.replace('agrupacion-', '');
+                            const tableNames: Record<string, string> = {
+                              'entidad': 'ENTIDAD',
+                              'entidad_localizacion': 'LOCALIZACIÓN DE ENTIDAD'
+                            };
+                            breadcrumb += ` / ${tableNames[agrupacionTable]?.toUpperCase() || agrupacionTable.toUpperCase()}`;
+                            if (activeSubTab) {
+                              const subTabNames: { [key: string]: string } = {
+                                'status': t('subtabs.status'),
+                                'insert': t('subtabs.insert'),
+                                'update': t('subtabs.update'),
+                                'massive': t('subtabs.massive')
+                              };
+                              breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                            }
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'configuracion' || activeTab?.startsWith('configuracion-')
+                      ? (() => {
+                          let breadcrumb = 'CONFIGURACIÓN';
+                          if (activeTab.startsWith('configuracion-')) {
+                            const configPart = activeTab.replace('configuracion-', '');
+                            // Determinar la sección de configuración
+                            if (configPart.startsWith('dispositivos-')) {
+                              breadcrumb += ' / DISPOSITIVOS';
+                              const table = configPart.replace('dispositivos-', '').split('-')[0];
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                const subTab = configPart.replace(`dispositivos-${table}-`, '').split('-')[0];
+                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': t('subtabs.status'),
+                                    'insert': t('subtabs.insert'),
+                                    'update': t('subtabs.update')
+                                  };
+                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                }
+                              }
+                            } else if (configPart.startsWith('usuarios-')) {
+                              breadcrumb += ' / USUARIOS';
+                              const table = configPart.replace('usuarios-', '').split('-')[0];
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                const subTab = configPart.replace(`usuarios-${table}-`, '').split('-')[0];
+                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': t('subtabs.status'),
+                                    'insert': t('subtabs.insert'),
+                                    'update': t('subtabs.update')
+                                  };
+                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                }
+                              }
+                            } else if (configPart.startsWith('parametros-geo-')) {
+                              breadcrumb += ' / PARÁMETROS GEO';
+                              const table = configPart.replace('parametros-geo-', '').split('-')[0];
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                const subTab = configPart.replace(`parametros-geo-${table}-`, '').split('-')[0];
+                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': t('subtabs.status'),
+                                    'insert': t('subtabs.insert'),
+                                    'update': t('subtabs.update')
+                                  };
+                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                }
+                              }
+                            } else if (configPart.startsWith('notificaciones-')) {
+                              breadcrumb += ' / NOTIFICACIONES';
+                              if (configPart.startsWith('notificaciones-regla-')) {
+                                const reglaPart = configPart.replace('notificaciones-regla-', '');
+                                const reglaTable = reglaPart.split('-')[0];
+                                if (reglaTable) {
+                                  const reglaTableNames: Record<string, string> = {
+                                    'regla': 'REGLA',
+                                    'regla_perfil': 'REGLA_PERFIL',
+                                    'regla_umbral': 'REGLA_UMBRAL',
+                                    'regla_objeto': 'REGLA_OBJETO'
+                                  };
+                                  breadcrumb += ` / ${reglaTableNames[reglaTable]?.toUpperCase() || reglaTable.toUpperCase()}`;
+                                  const subTab = reglaPart.replace(`${reglaTable}-`, '').split('-')[0];
+                                  if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                    const subTabNames: { [key: string]: string } = {
+                                      'status': t('subtabs.status'),
+                                      'insert': t('subtabs.insert'),
+                                      'update': t('subtabs.update')
+                                    };
+                                    breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                  }
+                                }
+                              }
+                            } else if (configPart.startsWith('permisos-')) {
+                              breadcrumb += ' / PERMISOS';
+                              if (configPart.startsWith('permisos-permisos-')) {
+                                const permisosTipo = configPart.replace('permisos-permisos-', '').split('-')[0];
+                                breadcrumb += ` / ${permisosTipo.toUpperCase()}`;
+                                const subTab = configPart.replace(`permisos-permisos-${permisosTipo}-`, '').split('-')[0];
+                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'asignar')) {
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': t('subtabs.status'),
+                                    'insert': t('subtabs.insert'),
+                                    'update': t('subtabs.update'),
+                                    'asignar': 'ASIGNAR'
+                                  };
+                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                }
+                              }
+                            } else if (configPart.startsWith('reportes-administrador-')) {
+                              breadcrumb += ' / REPORTES ADMINISTRADOR';
+                              const table = configPart.replace('reportes-administrador-', '');
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                              }
+                            }
+                          }
+                          return breadcrumb;
+                        })()
+                      : activeTab === 'ajustes' || activeTab?.startsWith('ajustes-')
+                      ? 'AJUSTES'
                       : activeTab?.toUpperCase() || 'OVERVIEW'
                     }
                   </span>
