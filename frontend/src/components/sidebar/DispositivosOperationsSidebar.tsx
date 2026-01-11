@@ -91,7 +91,13 @@ const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps
   const config = getTableConfig(selectedTable);
 
   // Filtrar operaciones según permisos de la tabla y permisos del usuario
+  // IMPORTANTE: NO mostrar operaciones hasta que los permisos se hayan verificado
   const availableOperations = useMemo(() => {
+    // Si aún se están cargando permisos, NO mostrar ninguna operación (previene mostrar elementos sin permiso)
+    if (permissionsLoading) {
+      return [];
+    }
+    
     const filtered = allOperations.filter(op => {
       // Verificar permisos de configuración de la tabla
       if (op.id === 'insert' && !config?.allowInsert) {
@@ -102,11 +108,6 @@ const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps
       }
       if (op.id === 'massive' && !config?.allowMassive) {
         return false;
-      }
-      
-      // Si aún se están cargando permisos, mostrar todas las pestañas permitidas por configuración
-      if (permissionsLoading) {
-        return true;
       }
       
       // Verificar permisos del usuario (solo cuando ya se cargaron)
@@ -145,8 +146,17 @@ const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
-          <nav className="space-y-1">
-            {availableOperations.map((operation) => {
+          {/* Mostrar loading state mientras se verifican permisos */}
+          {permissionsLoading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+          )}
+          
+          {/* Solo mostrar operaciones después de verificar permisos */}
+          {!permissionsLoading && (
+            <nav className="space-y-1">
+              {availableOperations.map((operation) => {
               const isActive = activeSubTab === operation.id;
               return (
                 <ProtectedSubTabButton
@@ -183,8 +193,9 @@ const DispositivosOperationsSidebar: React.FC<DispositivosOperationsSidebarProps
                   )}
                 </ProtectedSubTabButton>
               );
-            })}
-          </nav>
+              })}
+            </nav>
+          )}
         </div>
       </div>
     </BaseAuxiliarySidebar>
