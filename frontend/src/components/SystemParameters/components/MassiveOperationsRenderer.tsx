@@ -4,6 +4,8 @@
 
 import React from 'react';
 import { MassiveUmbralForm } from '../../MassiveUmbralForm';
+import { MassiveSensorForm } from '../../MassiveSensorForm';
+import { MassiveMetricaSensorForm } from '../../MassiveMetricaSensorForm';
 
 interface MassiveOperationsRendererProps {
   selectedTable: string;
@@ -22,6 +24,7 @@ interface MassiveOperationsRendererProps {
   getFundoName: (fundoId: string) => string;
   onFormDataChange?: (massiveFormData: Record<string, any>) => void;
   localizacionesData?: any[];
+  entidadesData?: any[];
 }
 
 export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps> = ({
@@ -38,7 +41,8 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
   getEmpresaName,
   getFundoName,
   onFormDataChange,
-  localizacionesData
+  localizacionesData,
+  entidadesData
 }) => {
   if (!config?.allowMassive) return null;
 
@@ -58,6 +62,32 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
         getFundoName={getFundoName}
         onFormDataChange={onFormDataChange}
         localizacionesData={localizacionesData || []}
+      />
+    );
+  }
+
+  // Si es la tabla sensor, renderizar el formulario masivo de sensores
+  if (selectedTable === 'sensor') {
+    return (
+      <MassiveSensorForm
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        onApply={onApply}
+        onCancel={onCancel}
+        loading={formState.isSubmitting}
+        entidadesData={entidadesData || []}
+      />
+    );
+  }
+
+  // Si es la tabla metricasensor, renderizar el formulario masivo de metricasensor
+  if (selectedTable === 'metricasensor') {
+    return (
+      <MassiveMetricaSensorForm
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        onApply={onApply}
+        onCancel={onCancel}
+        loading={formState.isSubmitting}
+        onFormDataChange={onFormDataChange}
       />
     );
   }
