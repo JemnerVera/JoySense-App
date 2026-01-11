@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSidebarLayout } from '../../hooks/useSidebarLayout';
+import { useSectionPermissions } from '../../hooks/useSectionPermissions';
 import MainSidebar from './MainSidebar';
 import AuxiliarySidebar from './AuxiliarySidebar';
 import ReglaOperationsSidebar from './ReglaOperationsSidebar';
@@ -40,6 +41,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   onPermisosSubTabChangeFromProtectedButton,
   onSubTabChangeFromProtectedButton
 }) => {
+  // Verificar permisos para REPORTES ADMINISTRADOR antes de renderizar
+  const reportesAdminPermissions = useSectionPermissions({ tableNames: ['msg_outbox', 'auth_outbox'] });
+
   const {
     mainSidebarExpanded,
     auxiliarySidebarExpanded,
@@ -294,6 +298,10 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {/* Sidebar auxiliar para REPORTES ADMINISTRADOR (cuando está en configuracion-reportes-administrador, mostrar a la derecha del ConfiguracionSidebar) */}
       {(() => {
         const shouldShow = activeTab.startsWith('configuracion-reportes-administrador') && hasAuxiliarySidebar(activeTab);
+        // NO renderizar si aún se están cargando permisos o si no tiene acceso
+        if (reportesAdminPermissions.loading || !reportesAdminPermissions.hasAccess) {
+          return false;
+        }
         return shouldShow;
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>

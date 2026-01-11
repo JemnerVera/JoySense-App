@@ -108,27 +108,36 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
     }
   ];
 
-  // Filtrar secciones basándose en permisos
-  const configuracionSections = useMemo(() => {
-    return allConfiguracionSections.filter(section => {
-      // Si aún se están cargando permisos, mostrar la sección (evita parpadeo)
-      if (section.loading) return true;
-      // Mostrar solo si tiene acceso
-      return section.hasAccess;
-    });
+  // Verificar si todas las secciones han terminado de cargar permisos
+  const allPermissionsLoaded = useMemo(() => {
+    return allConfiguracionSections.every(section => !section.loading);
   }, [
-    dispositivosPermissions.hasAccess,
     dispositivosPermissions.loading,
-    usuariosPermissions.hasAccess,
     usuariosPermissions.loading,
-    parametrosGeoPermissions.hasAccess,
     parametrosGeoPermissions.loading,
-    notificacionesPermissions.hasAccess,
     notificacionesPermissions.loading,
-    permisosPermissions.hasAccess,
     permisosPermissions.loading,
-    reportesAdminPermissions.hasAccess,
     reportesAdminPermissions.loading
+  ]);
+
+  // Filtrar secciones basándose en permisos
+  // IMPORTANTE: NO mostrar secciones hasta que TODOS los permisos se hayan verificado
+  const configuracionSections = useMemo(() => {
+    // Si aún se están cargando permisos, NO mostrar ninguna sección (previene mostrar elementos sin permiso)
+    if (!allPermissionsLoaded) {
+      return [];
+    }
+    
+    // Una vez que todos los permisos se han verificado, filtrar solo las que tienen acceso
+    return allConfiguracionSections.filter(section => section.hasAccess);
+  }, [
+    allPermissionsLoaded,
+    dispositivosPermissions.hasAccess,
+    usuariosPermissions.hasAccess,
+    parametrosGeoPermissions.hasAccess,
+    notificacionesPermissions.hasAccess,
+    permisosPermissions.hasAccess,
+    reportesAdminPermissions.hasAccess
   ]);
 
   const configuracionIcon = (
@@ -150,8 +159,17 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
-          <nav className="space-y-1">
-            {configuracionSections.map((section) => {
+          {/* Mostrar loading state mientras se verifican permisos */}
+          {!allPermissionsLoaded && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+          )}
+          
+          {/* Solo mostrar secciones después de verificar permisos */}
+          {allPermissionsLoaded && (
+            <nav className="space-y-1">
+              {configuracionSections.map((section) => {
               const isActive = selectedSection === section.id;
               return (
                 <button
@@ -173,8 +191,9 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
                   )}
                 </button>
               );
-            })}
-          </nav>
+              })}
+            </nav>
+          )}
         </div>
       </div>
     </BaseAuxiliarySidebar>
