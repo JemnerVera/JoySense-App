@@ -117,9 +117,9 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // Función para obtener clases del sidebar auxiliar
   // Nota: El ancho ahora lo controla cada sidebar mediante BaseAuxiliarySidebar (w-56 / w-14),
-  // para evitar franjas vacías adicionales. Aquí solo manejamos fondo, borde y altura.
+  // para evitar franjas vacías adicionales. El borde lo maneja BaseAuxiliarySidebar, no el contenedor.
   const getAuxiliarySidebarClasses = useCallback(() => {
-    return 'bg-gray-800 border-r border-gray-700 transition-all duration-300 flex-shrink-0 h-full'
+    return 'transition-all duration-300 flex-shrink-0 h-full'
   }, []);
 
   return {
