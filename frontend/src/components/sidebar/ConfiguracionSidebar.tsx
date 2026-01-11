@@ -27,7 +27,7 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
     'parametros-geo': ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion', 'asociacion'],
     notificaciones: ['criticidad', 'umbral', 'regla'],
     permisos: ['permiso'], // PERMISOS siempre visible (se filtra por tipos internos)
-    'reportes-administrador': ['msg_outbox', 'auth_outbox']
+    'reportes-administrador': ['msg_outbox']
   };
 
   // Verificar permisos para cada sección

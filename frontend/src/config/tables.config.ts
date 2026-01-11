@@ -363,7 +363,8 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'id_device', label: 'ID del Dispositivo', type: 'text', readonly: true },
       { name: 'error', label: 'Error', type: 'text', readonly: true },
       { name: 'valor', label: 'Valor', type: 'number', readonly: true },
-      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true }
+      { name: 'fecha', label: 'Fecha', type: 'datetime', readonly: true },
+      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
     ]
   },
 
@@ -829,29 +830,6 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'attempts', label: 'Intentos', type: 'number', readonly: true },
       { name: 'next_try_at', label: 'Próximo Intento', type: 'datetime', readonly: true },
       { name: 'last_error', label: 'Último Error', type: 'text', readonly: true },
-      { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true }
-    ]
-  },
-
-  auth_outbox: {
-    name: 'auth_outbox',
-    displayName: 'Autenticación Outbox',
-    description: 'Cola de códigos de autenticación pendientes',
-    icon: '🔐',
-    category: 'sistema',
-    primaryKey: 'outboxid',
-    allowInsert: false,
-    allowUpdate: false,
-    allowDelete: false,
-    fields: [
-      { name: 'outboxid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'usuarioid', label: 'Usuario', type: 'number', readonly: true },
-      { name: 'email', label: 'Email', type: 'email', readonly: true },
-      { name: 'request_id', label: 'Request ID', type: 'number', readonly: true },
-      { name: 'status', label: 'Estado', type: 'text', readonly: true },
-      { name: 'status_code', label: 'Código Estado', type: 'number', readonly: true },
-      { name: 'timed_out', label: 'Timeout', type: 'boolean', readonly: true },
-      { name: 'error_msg', label: 'Mensaje Error', type: 'text', readonly: true },
       { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true }
     ]
   }

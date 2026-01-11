@@ -28,7 +28,7 @@ const ALLOWED_TABLES = [
   'permiso', 'fuente', 'origen', 'tipo_mensaje', // Nuevo sistema de permisos
   'sensor_valor', 'sensor_valor_error',
   'canal', 'usuario_canal', // Sistema de notificaciones
-  'msg_outbox', 'auth_outbox' // Reportes administrativos
+  'msg_outbox' // Reportes administrativos
 ];
 
 // Mapeo de PK por tabla
@@ -70,8 +70,7 @@ const PK_MAPPING = {
   canal: 'canalid', // Sistema de notificaciones
   usuario_canal: 'usuario_canalid',
   usuario_empresa: null, // PK compuesta (usuarioid, empresaid)
-  msg_outbox: 'msg_outboxid', // Reportes administrativos
-  auth_outbox: 'outboxid' // Reportes administrativos
+  msg_outbox: 'msg_outboxid' // Reportes administrativos
 };
 
 // Validar tabla permitida

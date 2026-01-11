@@ -148,10 +148,11 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     if (!finalSortBy) {
       // Para audit_log_umbral, usar datemodified (no tiene datecreated)
       // Para alerta_regla, usar fecha (no tiene datemodified)
+      // Para sensor_valor_error, usar fecha (no tiene datecreated)
       // Para otras tablas, usar datecreated
       if (tableName === 'audit_log_umbral') {
         finalSortBy = 'datemodified';
-      } else if (tableName === 'alerta_regla') {
+      } else if (tableName === 'alerta_regla' || tableName === 'sensor_valor_error') {
         finalSortBy = 'fecha';
       } else {
         finalSortBy = 'datecreated';
@@ -165,22 +166,24 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
       // Solo agregar datemodified si la tabla lo tiene (no todas las tablas lo tienen)
-      // alerta_regla no tiene datemodified, solo tiene datecreated y fecha
-      if (tableName !== 'audit_log_umbral' && tableName !== 'alerta_regla') {
+      // alerta_regla y sensor_valor_error no tienen datemodified
+      if (tableName !== 'audit_log_umbral' && tableName !== 'alerta_regla' && tableName !== 'sensor_valor_error') {
         dataQuery = dataQuery.order('datemodified', { ascending });
       }
     } else if (finalSortBy === 'datemodified') {
       // Si ordenamos por datemodified, usar datecreated como desempate (si existe)
       dataQuery = dataQuery.order('datemodified', { ascending });
       // Solo agregar datecreated si la tabla lo tiene
-      if (tableName !== 'audit_log_umbral') {
+      if (tableName !== 'audit_log_umbral' && tableName !== 'sensor_valor_error') {
         dataQuery = dataQuery.order('datecreated', { ascending });
       }
-    } else if (finalSortBy === 'fecha' && tableName === 'alerta_regla') {
-      // Para alerta_regla, ordenar por fecha (campo principal de timestamp)
+    } else if (finalSortBy === 'fecha' && (tableName === 'alerta_regla' || tableName === 'sensor_valor_error')) {
+      // Para alerta_regla y sensor_valor_error, ordenar por fecha (campo principal de timestamp)
       dataQuery = dataQuery.order('fecha', { ascending });
-      // Usar datecreated como desempate
-      dataQuery = dataQuery.order('datecreated', { ascending });
+      // Solo usar datecreated como desempate si la tabla lo tiene (alerta_regla sí lo tiene, sensor_valor_error no)
+      if (tableName === 'alerta_regla') {
+        dataQuery = dataQuery.order('datecreated', { ascending });
+      }
     } else {
       // Ordenar por el campo especificado
       dataQuery = dataQuery.order(finalSortBy, { ascending });

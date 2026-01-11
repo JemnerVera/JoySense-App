@@ -42,7 +42,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   onSubTabChangeFromProtectedButton
 }) => {
   // Verificar permisos para REPORTES ADMINISTRADOR antes de renderizar
-  const reportesAdminPermissions = useSectionPermissions({ tableNames: ['msg_outbox', 'auth_outbox'] });
+  const reportesAdminPermissions = useSectionPermissions({ tableNames: ['msg_outbox'] });
 
   const {
     mainSidebarExpanded,

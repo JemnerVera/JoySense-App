@@ -19,7 +19,7 @@ interface ReportesAdminMainProps {
   activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
-  themeColor?: 'red';
+  themeColor?: 'orange';
 }
 
 export interface ReportesAdminMainRef {
@@ -39,7 +39,7 @@ const ReportesAdminMain = forwardRef<ReportesAdminMainRef, ReportesAdminMainProp
   activeSubTab: propActiveSubTab = 'status',
   onSubTabChange,
   onFormDataChange,
-  themeColor = 'red'
+  themeColor = 'orange'
 }, ref) => {
   const { t } = useLanguage();
 
@@ -192,15 +192,6 @@ const ReportesAdminMain = forwardRef<ReportesAdminMainRef, ReportesAdminMainProp
 
       {/* Contenido - Solo ESTADO (modo solo lectura) */}
       <div className="bg-gray-50 dark:bg-neutral-800/50 rounded-lg p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-red-500 font-mono tracking-wider">
-            {config.displayName || selectedTable.toUpperCase()}
-          </h2>
-          <span className="text-xs text-gray-500 dark:text-neutral-400 font-mono">
-            (Modo solo lectura)
-          </span>
-        </div>
-
         <StatusTab
           tableName={selectedTable}
           tableData={tableData}
