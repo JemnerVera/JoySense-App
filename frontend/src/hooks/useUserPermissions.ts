@@ -118,11 +118,16 @@ export function useUserPermissions({
         // Intentar usar la función RPC para obtener permisos directamente (evita problemas de RLS)
         const rpcPermissions = await JoySenseService.getUserPermissions(tableName);
         
-        if (rpcPermissions) {
+        // Si la función RPC devuelve permisos, verificar si son válidos (no todos false)
+        // Si son todos false, podría ser que la función RPC no encontró la fuente (ej: tabla 'permiso')
+        // En ese caso, usar el fallback para buscar permisos manualmente
+        if (rpcPermissions && (rpcPermissions.puede_ver || rpcPermissions.puede_insertar || rpcPermissions.puede_actualizar)) {
           setPermissions(rpcPermissions);
           setLoading(false);
           return;
         }
+        
+        // Si la función RPC devolvió null o todos los permisos en false, usar fallback
         
         // Fallback: método tradicional (puede fallar por RLS)
         // Intentar obtener perfilid usando función RPC

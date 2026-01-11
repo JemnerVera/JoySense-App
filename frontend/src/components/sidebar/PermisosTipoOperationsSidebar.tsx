@@ -42,7 +42,7 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
   // Si selectedTable es otra tabla (pais, empresa, etc.), verificamos permisos sobre esa tabla
   const { permissions, loading: permissionsLoading } = useUserPermissions({
     tableName: selectedTable || 'permiso',
-    origenid: null, // Se determinará automáticamente según el tipo de tabla
+    origenid: 2, // PERMISOS siempre es de origen TABLA (origenid: 2)
     fuenteid: null // Se determinará automáticamente según el nombre de la tabla
   });
 
