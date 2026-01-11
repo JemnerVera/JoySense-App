@@ -682,7 +682,7 @@ export type TableName =
   | 'usuario' | 'perfil' | 'usuarioperfil' | 'contacto' | 'correo' | 'codigotelefono'
   | 'permiso' | 'fuente' | 'origen' | 'tipo_mensaje' // Nuevo sistema de permisos
   | 'canal' | 'usuario_canal' // Sistema de notificaciones
-  | 'msg_outbox' | 'auth_outbox'; // Reportes administrativos
+  | 'msg_outbox'; // Reportes administrativos
 
 // Mapeo de PK por tabla
 export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
@@ -708,7 +708,6 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   alerta_regla_consolidado: 'uuid_consolidadoid',
   audit_log_umbral: 'auditid',
   msg_outbox: 'msg_outboxid',
-  auth_outbox: 'outboxid',
   regla: 'reglaid',
   regla_objeto: 'regla_objetoid',
   regla_perfil: 'regla_perfilid',
