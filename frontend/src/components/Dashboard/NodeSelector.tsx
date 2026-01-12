@@ -90,6 +90,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
     setFilteredNodes(filtered)
+    console.log('[NodeSelector] Nodos filtrados:', filtered.length, 'de', nodes.length, 'total');
   }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm])
 
   // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
@@ -381,6 +382,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
+      {useEffect(() => {
+        console.log('[NodeSelector] Renderizando InteractiveMap con', filteredNodes.length, 'nodos filtrados');
+      }, [filteredNodes.length])}
       <InteractiveMap
         nodes={filteredNodes}
         selectedNode={selectedNode}
