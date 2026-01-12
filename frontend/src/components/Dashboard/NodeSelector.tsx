@@ -382,13 +382,15 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
-      <InteractiveMap
-        nodes={filteredNodes}
-        selectedNode={selectedNode}
-        onNodeSelect={handleMapNodeClick}
-        loading={loading}
-        nodeMediciones={nodeMediciones}
-      />
+      <div className="w-full" style={{ height: '600px', minHeight: '600px' }}>
+        <InteractiveMap
+          nodes={filteredNodes}
+          selectedNode={selectedNode}
+          onNodeSelect={handleMapNodeClick}
+          loading={loading}
+          nodeMediciones={nodeMediciones}
+        />
+      </div>
 
     </div>
   )

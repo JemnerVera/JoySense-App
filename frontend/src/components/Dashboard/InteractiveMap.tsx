@@ -195,13 +195,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   
   // Log para diagnóstico
   useEffect(() => {
-    console.log('[InteractiveMap] Renderizando mapa:', {
-      totalNodes: nodes.length,
-      nodesWithGPS: nodesWithGPS.length,
-      selectedNodeId: selectedNode?.nodoid,
-      loading
-    });
-  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid, loading]);
+    if (nodesWithGPS.length > 0) {
+      console.log('[InteractiveMap] Renderizando mapa con', nodesWithGPS.length, 'nodos con GPS, center:', mapCenter);
+      // Log de coordenadas del primer nodo para verificar
+      const firstNode = nodesWithGPS[0];
+      const lat = typeof firstNode.latitud === 'string' ? parseFloat(firstNode.latitud) : (firstNode.latitud || 0);
+      const lng = typeof firstNode.longitud === 'string' ? parseFloat(firstNode.longitud) : (firstNode.longitud || 0);
+      console.log('[InteractiveMap] Primer nodo GPS:', { nodo: firstNode.nodo, lat, lng });
+    }
+  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid, loading, mapCenter]);
 
   // Función para abrir el popup del nodo seleccionado
   const openSelectedNodePopup = () => {
@@ -299,7 +301,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   return (
-    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-0 h-full relative" style={{ height: '100%', width: '100%' }}>
+    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-0 relative" style={{ height: '100%', width: '100%', minHeight: '500px' }}>
       <style dangerouslySetInnerHTML={{
         __html: `
           .custom-node-icon {
