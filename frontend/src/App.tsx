@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
@@ -172,7 +172,7 @@ const AppContentInternal: React.FC = () => {
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'status-nodos' | 'metrica' | 'umbrales'>('mapeo');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mapeo');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -200,8 +200,8 @@ const AppContentInternal: React.FC = () => {
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales';
-      if (subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'metrica' || subTab === 'umbrales') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+      if (subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     } else if (activeTab === 'reportes-dashboard') {
@@ -714,7 +714,7 @@ const AppContentInternal: React.FC = () => {
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales') => {
+  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1228,6 +1228,19 @@ const AppContentInternal: React.FC = () => {
                 </div>
               }>
                 <NodeStatusDashboardLazy />
+              </Suspense>
+            );
+          case 'status-alertas':
+            return (
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Status de Alertas...</p>
+                  </div>
+                </div>
+              }>
+                <AlertStatusDashboardLazy />
               </Suspense>
             );
           case 'metrica':

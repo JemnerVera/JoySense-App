@@ -24,6 +24,7 @@ interface InteractiveMapProps {
   onNodeSelect: (node: NodeData) => void
   loading?: boolean
   nodeMediciones?: { [nodeId: number]: number } // Mapa de nodoId -> cantidad de mediciones
+  nodesWithAlerts?: number[] // Array de nodoIds que tienen alertas activas
 }
 
 // Componente para centrar el mapa en el nodo seleccionado con animación en dos pasos
@@ -151,11 +152,13 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
 }
 
 // Icono personalizado para nodos
-const createNodeIcon = (isSelected: boolean) => {
+const createNodeIcon = (isSelected: boolean, hasAlert: boolean = false) => {
+  const alertClass = hasAlert ? 'alert' : '';
+  const alertColor = hasAlert ? 'background-color: #ef4444;' : '';
   return L.divIcon({
     className: 'custom-node-icon',
     html: `
-      <div class="node-marker ${isSelected ? 'selected' : ''}">
+      <div class="node-marker ${isSelected ? 'selected' : ''} ${alertClass}" style="${alertColor}">
         <div class="node-icon">
           📡
         </div>
@@ -173,7 +176,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   selectedNode,
   onNodeSelect,
   loading = false,
-  nodeMediciones = {}
+  nodeMediciones = {},
+  nodesWithAlerts = []
 }) => {
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
@@ -269,7 +273,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-neutral-700 rounded-lg p-4 h-96 flex items-center justify-center">
+      <div className="bg-neutral-700 rounded-lg p-4 h-full flex items-center justify-center" style={{ height: '100%' }}>
         <div className="text-center text-neutral-400">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
           <div className="text-lg font-mono tracking-wider">Cargando mapa...</div>
@@ -280,7 +284,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   if (nodesWithGPS.length === 0) {
     return (
-      <div className="bg-neutral-700 rounded-lg p-4 h-96 flex items-center justify-center">
+      <div className="bg-neutral-700 rounded-lg p-4 h-full flex items-center justify-center" style={{ height: '100%' }}>
         <div className="text-center text-neutral-400">
           <div className="text-4xl mb-4">🗺️</div>
           <div className="text-lg font-medium mb-2">No hay nodos disponibles</div>
@@ -291,7 +295,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   return (
-    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 h-96 relative">
+    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-0 h-full relative" style={{ height: '100%', width: '100%' }}>
       <style dangerouslySetInnerHTML={{
         __html: `
           .custom-node-icon {
@@ -323,6 +327,27 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             background: #f59e0b;
             border-color: #ffffff;
             box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);
+          }
+          
+          .node-marker.alert {
+            background: #ef4444 !important;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+          }
+          
+          .node-marker.alert:hover {
+            background: #dc2626 !important;
+            transform: scale(1.2);
+          }
+          
+          .node-marker.alert.selected {
+            background: #ef4444 !important;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.5);
+          }
+          
+          .node-marker.alert .node-pulse {
+            background: #ef4444;
           }
           
           .node-icon {
@@ -412,7 +437,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 }
               }}
             position={[lat, lng]}
-            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid)}
+            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid, nodesWithAlerts.includes(node.nodoid))}
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation();

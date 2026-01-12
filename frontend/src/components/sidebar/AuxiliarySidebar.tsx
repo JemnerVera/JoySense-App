@@ -32,8 +32,8 @@ interface AuxiliarySidebarProps {
   activeSubTab?: string;
   // onSubTabChange se usa en múltiples secciones; para PERMISOS también debe aceptar 'asignar'
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
-  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales') => void;
+  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
