@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
 import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -35,9 +35,12 @@ interface UmbralData {
   umbralid: number;
   minimo: number;
   maximo: number;
+  estandar?: number;
   umbral: string;
   criticidad: string;
   metrica: string;
+  metricaid?: number;
+  unidad?: string;
 }
 
 interface StatisticData {
@@ -148,14 +151,17 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
         // Cargar umbrales del nodo
         try {
           const umbralesData = await JoySenseService.getUmbralesPorNodo(selectedNode.nodoid);
+          console.log('Umbrales cargados para nodo:', selectedNode.nodoid, umbralesData);
           setUmbrales((umbralesData || []).map((u: any) => ({
             umbralid: u.umbralid,
             minimo: u.minimo,
             maximo: u.maximo,
+            estandar: u.estandar,
             umbral: u.umbral || 'Umbral',
             criticidad: u.criticidad?.criticidad || 'Media',
             metrica: u.metrica?.metrica || 'N/A',
-            unidad: u.metrica?.unidad || ''
+            unidad: u.metrica?.unidad || '',
+            metricaid: u.metricaid
           })));
         } catch (err) {
           console.error('Error cargando umbrales:', err);
@@ -229,22 +235,22 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
 
     return [
       {
-        label: 'Total Mediciones',
+        label: 'TOTAL MEDICIONES',
         value: totalMediciones,
         color: '#3b82f6'
       },
       {
-        label: 'Alertas Activas',
+        label: 'ALERTAS ACTIVAS',
         value: alertasActivas,
         color: alertasActivas > 0 ? '#ef4444' : '#10b981'
       },
       {
-        label: 'Umbrales Configurados',
+        label: 'UMBRALES CONFIGURADOS',
         value: umbralesConfigurados,
         color: '#8b5cf6'
       },
       {
-        label: 'Métricas Monitoreadas',
+        label: 'MÉTRICAS MONITOREADAS',
         value: Object.keys(statistics).length,
         color: '#f59e0b'
       }
@@ -347,6 +353,80 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       });
   }, [alertas]);
 
+  // Calcular estadísticas para boxplot por métrica
+  const boxplotData = useMemo(() => {
+    if (!selectedNode || mediciones.length === 0 || umbrales.length === 0) return [];
+    
+    const result: any[] = [];
+    
+    // Agrupar mediciones por métrica
+    const medicionesPorMetrica: { [metricId: number]: number[] } = {};
+    mediciones.forEach((m: any) => {
+      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
+      const valor = m.medicion || m.valor;
+      if (metricId && valor != null && !isNaN(valor)) {
+        if (!medicionesPorMetrica[metricId]) {
+          medicionesPorMetrica[metricId] = [];
+        }
+        medicionesPorMetrica[metricId].push(parseFloat(valor));
+      }
+    });
+
+    // Para cada umbral, calcular boxplot si hay mediciones de esa métrica
+    umbrales.forEach((umbral) => {
+      const metricId = umbral.metricaid;
+      if (!metricId || !medicionesPorMetrica[metricId] || medicionesPorMetrica[metricId].length === 0) {
+        return;
+      }
+
+      const valores = [...medicionesPorMetrica[metricId]].sort((a, b) => a - b);
+      const n = valores.length;
+      
+      // Calcular cuartiles
+      const q1Index = Math.floor(n * 0.25);
+      const medianIndex = Math.floor(n * 0.5);
+      const q3Index = Math.floor(n * 0.75);
+      
+      const min = valores[0];
+      const q1 = valores[q1Index];
+      const median = valores[medianIndex];
+      const q3 = valores[q3Index];
+      const max = valores[n - 1];
+      const iqr = q3 - q1; // Rango intercuartílico
+      
+      // Obtener nombre de métrica
+      const metric = mediciones.find((m: any) => 
+        (m.metricaid || m.localizacion?.metricaid || 0) === metricId
+      );
+      const metricName = metric?.localizacion?.metrica?.metrica || `Métrica ${metricId}`;
+      
+      // Calcular offsets para barras apiladas
+      const minOffset = min;
+      const q1Offset = q1 - min;
+      const iqrValue = q3 - q1;
+      const maxOffset = max - q3;
+      
+      result.push({
+        metrica: metricName,
+        metricId: metricId,
+        min,
+        q1,
+        median,
+        q3,
+        max,
+        iqr: iqrValue,
+        minOffset,
+        q1Offset,
+        maxOffset,
+        estandar: umbral.estandar,
+        minimo: umbral.minimo,
+        maximo: umbral.maximo
+      });
+    });
+
+    return result;
+  }, [mediciones, umbrales, selectedNode]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 p-6">
       <div className="max-w-7xl mx-auto">
@@ -365,7 +445,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                   const node = nodes.find(n => n.nodoid === nodeId);
                   setSelectedNode(node || null);
                 }}
-                className="h-8 w-48 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                className="h-8 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
               >
                 <option value="">-- Seleccione un nodo --</option>
                 {nodes.map(node => (
@@ -381,7 +461,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
 
             {/* Botón Nodo en Mapa */}
             <div className="flex flex-col flex-shrink-0">
-              <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase invisible">
+              <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">
                 Mapa:
               </label>
               <button
@@ -392,6 +472,9 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                 Nodo en Mapa
               </button>
             </div>
+
+            {/* Separador visual después de Mapa */}
+            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
             {/* Intervalo de Fechas */}
             {selectedNode && (
@@ -565,42 +648,105 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
               </div>
             )}
 
-            {/* Alertas del Nodo - Gráfico de Barras */}
+            {/* Alertas del Nodo y Boxplot en la misma fila */}
             {alertas.length > 0 && alertasChartData.length > 0 && (
-              <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 mb-6">
-                <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Alertas del Nodo</h2>
-                <style dangerouslySetInnerHTML={{
-                  __html: `
-                    .recharts-tooltip-wrapper,
-                    .recharts-legend-wrapper {
-                      font-family: 'JetBrains Mono', monospace !important;
-                    }
-                  `
-                }} />
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={alertasChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    {Array.from(new Set(alertas.map(a => a.criticidad))).map((criticidad, index) => {
-                      const colorMap: { [key: string]: string } = {
-                        'Alta': '#ef4444',
-                        'Media': '#f59e0b',
-                        'Baja': '#10b981'
-                      };
-                      return (
-                        <Bar
-                          key={criticidad}
-                          dataKey={criticidad}
-                          fill={colorMap[criticidad] || COLORS[index % COLORS.length]}
-                          name={criticidad}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Alertas del Nodo - Gráfico de Barras */}
+                <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Alertas del Nodo</h2>
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      .recharts-tooltip-wrapper,
+                      .recharts-legend-wrapper {
+                        font-family: 'JetBrains Mono', monospace !important;
+                      }
+                    `
+                  }} />
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={alertasChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="fecha" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      {Array.from(new Set(alertas.map(a => a.criticidad))).map((criticidad, index) => {
+                        const colorMap: { [key: string]: string } = {
+                          'Alta': '#ef4444',
+                          'Media': '#f59e0b',
+                          'Baja': '#10b981'
+                        };
+                        return (
+                          <Bar
+                            key={criticidad}
+                            dataKey={criticidad}
+                            fill={colorMap[criticidad] || COLORS[index % COLORS.length]}
+                            name={criticidad}
+                          />
+                        );
+                      })}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Boxplot de Mediciones vs Umbral Estándar */}
+                {boxplotData.length > 0 && (
+                  <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
+                    <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Distribución vs Umbral Estándar</h2>
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
+                        .recharts-tooltip-wrapper,
+                        .recharts-legend-wrapper {
+                          font-family: 'JetBrains Mono', monospace !important;
+                        }
+                      `
+                    }} />
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={boxplotData} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="metrica" type="category" width={120} />
+                        <Tooltip 
+                          formatter={(value: any, name: string, props: any) => {
+                            const data = props.payload;
+                            if (name === 'estandar') return [`${value?.toFixed(2) || 'N/A'}`, 'Umbral Estándar'];
+                            if (name === 'iqr') {
+                              return [
+                                `Min: ${data.min?.toFixed(2)}, Q1: ${data.q1?.toFixed(2)}, Mediana: ${data.median?.toFixed(2)}, Q3: ${data.q3?.toFixed(2)}, Max: ${data.max?.toFixed(2)}`,
+                                'Distribución'
+                              ];
+                            }
+                            return [value, name];
+                          }}
                         />
-                      );
-                    })}
-                  </BarChart>
-                </ResponsiveContainer>
+                        <Legend />
+                        {/* Boxplot: barras apiladas para representar la distribución */}
+                        {/* Offset hasta min (transparente) */}
+                        <Bar dataKey="minOffset" stackId="box" fill="transparent" />
+                        {/* Offset de min a Q1 (whisker inferior) */}
+                        <Bar dataKey="q1Offset" stackId="box" fill="#e5e7eb" name="Min-Q1" />
+                        {/* IQR (Q1 a Q3) - la caja del boxplot */}
+                        <Bar dataKey="iqr" stackId="box" fill="#3b82f6" name="IQR (Q1-Q3)" />
+                        {/* Offset de Q3 a max (whisker superior) */}
+                        <Bar dataKey="maxOffset" stackId="box" fill="#e5e7eb" name="Q3-Max" />
+                        {/* Mediana como barra delgada */}
+                        <Bar dataKey="median" fill="#f59e0b" name="Mediana" radius={[0, 0, 0, 0]} />
+                        {/* Línea de referencia para umbral estándar */}
+                        {boxplotData.map((item, index) => (
+                          item.estandar != null && !isNaN(item.estandar) && (
+                            <ReferenceLine
+                              key={`ref-${index}`}
+                              x={item.estandar}
+                              stroke="#8b5cf6"
+                              strokeWidth={2}
+                              strokeDasharray="5 5"
+                              label={{ value: 'Estándar', position: 'right', fill: '#8b5cf6', fontSize: 10 }}
+                            />
+                          )
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
             )}
 
