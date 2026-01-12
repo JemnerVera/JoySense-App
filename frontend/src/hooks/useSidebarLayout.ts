@@ -392,13 +392,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   // Función para expandir en cascada (desde el nivel más externo hacia el más interno)
   // EVENTO 2: Expansión en cascada cuando el cursor viene desde la ventana principal hacia los sidebars
   const expandCascade = useCallback((toLevel: SidebarLevel, fromContent: boolean = false) => {
-    console.log('[DEBUG] useSidebarLayout: expandCascade llamado', {
-      toLevel: toLevel,
-      fromContent: fromContent,
-      activeTab: activeTab,
-      isComingFromContentRef: isComingFromContentRef.current,
-      timestamp: new Date().toISOString()
-    });
+    // Log removido para reducir verbosidad
     clearCloseTimeout();
     
     // Si viene desde el contenido, activar expansión en cascada
@@ -415,13 +409,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
       hoveredLevelRef.current = toLevel;
       // Marcar que hay un sidebar hovered
       hasSidebarHoveredRef.current = true;
-      
-      console.log('[DEBUG] useSidebarLayout: expandCascade (fromContent=true) - refs actualizados', {
-        toLevel: toLevel,
-        hoveredLevels: Array.from(hoveredLevelsRef.current),
-        hasSidebarHovered: hasSidebarHoveredRef.current,
-        timestamp: new Date().toISOString()
-      });
     }
     
     // Si viene desde el contenido, expandir en cascada desde el nivel más externo hacia el especificado
@@ -515,14 +502,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         hoveredLevelRef.current = toLevel;
         hasSidebarHoveredRef.current = true;
       }
-      
-      // Log para debug
-      console.log('[DEBUG] useSidebarLayout: expandCascade (fromContent=false) - refs actualizados', {
-        toLevel: toLevel,
-        hoveredLevels: Array.from(hoveredLevelsRef.current),
-        hasSidebarHovered: hasSidebarHoveredRef.current,
-        timestamp: new Date().toISOString()
-      });
     }
   }, [clearCloseTimeout]);
 
@@ -541,11 +520,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [scheduleClose, activeTab]);
 
   const handleAux1MouseEnter = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: handleAux1MouseEnter llamado', {
-      activeTab: activeTab,
-      isComingFromContent: isComingFromContentRef.current,
-      timestamp: new Date().toISOString()
-    });
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux1', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -566,11 +540,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [scheduleClose, activeTab]);
 
   const handleAux2MouseEnter = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: handleAux2MouseEnter llamado', {
-      activeTab: activeTab,
-      isComingFromContent: isComingFromContentRef.current,
-      timestamp: new Date().toISOString()
-    });
     // Si viene desde contenido, expandir en cascada; si no, expandir directamente (click en pestaña)
     expandCascade('aux2', isComingFromContentRef.current);
     // Una vez que el cursor entra a un sidebar, ya no viene desde contenido
@@ -578,12 +547,6 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade, activeTab]);
 
   const handleAux2MouseLeave = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: handleAux2MouseLeave llamado', {
-      activeTab: activeTab,
-      aux1Expanded: aux1Expanded,
-      aux2Expanded: aux2Expanded
-    });
-    
     // SOLUCIÓN ROBUSTA: NO programar cierre si estamos en HISTORIAL y los sidebars están expandidos
     const isHistorial = activeTab && (activeTab.startsWith('reportes-historial') || activeTab === 'reportes-historial');
     if (isHistorial && (aux1Expanded || aux2Expanded)) {
@@ -640,25 +603,13 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // EVENTO 1: Cuando el cursor entra a la ventana principal, colapsar TODOS los sidebars en cascada inversa
   const handleContentMouseEnter = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: handleContentMouseEnter llamado', {
-      activeTab: activeTab,
-      hasSidebarHovered: hasSidebarHoveredRef.current,
-      hoveredLevels: Array.from(hoveredLevelsRef.current),
-      aux2Expanded: aux2Expanded,
-      aux1Expanded: aux1Expanded,
-      timestamp: new Date().toISOString()
-    });
+    // Log removido para reducir verbosidad
     if (activeTab) {
       // Si hay algún sidebar hovered, NO colapsar (el cursor aún está en los sidebars)
       // Esto previene que se colapsen cuando se cambia de tab desde el sidebar
       // También verificar si los sidebars están expandidos (lo cual indica que están siendo hovered)
       if (hasSidebarHoveredRef.current || hoveredLevelsRef.current.size > 0 || aux2Expanded || aux1Expanded) {
-        console.log('[DEBUG] useSidebarLayout: Ignorando handleContentMouseEnter porque hay sidebars hovered o expandidos', {
-          hasSidebarHovered: hasSidebarHoveredRef.current,
-          hoveredLevels: Array.from(hoveredLevelsRef.current),
-          aux2Expanded: aux2Expanded,
-          aux1Expanded: aux1Expanded
-        });
+        // Log removido para reducir verbosidad
         return;
       }
       
