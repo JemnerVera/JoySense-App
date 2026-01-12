@@ -90,28 +90,24 @@ router.put('/criticidad/:id', async (req, res) => {
 
 router.get('/umbral', async (req, res) => {
   try {
-    const { localizacionId } = req.query;
+    const { metricaId } = req.query;
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Usar Supabase API con joins anidados profundos
+    // Según el schema, umbral solo tiene metricaid como FK opcional
+    // No tiene criticidadid ni localizacionid directamente
     let query = userSupabase
       .schema(dbSchema)
       .from('umbral')
       .select(`
         *,
-        criticidad:criticidadid(criticidadid, criticidad, grado),
-        localizacion:localizacionid(
-          localizacionid,
-          localizacion,
-          nodo:nodoid(nodoid, nodo),
-          metrica:metricaid(metricaid, metrica, unidad)
-        )
-      `);
+        metrica:metricaid(metricaid, metrica, unidad)
+      `)
+      .eq('statusid', 1);
     
-    if (localizacionId) {
-      query = query.eq('localizacionid', localizacionId);
+    if (metricaId) {
+      query = query.eq('metricaid', metricaId);
     }
     
     query = query.order('umbralid', { ascending: true });
@@ -123,13 +119,357 @@ router.get('/umbral', async (req, res) => {
     // Transformar datos para mantener formato compatible
     const transformed = (data || []).map(u => ({
       ...u,
-      criticidad: u.criticidad ? (Array.isArray(u.criticidad) ? u.criticidad[0] : u.criticidad) : null,
-      localizacion: u.localizacion ? (Array.isArray(u.localizacion) ? u.localizacion[0] : u.localizacion) : null
+      metrica: u.metrica ? (Array.isArray(u.metrica) ? u.metrica[0] : u.metrica) : null
     }));
     
     res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /umbral:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Nuevo endpoint para obtener umbrales relacionados con un nodo
+// La relación es: nodo -> localizaciones -> regla_objeto -> regla -> regla_umbral -> umbral
+router.get('/umbral/por-nodo', async (req, res) => {
+  try {
+    const { nodoid } = req.query;
+    
+    if (!nodoid) {
+      return res.status(400).json({ error: 'nodoid es requerido' });
+    }
+    
+    const userSupabase = req.supabase || baseSupabase;
+    
+    // Paso 1: Obtener localizaciones del nodo
+    const { data: localizaciones, error: locError } = await userSupabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, metricaid')
+      .eq('nodoid', nodoid)
+      .eq('statusid', 1);
+    
+    if (locError) throw locError;
+    
+    if (!localizaciones || localizaciones.length === 0) {
+      return res.json([]);
+    }
+    
+    const localizacionIds = localizaciones.map(l => l.localizacionid);
+    
+    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 1 - Localizaciones', {
+      nodoid,
+      localizacionesCount: localizaciones.length,
+      localizacionIds
+    });
+    
+    // Paso 2: Obtener el nodo para buscar reglas a nivel de nodo/ubicación también
+    const { data: nodoData, error: nodoError } = await userSupabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select('nodoid, ubicacionid')
+      .eq('nodoid', nodoid)
+      .eq('statusid', 1)
+      .single();
+    
+    if (nodoError) {
+      logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo nodo', nodoError);
+    }
+    
+    const ubicacionId = nodoData?.ubicacionid;
+    
+    // Obtener todas las fuentes
+    const { data: fuentes, error: fuentesError } = await userSupabase
+      .schema(dbSchema)
+      .from('fuente')
+      .select('fuenteid, fuente')
+      .eq('statusid', 1);
+    
+    if (fuentesError) {
+      logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo fuentes', fuentesError);
+    }
+    
+    const fuenteMap = new Map();
+    if (fuentes) {
+      fuentes.forEach(f => {
+        fuenteMap.set(f.fuente, f.fuenteid);
+      });
+    }
+    
+    const fuenteLocalizacionId = fuenteMap.get('localizacion');
+    const fuenteNodoId = fuenteMap.get('nodo');
+    const fuenteUbicacionId = fuenteMap.get('ubicacion');
+    
+    logger.info('[DEBUG] GET /umbral/por-nodo: Fuentes', {
+      fuenteLocalizacionId,
+      fuenteNodoId,
+      fuenteUbicacionId,
+      ubicacionId
+    });
+    
+    // Obtener reglas que aplican a estas localizaciones/nodo/ubicación
+    // Buscar reglas con:
+    // 1. objetoid IS NULL (globales)
+    // 2. fuenteid=localizacion y objetoid IN localizacionIds
+    // 3. fuenteid=nodo y objetoid = nodoid
+    // 4. fuenteid=ubicacion y objetoid = ubicacionId
+    let reglaObjetoQuery = userSupabase
+      .schema(dbSchema)
+      .from('regla_objeto')
+      .select('reglaid, origenid, fuenteid, objetoid')
+      .eq('origenid', 1)
+      .eq('statusid', 1);
+    
+    // Construir condiciones OR para buscar en múltiples niveles
+    const conditions = [];
+    
+    // Reglas globales (objetoid IS NULL)
+    conditions.push('objetoid.is.null');
+    
+    // Reglas a nivel de localización
+    if (fuenteLocalizacionId && localizacionIds.length > 0) {
+      conditions.push(`and(fuenteid.eq.${fuenteLocalizacionId},objetoid.in.(${localizacionIds.join(',')}))`);
+    }
+    
+    // Reglas a nivel de nodo
+    if (fuenteNodoId && nodoid) {
+      conditions.push(`and(fuenteid.eq.${fuenteNodoId},objetoid.eq.${nodoid})`);
+    }
+    
+    // Reglas a nivel de ubicación
+    if (fuenteUbicacionId && ubicacionId) {
+      conditions.push(`and(fuenteid.eq.${fuenteUbicacionId},objetoid.eq.${ubicacionId})`);
+    }
+    
+    // Usar or() para combinar condiciones
+    if (conditions.length > 0) {
+      // Para Supabase, necesitamos hacer múltiples queries o usar una query más compleja
+      // Por ahora, haremos queries separadas y combinaremos resultados
+      const reglaObjetoQueries = [];
+      
+      // Query 1: Reglas globales
+      reglaObjetoQueries.push(
+        userSupabase
+          .schema(dbSchema)
+          .from('regla_objeto')
+          .select('reglaid')
+          .eq('origenid', 1)
+          .eq('statusid', 1)
+          .is('objetoid', null)
+      );
+      
+      // Query 2: Reglas a nivel de localización
+      if (fuenteLocalizacionId && localizacionIds.length > 0) {
+        reglaObjetoQueries.push(
+          userSupabase
+            .schema(dbSchema)
+            .from('regla_objeto')
+            .select('reglaid')
+            .eq('origenid', 1)
+            .eq('statusid', 1)
+            .eq('fuenteid', fuenteLocalizacionId)
+            .in('objetoid', localizacionIds)
+        );
+      }
+      
+      // Query 3: Reglas a nivel de nodo
+      if (fuenteNodoId && nodoid) {
+        reglaObjetoQueries.push(
+          userSupabase
+            .schema(dbSchema)
+            .from('regla_objeto')
+            .select('reglaid')
+            .eq('origenid', 1)
+            .eq('statusid', 1)
+            .eq('fuenteid', fuenteNodoId)
+            .eq('objetoid', nodoid)
+        );
+      }
+      
+      // Query 4: Reglas a nivel de ubicación
+      if (fuenteUbicacionId && ubicacionId) {
+        reglaObjetoQueries.push(
+          userSupabase
+            .schema(dbSchema)
+            .from('regla_objeto')
+            .select('reglaid')
+            .eq('origenid', 1)
+            .eq('statusid', 1)
+            .eq('fuenteid', fuenteUbicacionId)
+            .eq('objetoid', ubicacionId)
+        );
+      }
+      
+      // Ejecutar todas las queries en paralelo
+      const reglaObjetoResults = await Promise.all(reglaObjetoQueries.map(q => q));
+      
+      // Combinar resultados
+      const allReglaIds = new Set();
+      reglaObjetoResults.forEach((result, index) => {
+        if (result.error) {
+          logger.warn(`[DEBUG] GET /umbral/por-nodo: Error en query ${index}`, result.error);
+        } else if (result.data) {
+          result.data.forEach(r => allReglaIds.add(r.reglaid));
+        }
+      });
+      
+      logger.info('[DEBUG] GET /umbral/por-nodo: Reglas encontradas', {
+        reglaIds: Array.from(allReglaIds),
+        cantidad: allReglaIds.size
+      });
+      
+      if (allReglaIds.size === 0) {
+        return res.json([]);
+      }
+      
+      var reglaIds = Array.from(allReglaIds);
+    } else {
+      // Fallback: buscar solo por localización (código original)
+      if (fuenteLocalizacionId) {
+        reglaObjetoQuery = reglaObjetoQuery
+          .eq('fuenteid', fuenteLocalizacionId)
+          .in('objetoid', localizacionIds);
+      } else {
+        return res.json([]);
+      }
+      
+      const { data: reglasObjeto, error: reglasError } = await reglaObjetoQuery;
+      
+      if (reglasError) throw reglasError;
+      
+      logger.info('[DEBUG] GET /umbral/por-nodo: Reglas encontradas (fallback)', {
+        reglasObjeto,
+        cantidad: reglasObjeto?.length || 0
+      });
+      
+      if (!reglasObjeto || reglasObjeto.length === 0) {
+        return res.json([]);
+      }
+      
+      var reglaIds = [...new Set(reglasObjeto.map(r => r.reglaid))];
+    }
+    
+    // Paso 3: Obtener umbrales de estas reglas a través de regla_umbral
+    const { data: reglasUmbral, error: reglasUmbralError } = await userSupabase
+      .schema(dbSchema)
+      .from('regla_umbral')
+      .select('umbralid, reglaid')
+      .in('reglaid', reglaIds)
+      .eq('statusid', 1);
+    
+    if (reglasUmbralError) throw reglasUmbralError;
+    
+    if (!reglasUmbral || reglasUmbral.length === 0) {
+      return res.json([]);
+    }
+    
+    const umbralIds = [...new Set(reglasUmbral.map(ru => ru.umbralid))];
+    
+    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 3 - Umbrales IDs', {
+      umbralIds,
+      cantidad: umbralIds.length
+    });
+    
+    // Paso 4: Obtener los umbrales
+    const { data: umbrales, error: umbralError } = await userSupabase
+      .schema(dbSchema)
+      .from('umbral')
+      .select('*')
+      .in('umbralid', umbralIds)
+      .eq('statusid', 1)
+      .order('umbralid', { ascending: true });
+    
+    if (umbralError) throw umbralError;
+    
+    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 4 - Umbrales obtenidos', {
+      umbralesCount: umbrales?.length || 0,
+      umbrales: umbrales?.map(u => ({ umbralid: u.umbralid, metricaid: u.metricaid }))
+    });
+    
+    // Obtener métricas de forma separada
+    const metricaIds = [...new Set((umbrales || []).map(u => u.metricaid).filter(Boolean))];
+    let metricasMap = new Map();
+    
+    if (metricaIds.length > 0) {
+      const { data: metricas, error: metricasError } = await userSupabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+      
+      if (!metricasError && metricas) {
+        metricasMap = new Map(metricas.map(m => [m.metricaid, m]));
+      } else if (metricasError) {
+        logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo métricas', metricasError);
+      }
+    }
+    
+    // Paso 5: Obtener reglas para obtener criticidad
+    const { data: reglas, error: reglasDataError } = await userSupabase
+      .schema(dbSchema)
+      .from('regla')
+      .select('reglaid, criticidadid, nombre')
+      .in('reglaid', reglaIds)
+      .eq('statusid', 1);
+    
+    if (reglasDataError) throw reglasDataError;
+    
+    const reglasMap = new Map(reglas?.map(r => [r.reglaid, r]) || []);
+    const reglaUmbralMap = new Map();
+    
+    reglasUmbral.forEach(ru => {
+      if (!reglaUmbralMap.has(ru.umbralid)) {
+        reglaUmbralMap.set(ru.umbralid, []);
+      }
+      reglaUmbralMap.get(ru.umbralid).push(ru.reglaid);
+    });
+    
+    // Paso 6: Obtener criticidades
+    const criticidadIds = [...new Set(reglas?.map(r => r.criticidadid).filter(Boolean) || [])];
+    let criticidadesMap = new Map();
+    
+    if (criticidadIds.length > 0) {
+      const { data: criticidades, error: criticidadesError } = await userSupabase
+        .schema(dbSchema)
+        .from('criticidad')
+        .select('criticidadid, criticidad, grado')
+        .in('criticidadid', criticidadIds)
+        .eq('statusid', 1);
+      
+      if (!criticidadesError && criticidades) {
+        criticidadesMap = new Map(criticidades.map(c => [c.criticidadid, c]));
+      }
+    }
+    
+    // Paso 7: Transformar datos
+    const transformed = (umbrales || []).map(u => {
+      const reglaIdsDelUmbral = reglaUmbralMap.get(u.umbralid) || [];
+      const primeraRegla = reglaIdsDelUmbral.length > 0 ? reglasMap.get(reglaIdsDelUmbral[0]) : null;
+      const criticidad = primeraRegla?.criticidadid ? criticidadesMap.get(primeraRegla.criticidadid) : null;
+      const metrica = u.metricaid ? metricasMap.get(u.metricaid) : null;
+      
+      return {
+        ...u,
+        metrica: metrica || null,
+        criticidad: criticidad || null,
+        regla: primeraRegla ? { reglaid: primeraRegla.reglaid, nombre: primeraRegla.nombre } : null
+      };
+    });
+    
+    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 7 - Datos transformados', {
+      transformedCount: transformed.length,
+      transformed: transformed.map(t => ({
+        umbralid: t.umbralid,
+        umbral: t.umbral,
+        metrica: t.metrica?.metrica || 'N/A',
+        estandar: t.estandar
+      }))
+    });
+    
+    res.json(transformed);
+  } catch (error) {
+    logger.error('Error en GET /umbral/por-nodo:', error);
     res.status(500).json({ error: error.message });
   }
 });
