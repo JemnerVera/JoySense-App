@@ -103,6 +103,13 @@ const NodeStatusDashboardLazy = lazy(() =>
   })
 );
 
+const AlertStatusDashboardLazy = lazy(() => 
+  import('../Dashboard/AlertStatusDashboard').then(module => {
+    console.log('📦 AlertStatusDashboard cargado dinámicamente');
+    return { default: module.default };
+  })
+);
+
 // Placeholder components for missing modules
 const ReportsLazy = lazy(() => 
   Promise.resolve({
@@ -351,6 +358,7 @@ export {
   MetricaPorLoteLazy,
   UmbralesPorLoteLazy,
   NodeStatusDashboardLazy,
+  AlertStatusDashboardLazy,
   ReportsLazy,
   SettingsLazy,
   UsersLazy,
