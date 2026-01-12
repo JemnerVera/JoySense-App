@@ -1282,13 +1282,14 @@ router.get('/alerta_regla', async (req, res) => {
     const localizacionIds = [...new Set(alertasRegla.map(a => a.localizacionid).filter(id => id != null))];
     const medicionIds = [...new Set(alertasRegla.map(a => a.medicionid).filter(id => id != null))];
     
-    // Paso 3: Obtener reglas
+    // Paso 3: Obtener reglas (con criticidadid)
     let reglasMap = new Map();
+    let criticidadesMap = new Map();
     if (reglaIds.length > 0) {
       const { data: reglas, error: reglasError } = await userSupabase
         .schema(dbSchema)
         .from('regla')
-        .select('reglaid, nombre, prioridad')
+        .select('reglaid, nombre, prioridad, criticidadid')
         .in('reglaid', reglaIds)
         .eq('statusid', 1);
       
@@ -1296,6 +1297,25 @@ router.get('/alerta_regla', async (req, res) => {
         reglas.forEach(r => {
           reglasMap.set(r.reglaid, r);
         });
+        
+        // Obtener criticidadids únicos de las reglas
+        const criticidadIds = [...new Set(reglas.map(r => r.criticidadid).filter(id => id != null))];
+        
+        // Obtener criticidades
+        if (criticidadIds.length > 0) {
+          const { data: criticidades, error: criticidadesError } = await userSupabase
+            .schema(dbSchema)
+            .from('criticidad')
+            .select('criticidadid, criticidad, grado')
+            .in('criticidadid', criticidadIds)
+            .eq('statusid', 1);
+          
+          if (!criticidadesError && criticidades) {
+            criticidades.forEach(c => {
+              criticidadesMap.set(c.criticidadid, c);
+            });
+          }
+        }
       }
     }
     
@@ -1348,44 +1368,37 @@ router.get('/alerta_regla', async (req, res) => {
     // Paso 7: Obtener umbralids únicos
     const umbralIds = [...new Set(reglasUmbrales?.map(ru => ru.umbralid).filter(id => id != null) || [])];
     
-    // Paso 8: Obtener umbrales con criticidad
+    // Paso 8: Obtener umbrales (sin criticidadid, ya que umbral no tiene esa columna)
     let umbralesMap = new Map();
     if (umbralIds.length > 0) {
+      logger.info('[DEBUG] GET /alerta_regla: Obteniendo umbrales', {
+        umbralIds: umbralIds,
+        umbralIdsCount: umbralIds.length
+      });
+      
       const { data: umbrales, error: umbralesError } = await userSupabase
         .schema(dbSchema)
         .from('umbral')
-        .select('umbralid, umbral, minimo, maximo, estandar, operador, inversion, metricaid, criticidadid')
+        .select('umbralid, umbral, minimo, maximo, estandar, operador, inversion, metricaid')
         .in('umbralid', umbralIds)
         .eq('statusid', 1);
       
+      if (umbralesError) {
+        logger.error('[DEBUG] GET /alerta_regla: Error obteniendo umbrales', umbralesError);
+      }
+      
+      logger.info('[DEBUG] GET /alerta_regla: Umbrales obtenidos', {
+        umbralesCount: umbrales?.length || 0,
+        umbrales: umbrales,
+        umbralIdsSolicitados: umbralIds
+      });
+      
       if (!umbralesError && umbrales) {
-        // Obtener criticidadids únicos
-        const criticidadIds = [...new Set(umbrales.map(u => u.criticidadid).filter(id => id != null))];
-        
-        // Obtener criticidades
-        let criticidadesMap = new Map();
-        if (criticidadIds.length > 0) {
-          const { data: criticidades, error: criticidadesError } = await userSupabase
-            .schema(dbSchema)
-            .from('criticidad')
-            .select('criticidadid, criticidad, grado')
-            .in('criticidadid', criticidadIds)
-            .eq('statusid', 1);
-          
-          if (!criticidadesError && criticidades) {
-            criticidades.forEach(c => {
-              criticidadesMap.set(c.criticidadid, c);
-            });
-          }
-        }
-        
-        // Combinar umbrales con criticidades
+        // La criticidad se obtiene desde la regla, no desde el umbral
+        // Por ahora, solo guardamos los umbrales sin criticidad
+        // La criticidad se agregará cuando se mapee con la regla
         umbrales.forEach(u => {
-          const criticidad = u.criticidadid ? (criticidadesMap.get(u.criticidadid) || null) : null;
-          umbralesMap.set(u.umbralid, {
-            ...u,
-            criticidad: criticidad
-          });
+          umbralesMap.set(u.umbralid, u);
         });
       }
     }
@@ -1433,17 +1446,41 @@ router.get('/alerta_regla', async (req, res) => {
       }
     }
     
-    // Paso 9: Crear mapa de reglaid -> umbrales
+    // Paso 9: Crear mapa de reglaid -> umbrales (con criticidad desde la regla)
     const reglaUmbralMap = new Map(); // reglaid -> [umbral]
     if (reglasUmbrales) {
       reglasUmbrales.forEach(ru => {
         const umbral = umbralesMap.get(ru.umbralid);
         if (umbral) {
+          // Obtener la regla para obtener la criticidad
+          const regla = reglasMap.get(ru.reglaid);
+          const criticidad = regla?.criticidadid ? (criticidadesMap.get(regla.criticidadid) || null) : null;
+          
+          // Combinar umbral con criticidad desde la regla
+          const umbralConCriticidad = {
+            ...umbral,
+            criticidad: criticidad
+          };
+          
           if (!reglaUmbralMap.has(ru.reglaid)) {
             reglaUmbralMap.set(ru.reglaid, []);
           }
-          reglaUmbralMap.get(ru.reglaid).push(umbral);
+          reglaUmbralMap.get(ru.reglaid).push(umbralConCriticidad);
+        } else {
+          logger.warn('[DEBUG] GET /alerta_regla: regla_umbral sin umbral en map', {
+            reglaid: ru.reglaid,
+            umbralid: ru.umbralid,
+            umbralesMapKeys: Array.from(umbralesMap.keys()),
+            umbralesMapSize: umbralesMap.size
+          });
         }
+      });
+      
+      logger.info('[DEBUG] GET /alerta_regla: Mapa regla-umbral creado', {
+        reglaUmbralMapSize: reglaUmbralMap.size,
+        reglaUmbralMapKeys: Array.from(reglaUmbralMap.keys()),
+        reglasUmbralesCount: reglasUmbrales.length,
+        umbralesMapSize: umbralesMap.size
       });
     }
     
@@ -1485,6 +1522,17 @@ router.get('/alerta_regla', async (req, res) => {
       
       // Obtener umbrales de la regla (puede haber múltiples umbrales por regla)
       const umbralesDeRegla = regla ? (reglaUmbralMap.get(regla.reglaid) || []) : [];
+      
+      // Debug: Verificar por qué no hay umbral
+      if (!umbralesDeRegla.length && regla) {
+        logger.warn('[DEBUG] GET /alerta_regla: Alerta sin umbrales', {
+          alertaid: ar.uuid_alerta_reglaid,
+          reglaid: ar.reglaid,
+          regla: regla,
+          reglaUmbralMapKeys: Array.from(reglaUmbralMap.keys()),
+          reglaUmbralMapSize: reglaUmbralMap.size
+        });
+      }
       
       // Para compatibilidad con el frontend, usar el primer umbral o crear uno genérico
       const umbralPrincipal = umbralesDeRegla.length > 0 ? umbralesDeRegla[0] : null;

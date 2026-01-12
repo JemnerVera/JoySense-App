@@ -6,6 +6,7 @@ import ReglaSidebar from './ReglaSidebar';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import AlertasFilters from './AlertasFilters';
 import ReportesDashboardSidebar from './ReportesDashboardSidebar';
+import ReportesHistorialSidebar from './ReportesHistorialSidebar';
 import DispositivosSidebar from './DispositivosSidebar';
 import DispositivosOperationsSidebar from './DispositivosOperationsSidebar';
 import UsuariosSidebar from './UsuariosSidebar';
@@ -25,18 +26,20 @@ interface AuxiliarySidebarProps {
   onMouseLeave: () => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onExpandAllSidebars?: () => void; // Función para expandir todos los sidebars necesarios (para HISTORIAL)
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   // onSubTabChange se usa en múltiples secciones; para PERMISOS también debe aceptar 'asignar'
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
-  dashboardSubTab?: 'mapeo' | 'metrica' | 'umbrales';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica' | 'umbrales') => void;
+  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
   showThirdLevel?: boolean;
   showDashboardThirdLevel?: boolean;
+  showHistorialSecondLevel?: boolean;
   permisosSubTab?: 'status' | 'insert' | 'update' | 'asignar';
   onPermisosSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'asignar') => void;
   onPermisosSubTabChangeFromProtectedButton?: (subTab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => void;
@@ -53,6 +56,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   onMouseLeave,
   activeTab,
   onTabChange,
+  onExpandAllSidebars,
   selectedTable,
   onTableSelect,
   activeSubTab,
@@ -64,6 +68,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   massiveFormData = {},
   showThirdLevel = false,
   showDashboardThirdLevel = false,
+  showHistorialSecondLevel = false,
   permisosSubTab,
   onPermisosSubTabChange,
   isSidebarAux3 = false,
@@ -75,7 +80,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   
-  // Subpestañas para Reportes
+  // Subpestañas para Reportes (Sidebar Aux 1)
   const reportesSubTabs = [
     {
       id: 'dashboard',
@@ -87,20 +92,11 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       )
     },
     {
-      id: 'alertas',
-      label: t('subtabs.alerts'),
+      id: 'historial',
+      label: 'HISTORIAL',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-        </svg>
-      )
-    },
-    {
-      id: 'mensajes',
-      label: t('subtabs.messages'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
     }
@@ -118,8 +114,9 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   const isPermisosTipoSelected = activeTab.startsWith('configuracion-permisos-permisos-');
   const isReportesAdmin = activeTab.startsWith('configuracion-reportes-administrador');
   const isAlertas = activeTab === 'alertas' || activeTab.startsWith('alertas-');
-  const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-'));
+  const isReportes = activeTab === 'reportes' || (activeTab.startsWith('reportes-') && activeTab !== 'reportes-dashboard' && !activeTab.startsWith('reportes-dashboard-') && activeTab !== 'reportes-historial' && !activeTab.startsWith('reportes-historial-'));
   const isDashboard = activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-');
+  const isHistorial = activeTab === 'reportes-historial' || activeTab.startsWith('reportes-historial-');
   
   // Caso especial: REGLA dentro de NOTIFICACIONES
   const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
@@ -436,13 +433,46 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
             // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
+            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
             const isActive = subTab.id === 'dashboard' 
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : subTab.id === 'historial'
               ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
               : activeTab === `reportes-${subTab.id}`;
             return (
               <button
                 key={subTab.id}
-                onClick={() => onTabChange(`reportes-${subTab.id}`)}
+                onClick={(e) => {
+                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
+                    subTabId: subTab.id,
+                    activeTab: activeTab,
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  // Prevenir que el click cause que los sidebars se colapsen
+                  e.stopPropagation();
+                  // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
+                  // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
+                  if (subTab.id === 'historial') {
+                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
+                    // Expandir tanto aux1 como aux2 antes de cambiar el tab
+                    // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
+                    if (onExpandAllSidebars) {
+                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
+                      onExpandAllSidebars();
+                    } else {
+                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
+                      onMouseEnter?.();
+                    }
+                    // Cambiar el tab después de expandir los sidebars
+                    onTabChange(`reportes-${subTab.id}`);
+                  } else {
+                    // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
+                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
+                    onMouseEnter?.();
+                    onTabChange(`reportes-${subTab.id}`);
+                  }
+                }}
                 className={`w-full flex items-center p-3 rounded transition-colors ${
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${
@@ -461,16 +491,31 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
             );
           })}
         </div>
-
-        {/* Filtros para Alertas */}
-        {activeTab === 'reportes-alertas' && (
-          <AlertasFilters isExpanded={isExpanded} />
-        )}
       </BaseAuxiliarySidebar>
     );
   }
 
-  if (isReportes && !isDashboard) {
+  // Lógica para Historial (Sidebar Aux 2) - Similar a Dashboard
+  if (isHistorial) {
+    // Si showHistorialSecondLevel es true, renderizar el segundo sidebar de historial (ALERTAS y MENSAJES)
+    if (showHistorialSecondLevel) {
+      // Extraer el subTab del activeTab: 'reportes-historial-alertas' -> 'alertas', 'reportes-historial-mensajes' -> 'mensajes'
+      const historialSubTab = activeTab === 'reportes-historial' 
+        ? 'alertas' // Por defecto mostrar alertas
+        : (activeTab.replace('reportes-historial-', '') || 'alertas') as 'alertas' | 'mensajes';
+      
+      return (
+        <ReportesHistorialSidebar
+          activeSubTab={historialSubTab}
+          onSubTabChange={(subTab) => onTabChange(`reportes-historial-${subTab}`)}
+          isExpanded={isExpanded}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        />
+      );
+    }
+
+    // Si no es showHistorialSecondLevel, renderizar el segundo sidebar de reportes (DASHBOARD e HISTORIAL)
     const reportesIcon = (
       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -490,13 +535,46 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
             // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
+            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
             const isActive = subTab.id === 'dashboard' 
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : subTab.id === 'historial'
               ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
               : activeTab === `reportes-${subTab.id}`;
             return (
               <button
                 key={subTab.id}
-                onClick={() => onTabChange(`reportes-${subTab.id}`)}
+                onClick={(e) => {
+                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
+                    subTabId: subTab.id,
+                    activeTab: activeTab,
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  // Prevenir que el click cause que los sidebars se colapsen
+                  e.stopPropagation();
+                  // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
+                  // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
+                  if (subTab.id === 'historial') {
+                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
+                    // Expandir tanto aux1 como aux2 antes de cambiar el tab
+                    // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
+                    if (onExpandAllSidebars) {
+                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
+                      onExpandAllSidebars();
+                    } else {
+                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
+                      onMouseEnter?.();
+                    }
+                    // Cambiar el tab después de expandir los sidebars
+                    onTabChange(`reportes-${subTab.id}`);
+                  } else {
+                    // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
+                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
+                    onMouseEnter?.();
+                    onTabChange(`reportes-${subTab.id}`);
+                  }
+                }}
                 className={`w-full flex items-center p-3 rounded transition-colors ${
                   isExpanded ? 'gap-3' : 'justify-center'
                 } ${
@@ -515,11 +593,88 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
             );
           })}
         </div>
+      </BaseAuxiliarySidebar>
+    );
+  }
 
-        {/* Filtros para Alertas */}
-        {activeTab === 'reportes-alertas' && (
-          <AlertasFilters isExpanded={isExpanded} />
-        )}
+  if (isReportes && !isDashboard && !isHistorial) {
+    const reportesIcon = (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    );
+
+    return (
+      <BaseAuxiliarySidebar
+        isExpanded={isExpanded}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        title={t('tabs.reports')}
+        icon={reportesIcon}
+        color="blue"
+      >
+        {/* Subpestañas de reportes */}
+        <div className="py-4">
+          {reportesSubTabs.map((subTab) => {
+            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
+            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
+            const isActive = subTab.id === 'dashboard' 
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : subTab.id === 'historial'
+              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
+              : activeTab === `reportes-${subTab.id}`;
+            return (
+              <button
+                key={subTab.id}
+                onClick={(e) => {
+                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
+                    subTabId: subTab.id,
+                    activeTab: activeTab,
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  // Prevenir que el click cause que los sidebars se colapsen
+                  e.stopPropagation();
+                  // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
+                  // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
+                  if (subTab.id === 'historial') {
+                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
+                    // Expandir tanto aux1 como aux2 antes de cambiar el tab
+                    // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
+                    if (onExpandAllSidebars) {
+                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
+                      onExpandAllSidebars();
+                    } else {
+                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
+                      onMouseEnter?.();
+                    }
+                    // Cambiar el tab después de expandir los sidebars
+                    onTabChange(`reportes-${subTab.id}`);
+                  } else {
+                    // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
+                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
+                    onMouseEnter?.();
+                    onTabChange(`reportes-${subTab.id}`);
+                  }
+                }}
+                className={`w-full flex items-center p-3 rounded transition-colors ${
+                  isExpanded ? 'gap-3' : 'justify-center'
+                } ${
+                  isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                }`}
+              >
+                <div className="flex-shrink-0">
+                  {subTab.icon}
+                </div>
+                {isExpanded && (
+                  <span className="text-sm font-medium tracking-wider">{subTab.label.toUpperCase()}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </BaseAuxiliarySidebar>
     );
   }

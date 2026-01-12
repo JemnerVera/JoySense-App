@@ -387,6 +387,19 @@ export class JoySenseService {
     }
   }
 
+  static async getLocalizacionesByNodo(nodoid: number): Promise<Localizacion[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get(`/dispositivos/localizacion?nodoid=${nodoid}`, token || undefined);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getLocalizacionesByNodo:', error);
+      throw error;
+    }
+  }
+
   static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
     try {
       // Obtener token de sesión de Supabase para enviarlo al backend
@@ -582,14 +595,33 @@ export class JoySenseService {
     }
   }
 
-  static async getUmbrales(localizacionId?: number): Promise<Umbral[]> {
+  static async getUmbrales(metricaId?: number): Promise<Umbral[]> {
     try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
       let endpoint = '/alertas/umbral';
-      if (localizacionId) endpoint += `?localizacionid=${localizacionId}`;
-      const data = await backendAPI.get(endpoint);
+      if (metricaId) endpoint += `?metricaId=${metricaId}`;
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getUmbrales:', error);
+      throw error;
+    }
+  }
+
+  static async getUmbralesPorNodo(nodoid: number): Promise<Umbral[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const endpoint = `/alertas/umbral/por-nodo?nodoid=${nodoid}`;
+      const data = await backendAPI.get(endpoint, token || undefined);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUmbralesPorNodo:', error);
       throw error;
     }
   }

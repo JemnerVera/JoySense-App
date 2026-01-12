@@ -96,14 +96,19 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
 
   // Función para manejar hover en el contenido principal
   const handleContentMouseEnter = useCallback(() => {
+    console.log('[DEBUG] useAppSidebar: handleContentMouseEnter llamado', {
+      activeTab: activeTab,
+      timestamp: new Date().toISOString()
+    });
+    
+    // NOTA: Este hook (useAppSidebar) se usa en App.tsx pero parece que no es el que controla
+    // los sidebars principales. Los sidebars se controlan desde useSidebarLayout en SidebarContainer.
+    // Por ahora, solo actualizar la ubicación del hover sin colapsar los sidebars,
+    // ya que el colapso se maneja desde useSidebarLayout.
     setHoverLocation('content');
-    // Colapsar ambos sidebars si hay una pestaña seleccionada
-    if (activeTab) {
-      setSidebarVisible(false);
-      setAuxiliarySidebarVisible(false);
-      clearCloseTimeout();
-    }
-  }, [clearCloseTimeout, activeTab]);
+    // NO colapsar aquí porque los sidebars se controlan desde useSidebarLayout
+    // clearCloseTimeout();
+  }, [activeTab]);
 
   const handleContentMouseLeave = useCallback(() => {
     setHoverLocation('none');

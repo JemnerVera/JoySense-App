@@ -96,6 +96,13 @@ const UmbralesPorLoteLazy = lazy(() =>
   })
 );
 
+const NodeStatusDashboardLazy = lazy(() => 
+  import('../Dashboard/NodeStatusDashboard').then(module => {
+    console.log('📦 NodeStatusDashboard cargado dinámicamente');
+    return { default: module.default };
+  })
+);
+
 // Placeholder components for missing modules
 const ReportsLazy = lazy(() => 
   Promise.resolve({
@@ -343,6 +350,7 @@ export {
   DashboardHierarchyLazy,
   MetricaPorLoteLazy,
   UmbralesPorLoteLazy,
+  NodeStatusDashboardLazy,
   ReportsLazy,
   SettingsLazy,
   UsersLazy,

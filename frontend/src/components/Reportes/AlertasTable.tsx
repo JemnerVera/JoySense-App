@@ -103,6 +103,15 @@ const AlertasTable: React.FC = () => {
               allData = result;
             }
             
+            // Debug: Verificar umbrales en los datos
+            console.log('[DEBUG] AlertasTable: Datos recibidos', {
+              total: allData.length,
+              sampleAlerta: allData[0],
+              alertasConUmbral: allData.filter(a => a.umbral).length,
+              alertasSinUmbral: allData.filter(a => !a.umbral).length,
+              primeraAlertaSinUmbral: allData.find(a => !a.umbral)
+            });
+            
             setAllAlertas(allData);
             
             // Extraer opciones disponibles para los filtros
@@ -311,9 +320,6 @@ const AlertasTable: React.FC = () => {
     <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-blue-500 font-mono tracking-wider">
-          {t('reports.alerts.title')}
-        </h2>
         <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
           {totalRecords} {t('reports.alerts.total')}
         </div>

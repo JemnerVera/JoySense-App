@@ -16,8 +16,8 @@ interface SidebarContainerProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
-  dashboardSubTab?: 'mapeo' | 'metrica' | 'umbrales';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'metrica' | 'umbrales') => void;
+  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
@@ -98,6 +98,13 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
+            onExpandAllSidebars={() => {
+              console.log('[DEBUG] SidebarContainer: onExpandAllSidebars llamado - expandiendo aux1 y aux2');
+              // Cuando se hace click en HISTORIAL, expandir tanto aux1 como aux2
+              handleAux1MouseEnter();
+              handleAux2MouseEnter();
+              console.log('[DEBUG] SidebarContainer: onExpandAllSidebars completado');
+            }}
             selectedTable={selectedTable}
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
@@ -697,6 +704,30 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             multipleData={multipleData}
             massiveFormData={massiveFormData}
             showDashboardThirdLevel={true}
+          />
+        </div>
+      )}
+
+      {/* Sidebar Aux 2 para HISTORIAL (solo cuando está en reportes-historial) - Similar a dashboard */}
+      {hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-historial' || activeTab.startsWith('reportes-historial-')) && (
+        <div className="flex-shrink-0 z-20">
+          <AuxiliarySidebar
+            isExpanded={aux2Expanded}
+            onMouseEnter={handleAux2MouseEnter}
+            onMouseLeave={handleAux2MouseLeave}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            selectedTable={selectedTable}
+            onTableSelect={onTableSelect}
+            activeSubTab={activeSubTab}
+            onSubTabChange={onSubTabChange}
+            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
+            dashboardSubTab={dashboardSubTab}
+            onDashboardSubTabChange={onDashboardSubTabChange}
+            formData={formData}
+            multipleData={multipleData}
+            massiveFormData={massiveFormData}
+            showHistorialSecondLevel={true}
           />
         </div>
       )}
