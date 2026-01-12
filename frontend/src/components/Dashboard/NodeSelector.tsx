@@ -382,9 +382,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
-      {useEffect(() => {
-        console.log('[NodeSelector] Renderizando InteractiveMap con', filteredNodes.length, 'nodos filtrados');
-      }, [filteredNodes.length])}
       <InteractiveMap
         nodes={filteredNodes}
         selectedNode={selectedNode}
