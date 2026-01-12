@@ -11,7 +11,14 @@
  * - routes/ - Rutas organizadas por módulo
  */
 
-require('dotenv').config();
+// Cargar dotenv solo si existe archivo .env (desarrollo local)
+// En Azure, las variables están en Application Settings y ya están en process.env
+try {
+  require('dotenv').config();
+} catch (err) {
+  // Ignorar si no existe .env (normal en producción)
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

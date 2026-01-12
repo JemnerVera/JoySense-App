@@ -7,7 +7,14 @@
  * según las indicaciones del DBA: "backend_user YA NO SIRVE"
  */
 
-require('dotenv').config();
+// Cargar dotenv solo si existe archivo .env (desarrollo local)
+// En Azure, las variables están en Application Settings y ya están en process.env
+try {
+  require('dotenv').config();
+} catch (err) {
+  // Ignorar si no existe .env (normal en producción)
+}
+
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 
@@ -22,9 +29,18 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ ERROR: Se requiere SUPABASE_URL y SUPABASE_ANON_KEY');
-  console.error('   Agrega estas variables a tu archivo .env:');
+  console.error('');
+  if (process.env.NODE_ENV === 'production' || process.env.WEBSITE_SITE_NAME) {
+    console.error('   🔷 EN AZURE APP SERVICE:');
+    console.error('   Ve a: Azure Portal → App Service → Configuration → Application settings');
+    console.error('   Agrega estas variables:');
+  } else {
+    console.error('   🔷 EN DESARROLLO LOCAL:');
+    console.error('   Agrega estas variables a tu archivo backend/.env:');
+  }
   console.error('   SUPABASE_URL=https://tu-proyecto.supabase.co');
   console.error('   SUPABASE_ANON_KEY=tu-anon-key');
+  console.error('');
   process.exit(1);
 }
 
