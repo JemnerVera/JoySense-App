@@ -24,22 +24,48 @@ const dbSchema = process.env.DB_SCHEMA || 'joysense';
 // CONFIGURACIÓN DE SUPABASE
 // ============================================================================
 
+// Debug: Verificar variables de entorno disponibles
+const isAzure = !!process.env.WEBSITE_SITE_NAME;
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isAzure || isProduction) {
+  console.log('🔷 Ambiente detectado:', isAzure ? 'Azure App Service' : 'Producción');
+  console.log('🔷 Variables de entorno disponibles:');
+  console.log('   - SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Configurada' : '❌ No configurada');
+  console.log('   - SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ Configurada' : '❌ No configurada');
+  console.log('   - NODE_ENV:', process.env.NODE_ENV || 'no definido');
+  console.log('   - WEBSITE_SITE_NAME:', process.env.WEBSITE_SITE_NAME || 'no definido');
+}
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ ERROR: Se requiere SUPABASE_URL y SUPABASE_ANON_KEY');
   console.error('');
-  if (process.env.NODE_ENV === 'production' || process.env.WEBSITE_SITE_NAME) {
+  
+  // Debug adicional
+  console.error('🔍 DEBUG - Variables de entorno detectadas:');
+  console.error('   - process.env keys:', Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('NODE') || k.includes('WEBSITE')).join(', '));
+  console.error('   - SUPABASE_URL value:', supabaseUrl ? 'existe pero vacío' : 'no existe');
+  console.error('   - SUPABASE_ANON_KEY value:', supabaseAnonKey ? 'existe pero vacío' : 'no existe');
+  console.error('');
+  
+  if (isAzure || isProduction) {
     console.error('   🔷 EN AZURE APP SERVICE:');
     console.error('   Ve a: Azure Portal → App Service → Configuration → Application settings');
-    console.error('   Agrega estas variables:');
+    console.error('   Agrega estas variables (asegúrate de hacer "Save" después):');
+    console.error('   - SUPABASE_URL=https://tu-proyecto.supabase.co');
+    console.error('   - SUPABASE_ANON_KEY=tu-anon-key');
+    console.error('');
+    console.error('   ⚠️ IMPORTANTE: Después de agregar las variables, haz clic en "Save"');
+    console.error('   Esto reiniciará la aplicación y cargará las nuevas variables.');
   } else {
     console.error('   🔷 EN DESARROLLO LOCAL:');
     console.error('   Agrega estas variables a tu archivo backend/.env:');
+    console.error('   SUPABASE_URL=https://tu-proyecto.supabase.co');
+    console.error('   SUPABASE_ANON_KEY=tu-anon-key');
   }
-  console.error('   SUPABASE_URL=https://tu-proyecto.supabase.co');
-  console.error('   SUPABASE_ANON_KEY=tu-anon-key');
   console.error('');
   process.exit(1);
 }
