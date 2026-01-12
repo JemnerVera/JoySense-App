@@ -70,23 +70,13 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
 
   // Función para colapsar todos los sidebars en cascada inversa
   const collapseAllSidebars = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: collapseAllSidebars llamado', {
-      activeTab: activeTab,
-      aux1Expanded: aux1Expanded,
-      aux2Expanded: aux2Expanded,
-      timestamp: new Date().toISOString(),
-      stackTrace: new Error().stack
-    });
+    // Log removido para reducir verbosidad
     
     // SOLUCIÓN ROBUSTA: Prevenir colapso si estamos en HISTORIAL y los sidebars están expandidos
     // Esto previene que cualquier código colapse los sidebars cuando estamos en HISTORIAL
     const isHistorial = activeTab && (activeTab.startsWith('reportes-historial') || activeTab === 'reportes-historial');
     if (isHistorial && (aux1Expanded || aux2Expanded)) {
-      console.log('[DEBUG] useSidebarLayout: collapseAllSidebars BLOQUEADO para HISTORIAL', {
-        activeTab: activeTab,
-        aux1Expanded: aux1Expanded,
-        aux2Expanded: aux2Expanded
-      });
+      // Log removido para reducir verbosidad
       // NO colapsar los sidebars si estamos en HISTORIAL y están expandidos
       return;
     }
@@ -158,7 +148,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         if (isHistorial && (aux1Expanded || aux2Expanded)) {
           // Para HISTORIAL, mantener los sidebars expandidos incluso si no hay niveles hovered
           // porque se expandieron por click en pestaña
-          console.log('[DEBUG] useSidebarLayout: scheduleClose - manteniendo sidebars expandidos para HISTORIAL');
+          // Log removido para reducir verbosidad
           return;
         }
         // Si los sidebars no están expandidos, colapsar todo
@@ -182,7 +172,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         // Verificar si estamos en un tab que necesita mantener los sidebars expandidos
         if (isHistorial && (aux1Expanded || aux2Expanded)) {
           // Para HISTORIAL, mantener los sidebars expandidos incluso si los refs están vacíos
-          console.log('[DEBUG] useSidebarLayout: scheduleClose timeout - manteniendo sidebars expandidos para HISTORIAL');
+          // Log removido para reducir verbosidad
           return;
         }
         
@@ -227,7 +217,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
         // SOLUCIÓN ROBUSTA: Verificar si estamos en HISTORIAL antes de colapsar (reutilizar isHistorial declarado arriba)
         if (isHistorial && (aux1Expanded || aux2Expanded)) {
           // Si estamos en HISTORIAL y los sidebars están expandidos, NO colapsar
-          console.log('[DEBUG] useSidebarLayout: scheduleClose timeout - manteniendo sidebars para HISTORIAL');
+          // Log removido para reducir verbosidad
           return;
         }
         
@@ -563,7 +553,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
   }, [expandCascade, activeTab]);
 
   const handleAux1MouseLeave = useCallback(() => {
-    console.log('[DEBUG] useSidebarLayout: handleAux1MouseLeave llamado');
+    // Log removido para reducir verbosidad
     // Remover del set de niveles hovered
     hoveredLevelsRef.current.delete('aux1');
     // Si no hay más niveles hovered, marcar que no hay sidebars hovered
@@ -597,7 +587,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
     // SOLUCIÓN ROBUSTA: NO programar cierre si estamos en HISTORIAL y los sidebars están expandidos
     const isHistorial = activeTab && (activeTab.startsWith('reportes-historial') || activeTab === 'reportes-historial');
     if (isHistorial && (aux1Expanded || aux2Expanded)) {
-      console.log('[DEBUG] useSidebarLayout: handleAux2MouseLeave BLOQUEADO para HISTORIAL');
+      // Log removido para reducir verbosidad
       // NO remover de los niveles hovered ni programar cierre si estamos en HISTORIAL
       return;
     }
@@ -678,7 +668,7 @@ export const useSidebarLayout = ({ showWelcome, activeTab }: UseSidebarLayoutPro
       hoveredLevelsRef.current.clear();
       hoveredLevelRef.current = null;
       // Usar la función de colapso para mantener consistencia
-      console.log('[DEBUG] useSidebarLayout: Colapsando todos los sidebars desde handleContentMouseEnter');
+      // Log removido para reducir verbosidad
       collapseAllSidebars();
       // Marcar que viene desde el contenido para activar expansión en cascada cuando vuelva a los sidebars
       setTimeout(() => {

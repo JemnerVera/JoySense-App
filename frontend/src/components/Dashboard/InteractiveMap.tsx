@@ -193,11 +193,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     });
   }, [nodes])
   
-  // Log solo cuando cambian los nodos (usando useEffect para evitar loops)
+  // Log para diagnóstico
   useEffect(() => {
-    if (nodes.length > 0) {
-    }
-  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid]);
+    console.log('[InteractiveMap] Renderizando mapa:', {
+      totalNodes: nodes.length,
+      nodesWithGPS: nodesWithGPS.length,
+      selectedNodeId: selectedNode?.nodoid,
+      loading
+    });
+  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid, loading]);
 
   // Función para abrir el popup del nodo seleccionado
   const openSelectedNodePopup = () => {

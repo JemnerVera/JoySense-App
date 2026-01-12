@@ -123,6 +123,7 @@ function getMetricIdFromDataKey(dataKey: string): number {
 }
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
+  console.log('[ModernDashboard] Renderizando con filters:', filters);
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
   

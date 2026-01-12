@@ -76,10 +76,12 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
     const loadNodes = async () => {
       try {
         setLoading(true);
+        console.log('[NodeStatusDashboard] Cargando nodos...');
         const nodesData = await JoySenseService.getNodosConLocalizacion(1000);
+        console.log('[NodeStatusDashboard] Nodos cargados:', nodesData?.length || 0);
         setNodes(nodesData || []);
       } catch (err: any) {
-        console.error('Error cargando nodos:', err);
+        console.error('[NodeStatusDashboard] Error cargando nodos:', err);
         showError('Error', 'Error al cargar nodos');
       } finally {
         setLoading(false);
@@ -91,6 +93,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
   // Cargar datos cuando se selecciona un nodo
   useEffect(() => {
     if (!selectedNode) {
+      console.log('[NodeStatusDashboard] No hay nodo seleccionado, limpiando datos');
       setMediciones([]);
       setAlertas([]);
       setUmbrales([]);
@@ -98,9 +101,11 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       return;
     }
 
+    console.log('[NodeStatusDashboard] Nodo seleccionado:', selectedNode.nodoid, selectedNode.nodo);
     const loadNodeData = async () => {
       try {
         setLoading(true);
+        console.log('[NodeStatusDashboard] Cargando datos para nodo:', selectedNode.nodoid);
         
         // Cargar mediciones del nodo
         const medicionesData = await JoySenseService.getMediciones({
@@ -111,6 +116,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
         });
         // Verificar si es un array o un objeto con count
         const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
+        console.log('[NodeStatusDashboard] Mediciones cargadas:', medicionesArray.length);
         setMediciones(medicionesArray);
 
         // Cargar alertas del nodo
@@ -211,11 +217,13 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
         });
 
         setStatistics(statsByMetric);
+        console.log('[NodeStatusDashboard] Datos cargados exitosamente. Estadísticas:', Object.keys(statsByMetric).length, 'métricas');
       } catch (err: any) {
-        console.error('Error cargando datos del nodo:', err);
+        console.error('[NodeStatusDashboard] Error cargando datos del nodo:', err);
         showError('Error', 'Error al cargar datos del nodo');
       } finally {
         setLoading(false);
+        console.log('[NodeStatusDashboard] Carga de datos completada');
       }
     };
 
