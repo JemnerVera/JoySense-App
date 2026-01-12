@@ -13,7 +13,7 @@ import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 // import { DynamicHierarchy } from './components/Dashboard';
-import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/PermisosMain';
@@ -172,7 +172,7 @@ const AppContentInternal: React.FC = () => {
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'metrica' | 'umbrales'>('mapeo');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'status-nodos' | 'metrica' | 'umbrales'>('mapeo');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -200,8 +200,8 @@ const AppContentInternal: React.FC = () => {
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'metrica' | 'umbrales';
-      if (subTab === 'mapeo' || subTab === 'metrica' || subTab === 'umbrales') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales';
+      if (subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     } else if (activeTab === 'reportes-dashboard') {
@@ -395,8 +395,8 @@ const AppContentInternal: React.FC = () => {
     hasAuxiliarySidebar
   } = useAppSidebar({ showWelcome: showWelcomeIntegrated, activeTab });
 
-  // Hook para el layout del contenido principal
-  useMainContentLayout({ 
+  // Hook para el layout del contenido principal (obtiene handleContentMouseEnter de useSidebarLayout)
+  const { handleContentMouseEnter: handleContentMouseEnterFromLayout, handleContentMouseLeave: handleContentMouseLeaveFromLayout } = useMainContentLayout({ 
     showWelcome: showWelcomeIntegrated, 
     activeTab 
   });
@@ -509,6 +509,12 @@ const AppContentInternal: React.FC = () => {
 
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
+    console.log('[DEBUG] App.tsx: handleTabChange llamado', {
+      tabAnterior: activeTab,
+      tabNuevo: tab,
+      timestamp: new Date().toISOString()
+    });
+    
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
       setActiveSubTab('status');
@@ -708,7 +714,7 @@ const AppContentInternal: React.FC = () => {
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'metrica' | 'umbrales') => {
+  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'status-nodos' | 'metrica' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1211,6 +1217,19 @@ const AppContentInternal: React.FC = () => {
               />
             </Suspense>
           );
+          case 'status-nodos':
+            return (
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Status de Nodos...</p>
+                  </div>
+                </div>
+              }>
+                <NodeStatusDashboardLazy />
+              </Suspense>
+            );
           case 'metrica':
             return (
               <Suspense fallback={
@@ -1255,10 +1274,31 @@ const AppContentInternal: React.FC = () => {
             setActiveTab('reportes-dashboard-mapeo');
           });
           return null;
-        case 'alertas':
+        case 'historial':
+          // Redirigir a alertas por defecto
+          console.log('[DEBUG] App.tsx: Cambiando tab a reportes-historial-alertas');
+          startTransition(() => {
+            console.log('[DEBUG] App.tsx: Dentro de startTransition - setActiveTab reportes-historial-alertas');
+            setActiveTab('reportes-historial-alertas');
+          });
+          return null;
+        case 'historial-alertas':
           return <AlertasMain />;
-        case 'mensajes':
+        case 'historial-mensajes':
           return <MensajesMain />;
+        // Mantener compatibilidad con rutas antiguas
+        case 'alertas':
+          // Redirigir a historial-alertas
+          startTransition(() => {
+            setActiveTab('reportes-historial-alertas');
+          });
+          return null;
+        case 'mensajes':
+          // Redirigir a historial-mensajes
+          startTransition(() => {
+            setActiveTab('reportes-historial-mensajes');
+          });
+          return null;
         default:
           return (
             <div className="p-6">
@@ -1584,8 +1624,34 @@ const AppContentInternal: React.FC = () => {
         {/* Área principal con header fijo y contenido scrolleable */}
         <div 
           className={`${getMainContentClasses(sidebarVisible)} bg-gray-50 dark:bg-black flex-1`}
-          onMouseEnter={handleContentMouseEnter}
-          onMouseLeave={handleContentMouseLeave}
+          onMouseEnter={(e) => {
+            console.log('[DEBUG] App.tsx: handleContentMouseEnter en área principal', {
+              activeTab: activeTab,
+              target: e.target,
+              timestamp: new Date().toISOString(),
+              // Verificar si el target está realmente en el contenido o en los sidebars
+              targetClasses: (e.target as HTMLElement).className,
+              targetTagName: (e.target as HTMLElement).tagName
+            });
+            // Usar el handleContentMouseEnter de useSidebarLayout (que controla los sidebars reales)
+            // en lugar del de useAppSidebar (que es solo para compatibilidad)
+            if (handleContentMouseEnterFromLayout) {
+              handleContentMouseEnterFromLayout();
+            }
+            // También llamar el de useAppSidebar para mantener compatibilidad con otros hooks
+            handleContentMouseEnter();
+          }}
+          onMouseLeave={(e) => {
+            console.log('[DEBUG] App.tsx: handleContentMouseLeave en área principal', {
+              activeTab: activeTab,
+              timestamp: new Date().toISOString()
+            });
+            // Usar el handleContentMouseLeave de useSidebarLayout
+            if (handleContentMouseLeaveFromLayout) {
+              handleContentMouseLeaveFromLayout();
+            }
+            handleContentMouseLeave();
+          }}
         >
         {/* Header fijo (freeze pane) - Solo mostrar si no es ventana de bienvenida */}
         {!showWelcomeIntegrated && (
@@ -1701,6 +1767,7 @@ const AppContentInternal: React.FC = () => {
                             const subTab = activeTab.replace('reportes-dashboard-', '');
                             const subTabNames: { [key: string]: string } = {
                               'mapeo': 'MAPEO',
+                              'status-nodos': 'STATUS DE NODOS',
                               'metrica': 'MÉTRICA POR LOTE',
                               'umbrales': 'UMBRALES POR LOTE'
                             };
@@ -1709,9 +1776,17 @@ const AppContentInternal: React.FC = () => {
                           const reporteTab = activeTab.replace('reportes-', '');
                           const reporteNames: { [key: string]: string } = {
                             'dashboard': t('subtabs.dashboard'),
-                            'alertas': t('subtabs.alerts'),
-                            'mensajes': t('subtabs.messages')
+                            'historial': 'HISTORIAL',
+                            'historial-alertas': t('subtabs.alerts'),
+                            'historial-mensajes': t('subtabs.messages'),
+                            'alertas': t('subtabs.alerts'), // Compatibilidad
+                            'mensajes': t('subtabs.messages') // Compatibilidad
                           };
+                          // Si es historial-alertas o historial-mensajes, mostrar "HISTORIAL / ALERTAS" o "HISTORIAL / MENSAJES"
+                          if (reporteTab.startsWith('historial-')) {
+                            const historialSubTab = reporteTab.replace('historial-', '');
+                            return `${t('tabs.reports')} / HISTORIAL / ${reporteNames[`historial-${historialSubTab}`] || historialSubTab.toUpperCase()}`;
+                          }
                           return `${t('tabs.reports')} / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
                         })()
                       : activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')
@@ -2073,8 +2148,8 @@ const AppContentInternal: React.FC = () => {
       </div>
   );
 
-  // Envolver con ReportesAlertasWrapper si estamos en reportes-alertas
-  if (activeTab === 'reportes-alertas') {
+  // Envolver con ReportesAlertasWrapper si estamos en reportes-alertas o reportes-historial-alertas
+  if (activeTab === 'reportes-alertas' || activeTab === 'reportes-historial-alertas') {
     return (
       <ReportesAlertasWrapper>
         {layoutContent}
