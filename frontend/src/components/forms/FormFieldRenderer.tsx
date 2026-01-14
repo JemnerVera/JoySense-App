@@ -8,6 +8,7 @@ import SelectWithPlaceholder from '../SelectWithPlaceholder';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 import { LocationSelector } from './LocationSelector';
+import { UserSelector } from './UserSelector';
 
 interface FormFieldRendererProps {
   col: any;
@@ -334,6 +335,30 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           placeholder="BUSQUEDA"
           isRequired={isFieldRequired(col.columnName)}
           themeColor={getThemeColor('bg').includes('green') ? 'green' : 'blue'}
+        />
+      </div>
+    );
+  }
+
+  // UserSelector para correo - usuarioid
+  if (col.columnName === 'usuarioid' && selectedTable === 'correo') {
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
+        </label>
+        <UserSelector
+          value={formData[col.columnName] || null}
+          onChange={(usuarioid: number | null) => {
+            const newFormData: any = {
+              ...formData,
+              [col.columnName]: usuarioid
+            };
+            setFormData(newFormData);
+          }}
+          placeholder="BUSQUEDA"
+          isRequired={isFieldRequired(col.columnName)}
+          themeColor="orange"
         />
       </div>
     );

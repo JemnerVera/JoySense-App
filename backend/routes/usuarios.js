@@ -679,14 +679,22 @@ router.get('/correo/columns', async (req, res) => {
 
 router.post('/correo', async (req, res) => {
   try {
-    const { correo } = req.body;
+    const { correo, usuarioid } = req.body;
     
     if (!isValidEmail(correo)) {
       return res.status(400).json({ error: 'El correo debe ser un email válido' });
     }
     
+    if (!usuarioid) {
+      return res.status(400).json({ error: 'Debe especificar un usuario' });
+    }
+    
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
+    
+    // Insertar el nuevo correo
+    // NOTA: El trigger trg_inactivar_correos_anteriores se ejecuta automáticamente
+    // y inactiva todos los correos anteriores del mismo usuario cuando statusid = 1
     const { data, error } = await userSupabase
       .schema(dbSchema)
       .from('correo')
@@ -716,6 +724,90 @@ router.put('/correo/:id', async (req, res) => {
     res.json(data);
   } catch (error) {
     logger.error('Error en PUT /correo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// BÚSQUEDA DE USUARIOS
+// ============================================================================
+
+router.get('/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+    
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    
+    // Buscar usuarios por login, firstname o lastname
+    // Hacer tres queries separadas y combinar resultados (más confiable que .or() con ilike)
+    const searchTerm = `%${query}%`;
+    
+    const [result1, result2, result3] = await Promise.all([
+      userSupabase
+        .schema(dbSchema)
+        .from('usuario')
+        .select('usuarioid, login, firstname, lastname, statusid')
+        .ilike('login', searchTerm)
+        .eq('statusid', 1)
+        .limit(50),
+      userSupabase
+        .schema(dbSchema)
+        .from('usuario')
+        .select('usuarioid, login, firstname, lastname, statusid')
+        .ilike('firstname', searchTerm)
+        .eq('statusid', 1)
+        .limit(50),
+      userSupabase
+        .schema(dbSchema)
+        .from('usuario')
+        .select('usuarioid, login, firstname, lastname, statusid')
+        .ilike('lastname', searchTerm)
+        .eq('statusid', 1)
+        .limit(50)
+    ]);
+    
+    // Verificar errores
+    if (result1.error) throw result1.error;
+    if (result2.error) throw result2.error;
+    if (result3.error) throw result3.error;
+    
+    // Combinar resultados y eliminar duplicados
+    const allUsuarios = [...(result1.data || []), ...(result2.data || []), ...(result3.data || [])];
+    const uniqueUsuarios = Array.from(
+      new Map(allUsuarios.map(u => [u.usuarioid, u])).values()
+    );
+    
+    // Ordenar por firstname
+    const usuarios = uniqueUsuarios
+      .sort((a, b) => {
+        const nameA = (a.firstname || '').toLowerCase();
+        const nameB = (b.firstname || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      })
+      .slice(0, 50); // Limitar a 50 resultados finales
+    
+    // Formatear resultados con label completo: "firstname lastname - login"
+    const results = usuarios.map((u) => {
+      const fullName = [u.firstname, u.lastname].filter(Boolean).join(' ') || 'Sin nombre';
+      const label = `${fullName} - ${u.login}`;
+      return {
+        usuarioid: u.usuarioid,
+        login: u.login,
+        firstname: u.firstname,
+        lastname: u.lastname,
+        label: label,
+        displayName: fullName // Para mostrar solo el nombre en el input
+      };
+    });
+    
+    res.json(results);
+  } catch (error) {
+    logger.error('Error en GET /usuarios/search:', error);
     res.status(500).json({ error: error.message });
   }
 });

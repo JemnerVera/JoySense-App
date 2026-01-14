@@ -528,8 +528,13 @@ export const useInsertForm = ({
           const cleanData = initializeFormData()
           setFormDataState(cleanData)
           setFormErrors({})
-          if (tableName !== 'usuario') {
-            setMessage?.({ type: 'success', text: 'Registro insertado correctamente' })
+          // Mostrar mensaje de éxito para todas las tablas, incluyendo usuario cuando no hay sync pendiente
+          if (tableName === 'usuario' && result.data?.syncStatus === 'success') {
+            // Ya se mostró el mensaje arriba para sync success
+          } else if (tableName === 'usuario' && result.data?.syncStatus === 'error') {
+            // Ya se mostró el mensaje arriba para sync error
+          } else {
+            setMessage?.({ type: 'success', text: tableName === 'usuario' ? 'Usuario creado correctamente' : 'Registro insertado correctamente' })
           }
           onSuccess?.()
         }
