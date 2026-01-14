@@ -274,3 +274,36 @@ select.dashboard-scrollbar::-webkit-scrollbar-thumb {
 select.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #78350f; /* amber-900 - marrón oscuro */
 }
+
+/* Scrollbar Azul para NodeStatusDashboard */
+.dashboard-scrollbar-blue::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-scrollbar-blue::-webkit-scrollbar-track {
+  background: #d1d5db; /* gray-300 para modo claro */
+  border-radius: 3px;
+}
+
+.dark .dashboard-scrollbar-blue::-webkit-scrollbar-track {
+  background: #404040; /* neutral-700 para modo oscuro */
+}
+
+.dashboard-scrollbar-blue::-webkit-scrollbar-thumb {
+  background: #3b82f6; /* blue-500 */
+  border-radius: 3px;
+}
+
+.dashboard-scrollbar-blue::-webkit-scrollbar-thumb:hover {
+  background: #2563eb; /* blue-600 */
+}
+
+/* Para Firefox */
+.dashboard-scrollbar-blue {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #d1d5db; /* blue-500 gray-300 */
+}
+
+.dark .dashboard-scrollbar-blue {
+  scrollbar-color: #3b82f6 #404040; /* blue-500 neutral-700 */
+}
