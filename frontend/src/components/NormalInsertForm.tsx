@@ -12,6 +12,7 @@ import { GeografiaFormFields } from './forms/table-specific/GeografiaFormFields'
 import { ContactoFormFields } from './forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from './forms/table-specific/UsuarioCanalFormFields';
 import { PerfilFormFields } from './forms/table-specific/PerfilFormFields';
+import { UsuarioPerfilFormFields } from './forms/table-specific/UsuarioPerfilFormFields';
 import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
@@ -55,6 +56,8 @@ interface NormalInsertFormProps {
   contactosData?: any[];
   correosData?: any[];
   canalesData?: any[];
+  // Datos para usuarioperfil
+  perfilesData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
@@ -89,6 +92,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   contactosData = [],
   correosData = [],
   canalesData = [],
+  perfilesData = [],
   themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -761,7 +765,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -798,6 +802,16 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 renderField={renderField}
                 getThemeColor={getThemeColor}
                 getUniqueOptionsForField={getUniqueOptionsForField}
+              />
+            ) : selectedTable === 'usuarioperfil' ? (
+              <UsuarioPerfilFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                renderField={renderField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                perfilesData={perfilesData}
               />
             ) : (
               renderSpecialLayoutFields()

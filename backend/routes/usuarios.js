@@ -812,4 +812,61 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// ============================================================================
+// BUSCAR USUARIOS CON EMPRESAS (para usuarioperfil)
+// ============================================================================
+// Busca usuarios por firstname, lastname o empresa usando función de Supabase
+// que permite acceder a usuario_empresa sin permisos directos
+router.get('/search-with-empresas', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const userSupabase = req.supabase || baseSupabase;
+    const dbSchema = process.env.DB_SCHEMA || 'joysense';
+    
+    // Usar la función de Supabase que permite acceder a usuario_empresa
+    // IMPORTANTE: Especificar schema joysense explícitamente
+    const { data, error } = await userSupabase
+      .schema('joysense')
+      .rpc('fn_obtener_usuarios_con_empresas', {
+        p_query: query
+      });
+    
+    if (error) {
+      logger.error('Error en RPC fn_obtener_usuarios_con_empresas:', error);
+      logger.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
+    }
+    
+    // Formatear resultados para el frontend
+    const results = (data || []).map((u) => ({
+      usuarioid: u.usuarioid,
+      firstname: u.firstname,
+      lastname: u.lastname,
+      login: u.login,
+      label: u.label || `${u.display_name || u.firstname || ''} ${u.lastname || ''} - ${u.empresas || 'Sin empresa'}`.trim(),
+      displayName: u.display_name || `${u.firstname || ''} ${u.lastname || ''}`.trim() || u.login
+    }));
+    
+    res.json(results);
+  } catch (error) {
+    logger.error('Error en GET /usuarios/search-with-empresas:', error);
+    logger.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.details || null,
+      hint: error.hint || null
+    });
+  }
+});
+
 module.exports = router;

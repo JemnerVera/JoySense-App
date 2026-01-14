@@ -293,9 +293,31 @@ export const useInsertForm = ({
 
     const errors: Record<string, string> = {}
 
+    // Caso especial para usuarioperfil: validar usuarioid y que haya perfiles seleccionados
+    if (tableName === 'usuarioperfil') {
+      if (!formData.usuarioid) {
+        errors.usuarioid = 'Usuario es requerido'
+      }
+      
+      // Verificar que haya al menos un perfil seleccionado
+      const perfilesStatus = formData._perfilesStatus as Record<number, number> | undefined
+      if (!perfilesStatus || Object.values(perfilesStatus).filter(statusid => statusid === 1).length === 0) {
+        errors._perfilesStatus = 'Debe seleccionar al menos un perfil activo'
+      }
+      
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
+    // Validación normal para otras tablas
     config.fields.forEach(field => {
       // No validar campos ocultos o de solo lectura
       if (field.hidden || field.readonly) return
+      
+      // Para usuarioperfil, no validar perfilid y statusid ya que se manejan de forma especial
+      if (tableName === 'usuarioperfil' && (field.name === 'perfilid' || field.name === 'statusid')) {
+        return
+      }
       
       if (field.required && !formData[field.name] && formData[field.name] !== 0) {
         errors[field.name] = `${field.label} es requerido`
@@ -304,7 +326,7 @@ export const useInsertForm = ({
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }, [config, formData])
+  }, [config, formData, tableName])
   
   // Validar formulario completo (incluyendo validaciones específicas de insert)
   const validateFormComplete = useCallback(async (): Promise<boolean> => {
@@ -413,6 +435,54 @@ export const useInsertForm = ({
       // porque password_hash está oculto y password es el campo que el usuario ingresa
       if (tableName === 'usuario' && formData.password !== undefined && formData.password !== null && formData.password !== '') {
         filteredData.password = formData.password
+      }
+      
+      // Caso especial para tabla 'usuarioperfil': crear múltiples registros (uno por cada perfil seleccionado)
+      if (tableName === 'usuarioperfil' && formData._perfilesStatus) {
+        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+        const usuarioid = formData.usuarioid;
+        
+        if (!usuarioid) {
+          throw new Error('Debe seleccionar un usuario');
+        }
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        const now = new Date().toISOString();
+        
+        // Crear un array de registros, uno por cada perfil con statusid = 1
+        const recordsToInsert = Object.entries(perfilesStatus)
+          .filter(([_, statusid]) => statusid === 1)
+          .map(([perfilid, _]) => ({
+            usuarioid: usuarioid,
+            perfilid: parseInt(perfilid),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          }));
+        
+        if (recordsToInsert.length === 0) {
+          throw new Error('Debe seleccionar al menos un perfil activo');
+        }
+        
+        // Insertar múltiples registros
+        const results = [];
+        for (const record of recordsToInsert) {
+          const result = await insertRow(record);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al insertar perfil ${record.perfilid}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} perfil(es) al usuario correctamente` });
+        resetForm();
+        return;
       }
       
       // Agregar campos de auditoría
