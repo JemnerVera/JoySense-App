@@ -4,10 +4,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface ConfigurationPanelProps {
   className?: string;
-  selectedSection?: 'basicas' | 'avanzadas'; // Nueva prop para determinar qué mostrar
 }
 
-const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '', selectedSection = 'basicas' }) => {
+const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '' }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
 
@@ -18,19 +17,17 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '',
 
   const currentLanguage = languages.find(lang => lang.code === language) || languages[0];
 
-  // Determinar qué secciones mostrar según selectedSection
-  const showBasics = selectedSection === 'basicas';
-  const showAdvanced = selectedSection === 'avanzadas';
-
   return (
     <div className={`space-y-6 ${className}`}>
         {/* Configuración Básica: Idioma y Tema */}
-        {showBasics && (
-          <>
+        <>
             {/* Configuración de Idioma */}
             <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase">
-                🌐 {t('configuration.language')}
+              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                {t('configuration.language')}
               </h3>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600 dark:text-neutral-400 font-mono uppercase">
@@ -67,8 +64,11 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '',
 
             {/* Configuración de Tema */}
             <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase">
-                🎨 {t('configuration.theme')}
+              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                {t('configuration.theme')}
               </h3>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600 dark:text-neutral-400 font-mono uppercase">
@@ -122,8 +122,11 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '',
 
             {/* Información del Sistema (también básica) */}
             <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase">
-                ℹ️ {t('configuration.system_info')}
+              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t('configuration.system_info')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-mono uppercase">
                 <div>
@@ -159,133 +162,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ className = '',
               </div>
             </div>
 
-            {/* Botones de Acción */}
-            <div className="flex justify-center space-x-3 pt-4">
-              <button className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-mono tracking-wider uppercase">
-                {t('configuration.save_changes')}
-              </button>
-              <button className="px-4 py-2 bg-gray-300 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded-lg hover:bg-gray-400 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider uppercase">
-                {t('configuration.reset')}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Configuración Avanzada: Notificaciones, Datos, Interfaz */}
-        {showAdvanced && (
-          <>
-            <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-gray-500 mb-3 font-mono tracking-wider uppercase">
-                ⚙️ {t('configuration.advanced')}
-              </h3>
-              <div className="space-y-4">
-                {/* Configuración de Notificaciones */}
-                <div className="border-b border-gray-300 dark:border-neutral-600 pb-4">
-                  <h4 className="font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider uppercase">
-                    🔔 {t('configuration.notifications')}
-                  </h4>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.email_alerts')}
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.push_notifications')}
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.alert_sounds')}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Configuración de Datos */}
-                <div className="border-b border-gray-300 dark:border-neutral-600 pb-4">
-                  <h4 className="font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider uppercase">
-                    📊 {t('configuration.data')}
-                  </h4>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.auto_refresh')}
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.offline_mode')}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Configuración de Interfaz */}
-                <div>
-                  <h4 className="font-bold text-gray-800 dark:text-white mb-2 font-mono tracking-wider uppercase">
-                    🖥️ {t('configuration.interface')}
-                  </h4>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.smooth_animations')}
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-gray-500 bg-gray-100 dark:bg-neutral-700 border-gray-300 dark:border-neutral-600 rounded focus:ring-gray-500 focus:ring-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-neutral-300 font-mono uppercase">
-                        {t('configuration.compact_mode')}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botones de Acción */}
-            <div className="flex justify-center space-x-3 pt-4">
-              <button className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-mono tracking-wider uppercase">
-                {t('configuration.save_changes')}
-              </button>
-              <button className="px-4 py-2 bg-gray-300 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded-lg hover:bg-gray-400 dark:hover:bg-neutral-600 transition-colors font-mono tracking-wider uppercase">
-                {t('configuration.reset')}
-              </button>
-            </div>
-          </>
-        )}
+        </>
       </div>
   );
 };
