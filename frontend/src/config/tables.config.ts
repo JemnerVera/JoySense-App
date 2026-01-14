@@ -136,8 +136,8 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   entidad: {
     name: 'entidad',
-    displayName: 'Entidad',
-    description: 'Entidades o cultivos',
+    displayName: 'Carpeta',
+    description: 'Carpetas o cultivos',
     icon: '🌱',
     category: 'geografia',
     primaryKey: 'entidadid',
@@ -147,15 +147,15 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     sortField: 'entidad',
     fields: [
       { name: 'entidadid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'entidad', label: 'Entidad', type: 'text', required: true },
+      { name: 'entidad', label: 'Carpeta', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
 
   entidad_localizacion: {
     name: 'entidad_localizacion',
-    displayName: 'Localización de Entidad',
-    description: 'Relación entre entidades y localizaciones',
+    displayName: 'Localización por Carpeta',
+    description: 'Relación entre carpetas y localizaciones',
     icon: '🔗',
     category: 'geografia',
     primaryKey: ['entidadid', 'localizacionid'],
@@ -163,7 +163,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: true,
     allowDelete: true,
     fields: [
-      { name: 'entidadid', label: 'Entidad', type: 'select', required: true, foreignKey: { table: 'entidad', valueField: 'entidadid', labelField: 'entidad' } },
+      { name: 'entidadid', label: 'Carpeta', type: 'select', required: true, foreignKey: { table: 'entidad', valueField: 'entidadid', labelField: 'entidad' } },
       { name: 'localizacionid', label: 'Localización', type: 'select', required: true, foreignKey: { table: 'localizacion', valueField: 'localizacionid', labelField: 'localizacion' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]

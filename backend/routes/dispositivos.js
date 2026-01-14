@@ -473,7 +473,7 @@ router.put('/metricasensor/composite', async (req, res) => {
 
 router.get('/localizacion', async (req, res) => {
   try {
-    const { nodoid } = req.query;
+    const { nodoid, ubicacionId } = req.query;
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
@@ -502,6 +502,26 @@ router.get('/localizacion', async (req, res) => {
     
     if (nodoid) {
       query = query.eq('nodoid', nodoid);
+    }
+    
+    // Si se proporciona ubicacionId, filtrar por nodos de esa ubicación
+    if (ubicacionId) {
+      // Primero obtener nodos de esa ubicación
+      const { data: nodos, error: nodosError } = await userSupabase
+        .schema(dbSchema)
+        .from('nodo')
+        .select('nodoid')
+        .eq('ubicacionid', ubicacionId);
+      
+      if (nodosError) throw nodosError;
+      
+      const nodoIds = (nodos || []).map(n => n.nodoid);
+      if (nodoIds.length > 0) {
+        query = query.in('nodoid', nodoIds);
+      } else {
+        // Si no hay nodos en esa ubicación, retornar array vacío
+        return res.json([]);
+      }
     }
     
     query = query.order('localizacionid', { ascending: true });
@@ -939,6 +959,101 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     res.json(transformed);
   } catch (error) {
     logger.error('Error en GET /nodos-con-localizacion:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// BÚSQUEDA GLOBAL DE LOCALIZACIONES
+// ============================================================================
+
+router.get('/locations/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+    
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    
+    // Obtener todas las localizaciones con sus relaciones
+    const { data: localizaciones, error: locError } = await userSupabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select(`
+        localizacionid,
+        localizacion,
+        nodo:nodoid(
+          nodoid,
+          nodo,
+          ubicacionid,
+          ubicacion:ubicacionid(
+            ubicacionid,
+            ubicacion,
+            fundoid,
+            fundo:fundoid(
+              fundoid,
+              fundo,
+              empresaid,
+              empresa:empresaid(
+                empresaid,
+                empresa,
+                paisid,
+                pais:paisid(paisid, pais)
+              )
+            )
+          )
+        )
+      `)
+      .limit(1000);
+    
+    if (locError) throw locError;
+    
+    // Filtrar localizaciones que coincidan con el término de búsqueda
+    const results = (localizaciones || []).filter(loc => {
+      const nodo = loc.nodo ? (Array.isArray(loc.nodo) ? loc.nodo[0] : loc.nodo) : null;
+      const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
+      const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
+      const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
+      const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
+      
+      const searchLower = query.toLowerCase();
+      const matches = 
+        (loc.localizacion?.toLowerCase().includes(searchLower)) ||
+        (nodo?.nodo?.toLowerCase().includes(searchLower)) ||
+        (ubicacion?.ubicacion?.toLowerCase().includes(searchLower)) ||
+        (fundo?.fundo?.toLowerCase().includes(searchLower)) ||
+        (empresa?.empresa?.toLowerCase().includes(searchLower)) ||
+        (pais?.pais?.toLowerCase().includes(searchLower));
+      
+      return matches;
+    }).map(loc => {
+      const nodo = loc.nodo ? (Array.isArray(loc.nodo) ? loc.nodo[0] : loc.nodo) : null;
+      const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
+      const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
+      const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
+      const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
+      
+      const breadcrumb = [
+        pais?.pais,
+        empresa?.empresa,
+        fundo?.fundo,
+        ubicacion?.ubicacion,
+        loc.localizacion
+      ].filter(Boolean).join(' → ');
+      
+      return {
+        localizacionid: loc.localizacionid,
+        localizacion: loc.localizacion,
+        breadcrumb: breadcrumb
+      };
+    });
+    
+    res.json(results);
+  } catch (error) {
+    logger.error('Error en GET /locations/search:', error);
     res.status(500).json({ error: error.message });
   }
 });
