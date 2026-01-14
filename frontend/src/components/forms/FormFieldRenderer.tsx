@@ -46,8 +46,8 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return null;
   }
 
-  // Campo statusid como checkbox
-  if (col.columnName === 'statusid') {
+  // Campo statusid como checkbox (excepto en perfil, que se maneja en PerfilFormFields)
+  if (col.columnName === 'statusid' && selectedTable !== 'perfil') {
     return (
       <div key={col.columnName} className="mb-4">
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
@@ -66,6 +66,11 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
         </div>
       </div>
     );
+  }
+  
+  // Si es statusid en perfil, no renderizar aquí (se maneja en PerfilFormFields)
+  if (col.columnName === 'statusid' && selectedTable === 'perfil') {
+    return null;
   }
 
   // Helper para renderizar un campo de selección
@@ -172,58 +177,36 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_profile'));
   }
 
-  // Combobox para perfil - jefeid (mostrar nivel - perfil)
+  // Si es jefeid en perfil, no renderizar aquí (se maneja en PerfilFormFields)
   if (col.columnName === 'jefeid' && selectedTable === 'perfil') {
-    return renderSelectField(t('create.select_boss'));
+    return null;
   }
-
-  // Combobox para perfil - is_admin_global (TRUE/FALSE)
-  if (col.columnName === 'is_admin_global' && selectedTable === 'perfil') {
-    const adminGlobalOptions = [
-      { value: 'true', label: 'TRUE' },
-      { value: 'false', label: 'FALSE' }
-    ];
-    
-    // Convertir valor booleano a string para el componente
-    // Por defecto debe ser 'false' si no hay valor
-    let currentValue: string | null = null;
-    if (value === true || value === 'true' || value === 1 || value === '1') {
-      currentValue = 'true';
-    } else if (value === false || value === 'false' || value === 0 || value === '0') {
-      currentValue = 'false';
-    } else {
-      // Si no hay valor, usar 'false' por defecto
-      currentValue = 'false';
-      // Asegurar que el valor inicial sea false si no está definido
-      if (formData[col.columnName] === undefined || formData[col.columnName] === null || formData[col.columnName] === '') {
-        setFormData({
-          ...formData,
-          [col.columnName]: false
-        });
-      }
-    }
-    
+  
+  // Combobox para perfil - jefeid (mostrar nivel - perfil) con tema naranja (legacy, no debería ejecutarse)
+  if (col.columnName === 'jefeid' && selectedTable === 'perfil') {
+    const options = getUniqueOptionsForField(col.columnName);
     return (
       <div key={col.columnName} className="mb-4">
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
         </label>
         <SelectWithPlaceholder
-          value={currentValue}
+          value={value}
           onChange={(newValue) => {
-            // Convertir string de vuelta a booleano
-            const boolValue = newValue === 'true' || newValue === 1 || newValue === '1';
+            const parsedValue = newValue ? parseInt(newValue.toString()) : null;
             setFormData({
               ...formData,
-              [col.columnName]: boolValue
+              [col.columnName]: parsedValue
             });
           }}
-          options={adminGlobalOptions}
-          placeholder="SELECCIONAR"
+          options={options}
+          placeholder={t('create.select_boss') || 'SELECCIONAR JEFE'}
+          themeColor="orange"
         />
       </div>
     );
   }
+
 
   // Combobox para contacto - usuarioid, codigotelefonoid
   if (col.columnName === 'usuarioid' && selectedTable === 'contacto') {
@@ -360,6 +343,120 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           isRequired={isFieldRequired(col.columnName)}
           themeColor="orange"
         />
+      </div>
+    );
+  }
+
+  // Si es nivel en perfil, no renderizar aquí (se maneja en PerfilFormFields)
+  if (col.columnName === 'nivel' && selectedTable === 'perfil') {
+    return null;
+  }
+  
+  // Combobox para perfil - nivel (1-10) con formato "nivel - PERFIL" (legacy, no debería ejecutarse)
+  if (col.columnName === 'nivel' && selectedTable === 'perfil') {
+    const nivelOptions = Array.from({ length: 10 }, (_, i) => {
+      const nivel = i + 1; // 1 al 10
+      const perfilNombre = formData.perfil || 'PERFIL';
+      return {
+        value: nivel,
+        label: `${nivel} - ${perfilNombre}`
+      };
+    });
+    
+    // Obtener el label del nivel seleccionado para el placeholder
+    const selectedNivel = value !== null && value !== undefined ? Number(value) : null;
+    const perfilNombre = formData.perfil || 'PERFIL';
+    const placeholderText = selectedNivel ? `${selectedNivel} - ${perfilNombre}` : 'SELECCIONAR NIVEL';
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={selectedNivel}
+          onChange={(newValue) => {
+            const parsedValue = newValue !== null && newValue !== undefined ? parseInt(newValue.toString()) : null;
+            setFormData({
+              ...formData,
+              [col.columnName]: parsedValue
+            });
+          }}
+          options={nivelOptions}
+          placeholder={placeholderText}
+          themeColor="orange"
+        />
+      </div>
+    );
+  }
+
+  // Si es is_admin_global en perfil, no renderizar aquí (se maneja en PerfilFormFields)
+  if (col.columnName === 'is_admin_global' && selectedTable === 'perfil') {
+    return null;
+  }
+  
+  // Toggle switch para perfil - is_admin_global (legacy, no debería ejecutarse)
+  if (col.columnName === 'is_admin_global' && selectedTable === 'perfil') {
+    // Por defecto debe estar en NO (false)
+    const isChecked = value === true || value === 'true' || value === 1;
+    const currentValue = isChecked ? true : false;
+    
+    // Determinar el color del tema (orange para perfil)
+    const themeBgColor = 'bg-orange-500';
+    const themeTextColor = 'text-orange-500';
+    
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
+        </label>
+        <div className="flex items-center space-x-4">
+          {/* Toggle Switch con animación */}
+          <div
+            onClick={() => {
+              setFormData({
+                ...formData,
+                [col.columnName]: !currentValue
+              });
+            }}
+            className={`relative inline-flex h-10 w-20 cursor-pointer items-center rounded-full transition-colors duration-300 ease-in-out ${
+              currentValue
+                ? themeBgColor
+                : 'bg-gray-300 dark:bg-neutral-700'
+            }`}
+            role="switch"
+            aria-checked={currentValue}
+          >
+            {/* Slider (círculo que se desliza) */}
+            <span
+              className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
+                currentValue ? 'translate-x-11' : 'translate-x-1'
+              }`}
+            />
+          </div>
+          
+          {/* Etiqueta de texto (solo una a la vez) */}
+          <div className="relative h-6 w-8 overflow-hidden">
+            <span
+              className={`absolute font-mono text-sm font-bold transition-all duration-300 ease-in-out ${
+                currentValue
+                  ? `${themeTextColor} translate-x-0 opacity-100`
+                  : 'text-gray-500 dark:text-neutral-400 -translate-x-full opacity-0'
+              }`}
+            >
+              SÍ
+            </span>
+            <span
+              className={`absolute font-mono text-sm font-bold transition-all duration-300 ease-in-out ${
+                !currentValue
+                  ? `${themeTextColor} translate-x-0 opacity-100`
+                  : 'text-gray-500 dark:text-neutral-400 translate-x-full opacity-0'
+              }`}
+            >
+              NO
+            </span>
+          </div>
+        </div>
       </div>
     );
   }

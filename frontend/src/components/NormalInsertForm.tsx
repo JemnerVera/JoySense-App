@@ -11,6 +11,7 @@ import { UsuarioFormFields } from './forms/table-specific/UsuarioFormFields';
 import { GeografiaFormFields } from './forms/table-specific/GeografiaFormFields';
 import { ContactoFormFields } from './forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from './forms/table-specific/UsuarioCanalFormFields';
+import { PerfilFormFields } from './forms/table-specific/PerfilFormFields';
 import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
@@ -760,7 +761,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -788,6 +789,15 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 correosData={correosData || []}
                 canalesData={canalesData || []}
                 codigotelefonosData={codigotelefonosData || []}
+              />
+            ) : selectedTable === 'perfil' ? (
+              <PerfilFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                renderField={renderField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
               />
             ) : (
               renderSpecialLayoutFields()
