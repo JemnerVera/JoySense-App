@@ -80,7 +80,7 @@ const AgrupacionMain = forwardRef<AgrupacionMainRef, AgrupacionMainProps>(({
         <div className="text-center">
           <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
             <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">AGRUPACIÓN</h2>
-            <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA SUBPESTAÑA PARA CONTINUAR</p>
+            <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DE AGRUPACIÓN PARA CONTINUAR</p>
           </div>
         </div>
       </div>

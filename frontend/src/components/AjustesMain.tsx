@@ -13,12 +13,10 @@ export interface AjustesMainRef {
 
 interface AjustesMainProps {
   className?: string;
-  selectedSection?: 'basicas' | 'avanzadas'; // Nueva prop para la sección seleccionada
 }
 
 const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
-  className = '',
-  selectedSection = 'basicas'
+  className = ''
 }, ref) => {
   // Exponer métodos al componente padre
   useImperativeHandle(ref, () => ({
@@ -36,7 +34,7 @@ const AjustesMain = forwardRef<AjustesMainRef, AjustesMainProps>(({
     <div className={`flex flex-col h-full ${className}`}>
       {/* Contenido principal - sin título */}
       <div className="flex-1 overflow-y-auto p-6">
-        <ConfigurationPanel className="max-w-4xl mx-auto" selectedSection={selectedSection} />
+        <ConfigurationPanel className="max-w-4xl mx-auto" />
       </div>
     </div>
   );

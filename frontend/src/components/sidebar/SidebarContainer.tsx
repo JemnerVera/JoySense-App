@@ -160,14 +160,10 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       })() && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
           <AjustesSidebar
-            selectedSection={(() => {
-              if (!activeTab.startsWith('ajustes-')) return 'basicas'
-              const rest = activeTab.replace('ajustes-', '')
-              return (rest === 'avanzadas' ? 'avanzadas' : 'basicas') as 'basicas' | 'avanzadas'
-            })()}
+            selectedSection="basicas"
             onSectionSelect={(section) => {
               if (onTabChange) {
-                onTabChange(`ajustes-${section}`);
+                onTabChange('ajustes-basicas');
               }
             }}
             isExpanded={aux1Expanded}
