@@ -18,13 +18,17 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   onChange,
   options,
   placeholder,
-  className = "w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 dark:text-white text-base font-mono",
+  className,
   disabled = false,
   themeColor = 'purple',
   dropdownWidth,
   renderSelectedLabel,
   allowExternalChange = false
 }) => {
+  // Construir className por defecto con el themeColor
+  const defaultClassName = `w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${themeColor === 'orange' ? 'focus:ring-orange-500 focus:border-orange-500' : 'focus:ring-purple-500 focus:border-purple-500'} text-gray-800 dark:text-white text-base font-mono`;
+  const finalClassName = className || defaultClassName;
+  
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -172,7 +176,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     <div className="relative" ref={dropdownRef}>
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center`}
+        className={`${finalClassName} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center`}
       >
         <span className={value && value !== 0 ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'} style={{fontFamily: 'monospace'}}>
           {selectedOption 
@@ -197,7 +201,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
           </div>
           
           {/* Lista de opciones */}
-          <div className="max-h-32 overflow-y-auto custom-scrollbar">
+          <div className={`max-h-32 overflow-y-auto custom-scrollbar ${themeColor === 'orange' ? 'theme-orange' : ''}`}>
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 // Si el label contiene " - ", mostrar código en naranja y país en blanco

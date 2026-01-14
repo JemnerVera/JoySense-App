@@ -568,41 +568,91 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
                   options={getUniqueOptionsForField(field.name)}
                   placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
+                  themeColor="orange"
                 />
-              ) : field.name === 'is_admin_global' && tableName === 'perfil' ? (
-                // Caso especial para is_admin_global en perfil: dropdown con TRUE/FALSE
+              ) : field.name === 'nivel' && tableName === 'perfil' ? (
+                // Caso especial para nivel en perfil: mostrar "nivel - PERFIL"
                 (() => {
-                  const fieldValue = formData[field.name];
-                  // Convertir valor booleano a string para el componente
-                  // Por defecto debe ser 'false' si no hay valor
-                  let currentValue: string | null = null;
-                  if (fieldValue === true || fieldValue === 'true' || fieldValue === 1 || fieldValue === '1') {
-                    currentValue = 'true';
-                  } else if (fieldValue === false || fieldValue === 'false' || fieldValue === 0 || fieldValue === '0') {
-                    currentValue = 'false';
-                  } else {
-                    // Si no hay valor, usar 'false' por defecto
-                    currentValue = 'false';
-                    // Asegurar que el valor inicial sea false si no está definido
-                    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
-                      updateFormField(field.name, false);
-                    }
-                  }
+                  const nivelOptions = Array.from({ length: 10 }, (_, i) => {
+                    const nivel = i + 1; // 1 al 10
+                    const perfilNombre = formData.perfil || 'PERFIL';
+                    return {
+                      value: nivel,
+                      label: `${nivel} - ${perfilNombre}`
+                    };
+                  });
+                  
+                  const selectedNivel = formData.nivel !== null && formData.nivel !== undefined ? Number(formData.nivel) : null;
+                  const perfilNombre = formData.perfil || 'PERFIL';
+                  const placeholderText = selectedNivel ? `${selectedNivel} - ${perfilNombre}` : 'SELECCIONAR NIVEL';
                   
                   return (
                     <SelectWithPlaceholder
-                      value={currentValue}
+                      value={selectedNivel}
                       onChange={(newValue) => {
-                        // Convertir string de vuelta a booleano
-                        const boolValue = newValue === 'true' || newValue === 1 || newValue === '1';
-                        updateFormField(field.name, boolValue);
+                        const parsedValue = newValue !== null && newValue !== undefined ? parseInt(newValue.toString()) : null;
+                        updateFormField('nivel', parsedValue);
                       }}
-                      options={[
-                        { value: 'true', label: 'TRUE' },
-                        { value: 'false', label: 'FALSE' }
-                      ]}
-                      placeholder="SELECCIONAR"
+                      options={nivelOptions}
+                      placeholder={placeholderText}
+                      themeColor="orange"
                     />
+                  );
+                })()
+              ) : field.name === 'is_admin_global' && tableName === 'perfil' ? (
+                // Caso especial para is_admin_global en perfil: toggle switch
+                (() => {
+                  const fieldValue = formData[field.name];
+                  const isChecked = fieldValue === true || fieldValue === 'true' || fieldValue === 1;
+                  const currentValue = isChecked ? true : false;
+                  const themeBgColor = 'bg-orange-500';
+                  const themeTextColor = 'text-orange-500';
+                  
+                  return (
+                    <div className="flex items-center space-x-4">
+                      {/* Toggle Switch con animación */}
+                      <div
+                        onClick={() => {
+                          updateFormField(field.name, !currentValue);
+                        }}
+                        className={`relative inline-flex h-10 w-20 cursor-pointer items-center rounded-full transition-colors duration-300 ease-in-out ${
+                          currentValue
+                            ? themeBgColor
+                            : 'bg-gray-300 dark:bg-neutral-700'
+                        }`}
+                        role="switch"
+                        aria-checked={currentValue}
+                      >
+                        {/* Slider (círculo que se desliza) */}
+                        <span
+                          className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
+                            currentValue ? 'translate-x-11' : 'translate-x-1'
+                          }`}
+                        />
+                      </div>
+                      
+                      {/* Etiqueta de texto (solo una a la vez) */}
+                      <div className="relative h-6 w-8 overflow-hidden">
+                        <span
+                          className={`absolute font-mono text-sm font-bold transition-all duration-300 ease-in-out ${
+                            currentValue
+                              ? `${themeTextColor} translate-x-0 opacity-100`
+                              : 'text-gray-500 dark:text-neutral-400 -translate-x-full opacity-0'
+                          }`}
+                        >
+                          SÍ
+                        </span>
+                        <span
+                          className={`absolute font-mono text-sm font-bold transition-all duration-300 ease-in-out ${
+                            !currentValue
+                              ? `${themeTextColor} translate-x-0 opacity-100`
+                              : 'text-gray-500 dark:text-neutral-400 translate-x-full opacity-0'
+                          }`}
+                        >
+                          NO
+                        </span>
+                      </div>
+                    </div>
                   );
                 })()
               ) : field.foreignKey && isConstrained ? (
