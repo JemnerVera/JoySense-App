@@ -150,7 +150,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     {
       id: "conductividad",
       title: t('dashboard.metrics.electroconductivity'),
-      color: "#10b981",
+      color: "#3b82f6",
       unit: "uS/cm",
       dataKey: "conductividad",
       description: "Conductividad eléctrica del sustrato",
@@ -187,6 +187,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null) // Recomendaciones de umbrales por nodo
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
+  const [localizacionesPorNodo, setLocalizacionesPorNodo] = useState<Map<number, string[]>>(new Map()) // Localizaciones por nodo
   const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()) // Tipos de sensores visibles en el gráfico
   const [umbralNodoSeleccionado, setUmbralNodoSeleccionado] = useState<number | null>(null) // Nodo seleccionado para visualizar umbral
   const [umbralTipoSeleccionado, setUmbralTipoSeleccionado] = useState<number | null>(null) // Tipo de sensor seleccionado para visualizar umbral (legacy, para compatibilidad)
@@ -754,34 +755,58 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
   }, [filters.entidadId, selectedNode])
 
+  // Cargar localizaciones del nodo seleccionado
+  useEffect(() => {
+    const loadLocalizaciones = async () => {
+      if (!selectedNode?.nodoid) {
+        setLocalizacionesPorNodo(new Map())
+        return
+      }
+
+      try {
+        const localizaciones = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid)
+        const nombres = localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)
+        const map = new Map<number, string[]>()
+        if (nombres.length > 0) {
+          map.set(selectedNode.nodoid, nombres)
+        }
+        setLocalizacionesPorNodo(map)
+      } catch (error) {
+        console.error('Error cargando localizaciones:', error)
+        setLocalizacionesPorNodo(new Map())
+      }
+    }
+
+    loadLocalizaciones()
+  }, [selectedNode?.nodoid])
+
   // Cargar nodos disponibles cuando se abre el modal de análisis detallado
   useEffect(() => {
     if (showDetailedAnalysis && selectedNode) {
       const loadAvailableNodes = async () => {
         try {
+          // Obtener todos los nodos con localizaciones
           const nodes = await JoySenseService.getNodosConLocalizacion()
-          // Filtrar nodos para que solo muestre los de la misma entidad que el nodo seleccionado
+          
+          // Filtrar nodos: excluir solo el nodo actual
+          // Mostrar todos los demás nodos (la verificación de mediciones se hace cuando se selecciona)
           const filteredNodes = (nodes || []).filter((node: any) => {
             // Excluir el nodo actual
-            if (node.nodoid === selectedNode.nodoid) {
-              return false
-            }
-            // Solo incluir nodos de la misma entidad
-            if (selectedNode.entidad?.entidadid && node.entidad?.entidadid) {
-              return node.entidad.entidadid === selectedNode.entidad.entidadid
-            }
-            return false
+            return node.nodoid !== selectedNode.nodoid
           })
+          
           setAvailableNodes(filteredNodes)
-    } catch (err) {
+          console.log(`[ModernDashboard] Nodos disponibles para comparación: ${filteredNodes.length} (de ${nodes.length} total)`)
+        } catch (err) {
           console.error('Error cargando nodos disponibles:', err)
+          setAvailableNodes([])
         }
       }
       loadAvailableNodes()
     } else {
       setAvailableNodes([])
     }
-  }, [showDetailedAnalysis, selectedNode?.nodoid, selectedNode?.entidad?.entidadid])
+  }, [showDetailedAnalysis, selectedNode?.nodoid])
 
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
@@ -1936,7 +1961,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Memoizar funciones de utilidad para evitar recrearlas
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
-      case "normal": return "bg-green-900 text-green-300 border-green-700"
+      case "normal": return "bg-blue-900 text-blue-300 border-blue-700"
       default: return "bg-gray-900 text-gray-300 border-gray-700"
     }
   }, [])
@@ -1952,6 +1977,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const openDetailedAnalysis = (metric: MetricConfig) => {
     setSelectedMetricForAnalysis(metric)
     setSelectedDetailedMetric(metric.dataKey)
+    
+    // Si no hay métricas disponibles, seleccionar la primera disponible automáticamente
+    if (availableMetrics.length > 0 && !availableMetrics.find(m => m.id === metric.id)) {
+      setSelectedDetailedMetric(availableMetrics[0].dataKey)
+      setSelectedMetricForAnalysis(availableMetrics[0])
+    }
     
     // Limpiar nodo de comparación al abrir el modal
     setComparisonNode(null)
@@ -2089,23 +2120,35 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [mediciones])
 
   // Filtrar métricas disponibles para mostrar solo las que tienen datos
+  // Para el análisis detallado, usar detailedMediciones si están disponibles
   const availableMetrics = useMemo(() => {
     if (!selectedNode) {
       return []
     }
     
-    if (metricsWithData.size === 0) {
+    // Usar detailedMediciones si están disponibles (en el modal de análisis detallado)
+    const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+    
+    // Obtener métricas únicas del nodo desde la fuente de datos
+    const nodeMediciones = dataSource.filter(m => m.nodoid === selectedNode.nodoid)
+    const uniqueMetricIds = new Set<number>()
+    nodeMediciones.forEach(m => {
+      if (m.metricaid) {
+        uniqueMetricIds.add(m.metricaid)
+      }
+    })
+    
+    if (uniqueMetricIds.size === 0) {
       return []
     }
     
     // Filtrar las métricas traducidas para mostrar solo las que tienen datos
     const filtered = getTranslatedMetrics.filter(metric => {
       // Buscar si hay alguna medición con una métrica que coincida con el nombre
-      const hasData = Array.from(metricsWithData).some(metricaId => {
+      const hasData = Array.from(uniqueMetricIds).some(metricaId => {
         // Buscar una medición con este metricaid y verificar si el nombre coincide
-        const medicion = mediciones.find(m => 
-          m.metricaid === metricaId && 
-          m.nodoid === selectedNode.nodoid
+        const medicion = nodeMediciones.find(m => 
+          m.metricaid === metricaId
         )
         
         if (!medicion) {
@@ -2158,7 +2201,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     })
     
     return filtered
-  }, [getTranslatedMetrics, metricsWithData, mediciones, selectedNode])
+  }, [getTranslatedMetrics, mediciones, detailedMediciones, selectedNode])
 
   // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
   // Los datos se cargan en rangos de 1, 7, 14, 30 días, así que consideramos "recientes" los últimos 30 días
@@ -2219,7 +2262,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [mediciones, selectedNode])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue">
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
 
@@ -2259,7 +2302,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {/* Loading State - Mostrar después del mapa, donde van los gráficos */}
         {loading && selectedNode && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         )}
 
@@ -2274,7 +2317,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               return (
                 <div
                   key={metric.id}
-                  className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-green-500/20 p-6 group ${
+                  className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500/20 p-6 group ${
                     !hasData ? 'opacity-60' : ''
                   }`}
                 >
@@ -2296,7 +2339,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   </div>
 
                   <div className="flex items-baseline justify-end space-x-2 mb-4">
-                    <span className="text-3xl font-bold text-green-500 font-mono">
+                    <span className="text-3xl font-bold text-blue-500 font-mono">
                       {hasData && typeof currentValue === "number" ? currentValue.toFixed(1) : "--"}
                     </span>
                     <span className="text-sm text-neutral-400 font-mono">{metric.unit}</span>
@@ -2326,7 +2369,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
                             const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
-                            const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                            const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                             
                             return [
                               ...tipoKeys.map((tipoKey, index) => (
@@ -2379,7 +2422,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </div>
                         <button
                           onClick={() => openDetailedAnalysis(metric)}
-                          className="px-3 py-1.5 text-xs font-mono tracking-wider bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200"
+                          className="px-3 py-1.5 text-xs font-mono tracking-wider bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
                         >
                           Ajustar Rango Manualmente
                         </button>
@@ -2415,7 +2458,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         onClick={() => openDetailedAnalysis(metric)}
                       className={`p-2 rounded-lg transition-all duration-200 ${
                         hasData 
-                          ? 'text-neutral-400 group-hover:text-green-500 group-hover:bg-green-500/10 group-hover:scale-110'
+                          ? 'text-neutral-400 group-hover:text-blue-500 group-hover:bg-blue-500/10 group-hover:scale-110'
                           : 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
                       }`}
                       title={hasData ? "Ver análisis detallado" : "Ajustar rango de fechas para buscar datos antiguos"}
@@ -2441,53 +2484,50 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                 {/* Sidebar izquierdo con pestañas de métricas (estilo separadores de libros) */}
                 <div className="w-48 border-r border-gray-300 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 flex flex-col py-4">
                   <div className="flex flex-col space-y-2 px-2">
-                    {getTranslatedMetrics.map((metric) => (
-                      <button
-                        key={metric.id}
-                        onClick={() => setSelectedDetailedMetric(metric.dataKey)}
-                        disabled={loadingDetailedData}
-                        className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-sm text-left ${
-                          selectedDetailedMetric === metric.dataKey
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
-                        } ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        style={{
-                          clipPath: selectedDetailedMetric === metric.dataKey 
-                            ? 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)'
-                            : 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-                          borderTopRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
-                          borderBottomRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
-                          marginRight: selectedDetailedMetric === metric.dataKey ? '-1px' : '0',
-                          zIndex: selectedDetailedMetric === metric.dataKey ? '10' : '1'
-                        }}
-                      >
-                        <span className="truncate block">{metric.title}</span>
-                      </button>
-                    ))}
+                    {availableMetrics.length > 0 ? (
+                      availableMetrics.map((metric) => (
+                        <button
+                          key={metric.id}
+                          onClick={() => setSelectedDetailedMetric(metric.dataKey)}
+                          disabled={loadingDetailedData}
+                          className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-sm text-left ${
+                            selectedDetailedMetric === metric.dataKey
+                              ? 'bg-blue-500 text-white shadow-md'
+                              : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
+                          } ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          style={{
+                            clipPath: selectedDetailedMetric === metric.dataKey 
+                              ? 'polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)'
+                              : 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
+                            borderTopRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
+                            borderBottomRightRadius: selectedDetailedMetric === metric.dataKey ? '0.5rem' : '0',
+                            marginRight: selectedDetailedMetric === metric.dataKey ? '-1px' : '0',
+                            zIndex: selectedDetailedMetric === metric.dataKey ? '10' : '1'
+                          }}
+                        >
+                          <span className="truncate block">{metric.title}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-xs text-gray-500 dark:text-neutral-400 font-mono text-center">
+                        No hay métricas disponibles
+                      </div>
+                    )}
                   </div>
                   
                   {/* Información del nodo debajo de las pestañas */}
                   {selectedNode && (
                     <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
                       <div className="text-xs font-mono space-y-1.5 text-gray-700 dark:text-neutral-300">
-                        {/* Entidad primero, en negrita */}
-                        {selectedNode.entidad && (
-                          <div className="truncate pl-2 mb-2">
-                            <span className="font-bold text-gray-800 dark:text-white">Entidad: {selectedNode.entidad.entidad}</span>
-                          </div>
-                        )}
-                        
-                        {/* Separador */}
-                        {selectedNode.entidad && (
-                          <div className="border-t border-gray-300 dark:border-neutral-600 my-2"></div>
-                        )}
-                        
-                        {/* Resto de la información */}
-                        {selectedNode.deveui && (
-                          <div className="truncate pl-2" title={`DevEUI: ${selectedNode.deveui}`}>
-                            <span className="text-gray-500 dark:text-neutral-500">DevEUI:</span> {selectedNode.deveui}
-                </div>
-                        )}
+                        {/* Localización */}
+                        {(() => {
+                          const localizaciones = localizacionesPorNodo.get(selectedNode.nodoid)
+                          return localizaciones && localizaciones.length > 0 ? (
+                            <div className="truncate pl-2">
+                              <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {localizaciones.join(', ')}
+                            </div>
+                          ) : null
+                        })()}
                         {selectedNode.ubicacion && (
                           <div className="truncate pl-2" title={`Ubicación: ${selectedNode.ubicacion.ubicacion}`}>
                             <span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}
@@ -2616,7 +2656,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                       }
                                       setVisibleTipos(newVisibleTipos)
                                     }}
-                                    className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                    className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
                                   />
                                   <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 font-semibold">
                                     {tipoNombre}
@@ -2664,7 +2704,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   setUmbralData(null)
                                   setUmbralAplicado(false) // Reset aplicación cuando cambia el nodo
                                 }}
-                                className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="" disabled hidden>Seleccionar nodo...</option>
                                 {(() => {
@@ -2707,7 +2747,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   return (
                                     <select
                                       disabled={true}
-                                      className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      className="w-full h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                       <option value="" disabled hidden>Seleccionar tipo...</option>
                                     </select>
@@ -2788,7 +2828,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                       <span className="truncate">{textoBoton}</span>
                                       {hayUmbralesIguales && (
                                         <div className="relative group">
-                                          <span className="ml-2 text-green-500 cursor-help">
+                                          <span className="ml-2 text-blue-500 cursor-help">
                                             ⓘ
                                           </span>
                                           <div className="absolute bottom-full left-full ml-2 mb-0 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs font-mono rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-30">
@@ -2871,7 +2911,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                                       setTipoSensorDropdownOpen(false)
                                                     }
                                                   }}
-                                                  className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-green-500 focus:ring-green-500"
+                                                  className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
                                                 />
                                                 <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 flex-1">
                                                   {tipo.tipo}
@@ -2903,7 +2943,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   }
                                 }}
                                 disabled={!umbralNodoSeleccionado || (umbralTiposSeleccionados.length === 0 && !umbralTipoSeleccionado) || !umbralData || umbralAplicado}
-                                className="flex-1 h-8 px-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-xs font-mono transition-colors"
+                                className="flex-1 h-8 px-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded text-xs font-mono transition-colors"
                               >
                                 Aplicar
                               </button>
@@ -2933,7 +2973,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               </div>
               
                 {/* Contenido principal */}
-              <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800 relative">
+              <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 dashboard-scrollbar-blue relative">
                 <div className="p-6">
 
                   {/* Mensaje de validación de fechas */}
@@ -2965,7 +3005,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               max={tempEndDate || detailedEndDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                               style={{
                                 colorScheme: 'dark',
                                 WebkitAppearance: 'none'
@@ -2984,7 +3024,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }}
                               min={tempStartDate || detailedStartDate || undefined}
                               disabled={loadingDetailedData}
-                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : ''}`}
                               style={{
                                 colorScheme: 'dark',
                                 WebkitAppearance: 'none'
@@ -3142,11 +3182,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               }
                             }}
                             disabled={loadingComparisonData}
-                            className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white font-mono text-xs w-28 disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
-                            style={{
-                              scrollbarWidth: 'thin',
-                              scrollbarColor: '#22c55e #d1d5db'
-                            }}
+                            className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white font-mono text-xs min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar-blue"
                           >
                             <option value="" disabled hidden>Ninguno</option>
                             {availableNodes
@@ -3233,7 +3269,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                             <div className="text-center">
-                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                               <div className="text-gray-600 dark:text-neutral-400 text-lg font-mono">
                                 Cargando datos...
                               </div>
@@ -4071,7 +4107,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     
                     return (
                       <div key={nodeId} className="space-y-4">
-                        <h3 className="text-xl font-bold text-green-600 dark:text-green-400 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
+                        <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
                           {nodeName}
                         </h3>
                         {Object.keys(nodeRecommendations).map(tipoidStr => {

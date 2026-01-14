@@ -6,8 +6,8 @@ import MetricaPorLoteModal from './MetricaPorLoteModal';
 interface MetricaPorLoteProps {}
 
 interface LoteMetricaData {
-  ubicacionid: number;
-  ubicacion: string;
+  localizacionid: number;
+  localizacion: string;
   valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
   medicionCount: number;
 }
@@ -283,9 +283,15 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         cantidad: tiposUnicos.length
       })
 
-      // Agrupar por ubicación
+      // Obtener localizaciones que pertenecen a nodos de las ubicaciones seleccionadas
+      const localizacionesFiltradas = localizaciones.filter((loc: any) => {
+        const nodoUbicacionId = loc.nodo?.ubicacionid;
+        return nodoUbicacionId && ubicacionIds.includes(nodoUbicacionId);
+      });
+
+      // Agrupar por localización
       const loteMap = new Map<number, { 
-        ubicacion: string; 
+        localizacion: string; 
         valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
         medicionCount: number;
       }>();
@@ -295,18 +301,18 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
       ultimasMediciones.forEach((medicion: any) => {
         medicionesProcesadas++
-        // CRÍTICO: Obtener ubicacionid y tipoid desde múltiples fuentes posibles
-        const ubicacionId = medicion.ubicacionid ?? medicion.localizacion?.nodo?.ubicacionid ?? 0
+        // CRÍTICO: Obtener localizacionid y tipoid desde múltiples fuentes posibles
+        const localizacionId = medicion.localizacionid ?? medicion.localizacion?.localizacionid ?? 0
         const tipoid = medicion.tipoid ?? medicion.localizacion?.sensor?.tipoid ?? 0
         const valor = medicion.valor ?? medicion.medicion
         const fecha = medicion.fecha
         const medicionCount = medicion.medicionCount || 1
 
-        if (!ubicacionId || ubicacionId === 0 || !tipoid || tipoid === 0 || valor == null || isNaN(valor) || !fecha) {
+        if (!localizacionId || localizacionId === 0 || !tipoid || tipoid === 0 || valor == null || isNaN(valor) || !fecha) {
           if (medicionesProcesadas <= 3) {
             console.warn('[DEBUG] calcularMetricaPorLote: Medición filtrada', {
               medicionid: medicion.medicionid,
-              ubicacionId,
+              localizacionId,
               tipoid,
               valor,
               fecha,
@@ -318,16 +324,23 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
           return
         }
 
-        if (!loteMap.has(ubicacionId)) {
-          const ubicacion = ubicaciones.find(u => u.ubicacionid === ubicacionId)
-          loteMap.set(ubicacionId, {
-            ubicacion: ubicacion?.ubicacion || `Ubicación ${ubicacionId}`,
+        // Verificar que la localización pertenezca a los fundos seleccionados
+        const localizacion = localizacionesFiltradas.find((loc: any) => loc.localizacionid === localizacionId);
+        if (!localizacion) {
+          medicionesFiltradas++
+          return
+        }
+
+        if (!loteMap.has(localizacionId)) {
+          const nombreLocalizacion = localizacion?.localizacion || medicion.localizacion?.localizacion || `Localización ${localizacionId}`;
+          loteMap.set(localizacionId, {
+            localizacion: nombreLocalizacion,
             valoresPorTipo: {},
             medicionCount: 0
           })
         }
 
-        const lote = loteMap.get(ubicacionId)!
+        const lote = loteMap.get(localizacionId)!
         lote.medicionCount = Math.max(lote.medicionCount, medicionCount)
         // Solo actualizar si es la medición más reciente para este tipo
         const existingTipo = lote.valoresPorTipo[tipoid]
@@ -348,10 +361,10 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       })
 
       // Crear array de datos con valores por tipo
-      const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([ubicacionid, data]) => {
+      const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([localizacionid, data]) => {
         return {
-          ubicacionid,
-          ubicacion: data.ubicacion,
+          localizacionid,
+          localizacion: data.localizacion,
           valoresPorTipo: data.valoresPorTipo,
           medicionCount: data.medicionCount
         };
@@ -714,12 +727,12 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-200 dark:bg-neutral-700">
                   <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                    LOTE
+                    LOCALIZACIÓN
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
                     VALOR DE MÉTRICA
@@ -763,12 +776,12 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
                     return (
                       <tr
-                        key={lote.ubicacionid}
+                        key={lote.localizacionid}
                         onClick={() => handleRowClick(lote)}
                         className="cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors border-b border-gray-200 dark:border-neutral-600"
                       >
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
-                          {lote.ubicacion}
+                          {lote.localizacion}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold relative group">
                           {promedio !== null ? (
@@ -828,8 +841,8 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         <MetricaPorLoteModal
           isOpen={showModal}
           onClose={handleCloseModal}
-          ubicacionId={selectedLote.ubicacionid}
-          ubicacionNombre={selectedLote.ubicacion}
+          localizacionId={selectedLote.localizacionid}
+          localizacionNombre={selectedLote.localizacion}
           metricaId={selectedMetrica}
           metricaNombre={metricas.find(m => m.metricaid === selectedMetrica)?.metrica || 'Métrica'}
           startDate={startDate}

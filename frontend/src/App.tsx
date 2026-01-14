@@ -1249,7 +1249,7 @@ const AppContentInternal: React.FC = () => {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                    <p className="text-gray-400">Cargando Métrica por Lote...</p>
+                    <p className="text-gray-400">Cargando Métrica por Localización...</p>
                   </div>
                 </div>
               }>
@@ -1781,8 +1781,8 @@ const AppContentInternal: React.FC = () => {
                             const subTabNames: { [key: string]: string } = {
                               'mapeo': 'MAPEO',
                               'status-nodos': 'STATUS DE NODOS',
-                              'metrica': 'MÉTRICA POR LOTE',
-                              'umbrales': 'UMBRALES POR LOTE'
+                              'metrica': 'MÉTRICA POR LOCALIZACIÓN',
+                              'umbrales': 'UMBRALES POR LOCALIZACIÓN'
                             };
                             return `${t('tabs.reports')} / ${t('subtabs.dashboard')} / ${subTabNames[subTab] || subTab.toUpperCase()}`;
                           }
@@ -1927,8 +1927,8 @@ const AppContentInternal: React.FC = () => {
                           if (activeTab.startsWith('agrupacion-')) {
                             const agrupacionTable = activeTab.replace('agrupacion-', '');
                             const tableNames: Record<string, string> = {
-                              'entidad': 'ENTIDAD',
-                              'entidad_localizacion': 'LOCALIZACIÓN DE ENTIDAD'
+                              'entidad': 'CARPETA',
+                              'entidad_localizacion': 'LOCALIZACIÓN POR CARPETA'
                             };
                             breadcrumb += ` / ${tableNames[agrupacionTable]?.toUpperCase() || agrupacionTable.toUpperCase()}`;
                             if (activeSubTab) {
