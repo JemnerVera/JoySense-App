@@ -169,6 +169,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
         contactosData={relatedData.contactosData}
         correosData={relatedData.correosData}
         canalesData={relatedData.canalesData}
+        perfilesData={relatedData.perfilesData || []}
         selectedContactType={selectedContactType}
         countryCodes={countryCodes}
         resetContactType={resetContactType}
