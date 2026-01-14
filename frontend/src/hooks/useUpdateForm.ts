@@ -100,11 +100,14 @@ export const useUpdateForm = ({
               (ue: any) => ue.is_default === true && ue.statusid === 1
             );
             
+            // Si no hay empresa default pero hay empresas activas, usar la primera como default
+            const defaultEmpresaId = empresaDefault?.empresaid || (empresasActivas.length > 0 ? empresasActivas[0] : null);
+            
             // Cargar datos al formulario incluyendo empresas
             const formDataWithEmpresas = {
               ...selectedRow,
               empresas_ids: empresasActivas,
-              is_default_empresa: empresaDefault?.empresaid || null
+              is_default_empresa: defaultEmpresaId
             };
             
             logger.debug('[useUpdateForm] Empresas cargadas para usuario:', {

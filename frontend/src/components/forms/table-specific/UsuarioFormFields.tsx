@@ -3,9 +3,10 @@
 // ============================================================================
 // Componente específico para renderizar campos del formulario de Usuario
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import MultiSelectWithPlaceholder from '../../MultiSelectWithPlaceholder';
+import SelectWithPlaceholder from '../../SelectWithPlaceholder';
 
 interface UsuarioFormFieldsProps {
   visibleColumns: any[];
@@ -105,20 +106,68 @@ export const UsuarioFormFields: React.FC<UsuarioFormFieldsProps> = ({
       </label>
       <MultiSelectWithPlaceholder
         value={empresasIds}
-        onChange={(value) => setFormData({
-          ...formData,
-          empresas_ids: value
-        })}
+        onChange={(value) => {
+          const newFormData: Record<string, any> = {
+            ...formData,
+            empresas_ids: value
+          };
+          // Si la empresa default actual no está en las nuevas empresas seleccionadas, limpiarla
+          if (formData.is_default_empresa && !value.includes(Number(formData.is_default_empresa))) {
+            newFormData.is_default_empresa = null;
+          }
+          // Si no hay empresa default y hay empresas seleccionadas, establecer la primera como default
+          if (!newFormData.is_default_empresa && value.length > 0) {
+            newFormData.is_default_empresa = value[0];
+          }
+          setFormData(newFormData);
+        }}
         options={empresaOptions}
         placeholder={placeholderText}
-        className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500`}
+        className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500`}
         disabled={false}
       />
-      <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+      <p className="mt-2 text-xs text-gray-400 dark:text-neutral-500 font-mono opacity-75">
         Seleccione al menos una empresa. El usuario tendrá acceso a las empresas seleccionadas.
       </p>
     </div>
   );
+
+  // Cuarta fila: Empresa por defecto (solo si hay empresas seleccionadas)
+  const empresasSeleccionadasOptions = useMemo(() => {
+    return empresaOptions.filter(opt => empresasIds.includes(Number(opt.value)));
+  }, [empresaOptions, empresasIds]);
+
+  const empresaDefaultLabel = useMemo(() => {
+    if (!formData.is_default_empresa) return null;
+    const empresa = empresasSeleccionadasOptions.find(opt => Number(opt.value) === Number(formData.is_default_empresa));
+    return empresa ? empresa.label : null;
+  }, [formData.is_default_empresa, empresasSeleccionadasOptions]);
+
+  if (empresasIds.length > 0) {
+    result.push(
+      <div key="empresa-default-row" className="mb-6">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          EMPRESA POR DEFECTO
+        </label>
+        <SelectWithPlaceholder
+          value={formData.is_default_empresa || null}
+          onChange={(value) => setFormData({
+            ...formData,
+            is_default_empresa: value
+          })}
+          options={empresasSeleccionadasOptions}
+          placeholder={empresaDefaultLabel || 'Seleccione empresa por defecto'}
+          className={`w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-500`}
+          disabled={false}
+          themeColor="orange"
+          allowExternalChange={true}
+        />
+        <p className="mt-2 text-xs text-gray-400 dark:text-neutral-500 font-mono opacity-75">
+          Seleccione la empresa que será la predeterminada para este usuario. Si no se selecciona, se usará la primera empresa de la lista.
+        </p>
+      </div>
+    );
+  }
 
   return <>{result}</>;
 };

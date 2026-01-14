@@ -221,7 +221,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: false,
     allowMassive: true,
     fields: [
-      { name: 'sensorid', label: 'ID del Sensor', type: 'number', hidden: false, readonly: true, required: false },
+      { name: 'sensorid', label: 'ID del Sensor', type: 'number', hidden: true, readonly: true },
       { name: 'sensor', label: 'Sensor', type: 'text', required: true },
       { name: 'tipoid', label: 'Tipo', type: 'select', required: true, foreignKey: { table: 'tipo', valueField: 'tipoid', labelField: 'tipo' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }

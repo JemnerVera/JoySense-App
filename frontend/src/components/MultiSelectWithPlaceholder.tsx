@@ -14,7 +14,7 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
   onChange,
   options,
   placeholder,
-  className = "w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800 dark:text-white text-base font-mono",
+  className = "w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 dark:text-white text-base font-mono",
   disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -111,7 +111,7 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white text-sm font-mono placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -128,7 +128,7 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
                     onClick={() => handleOptionToggle(option.value)}
                     className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors flex items-center space-x-2 ${
                       isSelected
-                        ? 'bg-purple-600 text-white' 
+                        ? 'bg-orange-600 text-white' 
                         : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
                     }`}
                   >
@@ -136,7 +136,7 @@ const MultiSelectWithPlaceholder: React.FC<MultiSelectWithPlaceholderProps> = ({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => {}} // El click en el div maneja el toggle
-                      className="w-4 h-4 text-purple-600 bg-neutral-800 border-neutral-600 rounded focus:ring-purple-500 cursor-pointer"
+                      className="w-4 h-4 text-orange-600 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span>{option.label.toUpperCase()}</span>

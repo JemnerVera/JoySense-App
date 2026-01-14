@@ -840,6 +840,20 @@ export class JoySenseService {
     }
   }
 
+  static async searchUsers(query: string): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(`/usuarios/search?query=${encodeURIComponent(query)}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in searchUsers:', error);
+      throw error;
+    }
+  }
+
   /**
    * Obtiene empresas filtradas por país
    */
