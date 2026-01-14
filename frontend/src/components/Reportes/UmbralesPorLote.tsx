@@ -6,8 +6,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface UmbralesPorLoteProps {}
 
 interface LoteUmbralData {
-  ubicacionid: number;
-  ubicacion: string;
+  localizacionid: number;
+  localizacion: string;
   umbralesPorTipo: { [tipoid: number]: { minimo: number; maximo: number; umbral: string; criticidadid: number } };
   umbralCount: number;
 }
@@ -16,7 +16,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   const { t } = useLanguage();
   const [metricas, setMetricas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
-  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
+  const [localizaciones, setLocalizaciones] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
   const [criticidades, setCriticidades] = useState<any[]>([]);
   const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
@@ -59,33 +59,49 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
     loadInitialData();
   }, []);
 
-  // Cargar ubicaciones cuando se seleccionan fundos
+  // Cargar localizaciones cuando se seleccionan fundos
   useEffect(() => {
-    const loadUbicaciones = async () => {
+    const loadLocalizaciones = async () => {
       if (selectedFundos.length === 0) {
-        setUbicaciones([]);
+        setLocalizaciones([]);
         return;
       }
 
       try {
-        // Usar getTableData para obtener ubicaciones directamente
-        const ubicacionesData = await JoySenseService.getTableData('ubicacion', 1000);
-        const ubicacionesFiltradas = ubicacionesData.filter((u: any) => selectedFundos.includes(u.fundoid));
+        // Obtener localizaciones que pertenecen a nodos de los fundos seleccionados
+        const localizacionesData = await JoySenseService.getLocalizaciones();
+        // Filtrar localizaciones por fundos seleccionados (a través de nodos -> ubicaciones -> fundos)
+        const nodosData = await JoySenseService.getNodos();
+        const ubicacionesData = await JoySenseService.getUbicaciones();
         
-        console.log('[DEBUG] loadUbicaciones: Ubicaciones cargadas', {
-          totalUbicaciones: ubicacionesData?.length || 0,
-          ubicacionesFiltradas: ubicacionesFiltradas?.length || 0,
+        // Crear un mapa de nodoid -> fundoid
+        const nodoToFundoMap = new Map<number, number>();
+        nodosData.forEach((nodo: any) => {
+          const ubicacion = ubicacionesData.find((u: any) => u.ubicacionid === nodo.ubicacionid);
+          if (ubicacion && selectedFundos.includes(ubicacion.fundoid)) {
+            nodoToFundoMap.set(nodo.nodoid, ubicacion.fundoid);
+          }
+        });
+        
+        // Filtrar localizaciones que pertenecen a nodos de los fundos seleccionados
+        const localizacionesFiltradas = localizacionesData.filter((loc: any) => {
+          return nodoToFundoMap.has(loc.nodoid);
+        });
+        
+        console.log('[DEBUG] loadLocalizaciones: Localizaciones cargadas', {
+          totalLocalizaciones: localizacionesData?.length || 0,
+          localizacionesFiltradas: localizacionesFiltradas?.length || 0,
           selectedFundos
         });
         
-        setUbicaciones(ubicacionesFiltradas);
+        setLocalizaciones(localizacionesFiltradas);
       } catch (err: any) {
-        console.error('Error cargando ubicaciones:', err);
-        setUbicaciones([]);
+        console.error('Error cargando localizaciones:', err);
+        setLocalizaciones([]);
       }
     };
 
-    loadUbicaciones();
+    loadLocalizaciones();
   }, [selectedFundos]);
 
   // Calcular umbrales por lote
@@ -112,40 +128,40 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         selectedMetrica
       });
 
-      // Agrupar por ubicación
+      // Agrupar por localización
       const loteMap = new Map<number, { 
-        ubicacion: string; 
+        localizacion: string; 
         umbralesPorTipo: { [tipoid: number]: { minimo: number; maximo: number; umbral: string; criticidadid: number } };
         umbralCount: number;
       }>();
 
       umbrales.forEach((umbral: any) => {
-        // Obtener ubicacionid desde múltiples fuentes posibles
-        const ubicacionId = umbral.ubicacionid || umbral.localizacion?.nodo?.ubicacionid || null;
+        // Obtener localizacionid desde múltiples fuentes posibles
+        const localizacionId = umbral.localizacionid || umbral.localizacion?.localizacionid || null;
         // Obtener tipoid desde múltiples fuentes posibles
         const tipoid = umbral.tipoid || umbral.localizacion?.sensor?.tipoid || null;
 
-        if (!ubicacionId || !tipoid) {
-          console.warn('[DEBUG] calcularUmbralesPorLote: Umbral sin ubicacionid o tipoid', {
+        if (!localizacionId || !tipoid) {
+          console.warn('[DEBUG] calcularUmbralesPorLote: Umbral sin localizacionid o tipoid', {
             umbralid: umbral.umbralid,
-            ubicacionid: ubicacionId,
+            localizacionid: localizacionId,
             tipoid: tipoid,
             umbral: umbral
           });
           return;
         }
 
-        if (!loteMap.has(ubicacionId)) {
-          const ubicacion = ubicaciones.find(u => u.ubicacionid === ubicacionId);
-          loteMap.set(ubicacionId, {
-            ubicacion: ubicacion?.ubicacion || `Ubicación ${ubicacionId}`,
+        if (!loteMap.has(localizacionId)) {
+          const localizacion = localizaciones.find(loc => loc.localizacionid === localizacionId);
+          loteMap.set(localizacionId, {
+            localizacion: localizacion?.localizacion || `Localización ${localizacionId}`,
             umbralesPorTipo: {},
             umbralCount: 0
           });
         }
 
-        const lote = loteMap.get(ubicacionId)!;
-        // Contar umbrales por ubicación (incrementar contador)
+        const lote = loteMap.get(localizacionId)!;
+        // Contar umbrales por localización (incrementar contador)
         lote.umbralCount = lote.umbralCount + 1;
         lote.umbralesPorTipo[tipoid] = {
           minimo: umbral.minimo,
@@ -158,18 +174,18 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
       console.log('[DEBUG] calcularUmbralesPorLote: Lotes agrupados', {
         lotesCount: loteMap.size,
         lotes: Array.from(loteMap.entries()).map(([id, data]) => ({
-          ubicacionid: id,
-          ubicacion: data.ubicacion,
+          localizacionid: id,
+          localizacion: data.localizacion,
           umbralCount: data.umbralCount,
           tiposCount: Object.keys(data.umbralesPorTipo).length
         }))
       });
 
       // Crear array de datos
-      const lotesArray: LoteUmbralData[] = Array.from(loteMap.entries()).map(([ubicacionid, data]) => {
+      const lotesArray: LoteUmbralData[] = Array.from(loteMap.entries()).map(([localizacionid, data]) => {
         return {
-          ubicacionid,
-          ubicacion: data.ubicacion,
+          localizacionid,
+          localizacion: data.localizacion,
           umbralesPorTipo: data.umbralesPorTipo,
           umbralCount: data.umbralCount
         };
@@ -206,7 +222,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
     } else {
       setLotesData([]);
     }
-  }, [selectedMetrica, orden, selectedFundos, ubicaciones]);
+  }, [selectedMetrica, orden, selectedFundos, localizaciones]);
 
   // Manejar selección de fundos
   const handleFundoToggle = (fundoId: number) => {
@@ -229,16 +245,16 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   };
 
   // Manejar selección de lote (checkbox)
-  const handleLoteToggle = (ubicacionId: number, e?: React.SyntheticEvent) => {
+  const handleLoteToggle = (localizacionId: number, e?: React.SyntheticEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
     setSelectedLotes(prev => {
-      if (prev.includes(ubicacionId)) {
-        return prev.filter(id => id !== ubicacionId);
+      if (prev.includes(localizacionId)) {
+        return prev.filter(id => id !== localizacionId);
       } else {
-        return [...prev, ubicacionId];
+        return [...prev, localizacionId];
       }
     });
   };
@@ -247,12 +263,12 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   const handleRowClick = (lote: LoteUmbralData) => {
     if (selectedLotes.length === 0) {
       // Si no hay selección, seleccionar este lote y abrir modal
-      setSelectedLotes([lote.ubicacionid]);
+      setSelectedLotes([lote.localizacionid]);
       setSelectedLote(lote);
       setShowModal(true);
     } else {
       // Si hay selección, abrir modal con todos los seleccionados
-      const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+      const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.localizacionid));
       if (lotesSeleccionados.length === 1) {
         setSelectedLote(lotesSeleccionados[0]);
       } else {
@@ -265,7 +281,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   // Abrir modal de comparación
   const handleOpenComparison = () => {
     if (selectedLotes.length === 0) return;
-    const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+    const lotesSeleccionados = lotesData.filter(l => selectedLotes.includes(l.localizacionid));
     if (lotesSeleccionados.length === 1) {
       setSelectedLote(lotesSeleccionados[0]);
     } else {
@@ -440,7 +456,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Comparar ({selectedLotes.length} {selectedLotes.length === 1 ? 'lote' : 'lotes'})
+              Comparar ({selectedLotes.length} {selectedLotes.length === 1 ? 'localización' : 'localizaciones'})
             </button>
           </div>
         )}
@@ -462,7 +478,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                     {/* Checkbox header */}
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
-                    LOTE
+                    LOCALIZACIÓN
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white font-mono tracking-wider border-b border-gray-300 dark:border-neutral-600">
                     UMBRAL MIN
@@ -502,7 +518,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
 
                     return (
                       <tr
-                        key={lote.ubicacionid}
+                        key={lote.localizacionid}
                         onClick={() => handleRowClick(lote)}
                         className="cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors border-b border-gray-200 dark:border-neutral-600"
                       >
@@ -514,15 +530,15 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                         >
                           <input
                             type="checkbox"
-                            checked={selectedLotes.includes(lote.ubicacionid)}
+                            checked={selectedLotes.includes(lote.localizacionid)}
                             onChange={(e) => {
                               e.stopPropagation();
                               const isChecked = e.target.checked;
                               setSelectedLotes(prev => {
                                 if (isChecked) {
-                                  return prev.includes(lote.ubicacionid) ? prev : [...prev, lote.ubicacionid];
+                                  return prev.includes(lote.localizacionid) ? prev : [...prev, lote.localizacionid];
                                 } else {
-                                  return prev.filter(id => id !== lote.ubicacionid);
+                                  return prev.filter(id => id !== lote.localizacionid);
                                 }
                               });
                             }}
@@ -536,7 +552,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                           />
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono">
-                          {lote.ubicacion}
+                          {lote.localizacion}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-mono font-bold relative group">
                           {promedioMin !== null ? (
@@ -630,7 +646,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         // Obtener lotes seleccionados
         const lotesSeleccionados = selectedLote 
           ? [selectedLote]
-          : lotesData.filter(l => selectedLotes.includes(l.ubicacionid));
+          : lotesData.filter(l => selectedLotes.includes(l.localizacionid));
         
         const isComparacion = lotesSeleccionados.length > 1;
 
@@ -683,7 +699,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
               <div className="flex justify-between items-center p-6 border-b border-gray-600 dark:border-gray-600">
                 <div>
                   <h2 className="text-xl font-bold text-white dark:text-white font-mono tracking-wider">
-                    INTERVALOS DE UMBRALES - {selectedLote.ubicacion.toUpperCase()}
+                    INTERVALOS DE UMBRALES - {selectedLote.localizacion.toUpperCase()}
                   </h2>
                   <p className="text-sm text-gray-400 dark:text-gray-400 font-mono mt-1">
                     Visualización de rangos de umbrales por tipo de sensor
@@ -878,13 +894,13 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
             lotesSeleccionados.forEach(lote => {
               const umbralData = lote.umbralesPorTipo[tipoid];
               if (umbralData) {
-                entry[`${lote.ubicacion}_min`] = umbralData.minimo;
-                entry[`${lote.ubicacion}_max`] = umbralData.maximo;
-                entry[`${lote.ubicacion}_rango`] = umbralData.maximo - umbralData.minimo;
+                entry[`${lote.localizacion}_min`] = umbralData.minimo;
+                entry[`${lote.localizacion}_max`] = umbralData.maximo;
+                entry[`${lote.localizacion}_rango`] = umbralData.maximo - umbralData.minimo;
               } else {
-                entry[`${lote.ubicacion}_min`] = null;
-                entry[`${lote.ubicacion}_max`] = null;
-                entry[`${lote.ubicacion}_rango`] = null;
+                entry[`${lote.localizacion}_min`] = null;
+                entry[`${lote.localizacion}_max`] = null;
+                entry[`${lote.localizacion}_rango`] = null;
               }
             });
             
@@ -911,7 +927,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
               <div className="flex justify-between items-center p-6 border-b border-gray-600 dark:border-gray-600">
                 <div>
                   <h2 className="text-xl font-bold text-white dark:text-white font-mono tracking-wider">
-                    COMPARACIÓN DE UMBRALES - {lotesSeleccionados.length} {lotesSeleccionados.length === 1 ? 'LOTE' : 'LOTES'}
+                    COMPARACIÓN DE UMBRALES - {lotesSeleccionados.length} {lotesSeleccionados.length === 1 ? 'LOCALIZACIÓN' : 'LOCALIZACIONES'}
                   </h2>
                   <p className="text-sm text-gray-400 dark:text-gray-400 font-mono mt-1">
                     Comparación de rangos de umbrales por tipo de sensor
@@ -979,7 +995,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                                   const max = data[`${loteName}_max`];
                                   if (min !== null && max !== null && !isNaN(min) && !isNaN(max)) {
                                     // Encontrar el índice del lote para obtener su color
-                                    const loteIndex = lotesSeleccionados.findIndex(l => l.ubicacion === loteName);
+                                    const loteIndex = lotesSeleccionados.findIndex(l => l.localizacion === loteName);
                                     const loteColor = loteIndex >= 0 ? loteColors[loteIndex % loteColors.length] : '#10B981';
                                     return {
                                       name: loteName,
@@ -1010,24 +1026,24 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                             const loteColor = loteColors[loteIndex % loteColors.length];
                             // Primero agregar la barra base (min) transparente para posicionar correctamente
                             return (
-                              <React.Fragment key={lote.ubicacionid}>
+                              <React.Fragment key={lote.localizacionid}>
                                 <Bar
-                                  dataKey={`${lote.ubicacion}_min`}
-                                  stackId={`stack_${lote.ubicacionid}`}
+                                  dataKey={`${lote.localizacion}_min`}
+                                  stackId={`stack_${lote.localizacionid}`}
                                   fill="transparent"
                                 />
                                 <Bar
-                                  dataKey={`${lote.ubicacion}_rango`}
-                                  stackId={`stack_${lote.ubicacionid}`}
+                                  dataKey={`${lote.localizacion}_rango`}
+                                  stackId={`stack_${lote.localizacionid}`}
                                   fill={loteColor}
                                   fillOpacity={0.7}
                                   radius={[0, 4, 4, 0]}
                                 >
                                   {chartDataComparacion.map((entry, index) => {
-                                    const hasData = entry[`${lote.ubicacion}_rango`] !== null;
+                                    const hasData = entry[`${lote.localizacion}_rango`] !== null;
                                     return (
                                       <Cell 
-                                        key={`cell-${lote.ubicacionid}-${index}`} 
+                                        key={`cell-${lote.localizacionid}-${index}`} 
                                         fill={hasData ? loteColor : 'transparent'} 
                                       />
                                     );
@@ -1046,12 +1062,12 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-300 dark:text-gray-300 font-mono">
                         {lotesSeleccionados.map((lote, index) => (
-                          <div key={lote.ubicacionid} className="flex items-center gap-2">
+                          <div key={lote.localizacionid} className="flex items-center gap-2">
                             <div 
                               className="w-4 h-4 rounded" 
                               style={{ backgroundColor: loteColors[index % loteColors.length], opacity: 0.7 }}
                             ></div>
-                            <span>{lote.ubicacion}</span>
+                            <span>{lote.localizacion}</span>
                           </div>
                         ))}
                       </div>

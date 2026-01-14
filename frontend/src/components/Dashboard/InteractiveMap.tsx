@@ -4,6 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { NodeData } from '../../types/NodeData'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { JoySenseService } from '../../services/backend-api'
 
 // Importar iconos de Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -182,6 +183,43 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
   const markerRefs = useRef<Map<number, L.Marker>>(new Map())
+  const [localizacionesPorNodo, setLocalizacionesPorNodo] = useState<Map<number, string[]>>(new Map())
+
+  // Cargar localizaciones para todos los nodos
+  useEffect(() => {
+    const loadLocalizaciones = async () => {
+      try {
+        const nodoIds = nodes.map(n => n.nodoid);
+        if (nodoIds.length === 0) {
+          setLocalizacionesPorNodo(new Map());
+          return;
+        }
+
+        // Cargar localizaciones para todos los nodos en paralelo
+        const localizacionesPromises = nodoIds.map(nodoid => 
+          JoySenseService.getLocalizacionesByNodo(nodoid).catch(() => [])
+        );
+        const localizacionesArrays = await Promise.all(localizacionesPromises);
+
+        // Crear mapa de nodoid -> nombres de localizaciones
+        const map = new Map<number, string[]>();
+        nodoIds.forEach((nodoid, index) => {
+          const localizaciones = localizacionesArrays[index] || [];
+          const nombres = localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n);
+          if (nombres.length > 0) {
+            map.set(nodoid, nombres);
+          }
+        });
+
+        setLocalizacionesPorNodo(map);
+      } catch (error) {
+        console.error('Error cargando localizaciones:', error);
+        setLocalizacionesPorNodo(new Map());
+      }
+    };
+
+    loadLocalizaciones();
+  }, [nodes.length, nodes.map(n => n.nodoid).join(',')])
 
   // Usar useMemo para evitar recalcular en cada render
   const nodesWithGPS = useMemo(() => {
@@ -281,7 +319,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     return (
       <div className="bg-neutral-700 rounded-lg p-4 h-full flex items-center justify-center" style={{ height: '100%' }}>
         <div className="text-center text-neutral-400">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <div className="text-lg font-mono tracking-wider">Cargando mapa...</div>
         </div>
       </div>
@@ -316,7 +354,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             justify-content: center;
             width: 30px;
             height: 30px;
-            background: #10b981;
+            background: #3b82f6;
             border: 3px solid #ffffff;
             border-radius: 50%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -326,7 +364,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           
           .node-marker:hover {
             transform: scale(1.2);
-            background: #059669;
+            background: #2563eb;
           }
           
           .node-marker.selected {
@@ -457,14 +495,18 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           >
             <Popup>
               <div className="text-sm">
-                <div className="font-bold text-green-400 mb-2">{node.nodo}</div>
+                <div className="font-bold text-blue-400 mb-2">{node.nodo}</div>
                 <div className="space-y-1">
-                  <div><strong>{t('dashboard.tooltip.deveui')}</strong> {node.deveui}</div>
+                  {(() => {
+                    const localizaciones = localizacionesPorNodo.get(node.nodoid);
+                    return localizaciones && localizaciones.length > 0 ? (
+                      <div><strong>Localización:</strong> {localizaciones.join(', ')}</div>
+                    ) : null;
+                  })()}
                   <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
                   <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
                   <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
                   <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
-                  <div><strong>{t('dashboard.tooltip.entity')}</strong> {node.entidad.entidad}</div>
                   <div className="mt-2 pt-2 border-t border-neutral-600">
                     <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
                     <div className="text-xs text-neutral-400">
@@ -479,21 +521,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       </div>
                     </div>
                   )}
-                </div>
-                <div className="mt-3 pt-2 border-t border-neutral-600">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      try {
-                        onNodeSelect(node);
-                      } catch (error) {
-                        console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect desde botón:', error);
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
-                  >
-                    {selectedNode?.nodoid === node.nodoid ? '✓ Seleccionado' : 'Seleccionar Nodo'}
-                  </button>
                 </div>
               </div>
             </Popup>

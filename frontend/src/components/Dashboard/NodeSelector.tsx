@@ -82,7 +82,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     if (searchTerm.trim()) {
       filtered = filtered.filter(node =>
         node.nodo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.deveui.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.ubicacion.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.ubicacion.fundo.fundo.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -165,7 +164,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     if (searchTerm.trim()) {
       const filtered = nodes.filter(node => 
         node.nodo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.deveui.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.ubicacion.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.ubicacion.fundo.fundo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(searchTerm.toLowerCase())
@@ -345,7 +343,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
           {/* Dropdown de resultados */}
           {isSearchDropdownOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar">
+            <div className="absolute z-50 w-full mt-1 bg-gray-100 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto dashboard-scrollbar-blue">
               {loading ? (
                 <div className="px-4 py-3 text-center text-gray-600 dark:text-neutral-400">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
@@ -362,7 +360,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                     key={node.nodoid}
                     onClick={() => handleNodeSelect(node)}
                     className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
-                    title={`${t('dashboard.tooltip.deveui')} ${node.deveui} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
+                    title={`${node.nodo} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
                   >
                     <div className="font-medium text-gray-800 dark:text-white">{node.nodo}</div>
                     <div className="text-sm text-gray-600 dark:text-neutral-400">

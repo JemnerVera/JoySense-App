@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition, useMemo } from 'react';
+import React, { useState, useEffect, startTransition, useMemo, useRef } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAlertasFilter } from '../../contexts/AlertasFilterContext';
@@ -80,8 +80,26 @@ const AlertasTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
+  
+  // Estados para comboboxes de filtros
+  const [selectedLocalizacion, setSelectedLocalizacion] = useState<any>(null);
+  const [localizaciones, setLocalizaciones] = useState<any[]>([]);
+  const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
+  const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
+  const localizacionDropdownRef = useRef<HTMLDivElement>(null);
+  const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  
+  // Estados para intervalo de fechas
+  const [startDate, setStartDate] = useState<string>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0];
+  });
 
   const loadAlertas = async (page: number = 1) => {
     try {
@@ -168,6 +186,52 @@ const AlertasTable: React.FC = () => {
     }
   };
   
+  // Cargar localizaciones disponibles
+  useEffect(() => {
+    const loadLocalizaciones = async () => {
+      try {
+        const localizacionesData = await JoySenseService.getLocalizaciones();
+        setLocalizaciones(localizacionesData || []);
+      } catch (err: any) {
+        console.error('Error cargando localizaciones:', err);
+      }
+    };
+    loadLocalizaciones();
+  }, []);
+
+  // Calcular posición del dropdown de localización cuando se abre
+  useEffect(() => {
+    if (isLocalizacionDropdownOpen && localizacionDropdownRef.current) {
+      const rect = localizacionDropdownRef.current.getBoundingClientRect();
+      setLocalizacionDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isLocalizacionDropdownOpen]);
+
+  // Cerrar dropdowns al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (localizacionDropdownRef.current && !localizacionDropdownRef.current.contains(event.target as Node)) {
+        setIsLocalizacionDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filtrar localizaciones por término de búsqueda
+  const filteredLocalizaciones = useMemo(() => {
+    if (!localizacionSearchTerm.trim()) {
+      return localizaciones;
+    }
+    return localizaciones.filter((loc: any) =>
+      loc.localizacion?.toLowerCase().includes(localizacionSearchTerm.toLowerCase())
+    );
+  }, [localizaciones, localizacionSearchTerm]);
+  
   // Filtrar alertas según los filtros seleccionados
   const filteredAlertas = useMemo(() => {
     let filtered = [...allAlertas];
@@ -228,7 +292,7 @@ const AlertasTable: React.FC = () => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [filtroCriticidad, filtroUbicacion, filtroLocalizacion]);
+  }, [filtroCriticidad, filtroUbicacion, filtroLocalizacion, selectedLocalizacion, startDate, endDate]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -317,20 +381,163 @@ const AlertasTable: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-sm text-gray-600 dark:text-neutral-400 font-mono">
-          {totalRecords} {t('reports.alerts.total')}
+    <div className="space-y-6">
+      {/* Container con comboboxes de filtros */}
+      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 relative">
+        {/* Botón X para cancelar selección */}
+        {(selectedLocalizacion || startDate || endDate) && (
+          <button
+            onClick={() => {
+              setSelectedLocalizacion(null);
+              setStartDate(() => {
+                const date = new Date();
+                date.setDate(date.getDate() - 7);
+                return date.toISOString().split('T')[0];
+              });
+              setEndDate(() => new Date().toISOString().split('T')[0]);
+              setLocalizacionSearchTerm('');
+            }}
+            className="absolute top-2 right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center transition-colors"
+            title="Cancelar selección"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
+        <div className="flex items-start gap-2 flex-nowrap overflow-x-auto dashboard-scrollbar-blue justify-center" style={{ maxWidth: '100%', width: '100%' }}>
+          {/* Selector de Localización */}
+          <div className="flex flex-col flex-shrink-0" ref={localizacionDropdownRef}>
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Localización:
+            </label>
+            <div className="relative">
+              <button
+                onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
+                className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
+              >
+                <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                  {selectedLocalizacion?.localizacion || 'Todas'}
+                </span>
+                <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isLocalizacionDropdownOpen && localizacionDropdownPosition && (
+                <div 
+                  className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
+                  style={{
+                    top: `${localizacionDropdownPosition.top}px`,
+                    left: `${localizacionDropdownPosition.left}px`,
+                    width: `${localizacionDropdownPosition.width}px`
+                  }}
+                >
+                  <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
+                    <input
+                      type="text"
+                      value={localizacionSearchTerm}
+                      onChange={(e) => setLocalizacionSearchTerm(e.target.value)}
+                      placeholder="Buscar..."
+                      className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
+                    <button
+                      onClick={() => {
+                        setSelectedLocalizacion(null);
+                        setIsLocalizacionDropdownOpen(false);
+                        setLocalizacionSearchTerm('');
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                        !selectedLocalizacion
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {filteredLocalizaciones.length > 0 ? (
+                      filteredLocalizaciones.map((localizacion: any) => (
+                        <button
+                          key={localizacion.localizacionid}
+                          onClick={() => {
+                            setSelectedLocalizacion(localizacion);
+                            setIsLocalizacionDropdownOpen(false);
+                            setLocalizacionSearchTerm('');
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                            selectedLocalizacion?.localizacionid === localizacion.localizacionid
+                              ? 'bg-blue-500 text-white'
+                              : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                          }`}
+                        >
+                          {localizacion.localizacion}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono text-center">
+                        No se encontraron localizaciones
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Separador vertical */}
+          <div className="h-16 w-px bg-gray-300 dark:bg-neutral-600 flex-shrink-0"></div>
+
+          {/* Intervalo de Fechas */}
+          <div className="flex flex-col flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Fecha Inicio:
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              max={endDate || undefined}
+              className="h-8 w-36 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+              style={{
+                colorScheme: 'dark',
+                WebkitAppearance: 'none'
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Fecha Fin:
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate || undefined}
+              className="h-8 w-36 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+              style={{
+                colorScheme: 'dark',
+                WebkitAppearance: 'none'
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="overflow-x-auto">
+      {/* Container de la tabla */}
+      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6 border border-gray-300 dark:border-neutral-700">
+        {/* Tabla */}
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-300 dark:border-neutral-700">
               <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.id_alert')}</th>
+              <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">LOCALIZACIÓN</th>
               <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.threshold')}</th>
               <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.measurement')}</th>
               <th className="text-left py-3 px-4 font-bold text-blue-500 font-mono tracking-wider">{t('reports.table.alert_date')}</th>
@@ -343,6 +550,9 @@ const AlertasTable: React.FC = () => {
               <tr key={alerta.uuid_alerta_reglaid || alerta.alertaid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {alerta.uuid_alerta_reglaid ? alerta.uuid_alerta_reglaid.substring(0, 8) : alerta.alertaid}
+                </td>
+                <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
+                  {alerta.localizacion?.localizacion || 'N/A'}
                 </td>
                 <td className="py-3 px-4 text-gray-800 dark:text-white font-mono">
                   {alerta.umbral ? (
@@ -385,11 +595,11 @@ const AlertasTable: React.FC = () => {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
 
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-neutral-400 font-mono">
             PÁGINA {currentPage} DE {totalPages}
           </div>
@@ -442,7 +652,8 @@ const AlertasTable: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

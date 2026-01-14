@@ -116,6 +116,7 @@ export interface Metrica {
  */
 export interface Sensor {
   sensorid: number;
+  sensor: string;
   tipoid: number;
   statusid: number;
   usercreatedid: number;
