@@ -7,6 +7,7 @@ import React from 'react';
 import SelectWithPlaceholder from '../SelectWithPlaceholder';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { LocationSelector } from './LocationSelector';
 
 interface FormFieldRendererProps {
   col: any;
@@ -315,7 +316,27 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   }
 
   if (col.columnName === 'localizacionid' && selectedTable === 'entidad_localizacion') {
-    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+    // Usar el nuevo componente LocationSelector
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
+        </label>
+        <LocationSelector
+          value={formData[col.columnName] || null}
+          onChange={(localizacionid: number | null) => {
+            const newFormData: any = {
+              ...formData,
+              [col.columnName]: localizacionid
+            };
+            setFormData(newFormData);
+          }}
+          placeholder="BUSQUEDA"
+          isRequired={isFieldRequired(col.columnName)}
+          themeColor={getThemeColor('bg').includes('green') ? 'green' : 'blue'}
+        />
+      </div>
+    );
   }
 
   // Combobox para asociacion - localizacionid

@@ -214,15 +214,6 @@ export class JoySenseService {
     }
   }
 
-  static async getEmpresasByPais(paisId: number): Promise<Empresa[]> {
-    try {
-      const data = await backendAPI.get(`/geografia/empresa?paisid=${paisId}`);
-      return data || [];
-    } catch (error) {
-      console.error('Error in getEmpresasByPais:', error);
-      throw error;
-    }
-  }
 
   static async getFundos(): Promise<Fundo[]> {
     try {
@@ -237,18 +228,6 @@ export class JoySenseService {
     }
   }
 
-  static async getFundosByEmpresa(empresaId: number): Promise<Fundo[]> {
-    try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
-      const data = await backendAPI.get(`/geografia/fundo?empresaid=${empresaId}`, token || undefined);
-      return data || [];
-    } catch (error) {
-      console.error('Error in getFundosByEmpresa:', error);
-      throw error;
-    }
-  }
 
   static async getUbicaciones(): Promise<Ubicacion[]> {
     try {
@@ -263,15 +242,6 @@ export class JoySenseService {
     }
   }
 
-  static async getUbicacionesByFundo(fundoId: number): Promise<Ubicacion[]> {
-    try {
-      const data = await backendAPI.get(`/geografia/ubicacion?fundoid=${fundoId}`);
-      return data || [];
-    } catch (error) {
-      console.error('Error in getUbicacionesByFundo:', error);
-      throw error;
-    }
-  }
 
   static async getEntidades(ubicacionId?: number): Promise<any[]> {
     try {
@@ -373,19 +343,6 @@ export class JoySenseService {
     }
   }
 
-  static async getLocalizacionesByUbicacion(ubicacionId: number): Promise<Localizacion[]> {
-    try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
-      // Localizacion se relaciona con nodo, que tiene ubicacionid
-      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionid=${ubicacionId}`, token || undefined);
-      return data || [];
-    } catch (error) {
-      console.error('Error in getLocalizacionesByUbicacion:', error);
-      throw error;
-    }
-  }
 
   static async getLocalizacionesByNodo(nodoid: number): Promise<Localizacion[]> {
     try {
@@ -857,6 +814,99 @@ export class JoySenseService {
       };
     } catch (error) {
       console.error('Error in getDataSummary:', error);
+      throw error;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // BÚSQUEDA Y JERARQUÍA DE LOCALIZACIONES
+  // --------------------------------------------------------------------------
+
+  /**
+   * Búsqueda global de localizaciones por cualquier parte de la jerarquía
+   * Devuelve localizaciones con breadcrumb completo
+   */
+  static async searchLocations(query: string): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(`/dispositivos/locations/search?query=${encodeURIComponent(query)}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in searchLocations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene empresas filtradas por país
+   */
+  static async getEmpresasByPais(paisId: number): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      // El backend acepta tanto paisId como paisid
+      const data = await backendAPI.get(`/geografia/empresa?paisId=${paisId}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getEmpresasByPais:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene fundos filtrados por empresa
+   */
+  static async getFundosByEmpresa(empresaId: number): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      // El backend acepta tanto empresaId como empresaid
+      const data = await backendAPI.get(`/geografia/fundo?empresaId=${empresaId}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getFundosByEmpresa:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene ubicaciones filtradas por fundo
+   */
+  static async getUbicacionesByFundo(fundoId: number): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      // El backend acepta tanto fundoId como fundoid
+      const data = await backendAPI.get(`/geografia/ubicacion?fundoId=${fundoId}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getUbicacionesByFundo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene localizaciones filtradas por ubicación
+   */
+  static async getLocalizacionesByUbicacion(ubicacionId: number): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionId=${ubicacionId}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getLocalizacionesByUbicacion:', error);
       throw error;
     }
   }
