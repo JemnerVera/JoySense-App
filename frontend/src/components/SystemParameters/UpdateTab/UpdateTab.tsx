@@ -68,11 +68,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       return tableData;
     }
 
-    console.log('[UpdateTab] Procesando datos de usuarioperfil:', {
-      tableDataLength: tableData.length,
-      tableData: tableData
-    });
-
     // Agrupar por usuarioid
     const groupedByUser: Record<number, any[]> = {};
     tableData.forEach((row: any) => {
@@ -82,8 +77,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       }
       groupedByUser[usuarioid].push(row);
     });
-    
-    console.log('[UpdateTab] Datos agrupados por usuario:', groupedByUser);
 
     // Crear filas agrupadas con información de perfiles
     const perfilesData = relatedData.perfilesData || [];
@@ -119,13 +112,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
         .map(p => p.nombre)
         .join(', ');
 
-      console.log('[UpdateTab] Perfiles para usuario', usuarioid, ':', {
-        rowsCount: rows.length,
-        perfilesUnicos: Array.from(perfilesUnicos.values()),
-        todosLosPerfiles,
-        rows: rows.map((r: any) => ({ perfilid: r.perfilid, statusid: r.statusid }))
-      });
-
       return {
         ...firstRow,
         _grouped: true,
@@ -140,8 +126,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       const dateB = new Date(b.datemodified || b.datecreated || 0).getTime();
       return dateB - dateA; // Más reciente primero
     });
-    
-    console.log('[UpdateTab] Filas procesadas finales:', sortedGroupedRows);
     
     return sortedGroupedRows;
   }, [tableData, tableName, relatedData.perfilesData]);
