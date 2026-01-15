@@ -152,10 +152,6 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(`${displayName.toUpperCase()}`);
   }
 
-  // Combobox para umbral - localizacionid
-  if (col.columnName === 'localizacionid' && selectedTable === 'umbral') {
-    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
-  }
 
   // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
 
@@ -461,9 +457,28 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     );
   }
 
-  // Combobox para asociacion - localizacionid
+  // LocationSelector para asociacion - localizacionid (similar a LOCALIZACIÓN POR CARPETA)
   if (col.columnName === 'localizacionid' && selectedTable === 'asociacion') {
-    return renderSelectField(t('create.select_location') || `${t('buttons.select')} ${displayName.toUpperCase()}`);
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isFieldRequired(col.columnName) ? '*' : ''}
+        </label>
+        <LocationSelector
+          value={formData[col.columnName] || null}
+          onChange={(localizacionid: number | null) => {
+            const newFormData: any = {
+              ...formData,
+              [col.columnName]: localizacionid
+            };
+            setFormData(newFormData);
+          }}
+          placeholder="BUSQUEDA"
+          isRequired={isFieldRequired(col.columnName)}
+          themeColor="orange"
+        />
+      </div>
+    );
   }
 
   // Combobox para usuario_canal - usuarioid, canalid

@@ -30,7 +30,7 @@ export const filterColumnsByTable = (
     'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'localizacion', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'sensor': ['sensorid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metricasensor': ['sensorid', 'metricaid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'umbral': ['umbralid', 'localizacionid', 'umbral', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'umbral': ['umbralid', 'umbral', 'metricaid', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla': ['nombre', 'prioridad', 'ventana', 'cooldown', 'criticidadid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla_perfil': ['reglaid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla_umbral': ['reglaid', 'umbralid', 'operador_logico', 'agrupador_inicio', 'agrupador_fin', 'orden', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -281,14 +281,14 @@ export const reorderColumns = (
       reordered.push(...otherColumns);
     }
   } else if (tableName === 'umbral') {
-    reordered.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['tipoid'].includes(col.columnName)));
+    // Orden correcto según schema: umbral, metricaid, minimo, maximo, estandar, operador, inversion
+    reordered.push(...otherColumns.filter(col => ['umbral'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['operador'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['minimo'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['maximo'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['criticidadid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['umbral'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['estandar'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['inversion'].includes(col.columnName)));
   } else if (tableName === 'usuario') {
     reordered.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
