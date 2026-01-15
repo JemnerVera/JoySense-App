@@ -120,7 +120,10 @@ export const getUniqueOptionsForField = ({
     return true;
   });
 
-  return activeData.map((item: any) => {
+  // Mapear a opciones y eliminar duplicados por value
+  const optionsMap = new Map<any, { value: any; label: string }>();
+  
+  activeData.forEach((item: any) => {
     let label = '';
     if (Array.isArray(mapping.label)) {
       // Para otros campos con múltiples labels, concatenar con espacio
@@ -133,10 +136,24 @@ export const getUniqueOptionsForField = ({
         label = item[mapping.label] || '';
       }
     }
-    return {
-      value: item[mapping.key],
-      label: label || `ID: ${item[mapping.key]}`
-    };
+    
+    const value = item[mapping.key];
+    const finalLabel = label || `ID: ${value}`;
+    
+    // Solo agregar si no existe ya (evitar duplicados por value)
+    if (!optionsMap.has(value)) {
+      optionsMap.set(value, {
+        value: value,
+        label: finalLabel
+      });
+    }
   });
+  
+  // Convertir Map a Array y ordenar por label
+  const options = Array.from(optionsMap.values()).sort((a, b) => {
+    return a.label.localeCompare(b.label);
+  });
+  
+  return options;
 };
 

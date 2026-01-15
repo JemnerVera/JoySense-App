@@ -19,13 +19,8 @@ export const validateUmbralData = async (
   const errors: ValidationError[] = [];
   
   // 1. Validar campos obligatorios según schema actual
-  if (!formData.localizacionid || formData.localizacionid === '' || formData.localizacionid === 0) {
-    errors.push({
-      field: 'localizacionid',
-      message: 'Debe seleccionar una localización',
-      type: 'required'
-    });
-  }
+  // NOTA: umbral NO tiene localizacionid ni criticidadid según SCHEMA_14.01.2026.SQL
+  // Campos requeridos: umbral (nombre), minimo, maximo, operador
   
   if (!formData.umbral || (typeof formData.umbral === 'string' && formData.umbral.trim() === '')) {
     errors.push({
@@ -74,17 +69,16 @@ export const validateUmbralData = async (
     }
   }
   
-  // 3. Validar duplicados si hay datos existentes (basado en localizacionid y nombre)
+  // 3. Validar duplicados si hay datos existentes (basado solo en nombre, ya que no hay localizacionid)
   if (existingData && existingData.length > 0) {
     const umbralExists = existingData.some(item => 
-      item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase() &&
-      item.localizacionid === formData.localizacionid
+      item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase()
     );
     
     if (umbralExists) {
       errors.push({
         field: 'general',
-        message: 'Ya existe un umbral con el mismo nombre para esta localización',
+        message: 'Ya existe un umbral con el mismo nombre',
         type: 'duplicate'
       });
     }
@@ -108,15 +102,10 @@ export const validateUmbralUpdate = async (
   const errors: ValidationError[] = [];
 
   // 1. Validar campos obligatorios según schema actual
-  if (!formData.localizacionid || formData.localizacionid === '' || formData.localizacionid === 0) {
-    errors.push({
-      field: 'localizacionid',
-      message: 'Debe seleccionar una localización',
-      type: 'required'
-    });
-  }
+  // NOTA: umbral NO tiene localizacionid ni criticidadid según SCHEMA_14.01.2026.SQL
+  // Campos requeridos: umbral (nombre), minimo, maximo, operador
   
-  if (!formData.umbral || formData.umbral.trim() === '') {
+  if (!formData.umbral || (typeof formData.umbral === 'string' && formData.umbral.trim() === '')) {
     errors.push({
       field: 'umbral',
       message: 'El nombre del umbral es obligatorio',
@@ -163,18 +152,17 @@ export const validateUmbralUpdate = async (
     }
   }
   
-  // 3. Validar duplicados si hay datos existentes (basado en localizacionid y nombre)
+  // 3. Validar duplicados si hay datos existentes (basado solo en nombre, ya que no hay localizacionid)
   if (existingData && existingData.length > 0) {
     const umbralExists = existingData.some(item => 
       item.umbralid !== originalData.umbralid &&
-      item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase() &&
-      item.localizacionid === formData.localizacionid
+      item.umbral && item.umbral.toLowerCase() === formData.umbral?.toLowerCase()
     );
     
     if (umbralExists) {
       errors.push({
         field: 'general',
-        message: 'Ya existe un umbral con el mismo nombre para esta localización',
+        message: 'Ya existe un umbral con el mismo nombre',
         type: 'duplicate'
       });
     }
