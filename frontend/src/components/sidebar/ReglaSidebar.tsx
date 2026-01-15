@@ -97,12 +97,14 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
     fetchUserPerfil();
   }, [user]);
 
-  // Tablas de regla disponibles
-  const reglaTables = [
-    { name: 'regla', displayName: 'REGLA' },
-    { name: 'regla_perfil', displayName: 'REGLA_PERFIL' },
-    { name: 'regla_umbral', displayName: 'REGLA_UMBRAL' },
-    { name: 'regla_objeto', displayName: 'REGLA_OBJETO' }
+  // Tablas de regla disponibles con orden y separadores
+  const reglaTables: Array<{ name: string; displayName: string; isSeparator?: boolean }> = [
+    { name: 'regla', displayName: 'REGLAS' },
+    { name: 'regla_umbral', displayName: 'REGLA DE UMBRAL' },
+    { name: '__separator1__', displayName: '', isSeparator: true },
+    { name: 'regla_perfil', displayName: 'REGLA DE PERFIL' },
+    { name: '__separator2__', displayName: '', isSeparator: true },
+    { name: 'regla_objeto', displayName: 'REGLA DE OBJETO' }
   ];
 
   // Mapear tablas a formato de sidebar con iconos
@@ -147,7 +149,7 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
       isExpanded={isExpanded}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      title="REGLA"
+      title="GESTIÓN DE REGLAS"
       icon={reglaIcon}
       color="orange"
       collapsedText="Sense"
@@ -161,6 +163,13 @@ const ReglaSidebar: React.FC<ReglaSidebarProps> = ({
               </div>
             ) : (
               reglaTables.map((table) => {
+                // Renderizar separador
+                if (table.isSeparator) {
+                  return (
+                    <div key={table.name} className="my-2 border-t border-gray-600 dark:border-neutral-700"></div>
+                  );
+                }
+                
                 const isActive = selectedTable === table.name;
                 return (
                   <ProtectedParameterButton

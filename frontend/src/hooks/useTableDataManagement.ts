@@ -209,6 +209,29 @@ export const useTableDataManagement = () => {
       // const endTime = performance.now(); // Para debugging de performance
     } catch (error) {
       console.error('❌ [loadRelatedTablesData] Error loading related tables data:', error);
+      // Asegurar que todos los datos se inicialicen como arrays vacíos en caso de error
+      setPaisesData([]);
+      setEmpresasData([]);
+      setFundosData([]);
+      setUbicacionesData([]);
+      setLocalizacionesData([]);
+      setEntidadesData([]);
+      setNodosData([]);
+      setTiposData([]);
+      setMetricasData([]);
+      setCriticidadesData([]);
+      setPerfilesData([]);
+      setUmbralesData([]);
+      setReglasData([]); // Asegurar que reglasData se inicialice como array vacío
+      setUserData([]);
+      setSensorsData([]);
+      setMetricasensorData([]);
+      setContactosData([]);
+      setOrigenesData([]); // Asegurar que origenesData se inicialice como array vacío
+      setFuentesData([]); // Asegurar que fuentesData se inicialice como array vacío
+      setCorreosData([]);
+      setCodigotelefonosData([]);
+      setCanalesData([]);
     }
   }, []);
 

@@ -149,7 +149,6 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   // Para 'insert' también necesitamos cargar las columnas (aunque no los datos)
   useEffect(() => {
     if (activeSubTab === 'status' || activeSubTab === 'update' || activeSubTab === 'insert') {
-      console.log('[ReglasMain] Cargando datos/columnas para subTab:', activeSubTab);
       loadTableData(selectedTable);
     }
   }, [activeSubTab, loadTableData, selectedTable]);

@@ -153,6 +153,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     criticidadesData,
     perfilesData,
     umbralesData,
+    reglasData,
+    origenesData,
+    fuentesData,
     sensorsData,
     codigotelefonosData,
     canalesData,
@@ -278,26 +281,38 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   }, [columns, selectedTable]);
 
   // Adaptar relatedData para StatusTab
-  const relatedDataForStatus = useMemo(() => ({
-    paisesData: paisesData || [],
-    empresasData: empresasData || [],
-    fundosData: fundosData || [],
-    ubicacionesData: ubicacionesData || [],
-    localizacionesData: localizacionesData || [],
-    entidadesData: entidadesData || [],
-    nodosData: nodosData || [],
-    tiposData: tiposData || [],
-    metricasData: metricasData || [],
-    criticidadesData: criticidadesData || [],
-    perfilesData: perfilesData || [],
-    umbralesData: umbralesData || [],
-    userData: userData || [],
-    sensorsData: sensorsData || [],
-    codigotelefonosData: codigotelefonosData || [],
-    canalesData: canalesData || [],
-    contactosData: contactosData || [],
-    correosData: correosData || []
-  }), [
+  const relatedDataForStatus = useMemo(() => {
+    // Asegurar que reglasData, origenesData y fuentesData siempre sean arrays
+    const safeReglasData = Array.isArray(reglasData) ? reglasData : [];
+    const safeOrigenesData = Array.isArray(origenesData) ? origenesData : [];
+    const safeFuentesData = Array.isArray(fuentesData) ? fuentesData : [];
+    
+    const result = {
+      paisesData: Array.isArray(paisesData) ? paisesData : [],
+      empresasData: Array.isArray(empresasData) ? empresasData : [],
+      fundosData: Array.isArray(fundosData) ? fundosData : [],
+      ubicacionesData: Array.isArray(ubicacionesData) ? ubicacionesData : [],
+      localizacionesData: Array.isArray(localizacionesData) ? localizacionesData : [],
+      entidadesData: Array.isArray(entidadesData) ? entidadesData : [],
+      nodosData: Array.isArray(nodosData) ? nodosData : [],
+      tiposData: Array.isArray(tiposData) ? tiposData : [],
+      metricasData: Array.isArray(metricasData) ? metricasData : [],
+      criticidadesData: Array.isArray(criticidadesData) ? criticidadesData : [],
+      perfilesData: Array.isArray(perfilesData) ? perfilesData : [],
+      umbralesData: Array.isArray(umbralesData) ? umbralesData : [],
+      reglasData: safeReglasData,
+      origenesData: safeOrigenesData,
+      fuentesData: safeFuentesData,
+      userData: Array.isArray(userData) ? userData : [],
+      sensorsData: Array.isArray(sensorsData) ? sensorsData : [],
+      codigotelefonosData: Array.isArray(codigotelefonosData) ? codigotelefonosData : [],
+      canalesData: Array.isArray(canalesData) ? canalesData : [],
+      contactosData: Array.isArray(contactosData) ? contactosData : [],
+      correosData: Array.isArray(correosData) ? correosData : []
+    };
+    
+    return result;
+  }, [
     paisesData,
     empresasData,
     fundosData,
@@ -310,12 +325,16 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     criticidadesData,
     perfilesData,
     umbralesData,
+    reglasData,
+    origenesData,
+    fuentesData,
     userData,
     sensorsData,
     codigotelefonosData,
     canalesData,
     contactosData,
-    correosData
+    correosData,
+    selectedTable // Agregado para que el useMemo se recalcule cuando cambia selectedTable
   ]);
 
   // Ref para poder usar handleSubTabChangeInternal en useSystemParametersSync (debe declararse antes)

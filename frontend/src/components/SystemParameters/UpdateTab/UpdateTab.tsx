@@ -36,6 +36,7 @@ interface UpdateTabProps {
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
   onFormDataChange?: (formData: Record<string, any>) => void;
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
+  initialSelectedRow?: any | null; // Fila seleccionada inicialmente desde StatusTab
 }
 
 export const UpdateTab: React.FC<UpdateTabProps> = ({
@@ -55,12 +56,43 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   onUpdateSuccess,
   setMessage,
   onFormDataChange,
-  themeColor = 'orange'
+  themeColor = 'orange',
+  initialSelectedRow = null
 }) => {
-  const [selectedRow, setSelectedRow] = useState<any | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<any | null>(initialSelectedRow);
+  const [showForm, setShowForm] = useState(!!initialSelectedRow); // Mostrar formulario si hay fila inicial
   const [originalFormData, setOriginalFormData] = useState<Record<string, any>>({});
   const { showModal } = useModal();
+  
+  // Debug: Log cuando se monta o actualiza UpdateTab
+  useEffect(() => {
+    console.log('[UpdateTab] Montado/Actualizado:', {
+      tableName,
+      hasConfig: !!config,
+      configAllowUpdate: config?.allowUpdate,
+      hasInitialSelectedRow: !!initialSelectedRow,
+      initialSelectedRowKeys: initialSelectedRow ? Object.keys(initialSelectedRow) : [],
+      selectedRow: !!selectedRow,
+      showForm,
+      tableDataCount: tableData?.length || 0
+    });
+  }, [tableName, config, initialSelectedRow, selectedRow, showForm, tableData]);
+  
+  // Sincronizar selectedRow cuando cambia initialSelectedRow
+  useEffect(() => {
+    if (initialSelectedRow) {
+      console.log('[UpdateTab] Sincronizando initialSelectedRow:', {
+        tableName,
+        initialSelectedRowKeys: Object.keys(initialSelectedRow),
+        initialSelectedRow
+      });
+      setSelectedRow(initialSelectedRow);
+      setShowForm(true);
+    } else {
+      setSelectedRow(null);
+      setShowForm(false);
+    }
+  }, [initialSelectedRow, tableName]);
 
   // Para usuarioperfil: agrupar datos por usuarioid y agregar columna "Perfil"
   const processedTableData = useMemo(() => {

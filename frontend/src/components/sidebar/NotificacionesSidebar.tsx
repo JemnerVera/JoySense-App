@@ -105,7 +105,7 @@ const NotificacionesSidebar: React.FC<NotificacionesSidebarProps> = ({
     const displayNameMap: Record<string, string> = {
       'criticidad': 'CRITICIDAD',
       'umbral': 'UMBRAL',
-      'regla': 'REGLA'
+      'regla': 'GESTIÓN DE REGLAS'
     };
     return displayNameMap[tableName] || tableName.toUpperCase();
   };

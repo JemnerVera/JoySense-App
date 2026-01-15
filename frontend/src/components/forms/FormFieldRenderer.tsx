@@ -144,6 +144,10 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_node'));
   }
 
+  if (col.columnName === 'sensorid' && selectedTable === 'metricasensor') {
+    return renderSelectField(`${t('buttons.select')} ${displayName.toUpperCase()}`);
+  }
+
   if (col.columnName === 'metricaid' && selectedTable === 'metricasensor') {
     return renderSelectField(t('create.select_metric'));
   }

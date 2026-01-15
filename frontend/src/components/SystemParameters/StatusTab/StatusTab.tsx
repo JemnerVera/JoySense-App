@@ -34,7 +34,6 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   onRowClick,
   themeColor = 'orange'
 }) => {
-
   // Hook que encapsula toda la lógica de Estado
   const {
     filteredData,

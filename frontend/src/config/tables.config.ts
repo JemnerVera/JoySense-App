@@ -240,7 +240,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowDelete: true,
     allowMassive: true,
     fields: [
-      { name: 'sensorid', label: 'ID del Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
+      { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensor' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
@@ -280,7 +280,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     fields: [
       { name: 'localizacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'nodoid', label: 'Nodo', type: 'select', required: true, foreignKey: { table: 'nodo', valueField: 'nodoid', labelField: 'nodo' } },
-      { name: 'sensorid', label: 'ID del Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensorid' } },
+      { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensor' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
       { name: 'localizacion', label: 'Nombre', type: 'text', required: true },
       { name: 'latitud', label: 'Latitud', type: 'number' },
@@ -483,7 +483,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowMassive: false,
     fields: [
       { name: 'reglaid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+      { name: 'nombre', label: 'REGLA', type: 'text', required: true },
       { name: 'prioridad', label: 'Prioridad', type: 'number', defaultValue: 1 },
       { name: 'ventana', label: 'Ventana', type: 'text', required: true, defaultValue: '00:10:00', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },
       { name: 'cooldown', label: 'Cooldown', type: 'text', required: true, defaultValue: '1 day', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },

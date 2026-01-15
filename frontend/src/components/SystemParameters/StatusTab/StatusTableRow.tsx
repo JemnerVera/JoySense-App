@@ -42,10 +42,19 @@ const StatusTableRowComponent: React.FC<StatusTableRowProps> = ({
   // Memoizar userData para evitar re-renders innecesarios
   const userData = useMemo(() => relatedData.userData || [], [relatedData.userData]);
 
+  const handleRowClick = useCallback((e: React.MouseEvent) => {
+    console.log('[StatusTableRow] Click en fila:', {
+      hasOnRowClick: !!onRowClick,
+      rowKeys: Object.keys(row),
+      rowId: row.reglaid || row.regla_perfilid || row.regla_umbralid || row.regla_objetoid || 'unknown'
+    });
+    onRowClick?.(row);
+  }, [onRowClick, row]);
+
   return (
     <tr 
       className={`bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 ${className || ''}`}
-      onClick={() => onRowClick?.(row)}
+      onClick={handleRowClick}
     >
       {columns.map(col => {
         const displayName = getColumnDisplayNameTranslated(col.columnName, t);

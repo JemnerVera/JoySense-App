@@ -23,6 +23,7 @@ export interface RelatedData {
   reglasData?: any[];
   origenesData?: any[];
   fuentesData?: any[];
+  canalesData?: any[];
   userData?: any[];
   mediosData?: any[];
 }
@@ -94,7 +95,9 @@ export const getColumnDisplayName = (columnName: string): string => {
     'direccion': 'Dirección',
     'contacto': 'Contacto',
     'celular': 'Celular',
-    'codigotelefonoid': 'Código País',
+    'codigotelefonoid': 'ID',
+    'codigotelefono': 'Código',
+    'paistelefono': 'País',
     'observaciones': 'Observaciones',
     'fecha_inicio': 'Fecha de Inicio',
     'fecha_fin': 'Fecha de Fin',
@@ -167,8 +170,20 @@ export const getColumnDisplayName = (columnName: string): string => {
     'certificacion_ifetel': 'Certificación IFETEL',
     'certificacion_telecom': 'Certificación TELECOM',
     'certificacion_osiptel': 'Certificación OSIPTEL',
-    'sensorid': 'ID del Sensor',
+    'sensorid': 'Sensor',
     'id_device': 'ID del Dispositivo',
+    // Campos de reglas
+    'reglaid': 'Regla',
+    'nombre': 'REGLA',
+    'regla_objetoid': 'ID',
+    'regla_umbralid': 'ID',
+    'regla_perfilid': 'ID',
+    'operador_logico': 'Operador Lógico',
+    'agrupador_inicio': 'Agrupador de Inicio',
+    'agrupador_fin': 'Agrupador de Fin',
+    'objetoid': 'ID de Objeto',
+    'fuenteid': 'Fuente',
+    'origenid': 'Origen',
   };
 
   return columnMappings[columnName] || columnName;
@@ -228,7 +243,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'criticidad': t('table_headers.criticality'),
     'escalamiento': t('table_headers.escalation'),
     'escalon': t('table_headers.step'),
-    'nombre': t('table_headers.name'),
+    'nombre': 'REGLA',
     'apellido': t('table_headers.last_name'),
     'firstname': t('table_headers.name'),
     'lastname': t('table_headers.last_name'),
@@ -256,7 +271,9 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'direccion': 'Dirección',
     'contacto': 'Contacto',
     'celular': 'Celular',
-    'codigotelefonoid': 'Código País',
+    'codigotelefonoid': 'ID',
+    'codigotelefono': 'Código',
+    'paistelefono': 'País',
     'observaciones': 'Observaciones',
     'fecha_inicio': 'Fecha de Inicio',
     'fecha_fin': 'Fecha de Fin',
@@ -329,7 +346,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'certificacion_ifetel': 'Certificación IFETEL',
     'certificacion_telecom': 'Certificación TELECOM',
     'certificacion_osiptel': 'Certificación OSIPTEL',
-    'sensorid': 'ID del Sensor',
+    'sensorid': 'Sensor',
     'id_device': 'ID del Dispositivo',
     // Campos de reglas
     'reglaid': 'Regla',
@@ -378,6 +395,7 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
     case 'regla': return relatedData.reglasData || [];
     case 'origen': return relatedData.origenesData || [];
     case 'fuente': return relatedData.fuentesData || [];
+    case 'canal': return relatedData.canalesData || [];
     case 'usuario': return relatedData.userData || [];
     case 'medio': return relatedData.mediosData || [];
     default: return [];
@@ -403,7 +421,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'nodoid': { table: 'nodo', nameField: 'nodo' },
     'tipoid': { table: 'tipo', nameField: 'tipo' },
     'metricaid': { table: 'metrica', nameField: 'metrica' },
-    'sensorid': { table: 'sensor', nameField: 'sensorid' }, // Mostrar ID del sensor
+    'sensorid': { table: 'sensor', nameField: 'sensor' }, // Mostrar nombre del sensor
     'localizacionid': { table: 'localizacion', nameField: 'localizacion' },
     'criticidadid': { table: 'criticidad', nameField: 'criticidad' },
     'perfilid': { table: 'perfil', nameField: 'perfil' },
@@ -477,7 +495,17 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
       const idField = `${mapping.table}id`;
       const relatedItem = relatedDataArray.find(item => {
         const itemId = item[idField];
-        return itemId && itemId.toString() === idValue.toString();
+        // Comparar tanto como número como string para mayor robustez (maneja bigint, number, string)
+        if (itemId === null || itemId === undefined) return false;
+        // Comparación estricta primero (más rápida)
+        if (itemId === idValue) return true;
+        // Comparación como strings
+        if (itemId.toString() === idValue.toString()) return true;
+        // Comparación como números (maneja bigint)
+        const itemIdNum = Number(itemId);
+        const idValueNum = Number(idValue);
+        if (!isNaN(itemIdNum) && !isNaN(idValueNum) && itemIdNum === idValueNum) return true;
+        return false;
       });
 
       if (relatedItem) {
