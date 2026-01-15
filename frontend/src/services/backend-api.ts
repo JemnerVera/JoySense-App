@@ -1168,10 +1168,22 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
+      console.log('[JoySenseService.insertTableRow] Preparando inserción:', {
+        tableName,
+        endpoint,
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        dataKeys: Object.keys(data),
+        dataSample: Object.keys(data).reduce((acc, key) => {
+          acc[key] = typeof data[key];
+          return acc;
+        }, {} as Record<string, string>)
+      });
+      
       const result = await backendAPI.post(endpoint, data, token || undefined);
       return result;
     } catch (error) {
-      console.error(`Error in insertTableRow for ${tableName}:`, error);
+      console.error(`[JoySenseService.insertTableRow] Error in insertTableRow for ${tableName}:`, error);
       throw error;
     }
   }

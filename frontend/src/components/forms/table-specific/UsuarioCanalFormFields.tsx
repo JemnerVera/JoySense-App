@@ -2,12 +2,13 @@
 // USUARIO CANAL FORM FIELDS
 // ============================================================================
 // Componente específico para renderizar campos del formulario de Usuario Canal
-// Autocompleta el identificador basado en el usuario y canal seleccionados
+// Muestra un grid de canales cuando se selecciona un usuario
 
-import React, { useEffect, useMemo } from 'react';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { UserSelector } from '../UserSelector';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
+import { JoySenseService } from '../../../services/backend-api';
 
 interface UsuarioCanalFormFieldsProps {
   visibleColumns: any[];
@@ -20,6 +21,13 @@ interface UsuarioCanalFormFieldsProps {
   correosData?: any[];
   canalesData?: any[];
   codigotelefonosData?: any[];
+}
+
+interface CanalRow {
+  canalid: number;
+  canal: string;
+  status: boolean;
+  identificador: string;
 }
 
 export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
@@ -35,211 +43,251 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
   codigotelefonosData = []
 }) => {
   const { t } = useLanguage();
+  
+  // Estado para almacenar los datos del usuario seleccionado (login)
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<any>(null);
+  
+  // Estado para el grid de canales
+  const [canalesGrid, setCanalesGrid] = useState<CanalRow[]>([]);
 
-  // Obtener el nombre del canal seleccionado
-  const canalSeleccionado = useMemo(() => {
-    if (!formData.canalid) return null;
-    return canalesData.find((c: any) => c.canalid === formData.canalid);
-  }, [formData.canalid, canalesData]);
-
-  const nombreCanal = canalSeleccionado?.canal?.toLowerCase() || '';
-
-  // Determinar si el canal requiere teléfono o email
-  const requiereTelefono = ['whatsapp', 'telegram', 'sms'].includes(nombreCanal);
-  const requiereEmail = nombreCanal === 'email';
-
-  // Buscar contacto o correo del usuario seleccionado
-  const contactoUsuario = useMemo(() => {
-    if (!formData.usuarioid) return null;
-    // Convertir ambos a número para comparación correcta (usuarioid puede ser bigint en BD)
-    const usuarioidNum = Number(formData.usuarioid);
-    return contactosData.find((c: any) => 
-      Number(c.usuarioid) === usuarioidNum && c.statusid === 1
-    ) || null;
-  }, [formData.usuarioid, contactosData]);
-
-  const correoUsuario = useMemo(() => {
-    if (!formData.usuarioid) return null;
-    // Convertir ambos a número para comparación correcta (usuarioid puede ser bigint en BD)
-    const usuarioidNum = Number(formData.usuarioid);
-    return correosData.find((c: any) => 
-      Number(c.usuarioid) === usuarioidNum && c.statusid === 1
-    );
-  }, [formData.usuarioid, correosData]);
-
-  // Construir el identificador automáticamente
+  // Cargar datos del usuario cuando se selecciona
   useEffect(() => {
-    // Solo autocompletar si no hay un identificador ya ingresado manualmente
-    // y si tenemos usuario y canal seleccionados
-    if (!formData.usuarioid || !formData.canalid) {
-      return;
-    }
-
-    // Si ya hay un identificador y el usuario no lo ha cambiado manualmente, no sobrescribir
-    // (esto permite que el usuario pueda editar el valor si es necesario)
-    if (formData.identificador && formData.identificador.trim() !== '') {
-      // Verificar si el identificador actual coincide con el que se generaría automáticamente
-      // Si no coincide, significa que el usuario lo editó manualmente, no sobrescribir
-      let identificadorEsperado = '';
-      
-      if (requiereTelefono && contactoUsuario) {
-        // El celular en contacto ya contiene el código de país concatenado
-        identificadorEsperado = contactoUsuario.celular || '';
-      } else if (requiereEmail && correoUsuario) {
-        identificadorEsperado = correoUsuario.correo || '';
-      }
-
-      // Si el identificador actual no coincide con el esperado, no sobrescribir
-      if (identificadorEsperado && formData.identificador !== identificadorEsperado) {
+    const loadUsuarioData = async () => {
+      if (!formData.usuarioid) {
+        console.log('[UsuarioCanalFormFields] No hay usuarioid, limpiando datos');
+        setUsuarioSeleccionado(null);
+        setCanalesGrid([]);
         return;
       }
-    }
 
-    // Autocompletar identificador
-    let nuevoIdentificador = '';
+      console.log('[UsuarioCanalFormFields] Cargando datos del usuario:', {
+        usuarioid: formData.usuarioid,
+        canalesDataLength: canalesData.length,
+        contactosDataLength: contactosData.length,
+        correosDataLength: correosData.length
+      });
 
-    if (requiereTelefono && contactoUsuario) {
-      // El celular en contacto ya contiene el código de país concatenado
-      // (se concatena en useInsertForm/useUpdateForm antes de guardar)
-      // Por lo tanto, usar el celular directamente
-      if (contactoUsuario.celular) {
-        nuevoIdentificador = contactoUsuario.celular;
+      try {
+        const usuariosData = await JoySenseService.getTableData('usuario', 1000);
+        const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
+        const usuario = usuarios.find((u: any) => Number(u.usuarioid) === Number(formData.usuarioid));
+        
+        console.log('[UsuarioCanalFormFields] Usuario encontrado:', {
+          usuario: usuario ? { usuarioid: usuario.usuarioid, login: usuario.login } : null,
+          totalUsuarios: usuarios.length
+        });
+        
+        if (usuario) {
+          setUsuarioSeleccionado(usuario);
+          
+          // Inicializar el grid con todos los canales disponibles
+          const canalesActivos = canalesData.filter((c: any) => c.statusid === 1);
+          console.log('[UsuarioCanalFormFields] Canales activos:', {
+            total: canalesActivos.length,
+            canales: canalesActivos.map((c: any) => ({ canalid: c.canalid, canal: c.canal }))
+          });
+          
+          // Buscar contacto del usuario (para WhatsApp)
+          const contactoUsuario = contactosData.find((c: any) => 
+            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === 1
+          );
+          console.log('[UsuarioCanalFormFields] Contacto encontrado:', {
+            contacto: contactoUsuario ? { usuarioid: contactoUsuario.usuarioid, celular: contactoUsuario.celular } : null,
+            contactosDataSample: contactosData.slice(0, 3).map((c: any) => ({ usuarioid: c.usuarioid, statusid: c.statusid }))
+          });
+          
+          // Buscar correo activo del usuario (para CORREO)
+          const correoUsuario = correosData.find((c: any) => 
+            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === 1
+          );
+          console.log('[UsuarioCanalFormFields] Correo encontrado:', {
+            correo: correoUsuario ? { usuarioid: correoUsuario.usuarioid, correo: correoUsuario.correo, statusid: correoUsuario.statusid } : null,
+            correosDataSample: correosData.slice(0, 5).map((c: any) => ({ usuarioid: c.usuarioid, correo: c.correo, statusid: c.statusid })),
+            buscandoUsuarioid: formData.usuarioid,
+            tipoUsuarioid: typeof formData.usuarioid
+          });
+          
+          const grid: CanalRow[] = canalesActivos.map((canal: any) => {
+            const nombreCanalOriginal = canal.canal || '';
+            const nombreCanal = nombreCanalOriginal.toLowerCase();
+            
+            console.log('[UsuarioCanalFormFields] Procesando canal:', {
+              canalid: canal.canalid,
+              nombreCanalOriginal,
+              nombreCanalLowercase: nombreCanal,
+              esWhatsapp: nombreCanal === 'whatsapp',
+              esCorreo: nombreCanal === 'correo',
+              esEmail: nombreCanal === 'email',
+              esTelegram: nombreCanal === 'telegram'
+            });
+            
+            // Calcular identificador según el canal
+            let identificador = '';
+            if (nombreCanal === 'whatsapp' && contactoUsuario?.celular) {
+              identificador = contactoUsuario.celular;
+              console.log('[UsuarioCanalFormFields] WhatsApp identificador calculado:', identificador);
+            } else if (nombreCanal === 'correo' || nombreCanal === 'email') {
+              console.log('[UsuarioCanalFormFields] Procesando canal CORREO/EMAIL:', {
+                nombreCanalOriginal,
+                nombreCanalLowercase: nombreCanal,
+                correoUsuario: correoUsuario ? { correo: correoUsuario.correo, usuarioid: correoUsuario.usuarioid, statusid: correoUsuario.statusid } : null,
+                tieneCorreo: !!correoUsuario?.correo,
+                correoValue: correoUsuario?.correo
+              });
+              if (correoUsuario?.correo) {
+                identificador = correoUsuario.correo;
+                console.log('[UsuarioCanalFormFields] CORREO identificador calculado:', identificador);
+              } else {
+                console.log('[UsuarioCanalFormFields] CORREO: No se encontró correo activo para el usuario');
+              }
+            } else if (nombreCanal === 'telegram') {
+              identificador = ''; // Dejar vacío por el momento
+              console.log('[UsuarioCanalFormFields] TELEGRAM: identificador vacío');
+            } else {
+              console.log('[UsuarioCanalFormFields] Canal no reconocido:', nombreCanalOriginal);
+            }
+            
+            return {
+              canalid: canal.canalid,
+              canal: canal.canal,
+              status: false, // Por defecto no seleccionado
+              identificador: identificador
+            };
+          });
+          
+          console.log('[UsuarioCanalFormFields] Grid final:', {
+            totalCanales: grid.length,
+            grid: grid.map((g: CanalRow) => ({ canalid: g.canalid, canal: g.canal, identificador: g.identificador }))
+          });
+          
+          setCanalesGrid(grid);
+        } else {
+          console.log('[UsuarioCanalFormFields] Usuario no encontrado');
+          setUsuarioSeleccionado(null);
+          setCanalesGrid([]);
+        }
+      } catch (error) {
+        console.error('[UsuarioCanalFormFields] Error cargando datos del usuario:', error);
+        setUsuarioSeleccionado(null);
+        setCanalesGrid([]);
       }
-    } else if (requiereEmail && correoUsuario) {
-      nuevoIdentificador = correoUsuario.correo || '';
-    }
+    };
 
-    // Solo actualizar si hay un nuevo identificador y es diferente al actual
-    if (nuevoIdentificador && formData.identificador !== nuevoIdentificador) {
-      updateField('identificador', nuevoIdentificador);
+    loadUsuarioData();
+  }, [formData.usuarioid, canalesData, contactosData, correosData]);
+
+  // Manejar cambio de status en el grid
+  const handleStatusChange = useCallback((canalid: number, checked: boolean) => {
+    setCanalesGrid(prev => prev.map(row => 
+      row.canalid === canalid 
+        ? { ...row, status: checked }
+        : row
+    ));
+  }, []);
+
+  // Manejar cambio de identificador en el grid
+  const handleIdentificadorChange = useCallback((canalid: number, value: string) => {
+    setCanalesGrid(prev => prev.map(row => 
+      row.canalid === canalid 
+        ? { ...row, identificador: value }
+        : row
+    ));
+  }, []);
+
+  // Actualizar formData cuando cambia el grid
+  useEffect(() => {
+    if (formData.usuarioid && canalesGrid.length > 0) {
+      // Guardar el estado del grid en formData para que useInsertForm pueda acceder
+      setFormData((prev: Record<string, any>) => ({
+        ...prev,
+        _canalesGrid: canalesGrid
+      }));
     }
-  }, [
-    formData.usuarioid,
-    formData.canalid,
-    contactoUsuario,
-    correoUsuario,
-    requiereTelefono,
-    requiereEmail,
-    codigotelefonosData,
-    updateField,
-    formData.identificador
-  ]);
+  }, [canalesGrid, formData.usuarioid, setFormData]);
 
   // Obtener campos visibles
   const usuarioidField = visibleColumns.find(c => c.columnName === 'usuarioid');
-  const canalidField = visibleColumns.find(c => c.columnName === 'canalid');
-  const identificadorField = visibleColumns.find(c => c.columnName === 'identificador');
-  const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-
-  // Mensaje de ayuda para el identificador
-  const ayudaIdentificador = useMemo(() => {
-    if (!formData.usuarioid || !formData.canalid) {
-      return 'Seleccione usuario y canal para autocompletar';
-    }
-    
-    if (requiereTelefono) {
-      if (contactoUsuario) {
-        return '✅ Teléfono encontrado y autocompletado';
-      } else {
-        return '⚠️ No se encontró contacto para este usuario';
-      }
-    } else if (requiereEmail) {
-      if (correoUsuario) {
-        return '✅ Correo encontrado y autocompletado';
-      } else {
-        return '⚠️ No se encontró correo para este usuario';
-      }
-    }
-    return '';
-  }, [formData.usuarioid, formData.canalid, requiereTelefono, requiereEmail, contactoUsuario, correoUsuario]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="space-y-6">
       {/* Campo Usuario */}
       {usuarioidField && (
         <div className="space-y-3">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
             {getColumnDisplayNameTranslated('usuarioid', t)?.toUpperCase()} *
           </label>
-          <SelectWithPlaceholder
-            value={formData.usuarioid || ''}
-            onChange={(value) => updateField('usuarioid', value)}
-            options={getUniqueOptionsForField('usuarioid')}
-            placeholder={`${t('create.select_user')}...`}
-            className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${getThemeColor('focus')} focus:border-${getThemeColor('border')} text-gray-800 dark:text-white text-base font-mono`}
+          <UserSelector
+            value={formData.usuarioid || null}
+            onChange={(usuarioid: number | null) => {
+              updateField('usuarioid', usuarioid);
+            }}
+            placeholder="BUSQUEDA"
+            isRequired={true}
+            themeColor="orange"
           />
         </div>
       )}
 
-      {/* Campo Canal */}
-      {canalidField && (
+      {/* Grid de Canales - Solo mostrar si hay un usuario seleccionado */}
+      {formData.usuarioid && canalesGrid.length > 0 && (
         <div className="space-y-3">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            {getColumnDisplayNameTranslated('canalid', t)?.toUpperCase()} *
+            CANALES DE NOTIFICACIÓN
           </label>
-          <SelectWithPlaceholder
-            value={formData.canalid || ''}
-            onChange={(value) => updateField('canalid', value)}
-            options={getUniqueOptionsForField('canalid')}
-            placeholder="SELECCIONAR CANAL"
-            className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${getThemeColor('focus')} focus:border-${getThemeColor('border')} text-gray-800 dark:text-white text-base font-mono`}
-          />
-        </div>
-      )}
-
-      {/* Campo Identificador */}
-      {identificadorField && (
-        <div className="space-y-3">
-          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            {getColumnDisplayNameTranslated('identificador', t)?.toUpperCase()} *
-          </label>
-          <input
-            type="text"
-            value={formData.identificador || ''}
-            onChange={(e) => updateField('identificador', e.target.value)}
-            className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${getThemeColor('focus')} focus:border-${getThemeColor('border')} text-gray-800 dark:text-white text-base font-mono`}
-            placeholder={
-              requiereTelefono 
-                ? 'Ej: +51960599778' 
-                : requiereEmail 
-                ? 'Ej: usuario@demo.com'
-                : 'Identificador del canal'
-            }
-          />
-          {ayudaIdentificador && (
-            <p className={`text-xs mt-1 font-mono ${
-              ayudaIdentificador.startsWith('✅') 
-                ? 'text-green-500' 
-                : ayudaIdentificador.startsWith('⚠️')
-                ? 'text-yellow-500'
-                : 'text-gray-500 dark:text-neutral-400'
-            }`}>
-              {ayudaIdentificador}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Campo Status */}
-      {statusField && (
-        <div className="space-y-3">
-          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            {getColumnDisplayNameTranslated('statusid', t)?.toUpperCase()}
-          </label>
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={formData.statusid === 1}
-              onChange={(e) => updateField('statusid', e.target.checked ? 1 : 0)}
-              className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')}`}
-            />
-            <span className="text-white font-mono tracking-wider">
-              {formData.statusid === 1 ? t('create.active') : t('create.inactive')}
-            </span>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-300 dark:border-neutral-600">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-neutral-800">
+                  <th className="border border-gray-300 dark:border-neutral-600 px-2 py-2 text-center font-mono text-sm font-bold w-16">
+                    STATUS
+                  </th>
+                  <th className="border border-gray-300 dark:border-neutral-600 px-4 py-2 text-left font-mono text-sm font-bold">
+                    CANAL
+                  </th>
+                  <th className="border border-gray-300 dark:border-neutral-600 px-4 py-2 text-left font-mono text-sm font-bold">
+                    IDENTIFICADOR
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {canalesGrid.map((row) => (
+                  <tr key={row.canalid} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
+                    <td className="border border-gray-300 dark:border-neutral-600 px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={row.status}
+                        onChange={(e) => handleStatusChange(row.canalid, e.target.checked)}
+                        className="w-5 h-5 text-orange-600 bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-2 focus:ring-orange-500"
+                      />
+                    </td>
+                    <td className="border border-gray-300 dark:border-neutral-600 px-4 py-2 font-mono text-sm text-gray-900 dark:text-white">
+                      {row.canal}
+                    </td>
+                    <td className="border border-gray-300 dark:border-neutral-600 px-4 py-2">
+                      <input
+                        type="text"
+                        value={row.identificador}
+                        onChange={(e) => handleIdentificadorChange(row.canalid, e.target.value)}
+                        disabled={!row.status}
+                        className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                          !row.status ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        placeholder={
+                          row.canal.toLowerCase() === 'whatsapp' 
+                            ? 'Ej: +51960599778' 
+                            : row.canal.toLowerCase() === 'correo'
+                            ? 'Ej: usuario@demo.com'
+                            : 'Identificador del canal'
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
     </div>
   );
 };
-

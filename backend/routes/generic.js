@@ -142,6 +142,17 @@ router.get('/:table/columns', async (req, res) => {
 router.post('/:table', async (req, res) => {
   const { table } = req.params;
   
+  logger.debug(`[POST /:table] Request recibido:`, {
+    table,
+    hasAuthHeader: !!req.headers.authorization,
+    authHeaderPrefix: req.headers.authorization?.substring(0, 20),
+    hasUser: !!req.user,
+    userId: req.user?.id,
+    userEmail: req.user?.email,
+    hasSupabase: !!req.supabase,
+    dataKeys: Object.keys(req.body || {})
+  });
+  
   if (!isTableAllowed(table)) {
     return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
@@ -217,14 +228,85 @@ router.post('/:table', async (req, res) => {
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
+    // IMPORTANTE: Asegurarse de que el cliente tenga el token configurado correctamente
+    let userSupabase = req.supabase || baseSupabase;
+    
+    // Si hay token pero req.supabase no está configurado correctamente, recrear el cliente
+    if (req.user && req.headers.authorization && !req.supabase) {
+      const token = req.headers.authorization.replace('Bearer ', '');
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+      
+      userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      });
+    }
+    
+    logger.debug(`[POST /:table] Usando cliente Supabase:`, {
+      table,
+      hasReqSupabase: !!req.supabase,
+      hasBaseSupabase: !!baseSupabase,
+      usingUserSupabase: req.supabase ? 'req.supabase' : (req.user ? 'recreado con token' : 'baseSupabase'),
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      hasToken: !!req.headers.authorization,
+      dataToInsertKeys: Object.keys(dataToInsert)
+    });
+    
+    // Para usuario_canal, verificar auth.uid() antes de insertar
+    if (table === 'usuario_canal' && req.user) {
+      try {
+        // Verificar qué devuelve auth.uid() en una query simple
+        const { data: authUidCheck, error: authUidError } = await userSupabase
+          .rpc('fn_obtener_auth_uid')
+          .single();
+        
+        if (authUidError) {
+          // Si la función no existe, intentar con una query directa
+          const { data: directCheck } = await userSupabase
+            .from('usuario')
+            .select('usuarioid')
+            .limit(1);
+          
+          logger.debug(`[POST /:table] Verificación auth.uid():`, {
+            directQueryWorks: !!directCheck,
+            expectedUserId: req.user.id
+          });
+        } else {
+          logger.debug(`[POST /:table] auth.uid() desde función:`, {
+            authUid: authUidCheck,
+            expectedUserId: req.user.id
+          });
+        }
+      } catch (checkError) {
+        logger.warn(`[POST /:table] Error verificando auth.uid() (continuando):`, checkError.message);
+      }
+    }
+    
+    // IMPORTANTE: Para RLS, el token debe estar presente. Verificar que el cliente tenga el token
     const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(dataToInsert).select();
     
     if (error) {
-      logger.error(`❌ Error en INSERT ${table}:`, error.message);
-      if (error.code) logger.error(`   Código: ${error.code}`);
-      if (error.detail) logger.error(`   Detalle: ${error.detail}`);
-      if (error.hint) logger.error(`   Hint: ${error.hint}`);
+      logger.error(`❌ ❌ Error en INSERT ${table}:`, error.message);
+      if (error.code) logger.error(`❌    Código: ${error.code}`);
+      if (error.detail) logger.error(`❌    Detalle: ${error.detail}`);
+      if (error.hint) logger.error(`❌    Hint: ${error.hint}`);
+      logger.error(`❌ [POST /:table] Contexto del error:`, {
+        table,
+        hasReqSupabase: !!req.supabase,
+        hasUser: !!req.user,
+        userId: req.user?.id,
+        usingUserSupabase: req.supabase ? 'req.supabase' : 'baseSupabase'
+      });
       throw error;
     }
     
