@@ -309,6 +309,28 @@ export const useInsertForm = ({
       return Object.keys(errors).length === 0
     }
 
+    // Caso especial para usuario_canal: validar usuarioid y que haya canales seleccionados
+    if (tableName === 'usuario_canal') {
+      if (!formData.usuarioid) {
+        errors.usuarioid = 'Usuario es requerido'
+      }
+      
+      // Verificar que haya al menos un canal seleccionado
+      const canalesGrid = formData._canalesGrid as Array<{canalid: number, canal: string, status: boolean, identificador: string}> | undefined
+      if (!canalesGrid || canalesGrid.filter(c => c.status === true).length === 0) {
+        errors._canalesGrid = 'Debe seleccionar al menos un canal activo'
+      } else {
+        // Verificar que todos los canales seleccionados tengan identificador
+        const canalesSinIdentificador = canalesGrid.filter(c => c.status === true && !c.identificador?.trim())
+        if (canalesSinIdentificador.length > 0) {
+          errors._canalesGrid = 'Todos los canales seleccionados deben tener un identificador'
+        }
+      }
+      
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
     // Validación normal para otras tablas
     config.fields.forEach(field => {
       // No validar campos ocultos o de solo lectura
@@ -316,6 +338,11 @@ export const useInsertForm = ({
       
       // Para usuarioperfil, no validar perfilid y statusid ya que se manejan de forma especial
       if (tableName === 'usuarioperfil' && (field.name === 'perfilid' || field.name === 'statusid')) {
+        return
+      }
+      
+      // Para usuario_canal, no validar canalid, identificador y statusid ya que se manejan de forma especial
+      if (tableName === 'usuario_canal' && (field.name === 'canalid' || field.name === 'identificador' || field.name === 'statusid')) {
         return
       }
       
@@ -481,6 +508,55 @@ export const useInsertForm = ({
         
         setIsSubmitting(false);
         setMessage?.({ type: 'success', text: `Se asignaron ${results.length} perfil(es) al usuario correctamente` });
+        resetForm();
+        return;
+      }
+
+      // Caso especial para tabla 'usuario_canal': crear múltiples registros (uno por cada canal seleccionado)
+      if (tableName === 'usuario_canal' && formData._canalesGrid) {
+        const canalesGrid = formData._canalesGrid as Array<{canalid: number, canal: string, status: boolean, identificador: string}>;
+        const usuarioid = formData.usuarioid;
+        
+        if (!usuarioid) {
+          throw new Error('Debe seleccionar un usuario');
+        }
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        const now = new Date().toISOString();
+        
+        // Crear un array de registros, uno por cada canal con status = true
+        const recordsToInsert = canalesGrid
+          .filter(c => c.status === true && c.identificador?.trim())
+          .map(c => ({
+            usuarioid: usuarioid,
+            canalid: c.canalid,
+            identificador: c.identificador.trim(),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          }));
+        
+        if (recordsToInsert.length === 0) {
+          throw new Error('Debe seleccionar al menos un canal activo con identificador');
+        }
+        
+        // Insertar múltiples registros
+        const results = [];
+        for (const record of recordsToInsert) {
+          const result = await insertRow(record);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al insertar canal ${record.canalid}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} canal(es) al usuario correctamente` });
         resetForm();
         return;
       }
