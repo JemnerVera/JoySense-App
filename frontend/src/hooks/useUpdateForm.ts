@@ -59,6 +59,18 @@ export const useUpdateForm = ({
       // Guardar datos originales para validación
       setOriginalData({ ...selectedRow });
       
+      // Para tabla 'usuarioperfil', cargar perfiles existentes del usuario
+      if (tableName === 'usuarioperfil' && selectedRow._allRows) {
+        // Cargar datos con los perfiles existentes
+        setFormData({
+          ...selectedRow,
+          _allRows: selectedRow._allRows, // Guardar todas las filas originales
+          usuarioid: selectedRow.usuarioid
+        });
+        setFormErrors({});
+        return;
+      }
+      
       // Para tabla 'usuario', cargar empresas asociadas
       if (tableName === 'usuario' && selectedRow.usuarioid) {
         const loadUsuarioEmpresas = async () => {
@@ -303,6 +315,121 @@ export const useUpdateForm = ({
       // También incluir is_default_empresa si existe
       if (tableName === 'usuario' && formData.is_default_empresa !== undefined) {
         dataToUpdate.is_default_empresa = formData.is_default_empresa;
+      }
+
+      // Caso especial para usuarioperfil: actualizar múltiples registros
+      if (tableName === 'usuarioperfil' && formData._perfilesStatus && formData._allRows) {
+        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+        const existingRows = formData._allRows as any[];
+        const usuarioid = formData.usuarioid;
+        
+        if (!usuarioid) {
+          throw new Error('Debe seleccionar un usuario');
+        }
+
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = user?.user_metadata?.usuarioid || 1;
+        const now = new Date().toISOString();
+
+        // Comparar perfiles seleccionados con existentes
+        const perfilesSeleccionados = Object.entries(perfilesStatus)
+          .filter(([_, statusid]) => statusid === 1)
+          .map(([perfilid, _]) => parseInt(perfilid));
+
+        const perfilesExistentes = existingRows.map((r: any) => r.perfilid);
+
+        // Perfiles a eliminar (estaban activos pero ahora están inactivos)
+        const perfilesAEliminar = existingRows
+          .filter((r: any) => r.statusid === 1 && !perfilesSeleccionados.includes(r.perfilid))
+          .map((r: any) => ({ usuarioid: r.usuarioid, perfilid: r.perfilid }));
+
+        // Perfiles a agregar (nuevos o que estaban inactivos)
+        const perfilesAAgregar = perfilesSeleccionados
+          .filter(perfilid => !existingRows.some((r: any) => r.perfilid === perfilid && r.statusid === 1))
+          .map(perfilid => ({
+            usuarioid: usuarioid,
+            perfilid: perfilid,
+            statusid: 1,
+            usercreatedid: currentUserId,
+            datecreated: now,
+            usermodifiedid: currentUserId,
+            datemodified: now
+          }));
+
+        // Perfiles a actualizar (cambiar statusid)
+        const perfilesAActualizar = existingRows
+          .filter((r: any) => {
+            const nuevoStatus = perfilesStatus[r.perfilid];
+            return nuevoStatus !== undefined && nuevoStatus !== r.statusid;
+          })
+          .map((r: any) => ({
+            pk: { usuarioid: r.usuarioid, perfilid: r.perfilid },
+            data: {
+              statusid: perfilesStatus[r.perfilid],
+              usermodifiedid: currentUserId,
+              datemodified: now
+            }
+          }));
+
+        // Ejecutar operaciones
+        const results = [];
+        
+        // Eliminar perfiles
+        for (const pk of perfilesAEliminar) {
+          try {
+            // Para eliminar, necesitamos usar DELETE, pero como no tenemos deleteRow aquí,
+            // actualizamos statusid a 0
+            const result = await updateRow(pk, {
+              statusid: 0,
+              usermodifiedid: currentUserId,
+              datemodified: now
+            });
+            if (result.success) {
+              results.push({ type: 'delete', success: true });
+            }
+          } catch (error: any) {
+            results.push({ type: 'delete', success: false, error: error.message });
+          }
+        }
+
+        // Agregar perfiles nuevos
+        for (const record of perfilesAAgregar) {
+          try {
+            // Usar JoySenseService para insertar nuevos perfiles
+            const { JoySenseService } = await import('../services/backend-api');
+            await JoySenseService.insertTableRow('usuarioperfil', record);
+            results.push({ type: 'insert', success: true });
+          } catch (error: any) {
+            results.push({ type: 'insert', success: false, error: error.message });
+          }
+        }
+
+        // Actualizar perfiles existentes
+        for (const { pk, data } of perfilesAActualizar) {
+          try {
+            const result = await updateRow(pk, data);
+            if (result.success) {
+              results.push({ type: 'update', success: true });
+            } else {
+              results.push({ type: 'update', success: false, error: result.error });
+            }
+          } catch (error: any) {
+            results.push({ type: 'update', success: false, error: error.message });
+          }
+        }
+
+        const successCount = results.filter(r => r.success).length;
+        const errorCount = results.filter(r => !r.success).length;
+
+        if (errorCount === 0) {
+          onSuccess?.();
+        } else {
+          setFormErrors({ 
+            general: `Se actualizaron ${successCount} perfil(es), pero hubo ${errorCount} error(es). Los perfiles nuevos deben agregarse en modo CREATE.` 
+          });
+        }
+        
+        return;
       }
 
       const pk = getPrimaryKeyValue(selectedRow);

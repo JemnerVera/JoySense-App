@@ -819,7 +819,7 @@ router.get('/search', async (req, res) => {
 // que permite acceder a usuario_empresa sin permisos directos
 router.get('/search-with-empresas', async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, excludeWithProfiles } = req.query;
     
     if (!query || query.length < 2) {
       return res.json([]);
@@ -830,10 +830,12 @@ router.get('/search-with-empresas', async (req, res) => {
     
     // Usar la función de Supabase que permite acceder a usuario_empresa
     // IMPORTANTE: Especificar schema joysense explícitamente
+    // excludeWithProfiles: si es 'true', excluir usuarios que ya tienen perfiles asignados
     const { data, error } = await userSupabase
       .schema('joysense')
       .rpc('fn_obtener_usuarios_con_empresas', {
-        p_query: query
+        p_query: query,
+        p_exclude_with_profiles: excludeWithProfiles === 'true' || excludeWithProfiles === true
       });
     
     if (error) {

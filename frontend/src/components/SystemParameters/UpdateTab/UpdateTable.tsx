@@ -180,6 +180,18 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
               {/* Header vacío para checkbox */}
             </th>
             {columns.map(col => {
+              // Columna especial "_perfiles" para usuarioperfil
+              if (col.columnName === '_perfiles') {
+                return (
+                  <th 
+                    key={col.columnName} 
+                    className="px-6 py-3 font-mono tracking-wider text-gray-700 dark:text-gray-300"
+                  >
+                    PERFIL
+                  </th>
+                );
+              }
+              
               const displayName = getColumnDisplayNameTranslated(col.columnName, t);
               return displayName ? (
                 <th 
@@ -338,6 +350,22 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                               )}
                             </button>
                           </div>
+                        </td>
+                      );
+                    }
+
+                    // Columna especial "_perfiles" para usuarioperfil
+                    if (col.columnName === '_perfiles') {
+                      // Debug: verificar el valor de _perfiles
+                      if (tableName === 'usuarioperfil' && row.usuarioid === 77) {
+                        console.log('[UpdateTable] Renderizando columna _perfiles para usuario 77:', {
+                          _perfiles: row._perfiles,
+                          row: row
+                        });
+                      }
+                      return (
+                        <td key={col.columnName} className="px-6 py-4 text-xs font-mono text-gray-900 dark:text-white">
+                          {row._perfiles || 'Sin perfiles'}
                         </td>
                       );
                     }

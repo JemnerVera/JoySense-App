@@ -857,13 +857,14 @@ export class JoySenseService {
   /**
    * Busca usuarios con sus empresas para mostrar "firstname lastname - empresa"
    */
-  static async searchUsersWithEmpresas(query: string): Promise<any[]> {
+  static async searchUsersWithEmpresas(query: string, excludeWithProfiles: boolean = false): Promise<any[]> {
     try {
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      const data = await backendAPI.get(`/usuarios/search-with-empresas?query=${encodeURIComponent(query)}`, token || undefined);
+      const excludeParam = excludeWithProfiles ? '&excludeWithProfiles=true' : '';
+      const data = await backendAPI.get(`/usuarios/search-with-empresas?query=${encodeURIComponent(query)}${excludeParam}`, token || undefined);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in searchUsersWithEmpresas:', error);
