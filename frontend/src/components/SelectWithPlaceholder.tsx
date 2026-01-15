@@ -11,6 +11,7 @@ interface SelectWithPlaceholderProps {
   dropdownWidth?: string;
   renderSelectedLabel?: (label: string) => React.ReactNode;
   allowExternalChange?: boolean; // Permite cambios externos sin revertir
+  menuPlacement?: 'auto' | 'top' | 'bottom'; // Controla la posición del dropdown
 }
 
 const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
@@ -23,7 +24,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   themeColor = 'purple',
   dropdownWidth,
   renderSelectedLabel,
-  allowExternalChange = false
+  allowExternalChange = false,
+  menuPlacement = 'auto'
 }) => {
   // Construir className por defecto con el themeColor
   const defaultClassName = `w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 ${themeColor === 'orange' ? 'focus:ring-orange-500 focus:border-orange-500' : 'focus:ring-purple-500 focus:border-purple-500'} text-gray-800 dark:text-white text-base font-mono`;
@@ -187,7 +189,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       </div>
       
       {isOpen && !disabled && (
-        <div className={`absolute z-[9999] ${dropdownWidth || 'w-full'} mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-64 overflow-hidden`}>
+        <div className={`absolute z-[9999] ${dropdownWidth || 'w-full'} ${menuPlacement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-64 overflow-hidden`}>
           {/* Barra de búsqueda */}
           <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
             <input

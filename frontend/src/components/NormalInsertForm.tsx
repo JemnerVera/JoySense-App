@@ -16,6 +16,7 @@ import { UsuarioPerfilFormFields } from './forms/table-specific/UsuarioPerfilFor
 import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
+import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
@@ -216,7 +217,19 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // Función para renderizar campos con layout específico
   const renderSpecialLayoutFields = (): React.ReactNode[] => {
     
-    if (selectedTable === 'umbral') {
+    if (selectedTable === 'regla') {
+      return [<ReglaFormFields
+        key="regla"
+        selectedTable={selectedTable}
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        isFieldRequired={isFieldRequired}
+      />];
+    } else if (selectedTable === 'umbral') {
       return [<AlertasFormFields
         key="alertas"
         selectedTable={selectedTable}
@@ -765,7 +778,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />

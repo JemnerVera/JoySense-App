@@ -293,6 +293,30 @@ export const useInsertForm = ({
 
     const errors: Record<string, string> = {}
 
+    // Caso especial para regla: validar que haya al menos un umbral
+    if (tableName === 'regla') {
+      const reglaUmbralRows = formData._reglaUmbralRows as Array<{
+        umbralid: number | null;
+        operador_logico: 'AND' | 'OR';
+        agrupador_inicio: boolean;
+        agrupador_fin: boolean;
+        orden: number;
+      }> | undefined;
+      
+      if (!reglaUmbralRows || reglaUmbralRows.length === 0) {
+        errors._reglaUmbralRows = 'Debe agregar al menos un umbral'
+      } else {
+        // Validar que todos los umbrales tengan umbralid
+        const invalidRows = reglaUmbralRows.filter(row => !row.umbralid);
+        if (invalidRows.length > 0) {
+          errors._reglaUmbralRows = 'Todos los umbrales deben tener un umbral seleccionado'
+        }
+      }
+      
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
     // Caso especial para usuarioperfil: validar usuarioid y que haya perfiles seleccionados
     if (tableName === 'usuarioperfil') {
       if (!formData.usuarioid) {
@@ -512,6 +536,90 @@ export const useInsertForm = ({
         return;
       }
 
+      // Caso especial para tabla 'regla': crear regla y regla_umbral simultáneamente
+      if (tableName === 'regla' && formData._reglaUmbralRows) {
+        const reglaUmbralRows = formData._reglaUmbralRows as Array<{
+          umbralid: number | null;
+          operador_logico: 'AND' | 'OR';
+          agrupador_inicio: boolean;
+          agrupador_fin: boolean;
+          orden: number;
+        }>;
+        
+        // Validar que haya al menos un umbral
+        if (!reglaUmbralRows || reglaUmbralRows.length === 0) {
+          throw new Error('Debe agregar al menos un umbral');
+        }
+        
+        // Validar que todos los umbrales tengan umbralid
+        const invalidRows = reglaUmbralRows.filter(row => !row.umbralid);
+        if (invalidRows.length > 0) {
+          throw new Error('Todos los umbrales deben tener un umbral seleccionado');
+        }
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        
+        // Preparar datos de REGLA (sin _reglaUmbralRows)
+        const reglaData: Record<string, any> = { ...formData };
+        delete reglaData._reglaUmbralRows;
+        
+        // Asegurar que statusid = 1 por defecto (siempre activo)
+        if (!reglaData.statusid) {
+          reglaData.statusid = 1;
+        }
+        
+        // Agregar campos de auditoría a REGLA
+        reglaData.usercreatedid = userId;
+        reglaData.usermodifiedid = userId;
+        
+        // Insertar REGLA primero
+        setIsSubmitting(true);
+        const reglaResult = await insertRow(reglaData);
+        
+        if (!reglaResult.success || !reglaResult.data) {
+          throw new Error(`Error al insertar regla: ${reglaResult.error || 'Error desconocido'}`);
+        }
+        
+        // Obtener reglaid del resultado
+        const reglaid = reglaResult.data?.reglaid || reglaResult.data?.data?.reglaid;
+        if (!reglaid) {
+          throw new Error('No se pudo obtener el ID de la regla creada');
+        }
+        
+        // Insertar cada REGLA_UMBRAL
+        const results = [reglaResult];
+        for (const row of reglaUmbralRows) {
+          if (!row.umbralid) continue; // Ya validado arriba
+          
+          const reglaUmbralRecord: Record<string, any> = {
+            reglaid: reglaid,
+            umbralid: row.umbralid,
+            operador_logico: row.operador_logico,
+            agrupador_inicio: row.agrupador_inicio,
+            agrupador_fin: row.agrupador_fin,
+            orden: row.orden,
+            statusid: 1,
+            usercreatedid: userId,
+            usermodifiedid: userId
+          };
+          
+          const result = await JoySenseService.insertTableRow('regla_umbral', reglaUmbralRecord);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al insertar umbral ${row.umbralid}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Regla creada con ${results.length - 1} umbral(es) correctamente` });
+        resetForm();
+        onSuccess?.();
+        return;
+      }
+      
       // Caso especial para tabla 'usuario_canal': crear múltiples registros (uno por cada canal seleccionado)
       if (tableName === 'usuario_canal' && formData._canalesGrid) {
         const canalesGrid = formData._canalesGrid as Array<{canalid: number, canal: string, status: boolean, identificador: string}>;

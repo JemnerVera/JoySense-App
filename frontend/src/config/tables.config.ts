@@ -488,6 +488,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'ventana', label: 'Ventana', type: 'text', required: true, defaultValue: '00:10:00', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },
       { name: 'cooldown', label: 'Cooldown', type: 'text', required: true, defaultValue: '1 day', validation: { pattern: /^(\d{2}:\d{2}:\d{2}|\d+\s+(day|days|hour|hours|minute|minutes|second|seconds))$/i } },
       { name: 'criticidadid', label: 'Criticidad', type: 'select', required: true, foreignKey: { table: 'criticidad', valueField: 'criticidadid', labelField: 'criticidad' } },
+      { name: 'requiere_escalamiento', label: 'ESCALA?', type: 'boolean', defaultValue: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
