@@ -184,8 +184,8 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
       );
     }
 
-    // Campo localizacionid - select
-    if (col.columnName === 'localizacionid') {
+    // Campo metricaid - select (opcional, nullable)
+    if (col.columnName === 'metricaid') {
       const options = getUniqueOptionsForField(col.columnName);
       return (
         <div key={col.columnName} className="mb-4">
@@ -195,7 +195,7 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
             {displayName.toUpperCase()}{isRequired ? '*' : ''}
           </label>
           <SelectWithPlaceholder
-            value={value}
+            value={value || ''}
             onChange={(newValue) => {
               if (isEnabled) {
                 const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
@@ -205,6 +205,7 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
             options={options}
             placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
             disabled={!isEnabled}
+            className={isEnabled ? '' : 'opacity-50 cursor-not-allowed'}
           />
         </div>
       );
@@ -215,21 +216,21 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
   };
 
   // Función para renderizar campos de umbral según schema actual
-  // Schema: umbralid, localizacionid, umbral, minimo, maximo, estandar, operador, inversion, statusid
+  // Schema: umbralid, umbral, metricaid, minimo, maximo, estandar, operador, inversion, statusid
   const renderUmbralFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    // Fila 1: Localización, Nombre Umbral, Operador
-    const localizacionField = visibleColumns.find(c => c.columnName === 'localizacionid');
+    // Fila 1: Nombre Umbral, Métrica, Operador
     const umbralField = visibleColumns.find(c => c.columnName === 'umbral');
+    const metricaField = visibleColumns.find(c => c.columnName === 'metricaid');
     const operadorField = visibleColumns.find(c => c.columnName === 'operador');
     
-    if (localizacionField || umbralField || operadorField) {
+    if (umbralField || metricaField || operadorField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {localizacionField && renderUmbralField(localizacionField, true)}
-          {umbralField && renderUmbralField(umbralField, !!formData.localizacionid)}
-          {operadorField && renderUmbralField(operadorField, !!formData.localizacionid)}
+          {umbralField && renderUmbralField(umbralField, true)}
+          {metricaField && renderUmbralField(metricaField, true)}
+          {operadorField && renderUmbralField(operadorField, !!formData.umbral)}
         </div>
       );
     }
@@ -242,9 +243,9 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
     if (minimoField || maximoField || estandarField) {
       result.push(
         <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {minimoField && renderUmbralField(minimoField, !!formData.localizacionid)}
-          {maximoField && renderUmbralField(maximoField, !!formData.localizacionid)}
-          {estandarField && renderUmbralField(estandarField, !!formData.localizacionid)}
+          {minimoField && renderUmbralField(minimoField, !!formData.umbral)}
+          {maximoField && renderUmbralField(maximoField, !!formData.umbral)}
+          {estandarField && renderUmbralField(estandarField, !!formData.umbral)}
         </div>
       );
     }
@@ -257,8 +258,8 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
       result.push(
         <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div></div> {/* Espacio vacío */}
-          {inversionField && renderUmbralField(inversionField, !!formData.localizacionid)}
-          {statusField && renderUmbralField(statusField, !!formData.localizacionid)}
+          {inversionField && renderUmbralField(inversionField, !!formData.umbral)}
+          {statusField && renderUmbralField(statusField, !!formData.umbral)}
         </div>
       );
     }

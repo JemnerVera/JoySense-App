@@ -520,6 +520,177 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
     );
   }
 
+  // Layout específico para umbral
+  if (tableName === 'umbral') {
+    // Layout específico para umbral:
+    // Fila 1: Nombre Umbral, Métrica, Operador
+    // Fila 2: Mínimo, Máximo, Estándar
+    // Fila 3: (vacío), Inversión, Status
+    const umbralidField = config?.fields.find(f => f.name === 'umbralid');
+    const umbralField = config?.fields.find(f => f.name === 'umbral');
+    const metricaField = config?.fields.find(f => f.name === 'metricaid');
+    const operadorField = config?.fields.find(f => f.name === 'operador');
+    const minimoField = config?.fields.find(f => f.name === 'minimo');
+    const maximoField = config?.fields.find(f => f.name === 'maximo');
+    const estandarField = config?.fields.find(f => f.name === 'estandar');
+    const inversionField = config?.fields.find(f => f.name === 'inversion');
+    const statusField = config?.fields.find(f => f.name === 'statusid');
+    
+    const renderField = (field: any) => {
+      const isPrimaryKey = primaryKeyFields.includes(field.name);
+      const isStatusId = field.name === 'statusid';
+      const displayName = getColumnDisplayNameHelper(field.name);
+      const isConstrained = isConstrainedField(field.name);
+      const fieldValue = formData[field.name];
+      const isRequired = field.required && !isPrimaryKey;
+      
+      return (
+        <div key={field.name} className="mb-4">
+          {!isStatusId && (
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+              {isPrimaryKey && <span className="mr-1">🔒</span>}
+              {displayName.toUpperCase()}{isRequired ? '*' : ''}
+            </label>
+          )}
+
+          {isPrimaryKey ? (
+            <input
+              type="text"
+              value={formData[field.name] ?? ''}
+              readOnly
+              className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
+            />
+          ) : field.name === 'operador' ? (
+            // Campo operador - select con opciones válidas
+            (() => {
+              const operadorOptions = [
+                { value: '', label: '' },
+                { value: 'FUERA', label: 'FUERA' },
+                { value: 'OUTSIDE', label: 'OUTSIDE' },
+                { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
+                { value: 'RANGO', label: 'RANGO' },
+                { value: 'DENTRO', label: 'DENTRO' },
+                { value: 'INSIDE', label: 'INSIDE' },
+                { value: 'IN_RANGE', label: 'IN_RANGE' },
+                { value: 'BETWEEN', label: 'BETWEEN' },
+                { value: '>', label: '>' },
+                { value: '>=', label: '>=' },
+                { value: '<', label: '<' },
+                { value: '<=', label: '<=' }
+              ];
+              
+              return (
+                <SelectWithPlaceholder
+                  value={formData[field.name] || ''}
+                  onChange={(newValue) => updateFormField(field.name, newValue || '')}
+                  options={operadorOptions}
+                  placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+                />
+              );
+            })()
+          ) : field.name === 'inversion' ? (
+            // Campo inversion - checkbox (sin label adicional, ya se muestra arriba)
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={fieldValue === true || fieldValue === 1}
+                onChange={(e) => updateFormField(field.name, e.target.checked)}
+                className={`w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2`}
+              />
+              <span className="text-white font-mono tracking-wider">
+                {fieldValue === true || fieldValue === 1 ? 'Sí' : 'No'}
+              </span>
+            </div>
+          ) : field.foreignKey ? (
+            <SelectWithPlaceholder
+              value={formData[field.name] != null ? formData[field.name] : null}
+              onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+              options={(() => {
+                const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                return relatedTableData.map((item: any) => {
+                  const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                    ? field.foreignKey!.labelField 
+                    : [field.foreignKey!.labelField];
+                  const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                  return {
+                    value: item[field.foreignKey!.valueField],
+                    label: label || `ID: ${item[field.foreignKey!.valueField]}`
+                  };
+                });
+              })()}
+              placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+            />
+          ) : isStatusId ? (
+            <div>
+              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+                {displayName.toUpperCase()}{field.required ? '*' : ''}
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={formData[field.name] === 1 || formData[field.name] === true}
+                  onChange={(e) => updateFormField(field.name, e.target.checked ? 1 : 0)}
+                  className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2`}
+                />
+                <span className="text-white font-mono tracking-wider">
+                  {formData[field.name] === 1 || formData[field.name] === true ? t('create.active') : t('create.inactive')}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <input
+              type={field.type === 'number' ? 'number' : 'text'}
+              value={formData[field.name] ?? ''}
+              onChange={(e) => updateFormField(
+                field.name, 
+                field.type === 'number' ? (e.target.value ? Number(e.target.value) : null) : e.target.value
+              )}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600 ${
+                formErrors[field.name] ? 'border-red-500' : ''
+              }`}
+              placeholder={`${displayName.toUpperCase()}`}
+            />
+          )}
+
+          {formErrors[field.name] && (
+            <p className="text-red-500 text-xs mt-1">{formErrors[field.name]}</p>
+          )}
+        </div>
+      );
+    };
+    
+    return (
+      <div className="space-y-4">
+        {/* Fila 1: Nombre Umbral, Métrica, Operador */}
+        {(umbralField || metricaField || operadorField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {umbralField && renderField(umbralField)}
+            {metricaField && renderField(metricaField)}
+            {operadorField && renderField(operadorField)}
+          </div>
+        )}
+
+        {/* Fila 2: Mínimo, Máximo, Estándar */}
+        {(minimoField || maximoField || estandarField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {minimoField && renderField(minimoField)}
+            {maximoField && renderField(maximoField)}
+            {estandarField && renderField(estandarField)}
+          </div>
+        )}
+
+        {/* Fila 3: (vacío), Inversión, Status */}
+        {(inversionField || statusField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div></div> {/* Espacio vacío */}
+            {inversionField && renderField(inversionField)}
+            {statusField && renderField(statusField)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -531,19 +702,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           const isConstrained = isConstrainedField(field.name);
           const fieldValue = formData[field.name];
           const isRequired = field.required && !isPrimaryKey;
-          
-          // Debug para campos específicos
-          if (field.name === 'empresaid' || field.name === 'fundo' || field.name === 'fundoabrev' || field.name === 'paisid') {
-            logger.debug(`[NormalUpdateForm] Campo ${field.name}:`, {
-              fieldValue,
-              formDataValue: formData[field.name],
-              isConstrained,
-              hasForeignKey: !!field.foreignKey,
-              foreignKeyTable: field.foreignKey?.table,
-              relatedDataExists: field.foreignKey ? !!(relatedData as any)[field.foreignKey.table] : false,
-              relatedDataLength: field.foreignKey ? ((relatedData as any)[field.foreignKey.table] || []).length : 0
-            });
-          }
 
           return (
             <div key={field.name} className="mb-4">
