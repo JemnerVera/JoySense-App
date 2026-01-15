@@ -205,7 +205,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         loadTableData(selectedTable)
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica'].includes(selectedTable)) {
+      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica', 'umbral'].includes(selectedTable)) {
         loadRelatedTablesData()
       }
     },

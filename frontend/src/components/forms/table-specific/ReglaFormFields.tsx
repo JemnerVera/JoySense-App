@@ -3,7 +3,7 @@
 // ============================================================================
 // Componente específico para renderizar formulario combinado REGLA + REGLA_UMBRAL
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import SelectWithPlaceholder from '../../SelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
@@ -63,60 +63,126 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
   }, []);
 
   // Sincronizar reglaUmbralRows con formData cuando cambia
-  useEffect(() => {
+  // Usamos useLayoutEffect para sincronizar ANTES del render, asegurando que formData esté actualizado
+  // cuando se ejecute la validación
+  useLayoutEffect(() => {
     if (isInitialized.current) {
-      setFormData({
-        ...formData,
-        _reglaUmbralRows: reglaUmbralRows
+      // Usar función de actualización para asegurar que tenemos el formData más reciente
+      setFormData((prevFormData: Record<string, any>) => {
+        // Solo actualizar si realmente cambió para evitar loops infinitos
+        const currentRows = prevFormData._reglaUmbralRows;
+        const currentRowsStr = JSON.stringify(currentRows);
+        const newRowsStr = JSON.stringify(reglaUmbralRows);
+        
+        if (currentRowsStr !== newRowsStr) {
+          return {
+            ...prevFormData,
+            _reglaUmbralRows: reglaUmbralRows
+          };
+        }
+        return prevFormData;
       });
     }
-  }, [reglaUmbralRows]);
+  }, [reglaUmbralRows, setFormData]);
+  
+  // También sincronizar con useEffect como fallback (por si useLayoutEffect no es suficiente)
+  useEffect(() => {
+    if (isInitialized.current) {
+      setFormData((prevFormData: Record<string, any>) => {
+        const currentRows = prevFormData._reglaUmbralRows;
+        const currentRowsStr = JSON.stringify(currentRows);
+        const newRowsStr = JSON.stringify(reglaUmbralRows);
+        
+        if (currentRowsStr !== newRowsStr) {
+          return {
+            ...prevFormData,
+            _reglaUmbralRows: reglaUmbralRows
+          };
+        }
+        return prevFormData;
+      });
+    }
+  }, [reglaUmbralRows, setFormData]);
 
   // Función para agregar una nueva fila de umbral
   const handleAddUmbralRow = () => {
     const newOrden = Math.max(...reglaUmbralRows.map(r => r.orden), 0) + 1;
-    setReglaUmbralRows([
-      ...reglaUmbralRows,
-      {
-        umbralid: null,
-        operador_logico: 'AND',
-        agrupador_inicio: false,
-        agrupador_fin: false,
-        orden: newOrden,
-        tempId: `temp-${Date.now()}-${Math.random()}`
-      }
-    ]);
+    const newRow: ReglaUmbralRow = {
+      umbralid: null,
+      operador_logico: 'AND' as 'AND' | 'OR',
+      agrupador_inicio: false,
+      agrupador_fin: false,
+      orden: newOrden,
+      tempId: `temp-${Date.now()}-${Math.random()}`
+    };
+    const newRows: ReglaUmbralRow[] = [...reglaUmbralRows, newRow];
+    setReglaUmbralRows(newRows);
+    // Sincronizar inmediatamente con formData
+    setFormData((prevFormData: Record<string, any>) => ({
+      ...prevFormData,
+      _reglaUmbralRows: newRows
+    }));
   };
 
   // Función para eliminar una fila de umbral (solo si hay más de 1)
   const handleRemoveUmbralRow = (tempId: string) => {
     if (reglaUmbralRows.length > 1) {
-      setReglaUmbralRows(reglaUmbralRows.filter(r => r.tempId !== tempId));
+      const newRows = reglaUmbralRows.filter(r => r.tempId !== tempId);
+      setReglaUmbralRows(newRows);
+      // Sincronizar inmediatamente con formData
+      setFormData((prevFormData: Record<string, any>) => ({
+        ...prevFormData,
+        _reglaUmbralRows: newRows
+      }));
     }
   };
 
   // Función para actualizar una fila de umbral
   const handleUpdateUmbralRow = (tempId: string, field: keyof ReglaUmbralRow, value: any) => {
-    setReglaUmbralRows(prevRows => prevRows.map(row => {
-      if (row.tempId === tempId) {
-        return { ...row, [field]: value };
-      }
-      return row;
-    }));
+    setReglaUmbralRows(prevRows => {
+      const updatedRows = prevRows.map(row => {
+        if (row.tempId === tempId) {
+          return { ...row, [field]: value };
+        }
+        return row;
+      });
+      // Sincronizar inmediatamente con formData
+      setFormData((prevFormData: Record<string, any>) => ({
+        ...prevFormData,
+        _reglaUmbralRows: updatedRows
+      }));
+      return updatedRows;
+    });
   };
 
   // Función para actualizar múltiples campos de una fila de umbral
   const handleUpdateUmbralRowMultiple = (tempId: string, updates: Partial<ReglaUmbralRow>) => {
-    setReglaUmbralRows(prevRows => prevRows.map(row => {
-      if (row.tempId === tempId) {
-        return { ...row, ...updates };
-      }
-      return row;
-    }));
+    setReglaUmbralRows(prevRows => {
+      const updatedRows = prevRows.map(row => {
+        if (row.tempId === tempId) {
+          return { ...row, ...updates };
+        }
+        return row;
+      });
+      // Sincronizar inmediatamente con formData
+      setFormData((prevFormData: Record<string, any>) => ({
+        ...prevFormData,
+        _reglaUmbralRows: updatedRows
+      }));
+      return updatedRows;
+    });
   };
 
-  // Obtener opciones de umbrales
-  const umbralOptions = getUniqueOptionsForField('umbralid');
+  // Obtener opciones de umbrales - usar useMemo para actualizar cuando cambien los datos
+  const umbralOptions = React.useMemo(() => {
+    try {
+      const options = getUniqueOptionsForField('umbralid');
+      return options;
+    } catch (error) {
+      console.error('[ReglaFormFields] Error al obtener opciones de umbrales:', error);
+      return [];
+    }
+  }, [getUniqueOptionsForField]);
 
   // Renderizar campo de REGLA
   const renderReglaField = (col: any): React.ReactNode => {
@@ -359,7 +425,8 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       options={umbralOptions}
                       placeholder="SELECCIONAR UMBRAL"
                       themeColor="orange"
-                      menuPlacement="top"
+                      menuPlacement="auto"
+                      dropdownWidth="w-full min-w-[300px]"
                     />
                   </td>
 

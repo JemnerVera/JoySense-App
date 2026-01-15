@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SelectWithPlaceholderProps {
   value: string | number | null;
@@ -33,7 +34,10 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [actualPlacement, setActualPlacement] = useState<'top' | 'bottom'>(menuPlacement === 'top' ? 'top' : 'bottom');
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const previousValueRef = useRef<string | number | null>(value);
   const isUserInteractionRef = useRef(false);
   const isRevertingRef = useRef(false); // Flag para evitar loops al revertir cambios
@@ -97,10 +101,42 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, placeholder, isOpen]);
 
-  // Cerrar dropdown cuando se hace clic fuera
+  // Calcular posición del dropdown usando posicionamiento fijo (fixed) para que esté por encima del contenedor
   useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const estimatedDropdownHeight = 400;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Siempre abrir hacia abajo, pero usar posicionamiento fixed
+      setActualPlacement('bottom');
+      
+      // Calcular posición usando getBoundingClientRect (coordenadas relativas al viewport)
+      setDropdownPosition({
+        top: rect.bottom + 4, // 4px de margen
+        left: rect.left,
+        width: rect.width
+      });
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [isOpen]);
+
+  // Cerrar dropdown cuando se hace clic fuera (funciona con portal)
+  useEffect(() => {
+    if (!isOpen) return;
+    
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const portalElement = document.querySelector('[data-portal-dropdown]') as HTMLElement;
+      
+      // Verificar si el click fue fuera del trigger y del portal
+      if (
+        triggerRef.current && 
+        !triggerRef.current.contains(target) &&
+        (!portalElement || !portalElement.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -109,7 +145,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isOpen]);
 
   const handleOptionClick = (optionValue: any, event?: React.MouseEvent) => {
     // CRÍTICO: Verificar que esto es realmente un click del usuario
@@ -177,6 +213,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div
+        ref={triggerRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`${finalClassName} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center`}
       >
@@ -188,10 +225,27 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
         <span className={`text-gray-500 dark:text-neutral-400 ${value && value !== 0 ? 'opacity-0' : ''}`}>▼</span>
       </div>
       
-      {isOpen && !disabled && (
-        <div className={`absolute z-[9999] ${dropdownWidth || 'w-full'} ${menuPlacement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-64 overflow-hidden`}>
+      {isOpen && !disabled && dropdownPosition && createPortal(
+        <div 
+          data-portal-dropdown
+          className={`fixed z-[9999] ${dropdownWidth || 'w-full'} bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg`}
+          style={{ 
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            maxHeight: '500px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'fixed'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Barra de búsqueda */}
-          <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
+          <div 
+            className="p-2 border-b border-gray-300 dark:border-neutral-700"
+            style={{ flexShrink: 0 }}
+          >
             <input
               type="text"
               placeholder="Buscar..."
@@ -202,23 +256,52 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
             />
           </div>
           
-          {/* Lista de opciones */}
-          <div className={`max-h-32 overflow-y-auto custom-scrollbar ${themeColor === 'orange' ? 'theme-orange' : ''}`}>
+          {/* Lista de opciones - SOLUCIÓN ROBUSTA */}
+          <div 
+            className={`custom-scrollbar ${themeColor === 'orange' ? 'theme-orange' : ''}`}
+            style={{ 
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              maxHeight: '400px',
+              minHeight: '120px',
+              flex: '1 1 0',
+              display: 'block',
+              position: 'relative',
+              width: '100%',
+              height: 'auto'
+            }}
+          >
             {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
+              filteredOptions.map((option, index) => {
                 // Si el label contiene " - ", mostrar código en naranja y país en blanco
                 const labelParts = option.label.includes(' - ') 
                   ? option.label.split(' - ')
                   : null;
                 return (
                   <div
-                    key={option.value}
-                    onClick={() => handleOptionClick(option.value)}
+                    key={`option-${option.value}-${index}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOptionClick(option.value);
+                    }}
                     className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
                       selectedOption?.value === option.value 
                         ? (themeColor === 'orange' ? 'bg-orange-600' : 'bg-purple-600')
                         : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
                     }`}
+                    style={{ 
+                      minHeight: '40px',
+                      height: 'auto',
+                      display: 'block',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      position: 'static',
+                      visibility: 'visible',
+                      opacity: 1,
+                      zIndex: 'auto',
+                      margin: 0,
+                      padding: '8px 12px'
+                    }}
                   >
                     {labelParts ? (
                       <span>
@@ -226,7 +309,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                         <span> - {labelParts[1]}</span>
                       </span>
                     ) : (
-                      option.label.toUpperCase()
+                      <span style={{ width: '100%', display: 'block' }}>{option.label.toUpperCase()}</span>
                     )}
                   </div>
                 );
@@ -237,7 +320,8 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

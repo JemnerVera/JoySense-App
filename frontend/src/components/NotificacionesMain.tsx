@@ -178,7 +178,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         loadTableData(selectedTable)
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica'].includes(selectedTable)) {
+      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica', 'umbral'].includes(selectedTable)) {
         loadRelatedTablesData()
       }
     },
@@ -270,26 +270,30 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   }, [columns, selectedTable]);
 
   // Adaptar relatedData para StatusTab
-  const relatedDataForStatus = useMemo(() => ({
-    paisesData: paisesData || [],
-    empresasData: empresasData || [],
-    fundosData: fundosData || [],
-    ubicacionesData: ubicacionesData || [],
-    localizacionesData: localizacionesData || [],
-    entidadesData: entidadesData || [],
-    nodosData: nodosData || [],
-    tiposData: tiposData || [],
-    metricasData: metricasData || [],
-    criticidadesData: criticidadesData || [],
-    perfilesData: perfilesData || [],
-    umbralesData: umbralesData || [],
-    userData: userData || [],
-    sensorsData: sensorsData || [],
-    codigotelefonosData: codigotelefonosData || [],
-    canalesData: canalesData || [],
-    contactosData: contactosData || [],
-    correosData: correosData || []
-  }), [
+  const relatedDataForStatus = useMemo(() => {
+    const result = {
+      paisesData: paisesData || [],
+      empresasData: empresasData || [],
+      fundosData: fundosData || [],
+      ubicacionesData: ubicacionesData || [],
+      localizacionesData: localizacionesData || [],
+      entidadesData: entidadesData || [],
+      nodosData: nodosData || [],
+      tiposData: tiposData || [],
+      metricasData: metricasData || [],
+      criticidadesData: criticidadesData || [],
+      perfilesData: perfilesData || [],
+      umbralesData: umbralesData || [],
+      userData: userData || [],
+      sensorsData: sensorsData || [],
+      codigotelefonosData: codigotelefonosData || [],
+      canalesData: canalesData || [],
+      contactosData: contactosData || [],
+      correosData: correosData || []
+    };
+    
+    return result;
+  }, [
     paisesData,
     empresasData,
     fundosData,
@@ -307,7 +311,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     codigotelefonosData,
     canalesData,
     contactosData,
-    correosData
+    correosData,
+    selectedTable
   ]);
 
   // Ref para poder usar handleSubTabChangeInternal en useSystemParametersSync (debe declararse antes)
@@ -488,11 +493,13 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
 
   // Helper para getUniqueOptionsForField (para InsertTab y UpdateTab)
   const getUniqueOptionsForFieldHelper = useCallback((columnName: string) => {
-    return getUniqueOptionsForField({
+    const result = getUniqueOptionsForField({
       columnName,
       selectedTable,
       relatedDataForStatus
     });
+    
+    return result;
   }, [selectedTable, relatedDataForStatus]);
 
   // Handlers de navegación

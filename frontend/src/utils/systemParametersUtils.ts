@@ -674,17 +674,16 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'umbral':
-      if (!data.localizacionid) {
-        return 'Localización es obligatoria';
-      }
-      if (!data.criticidadid) {
-        return 'Criticidad es obligatoria';
-      }
+      // Umbral NO tiene localizacionid ni criticidadid según el schema
+      // Campos requeridos: umbral (nombre), minimo, maximo, operador
       if (!data.umbral || data.umbral.trim() === '') {
         return 'Nombre del umbral es obligatorio';
       }
-      if (data.minimo === undefined || data.maximo === undefined) {
-        return 'Mínimo y máximo son obligatorios';
+      if (data.minimo === undefined || data.minimo === null || data.minimo === '') {
+        return 'Mínimo es obligatorio';
+      }
+      if (data.maximo === undefined || data.maximo === null || data.maximo === '') {
+        return 'Máximo es obligatorio';
       }
       if (!data.operador || data.operador.trim() === '') {
         return 'Operador es obligatorio';

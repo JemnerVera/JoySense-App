@@ -228,34 +228,15 @@ router.post('/:table', async (req, res) => {
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    // IMPORTANTE: Asegurarse de que el cliente tenga el token configurado correctamente
-    let userSupabase = req.supabase || baseSupabase;
-    
-    // Si hay token pero req.supabase no está configurado correctamente, recrear el cliente
-    if (req.user && req.headers.authorization && !req.supabase) {
-      const token = req.headers.authorization.replace('Bearer ', '');
-      const { createClient } = require('@supabase/supabase-js');
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-      
-      userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        },
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        }
-      });
-    }
+    // IMPORTANTE: Confiar en req.supabase del middleware optionalAuth (igual que GET)
+    // El middleware ya configura correctamente el cliente con el token para RLS
+    const userSupabase = req.supabase || baseSupabase;
     
     logger.debug(`[POST /:table] Usando cliente Supabase:`, {
       table,
       hasReqSupabase: !!req.supabase,
       hasBaseSupabase: !!baseSupabase,
-      usingUserSupabase: req.supabase ? 'req.supabase' : (req.user ? 'recreado con token' : 'baseSupabase'),
+      usingUserSupabase: req.supabase ? 'req.supabase (del middleware)' : 'baseSupabase',
       hasUser: !!req.user,
       userId: req.user?.id,
       hasToken: !!req.headers.authorization,
