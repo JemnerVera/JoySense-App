@@ -153,6 +153,9 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     criticidadesData,
     perfilesData,
     umbralesData,
+    reglasData,
+    origenesData,
+    fuentesData,
     sensorsData,
     codigotelefonosData,
     canalesData,
@@ -269,27 +272,40 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     return filtered;
   }, [columns, selectedTable]);
 
+  // Cargar datos relacionados al montar el componente (una sola vez)
+  useEffect(() => {
+    loadRelatedTablesData();
+  }, [loadRelatedTablesData]);
+
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => {
+    // Asegurar que reglasData, origenesData y fuentesData siempre sean arrays
+    const safeReglasData = Array.isArray(reglasData) ? reglasData : [];
+    const safeOrigenesData = Array.isArray(origenesData) ? origenesData : [];
+    const safeFuentesData = Array.isArray(fuentesData) ? fuentesData : [];
+    
     const result = {
-      paisesData: paisesData || [],
-      empresasData: empresasData || [],
-      fundosData: fundosData || [],
-      ubicacionesData: ubicacionesData || [],
-      localizacionesData: localizacionesData || [],
-      entidadesData: entidadesData || [],
-      nodosData: nodosData || [],
-      tiposData: tiposData || [],
-      metricasData: metricasData || [],
-      criticidadesData: criticidadesData || [],
-      perfilesData: perfilesData || [],
-      umbralesData: umbralesData || [],
-      userData: userData || [],
-      sensorsData: sensorsData || [],
-      codigotelefonosData: codigotelefonosData || [],
-      canalesData: canalesData || [],
-      contactosData: contactosData || [],
-      correosData: correosData || []
+      paisesData: Array.isArray(paisesData) ? paisesData : [],
+      empresasData: Array.isArray(empresasData) ? empresasData : [],
+      fundosData: Array.isArray(fundosData) ? fundosData : [],
+      ubicacionesData: Array.isArray(ubicacionesData) ? ubicacionesData : [],
+      localizacionesData: Array.isArray(localizacionesData) ? localizacionesData : [],
+      entidadesData: Array.isArray(entidadesData) ? entidadesData : [],
+      nodosData: Array.isArray(nodosData) ? nodosData : [],
+      tiposData: Array.isArray(tiposData) ? tiposData : [],
+      metricasData: Array.isArray(metricasData) ? metricasData : [],
+      criticidadesData: Array.isArray(criticidadesData) ? criticidadesData : [],
+      perfilesData: Array.isArray(perfilesData) ? perfilesData : [],
+      umbralesData: Array.isArray(umbralesData) ? umbralesData : [],
+      reglasData: safeReglasData,
+      origenesData: safeOrigenesData,
+      fuentesData: safeFuentesData,
+      canalesData: Array.isArray(canalesData) ? canalesData : [],
+      userData: Array.isArray(userData) ? userData : [],
+      sensorsData: Array.isArray(sensorsData) ? sensorsData : [],
+      codigotelefonosData: Array.isArray(codigotelefonosData) ? codigotelefonosData : [],
+      contactosData: Array.isArray(contactosData) ? contactosData : [],
+      correosData: Array.isArray(correosData) ? correosData : []
     };
     
     return result;
@@ -306,13 +322,16 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     criticidadesData,
     perfilesData,
     umbralesData,
+    reglasData,
+    origenesData,
+    fuentesData,
+    canalesData,
     userData,
     sensorsData,
     codigotelefonosData,
-    canalesData,
     contactosData,
     correosData,
-    selectedTable
+    selectedTable // Agregado para que el useMemo se recalcule cuando cambia selectedTable
   ]);
 
   // Ref para poder usar handleSubTabChangeInternal en useSystemParametersSync (debe declararse antes)
@@ -793,11 +812,17 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   }, [handleSubTabChangeInternal]);
 
   const handleRowSelect = useCallback((row: any) => {
+    console.log('[NotificacionesMain] handleRowSelect llamado:', {
+      tableName: selectedTable,
+      row: row,
+      hasRow: !!row,
+      rowKeys: row ? Object.keys(row) : []
+    });
     setSelectedRow(row);
     // NO llamar setFormData aquí - useUpdateForm maneja su propio estado interno
     // setFormData(row); // <-- ESTO CONTAMINABA EL ESTADO COMPARTIDO
     handleSubTabChangeInternal('update');
-  }, [handleSubTabChangeInternal]); // Usar handleSubTabChangeInternal en lugar de llamar directamente
+  }, [handleSubTabChangeInternal, selectedTable]); // Usar handleSubTabChangeInternal en lugar de llamar directamente
 
 
   // ============================================================================
@@ -1119,19 +1144,31 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 themeColor={themeColor}
               />
             )}
-            {activeSubTab === 'update' && (
-              <UpdateTab
-                tableName={selectedTable}
-                tableData={tableState.data}
-                columns={uniqueColumns}
-                relatedData={relatedDataForStatus}
-                config={config}
-                updateRow={updateRow}
-                getPrimaryKeyValue={getPrimaryKeyValue}
-                user={user}
-                loading={tableState.loading}
-                themeColor={themeColor}
-                visibleColumns={uniqueColumns.filter(col => {
+            {activeSubTab === 'update' && (() => {
+              console.log('[NotificacionesMain] Renderizando UpdateTab:', {
+                activeSubTab,
+                selectedTable,
+                hasConfig: !!config,
+                configAllowUpdate: config?.allowUpdate,
+                hasSelectedRow: !!selectedRow,
+                selectedRowKeys: selectedRow ? Object.keys(selectedRow) : [],
+                tableDataCount: tableState.data?.length || 0,
+                columnsCount: uniqueColumns.length
+              });
+              return (
+                <UpdateTab
+                  tableName={selectedTable}
+                  tableData={tableState.data}
+                  columns={uniqueColumns}
+                  relatedData={relatedDataForStatus}
+                  config={config}
+                  updateRow={updateRow}
+                  getPrimaryKeyValue={getPrimaryKeyValue}
+                  user={user}
+                  loading={tableState.loading}
+                  themeColor={themeColor}
+                  initialSelectedRow={selectedRow}
+                  visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
                   const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
                   
@@ -1168,7 +1205,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                   }
                 }}
               />
-            )}
+              );
+            })()}
             {activeSubTab === 'massive' && (
               <MassiveOperationsRenderer
                 selectedTable={selectedTable}

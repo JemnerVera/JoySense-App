@@ -256,19 +256,17 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
             />
           </div>
           
-          {/* Lista de opciones - SOLUCIÓN ROBUSTA */}
+          {/* Lista de opciones - Ajustar al contenido */}
           <div 
             className={`custom-scrollbar ${themeColor === 'orange' ? 'theme-orange' : ''}`}
             style={{ 
-              overflowY: 'auto',
+              overflowY: filteredOptions.length > 8 ? 'auto' : 'visible',
               overflowX: 'hidden',
-              maxHeight: '400px',
-              minHeight: '120px',
-              flex: '1 1 0',
+              maxHeight: filteredOptions.length > 8 ? '400px' : 'none',
+              flex: '0 0 auto',
               display: 'block',
               position: 'relative',
-              width: '100%',
-              height: 'auto'
+              width: '100%'
             }}
           >
             {filteredOptions.length > 0 ? (

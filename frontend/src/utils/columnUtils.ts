@@ -28,7 +28,7 @@ export const filterColumnsByTable = (
     'metrica': ['metrica', 'unidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'tipo': ['tipo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'localizacion', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'sensor': ['sensorid', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'sensor': ['sensor', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metricasensor': ['sensorid', 'metricaid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'umbral': ['umbralid', 'umbral', 'metricaid', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'regla': ['nombre', 'prioridad', 'ventana', 'cooldown', 'criticidadid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -37,7 +37,7 @@ export const filterColumnsByTable = (
     'regla_objeto': ['reglaid', 'origenid', 'fuenteid', 'objetoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'audit_log_umbral': ['auditid', 'umbralid', 'old_minimo', 'new_minimo', 'old_maximo', 'new_maximo', 'accion', 'usermodifiedid', 'datemodified'],
     'criticidad': ['criticidad', 'escalamiento', 'escalon', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'usuario': ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'usuario': ['firstname', 'lastname', 'login', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'perfil': ['perfil', 'nivel', 'jefeid', 'is_admin_global', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'usuarioperfil': ['usuarioid', 'perfilid', '_perfiles', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'mensaje': ['uuid_origen', 'contactoid', 'tipo_mensajeid', 'mensaje', 'fecha', 'statusid', 'usercreatedid', 'datecreated'],
@@ -52,10 +52,10 @@ export const filterColumnsByTable = (
     'medicion': ['medicionid', 'localizacionid', 'fecha', 'medicion', 'usercreatedid', 'datecreated'],
     'alerta_regla': ['uuid_alerta_reglaid', 'reglaid', 'localizacionid', 'medicionid', 'fecha', 'valor', 'statusid', 'usercreatedid', 'datecreated'],
     'alerta_regla_consolidado': ['uuid_consolidadoid', 'reglaid', 'localizacionid', 'fechainicio', 'fechaultimo', 'fechaultimacorrida', 'ultimovalor', 'contador', 'nivelnotificado', 'ultimoenvio', 'ultimoescalamiento', 'nivelescalamiento', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'correo': ['correoid', 'usuarioid', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'correo': ['usuarioid', 'correo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'codigotelefono': ['codigotelefonoid', 'codigotelefono', 'paistelefono', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'tipo_mensaje': ['tipo_mensajeid', 'tipo_mensaje', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'usuario_canal': ['usuario_canalid', 'usuarioid', 'canalid', 'identificador', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'usuario_canal': ['usuarioid', 'canalid', 'identificador', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
   };
 
   // Caso especial para nodo - ya no tiene campos obsoletos (deveui, appeui, appkey, atpin)
@@ -74,7 +74,7 @@ export const filterColumnsByTable = (
       );
     } else {
       return columns.filter(col => 
-        ['usuarioid', 'celular', 'codigotelefonoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
+        ['usuarioid', 'celular', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
       );
     }
   }
@@ -290,9 +290,9 @@ export const reorderColumns = (
     reordered.push(...otherColumns.filter(col => ['estandar'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['inversion'].includes(col.columnName)));
   } else if (tableName === 'usuario') {
-    reordered.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['firstname'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['lastname'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['login'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['email'].includes(col.columnName)));
   } else {
     // Para otras tablas, mantener orden original

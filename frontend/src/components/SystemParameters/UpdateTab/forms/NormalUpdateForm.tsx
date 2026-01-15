@@ -193,7 +193,8 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   };
 
   // Layout específico para localizacion
-  if (tableName === 'localizacion') {
+  const currentTableName = tableName || config?.name || '';
+  if (currentTableName === 'localizacion') {
     // Layout específico para localizacion:
     // Fila 1: NODO, ID DEL SENSOR, METRICA
     // Fila 2: LOCALIZACION, LATITUD, LONGITUD
@@ -225,8 +226,45 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           )}
 
           {isPrimaryKey ? (
-            // Si es clave primaria pero también foreign key, mostrar el nombre
-            field.foreignKey ? (
+            // Si es clave primaria compuesta (múltiples campos) Y tiene foreignKey, permitir selección
+            // Si es clave primaria simple, mostrar como readonly
+            (primaryKeyFields.length > 1 && field.foreignKey) ? (
+              // Clave primaria compuesta con foreignKey: renderizar como combobox editable
+              <SelectWithPlaceholder
+                value={formData[field.name] || ''}
+                onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                options={(() => {
+                  const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                  // Caso especial para sensorid en metricasensor: mostrar "sensor - tipo"
+                  if (field.name === 'sensorid' && (config?.name === 'metricasensor' || tableName === 'metricasensor')) {
+                    const tiposData = (relatedData as any)?.tiposData || [];
+                    const tiposMap = new Map(tiposData.map((t: any) => [t.tipoid, t.tipo]));
+                    return relatedTableData.map((item: any) => {
+                      const sensorName = item.sensor || '';
+                      const tipoName = tiposMap.get(item.tipoid) || '';
+                      const label = tipoName ? `${sensorName} - ${tipoName}` : sensorName || String(item[field.foreignKey!.valueField]);
+                      return {
+                        value: String(item[field.foreignKey!.valueField]),
+                        label: label
+                      };
+                    });
+                  }
+                  // Caso general: usar labelField
+                  return relatedTableData.map((item: any) => {
+                    const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                      ? field.foreignKey!.labelField 
+                      : [field.foreignKey!.labelField];
+                    const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                    return {
+                      value: String(item[field.foreignKey!.valueField]),
+                      label: label || String(item[field.foreignKey!.valueField])
+                    };
+                  });
+                })()}
+                placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+              />
+            ) : field.foreignKey ? (
+              // Clave primaria simple con foreignKey: mostrar nombre como readonly
               (() => {
                 const relatedTableData = getRelatedTableData(field.foreignKey!.table);
                 const fieldValue = formData[field.name];
@@ -250,6 +288,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                 );
               })()
             ) : (
+              // Clave primaria simple sin foreignKey: mostrar ID como readonly
               <input
                 type="text"
                 value={formData[field.name] ?? ''}
@@ -713,8 +752,45 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
               )}
 
               {isPrimaryKey ? (
-                // Si es clave primaria pero también foreign key, mostrar el nombre
-                field.foreignKey ? (
+                // Si es clave primaria compuesta (múltiples campos) Y tiene foreignKey, permitir selección
+                // Si es clave primaria simple, mostrar como readonly
+                (primaryKeyFields.length > 1 && field.foreignKey) ? (
+                  // Clave primaria compuesta con foreignKey: renderizar como combobox editable
+                  <SelectWithPlaceholder
+                    value={formData[field.name] || ''}
+                    onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                    options={(() => {
+                      const relatedTableData = getRelatedTableData(field.foreignKey!.table);
+                      // Caso especial para sensorid en metricasensor: mostrar "sensor - tipo"
+                      if (field.name === 'sensorid' && (config?.name === 'metricasensor' || tableName === 'metricasensor')) {
+                        const tiposData = (relatedData as any)?.tiposData || [];
+                        const tiposMap = new Map(tiposData.map((t: any) => [t.tipoid, t.tipo]));
+                        return relatedTableData.map((item: any) => {
+                          const sensorName = item.sensor || '';
+                          const tipoName = tiposMap.get(item.tipoid) || '';
+                          const label = tipoName ? `${sensorName} - ${tipoName}` : sensorName || String(item[field.foreignKey!.valueField]);
+                          return {
+                            value: String(item[field.foreignKey!.valueField]),
+                            label: label
+                          };
+                        });
+                      }
+                      // Caso general: usar labelField
+                      return relatedTableData.map((item: any) => {
+                        const labelFields = Array.isArray(field.foreignKey!.labelField) 
+                          ? field.foreignKey!.labelField 
+                          : [field.foreignKey!.labelField];
+                        const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
+                        return {
+                          value: String(item[field.foreignKey!.valueField]),
+                          label: label || String(item[field.foreignKey!.valueField])
+                        };
+                      });
+                    })()}
+                    placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+                  />
+                ) : field.foreignKey ? (
+                  // Clave primaria simple con foreignKey: mostrar nombre como readonly
                   (() => {
                     const relatedTableData = getRelatedTableData(field.foreignKey!.table);
                     const fieldValue = formData[field.name];
@@ -738,6 +814,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                     );
                   })()
                 ) : (
+                  // Clave primaria simple sin foreignKey: mostrar ID como readonly
                   <input
                     type="text"
                     value={formData[field.name] ?? ''}

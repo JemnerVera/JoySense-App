@@ -573,12 +573,12 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-40`}>
           <ReglaOperationsSidebar
             selectedTable={selectedTable || ''}
-            activeSubTab={((activeSubTab === 'status' || activeSubTab === 'insert') ? activeSubTab : 'status') as 'status' | 'insert'}
+            activeSubTab={((activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update') ? activeSubTab : 'status') as 'status' | 'insert' | 'update'}
             onSubTabChange={(onSubTabChange ? ((subTab: 'status' | 'insert' | 'update' | 'massive') => {
-              if (subTab === 'status' || subTab === 'insert') {
+              if (subTab === 'status' || subTab === 'insert' || subTab === 'update') {
                 onSubTabChange(subTab);
               }
-            }) : (() => {})) as ((subTab: 'status' | 'insert') => void)}
+            }) : (() => {})) as ((subTab: 'status' | 'insert' | 'update') => void)}
             isExpanded={aux4Expanded}
             onMouseEnter={handleAux4MouseEnter}
             onMouseLeave={handleAux4MouseLeave}

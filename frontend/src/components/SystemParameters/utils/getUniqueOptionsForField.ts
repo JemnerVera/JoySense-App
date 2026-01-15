@@ -53,6 +53,28 @@ export const getUniqueOptionsForField = ({
       });
   }
 
+  // Caso especial para sensorid en tabla metricasensor: mostrar "sensor - tipo"
+  if (columnName === 'sensorid' && selectedTable === 'metricasensor') {
+    const sensors = relatedDataForStatus.sensorsData || [];
+    const tipos = relatedDataForStatus.tiposData || [];
+    
+    // Crear un mapa de tipos por tipoid para búsqueda rápida
+    const tiposMap = new Map(tipos.map((t: any) => [t.tipoid, t.tipo]));
+    
+    return sensors
+      .filter((s: any) => s.statusid === 1) // Solo sensores activos
+      .map((item: any) => {
+        const sensorName = item.sensor || '';
+        const tipoName = tiposMap.get(item.tipoid) || '';
+        const label = tipoName ? `${sensorName} - ${tipoName}` : sensorName || `ID: ${item.sensorid}`;
+        return {
+          value: item.sensorid,
+          label: label
+        };
+      })
+      .sort((a: any, b: any) => a.label.localeCompare(b.label));
+  }
+
   // Caso especial para usuarioid en tabla contacto: solo mostrar usuarios que NO tienen contacto
   if (columnName === 'usuarioid' && selectedTable === 'contacto') {
     const usuarios = relatedDataForStatus.userData || [];
@@ -93,7 +115,7 @@ export const getUniqueOptionsForField = ({
     'criticidadid': { table: 'criticidadesData', key: 'criticidadid', label: 'criticidad' },
     'perfilid': { table: 'perfilesData', key: 'perfilid', label: 'perfil' },
     'usuarioid': { table: 'userData', key: 'usuarioid', label: ['firstname', 'lastname'] },
-    'sensorid': { table: 'sensorsData', key: 'sensorid', label: 'sensorid' },
+    'sensorid': { table: 'sensorsData', key: 'sensorid', label: 'sensor' },
     'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: 'paistelefono' },
     'canalid': { table: 'canalesData', key: 'canalid', label: 'canal' },
     'umbralid': { table: 'umbralesData', key: 'umbralid', label: 'umbral' }
@@ -129,12 +151,8 @@ export const getUniqueOptionsForField = ({
       // Para otros campos con múltiples labels, concatenar con espacio
       label = mapping.label.map(l => item[l]).filter(Boolean).join(' ');
     } else {
-      // Para sensorid, mostrar solo el ID ya que no hay campo descriptivo
-      if (mapping.label === 'sensorid') {
-        label = `ID: ${item[mapping.key]}`;
-      } else {
-        label = item[mapping.label] || '';
-      }
+      // Para sensorid, mostrar el nombre del sensor
+      label = item[mapping.label] || '';
     }
     
     const value = item[mapping.key];

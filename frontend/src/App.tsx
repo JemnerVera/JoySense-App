@@ -360,10 +360,10 @@ const AppContentInternal: React.FC = () => {
       const afterRegla = activeTab.replace('configuracion-notificaciones-regla-', '');
       const parts = afterRegla.split('-');
       
-      // Si hay una segunda parte, es la operación (status, insert)
+      // Si hay una segunda parte, es la operación (status, insert, update)
       if (parts.length > 1) {
         const reglaOperation = parts[1];
-        if (reglaOperation && (reglaOperation === 'status' || reglaOperation === 'insert')) {
+        if (reglaOperation && (reglaOperation === 'status' || reglaOperation === 'insert' || reglaOperation === 'update')) {
           // Usar forma funcional para evitar loops - no incluir activeSubTab en dependencias
           setActiveSubTab((currentSubTab) => {
             if (currentSubTab !== reglaOperation) {
