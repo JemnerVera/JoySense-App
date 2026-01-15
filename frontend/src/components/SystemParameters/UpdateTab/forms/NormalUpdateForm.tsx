@@ -11,6 +11,7 @@ import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
 import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
 import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
+import { UsuarioPerfilFormFields } from '../../../forms/table-specific/UsuarioPerfilFormFields';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 import { logger } from '../../../../utils/logger';
@@ -467,6 +468,31 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         getThemeColor={getThemeColor}
         empresasData={(relatedData as any)?.empresasData || []}
         getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+      />
+    );
+  }
+
+  // Caso especial para usuarioperfil: usar UsuarioPerfilFormFields
+  if (tableName === 'usuarioperfil') {
+    // Obtener perfiles existentes del formData (vienen de selectedRow._allRows)
+    const existingPerfiles = (formData as any)?._allRows || [];
+    
+    return (
+      <UsuarioPerfilFormFields
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={(data: Record<string, any>) => {
+          // Actualizar cada campo individualmente
+          Object.keys(data).forEach(key => {
+            updateFormField(key, data[key]);
+          });
+        }}
+        renderField={() => null} // No renderizar campos adicionales
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+        perfilesData={(relatedData as any)?.perfilesData || []}
+        existingPerfiles={existingPerfiles}
+        isUpdateMode={true}
       />
     );
   }

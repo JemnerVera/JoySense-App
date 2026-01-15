@@ -3,7 +3,7 @@
  * Orquesta tabla de selección y formulario modal
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useUpdateTable } from '../../../hooks/useUpdateTable';
 import { useUpdateForm } from '../../../hooks/useUpdateForm';
 import { SearchBarWithCounter } from '../SearchBarWithCounter';
@@ -62,7 +62,125 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   const [originalFormData, setOriginalFormData] = useState<Record<string, any>>({});
   const { showModal } = useModal();
 
-  // Hook para tabla
+  // Para usuarioperfil: agrupar datos por usuarioid y agregar columna "Perfil"
+  const processedTableData = useMemo(() => {
+    if (tableName !== 'usuarioperfil') {
+      return tableData;
+    }
+
+    console.log('[UpdateTab] Procesando datos de usuarioperfil:', {
+      tableDataLength: tableData.length,
+      tableData: tableData
+    });
+
+    // Agrupar por usuarioid
+    const groupedByUser: Record<number, any[]> = {};
+    tableData.forEach((row: any) => {
+      const usuarioid = row.usuarioid;
+      if (!groupedByUser[usuarioid]) {
+        groupedByUser[usuarioid] = [];
+      }
+      groupedByUser[usuarioid].push(row);
+    });
+    
+    console.log('[UpdateTab] Datos agrupados por usuario:', groupedByUser);
+
+    // Crear filas agrupadas con información de perfiles
+    const perfilesData = relatedData.perfilesData || [];
+    const groupedRows = Object.entries(groupedByUser).map(([usuarioid, rows]) => {
+      // Ordenar rows por fecha más reciente primero (usar datemodified o datecreated)
+      const sortedRows = [...rows].sort((a, b) => {
+        const dateA = new Date(a.datemodified || a.datecreated || 0).getTime();
+        const dateB = new Date(b.datemodified || b.datecreated || 0).getTime();
+        return dateB - dateA; // Más reciente primero
+      });
+      
+      const firstRow = sortedRows[0]; // Usar la fila más reciente como base
+      
+      // Mostrar TODOS los perfiles (activos e inactivos), ordenados por perfilid
+      // Eliminar duplicados por perfilid (por si hay múltiples registros del mismo perfil)
+      const perfilesUnicos = new Map<number, { perfilid: number; nombre: string; statusid: number }>();
+      rows.forEach((r: any) => {
+        // Asegurarse de que perfilid existe
+        if (r.perfilid !== undefined && r.perfilid !== null) {
+          if (!perfilesUnicos.has(r.perfilid)) {
+            const perfil = perfilesData.find((p: any) => p.perfilid === r.perfilid);
+            perfilesUnicos.set(r.perfilid, {
+              perfilid: r.perfilid,
+              nombre: perfil ? perfil.perfil : `Perfil ${r.perfilid}`,
+              statusid: r.statusid
+            });
+          }
+        }
+      });
+      
+      const todosLosPerfiles = Array.from(perfilesUnicos.values())
+        .sort((a, b) => a.perfilid - b.perfilid) // Ordenar por perfilid
+        .map(p => p.nombre)
+        .join(', ');
+
+      console.log('[UpdateTab] Perfiles para usuario', usuarioid, ':', {
+        rowsCount: rows.length,
+        perfilesUnicos: Array.from(perfilesUnicos.values()),
+        todosLosPerfiles,
+        rows: rows.map((r: any) => ({ perfilid: r.perfilid, statusid: r.statusid }))
+      });
+
+      return {
+        ...firstRow,
+        _grouped: true,
+        _perfiles: todosLosPerfiles || 'Sin perfiles',
+        _allRows: sortedRows // Guardar todas las filas originales ordenadas para el modal
+      };
+    });
+    
+    // Ordenar las filas agrupadas por fecha más reciente primero
+    const sortedGroupedRows = groupedRows.sort((a, b) => {
+      const dateA = new Date(a.datemodified || a.datecreated || 0).getTime();
+      const dateB = new Date(b.datemodified || b.datecreated || 0).getTime();
+      return dateB - dateA; // Más reciente primero
+    });
+    
+    console.log('[UpdateTab] Filas procesadas finales:', sortedGroupedRows);
+    
+    return sortedGroupedRows;
+  }, [tableData, tableName, relatedData.perfilesData]);
+
+  // Para usuarioperfil: agregar columna "Perfil"
+  const processedColumns = useMemo(() => {
+    if (tableName !== 'usuarioperfil') {
+      return columns;
+    }
+
+    // Agregar columna "Perfil" después de "Usuario"
+    const usuarioidIndex = columns.findIndex((col: ColumnInfo) => col.columnName === 'usuarioid');
+    const newColumns = [...columns];
+    
+    if (usuarioidIndex >= 0) {
+      newColumns.splice(usuarioidIndex + 1, 0, {
+        columnName: '_perfiles',
+        dataType: 'text',
+        isNullable: true,
+        isIdentity: false,
+        isPrimaryKey: false,
+        columnDefault: null
+      } as ColumnInfo);
+    } else {
+      // Si no se encuentra usuarioid, agregar al principio
+      newColumns.unshift({
+        columnName: '_perfiles',
+        dataType: 'text',
+        isNullable: true,
+        isIdentity: false,
+        isPrimaryKey: false,
+        columnDefault: null
+      } as ColumnInfo);
+    }
+
+    return newColumns;
+  }, [columns, tableName]);
+
+  // Hook para tabla - usar datos procesados para usuarioperfil
   const {
     filteredData,
     paginatedData,
@@ -75,8 +193,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     hasSearched
   } = useUpdateTable({
     tableName,
-    tableData,
-    columns,
+    tableData: processedTableData,
+    columns: processedColumns,
     relatedData,
     itemsPerPage: 10
   });
@@ -122,10 +240,16 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     setOriginalFormData({}); // Limpiar datos originales al cambiar de fila
   };
 
-  // Cuando se hace click en "Actualizar", mostrar el formulario
+  // Cuando se hace click en "Actualizar", mostrar el formulario o modal
   const handleGoToUpdate = () => {
     if (selectedRow) {
-      setShowForm(true);
+      // Para usuarioperfil, usar modal especial
+      if (tableName === 'usuarioperfil') {
+        // El modal se manejará en el componente de actualización
+        setShowForm(true);
+      } else {
+        setShowForm(true);
+      }
     }
   };
 

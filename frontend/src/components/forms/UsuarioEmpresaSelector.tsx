@@ -21,6 +21,7 @@ interface UsuarioEmpresaSelectorProps {
   placeholder?: string;
   isRequired?: boolean;
   themeColor?: string;
+  excludeWithProfiles?: boolean; // Si es true, excluir usuarios que ya tienen perfiles asignados
 }
 
 export const UsuarioEmpresaSelector: React.FC<UsuarioEmpresaSelectorProps> = ({
@@ -28,7 +29,8 @@ export const UsuarioEmpresaSelector: React.FC<UsuarioEmpresaSelectorProps> = ({
   onChange,
   placeholder = 'BUSQUEDA',
   isRequired = false,
-  themeColor = 'orange'
+  themeColor = 'orange',
+  excludeWithProfiles = false
 }) => {
   const { t } = useLanguage();
   
@@ -51,7 +53,7 @@ export const UsuarioEmpresaSelector: React.FC<UsuarioEmpresaSelectorProps> = ({
     }
 
     try {
-      const results = await JoySenseService.searchUsersWithEmpresas(inputValue);
+      const results = await JoySenseService.searchUsersWithEmpresas(inputValue, excludeWithProfiles);
       return results.map((u: any) => ({
         value: u.usuarioid,
         label: u.label || `${u.firstname || ''} ${u.lastname || ''} - ${u.empresa || 'Sin empresa'}`.trim(),
@@ -62,7 +64,7 @@ export const UsuarioEmpresaSelector: React.FC<UsuarioEmpresaSelectorProps> = ({
       console.error('Error en búsqueda de usuarios con empresas:', error);
       return [];
     }
-  }, []);
+  }, [excludeWithProfiles]);
 
   // Cargar el nombre del usuario cuando hay un value pero no hay selectedLabel
   useEffect(() => {

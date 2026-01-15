@@ -3,7 +3,7 @@
 // ============================================================================
 // Componente específico para renderizar campos del formulario de UsuarioPerfil
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { UsuarioEmpresaSelector } from '../UsuarioEmpresaSelector';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
@@ -16,6 +16,8 @@ interface UsuarioPerfilFormFieldsProps {
   getThemeColor: (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => string;
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   perfilesData?: any[]; // Datos de perfiles disponibles
+  existingPerfiles?: any[]; // Para modo UPDATE: perfiles existentes del usuario
+  isUpdateMode?: boolean; // Si es true, estamos en modo UPDATE
 }
 
 export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = ({
@@ -25,12 +27,18 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
   renderField,
   getThemeColor,
   getUniqueOptionsForField,
-  perfilesData = []
+  perfilesData = [],
+  existingPerfiles = [],
+  isUpdateMode = false
 }) => {
   const { t } = useLanguage();
 
   // Estado para los perfiles seleccionados (perfilid -> statusid)
   const [perfilesStatus, setPerfilesStatus] = useState<Record<number, number>>({});
+  
+  // Ref para rastrear si ya se inicializó para evitar loops
+  const initializedRef = useRef<number | null>(null);
+  const lastPerfilesStatusRef = useRef<string>('');
 
   // Obtener el campo usuarioid
   const usuarioidField = visibleColumns.find(c => c.columnName === 'usuarioid');
@@ -38,26 +46,44 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
 
   // Cuando se selecciona un usuario, inicializar los perfiles
   useEffect(() => {
-    if (usuarioid) {
-      // Inicializar todos los perfiles como inactivos (statusid = 0)
+    // Solo inicializar si cambió el usuarioid o si no se ha inicializado
+    if (usuarioid && initializedRef.current !== usuarioid) {
       const initialStatus: Record<number, number> = {};
-      perfilesData.forEach((perfil: any) => {
-        initialStatus[perfil.perfilid] = 0; // Por defecto inactivo
-      });
-      setPerfilesStatus(initialStatus);
       
-      // Limpiar perfilid del formData ya que ahora usamos la tabla
-      if (formData.perfilid) {
-        setFormData({
-          ...formData,
-          perfilid: null
+      if (isUpdateMode && existingPerfiles.length > 0) {
+        // En modo UPDATE: cargar perfiles existentes
+        existingPerfiles.forEach((row: any) => {
+          initialStatus[row.perfilid] = row.statusid || 0;
+        });
+        // Inicializar perfiles no existentes como inactivos
+        perfilesData.forEach((perfil: any) => {
+          if (!initialStatus.hasOwnProperty(perfil.perfilid)) {
+            initialStatus[perfil.perfilid] = 0;
+          }
+        });
+      } else {
+        // En modo CREATE: inicializar todos los perfiles como inactivos
+        perfilesData.forEach((perfil: any) => {
+          initialStatus[perfil.perfilid] = 0; // Por defecto inactivo
         });
       }
-    } else {
+      
+      setPerfilesStatus(initialStatus);
+      initializedRef.current = usuarioid;
+      
+      // Limpiar perfilid del formData ya que ahora usamos la tabla (solo si existe)
+      if (formData.perfilid) {
+        setFormData((prev: Record<string, any>) => ({
+          ...prev,
+          perfilid: null
+        }));
+      }
+    } else if (!usuarioid) {
       // Si no hay usuario seleccionado, limpiar los perfiles
       setPerfilesStatus({});
+      initializedRef.current = null;
     }
-  }, [usuarioid, perfilesData]); // Solo cuando cambia el usuario o los perfiles
+  }, [usuarioid, isUpdateMode]); // Remover formData y otras dependencias que cambian constantemente
 
   // Manejar cambio de checkbox de perfil
   const handlePerfilToggle = (perfilid: number) => {
@@ -69,19 +95,28 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
 
   // Obtener perfiles activos para el formData (esto se usará al insertar)
   useEffect(() => {
+    // Serializar perfilesStatus para comparar
+    const perfilesStatusStr = JSON.stringify(perfilesStatus);
+    
+    // Solo actualizar si realmente cambió
+    if (perfilesStatusStr === lastPerfilesStatusRef.current) {
+      return;
+    }
+    
+    lastPerfilesStatusRef.current = perfilesStatusStr;
+    
     // Actualizar formData con los perfiles seleccionados
-    // Esto se manejará en el componente padre al insertar
     const perfilesActivos = Object.entries(perfilesStatus)
       .filter(([_, statusid]) => statusid === 1)
       .map(([perfilid, _]) => parseInt(perfilid));
     
-    // Guardar en formData para que el componente padre pueda acceder
-    setFormData({
-      ...formData,
+    // Usar función de actualización para evitar depender de formData
+    setFormData((prev: Record<string, any>) => ({
+      ...prev,
       _perfilesSeleccionados: perfilesActivos,
       _perfilesStatus: perfilesStatus
-    });
-  }, [perfilesStatus]);
+    }));
+  }, [perfilesStatus, setFormData]);
 
   // Filtrar perfiles activos
   const perfilesActivos = useMemo(() => {
@@ -107,6 +142,7 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
             placeholder="BUSQUEDA"
             isRequired={usuarioidField.required}
             themeColor="orange"
+            excludeWithProfiles={true}
           />
         </div>
       )}

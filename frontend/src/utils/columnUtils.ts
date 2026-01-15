@@ -39,7 +39,7 @@ export const filterColumnsByTable = (
     'criticidad': ['criticidad', 'escalamiento', 'escalon', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'usuario': ['login', 'firstname', 'lastname', 'email', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'perfil': ['perfil', 'nivel', 'jefeid', 'is_admin_global', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'usuarioperfil': ['usuarioid', 'perfilid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'usuarioperfil': ['usuarioid', 'perfilid', '_perfiles', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'mensaje': ['uuid_origen', 'contactoid', 'tipo_mensajeid', 'mensaje', 'fecha', 'statusid', 'usercreatedid', 'datecreated'],
     'alerta': ['alertaid', 'medicionid', 'umbralid', 'fecha', 'statusid', 'usercreatedid', 'datecreated'],
     'permiso': ['perfilid', 'origenid', 'fuenteid', 'objetoid', 'puede_ver', 'puede_insertar', 'puede_actualizar', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -259,25 +259,23 @@ export const reorderColumns = (
     }
   } else if (tableName === 'usuarioperfil') {
     if (forTable) {
-      // Para tabla agrupada: Usuario, Perfiles
-      reordered.push({
-        columnName: 'usuario',
-        dataType: 'varchar',
-        isNullable: true,
-        isIdentity: false,
-        isPrimaryKey: false,
-        isForeignKey: false,
-        defaultValue: null
-      } as ColumnInfo);
-      reordered.push({
-        columnName: 'perfiles',
-        dataType: 'varchar',
-        isNullable: true,
-        isIdentity: false,
-        isPrimaryKey: false,
-        isForeignKey: false,
-        defaultValue: null
-      } as ColumnInfo);
+      // Para tabla agrupada: Usuario, Perfiles (usar _perfiles si existe, sino crear columna virtual)
+      reordered.push(...otherColumns.filter(col => ['usuarioid'].includes(col.columnName)));
+      // Usar _perfiles si existe (agregada en UpdateTab), sino crear columna virtual 'perfiles'
+      const perfilesColumn = otherColumns.find(col => col.columnName === '_perfiles');
+      if (perfilesColumn) {
+        reordered.push(perfilesColumn);
+      } else {
+        reordered.push({
+          columnName: 'perfiles',
+          dataType: 'varchar',
+          isNullable: true,
+          isIdentity: false,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          defaultValue: null
+        } as ColumnInfo);
+      }
     } else {
       // Para Estado desagregado: mantener orden original
       reordered.push(...otherColumns);
