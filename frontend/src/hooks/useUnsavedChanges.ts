@@ -83,18 +83,22 @@ export const useUnsavedChanges = () => {
           }
           
           // Verificar si hay datos significativos
+          // String: cualquier texto no vacío (input de texto)
           if (typeof value === 'string' && value.trim() !== '') {
             console.log(`✅ [useUnsavedChanges] Cambio detectado en campo string: ${key} = "${value}"`);
             return true;
           }
+          // Number: cualquier número que no sea 0 (combobox seleccionado, input numérico)
           if (typeof value === 'number' && value !== null && value !== undefined && value !== 0) {
             console.log(`✅ [useUnsavedChanges] Cambio detectado en campo number: ${key} = ${value}`);
             return true;
           }
+          // Array: cualquier array con elementos (múltiples selecciones, listas)
           if (Array.isArray(value) && value.length > 0) {
             console.log(`✅ [useUnsavedChanges] Cambio detectado en campo array: ${key} = [${value.length} items]`);
             return true;
           }
+          // Object: cualquier objeto con propiedades (objetos complejos)
           if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
             const hasObjectData = Object.keys(value).some(objKey => {
               const objValue = value[objKey];
@@ -105,6 +109,7 @@ export const useUnsavedChanges = () => {
             }
             return hasObjectData;
           }
+          // Boolean: cualquier checkbox marcado (true)
           if (typeof value === 'boolean' && value === true) {
             console.log(`✅ [useUnsavedChanges] Cambio detectado en campo boolean: ${key} = true`);
             return true;
@@ -131,9 +136,42 @@ export const useUnsavedChanges = () => {
     
     // Verificar pestaña "Actualizar"
     if (activeSubTab === 'update') {
+      // Excluir campos de auditoría y marcadores internos
+      const alwaysExcludedFields = [
+        'usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified',
+        'modified_at', 'modified_by', 'auditid', '__formOpen', '__hasChanges'
+      ];
+      
       return Object.keys(formData).some(key => {
+        // Excluir campos de auditoría y marcadores
+        if (alwaysExcludedFields.includes(key)) {
+          return false;
+        }
+        
         const value = formData[key];
-        return value !== null && value !== undefined && value !== '';
+        
+        // Verificar si hay datos significativos (igual que en insert)
+        if (typeof value === 'string' && value.trim() !== '') {
+          return true;
+        }
+        if (typeof value === 'number' && value !== null && value !== undefined && value !== 0) {
+          return true;
+        }
+        if (Array.isArray(value) && value.length > 0) {
+          return true;
+        }
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const hasObjectData = Object.keys(value).some(objKey => {
+            const objValue = value[objKey];
+            return objValue !== null && objValue !== undefined && objValue !== '';
+          });
+          return hasObjectData;
+        }
+        if (typeof value === 'boolean' && value === true) {
+          return true;
+        }
+        
+        return false;
       });
     }
     
