@@ -33,16 +33,13 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
     return internalLevels.includes(sidebar)
   }, [])
   
-  // Efecto para expandir sidebars cuando se muestra welcome
+  // Efecto para expandir sidebar principal cuando se muestra welcome
   useEffect(() => {
     if (showWelcome) {
-      // Usar un timeout para evitar loops infinitos
+      // Solo expandir el sidebar principal (main) cuando se muestra la pantalla de bienvenida
+      // Debe permanecer expandido hasta que el usuario haga hover sobre él
       const timer = setTimeout(() => {
         sidebar.openPanel('main', false)
-        sidebar.openPanel('aux1', false)
-        sidebar.openPanel('aux2', false)
-        sidebar.openPanel('aux3', false)
-        sidebar.openPanel('aux4', false)
         // Marcar que los sidebars están establecidos después de la activación inicial
         setTimeout(() => {
           isInitialActivationRef.current = false
@@ -50,7 +47,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       }, 0)
       return () => clearTimeout(timer)
     }
-  }, [showWelcome]) // Remover sidebar de las dependencias para evitar loops
+  }, [showWelcome, sidebar]) // Incluir sidebar en dependencias para asegurar que se expanda
   
   // Efecto para detectar cuando se activa una pestaña (cambio de activeTab)
   useEffect(() => {
@@ -89,6 +86,12 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
   }, [sidebar, clearCloseTimeout])
   
   const handleMainSidebarMouseLeave = useCallback(() => {
+    // Si estamos en la pantalla de bienvenida, NO colapsar el sidebar principal
+    // Debe permanecer expandido hasta que el usuario interactúe con él
+    if (showWelcome) {
+      return
+    }
+    
     if (activeTab) {
       // Reducir delay para detectar más rápido cuando el mouse sale
       // Esto previene que los sidebars se queden expandidos cuando el mouse se mueve rápido
@@ -106,7 +109,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         }
       }, 100) // Reducir delay para detectar más rápido
     }
-  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
+  }, [showWelcome, activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux1
   const handleAux1MouseEnter = useCallback(() => {
@@ -517,6 +520,12 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
   
   // Handler para cuando el cursor entra al contenido
   const handleContentMouseEnter = useCallback(() => {
+    // Si estamos en la pantalla de bienvenida, NO colapsar el sidebar principal
+    // Debe permanecer expandido para que el usuario vea las opciones disponibles
+    if (showWelcome) {
+      return
+    }
+    
     if (activeTab) {
       // Limpiar cualquier timeout pendiente
       clearCloseTimeout()
@@ -538,7 +547,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       // Activar expansión en cascada cuando vuelva
       isComingFromContentRef.current = true
     }
-  }, [activeTab, sidebar, clearCloseTimeout])
+  }, [showWelcome, activeTab, sidebar, clearCloseTimeout])
   
   // Handler para cuando el cursor sale del contenido
   const handleContentMouseLeave = useCallback(() => {

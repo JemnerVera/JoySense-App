@@ -145,7 +145,26 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   }
 
   if (col.columnName === 'sensorid' && selectedTable === 'metricasensor') {
-    return renderSelectField(`${t('buttons.select')} ${displayName.toUpperCase()}`);
+    const options = getUniqueOptionsForField(col.columnName);
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={value}
+          onChange={(newValue) => {
+            setFormData({
+              ...formData,
+              [col.columnName]: newValue ? Number(newValue) : null
+            });
+          }}
+          options={options}
+          placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+          themeColor="orange"
+        />
+      </div>
+    );
   }
 
   if (col.columnName === 'metricaid' && selectedTable === 'metricasensor') {
@@ -497,7 +516,6 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   // Select para umbral - operador (con opciones válidas según constraint)
   if (col.columnName === 'operador' && selectedTable === 'umbral') {
     const operadorOptions = [
-      { value: '', label: '' },
       { value: 'FUERA', label: 'FUERA' },
       { value: 'OUTSIDE', label: 'OUTSIDE' },
       { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
@@ -518,7 +536,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           {displayName.toUpperCase()}{isRequired ? '*' : ''}
         </label>
         <SelectWithPlaceholder
-          value={value}
+          value={value || null}
           onChange={(newValue) => {
             setFormData({
               ...formData,
@@ -526,7 +544,8 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
             });
           }}
           options={operadorOptions}
-          placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+          placeholder="SELECCIONAR OPERACIÓN"
+          themeColor="orange"
         />
       </div>
     );

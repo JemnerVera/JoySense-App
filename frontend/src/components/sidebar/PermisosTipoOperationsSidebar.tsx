@@ -49,9 +49,9 @@ const PermisosTipoOperationsSidebar: React.FC<PermisosTipoOperationsSidebarProps
   // Determinar el título según el tipo seleccionado
   const getTitle = () => {
     if (selectedTipo === 'permisos-geo') {
-      return 'PERMISOS GEO';
+      return 'GEOGRÁFICOS';
     } else if (selectedTipo === 'permisos-conf') {
-      return 'PERMISOS CONF';
+      return 'CONFIGURABLES';
     }
     return 'PERMISOS';
   };
