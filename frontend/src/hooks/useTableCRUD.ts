@@ -405,14 +405,6 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     // Incrementar contador de reset para forzar re-mounts
     resetCounterRef.current += 1;
     
-    console.log('[useTableCRUD] resetForm llamado', {
-      tableName,
-      hasConfig: !!config,
-      initialData,
-      initialDataKeys: Object.keys(initialData),
-      resetCounter: resetCounterRef.current
-    });
-    
     // ESTABLECER timestamp ANTES de cambiar el estado para que esté disponible inmediatamente
     const resetTimestamp = Date.now();
     resetTimestampRef.current = resetTimestamp;
@@ -425,22 +417,6 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       clearTimeout(resetTimeoutRef.current);
     }
     
-    console.log('[useTableCRUD] Estableciendo bloqueo de reset', {
-      tableName,
-      resetTimestamp: resetTimestampRef.current,
-      timestampActual: Date.now()
-    });
-    
-    console.log('[useTableCRUD] Estableciendo formState con initialData', {
-      tableName,
-      initialDataKeys: Object.keys(initialData),
-      initialDataSample: Object.keys(initialData).slice(0, 5).reduce((acc, key) => {
-        acc[key] = initialData[key];
-        return acc;
-      }, {} as Record<string, any>),
-      timestamp: Date.now()
-    });
-    
     setFormState({
       data: initialData,
       errors: {},
@@ -448,29 +424,15 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       isDirty: false
     });
     
-    console.log('[useTableCRUD] formState establecido, programando desbloqueo', {
-      tableName,
-      timestamp: Date.now()
-    });
-    
     // Reducir tiempo de bloqueo a 500ms (suficiente para que React complete el render inicial)
     // PERO mantener el timestamp por 3 segundos para el bloqueo específico de paisid
     resetTimeoutRef.current = setTimeout(() => {
       isResettingRef.current = false;
-      console.log('[useTableCRUD] Bloqueo de reset levantado (isResettingRef = false)', {
-        tableName,
-        resetTimestamp: resetTimestampRef.current,
-        tiempoTranscurrido: Date.now() - resetTimestamp
-      });
       
       // Mantener el timestamp por 3 segundos más para el bloqueo específico de paisid
       setTimeout(() => {
         if (resetTimestampRef.current === resetTimestamp) {
           resetTimestampRef.current = null;
-          console.log('[useTableCRUD] Timestamp de reset limpiado después de 3 segundos', {
-            tableName,
-            tiempoTotal: Date.now() - resetTimestamp
-          });
         }
       }, 3000 - 500); // Limpiar después de 3 segundos totales (2.5 segundos después de levantar el bloqueo)
     }, 500); // Reducido de 2000ms a 500ms

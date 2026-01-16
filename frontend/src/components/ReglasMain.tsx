@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Hooks
 import { useTableCRUD } from '../hooks/useTableCRUD';
@@ -55,6 +56,7 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showModal } = useModal();
+  const sidebar = useSidebar();
 
   // Tabla fija para reglas
   const selectedTable = 'regla';
@@ -129,11 +131,58 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
     });
   }, [formState.data, activeSubTab, selectedTable, updateFormData, checkUnsavedChanges]);
 
+  // Monitorear cambios sin guardar y notificar al sidebar
+  useEffect(() => {
+    const isDirty = hasUnsavedChanges();
+    sidebar.markDirty('reglas-main', isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.isDirty, formState.data, activeSubTab, updateFormData]);
+
+  // Handler interno para cambios de subTab con protección
+  const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update') => {
+    // Verificar cambios sin guardar antes de cambiar
+    const hasChanges = hasUnsavedChanges();
+    if (hasChanges) {
+      // Usar el modal para confirmar navegación
+      const getSubTabName = (subTab: string) => {
+        const names: { [key: string]: string } = {
+          'status': 'Estado',
+          'insert': 'Crear',
+          'update': 'Actualizar'
+        };
+        return names[subTab] || subTab;
+      };
+      
+      showModal(
+        'subtab',
+        getSubTabName(activeSubTab),
+        getSubTabName(tab),
+        () => {
+          // Limpiar el estado dirty en el sidebar
+          sidebar.markDirty('reglas-main', false);
+          onSubTabChange?.(tab);
+        },
+        () => {
+          // Cancelar: no hacer nada
+        }
+      );
+    } else {
+      onSubTabChange?.(tab);
+    }
+  }, [hasUnsavedChanges, sidebar, onSubTabChange, showModal]);
+
+  // Monitorear cambios sin guardar y notificar al sidebar
+  useEffect(() => {
+    const isDirty = hasUnsavedChanges();
+    sidebar.markDirty('reglas-main', isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.isDirty, formState.data, activeSubTab, updateFormData]);
+
   // Exponer métodos al padre mediante ref
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasUnsavedChanges(),
     handleTabChange: (tab: 'status' | 'insert' | 'update') => {
-      onSubTabChange?.(tab);
+      handleSubTabChangeInternal(tab);
     }
   }));
 
