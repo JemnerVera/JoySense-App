@@ -96,10 +96,6 @@ export const useAppSidebar = ({ showWelcome, activeTab }: UseAppSidebarProps) =>
 
   // Función para manejar hover en el contenido principal
   const handleContentMouseEnter = useCallback(() => {
-    console.log('[DEBUG] useAppSidebar: handleContentMouseEnter llamado', {
-      activeTab: activeTab,
-      timestamp: new Date().toISOString()
-    });
     
     // NOTA: Este hook (useAppSidebar) se usa en App.tsx pero parece que no es el que controla
     // los sidebars principales. Los sidebars se controlan desde useSidebarLayout en SidebarContainer.

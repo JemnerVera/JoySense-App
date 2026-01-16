@@ -308,9 +308,10 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
       }
     }
 
-    // Marcar en el sidebar
+    // Marcar en el sidebar (sin incluir sidebar/hasUnsavedChanges en dependencias para evitar loops)
     sidebar.markDirty(panelId, hasChanges);
-  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, hasUnsavedChanges, sidebar]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData]);
 
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => {

@@ -515,11 +515,6 @@ const AppContentInternal: React.FC = () => {
 
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
-    console.log('[DEBUG] App.tsx: handleTabChange llamado', {
-      tabAnterior: activeTab,
-      tabNuevo: tab,
-      timestamp: new Date().toISOString()
-    });
     
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
@@ -1291,9 +1286,7 @@ const AppContentInternal: React.FC = () => {
           return null;
         case 'historial':
           // Redirigir a alertas por defecto
-          console.log('[DEBUG] App.tsx: Cambiando tab a reportes-historial-alertas');
           startTransition(() => {
-            console.log('[DEBUG] App.tsx: Dentro de startTransition - setActiveTab reportes-historial-alertas');
             setActiveTab('reportes-historial-alertas');
           });
           return null;
@@ -1659,10 +1652,6 @@ const AppContentInternal: React.FC = () => {
             handleContentMouseEnter();
           }}
           onMouseLeave={(e) => {
-            console.log('[DEBUG] App.tsx: handleContentMouseLeave en área principal', {
-              activeTab: activeTab,
-              timestamp: new Date().toISOString()
-            });
             // Usar el handleContentMouseLeave de useSidebarLayout
             if (handleContentMouseLeaveFromLayout) {
               handleContentMouseLeaveFromLayout();

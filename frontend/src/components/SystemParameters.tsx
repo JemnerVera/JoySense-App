@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
 import { useFilters } from '../contexts/FilterContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
@@ -84,6 +85,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const { user } = useAuth();
   const { showModal } = useModal();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const sidebar = useSidebar();
 
   // Estado local
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
@@ -353,6 +355,32 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   // Esto evita que se valide el cambio de activeSubTab cuando viene de un cambio de tabla
   const isTableChangeFromProtectedButtonRef = useRef<boolean>(false);
   
+  // Monitorear cambios sin guardar y notificar al sidebar
+  useEffect(() => {
+    if (!selectedTable) return;
+    
+    let hasChanges = false;
+    if (activeSubTab === 'insert') {
+      // Verificar con hasUnsavedChanges para detectar cambios reales
+      hasChanges = hasUnsavedChanges({
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab
+      });
+    } else if (activeSubTab === 'update') {
+      // Verificar cambios en formulario de actualización
+      if (updateFormData && Object.keys(updateFormData).length > 0) {
+        const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
+        hasChanges = hasRealChanges;
+      }
+    }
+
+    // Marcar en el sidebar (sin incluir sidebar en dependencias para evitar loops)
+    const panelId = `system-parameters-${selectedTable}`;
+    sidebar.markDirty(panelId, hasChanges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData]);
+
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
     propSelectedTable,

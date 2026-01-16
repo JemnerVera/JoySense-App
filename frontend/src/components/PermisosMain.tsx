@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Hooks
 import { useTableCRUD } from '../hooks/useTableCRUD';
@@ -68,6 +69,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showModal } = useModal();
+  const sidebar = useSidebar();
 
   // Estado local para la tabla seleccionada
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || 'permiso');
@@ -160,6 +162,14 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     });
   }, [formState.data, activeSubTab, selectedTable, updateFormData, checkUnsavedChanges]);
 
+  // Monitorear cambios sin guardar y notificar al sidebar
+  useEffect(() => {
+    const isDirty = hasUnsavedChanges();
+    const panelId = `permisos-${selectedTable}-main`;
+    sidebar.markDirty(panelId, isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.isDirty, formState.data, activeSubTab, updateFormData, selectedTable]);
+
   // Handler para cambio de tab desde ProtectedSubTabButton (similar a SystemParameters)
   const handleSubTabChangeFromProtectedButton = useCallback((tab: 'status' | 'insert' | 'update' | 'asignar') => {
     // Limpiar formularios antes de cambiar
@@ -179,24 +189,84 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     onSubTabChange?.(tab);
   }, [activeSubTab, resetForm, setTableData, onSubTabChange]);
 
+  // Handler interno para cambios de subTab con protección
+  const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'asignar') => {
+    // Verificar cambios sin guardar antes de cambiar
+    const hasChanges = hasUnsavedChanges();
+    if (hasChanges) {
+      // Usar el modal para confirmar navegación
+      const getSubTabName = (subTab: string) => {
+        const names: { [key: string]: string } = {
+          'status': 'Estado',
+          'insert': 'Crear',
+          'update': 'Actualizar',
+          'asignar': 'Asignar'
+        };
+        return names[subTab] || subTab;
+      };
+      
+      showModal(
+        'subtab',
+        getSubTabName(activeSubTab),
+        getSubTabName(tab),
+        () => {
+          // Limpiar el estado dirty en el sidebar
+          sidebar.markDirty(`permisos-${selectedTable}-main`, false);
+          onSubTabChange?.(tab);
+        },
+        () => {
+          // Cancelar: no hacer nada
+        }
+      );
+    } else {
+      onSubTabChange?.(tab);
+    }
+  }, [hasUnsavedChanges, sidebar, onSubTabChange, showModal, selectedTable]);
+
   // Exponer métodos al padre mediante ref
   // Handler para cambio de tabla
   const handleTableChange = useCallback((table: string) => {
-    setSelectedTable(table);
-    onTableSelect?.(table);
-    // Resetear a status cuando cambia la tabla
-    onSubTabChange?.('status');
-    resetForm();
-    setTableData([]);
-    setUpdateFormData({});
-    setMessage(null);
-    setSelectedRow(null);
-  }, [onTableSelect, onSubTabChange, resetForm, setTableData]);
+    // Verificar cambios sin guardar antes de cambiar de tabla
+    const hasChanges = hasUnsavedChanges();
+    if (hasChanges) {
+      showModal(
+        'parameter',
+        selectedTable,
+        table,
+        () => {
+          // Limpiar el estado dirty en el sidebar
+          sidebar.markDirty(`permisos-${selectedTable}-main`, false);
+          setSelectedTable(table);
+          onTableSelect?.(table);
+          // Resetear a status cuando cambia la tabla
+          onSubTabChange?.('status');
+          resetForm();
+          setTableData([]);
+          setUpdateFormData({});
+          setMessage(null);
+          setSelectedRow(null);
+        },
+        () => {
+          // Cancelar: no hacer nada
+        }
+      );
+    } else {
+      setSelectedTable(table);
+      onTableSelect?.(table);
+      // Resetear a status cuando cambia la tabla
+      onSubTabChange?.('status');
+      resetForm();
+      setTableData([]);
+      setUpdateFormData({});
+      setMessage(null);
+      setSelectedRow(null);
+    }
+  }, [hasUnsavedChanges, sidebar, onTableSelect, onSubTabChange, resetForm, setTableData, showModal, selectedTable]);
 
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasUnsavedChanges(),
     handleTabChange: (tab: 'status' | 'insert' | 'update' | 'asignar') => {
-      onSubTabChange?.(tab);
+      handleSubTabChangeInternal(tab);
     },
     handleSubTabChangeFromProtectedButton,
     handleTableChange

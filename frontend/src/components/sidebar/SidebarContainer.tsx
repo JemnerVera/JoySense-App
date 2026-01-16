@@ -99,11 +99,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             activeTab={activeTab}
             onTabChange={onTabChange}
             onExpandAllSidebars={() => {
-              console.log('[DEBUG] SidebarContainer: onExpandAllSidebars llamado - expandiendo aux1 y aux2');
               // Cuando se hace click en HISTORIAL, expandir tanto aux1 como aux2
               handleAux1MouseEnter();
               handleAux2MouseEnter();
-              console.log('[DEBUG] SidebarContainer: onExpandAllSidebars completado');
             }}
             selectedTable={selectedTable}
             onTableSelect={onTableSelect}

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Hooks
 import { useTableCRUD } from '../hooks/useTableCRUD';
@@ -57,6 +58,7 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showModal } = useModal();
+  const sidebar = useSidebar();
 
   const selectedTable = tableName;
   const activeSubTab = propActiveSubTab;
@@ -131,11 +133,51 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     });
   }, [formState.data, activeSubTab, selectedTable, updateFormData, checkUnsavedChanges]);
 
+  // Handler interno para cambios de subTab con protección
+  const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update') => {
+    // Verificar cambios sin guardar antes de cambiar
+    const hasChanges = hasUnsavedChanges();
+    if (hasChanges) {
+      // Usar el modal para confirmar navegación
+      const getSubTabName = (subTab: string) => {
+        const names: { [key: string]: string } = {
+          'status': 'Estado',
+          'insert': 'Crear',
+          'update': 'Actualizar'
+        };
+        return names[subTab] || subTab;
+      };
+      
+      showModal(
+        'subtab',
+        getSubTabName(activeSubTab),
+        getSubTabName(tab),
+        () => {
+          // Limpiar el estado dirty en el sidebar
+          sidebar.markDirty(`${tableName}-main`, false);
+          onSubTabChange?.(tab);
+        },
+        () => {
+          // Cancelar: no hacer nada
+        }
+      );
+    } else {
+      onSubTabChange?.(tab);
+    }
+  }, [hasUnsavedChanges, sidebar, onSubTabChange, showModal, tableName]);
+
+  // Monitorear cambios sin guardar y notificar al sidebar
+  useEffect(() => {
+    const isDirty = hasUnsavedChanges();
+    sidebar.markDirty(`${tableName}-main`, isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.isDirty, formState.data, activeSubTab, updateFormData, tableName]);
+
   // Exponer métodos al padre mediante ref
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasUnsavedChanges(),
     handleTabChange: (tab: 'status' | 'insert' | 'update') => {
-      onSubTabChange?.(tab);
+      handleSubTabChangeInternal(tab);
     }
   }));
 
