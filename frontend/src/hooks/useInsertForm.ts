@@ -596,6 +596,54 @@ export const useInsertForm = ({
         return;
       }
 
+      // Caso especial para tabla 'regla_perfil': crear múltiples registros (uno por cada perfil seleccionado)
+      if (tableName === 'regla_perfil' && formData._perfilesStatus) {
+        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+        const reglaid = formData.reglaid;
+        
+        if (!reglaid) {
+          throw new Error('Debe seleccionar una regla');
+        }
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        const now = new Date().toISOString();
+        
+        // Crear un array de registros, uno por cada perfil con statusid = 1
+        const recordsToInsert = Object.entries(perfilesStatus)
+          .filter(([_, statusid]) => statusid === 1)
+          .map(([perfilid, _]) => ({
+            reglaid: reglaid,
+            perfilid: parseInt(perfilid),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          }));
+        
+        if (recordsToInsert.length === 0) {
+          throw new Error('Debe seleccionar al menos un perfil activo');
+        }
+        
+        // Insertar múltiples registros
+        const results = [];
+        for (const record of recordsToInsert) {
+          const result = await insertRow(record);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al insertar perfil ${record.perfilid}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} perfil(es) a la regla correctamente` });
+        resetForm();
+        return;
+      }
+
       // Caso especial para tabla 'regla': crear regla y regla_umbral simultáneamente
       if (tableName === 'regla' && formData._reglaUmbralRows) {
         const reglaUmbralRows = formData._reglaUmbralRows as Array<{

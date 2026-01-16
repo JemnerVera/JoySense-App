@@ -17,6 +17,7 @@ import { DispositivosFormFields } from './forms/table-specific/DispositivosFormF
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
 import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
+import { ReglaPerfilFormFields } from './forms/table-specific/ReglaPerfilFormFields';
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
@@ -59,6 +60,8 @@ interface NormalInsertFormProps {
   canalesData?: any[];
   // Datos para usuarioperfil
   perfilesData?: any[];
+  // Datos para regla_perfil
+  reglasData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
@@ -90,11 +93,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   selectedContactType,
   countryCodes,
   resetContactType,
-  contactosData = [],
-  correosData = [],
-  canalesData = [],
-  perfilesData = [],
-  themeColor = 'orange'
+    contactosData = [],
+    correosData = [],
+    canalesData = [],
+    perfilesData = [],
+    reglasData = [],
+    themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
   
@@ -778,7 +782,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -824,6 +828,17 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 renderField={renderField}
                 getThemeColor={getThemeColor}
                 getUniqueOptionsForField={getUniqueOptionsForField}
+                perfilesData={perfilesData}
+              />
+            ) : selectedTable === 'regla_perfil' ? (
+              <ReglaPerfilFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                renderField={renderField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                reglasData={reglasData}
                 perfilesData={perfilesData}
               />
             ) : (

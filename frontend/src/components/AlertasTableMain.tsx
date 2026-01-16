@@ -293,6 +293,7 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
     }
   }, [formState.data, formState.errors, validateForm, selectedRow, updateRow, user, getPrimaryKeyValue, loadTableData, onSubTabChange, resetForm, selectedTable]);
 
+
   // Función helper para obtener opciones únicas
   const getUniqueOptionsForField = useCallback((columnName: string): Array<{value: any, label: string}> => {
     let relatedTable = crudRelatedData[columnName.replace('id', '')] || 
@@ -424,6 +425,8 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
             }
             getUniqueOptionsForField={getUniqueOptionsForField}
             themeColor="red"
+            // Props adicionales para regla_perfil
+            reglasData={reglasData}
           />
         );
       

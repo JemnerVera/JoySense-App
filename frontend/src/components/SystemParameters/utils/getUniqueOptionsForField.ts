@@ -118,7 +118,8 @@ export const getUniqueOptionsForField = ({
     'sensorid': { table: 'sensorsData', key: 'sensorid', label: 'sensor' },
     'codigotelefonoid': { table: 'codigotelefonosData', key: 'codigotelefonoid', label: 'paistelefono' },
     'canalid': { table: 'canalesData', key: 'canalid', label: 'canal' },
-    'umbralid': { table: 'umbralesData', key: 'umbralid', label: 'umbral' }
+    'umbralid': { table: 'umbralesData', key: 'umbralid', label: 'umbral' },
+    'reglaid': { table: 'reglasData', key: 'reglaid', label: 'nombre' }
   };
 
   const mapping = fieldToTableMap[columnName];
