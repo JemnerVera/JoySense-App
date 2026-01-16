@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useRef, useState, useMemo, ReactNode } from 'react'
+import React, { createContext, useContext, useCallback, useRef, useState, useMemo, useEffect, ReactNode } from 'react'
 
 // ============================================================================
 // TYPES
@@ -97,6 +97,9 @@ export function SidebarProvider({
   const [pendingTransition, setPendingTransition] = useState<{ type: 'navigate' | 'push' | 'pop' | 'subtab'; payload?: any; onConfirm?: () => void } | null>(null)
   const [showModal, setShowModal] = useState(false)
   
+  // Ref para el failsafe de colapso automático
+  const failsafeTimeoutRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  
   // Refs para control de animaciones y hover
   const animationTimeoutsRef = useRef<Map<SidebarLevel, ReturnType<typeof setTimeout>>>(new Map())
   const hoveredLevelsRef = useRef<Set<SidebarLevel>>(new Set())
@@ -126,8 +129,10 @@ export function SidebarProvider({
     // Recorrer desde main hacia los internos
     for (const level of allLevels) {
       const panel = panels.get(level)
+      const isExpanded = panel?.isExpanded ?? false
+      
       // Si el panel está expandido, agregarlo a activos
-      if (panel?.isExpanded) {
+      if (isExpanded) {
         active.push(level)
       } else if (active.length > 0) {
         // Si ya encontramos un sidebar activo pero este no lo está, parar
@@ -176,14 +181,19 @@ export function SidebarProvider({
     const levelIndex = allLevels.indexOf(level)
     
     // Si el nivel no está en el orden, no hacer nada
-    if (levelIndex === -1) return
+    if (levelIndex === -1) {
+      console.warn(`[OPEN PANEL] Nivel ${level} no encontrado en allLevels`)
+      return
+    }
     
     // Verificar si el nivel solicitado ya está expandido
     const panel = panels.get(level)
+    
     if (panel?.isExpanded) {
-      // Solo actualizar hover si es necesario, sin causar re-render innecesario
+      // SIEMPRE actualizar hover cuando se hace hover sobre un panel expandido
+      // Esto asegura que la detección de hover funcione correctamente
+      hoveredLevelsRef.current.add(level)
       if (!panel.isHovered) {
-        hoveredLevelsRef.current.add(level)
         setPanels(prev => {
           const newPanels = new Map(prev)
           const panelToUpdate = newPanels.get(level)
@@ -193,7 +203,7 @@ export function SidebarProvider({
           return newPanels
         })
       }
-      return // No expandir si ya está expandido
+      return // No expandir si ya está expandido, solo actualizar hover
     }
     
     // Si viene del contenido, expandir solo el nivel específico sobre el cual se hace hover
@@ -242,7 +252,7 @@ export function SidebarProvider({
         isTransitioningRef.current = false
       }, 50)
     }
-  }, [clearTimeouts, state, getAllLevels, getActiveLevels, panels])
+  }, [clearTimeouts, state, getAllLevels, panels])
   
   // Cerrar panel con colapso en cascada inversa
   const closePanel = useCallback((level: SidebarLevel) => {
@@ -348,11 +358,20 @@ export function SidebarProvider({
     clearTimeouts()
     hoveredLevelsRef.current.clear()
     
-    // Obtener solo los paneles que están expandidos (dinámicamente)
-    const expandedPanels = getActiveLevels()
+    // Verificar DIRECTAMENTE el estado de cada panel (no usar getActiveLevels que requiere secuencia continua)
+    // Esto asegura que main se incluya si está expandido, incluso si no hay otros sidebars expandidos
+    const allLevels = getAllLevels()
+    const directlyExpandedPanels: SidebarLevel[] = []
+    allLevels.forEach(level => {
+      const panel = panels.get(level)
+      const isExpanded = panel?.isExpanded ?? false
+      if (isExpanded) {
+        directlyExpandedPanels.push(level)
+      }
+    })
     
     // Si no hay paneles expandidos, no hacer nada
-    if (expandedPanels.length === 0) {
+    if (directlyExpandedPanels.length === 0) {
       setState('closed')
       return
     }
@@ -362,9 +381,9 @@ export function SidebarProvider({
     
     // Colapsar en cascada inversa: desde el más interno hacia el más externo
     // Orden inverso: aux5 -> aux4 -> aux3 -> aux2 -> aux1 -> main
-    const allLevels = getAllLevels()
+    // IMPORTANTE: Usar directamenteExpandedPanels que incluye main si está expandido
     const reverseOrder = [...allLevels].reverse()
-    const panelsToCollapse = reverseOrder.filter(lvl => expandedPanels.includes(lvl))
+    const panelsToCollapse = reverseOrder.filter(lvl => directlyExpandedPanels.includes(lvl))
     
     if (panelsToCollapse.length === 0) {
       setState('closed')
@@ -380,6 +399,8 @@ export function SidebarProvider({
           const panel = newPanels.get(lvl)
           if (panel) {
             newPanels.set(lvl, { ...panel, isExpanded: false, isHovered: false })
+          } else {
+            console.warn(`[COLLAPSE ALL] No se encontró panel para ${lvl}`)
           }
           return newPanels
         })
@@ -391,7 +412,7 @@ export function SidebarProvider({
       }, delay)
       animationTimeoutsRef.current.set(lvl, timeout)
     })
-  }, [clearTimeouts, panels, getActiveLevels, getAllLevels])
+  }, [clearTimeouts, panels, getAllLevels])
   
   // Toggle colapso
   const toggleCollapse = useCallback(() => {
@@ -475,36 +496,22 @@ export function SidebarProvider({
   
   // Request leave (mostrar modal para cambio de pestaña principal)
   const requestLeave = useCallback((target: string, currentTab?: string, onRevert?: () => void, onConfirm?: () => void) => {
-    console.log('[SIDEBAR] requestLeave llamado', {
-      target,
-      currentTab,
-      hasPendingTransition: !!pendingTransition,
-      hasOnRevert: !!onRevert,
-      hasOnConfirm: !!onConfirm,
-      hasUnsavedChanges,
-      dirtyPanels: Object.entries(hasUnsavedChanges).filter(([_, v]) => v === true).map(([k]) => k)
-    });
-    
     // Si ya hay una transición pendiente, no hacer nada (evita múltiples modales)
     if (pendingTransition) {
-      console.log('[SIDEBAR] requestLeave: Ya hay transición pendiente, ignorando');
       return
     }
     
     const hasDirty = Object.values(hasUnsavedChanges).some(v => v === true)
-    console.log('[SIDEBAR] requestLeave: hasDirty =', hasDirty);
     
     if (hasDirty) {
       // CRÍTICO: Revertir activeTab inmediatamente si se proporciona onRevert
       // Esto previene que el cambio se ejecute antes de que el usuario confirme
       if (onRevert) {
-        console.log('[SIDEBAR] requestLeave: Revirtiendo activeTab a', currentTab);
         onRevert()
       }
       
       // Guardar la transición pendiente y mostrar modal
       // Si hay onConfirm, guardarlo en el payload para ejecutarlo cuando se confirme
-      console.log('[SIDEBAR] requestLeave: Mostrando modal para cambio de pestaña principal');
       setPendingTransition({ 
         type: 'navigate', 
         payload: { to: target },
@@ -514,7 +521,6 @@ export function SidebarProvider({
       // NO ejecutar onNavigate aquí - solo se ejecuta si el usuario confirma
     } else {
       // No hay cambios, ejecutar callback personalizado o navegar directamente
-      console.log('[SIDEBAR] requestLeave: No hay cambios, ejecutando cambio directamente');
       if (onConfirm) {
         onConfirm()
       } else {
@@ -658,13 +664,19 @@ export function SidebarProvider({
       return newPanels
     })
     
-    // Si hay paneles expandidos, colapsar inmediatamente en cascada
-    const expandedPanels = getExpandedPanels()
-    if (expandedPanels.length > 0) {
+    // Verificar DIRECTAMENTE si hay paneles expandidos (no usar getExpandedPanels que requiere secuencia continua)
+    // Esto asegura que main se incluya si está expandido, incluso si otros sidebars están colapsados
+    const allLevels = getAllLevels()
+    const hasExpandedPanels = allLevels.some(level => {
+      const panel = panels.get(level)
+      return panel?.isExpanded === true
+    })
+    
+    if (hasExpandedPanels) {
       // Colapsar inmediatamente sin delays de verificación
       collapseAll()
     }
-  }, [collapseAll, getExpandedPanels])
+  }, [collapseAll, getAllLevels, panels])
   
   // Handler para cuando el cursor sale del contenido
   // NOTA: Este handler se llama desde useSidebarState, no directamente
@@ -672,6 +684,40 @@ export function SidebarProvider({
     // Activar expansión en cascada cuando vuelva a los sidebars
     // Esto se maneja en openPanel con fromContent=true
   }, [])
+  
+  // FAILSAFE: Monitorear periódicamente si hay sidebars expandidos pero el mouse no está sobre ninguno
+  // Esto previene que los sidebars se queden expandidos si hay algún problema con los event handlers
+  useEffect(() => {
+    // Limpiar cualquier intervalo previo
+    if (failsafeTimeoutRef.current) {
+      clearInterval(failsafeTimeoutRef.current)
+    }
+    
+    // Configurar el failsafe para verificar cada 500ms
+    failsafeTimeoutRef.current = setInterval(() => {
+      const expandedPanels = getExpandedPanels()
+      
+      // Si hay paneles expandidos, verificar si alguno está siendo hovered
+      if (expandedPanels.length > 0) {
+        const hasAnyHovered = expandedPanels.some(level => isPanelHovered(level))
+        
+        // Si no hay ningún panel hovered y hay paneles expandidos, colapsar todo
+        // Esto es un failsafe en caso de que los event handlers fallen
+        if (!hasAnyHovered) {
+          console.warn('[SIDEBAR FAILSAFE] Detectados sidebars expandidos sin hover, colapsando automáticamente')
+          collapseAll()
+        }
+      }
+    }, 500) // Verificar cada 500ms
+    
+    // Limpiar el intervalo al desmontar
+    return () => {
+      if (failsafeTimeoutRef.current) {
+        clearInterval(failsafeTimeoutRef.current)
+        failsafeTimeoutRef.current = null
+      }
+    }
+  }, [getExpandedPanels, isPanelHovered, collapseAll])
   
   // Valor del contexto
   const value = useMemo<SidebarContextValue>(() => {

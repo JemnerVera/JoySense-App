@@ -8,7 +8,7 @@ import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ReportesHistorialSidebarProps {
-  activeSubTab: 'alertas' | 'mensajes';
+  activeSubTab?: 'alertas' | 'mensajes';
   onSubTabChange: (subTab: 'alertas' | 'mensajes') => void;
   isExpanded: boolean;
   onMouseEnter: () => void;
@@ -67,7 +67,9 @@ const ReportesHistorialSidebar: React.FC<ReportesHistorialSidebarProps> = ({
         <div className="py-4">
           <nav className="space-y-1">
             {historialTabs.map((tab) => {
-              const isActive = activeSubTab === tab.id;
+              // Solo marcar como activa si activeSubTab está definido y coincide
+              // Esto evita que se marque como activa cuando activeTab es exactamente 'reportes-historial'
+              const isActive = activeSubTab !== undefined && activeSubTab === tab.id;
               return (
                 <button
                   key={tab.id}

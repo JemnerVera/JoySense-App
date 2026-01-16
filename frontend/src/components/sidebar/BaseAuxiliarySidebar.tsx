@@ -23,12 +23,31 @@ const BaseAuxiliarySidebar: React.FC<BaseAuxiliarySidebarProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full flex flex-col flex-shrink-0 ${
+      className={`bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full flex flex-col flex-shrink-0 relative ${
         isExpanded ? 'w-56' : 'w-14'
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
+      {/* Área de detección invisible extendida cuando está colapsado para mejorar la detección de hover */}
+      {/* Extender más el área de detección para capturar movimientos rápidos */}
+      {!isExpanded && (
+        <>
+          <div 
+            className="absolute -right-4 top-0 bottom-0 w-8 z-50 cursor-pointer"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            style={{ pointerEvents: 'auto' }}
+          />
+          {/* Área adicional en el lado izquierdo para capturar cuando el mouse viene del contenido */}
+          <div 
+            className="absolute -left-4 top-0 bottom-0 w-8 z-50 cursor-pointer"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            style={{ pointerEvents: 'auto' }}
+          />
+        </>
+      )}
       {/* Título - Tactical Style */}
       {/* Altura alineada con el header del sidebar principal (h-16) para consistencia visual */}
       <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 px-2 flex-shrink-0">

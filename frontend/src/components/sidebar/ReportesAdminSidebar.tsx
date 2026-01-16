@@ -86,7 +86,9 @@ const ReportesAdminSidebar: React.FC<ReportesAdminSidebarProps> = ({
         <div className="py-4">
           <nav className="space-y-1">
             {reportesAdminTables.map((table) => {
-              const isActive = selectedTable === table.name;
+              // Solo marcar como activa si selectedTable no está vacío
+              // Esto evita que se marque como activa cuando activeTab es exactamente 'configuracion-reportes-administrador'
+              const isActive = selectedTable !== '' && selectedTable === table.name;
               return (
                 <ProtectedParameterButton
                   key={table.name}

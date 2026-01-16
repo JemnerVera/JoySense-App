@@ -170,7 +170,9 @@ const ConfiguracionSidebar: React.FC<ConfiguracionSidebarProps> = ({
           {allPermissionsLoaded && (
             <nav className="space-y-1">
               {configuracionSections.map((section) => {
-              const isActive = selectedSection === section.id;
+              // Solo marcar como activa si selectedSection no está vacío
+              // Esto evita que se marque como activa cuando activeTab es exactamente 'configuracion'
+              const isActive = selectedSection !== '' && selectedSection === section.id;
               return (
                 <button
                   key={section.id}
