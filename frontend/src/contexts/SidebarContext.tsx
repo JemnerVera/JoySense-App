@@ -23,7 +23,7 @@ export interface SidebarContextValue {
   
   // Flags de control
   hasUnsavedChanges: Record<string, boolean>
-  pendingTransition: { type: 'navigate' | 'push' | 'pop'; payload?: any } | null
+  pendingTransition: { type: 'navigate' | 'push' | 'pop' | 'subtab'; payload?: any; onConfirm?: () => void } | null
   showModal: boolean
   
   // Acciones
@@ -35,7 +35,8 @@ export interface SidebarContextValue {
   navigate: (to: string, subtab?: string) => void
   pushPanel: (level: SidebarLevel, panelId: string) => void
   popPanel: () => void
-  requestLeave: (target: string) => void
+  requestLeave: (target: string, currentTab?: string, onRevert?: () => void, onConfirm?: () => void) => void
+  requestSubTabChange: (targetSubTab: string, onConfirm: () => void) => void
   confirmLeave: () => void
   cancelLeave: () => void
   onAnimationEnd: (level: SidebarLevel) => void
@@ -89,7 +90,7 @@ export function SidebarProvider({
   const [state, setState] = useState<SidebarState>('closed')
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<Record<string, boolean>>({})
-  const [pendingTransition, setPendingTransition] = useState<{ type: 'navigate' | 'push' | 'pop'; payload?: any } | null>(null)
+  const [pendingTransition, setPendingTransition] = useState<{ type: 'navigate' | 'push' | 'pop' | 'subtab'; payload?: any; onConfirm?: () => void } | null>(null)
   const [showModal, setShowModal] = useState(false)
   
   // Refs para control de animaciones y hover
@@ -449,31 +450,110 @@ export function SidebarProvider({
     }
   }, [hasUnsavedChanges, panels, closePanel, getAllLevels])
   
-  // Request leave (mostrar modal)
-  const requestLeave = useCallback((target: string) => {
+  // Request leave (mostrar modal para cambio de pestaña principal)
+  const requestLeave = useCallback((target: string, currentTab?: string, onRevert?: () => void, onConfirm?: () => void) => {
+    console.log('[SIDEBAR] requestLeave llamado', {
+      target,
+      currentTab,
+      hasPendingTransition: !!pendingTransition,
+      hasOnRevert: !!onRevert,
+      hasOnConfirm: !!onConfirm,
+      hasUnsavedChanges,
+      dirtyPanels: Object.entries(hasUnsavedChanges).filter(([_, v]) => v === true).map(([k]) => k)
+    });
+    
+    // Si ya hay una transición pendiente, no hacer nada (evita múltiples modales)
+    if (pendingTransition) {
+      console.log('[SIDEBAR] requestLeave: Ya hay transición pendiente, ignorando');
+      return
+    }
+    
+    const hasDirty = Object.values(hasUnsavedChanges).some(v => v === true)
+    console.log('[SIDEBAR] requestLeave: hasDirty =', hasDirty);
+    
+    if (hasDirty) {
+      // CRÍTICO: Revertir activeTab inmediatamente si se proporciona onRevert
+      // Esto previene que el cambio se ejecute antes de que el usuario confirme
+      if (onRevert) {
+        console.log('[SIDEBAR] requestLeave: Revirtiendo activeTab a', currentTab);
+        onRevert()
+      }
+      
+      // Guardar la transición pendiente y mostrar modal
+      // Si hay onConfirm, guardarlo en el payload para ejecutarlo cuando se confirme
+      console.log('[SIDEBAR] requestLeave: Mostrando modal para cambio de pestaña principal');
+      setPendingTransition({ 
+        type: 'navigate', 
+        payload: { to: target },
+        onConfirm: onConfirm // Guardar callback personalizado si existe
+      })
+      setShowModal(true)
+      // NO ejecutar onNavigate aquí - solo se ejecuta si el usuario confirma
+    } else {
+      // No hay cambios, ejecutar callback personalizado o navegar directamente
+      console.log('[SIDEBAR] requestLeave: No hay cambios, ejecutando cambio directamente');
+      if (onConfirm) {
+        onConfirm()
+      } else {
+        onNavigate?.(target)
+      }
+    }
+  }, [hasUnsavedChanges, onNavigate, pendingTransition])
+  
+  // Request subTab change (mostrar modal para cambio de subpestaña)
+  const requestSubTabChange = useCallback((targetSubTab: string, onConfirm: () => void) => {
+    // Si ya hay una transición pendiente, no hacer nada (evita múltiples modales)
+    if (pendingTransition) {
+      return
+    }
+    
     const hasDirty = Object.values(hasUnsavedChanges).some(v => v === true)
     
     if (hasDirty) {
-      setPendingTransition({ type: 'navigate', payload: { to: target } })
+      // Guardar la transición pendiente y mostrar modal
+      setPendingTransition({ type: 'subtab', payload: { to: targetSubTab }, onConfirm })
       setShowModal(true)
+      // NO ejecutar onConfirm aquí - solo se ejecuta si el usuario confirma
     } else {
-      onNavigate?.(target)
+      // No hay cambios, ejecutar callback directamente
+      onConfirm()
     }
-  }, [hasUnsavedChanges, onNavigate])
+  }, [hasUnsavedChanges, pendingTransition])
   
   // Confirm leave
   const confirmLeave = useCallback(() => {
     if (!pendingTransition) return
     
-    // Limpiar cambios sin guardar
-    setHasUnsavedChanges({})
-    setShowModal(false)
-    
-    // Ejecutar transición pendiente
-    if (pendingTransition.type === 'navigate' && pendingTransition.payload) {
-      onNavigate?.(pendingTransition.payload.to, pendingTransition.payload.subtab)
+    // Ejecutar transición pendiente ANTES de limpiar cambios
+    if (pendingTransition.type === 'subtab' && pendingTransition.onConfirm) {
+      // Cambio de subpestaña: ejecutar callback de confirmación
+      setHasUnsavedChanges({})
+      setShowModal(false)
+      const onConfirm = pendingTransition.onConfirm
+      setPendingTransition(null)
+      // Ejecutar callback de confirmación (esto cambiará la subpestaña)
+      onConfirm()
+    } else if (pendingTransition.type === 'navigate' && pendingTransition.payload) {
+      const targetTab = pendingTransition.payload.to
+      // Limpiar cambios sin guardar antes de navegar
+      setHasUnsavedChanges({})
+      setShowModal(false)
+      const customOnConfirm = pendingTransition.onConfirm
+      setPendingTransition(null)
+      // Ejecutar callback personalizado si existe, sino usar onNavigate
+      if (customOnConfirm) {
+        customOnConfirm()
+      } else {
+        // Ejecutar navegación estándar
+        onNavigate?.(targetTab, pendingTransition.payload.subtab)
+      }
     } else if (pendingTransition.type === 'push' && pendingTransition.payload) {
       const { level, panelId } = pendingTransition.payload
+      // Limpiar cambios sin guardar
+      setHasUnsavedChanges({})
+      setShowModal(false)
+      setPendingTransition(null)
+      // Actualizar panel
       setPanels(prev => {
         const newPanels = new Map(prev)
         const panel = newPanels.get(level)
@@ -486,6 +566,11 @@ export function SidebarProvider({
         openPanel(level, false)
       }
     } else if (pendingTransition.type === 'pop') {
+      // Limpiar cambios sin guardar
+      setHasUnsavedChanges({})
+      setShowModal(false)
+      setPendingTransition(null)
+      // Cerrar panel
       const allLevels = getAllLevels()
       const reverseOrder = [...allLevels].reverse()
       for (const level of reverseOrder) {
@@ -496,9 +581,7 @@ export function SidebarProvider({
         }
       }
     }
-    
-    setPendingTransition(null)
-  }, [pendingTransition, panels, openPanel, closePanel, onNavigate])
+  }, [pendingTransition, panels, openPanel, closePanel, onNavigate, getAllLevels])
   
   // Cancel leave
   const cancelLeave = useCallback(() => {
@@ -585,6 +668,7 @@ export function SidebarProvider({
       pushPanel,
       popPanel,
       requestLeave,
+      requestSubTabChange,
       confirmLeave,
       cancelLeave,
       onAnimationEnd,
@@ -620,6 +704,7 @@ export function SidebarProvider({
     pushPanel,
     popPanel,
     requestLeave,
+    requestSubTabChange,
     confirmLeave,
     cancelLeave,
     onAnimationEnd,
