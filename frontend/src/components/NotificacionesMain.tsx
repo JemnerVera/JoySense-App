@@ -8,7 +8,6 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useModal } from '../contexts/ModalContext';
 import { useFilters } from '../contexts/FilterContext';
 import { useSidebar } from '../contexts/SidebarContext';
 
@@ -83,7 +82,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { showModal } = useModal();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const sidebar = useSidebar();
 
@@ -94,6 +92,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
+  const [massiveFormData, setMassiveFormData] = useState<Record<string, any>>({});
   const [insertedRecords, setInsertedRecords] = useState<Array<{ id: string; fields: Record<string, any> }>>([]);
   const insertTabMountCounterRef = useRef<number>(0); // Contador para forzar re-mount de InsertTab
   const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
@@ -284,6 +283,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   // ============================================================================
   
   // Detectar cambios sin guardar y marcarlos en el sidebar
+  // SOLO marcar dirty en CREAR, MASIVO o ACTUALIZAR (no en STATUS)
   useEffect(() => {
     if (!selectedTable) {
       sidebar.markDirty(`notificaciones-${selectedTable}`, false);
@@ -291,6 +291,13 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     }
 
     const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+    
+    // En STATUS no hay cambios sin guardar
+    if (activeSubTab === 'status') {
+      sidebar.markDirty(panelId, false);
+      return;
+    }
+    
     let hasChanges = false;
 
     if (activeSubTab === 'insert') {
@@ -306,12 +313,21 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
         hasChanges = hasRealChanges;
       }
+    } else if (activeSubTab === 'massive') {
+      // Verificar cambios en formulario masivo
+      if (massiveFormData && Object.keys(massiveFormData).length > 0) {
+        hasChanges = hasUnsavedChanges({
+          formData: massiveFormData,
+          selectedTable,
+          activeSubTab
+        });
+      }
     }
 
     // Marcar en el sidebar (sin incluir sidebar/hasUnsavedChanges en dependencias para evitar loops)
     sidebar.markDirty(panelId, hasChanges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData]);
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, massiveFormData]);
 
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => {
@@ -381,6 +397,15 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   
   // Ref para rastrear si el cambio viene de ProtectedSubTabButton (ya validado)
   const changeFromProtectedButtonRef = useRef<boolean>(false);
+  
+  // Efecto para resetear isProcessingTabChangeRef cuando se cancela el modal
+  useEffect(() => {
+    // Si el modal se cierra y no hay pendingTransition, significa que se canceló
+    // Resetear el ref para permitir futuros cambios
+    if (!sidebar.showModal && !sidebar.pendingTransition && isProcessingTabChangeRef.current) {
+      isProcessingTabChangeRef.current = false;
+    }
+  }, [sidebar.showModal, sidebar.pendingTransition]);
   
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
@@ -589,12 +614,15 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
               return config?.displayName || table;
             };
             
-            showModal(
-              'parameter',
-              getTableName(selectedTable),
-              getTableName(table),
-              () => {
-                // Confirmar: proceder con el cambio
+            // Usar el sistema del sidebar para mostrar el modal de cambio de tabla
+            // El cambio de tabla dentro de la misma sección también debe verificar cambios
+            const currentPanelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+            const hasChanges = sidebar.hasUnsavedChanges[currentPanelId] === true;
+            
+            if (hasChanges) {
+              // Guardar la acción de cambio de tabla para ejecutarla después de confirmar
+              const executeTableChange = () => {
+                sidebar.markDirty(currentPanelId, false);
                 setSelectedTable(table);
                 onTableSelect?.(table);
                 setActiveSubTabState('status');
@@ -602,11 +630,21 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 setMessage(null);
                 resetForm();
                 setUpdateFormData({});
-              },
-              () => {
-                // Cancelar: no hacer nada
-              }
-            );
+              };
+              
+              // Usar requestSubTabChange para mostrar el modal (aunque técnicamente es cambio de tabla)
+              // Esto unifica el sistema de modales
+              sidebar.requestSubTabChange?.('status', executeTableChange);
+            } else {
+              // No hay cambios, proceder directamente
+              setSelectedTable(table);
+              onTableSelect?.(table);
+              setActiveSubTabState('status');
+              propOnSubTabChange?.('status');
+              setMessage(null);
+              resetForm();
+              setUpdateFormData({});
+            }
             return; // Cancelar cambio de tabla (el modal manejará la confirmación)
           }
         }
@@ -624,28 +662,18 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
 
   // handleSubTabChange interno que verifica cambios sin guardar
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
-    console.log('[NotificacionesMain] handleSubTabChangeInternal llamado', {
-      from: activeSubTab,
-      to: tab,
-      changeFromProtectedButton: changeFromProtectedButtonRef.current,
-      isProcessing: isProcessingTabChangeRef.current
-    });
-    
     // Si ya estamos en el tab objetivo, no hacer nada
     if (tab === activeSubTab) {
-      console.log('[NotificacionesMain] Ya estamos en el tab objetivo, ignorando');
       return;
     }
     
     // Si ya hay un cambio de tab en proceso, ignorar esta llamada
     if (isProcessingTabChangeRef.current) {
-      console.log('[NotificacionesMain] Cambio de tab en proceso, ignorando');
       return;
     }
     
     // Si el cambio viene de ProtectedSubTabButton (ya validado), proceder sin validar de nuevo
     if (changeFromProtectedButtonRef.current) {
-      console.log('[NotificacionesMain] Cambio viene de ProtectedSubTabButton, procediendo sin validar');
       changeFromProtectedButtonRef.current = false;
       // Marcar para saltar la próxima sincronización y evitar que useSystemParametersSync procese el cambio
       skipNextSyncRef.current = true;
@@ -688,11 +716,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         activeSubTab
       });
       
-      console.log('[NotificacionesMain] Resultado de hasUnsavedChanges:', hasChanges);
-      
       // Si hay cambios, mostrar modal de confirmación
       if (hasChanges) {
-        console.log('[NotificacionesMain] Mostrando modal de confirmación desde handleSubTabChangeInternal');
         // Activar guard para prevenir múltiples llamadas
         isProcessingTabChangeRef.current = true;
         
@@ -717,51 +742,18 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
           tab
         });
         
-        showModal(
-          'subtab',
-          currentTabName,
-          targetTabName,
-          () => {
-            console.log('[SystemParameters] Modal confirmado (INSERT -> otro)', {
-              from: activeSubTab,
-              to: tab,
-              skipNextSyncBefore: skipNextSyncRef.current,
-              isProcessingBefore: isProcessingTabChangeRef.current
-            });
-            
-            // Confirmar: proceder con el cambio y limpiar formulario
-            // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
-            skipNextSyncRef.current = true;
-            // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
-            
-            // Limpiar cambios sin guardar en el sidebar
-            const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
-            sidebar.markDirty(panelId, false);
-            
-            insertForm?.resetForm(); // Limpiar formulario usando useInsertForm
-            setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-            // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
-            console.log('[SystemParameters] Llamando a propOnSubTabChange con tab:', tab);
-            propOnSubTabChange?.(tab);
-            setMessage(null);
-            setInsertedRecords([]); // Limpiar registros insertados
-            // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
-            setTimeout(() => {
-              console.log('[SystemParameters] Liberando isProcessingTabChangeRef');
-              isProcessingTabChangeRef.current = false;
-              // Resetear skipNextSyncRef después de que se haya procesado
-              setTimeout(() => {
-                skipNextSyncRef.current = false;
-              }, 100);
-            }, 200);
-          },
-          () => {
-            // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
-            propOnSubTabChange?.(activeSubTab);
-            // Liberar el guard inmediatamente en caso de cancelar
-            isProcessingTabChangeRef.current = false;
-          }
-        );
+        // Usar el sistema del sidebar para mostrar el modal
+        const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+        
+        // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
+        // Esto previene que el cambio se ejecute antes de que el usuario confirme
+        propOnSubTabChange?.(activeSubTab);
+        
+        sidebar.requestSubTabChange?.(tab, () => {
+          // Confirmar: usar handleSubTabChangeFromProtectedButton para evitar validación duplicada
+          sidebar.markDirty(panelId, false);
+          handleSubTabChangeFromProtectedButton(tab);
+        });
         return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
       }
     } else if (activeSubTab === 'update' && !changeFromProtectedButtonRef.current) {
@@ -775,53 +767,18 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
           // Activar guard para prevenir múltiples llamadas
           isProcessingTabChangeRef.current = true;
           
-          // Obtener nombres de las pestañas
-          const getSubTabName = (subTab: string) => {
-            const names: { [key: string]: string } = {
-              'status': 'Estado',
-              'insert': 'Crear',
-              'update': 'Actualizar',
-              'massive': 'Masivo'
-            };
-            return names[subTab] || subTab;
-          };
+          // Usar el sistema del sidebar para mostrar el modal
+          const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
           
-          showModal(
-            'subtab',
-            getSubTabName(activeSubTab),
-            getSubTabName(tab),
-            () => {
-              // Confirmar: proceder con el cambio y limpiar formulario
-              // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
-              skipNextSyncRef.current = true;
-              // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
-              
-              // Limpiar cambios sin guardar en el sidebar
-              const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
-              sidebar.markDirty(panelId, false);
-              
-              setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-              // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
-              propOnSubTabChange?.(tab);
-              setMessage(null);
-              resetForm(); // Limpiar formulario siempre al confirmar
-              setUpdateFormData({}); // Limpiar datos de actualización
-              // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
-              setTimeout(() => {
-                isProcessingTabChangeRef.current = false;
-                // Resetear skipNextSyncRef después de que se haya procesado
-                setTimeout(() => {
-                  skipNextSyncRef.current = false;
-                }, 100);
-              }, 200);
-            },
-            () => {
-              // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
-              propOnSubTabChange?.(activeSubTab);
-              // Liberar el guard inmediatamente en caso de cancelar
-              isProcessingTabChangeRef.current = false;
-            }
-          );
+          // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
+          // Esto previene que el cambio se ejecute antes de que el usuario confirme
+          propOnSubTabChange?.(activeSubTab);
+          
+          sidebar.requestSubTabChange?.(tab, () => {
+            // Confirmar: usar handleSubTabChangeFromProtectedButton para evitar validación duplicada
+            sidebar.markDirty(panelId, false);
+            handleSubTabChangeFromProtectedButton(tab);
+          });
           return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
         }
       }
@@ -850,7 +807,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
       setInsertedRecords([]); // Limpiar registros insertados
     }
     if (tab !== 'update') setUpdateFormData({}); // Limpiar datos de actualización al cambiar de pestaña
-  }, [insertForm, activeSubTab, selectedTable, hasUnsavedChanges, propOnSubTabChange, updateFormData, showModal, setInsertedRecords]);
+  }, [insertForm, activeSubTab, selectedTable, hasUnsavedChanges, propOnSubTabChange, updateFormData, setInsertedRecords]);
 
   // Actualizar el ref cuando handleSubTabChangeInternal cambie
   useEffect(() => {
@@ -1270,6 +1227,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 getEmpresaName={getEmpresaName}
                 getFundoName={getFundoName}
                 onFormDataChange={(massiveFormData) => {
+                  // Guardar datos del formulario masivo para detección de cambios sin guardar
+                  setMassiveFormData(massiveFormData);
                   if (onMassiveFormDataChange) {
                     onMassiveFormDataChange(massiveFormData);
                   }

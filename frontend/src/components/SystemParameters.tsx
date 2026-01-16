@@ -8,7 +8,6 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useModal } from '../contexts/ModalContext';
 import { useFilters } from '../contexts/FilterContext';
 import { useSidebar } from '../contexts/SidebarContext';
 
@@ -83,7 +82,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { showModal } = useModal();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const sidebar = useSidebar();
 
@@ -94,6 +92,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
+  const [massiveFormData, setMassiveFormData] = useState<Record<string, any>>({});
   const [insertedRecords, setInsertedRecords] = useState<Array<{ id: string; fields: Record<string, any> }>>([]);
   const insertTabMountCounterRef = useRef<number>(0); // Contador para forzar re-mount de InsertTab
   const prevActiveSubTabRef = useRef<'status' | 'insert' | 'update' | 'massive'>(activeSubTab);
@@ -356,8 +355,17 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
   const isTableChangeFromProtectedButtonRef = useRef<boolean>(false);
   
   // Monitorear cambios sin guardar y notificar al sidebar
+  // SOLO marcar dirty en CREAR, ASIGNAR, MASIVO o ACTUALIZAR (no en STATUS)
   useEffect(() => {
     if (!selectedTable) return;
+    
+    // Solo verificar cambios en pestañas que tienen formularios editables
+    if (activeSubTab === 'status') {
+      // En STATUS no hay cambios sin guardar
+      const panelId = `system-parameters-${selectedTable}`;
+      sidebar.markDirty(panelId, false);
+      return;
+    }
     
     let hasChanges = false;
     if (activeSubTab === 'insert') {
@@ -373,13 +381,29 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
         hasChanges = hasRealChanges;
       }
+    } else if (activeSubTab === 'massive') {
+      // Verificar cambios en formulario masivo
+      if (massiveFormData && Object.keys(massiveFormData).length > 0) {
+        hasChanges = hasUnsavedChanges({
+          formData: massiveFormData,
+          selectedTable,
+          activeSubTab
+        });
+      }
+    } else if (activeSubTab === 'asignar') {
+      // Verificar cambios en formulario de asignar (similar a insert)
+      hasChanges = hasUnsavedChanges({
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab: 'insert' // Usar 'insert' para la detección ya que 'asignar' es similar
+      });
     }
 
     // Marcar en el sidebar (sin incluir sidebar en dependencias para evitar loops)
     const panelId = `system-parameters-${selectedTable}`;
     sidebar.markDirty(panelId, hasChanges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData]);
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, massiveFormData]);
 
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
@@ -594,6 +618,15 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }, 500);
   }, [selectedTable, onTableSelect, propOnSubTabChange, resetForm, updateFormData, setInsertedRecords, skipNextSyncRef]);
 
+  // Efecto para resetear isProcessingTabChangeRef cuando se cancela el modal
+  useEffect(() => {
+    // Si el modal se cierra y no hay pendingTransition, significa que se canceló
+    // Resetear el ref para permitir futuros cambios
+    if (!sidebar.showModal && !sidebar.pendingTransition && isProcessingTabChangeRef.current) {
+      isProcessingTabChangeRef.current = false;
+    }
+  }, [sidebar.showModal, sidebar.pendingTransition]);
+
   // handleSubTabChange interno que verifica cambios sin guardar
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
     // Si ya estamos en el tab objetivo, no hacer nada
@@ -661,37 +694,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         const currentTabName = getSubTabName(activeSubTab);
         const targetTabName = getSubTabName(tab);
         
-        showModal(
-          'subtab',
-          currentTabName,
-          targetTabName,
-          () => {
-            // Confirmar: proceder con el cambio y limpiar formulario
-            // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
-            skipNextSyncRef.current = true;
-            // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
-            insertForm?.resetForm(); // Limpiar formulario usando useInsertForm
-            setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-            // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
-            propOnSubTabChange?.(tab);
-            setMessage(null);
-            setInsertedRecords([]); // Limpiar registros insertados
-            // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
-            setTimeout(() => {
-              isProcessingTabChangeRef.current = false;
-              // Resetear skipNextSyncRef después de que se haya procesado
-              setTimeout(() => {
-                skipNextSyncRef.current = false;
-              }, 100);
-            }, 200);
-          },
-          () => {
-            // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
-            propOnSubTabChange?.(activeSubTab);
-            // Liberar el guard inmediatamente en caso de cancelar
-            isProcessingTabChangeRef.current = false;
-          }
-        );
+        // Usar el sistema del sidebar para mostrar el modal
+        const panelId = `system-parameters-${selectedTable}`;
+        
+        // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
+        // Esto previene que el cambio se ejecute antes de que el usuario confirme
+        propOnSubTabChange?.(activeSubTab);
+        
+        sidebar.requestSubTabChange?.(tab, () => {
+          // Confirmar: usar handleSubTabChangeFromProtectedButton para evitar validación duplicada
+          sidebar.markDirty(panelId, false);
+          handleSubTabChangeFromProtectedButton(tab);
+        });
         return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
       }
     } else if (activeSubTab === 'update') {
@@ -716,37 +730,18 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             return names[subTab] || subTab;
           };
           
-          showModal(
-            'subtab',
-            getSubTabName(activeSubTab),
-            getSubTabName(tab),
-            () => {
-              // Confirmar: proceder con el cambio y limpiar formulario
-              // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
-              skipNextSyncRef.current = true;
-              // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
-              setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
-              // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
-              propOnSubTabChange?.(tab);
-              setMessage(null);
-              resetForm(); // Limpiar formulario siempre al confirmar
-              setUpdateFormData({}); // Limpiar datos de actualización
-              // Liberar el guard después de un delay suficiente para que useSystemParametersSync procese el skip
-              setTimeout(() => {
-                isProcessingTabChangeRef.current = false;
-                // Resetear skipNextSyncRef después de que se haya procesado
-                setTimeout(() => {
-                  skipNextSyncRef.current = false;
-                }, 100);
-              }, 200);
-            },
-            () => {
-              // Cancelar: revertir el cambio en App.tsx para que la pestaña visual vuelva al estado original
-              propOnSubTabChange?.(activeSubTab);
-              // Liberar el guard inmediatamente en caso de cancelar
-              isProcessingTabChangeRef.current = false;
-            }
-          );
+          // Usar el sistema del sidebar para mostrar el modal
+          const panelId = `system-parameters-${selectedTable}`;
+          
+          // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
+          // Esto previene que el cambio se ejecute antes de que el usuario confirme
+          propOnSubTabChange?.(activeSubTab);
+          
+          sidebar.requestSubTabChange?.(tab, () => {
+            // Confirmar: usar handleSubTabChangeFromProtectedButton para evitar validación duplicada
+            sidebar.markDirty(panelId, false);
+            handleSubTabChangeFromProtectedButton(tab);
+          });
           return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
         }
       }
@@ -775,7 +770,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       setInsertedRecords([]); // Limpiar registros insertados
     }
     if (tab !== 'update') setUpdateFormData({}); // Limpiar datos de actualización al cambiar de pestaña
-  }, [insertForm, activeSubTab, selectedTable, hasUnsavedChanges, propOnSubTabChange, updateFormData, showModal, setInsertedRecords]);
+  }, [insertForm, activeSubTab, selectedTable, hasUnsavedChanges, propOnSubTabChange, updateFormData, setInsertedRecords]);
 
   // Actualizar el ref cuando handleSubTabChangeInternal cambie
   useEffect(() => {
@@ -1147,6 +1142,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getEmpresaName={getEmpresaName}
                 getFundoName={getFundoName}
                 onFormDataChange={(massiveFormData) => {
+                  // Guardar datos del formulario masivo para detección de cambios sin guardar
+                  setMassiveFormData(massiveFormData);
                   if (onMassiveFormDataChange) {
                     onMassiveFormDataChange(massiveFormData);
                   }

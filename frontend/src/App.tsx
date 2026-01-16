@@ -61,7 +61,7 @@ const SystemParametersWithSuspense = React.forwardRef<
 // MAIN COMPONENT
 // ============================================================================
 
-const AppContentInternal: React.FC = () => {
+const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null> }> = ({ executeTabChangeRef }) => {
 
   // ============================================================================
   // HOOKS & CONTEXTS
@@ -476,46 +476,9 @@ const AppContentInternal: React.FC = () => {
     setCurrentMassiveFormData(massiveFormData);
   }, []);
 
-
-  // Handler para cambios de pestaña de ALERTAS
-  const handleAlertasReglaChange = (subTab: 'status' | 'insert' | 'update') => {
-    setActiveSubTab(subTab);
-    startTransition(() => {
-      setActiveTab(`alertas-regla-${subTab}`);
-    });
-  };
-
-  // Función para obtener datos del formulario actual (si estamos en parámetros)
-  const getCurrentFormData = () => {
-    return currentFormData;
-  };
-
-  // Función para obtener datos múltiples actuales (si estamos en parámetros)
-  const getCurrentMultipleData = () => {
-    return currentMultipleData;
-  };
-
-  // Mostrar loading mientras se verifica la autenticación
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Mostrar login si no hay usuario autenticado
-  if (!user) {
-    return <LoginForm activeTab={activeTab} />;
-  }
-
-
-  // Handlers para cambios de pestaña
-  const handleTabChange = (tab: string) => {
-    
+  // Handler interno para ejecutar el cambio de tab después de confirmar
+  // IMPORTANTE: Debe estar ANTES de cualquier return condicional
+  const executeTabChange = useCallback((tab: string) => {
     // Si cambiamos a permisos, inicializar activeSubTab a 'status'
     if (tab === 'permisos' && activeTab !== 'permisos') {
       setActiveSubTab('status');
@@ -542,13 +505,96 @@ const AppContentInternal: React.FC = () => {
     // Navegación simple sin interceptores
     setActiveTab(tab);
     setShowWelcomeIntegrated(false);
+  }, [activeTab]);
+  
+  // Exponer executeTabChange al ref para que SidebarProvider pueda usarlo
+  // IMPORTANTE: Debe estar ANTES de cualquier return condicional
+  useEffect(() => {
+    if (executeTabChangeRef) {
+      executeTabChangeRef.current = executeTabChange;
+    }
+  }, [executeTabChange, executeTabChangeRef]);
+
+  // Handler para cambios de pestaña de ALERTAS
+  const handleAlertasReglaChange = (subTab: 'status' | 'insert' | 'update') => {
+    setActiveSubTab(subTab);
+    startTransition(() => {
+      setActiveTab(`alertas-regla-${subTab}`);
+    });
   };
 
-  const handleTableSelect = (table: string) => {
-    // Cambio directo sin validación (la validación se hace en ProtectedParameterButton)
-    setActiveSubTab('status');
+  // Función para obtener datos del formulario actual (si estamos en parámetros)
+  const getCurrentFormData = () => {
+    return currentFormData;
+  };
+
+  // Función para obtener datos múltiples actuales (si estamos en parámetros)
+  const getCurrentMultipleData = () => {
+    return currentMultipleData;
+  };
+
+  // Ref para mantener el activeTab actual (para reversión cuando se cancela el modal)
+  const activeTabRef = useRef(activeTab);
+  
+  // Actualizar ref cuando activeTab cambia
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Handlers para cambios de pestaña
+  const handleTabChange = (tab: string) => {
+    // Guardar el activeTab actual antes de cualquier cambio
+    const currentTab = activeTabRef.current;
     
-    // Determinar a qué sección pertenece la tabla
+    console.log('[App] handleTabChange llamado', {
+      currentTab,
+      targetTab: tab,
+      activeTabState: activeTab,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Usar el sistema del sidebar para verificar cambios sin guardar
+    // IMPORTANTE: requestLeave solo muestra el modal si hay cambios, no ejecuta el cambio inmediatamente
+    // Pasar activeTab actual y callback para revertir si hay cambios
+    sidebar.requestLeave(tab, currentTab, () => {
+      console.log('[App] onRevert ejecutado, revirtiendo activeTab a', currentTab);
+      // Revertir activeTab al valor que tenía antes del click
+      // Esto previene que el cambio se ejecute antes de que el usuario confirme
+      setActiveTab(currentTab);
+      // Actualizar el ref también
+      activeTabRef.current = currentTab;
+    });
+  };
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar login si no hay usuario autenticado
+  if (!user) {
+    return <LoginForm activeTab={activeTab} />;
+  }
+
+  const handleTableSelect = (table: string) => {
+    // Guardar el activeTab actual antes de cualquier cambio
+    const currentTab = activeTabRef.current;
+    
+    console.log('[App] handleTableSelect llamado', {
+      currentTab,
+      targetTable: table,
+      activeTabState: activeTab,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Calcular el nuevo activeTab que se generaría
     const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
     const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
     const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
@@ -557,7 +603,56 @@ const AppContentInternal: React.FC = () => {
     const parametrosGeoTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion', 'asociacion'];
     const notificacionesTables = ['criticidad', 'umbral', 'regla'];
     
-    startTransition(() => {
+    let newActiveTab = '';
+    if (activeTab.startsWith('configuracion-dispositivos') && dispositivosTables.includes(table)) {
+      newActiveTab = `configuracion-dispositivos-${table}`;
+    } else if (activeTab.startsWith('configuracion-usuarios') && usuariosTables.includes(table)) {
+      newActiveTab = `configuracion-usuarios-${table}`;
+    } else if (activeTab.startsWith('configuracion-parametros-geo') && parametrosGeoTables.includes(table)) {
+      newActiveTab = `configuracion-parametros-geo-${table}`;
+    } else if (activeTab.startsWith('configuracion-notificaciones') && notificacionesTables.includes(table)) {
+      if (table === 'regla' && activeTab.startsWith('configuracion-notificaciones-regla')) {
+        newActiveTab = 'configuracion-notificaciones-regla-regla';
+      } else if (table === 'regla') {
+        newActiveTab = 'configuracion-notificaciones-regla';
+      } else {
+        newActiveTab = `configuracion-notificaciones-${table}`;
+      }
+    } else if (table === 'entidad' || table === 'entidad_localizacion') {
+      newActiveTab = `agrupacion-${table}`;
+    } else if (geografiaTables.includes(table)) {
+      newActiveTab = `geografia-${table}`;
+    } else if (dispositivosTables.includes(table)) {
+      newActiveTab = `configuracion-dispositivos-${table}`;
+    } else if (usuariosTables.includes(table)) {
+      newActiveTab = `configuracion-usuarios-${table}`;
+    } else if (parametrosGeoTables.includes(table)) {
+      newActiveTab = `configuracion-parametros-geo-${table}`;
+    } else if (parametrosTables.includes(table)) {
+      newActiveTab = `parametros-${table}`;
+    } else if (permisosTables.includes(table)) {
+      newActiveTab = `permisos-${table}`;
+    } else if (notificacionesTables.includes(table)) {
+      if (table === 'regla') {
+        newActiveTab = 'configuracion-notificaciones-regla';
+      } else {
+        newActiveTab = `configuracion-notificaciones-${table}`;
+      }
+    } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
+      newActiveTab = `configuracion-notificaciones-regla-${table}`;
+    } else if (table === 'permisos-geo' || table === 'permisos-conf') {
+      newActiveTab = `configuracion-permisos-${table}`;
+    } else if (['sensor_valor_error', 'audit_log_umbral', 'msg_outbox'].includes(table)) {
+      newActiveTab = `configuracion-reportes-administrador-${table}`;
+    } else {
+      newActiveTab = `tabla-${table}`;
+    }
+    
+    // Función para ejecutar el cambio de tabla después de confirmar
+    const executeTableChange = () => {
+      setActiveSubTab('status');
+      
+      startTransition(() => {
       // PRIORIDAD: Verificar primero el contexto actual (activeTab) para determinar la sección
       // Esto evita conflictos cuando una tabla está en múltiples listas (ej: 'tipo' está en parametrosTables y dispositivosTables)
       if (activeTab.startsWith('configuracion-dispositivos') && dispositivosTables.includes(table)) {
@@ -672,7 +767,18 @@ const AppContentInternal: React.FC = () => {
         setSelectedTable(table);
         setActiveTab(`tabla-${table}`);
       }
-    });
+      });
+    };
+    
+    // Usar el sistema del sidebar para verificar cambios sin guardar
+    // IMPORTANTE: requestLeave solo muestra el modal si hay cambios, no ejecuta el cambio inmediatamente
+    // Pasar el nuevo activeTab como target, currentTab para revertir, y executeTableChange como onConfirm
+    sidebar.requestLeave(newActiveTab, currentTab, () => {
+      console.log('[App] onRevert ejecutado en handleTableSelect, revirtiendo activeTab a', currentTab);
+      // Revertir activeTab al valor que tenía antes del click
+      setActiveTab(currentTab);
+      activeTabRef.current = currentTab;
+    }, executeTableChange);
   };
 
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => {
@@ -2234,10 +2340,10 @@ const AppContentInternal: React.FC = () => {
 // COMPONENT WRAPPERS
 // ============================================================================
 
-const AppContent: React.FC = () => {
+const AppContent: React.FC<{ executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null> }> = ({ executeTabChangeRef }) => {
   return (
     <FilterProvider>
-      <AppContentInternal />
+      <AppContentInternal executeTabChangeRef={executeTabChangeRef} />
     </FilterProvider>
   );
 };
@@ -2245,12 +2351,19 @@ const AppContent: React.FC = () => {
 // Wrapper para conectar SidebarProvider con AppContentInternal
 // Necesitamos pasar handleTabChange al SidebarProvider
 const AppWithSidebar: React.FC = () => {
-  // Crear una referencia para handleTabChange que se pasará al SidebarProvider
-  // Nota: handleTabChange está dentro de AppContentInternal, así que necesitamos
-  // una forma de conectarlo. Por ahora, el SidebarProvider usará onNavigate opcional.
+  // Ref para almacenar la función executeTabChange desde AppContentInternal
+  const executeTabChangeRef = useRef<((tab: string) => void) | null>(null);
+  
+  // Handler para navegación desde el sidebar
+  const handleNavigate = useCallback((tab: string, subtab?: string) => {
+    if (executeTabChangeRef.current) {
+      executeTabChangeRef.current(tab);
+    }
+  }, []);
+  
   return (
-    <SidebarProvider>
-      <AppContent />
+    <SidebarProvider onNavigate={handleNavigate}>
+      <AppContent executeTabChangeRef={executeTabChangeRef} />
       <SimpleAlertModal />
       <SidebarConfirmModal />
     </SidebarProvider>
