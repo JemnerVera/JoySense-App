@@ -82,7 +82,6 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
     // Campo operador - select con opciones válidas según constraint
     if (col.columnName === 'operador') {
       const operadorOptions = [
-        { value: '', label: '' },
         { value: 'FUERA', label: 'FUERA' },
         { value: 'OUTSIDE', label: 'OUTSIDE' },
         { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
@@ -105,14 +104,15 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
             {displayName.toUpperCase()}{isRequired ? '*' : ''}
           </label>
           <SelectWithPlaceholder
-            value={value || ''}
+            value={value || null}
             onChange={(newValue) => {
               if (isEnabled) {
                 updateField(col.columnName, newValue || '');
               }
             }}
             options={operadorOptions}
-            placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+            placeholder="SELECCIONAR OPERACIÓN"
+            themeColor="orange"
             disabled={!isEnabled}
           />
         </div>

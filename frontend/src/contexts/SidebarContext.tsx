@@ -702,8 +702,12 @@ export function SidebarProvider({
         const hasAnyHovered = expandedPanels.some(level => isPanelHovered(level))
         
         // Si no hay ningún panel hovered y hay paneles expandidos, colapsar todo
-        // Esto es un failsafe en caso de que los event handlers fallen
-        if (!hasAnyHovered) {
+        // EXCEPTO: Si solo está expandido 'main' y no hay activeTab, probablemente estamos en la pantalla de bienvenida
+        // En ese caso, NO colapsar para que el usuario vea las opciones disponibles
+        const isOnlyMainExpanded = expandedPanels.length === 1 && expandedPanels[0] === 'main'
+        const isWelcomeScreen = isOnlyMainExpanded && !activeTab
+        
+        if (!hasAnyHovered && !isWelcomeScreen) {
           console.warn('[SIDEBAR FAILSAFE] Detectados sidebars expandidos sin hover, colapsando automáticamente')
           collapseAll()
         }
@@ -717,7 +721,7 @@ export function SidebarProvider({
         failsafeTimeoutRef.current = null
       }
     }
-  }, [getExpandedPanels, isPanelHovered, collapseAll])
+  }, [getExpandedPanels, isPanelHovered, collapseAll, activeTab])
   
   // Valor del contexto
   const value = useMemo<SidebarContextValue>(() => {

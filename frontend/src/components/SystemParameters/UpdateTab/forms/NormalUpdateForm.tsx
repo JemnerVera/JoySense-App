@@ -603,7 +603,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
             // Campo operador - select con opciones válidas
             (() => {
               const operadorOptions = [
-                { value: '', label: '' },
                 { value: 'FUERA', label: 'FUERA' },
                 { value: 'OUTSIDE', label: 'OUTSIDE' },
                 { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
@@ -620,10 +619,11 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
               
               return (
                 <SelectWithPlaceholder
-                  value={formData[field.name] || ''}
+                  value={formData[field.name] || null}
                   onChange={(newValue) => updateFormField(field.name, newValue || '')}
                   options={operadorOptions}
-                  placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+                  placeholder="SELECCIONAR OPERACIÓN"
+                  themeColor="orange"
                 />
               );
             })()
@@ -788,6 +788,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                       });
                     })()}
                     placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
+                    themeColor={field.name === 'sensorid' && (config?.name === 'metricasensor' || tableName === 'metricasensor') ? 'orange' : undefined}
                   />
                 ) : field.foreignKey ? (
                   // Clave primaria simple con foreignKey: mostrar nombre como readonly
