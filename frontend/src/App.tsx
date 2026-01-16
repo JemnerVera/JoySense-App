@@ -8,6 +8,8 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { FilterProvider, useFilters } from './contexts/FilterContext';
+import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
+import { SidebarConfirmModal } from './components/sidebar/SidebarConfirmModal';
 import ReportesAlertasWrapper from './components/ReportesAlertasWrapper';
 import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
@@ -396,10 +398,14 @@ const AppContentInternal: React.FC = () => {
   } = useAppSidebar({ showWelcome: showWelcomeIntegrated, activeTab });
 
   // Hook para el layout del contenido principal (obtiene handleContentMouseEnter de useSidebarLayout)
+  // NOTA: Este hook se mantiene para compatibilidad, pero el nuevo sistema usa useSidebar directamente
   const { handleContentMouseEnter: handleContentMouseEnterFromLayout, handleContentMouseLeave: handleContentMouseLeaveFromLayout } = useMainContentLayout({ 
     showWelcome: showWelcomeIntegrated, 
     activeTab 
   });
+  
+  // Obtener el handler del nuevo sistema de sidebars
+  const sidebar = useSidebar()
 
   // Cargar todos los datos iniciales en un solo useEffect
   useEffect(() => {
@@ -1634,20 +1640,22 @@ const AppContentInternal: React.FC = () => {
         <div 
           className={`${getMainContentClasses(sidebarVisible)} bg-gray-50 dark:bg-black flex-1`}
           onMouseEnter={(e) => {
-            console.log('[DEBUG] App.tsx: handleContentMouseEnter en área principal', {
-              activeTab: activeTab,
-              target: e.target,
-              timestamp: new Date().toISOString(),
-              // Verificar si el target está realmente en el contenido o en los sidebars
-              targetClasses: (e.target as HTMLElement).className,
-              targetTagName: (e.target as HTMLElement).tagName
-            });
-            // Usar el handleContentMouseEnter de useSidebarLayout (que controla los sidebars reales)
-            // en lugar del de useAppSidebar (que es solo para compatibilidad)
+            // Usar el nuevo sistema de sidebars para colapsar cuando el cursor entra al contenido
+            // Verificar que la función exista antes de llamarla
+            if (sidebar && typeof sidebar.handleContentMouseEnter === 'function') {
+              sidebar.handleContentMouseEnter()
+            } else {
+              console.error('[SIDEBAR ERROR] handleContentMouseEnter no está disponible en sidebar:', {
+                sidebar: sidebar,
+                hasHandleContentMouseEnter: sidebar && 'handleContentMouseEnter' in sidebar,
+                type: sidebar && typeof sidebar.handleContentMouseEnter
+              })
+            }
+            
+            // También llamar los handlers antiguos para compatibilidad
             if (handleContentMouseEnterFromLayout) {
               handleContentMouseEnterFromLayout();
             }
-            // También llamar el de useAppSidebar para mantener compatibilidad con otros hooks
             handleContentMouseEnter();
           }}
           onMouseLeave={(e) => {
@@ -2245,6 +2253,21 @@ const AppContent: React.FC = () => {
   );
 };
 
+// Wrapper para conectar SidebarProvider con AppContentInternal
+// Necesitamos pasar handleTabChange al SidebarProvider
+const AppWithSidebar: React.FC = () => {
+  // Crear una referencia para handleTabChange que se pasará al SidebarProvider
+  // Nota: handleTabChange está dentro de AppContentInternal, así que necesitamos
+  // una forma de conectarlo. Por ahora, el SidebarProvider usará onNavigate opcional.
+  return (
+    <SidebarProvider>
+      <AppContent />
+      <SimpleAlertModal />
+      <SidebarConfirmModal />
+    </SidebarProvider>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
@@ -2252,8 +2275,7 @@ const App: React.FC = () => {
         <LanguageProvider>
           <ToastProvider>
             <ModalProvider>
-              <AppContent />
-              <SimpleAlertModal />
+              <AppWithSidebar />
             </ModalProvider>
           </ToastProvider>
         </LanguageProvider>

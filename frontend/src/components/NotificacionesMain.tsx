@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useModal } from '../contexts/ModalContext';
 import { useFilters } from '../contexts/FilterContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Config & Types
 import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
@@ -84,6 +85,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   const { user } = useAuth();
   const { showModal } = useModal();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const sidebar = useSidebar();
 
   // Estado local
   const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || '');
@@ -276,6 +278,39 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   useEffect(() => {
     loadRelatedTablesData();
   }, [loadRelatedTablesData]);
+
+  // ============================================================================
+  // INTEGRACIÓN CON SIDEBAR - Detectar y marcar cambios sin guardar
+  // ============================================================================
+  
+  // Detectar cambios sin guardar y marcarlos en el sidebar
+  useEffect(() => {
+    if (!selectedTable) {
+      sidebar.markDirty(`notificaciones-${selectedTable}`, false);
+      return;
+    }
+
+    const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+    let hasChanges = false;
+
+    if (activeSubTab === 'insert') {
+      // Verificar cambios en formulario de inserción
+      hasChanges = hasUnsavedChanges({
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab
+      });
+    } else if (activeSubTab === 'update') {
+      // Verificar cambios en formulario de actualización
+      if (updateFormData && Object.keys(updateFormData).length > 0) {
+        const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
+        hasChanges = hasRealChanges;
+      }
+    }
+
+    // Marcar en el sidebar
+    sidebar.markDirty(panelId, hasChanges);
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, hasUnsavedChanges, sidebar]);
 
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => {
@@ -697,6 +732,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
             // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
             skipNextSyncRef.current = true;
             // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
+            
+            // Limpiar cambios sin guardar en el sidebar
+            const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+            sidebar.markDirty(panelId, false);
+            
             insertForm?.resetForm(); // Limpiar formulario usando useInsertForm
             setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
             // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
@@ -754,6 +794,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
               // IMPORTANTE: Marcar ANTES de cualquier actualización de estado para prevenir sincronización duplicada
               skipNextSyncRef.current = true;
               // Mantener isProcessingTabChangeRef en true hasta que se complete el cambio
+              
+              // Limpiar cambios sin guardar en el sidebar
+              const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+              sidebar.markDirty(panelId, false);
+              
               setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación)
               // Llamar al callback del padre - esto actualizará propActiveSubTab en App.tsx
               propOnSubTabChange?.(tab);

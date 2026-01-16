@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSidebarLayout } from '../../hooks/useSidebarLayout';
+import { useSidebarState } from '../../hooks/useSidebarState';
 import { useSectionPermissions } from '../../hooks/useSectionPermissions';
 import MainSidebar from './MainSidebar';
 import AuxiliarySidebar from './AuxiliarySidebar';
@@ -70,7 +70,7 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
     getMainContentMargin,
     getMainSidebarClasses,
     getAuxiliarySidebarClasses
-  } = useSidebarLayout({ showWelcome, activeTab });
+  } = useSidebarState({ showWelcome, activeTab });
 
   return (
     <div className="flex h-full flex-shrink-0 relative">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useModal } from '../contexts/ModalContext';
 import { useSimpleChangeDetection } from '../hooks/useSimpleChangeDetection';
+import { useSidebar } from '../contexts/SidebarContext';
 
 interface ProtectedSubTabButtonProps {
   children: React.ReactNode;
@@ -31,6 +32,7 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
 }) => {
   const { showModal } = useModal();
   const { hasSignificantChanges } = useSimpleChangeDetection();
+  const sidebar = useSidebar();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -61,17 +63,25 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
       onClick();
     }
 
-    // Verificar si hay cambios sin guardar
+    // NUEVO SISTEMA: Verificar cambios usando el sidebar
+    // Construir panelId para el sidebar
+    const panelId = selectedTable ? `${selectedTable}-${currentTab}` : currentTab;
+    const hasChangesInSidebar = sidebar.hasUnsavedChanges[panelId] === true;
+    
+    // También verificar con el sistema legacy para compatibilidad
     const hasChanges = hasSignificantChanges(formData, selectedTable, currentTab, multipleData, massiveFormData);
     
     console.log('[ProtectedSubTabButton] Resultado de detección de cambios', {
       hasChanges,
+      hasChangesInSidebar,
       selectedTable,
       currentTab,
-      targetTab
+      targetTab,
+      panelId
     });
     
-    if (hasChanges) {
+    // Si hay cambios (en cualquiera de los dos sistemas), mostrar modal
+    if (hasChanges || hasChangesInSidebar) {
       console.log('[ProtectedSubTabButton] Mostrando modal de confirmación');
       setIsModalOpen(true);
       // Mostrar modal de confirmación SIN cambiar la pestaña
@@ -82,6 +92,10 @@ const ProtectedSubTabButton: React.FC<ProtectedSubTabButtonProps> = ({
         () => {
           console.log('[ProtectedSubTabButton] Modal confirmado, cambiando a tab:', targetTab);
           setIsModalOpen(false);
+          
+          // Limpiar cambios en el sidebar
+          sidebar.markDirty(panelId, false);
+          
           // IMPORTANTE: Si hay onTabChangeFromProtectedButton, usarlo en lugar de onTabChange
           // Esto evita que handleSubTabChangeInternal muestre el modal de nuevo
           if (onTabChangeFromProtectedButton) {
