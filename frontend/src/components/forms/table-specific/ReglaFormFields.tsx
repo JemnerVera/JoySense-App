@@ -3,7 +3,7 @@
 // ============================================================================
 // Componente específico para renderizar formulario combinado REGLA + REGLA_UMBRAL
 
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import SelectWithPlaceholder from '../../SelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
@@ -26,6 +26,7 @@ interface ReglaFormFieldsProps {
   getThemeColor: (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => string;
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   isFieldRequired: (columnName: string) => boolean;
+  disabled?: boolean; // Nueva prop para deshabilitar campos
 }
 
 export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
@@ -36,153 +37,68 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
   updateField,
   getThemeColor,
   getUniqueOptionsForField,
-  isFieldRequired
+  isFieldRequired,
+  disabled = false
 }) => {
   const { t } = useLanguage();
-  const [reglaUmbralRows, setReglaUmbralRows] = useState<ReglaUmbralRow[]>([
-    {
-      umbralid: null,
-      operador_logico: 'AND',
-      agrupador_inicio: false,
-      agrupador_fin: false,
-      orden: 1,
-      tempId: `temp-${Date.now()}`
-    }
-  ]);
-
-  // Inicializar reglaUmbralRows desde formData si existe (solo una vez)
-  const isInitialized = React.useRef(false);
-  useEffect(() => {
-    if (!isInitialized.current && formData._reglaUmbralRows && Array.isArray(formData._reglaUmbralRows)) {
-      setReglaUmbralRows(formData._reglaUmbralRows);
-      isInitialized.current = true;
-    } else if (!isInitialized.current) {
-      // Si no hay datos iniciales, inicializar con una fila por defecto
-      isInitialized.current = true;
-    }
-  }, []);
-
-  // Sincronizar reglaUmbralRows con formData cuando cambia
-  // Usamos useLayoutEffect para sincronizar ANTES del render, asegurando que formData esté actualizado
-  // cuando se ejecute la validación
-  useLayoutEffect(() => {
-    if (isInitialized.current) {
-      // Usar función de actualización para asegurar que tenemos el formData más reciente
-      setFormData((prevFormData: Record<string, any>) => {
-        // Solo actualizar si realmente cambió para evitar loops infinitos
-        const currentRows = prevFormData._reglaUmbralRows;
-        const currentRowsStr = JSON.stringify(currentRows);
-        const newRowsStr = JSON.stringify(reglaUmbralRows);
-        
-        if (currentRowsStr !== newRowsStr) {
-          return {
-            ...prevFormData,
-            _reglaUmbralRows: reglaUmbralRows
-          };
-        }
-        return prevFormData;
-      });
-    }
-  }, [reglaUmbralRows, setFormData]);
   
-  // También sincronizar con useEffect como fallback (por si useLayoutEffect no es suficiente)
-  useEffect(() => {
-    if (isInitialized.current) {
-      setFormData((prevFormData: Record<string, any>) => {
-        const currentRows = prevFormData._reglaUmbralRows;
-        const currentRowsStr = JSON.stringify(currentRows);
-        const newRowsStr = JSON.stringify(reglaUmbralRows);
-        
-        if (currentRowsStr !== newRowsStr) {
-          return {
-            ...prevFormData,
-            _reglaUmbralRows: reglaUmbralRows
-          };
-        }
-        return prevFormData;
-      });
-    }
-  }, [reglaUmbralRows, setFormData]);
+  // SOLUCIÓN SIMPLIFICADA: Usar directamente formData._reglaUmbralRows como fuente de verdad
+  const reglaUmbralRows = React.useMemo(() => {
+    return (formData._reglaUmbralRows && Array.isArray(formData._reglaUmbralRows)) 
+      ? formData._reglaUmbralRows 
+      : [];
+  }, [formData._reglaUmbralRows]);
 
   // Función para agregar una nueva fila de umbral
   const handleAddUmbralRow = () => {
-    const newOrden = Math.max(...reglaUmbralRows.map(r => r.orden), 0) + 1;
+    const newOrden = Math.max(...reglaUmbralRows.map(r => r.orden || 0), 0) + 1;
     const newRow: ReglaUmbralRow = {
       umbralid: null,
       operador_logico: 'AND' as 'AND' | 'OR',
       agrupador_inicio: false,
       agrupador_fin: false,
       orden: newOrden,
-      tempId: `temp-${Date.now()}-${Math.random()}`
+      tempId: `temp-${Date.now()}`
     };
-    const newRows: ReglaUmbralRow[] = [...reglaUmbralRows, newRow];
-    setReglaUmbralRows(newRows);
-    // Sincronizar inmediatamente con formData
-    setFormData((prevFormData: Record<string, any>) => ({
-      ...prevFormData,
+    setFormData((prev: Record<string, any>) => ({
+      ...prev,
+      _reglaUmbralRows: [...reglaUmbralRows, newRow]
+    }));
+  };
+
+  // Función para eliminar una fila de umbral
+  const handleRemoveUmbralRow = (tempId: string) => {
+    const newRows = reglaUmbralRows.filter(row => row.tempId !== tempId);
+    setFormData((prev: Record<string, any>) => ({
+      ...prev,
       _reglaUmbralRows: newRows
     }));
   };
 
-  // Función para eliminar una fila de umbral (solo si hay más de 1)
-  const handleRemoveUmbralRow = (tempId: string) => {
-    if (reglaUmbralRows.length > 1) {
-      const newRows = reglaUmbralRows.filter(r => r.tempId !== tempId);
-      setReglaUmbralRows(newRows);
-      // Sincronizar inmediatamente con formData
-      setFormData((prevFormData: Record<string, any>) => ({
-        ...prevFormData,
-        _reglaUmbralRows: newRows
-      }));
-    }
-  };
-
-  // Función para actualizar una fila de umbral
+  // Función para actualizar un campo de una fila de umbral
   const handleUpdateUmbralRow = (tempId: string, field: keyof ReglaUmbralRow, value: any) => {
-    setReglaUmbralRows(prevRows => {
-      const updatedRows = prevRows.map(row => {
-        if (row.tempId === tempId) {
-          return { ...row, [field]: value };
-        }
-        return row;
-      });
-      // Sincronizar inmediatamente con formData
-      setFormData((prevFormData: Record<string, any>) => ({
-        ...prevFormData,
-        _reglaUmbralRows: updatedRows
-      }));
-      return updatedRows;
-    });
+    const newRows = reglaUmbralRows.map(row => 
+      row.tempId === tempId ? { ...row, [field]: value } : row
+    );
+    setFormData((prev: Record<string, any>) => ({
+      ...prev,
+      _reglaUmbralRows: newRows
+    }));
   };
 
   // Función para actualizar múltiples campos de una fila de umbral
   const handleUpdateUmbralRowMultiple = (tempId: string, updates: Partial<ReglaUmbralRow>) => {
-    setReglaUmbralRows(prevRows => {
-      const updatedRows = prevRows.map(row => {
-        if (row.tempId === tempId) {
-          return { ...row, ...updates };
-        }
-        return row;
-      });
-      // Sincronizar inmediatamente con formData
-      setFormData((prevFormData: Record<string, any>) => ({
-        ...prevFormData,
-        _reglaUmbralRows: updatedRows
-      }));
-      return updatedRows;
-    });
+    const newRows = reglaUmbralRows.map(row => 
+      row.tempId === tempId ? { ...row, ...updates } : row
+    );
+    setFormData((prev: Record<string, any>) => ({
+      ...prev,
+      _reglaUmbralRows: newRows
+    }));
   };
 
-  // Obtener opciones de umbrales - usar useMemo para actualizar cuando cambien los datos
-  const umbralOptions = React.useMemo(() => {
-    try {
-      const options = getUniqueOptionsForField('umbralid');
-      return options;
-    } catch (error) {
-      console.error('[ReglaFormFields] Error al obtener opciones de umbrales:', error);
-      return [];
-    }
-  }, [getUniqueOptionsForField]);
+  // Obtener opciones de umbrales
+  const umbralOptions = getUniqueOptionsForField('umbralid');
 
   // Renderizar campo de REGLA
   const renderReglaField = (col: any): React.ReactNode => {
@@ -205,14 +121,19 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
           <div className="flex items-center space-x-4">
             {/* Toggle Switch */}
             <div
-              onClick={() => updateField(col.columnName, !isChecked)}
-              className={`relative inline-flex h-10 w-20 cursor-pointer items-center rounded-full transition-colors duration-300 ease-in-out ${
+              onClick={() => {
+                if (!disabled) {
+                  updateField(col.columnName, !isChecked);
+                }
+              }}
+              className={`relative inline-flex h-10 w-20 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} items-center rounded-full transition-colors duration-300 ease-in-out ${
                 isChecked
                   ? 'bg-orange-500'
                   : 'bg-gray-300 dark:bg-neutral-700'
               }`}
               role="switch"
               aria-checked={isChecked}
+              aria-disabled={disabled}
             >
               {/* Slider */}
               <span
@@ -264,12 +185,15 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
           <SelectWithPlaceholder
             value={value || ''}
             onChange={(newValue) => {
-              const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
-              updateField(col.columnName, newValueParsed);
+              if (!disabled) {
+                const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
+                updateField(col.columnName, newValueParsed);
+              }
             }}
             options={options}
             placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
             themeColor="orange"
+            disabled={disabled}
           />
         </div>
       );
@@ -285,29 +209,27 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
           <input
             type="text"
             value={value || ''}
-            onChange={(e) => updateField(col.columnName, e.target.value)}
+            onChange={(e) => {
+              if (!disabled) {
+                updateField(col.columnName, e.target.value);
+              }
+            }}
+            disabled={disabled}
             placeholder={displayName.toUpperCase()}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600`}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono ${
+              disabled
+                ? 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
+                : 'bg-neutral-800 border-neutral-600'
+            }`}
           />
         </div>
       );
     }
 
-    // Campos con valores por defecto y tooltips (ventana, cooldown, prioridad)
+    // Campos numéricos (ventana, cooldown, prioridad)
     if (['ventana', 'cooldown', 'prioridad'].includes(col.columnName)) {
-      // Tooltips explicativos
-      const tooltips: Record<string, string> = {
-        prioridad: 'Nivel de importancia. Mayor número = mayor prioridad en la evaluación.',
-        ventana: 'Período de tiempo para evaluar las condiciones. Formato: "00:10:00" (10 minutos) o "1 hour".',
-        cooldown: 'Tiempo de espera antes de generar otra alerta. Formato: "1 day" o "00:30:00" (30 minutos).'
-      };
-      
-      const tooltipText = tooltips[col.columnName];
-      
-      // Valores por defecto
-      const defaultValue = col.columnName === 'prioridad' ? 1 : col.columnName === 'ventana' ? '00:10:00' : '1 day';
-      const defaultValueString = String(defaultValue);
-      const displayValue = value !== null && value !== undefined && value !== '' ? value : defaultValue;
+      const displayValue = value !== null && value !== undefined ? String(value) : '';
+      const defaultValueString = col.columnName === 'ventana' ? 'Ej: 300' : col.columnName === 'cooldown' ? 'Ej: 60' : 'Ej: 1';
       
       return (
         <div key={col.columnName} className="mb-4">
@@ -315,10 +237,10 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             <label className={`block text-lg font-bold font-mono tracking-wider ${getThemeColor('text')}`}>
               {displayName.toUpperCase()}{isRequired ? '*' : ''}
             </label>
-            {tooltipText && (
+            {col.columnName === 'ventana' && (
               <div className="group relative">
                 <svg
-                  className="w-5 h-5 text-orange-500 cursor-help hover:text-orange-400 transition-colors"
+                  className="w-5 h-5 text-orange-500 cursor-help"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -332,7 +254,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                 </svg>
                 <div className="absolute left-0 bottom-full mb-2 w-72 p-3 bg-gray-800 dark:bg-neutral-900 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 font-mono border border-orange-500">
                   <div className="text-orange-400 font-bold mb-1">{displayName.toUpperCase()}</div>
-                  <div className="text-gray-300">{tooltipText}</div>
+                  <div className="text-gray-300">Tiempo de ventana para evaluar la regla. Formato: HH:MM:SS o descripción (ej: 00:10:00 o 10 minutes)</div>
                 </div>
               </div>
             )}
@@ -341,13 +263,20 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             type={col.columnName === 'prioridad' ? 'number' : 'text'}
             value={displayValue}
             onChange={(e) => {
-              const newValue = col.columnName === 'prioridad' 
-                ? (e.target.value ? parseInt(e.target.value) : null)
-                : e.target.value;
-              updateField(col.columnName, newValue);
+              if (!disabled) {
+                const newValue = col.columnName === 'prioridad' 
+                  ? (e.target.value ? parseInt(e.target.value) : null)
+                  : e.target.value;
+                updateField(col.columnName, newValue);
+              }
             }}
+            disabled={disabled}
             placeholder={defaultValueString}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600`}
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono ${
+              disabled
+                ? 'bg-neutral-700 border-neutral-600 opacity-50 cursor-not-allowed'
+                : 'bg-neutral-800 border-neutral-600'
+            }`}
           />
         </div>
       );
@@ -356,87 +285,86 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
     return null;
   };
 
-  // Obtener campos de REGLA
-  const nombreField = visibleColumns.find(c => c.columnName === 'nombre');
-  const prioridadField = visibleColumns.find(c => c.columnName === 'prioridad');
-  const ventanaField = visibleColumns.find(c => c.columnName === 'ventana');
-  const cooldownField = visibleColumns.find(c => c.columnName === 'cooldown');
-  const criticidadField = visibleColumns.find(c => c.columnName === 'criticidadid');
-  const requiereEscalamientoField = visibleColumns.find(c => c.columnName === 'requiere_escalamiento');
-  const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-
   return (
     <div className="space-y-6">
-      {/* Formulario compacto de REGLA (cabecera) */}
-      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4">
-        <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500 mb-4">REGLA</h3>
-        
-        {/* Fila 1: Nombre, Prioridad, Ventana */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {nombreField && renderReglaField(nombreField)}
-          {prioridadField && renderReglaField(prioridadField)}
-          {ventanaField && renderReglaField(ventanaField)}
-        </div>
-
-        {/* Fila 2: Cooldown, Criticidad, ESCALA? */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {cooldownField && renderReglaField(cooldownField)}
-          {criticidadField && renderReglaField(criticidadField)}
-          {requiereEscalamientoField && renderReglaField(requiereEscalamientoField)}
-        </div>
+      {/* Campos de la regla */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {visibleColumns.map(col => renderReglaField(col))}
       </div>
 
-      {/* Grid de REGLA_UMBRAL */}
-      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4">
+      {/* Tabla de umbrales */}
+      <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">UMBRALES</h3>
           <button
             type="button"
-            onClick={handleAddUmbralRow}
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-mono rounded-lg transition-colors"
+            onClick={() => {
+              if (!disabled) {
+                handleAddUmbralRow();
+              }
+            }}
+            disabled={disabled}
+            className={`px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-mono rounded-lg transition-colors ${
+              disabled ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             + AGREGAR UMBRAL
           </button>
         </div>
-
         {/* Tabla de umbrales */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-300 dark:border-neutral-600">
-                <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">UMBRAL</th>
-                <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">OPERADOR</th>
-                <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">AGRUPADOR</th>
-                <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">ORDEN</th>
-                <th className="px-3 py-2 text-left font-mono font-bold text-orange-500"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {reglaUmbralRows.map((row, index) => (
-                <tr key={row.tempId} className="border-b border-gray-300 dark:border-neutral-600">
-                  {/* Umbral - Combobox */}
-                  <td className="px-3 py-2">
+        {reglaUmbralRows.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-gray-300 dark:border-neutral-600">
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">UMBRAL</th>
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">OPERADOR</th>
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">AGRUPADOR</th>
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">ORDEN</th>
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {reglaUmbralRows.map((row, index) => {
+                  const umbralValue = row.umbralid ? String(row.umbralid) : null;
+                  return (
+                    <tr key={row.tempId} className="border-b border-gray-300 dark:border-neutral-600">
+                      {/* Umbral - Combobox */}
+                      <td className="px-3 py-2">
                     <SelectWithPlaceholder
-                      value={row.umbralid || ''}
+                      value={umbralValue}
                       onChange={(newValue) => {
-                        const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
-                        handleUpdateUmbralRow(row.tempId!, 'umbralid', newValueParsed);
+                        if (!disabled) {
+                          const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
+                          handleUpdateUmbralRow(row.tempId!, 'umbralid', newValueParsed);
+                        }
                       }}
                       options={umbralOptions}
                       placeholder="SELECCIONAR UMBRAL"
                       themeColor="orange"
                       menuPlacement="auto"
                       dropdownWidth="w-full min-w-[300px]"
+                      disabled={disabled}
+                      allowExternalChange={true}
                     />
-                  </td>
+                      </td>
 
-                  {/* Operador - Botones AND/OR */}
-                  <td className="px-3 py-2">
+                      {/* Operador - Botones AND/OR */}
+                      <td className="px-3 py-2">
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'AND')}
+                        onClick={() => {
+                          if (!disabled) {
+                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'AND');
+                          }
+                        }}
+                        disabled={disabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
                           row.operador_logico === 'AND'
                             ? 'bg-orange-500 text-white'
                             : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -446,8 +374,17 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'OR')}
+                        onClick={() => {
+                          if (!disabled) {
+                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'OR');
+                          }
+                        }}
+                        disabled={disabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
                           row.operador_logico === 'OR'
                             ? 'bg-orange-500 text-white'
                             : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -456,22 +393,29 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                         OR
                       </button>
                     </div>
-                  </td>
+                      </td>
 
-                  {/* Agrupador - Botones Inicio/Fin */}
-                  <td className="px-3 py-2">
+                      {/* Agrupador - Botones Inicio/Fin */}
+                      <td className="px-3 py-2">
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => {
-                          const newInicioValue = !row.agrupador_inicio;
-                          // Si se selecciona Inicio, deseleccionar Fin en la misma actualización
-                          handleUpdateUmbralRowMultiple(row.tempId!, {
-                            agrupador_inicio: newInicioValue,
-                            agrupador_fin: newInicioValue ? false : row.agrupador_fin
-                          });
+                          if (!disabled) {
+                            const newInicioValue = !row.agrupador_inicio;
+                            // Si se selecciona Inicio, deseleccionar Fin en la misma actualización
+                            handleUpdateUmbralRowMultiple(row.tempId!, {
+                              agrupador_inicio: newInicioValue,
+                              agrupador_fin: newInicioValue ? false : row.agrupador_fin
+                            });
+                          }
                         }}
+                        disabled={disabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
                           row.agrupador_inicio
                             ? 'bg-orange-500 text-white'
                             : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -482,14 +426,21 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const newFinValue = !row.agrupador_fin;
-                          // Si se selecciona Fin, deseleccionar Inicio en la misma actualización
-                          handleUpdateUmbralRowMultiple(row.tempId!, {
-                            agrupador_fin: newFinValue,
-                            agrupador_inicio: newFinValue ? false : row.agrupador_inicio
-                          });
+                          if (!disabled) {
+                            const newFinValue = !row.agrupador_fin;
+                            // Si se selecciona Fin, deseleccionar Inicio en la misma actualización
+                            handleUpdateUmbralRowMultiple(row.tempId!, {
+                              agrupador_fin: newFinValue,
+                              agrupador_inicio: newFinValue ? false : row.agrupador_inicio
+                            });
+                          }
                         }}
+                        disabled={disabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
                           row.agrupador_fin
                             ? 'bg-orange-500 text-white'
                             : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -498,41 +449,59 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                         FIN
                       </button>
                     </div>
-                  </td>
+                      </td>
 
-                  {/* Orden - Input */}
-                  <td className="px-3 py-2">
+                      {/* Orden - Input */}
+                      <td className="px-3 py-2">
                     <input
                       type="number"
                       value={row.orden || ''}
+                      disabled={disabled}
                       onChange={(e) => {
+                        if (disabled) return;
                         const newOrden = e.target.value ? parseInt(e.target.value) : 1;
                         handleUpdateUmbralRow(row.tempId!, 'orden', newOrden);
                       }}
-                      className="w-20 px-2 py-1 border rounded-lg focus:ring-2 focus:ring-orange-500 border-gray-300 dark:border-neutral-600 text-white text-sm font-mono bg-neutral-800"
+                      className={`w-20 px-2 py-1 border rounded-lg focus:ring-2 focus:ring-orange-500 border-gray-300 dark:border-neutral-600 text-white text-sm font-mono ${
+                        disabled
+                          ? 'bg-neutral-700 opacity-50 cursor-not-allowed'
+                          : 'bg-neutral-800'
+                      }`}
                       min="1"
                     />
-                  </td>
+                      </td>
 
-                  {/* Acción - Botón eliminar (solo si hay más de 1 fila) */}
-                  <td className="px-3 py-2">
+                      {/* Acción - Botón eliminar (solo si hay más de 1 fila) */}
+                      <td className="px-3 py-2">
                     {reglaUmbralRows.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveUmbralRow(row.tempId!)}
-                        className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm rounded transition-colors"
+                        onClick={() => {
+                          if (!disabled) {
+                            handleRemoveUmbralRow(row.tempId!);
+                          }
+                        }}
+                        disabled={disabled}
+                        className={`px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white font-mono text-sm rounded transition-colors ${
+                          disabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
                         ELIMINAR
                       </button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    </tr>
+                );
+              })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400 dark:text-neutral-500 font-mono">
+            No hay umbrales. Haga clic en "AGREGAR UMBRAL" para agregar uno.
+          </div>
+        )}
       </div>
     </div>
   );
 };
-

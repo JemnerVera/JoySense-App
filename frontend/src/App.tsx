@@ -1092,7 +1092,22 @@ const AppContentInternal: React.FC<{
           }
         }
         
-        // Usar SystemParameters para las tablas de regla
+        // Caso especial: Si la tabla es 'regla', usar ReglasMain en lugar de SystemParameters
+        if (reglaTableName === 'regla') {
+          return (
+            <ReglasMain
+              activeSubTab={reglaOperation as 'status' | 'insert' | 'update' || 'status'}
+              onSubTabChange={(tab: 'status' | 'insert' | 'update') => {
+                // Actualizar activeTab cuando cambia el subTab
+                const newActiveTab = `configuracion-notificaciones-regla-regla-${tab}`;
+                setActiveTab(newActiveTab);
+              }}
+              onFormDataChange={handleFormDataChange}
+            />
+          );
+        }
+        
+        // Usar SystemParameters para las otras tablas de regla (regla_perfil, regla_umbral, regla_objeto)
         // IMPORTANTE: reglaTableName viene de selectedTable (fuente de verdad para REGLA)
         return (
           <SystemParametersWithSuspense 
