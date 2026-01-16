@@ -174,7 +174,9 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
               </div>
             ) : (
               parametrosGeoTables.map((table) => {
-                const isActive = selectedTable === table.name;
+                // Solo marcar como activa si selectedTable no está vacío
+                // Esto evita que se marque como activa cuando activeTab es exactamente 'configuracion-parametros-geo'
+                const isActive = selectedTable !== '' && selectedTable === table.name;
                 return (
                   <ProtectedParameterButton
                     key={table.name}

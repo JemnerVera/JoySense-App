@@ -127,10 +127,29 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
   return (
     <div 
-      className="bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full"
+      className="bg-gray-100 dark:bg-neutral-900 border-r border-gray-300 dark:border-neutral-700 transition-all duration-300 h-full relative"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
+      {/* Área de detección invisible extendida cuando está colapsado para mejorar la detección de hover */}
+      {/* Extender más el área de detección para capturar movimientos rápidos */}
+      {!isExpanded && (
+        <>
+          <div 
+            className="absolute -right-4 top-0 bottom-0 w-8 z-50 cursor-pointer"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            style={{ pointerEvents: 'auto' }}
+          />
+          {/* Área adicional en el lado izquierdo para capturar cuando el mouse viene del contenido */}
+          <div 
+            className="absolute -left-4 top-0 bottom-0 w-8 z-50 cursor-pointer"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            style={{ pointerEvents: 'auto' }}
+          />
+        </>
+      )}
       {/* Logo y Título - Tactical Style */}
       <div className="h-16 flex items-center justify-center border-b border-gray-300 dark:border-neutral-700 p-4">
         {isExpanded ? (

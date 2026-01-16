@@ -77,7 +77,9 @@ const AgrupacionSidebar: React.FC<AgrupacionSidebarProps> = ({
         <div className="py-4">
           <nav className="space-y-1">
             {agrupacionTables.map((table) => {
-              const isActive = selectedTable === table.name;
+              // Solo marcar como activa si selectedTable no está vacío
+              // Esto evita que se marque como activa cuando activeTab es exactamente 'agrupacion'
+              const isActive = selectedTable !== '' && selectedTable === table.name;
               return (
                 <ProtectedParameterButton
                   key={table.name}

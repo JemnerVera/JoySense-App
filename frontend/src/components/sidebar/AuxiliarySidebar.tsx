@@ -402,9 +402,15 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   if (isDashboard) {
     // Si showDashboardThirdLevel es true, renderizar el tercer sidebar de dashboards
     if (showDashboardThirdLevel) {
+      // Solo pasar activeSubTab si activeTab tiene un subTab seleccionado (no es exactamente 'reportes-dashboard')
+      // Si activeTab es exactamente 'reportes-dashboard', no pasar ningún subTab para que no se marque ninguna pestaña como activa
+      const dashboardSubTabValue = activeTab === 'reportes-dashboard' 
+        ? undefined 
+        : (dashboardSubTab || (activeTab.replace('reportes-dashboard-', '') || 'mapeo') as 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales');
+      
       return (
         <ReportesDashboardSidebar
-          activeSubTab={dashboardSubTab || 'mapeo'}
+          activeSubTab={dashboardSubTabValue}
           onSubTabChange={onDashboardSubTabChange || (() => {})}
           isExpanded={isExpanded}
           onMouseEnter={onMouseEnter}
@@ -432,13 +438,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         {/* Subpestañas de reportes */}
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
-            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
-            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
-            const isActive = subTab.id === 'dashboard' 
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : subTab.id === 'historial'
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : activeTab === `reportes-${subTab.id}`;
+            // Solo marcar como activa si activeTab empieza con reportes-{subTab.id}- (tiene un subTab seleccionado)
+            // NO marcar como activa si activeTab es exactamente 'reportes-dashboard' o 'reportes-historial'
+            // Esto permite que el sidebar aux2 se renderice sin activar ninguna pestaña
+            const isActive = activeTab.startsWith(`reportes-${subTab.id}-`);
             return (
               <button
                 key={subTab.id}
@@ -499,9 +502,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   if (isHistorial) {
     // Si showHistorialSecondLevel es true, renderizar el segundo sidebar de historial (ALERTAS y MENSAJES)
     if (showHistorialSecondLevel) {
-      // Extraer el subTab del activeTab: 'reportes-historial-alertas' -> 'alertas', 'reportes-historial-mensajes' -> 'mensajes'
+      // Solo pasar activeSubTab si activeTab tiene un subTab seleccionado (no es exactamente 'reportes-historial')
+      // Si activeTab es exactamente 'reportes-historial', no pasar ningún subTab para que no se marque ninguna pestaña como activa
       const historialSubTab = activeTab === 'reportes-historial' 
-        ? 'alertas' // Por defecto mostrar alertas
+        ? undefined 
         : (activeTab.replace('reportes-historial-', '') || 'alertas') as 'alertas' | 'mensajes';
       
       return (
@@ -534,13 +538,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         {/* Subpestañas de reportes */}
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
-            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
-            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
-            const isActive = subTab.id === 'dashboard' 
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : subTab.id === 'historial'
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : activeTab === `reportes-${subTab.id}`;
+            // Solo marcar como activa si activeTab empieza con reportes-{subTab.id}- (tiene un subTab seleccionado)
+            // NO marcar como activa si activeTab es exactamente 'reportes-dashboard' o 'reportes-historial'
+            // Esto permite que el sidebar aux2 se renderice sin activar ninguna pestaña
+            const isActive = activeTab.startsWith(`reportes-${subTab.id}-`);
             return (
               <button
                 key={subTab.id}
@@ -616,13 +617,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         {/* Subpestañas de reportes */}
         <div className="py-4">
           {reportesSubTabs.map((subTab) => {
-            // Para Dashboard, considerar activo si es reportes-dashboard o empieza con reportes-dashboard-
-            // Para Historial, considerar activo si es reportes-historial o empieza con reportes-historial-
-            const isActive = subTab.id === 'dashboard' 
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : subTab.id === 'historial'
-              ? (activeTab === `reportes-${subTab.id}` || activeTab.startsWith(`reportes-${subTab.id}-`))
-              : activeTab === `reportes-${subTab.id}`;
+            // Solo marcar como activa si activeTab empieza con reportes-{subTab.id}- (tiene un subTab seleccionado)
+            // NO marcar como activa si activeTab es exactamente 'reportes-dashboard' o 'reportes-historial'
+            // Esto permite que el sidebar aux2 se renderice sin activar ninguna pestaña
+            const isActive = activeTab.startsWith(`reportes-${subTab.id}-`);
             return (
               <button
                 key={subTab.id}

@@ -2,7 +2,7 @@ import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 
 interface ReportesDashboardSidebarProps {
-  activeSubTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  activeSubTab?: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
   onSubTabChange: (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
   isExpanded: boolean;
   onMouseEnter: () => void;
@@ -87,7 +87,9 @@ const ReportesDashboardSidebar: React.FC<ReportesDashboardSidebarProps> = ({
         <div className="py-4">
           <nav className="space-y-1">
             {dashboardTabs.map((tab) => {
-              const isActive = activeSubTab === tab.id;
+              // Solo marcar como activa si activeSubTab está definido y coincide
+              // Esto evita que se marque como activa cuando activeTab es exactamente 'reportes-dashboard'
+              const isActive = activeSubTab !== undefined && activeSubTab === tab.id;
               return (
                 <button
                   key={tab.id}

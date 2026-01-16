@@ -58,9 +58,10 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       // Cuando cambia la pestaña activa, marcar como activación inicial
       isInitialActivationRef.current = true
       // Después de un delay, marcar que los sidebars están establecidos
+      // Aumentar delay a 1500ms para asegurar que todas las secciones (incluyendo AGRUPACIÓN) tengan tiempo suficiente
       const timer = setTimeout(() => {
         isInitialActivationRef.current = false
-      }, 1000) // Delay para permitir que se completen las animaciones de expansión
+      }, 1500) // Delay para permitir que se completen las animaciones de expansión
       return () => clearTimeout(timer)
     }
   }, [activeTab])
@@ -81,13 +82,16 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
   // Handlers para main sidebar
   const handleMainSidebarMouseEnter = useCallback(() => {
     clearCloseTimeout()
+    // SIEMPRE llamar a openPanel para asegurar que el hover se actualice correctamente
+    // Esto es crítico para detectar hover en sidebars colapsados cuando el mouse se mueve rápido
     sidebar.openPanel('main', isComingFromContentRef.current)
     isComingFromContentRef.current = false
   }, [sidebar, clearCloseTimeout])
   
   const handleMainSidebarMouseLeave = useCallback(() => {
     if (activeTab) {
-      // Programar verificación con delay para permitir movimiento entre sidebars
+      // Reducir delay para detectar más rápido cuando el mouse sale
+      // Esto previene que los sidebars se queden expandidos cuando el mouse se mueve rápido
       closeTimeoutRef.current = setTimeout(() => {
         // Verificar si realmente no hay ningún sidebar hovered
         const expandedPanels = sidebar.getExpandedPanels()
@@ -95,18 +99,17 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         const nextSidebar = getLastHoveredSidebar()
         
         // Si no hay sidebars hovered y hay paneles expandidos, y el siguiente sidebar no es un aux,
-        // colapsar todo en cascada inversa
+        // colapsar todo en cascada inversa (incluyendo main)
         const isMovingToInternal = isSidebarMoreInternal(nextSidebar, 'aux1', 'aux2', 'aux3', 'aux4', 'aux5', 'main')
         if (!hasHovered && expandedPanels.length > 0 && !isMovingToInternal) {
           sidebar.collapseAll()
         }
-      }, 200) // Aumentar delay para dar más tiempo
+      }, 100) // Reducir delay para detectar más rápido
     }
-  }, [activeTab, sidebar])
+  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux1
   const handleAux1MouseEnter = useCallback(() => {
-    console.log('[SIDEBAR COLLAPSE] handleAux1MouseEnter')
     clearCloseTimeout()
     // Actualizar el último sidebar hovered
     lastHoveredSidebarRef.current = 'aux1'
@@ -117,7 +120,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
   
   const handleAux1MouseLeave = useCallback(() => {
     if (activeTab) {
-      console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - Iniciando verificación')
       closeTimeoutRef.current = setTimeout(() => {
         const aux1Expanded = sidebar.isPanelExpanded('aux1')
         const aux1IsHovered = sidebar.isPanelHovered('aux1')
@@ -135,16 +137,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         // Usar función helper para evitar problemas de inferencia de tipos de TypeScript
         const nextSidebarValue = getLastHoveredSidebar()
         
-        console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - Verificación:', {
-          aux1Expanded,
-          aux1IsHovered,
-          mainIsHovered,
-          anySidebarHovered,
-          nextSidebar: nextSidebarValue
-        })
-        
         if (!aux1Expanded) {
-          console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - aux1 ya fue colapsado, no hacer nada')
           return
         }
         
@@ -152,7 +145,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         const movedToInternal = mainIsHovered || isSidebarMoreInternal(nextSidebarValue, 'main')
         
         if (movedToInternal) {
-          console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - Cursor en sidebar más interno (main), no colapsar aux1')
           return
         }
         
@@ -162,26 +154,23 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
           // Si hay sidebars más externos hovered, colapsar aux1
           if (aux2IsHovered || aux3IsHovered || aux4IsHovered || aux5IsHovered || 
               isSidebarMoreInternal(nextSidebarValue, 'aux2', 'aux3', 'aux4', 'aux5')) {
-            console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - Cursor en sidebar más externo, colapsando aux1')
             sidebar.closePanel('aux1')
           } else if (!anySidebarHovered) {
             // Verificar si el siguiente sidebar es más interno usando una función helper
             const isMovingToInternal = (nextSidebarValue === 'main')
             if (!isMovingToInternal) {
               // No hay ningún sidebar hovered y el siguiente no es main, el cursor salió completamente - colapsar todo
-              console.log('[SIDEBAR COLLAPSE] handleAux1MouseLeave - No hay sidebars hovered, colapsando todo')
               sidebar.collapseAll()
             }
           }
         }
-      }, 200) // Aumentar delay para dar más tiempo
+      }, 100) // Reducir delay para detectar más rápido cuando el mouse sale
       globalCloseTimeoutRef.current = closeTimeoutRef.current
     }
-  }, [activeTab, sidebar])
+  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux2
   const handleAux2MouseEnter = useCallback(() => {
-    console.log('[SIDEBAR COLLAPSE] handleAux2MouseEnter')
     clearCloseTimeout() // Cancelar cualquier timeout pendiente de mouseLeave
     // Actualizar el último sidebar hovered
     const previousSidebar = lastHoveredSidebarRef.current
@@ -194,33 +183,21 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       const aux1IsHovered = sidebar.isPanelHovered('aux1')
       const mainIsHovered = sidebar.isPanelHovered('main')
       
-      console.log('[SIDEBAR COLLAPSE] handleAux2MouseEnter - Estados:', { 
-        aux1Expanded, 
-        aux1IsHovered,
-        mainIsHovered,
-        previousSidebar,
-        isInitialActivation: isInitialActivationRef.current 
-      })
-      
       // Solo colapsar si el cursor viene de un sidebar más interno (aux1 o main)
       // Usar el último sidebar hovered como referencia adicional
       const comesFromInternal = aux1IsHovered || mainIsHovered || previousSidebar === 'aux1' || previousSidebar === 'main'
       if (aux1Expanded && comesFromInternal) {
-        console.log('[SIDEBAR COLLAPSE] handleAux2MouseEnter - Cursor viene de aux1/main (más interno), colapsando aux1')
         sidebar.closePanelImmediate('aux1')
-      } else if (aux1Expanded) {
-        console.log('[SIDEBAR COLLAPSE] handleAux2MouseEnter - Cursor viene de sidebar más externo o contenido, no colapsar aux1')
       }
-    } else {
-      console.log('[SIDEBAR COLLAPSE] handleAux2MouseEnter - Activación inicial, no colapsar aux1')
     }
+    // SIEMPRE llamar a openPanel para asegurar que el hover se actualice correctamente
+    // Esto es crítico para detectar hover en sidebars colapsados cuando el mouse se mueve rápido
     sidebar.openPanel('aux2', isComingFromContentRef.current)
     isComingFromContentRef.current = false
   }, [sidebar, clearCloseTimeout])
   
   const handleAux2MouseLeave = useCallback(() => {
     if (activeTab) {
-      console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - Iniciando verificación')
       closeTimeoutRef.current = setTimeout(() => {
         const aux2Expanded = sidebar.isPanelExpanded('aux2')
         const aux2IsHovered = sidebar.isPanelHovered('aux2')
@@ -239,19 +216,8 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         // Usar función helper para evitar problemas de inferencia de tipos de TypeScript
         const nextSidebar = getLastHoveredSidebar()
         
-        console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - Verificación:', {
-          aux2Expanded,
-          aux2IsHovered,
-          aux1IsHovered,
-          mainIsHovered,
-          aux1Expanded,
-          anySidebarHovered,
-          nextSidebar
-        })
-        
         // Si aux2 ya fue colapsado, no hacer nada
         if (!aux2Expanded) {
-          console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - aux2 ya fue colapsado')
           return
         }
         
@@ -264,7 +230,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         }
         
         if (movedToInternal) {
-          console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - Cursor en sidebar más interno, no colapsar aux2')
           return
         }
         
@@ -273,7 +238,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         if (!aux2IsHovered) {
           // Si hay sidebars más externos hovered, colapsar aux2
           if (aux3IsHovered || aux4IsHovered || aux5IsHovered || isSidebarMoreInternal(nextSidebar, 'aux3', 'aux4', 'aux5')) {
-            console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - Cursor en sidebar más externo, colapsando aux2')
             sidebar.closePanel('aux2')
           } else if (!anySidebarHovered) {
             // Verificar si el siguiente sidebar es más interno usando función helper
@@ -285,19 +249,17 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
             
             if (!isMovingToInternal) {
               // No hay ningún sidebar hovered y el siguiente no es más interno, el cursor salió completamente - colapsar todo
-              console.log('[SIDEBAR COLLAPSE] handleAux2MouseLeave - No hay sidebars hovered, colapsando todo')
               sidebar.collapseAll()
             }
           }
         }
-      }, 200) // Aumentar delay para dar más tiempo
+      }, 100) // Reducir delay para detectar más rápido cuando el mouse sale
       globalCloseTimeoutRef.current = closeTimeoutRef.current
     }
-  }, [activeTab, sidebar])
+  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux3
   const handleAux3MouseEnter = useCallback(() => {
-    console.log('[SIDEBAR COLLAPSE] handleAux3MouseEnter')
     clearCloseTimeout() // Cancelar cualquier timeout pendiente de mouseLeave (aux1, aux2)
     // Actualizar el último sidebar hovered
     const previousSidebar = lastHoveredSidebarRef.current
@@ -312,23 +274,12 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       const aux2IsHovered = sidebar.isPanelHovered('aux2')
       const mainIsHovered = sidebar.isPanelHovered('main')
       
-      console.log('[SIDEBAR COLLAPSE] handleAux3MouseEnter - Estados:', { 
-        aux1Expanded, 
-        aux2Expanded, 
-        aux1IsHovered,
-        aux2IsHovered,
-        mainIsHovered,
-        previousSidebar,
-        isInitialActivation: isInitialActivationRef.current 
-      })
-      
       // Solo colapsar si el cursor viene de un sidebar más interno
       // IMPORTANTE: Solo colapsar si el sidebar está realmente expandido (existe)
       // Si aux1 no está expandido, significa que no existe en esta sección (ej: DISPOSITIVOS, USUARIOS)
       if (aux1Expanded) {
         const comesFromAux1 = aux1IsHovered || previousSidebar === 'aux1' || (previousSidebar === 'main' && !aux2Expanded)
         if (comesFromAux1) {
-          console.log('[SIDEBAR COLLAPSE] handleAux3MouseEnter - Cursor viene de aux1/main (más interno), colapsando aux1')
           sidebar.closePanelImmediate('aux1')
         }
       }
@@ -336,20 +287,18 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       if (aux2Expanded) {
         const comesFromAux2 = aux2IsHovered || previousSidebar === 'aux2' || (previousSidebar === 'aux1' && aux1Expanded)
         if (comesFromAux2) {
-          console.log('[SIDEBAR COLLAPSE] handleAux3MouseEnter - Cursor viene de aux2 (más interno), colapsando aux2')
           sidebar.closePanelImmediate('aux2')
         }
       }
-    } else {
-      console.log('[SIDEBAR COLLAPSE] handleAux3MouseEnter - Activación inicial, no colapsar aux1/aux2')
     }
+    // SIEMPRE llamar a openPanel para asegurar que el hover se actualice correctamente
+    // Esto es crítico para detectar hover en sidebars colapsados cuando el mouse se mueve rápido
     sidebar.openPanel('aux3', isComingFromContentRef.current)
     isComingFromContentRef.current = false
   }, [sidebar, clearCloseTimeout])
   
   const handleAux3MouseLeave = useCallback(() => {
     if (activeTab) {
-      console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - Iniciando verificación')
       closeTimeoutRef.current = setTimeout(() => {
         const aux3Expanded = sidebar.isPanelExpanded('aux3')
         const aux3IsHovered = sidebar.isPanelHovered('aux3')
@@ -368,20 +317,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         // Verificar el siguiente sidebar que será hovered (si hay un mouseEnter pendiente)
         const nextSidebar = getLastHoveredSidebar()
         
-        console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - Verificación:', {
-          aux3Expanded,
-          aux3IsHovered,
-          aux1IsHovered,
-          aux2IsHovered,
-          mainIsHovered,
-          aux1Expanded,
-          aux2Expanded,
-          anySidebarHovered,
-          nextSidebar
-        })
-        
         if (!aux3Expanded) {
-          console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - aux3 ya fue colapsado, no hacer nada')
           return
         }
         
@@ -399,7 +335,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         }
         
         if (movedToInternal) {
-          console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - Cursor en sidebar más interno, no colapsar aux3')
           return
         }
         
@@ -408,7 +343,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         if (!aux3IsHovered) {
           // Si hay sidebars más externos hovered, colapsar aux3
           if (aux4IsHovered || aux5IsHovered || isSidebarMoreInternal(nextSidebar, 'aux4', 'aux5')) {
-            console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - Cursor en sidebar más externo, colapsando aux3')
             sidebar.closePanel('aux3')
           } else if (!anySidebarHovered) {
             // Verificar si el siguiente sidebar es más interno usando función helper
@@ -423,19 +357,17 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
             
             if (!isMovingToInternal) {
               // No hay ningún sidebar hovered y el siguiente no es más interno, el cursor salió completamente - colapsar todo
-              console.log('[SIDEBAR COLLAPSE] handleAux3MouseLeave - No hay sidebars hovered, colapsando todo')
               sidebar.collapseAll()
             }
           }
         }
-      }, 200) // Aumentar delay para dar más tiempo a que se actualice el estado
+      }, 100) // Reducir delay para detectar más rápido cuando el mouse sale
       globalCloseTimeoutRef.current = closeTimeoutRef.current
     }
-  }, [activeTab, sidebar])
+  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux4
   const handleAux4MouseEnter = useCallback(() => {
-    console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter')
     clearCloseTimeout() // Cancelar cualquier timeout pendiente de mouseLeave (aux1, aux2, aux3)
     // Actualizar el último sidebar hovered
     const previousSidebar = lastHoveredSidebarRef.current
@@ -452,18 +384,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       const aux3IsHovered = sidebar.isPanelHovered('aux3')
       const mainIsHovered = sidebar.isPanelHovered('main')
       
-      console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter - Estados:', { 
-        aux1Expanded, 
-        aux2Expanded, 
-        aux3Expanded,
-        aux1IsHovered,
-        aux2IsHovered,
-        aux3IsHovered,
-        mainIsHovered,
-        previousSidebar,
-        isInitialActivation: isInitialActivationRef.current 
-      })
-      
       // Solo colapsar si el cursor viene de un sidebar más interno
       // Usar el último sidebar hovered como referencia adicional
       const comesFromAux1 = aux1IsHovered || mainIsHovered || previousSidebar === 'aux1' || previousSidebar === 'main'
@@ -471,27 +391,23 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       const comesFromAux3 = aux3IsHovered || previousSidebar === 'aux3'
       
       if (aux1Expanded && comesFromAux1) {
-        console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter - Cursor viene de aux1/main (más interno), colapsando aux1')
         sidebar.closePanelImmediate('aux1')
       }
       if (aux2Expanded && comesFromAux2) {
-        console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter - Cursor viene de aux2 (más interno), colapsando aux2')
         sidebar.closePanelImmediate('aux2')
       }
       if (aux3Expanded && comesFromAux3) {
-        console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter - Cursor viene de aux3 (más interno), colapsando aux3')
         sidebar.closePanelImmediate('aux3')
       }
-    } else {
-      console.log('[SIDEBAR COLLAPSE] handleAux4MouseEnter - Activación inicial, no colapsar aux1/aux2/aux3')
     }
+    // SIEMPRE llamar a openPanel para asegurar que el hover se actualice correctamente
+    // Esto es crítico para detectar hover en sidebars colapsados cuando el mouse se mueve rápido
     sidebar.openPanel('aux4', isComingFromContentRef.current)
     isComingFromContentRef.current = false
   }, [sidebar, clearCloseTimeout])
   
   const handleAux4MouseLeave = useCallback(() => {
     if (activeTab) {
-      console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - Iniciando verificación')
       closeTimeoutRef.current = setTimeout(() => {
         const aux4Expanded = sidebar.isPanelExpanded('aux4')
         const aux4IsHovered = sidebar.isPanelHovered('aux4')
@@ -512,22 +428,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         // Usar función helper para evitar problemas de inferencia de tipos de TypeScript
         const nextSidebar = getLastHoveredSidebar()
         
-        console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - Verificación:', {
-          aux4Expanded,
-          aux4IsHovered,
-          aux1IsHovered,
-          aux2IsHovered,
-          aux3IsHovered,
-          mainIsHovered,
-          aux1Expanded,
-          aux2Expanded,
-          aux3Expanded,
-          anySidebarHovered,
-          nextSidebar
-        })
-        
         if (!aux4Expanded) {
-          console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - aux4 ya fue colapsado, no hacer nada')
           return
         }
         
@@ -537,7 +438,6 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
                                isSidebarMoreInternal(nextSidebar, 'aux1', 'aux2', 'aux3', 'main')
         
         if (movedToInternal) {
-          console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - Cursor en sidebar más interno, no colapsar aux4')
           return
         }
         
@@ -546,26 +446,23 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
         if (!aux4IsHovered) {
           // Si hay sidebars más externos hovered, colapsar aux4
           if (aux5IsHovered || isSidebarMoreInternal(nextSidebar, 'aux5')) {
-            console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - Cursor en sidebar más externo, colapsando aux4')
             sidebar.closePanel('aux4')
           } else if (!anySidebarHovered) {
             // Verificar si el siguiente sidebar es más interno usando función helper
             const isMovingToInternal = isSidebarMoreInternal(nextSidebar, 'aux1', 'aux2', 'aux3', 'main')
             if (!isMovingToInternal) {
               // No hay ningún sidebar hovered y el siguiente no es más interno, el cursor salió completamente - colapsar todo
-              console.log('[SIDEBAR COLLAPSE] handleAux4MouseLeave - No hay sidebars hovered, colapsando todo')
               sidebar.collapseAll()
             }
           }
         }
-      }, 200) // Aumentar delay para dar más tiempo
+      }, 100) // Reducir delay para detectar más rápido cuando el mouse sale
       globalCloseTimeoutRef.current = closeTimeoutRef.current
     }
-  }, [activeTab, sidebar])
+  }, [activeTab, sidebar, getLastHoveredSidebar, isSidebarMoreInternal])
   
   // Handlers para aux5
   const handleAux5MouseEnter = useCallback(() => {
-    console.log('[SIDEBAR COLLAPSE] handleAux5MouseEnter')
     clearCloseTimeout() // Cancelar cualquier timeout pendiente de mouseLeave (aux1, aux2, aux3, aux4)
     // Solo colapsar aux1, aux2, aux3 y aux4 si NO es la activación inicial
     if (!isInitialActivationRef.current) {
@@ -589,24 +486,22 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
       if (sidebar.isPanelExpanded('aux4') && aux4IsHovered) {
         sidebar.closePanelImmediate('aux4')
       }
-    } else {
-      console.log('[SIDEBAR COLLAPSE] handleAux5MouseEnter - Activación inicial, no colapsar aux1/aux2/aux3/aux4')
     }
+    // SIEMPRE llamar a openPanel para asegurar que el hover se actualice correctamente
+    // Esto es crítico para detectar hover en sidebars colapsados cuando el mouse se mueve rápido
     sidebar.openPanel('aux5', isComingFromContentRef.current)
     isComingFromContentRef.current = false
   }, [sidebar, clearCloseTimeout])
   
   const handleAux5MouseLeave = useCallback(() => {
     if (activeTab) {
-      console.log('[SIDEBAR COLLAPSE] handleAux5MouseLeave - Iniciando verificación')
       closeTimeoutRef.current = setTimeout(() => {
         const expandedPanels = sidebar.getExpandedPanels()
         const hasHovered = expandedPanels.some(level => sidebar.isPanelHovered(level))
         if (!hasHovered) {
-          console.log('[SIDEBAR COLLAPSE] handleAux5MouseLeave - Colapsando todo (no hay sidebars hovered)')
           sidebar.collapseAll()
         }
-      }, 200)
+      }, 100) // Reducir delay para detectar más rápido cuando el mouse sale
       globalCloseTimeoutRef.current = closeTimeoutRef.current
     }
   }, [activeTab, sidebar])
