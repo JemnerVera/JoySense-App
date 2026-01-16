@@ -25,10 +25,12 @@ export interface SidebarContextValue {
   hasUnsavedChanges: Record<string, boolean>
   pendingTransition: { type: 'navigate' | 'push' | 'pop' | 'subtab'; payload?: any; onConfirm?: () => void } | null
   showModal: boolean
+  activeTab: string
   
   // Acciones
   openPanel: (level: SidebarLevel, fromContent?: boolean) => void
   closePanel: (level: SidebarLevel) => void
+  closePanelImmediate: (level: SidebarLevel) => void // Colapsa sin delays para colapso dinámico
   collapseAll: () => void
   toggleCollapse: () => void
   markDirty: (panelId: string, value: boolean) => void
@@ -65,12 +67,14 @@ interface SidebarProviderProps {
   children: ReactNode
   initialCollapsed?: boolean
   onNavigate?: (tab: string, subtab?: string) => void
+  activeTab?: string
 }
 
 export function SidebarProvider({ 
   children, 
   initialCollapsed = false,
-  onNavigate 
+  onNavigate,
+  activeTab = ''
 }: SidebarProviderProps) {
   // Estados
   const [panels, setPanels] = useState<Map<SidebarLevel, SidebarPanel>>(() => {
@@ -319,6 +323,25 @@ export function SidebarProvider({
       animationTimeoutsRef.current.set(lvl, timeout)
     })
   }, [clearTimeouts, panels, state, getAllLevels])
+  
+  // Cerrar panel inmediatamente (sin delays) para colapso dinámico cuando el cursor se mueve a un sidebar más externo
+  const closePanelImmediate = useCallback((level: SidebarLevel) => {
+    const panel = panels.get(level)
+    if (!panel?.isExpanded) return
+    
+    // Remover nivel de hovered inmediatamente
+    hoveredLevelsRef.current.delete(level)
+    
+    // Actualizar estado de hover y expansión inmediatamente
+    setPanels(prev => {
+      const newPanels = new Map(prev)
+      const panelToUpdate = newPanels.get(level)
+      if (panelToUpdate) {
+        newPanels.set(level, { ...panelToUpdate, isExpanded: false, isHovered: false })
+      }
+      return newPanels
+    })
+  }, [panels])
   
   // Colapsar todos los paneles en cascada inversa (desde el más interno hacia el externo)
   const collapseAll = useCallback(() => {
@@ -659,8 +682,10 @@ export function SidebarProvider({
       hasUnsavedChanges,
       pendingTransition,
       showModal,
+      activeTab,
       openPanel,
       closePanel,
+      closePanelImmediate,
       collapseAll,
       toggleCollapse,
       markDirty,
@@ -695,8 +720,10 @@ export function SidebarProvider({
     hasUnsavedChanges,
     pendingTransition,
     showModal,
+    activeTab,
     openPanel,
     closePanel,
+    closePanelImmediate,
     collapseAll,
     toggleCollapse,
     markDirty,

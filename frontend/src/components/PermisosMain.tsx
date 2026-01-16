@@ -163,7 +163,15 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
   }, [formState.data, activeSubTab, selectedTable, updateFormData, checkUnsavedChanges]);
 
   // Monitorear cambios sin guardar y notificar al sidebar
+  // SOLO marcar dirty en CREAR, ASIGNAR o ACTUALIZAR (no en STATUS)
   useEffect(() => {
+    // En STATUS no hay cambios sin guardar
+    if (activeSubTab === 'status') {
+      const panelId = `permisos-${selectedTable}-main`;
+      sidebar.markDirty(panelId, false);
+      return;
+    }
+    
     const isDirty = hasUnsavedChanges();
     const panelId = `permisos-${selectedTable}-main`;
     sidebar.markDirty(panelId, isDirty);
@@ -205,19 +213,12 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         return names[subTab] || subTab;
       };
       
-      showModal(
-        'subtab',
-        getSubTabName(activeSubTab),
-        getSubTabName(tab),
-        () => {
-          // Limpiar el estado dirty en el sidebar
-          sidebar.markDirty(`permisos-${selectedTable}-main`, false);
-          onSubTabChange?.(tab);
-        },
-        () => {
-          // Cancelar: no hacer nada
-        }
-      );
+      // Usar el sistema del sidebar para mostrar el modal
+      const panelId = `permisos-${selectedTable}-main`;
+      sidebar.requestSubTabChange?.(tab, () => {
+        sidebar.markDirty(panelId, false);
+        onSubTabChange?.(tab);
+      });
     } else {
       onSubTabChange?.(tab);
     }
@@ -229,27 +230,21 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     // Verificar cambios sin guardar antes de cambiar de tabla
     const hasChanges = hasUnsavedChanges();
     if (hasChanges) {
-      showModal(
-        'parameter',
-        selectedTable,
-        table,
-        () => {
-          // Limpiar el estado dirty en el sidebar
-          sidebar.markDirty(`permisos-${selectedTable}-main`, false);
-          setSelectedTable(table);
-          onTableSelect?.(table);
-          // Resetear a status cuando cambia la tabla
-          onSubTabChange?.('status');
-          resetForm();
-          setTableData([]);
-          setUpdateFormData({});
-          setMessage(null);
-          setSelectedRow(null);
-        },
-        () => {
-          // Cancelar: no hacer nada
-        }
-      );
+      // Usar el sistema del sidebar para mostrar el modal de cambio de tabla
+      const currentPanelId = `permisos-${selectedTable}-main`;
+      const executeTableChange = () => {
+        sidebar.markDirty(currentPanelId, false);
+        setSelectedTable(table);
+        onTableSelect?.(table);
+        onSubTabChange?.('status');
+        resetForm();
+        setTableData([]);
+        setUpdateFormData({});
+        setMessage(null);
+        setSelectedRow(null);
+      };
+      
+      sidebar.requestSubTabChange?.('status', executeTableChange);
     } else {
       setSelectedTable(table);
       onTableSelect?.(table);

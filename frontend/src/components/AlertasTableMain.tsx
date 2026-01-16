@@ -148,26 +148,26 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
         return names[subTab] || subTab;
       };
       
-      showModal(
-        'subtab',
-        getSubTabName(activeSubTab),
-        getSubTabName(tab),
-        () => {
-          // Limpiar el estado dirty en el sidebar
-          sidebar.markDirty(`${tableName}-main`, false);
-          onSubTabChange?.(tab);
-        },
-        () => {
-          // Cancelar: no hacer nada
-        }
-      );
+      // Usar el sistema del sidebar para mostrar el modal
+      const panelId = `${tableName}-main`;
+      sidebar.requestSubTabChange?.(tab, () => {
+        sidebar.markDirty(panelId, false);
+        onSubTabChange?.(tab);
+      });
     } else {
       onSubTabChange?.(tab);
     }
   }, [hasUnsavedChanges, sidebar, onSubTabChange, showModal, tableName]);
 
   // Monitorear cambios sin guardar y notificar al sidebar
+  // SOLO marcar dirty en CREAR o ACTUALIZAR (no en STATUS)
   useEffect(() => {
+    // En STATUS no hay cambios sin guardar
+    if (activeSubTab === 'status') {
+      sidebar.markDirty(`${tableName}-main`, false);
+      return;
+    }
+    
     const isDirty = hasUnsavedChanges();
     sidebar.markDirty(`${tableName}-main`, isDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps

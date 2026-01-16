@@ -61,7 +61,10 @@ const SystemParametersWithSuspense = React.forwardRef<
 // MAIN COMPONENT
 // ============================================================================
 
-const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null> }> = ({ executeTabChangeRef }) => {
+const AppContentInternal: React.FC<{ 
+  executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null>
+  activeTabRefShared?: React.MutableRefObject<string>
+}> = ({ executeTabChangeRef, activeTabRefShared }) => {
 
   // ============================================================================
   // HOOKS & CONTEXTS
@@ -539,7 +542,11 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
   // Actualizar ref cuando activeTab cambia
   useEffect(() => {
     activeTabRef.current = activeTab;
-  }, [activeTab]);
+    // Sincronizar con el ref compartido si existe
+    if (activeTabRefShared) {
+      activeTabRefShared.current = activeTab;
+    }
+  }, [activeTab, activeTabRefShared]);
 
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
@@ -563,6 +570,9 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
       setActiveTab(currentTab);
       // Actualizar el ref también
       activeTabRef.current = currentTab;
+      if (activeTabRefShared) {
+        activeTabRefShared.current = currentTab;
+      }
     });
   };
 
@@ -778,6 +788,9 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
       // Revertir activeTab al valor que tenía antes del click
       setActiveTab(currentTab);
       activeTabRef.current = currentTab;
+      if (activeTabRefShared) {
+        activeTabRefShared.current = currentTab;
+      }
     }, executeTableChange);
   };
 
@@ -2053,14 +2066,15 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
                               const table = configPart.replace('dispositivos-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                const subTab = configPart.replace(`dispositivos-${table}-`, '').split('-')[0];
-                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
+                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
-                                    'status': t('subtabs.status'),
-                                    'insert': t('subtabs.insert'),
-                                    'update': t('subtabs.update')
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR'
                                   };
-                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                                 }
                               }
                             } else if (configPart.startsWith('usuarios-')) {
@@ -2068,14 +2082,15 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
                               const table = configPart.replace('usuarios-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                const subTab = configPart.replace(`usuarios-${table}-`, '').split('-')[0];
-                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
+                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
-                                    'status': t('subtabs.status'),
-                                    'insert': t('subtabs.insert'),
-                                    'update': t('subtabs.update')
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR'
                                   };
-                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                                 }
                               }
                             } else if (configPart.startsWith('parametros-geo-')) {
@@ -2083,14 +2098,16 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
                               const table = configPart.replace('parametros-geo-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                const subTab = configPart.replace(`parametros-geo-${table}-`, '').split('-')[0];
-                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
+                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
-                                    'status': t('subtabs.status'),
-                                    'insert': t('subtabs.insert'),
-                                    'update': t('subtabs.update')
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR',
+                                    'massive': 'MASIVO'
                                   };
-                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                                 }
                               }
                             } else if (configPart.startsWith('notificaciones-')) {
@@ -2106,14 +2123,32 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
                                     'regla_objeto': 'REGLA_OBJETO'
                                   };
                                   breadcrumb += ` / ${reglaTableNames[reglaTable]?.toUpperCase() || reglaTable.toUpperCase()}`;
-                                  const subTab = reglaPart.replace(`${reglaTable}-`, '').split('-')[0];
-                                  if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update')) {
+                                  // Usar activeSubTab directamente
+                                  if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
+                                    breadcrumb += ' / OPERACIONES';
                                     const subTabNames: { [key: string]: string } = {
-                                      'status': t('subtabs.status'),
-                                      'insert': t('subtabs.insert'),
-                                      'update': t('subtabs.update')
+                                      'status': 'ESTADO',
+                                      'insert': 'CREAR',
+                                      'update': 'ACTUALIZAR'
                                     };
-                                    breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                    breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                                  }
+                                }
+                              } else {
+                                // Para otras tablas de notificaciones (criticidad, umbral)
+                                const table = configPart.replace('notificaciones-', '').split('-')[0];
+                                if (table && table !== 'regla') {
+                                  breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                  // Usar activeSubTab directamente
+                                  if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
+                                    breadcrumb += ' / OPERACIONES';
+                                    const subTabNames: { [key: string]: string } = {
+                                      'status': 'ESTADO',
+                                      'insert': 'CREAR',
+                                      'update': 'ACTUALIZAR',
+                                      'massive': 'MASIVO'
+                                    };
+                                    breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                                   }
                                 }
                               }
@@ -2122,15 +2157,16 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
                               if (configPart.startsWith('permisos-permisos-')) {
                                 const permisosTipo = configPart.replace('permisos-permisos-', '').split('-')[0];
                                 breadcrumb += ` / ${permisosTipo.toUpperCase()}`;
-                                const subTab = configPart.replace(`permisos-permisos-${permisosTipo}-`, '').split('-')[0];
-                                if (subTab && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'asignar')) {
+                                // Usar activeSubTab directamente
+                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'asignar')) {
+                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
-                                    'status': t('subtabs.status'),
-                                    'insert': t('subtabs.insert'),
-                                    'update': t('subtabs.update'),
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR',
                                     'asignar': 'ASIGNAR'
                                   };
-                                  breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
+                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
                                 }
                               }
                             } else if (configPart.startsWith('reportes-administrador-')) {
@@ -2340,10 +2376,13 @@ const AppContentInternal: React.FC<{ executeTabChangeRef?: React.MutableRefObjec
 // COMPONENT WRAPPERS
 // ============================================================================
 
-const AppContent: React.FC<{ executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null> }> = ({ executeTabChangeRef }) => {
+const AppContent: React.FC<{ 
+  executeTabChangeRef?: React.MutableRefObject<((tab: string) => void) | null>
+  activeTabRef?: React.MutableRefObject<string>
+}> = ({ executeTabChangeRef, activeTabRef }) => {
   return (
     <FilterProvider>
-      <AppContentInternal executeTabChangeRef={executeTabChangeRef} />
+      <AppContentInternal executeTabChangeRef={executeTabChangeRef} activeTabRefShared={activeTabRef} />
     </FilterProvider>
   );
 };
@@ -2353,6 +2392,8 @@ const AppContent: React.FC<{ executeTabChangeRef?: React.MutableRefObject<((tab:
 const AppWithSidebar: React.FC = () => {
   // Ref para almacenar la función executeTabChange desde AppContentInternal
   const executeTabChangeRef = useRef<((tab: string) => void) | null>(null);
+  // Ref para compartir activeTab con SidebarProvider
+  const activeTabRef = useRef<string>('dashboard');
   
   // Handler para navegación desde el sidebar
   const handleNavigate = useCallback((tab: string, subtab?: string) => {
@@ -2361,9 +2402,22 @@ const AppWithSidebar: React.FC = () => {
     }
   }, []);
   
+  // Estado para sincronizar activeTab con SidebarProvider
+  const [currentActiveTab, setCurrentActiveTab] = React.useState<string>('dashboard');
+  
+  // Efecto para actualizar currentActiveTab cuando activeTabRef cambia
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      if (activeTabRef.current !== currentActiveTab) {
+        setCurrentActiveTab(activeTabRef.current);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [currentActiveTab]);
+  
   return (
-    <SidebarProvider onNavigate={handleNavigate}>
-      <AppContent executeTabChangeRef={executeTabChangeRef} />
+    <SidebarProvider onNavigate={handleNavigate} activeTab={currentActiveTab}>
+      <AppContent executeTabChangeRef={executeTabChangeRef} activeTabRef={activeTabRef} />
       <SimpleAlertModal />
       <SidebarConfirmModal />
     </SidebarProvider>
