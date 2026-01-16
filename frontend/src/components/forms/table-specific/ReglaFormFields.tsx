@@ -42,12 +42,64 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
 }) => {
   const { t } = useLanguage();
   
+  // Verificar si el nombre está lleno (para habilitar/deshabilitar campos)
+  const isNombreFilled = React.useMemo(() => {
+    return !!(formData.nombre && formData.nombre.trim() !== '');
+  }, [formData.nombre]);
+  
   // SOLUCIÓN SIMPLIFICADA: Usar directamente formData._reglaUmbralRows como fuente de verdad
   const reglaUmbralRows = React.useMemo(() => {
     return (formData._reglaUmbralRows && Array.isArray(formData._reglaUmbralRows)) 
       ? formData._reglaUmbralRows 
       : [];
   }, [formData._reglaUmbralRows]);
+
+  // Ref para rastrear si ya se creó la fila inicial
+  const hasCreatedInitialRowRef = React.useRef(false);
+  const previousNombreRef = React.useRef<string>('');
+  
+  // Crear automáticamente una fila vacía cuando el nombre cambia de vacío a lleno
+  useEffect(() => {
+    const currentNombre = (formData.nombre || '').toString().trim();
+    const previousNombre = previousNombreRef.current;
+    const nombreChangedFromEmpty = !previousNombre && currentNombre;
+    
+    // Actualizar la referencia del nombre anterior solo si cambió
+    if (currentNombre !== previousNombre) {
+      previousNombreRef.current = currentNombre;
+    }
+    
+    // Resetear el ref si el nombre se borra completamente
+    if (!currentNombre) {
+      hasCreatedInitialRowRef.current = false;
+      return;
+    }
+    
+    // Solo crear la fila si:
+    // 1. El nombre cambió de vacío a lleno (primera vez que se llena)
+    // 2. No hay umbrales
+    // 3. No está deshabilitado
+    // 4. Aún no se ha creado la fila inicial
+    if (nombreChangedFromEmpty && 
+        reglaUmbralRows.length === 0 && 
+        !disabled && 
+        !hasCreatedInitialRowRef.current) {
+      // Crear una fila vacía automáticamente
+      const newRow: ReglaUmbralRow = {
+        umbralid: null,
+        operador_logico: 'AND' as 'AND' | 'OR',
+        agrupador_inicio: false,
+        agrupador_fin: false,
+        orden: 1,
+        tempId: `temp-${Date.now()}`
+      };
+      hasCreatedInitialRowRef.current = true;
+      
+      // Usar updateField para actualizar _reglaUmbralRows en lugar de setFormData
+      // Esto evita conflictos con el updateField del nombre
+      updateField('_reglaUmbralRows', [newRow]);
+    }
+  }, [formData.nombre, reglaUmbralRows.length, disabled, updateField]);
 
   // Función para agregar una nueva fila de umbral
   const handleAddUmbralRow = () => {
@@ -100,6 +152,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
   // Obtener opciones de umbrales
   const umbralOptions = getUniqueOptionsForField('umbralid');
 
+  // Determinar si los campos deben estar deshabilitados (excepto nombre)
+  // En modo CREAR: deshabilitar hasta que se llene el nombre
+  // En modo UPDATE: usar el prop disabled
+  const isFieldsDisabled = disabled || !isNombreFilled;
+
   // Renderizar campo de REGLA
   const renderReglaField = (col: any): React.ReactNode => {
     const displayName = getColumnDisplayNameTranslated(col.columnName, t);
@@ -107,6 +164,9 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
     
     const value = formData[col.columnName] || '';
     const isRequired = isFieldRequired(col.columnName);
+    
+    // El campo "nombre" siempre está habilitado, los demás se deshabilitan hasta que se llene el nombre
+    const isFieldDisabled = disabled || (col.columnName !== 'nombre' && !isNombreFilled);
 
     // Campo requiere_escalamiento como toggle "ESCALA?"
     if (col.columnName === 'requiere_escalamiento') {
@@ -122,18 +182,18 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             {/* Toggle Switch */}
             <div
               onClick={() => {
-                if (!disabled) {
+                if (!isFieldDisabled) {
                   updateField(col.columnName, !isChecked);
                 }
               }}
-              className={`relative inline-flex h-10 w-20 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} items-center rounded-full transition-colors duration-300 ease-in-out ${
+              className={`relative inline-flex h-10 w-20 ${isFieldDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} items-center rounded-full transition-colors duration-300 ease-in-out ${
                 isChecked
                   ? 'bg-orange-500'
                   : 'bg-gray-300 dark:bg-neutral-700'
               }`}
               role="switch"
               aria-checked={isChecked}
-              aria-disabled={disabled}
+              aria-disabled={isFieldDisabled}
             >
               {/* Slider */}
               <span
@@ -185,7 +245,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
           <SelectWithPlaceholder
             value={value || ''}
             onChange={(newValue) => {
-              if (!disabled) {
+              if (!isFieldDisabled) {
                 const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
                 updateField(col.columnName, newValueParsed);
               }
@@ -193,7 +253,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             options={options}
             placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
             themeColor="orange"
-            disabled={disabled}
+            disabled={isFieldDisabled}
           />
         </div>
       );
@@ -211,7 +271,9 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             value={value || ''}
             onChange={(e) => {
               if (!disabled) {
-                updateField(col.columnName, e.target.value);
+                const newValue = e.target.value;
+                // Solo actualizar el campo nombre usando updateField
+                updateField(col.columnName, newValue);
               }
             }}
             disabled={disabled}
@@ -263,14 +325,14 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             type={col.columnName === 'prioridad' ? 'number' : 'text'}
             value={displayValue}
             onChange={(e) => {
-              if (!disabled) {
+              if (!isFieldDisabled) {
                 const newValue = col.columnName === 'prioridad' 
                   ? (e.target.value ? parseInt(e.target.value) : null)
                   : e.target.value;
                 updateField(col.columnName, newValue);
               }
             }}
-            disabled={disabled}
+            disabled={isFieldDisabled}
             placeholder={defaultValueString}
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono ${
               disabled
@@ -299,13 +361,13 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (!disabled) {
+              if (!isFieldsDisabled) {
                 handleAddUmbralRow();
               }
             }}
-            disabled={disabled}
+            disabled={isFieldsDisabled}
             className={`px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-mono rounded-lg transition-colors ${
-              disabled ? 'opacity-50 cursor-not-allowed' : ''
+              isFieldsDisabled ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             + AGREGAR UMBRAL
@@ -334,7 +396,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                     <SelectWithPlaceholder
                       value={umbralValue}
                       onChange={(newValue) => {
-                        if (!disabled) {
+                        if (!isFieldsDisabled) {
                           const newValueParsed = newValue ? parseInt(newValue.toString()) : null;
                           handleUpdateUmbralRow(row.tempId!, 'umbralid', newValueParsed);
                         }
@@ -344,7 +406,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       themeColor="orange"
                       menuPlacement="auto"
                       dropdownWidth="w-full min-w-[300px]"
-                      disabled={disabled}
+                      disabled={isFieldsDisabled}
                       allowExternalChange={true}
                     />
                       </td>
@@ -355,11 +417,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!disabled) {
+                          if (!isFieldsDisabled) {
                             handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'AND');
                           }
                         }}
-                        disabled={disabled}
+                        disabled={isFieldsDisabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
                           disabled
                             ? 'opacity-50 cursor-not-allowed'
@@ -375,11 +437,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!disabled) {
+                          if (!isFieldsDisabled) {
                             handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'OR');
                           }
                         }}
-                        disabled={disabled}
+                        disabled={isFieldsDisabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
                           disabled
                             ? 'opacity-50 cursor-not-allowed'
@@ -401,7 +463,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!disabled) {
+                          if (!isFieldsDisabled) {
                             const newInicioValue = !row.agrupador_inicio;
                             // Si se selecciona Inicio, deseleccionar Fin en la misma actualización
                             handleUpdateUmbralRowMultiple(row.tempId!, {
@@ -410,7 +472,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                             });
                           }
                         }}
-                        disabled={disabled}
+                        disabled={isFieldsDisabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
                           disabled
                             ? 'opacity-50 cursor-not-allowed'
@@ -426,7 +488,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!disabled) {
+                          if (!isFieldsDisabled) {
                             const newFinValue = !row.agrupador_fin;
                             // Si se selecciona Fin, deseleccionar Inicio en la misma actualización
                             handleUpdateUmbralRowMultiple(row.tempId!, {
@@ -435,7 +497,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                             });
                           }
                         }}
-                        disabled={disabled}
+                        disabled={isFieldsDisabled}
                         className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
                           disabled
                             ? 'opacity-50 cursor-not-allowed'
@@ -456,9 +518,9 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                     <input
                       type="number"
                       value={row.orden || ''}
-                      disabled={disabled}
+                      disabled={isFieldsDisabled}
                       onChange={(e) => {
-                        if (disabled) return;
+                        if (isFieldsDisabled) return;
                         const newOrden = e.target.value ? parseInt(e.target.value) : 1;
                         handleUpdateUmbralRow(row.tempId!, 'orden', newOrden);
                       }}
@@ -477,13 +539,13 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!disabled) {
+                          if (!isFieldsDisabled) {
                             handleRemoveUmbralRow(row.tempId!);
                           }
                         }}
-                        disabled={disabled}
+                        disabled={isFieldsDisabled}
                         className={`px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white font-mono text-sm rounded transition-colors ${
-                          disabled ? 'opacity-50 cursor-not-allowed' : ''
+                          isFieldsDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         ELIMINAR
@@ -495,12 +557,8 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
               })}
               </tbody>
             </table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-400 dark:text-neutral-500 font-mono">
-            No hay umbrales. Haga clic en "AGREGAR UMBRAL" para agregar uno.
-          </div>
-        )}
+            </div>
+        ) : null}
       </div>
     </div>
   );
