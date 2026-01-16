@@ -40,6 +40,7 @@ interface InsertTabProps {
     metricasData?: any[];
     criticidadesData?: any[];
     perfilesData?: any[];
+    reglasData?: any[];
     userData?: any[];
     codigotelefonosData?: any[];
     contactosData?: any[];
@@ -71,6 +72,8 @@ interface InsertTabProps {
   // Para sensor
   onPasteFromClipboard?: () => void;
   onReplicateClick?: () => void;
+  // Para regla_perfil
+  reglasData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
   // Key para forzar re-mount
@@ -111,7 +114,9 @@ export const InsertTab: React.FC<InsertTabProps> = ({
   onPasteFromClipboard,
   onReplicateClick,
   themeColor = 'orange',
-  resetKey
+  resetKey,
+  // Props para regla_perfil
+  reglasData
 }) => {
   const { t } = useLanguage();
 
@@ -170,6 +175,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
         correosData={relatedData.correosData}
         canalesData={relatedData.canalesData}
         perfilesData={relatedData.perfilesData || []}
+        reglasData={reglasData || relatedData.reglasData || []}
         selectedContactType={selectedContactType}
         countryCodes={countryCodes}
         resetContactType={resetContactType}
