@@ -19,6 +19,7 @@ import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormF
 import { CriticidadFormFields } from './forms/table-specific/CriticidadFormFields';
 import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
 import { ReglaPerfilFormFields } from './forms/table-specific/ReglaPerfilFormFields';
+import { ReglaObjetoFormFields } from './forms/table-specific/ReglaObjetoFormFields';
 import PerfilGeografiaPermisoForm from './PerfilGeografiaPermisoForm';
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
@@ -68,6 +69,7 @@ interface NormalInsertFormProps {
   // Datos adicionales para geografía
   nodosData?: any[];
   localizacionesData?: any[];
+  fuentesData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
@@ -107,6 +109,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     reglasData = [],
     nodosData = [],
     localizacionesData = [],
+    fuentesData = [],
     themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -317,9 +320,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Función helper para actualizar un campo del formulario
   const updateField = useCallback((field: string, value: any) => {
-    // NO bloquear actualizaciones aquí - el bloqueo de reset debe ser manejado solo para restauraciones automáticas
-    // Las interacciones del usuario (clicks en SelectWithPlaceholder) siempre deben pasar
-
     // Para paisid, verificar que el valor realmente cambió
     if (field === 'paisid') {
       const currentValue = formData.paisid || null;
@@ -336,9 +336,9 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     if (updateFormField) {
       updateFormField(field, value);
     } else {
-      setFormData({ ...formData, [field]: value });
+      setFormData((prev: any) => ({ ...prev, [field]: value }));
     }
-  }, [formData, updateFormField, setFormData]);
+  }, [updateFormField, setFormData, formData.paisid]); // Removido formData de dependencias (solo mantener paisid por protección específica)
 
   // Detectar cuando el formulario se resetea (formData pasa de tener valores a estar vacío)
   useEffect(() => {
@@ -744,7 +744,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getUniqueOptionsForField={getUniqueOptionsForField}
             themeColor="orange"
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil', 'criticidad'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'regla_objeto', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil', 'criticidad'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -802,6 +802,25 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 getUniqueOptionsForField={getUniqueOptionsForField}
                 reglasData={reglasData}
                 perfilesData={perfilesData}
+              />
+            ) : selectedTable === 'regla_objeto' ? (
+              <ReglaObjetoFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                updateField={updateField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                isFieldRequired={isFieldRequired}
+                paisesData={paisesData}
+                empresasData={empresasData}
+                fundosData={fundosData}
+                ubicacionesData={ubicacionesData}
+                nodosData={nodosData}
+                localizacionesData={localizacionesData}
+                fuentesData={fuentesData}
+                reglasData={reglasData}
+                disabled={loading}
               />
             ) : (
               renderSpecialLayoutFields()

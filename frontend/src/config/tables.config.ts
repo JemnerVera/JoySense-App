@@ -982,7 +982,8 @@ export function getNotificacionesTables(): TableConfig[] {
   const notificacionesTableNames: TableName[] = [
     'criticidad',
     'umbral',
-    'regla'
+    'regla',
+    'regla_objeto'
   ];
   const tables = notificacionesTableNames.map(name => {
     const config = TABLES_CONFIG[name];

@@ -138,10 +138,10 @@ export const useTableDataManagement = () => {
       const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
       const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
       
-      // Para fundo, extraer paisid de la relación con empresa
+      // Para fundo, extraer paisid de la relación con empresa si no está presente
       const processedFundos = fundos.map((fundo: any) => ({
         ...fundo,
-        paisid: fundo.empresa?.paisid || null
+        paisid: fundo.paisid || fundo.empresa?.paisid || null
       }));
 
       // ubicaciones, localizaciones y nodos ya fueron procesados arriba con Promise.allSettled

@@ -244,6 +244,52 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
       delete dataToInsert[primaryKey];
     }
 
+    // Caso especial para tabla 'regla_objeto': crear múltiples registros si _objetosSeleccionados está presente
+    if (tableName === 'regla_objeto' && formState.data._objetosSeleccionados && Array.isArray(formState.data._objetosSeleccionados)) {
+      const objetosSeleccionados = formState.data._objetosSeleccionados as number[];
+      const reglaid = formState.data.reglaid;
+      const origenid = formState.data.origenid || 1;
+      const fuenteid = formState.data.fuenteid;
+      
+      if (!reglaid) {
+        setMessage({ type: 'warning', text: 'Debe seleccionar una regla' });
+        return;
+      }
+      if (!fuenteid) {
+        setMessage({ type: 'warning', text: 'Debe seleccionar un nivel de objeto' });
+        return;
+      }
+      if (objetosSeleccionados.length === 0) {
+        setMessage({ type: 'warning', text: 'Debe seleccionar al menos un objeto' });
+        return;
+      }
+      
+      // Preparar lote de registros para inserción masiva
+      const batchRecords = objetosSeleccionados.map(objetoid => ({
+        reglaid,
+        origenid,
+        fuenteid,
+        objetoid,
+        statusid: 1,
+        usercreatedid: userId,
+        datecreated: now,
+        usermodifiedid: userId,
+        datemodified: now
+      }));
+      
+      const result = await insertRow(batchRecords);
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: `Se asignaron ${objetosSeleccionados.length} objeto(s) a la regla correctamente` });
+        resetForm();
+        onSubTabChange?.('status');
+        loadTableData(selectedTable);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Error al asignar los objetos' });
+      }
+      return;
+    }
+
     const result = await insertRow(dataToInsert);
     
     if (result.success) {
