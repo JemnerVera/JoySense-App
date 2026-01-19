@@ -213,7 +213,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
         setLocalizacionesPorNodo(map);
       } catch (error) {
-        console.error('Error cargando localizaciones:', error);
+        // No loguear error silencioso
         setLocalizacionesPorNodo(new Map());
       }
     };
@@ -231,18 +231,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     });
   }, [nodes])
   
-  // Log para diagnóstico
-  useEffect(() => {
-    if (nodesWithGPS.length > 0) {
-      console.log('[InteractiveMap] Renderizando mapa con', nodesWithGPS.length, 'nodos con GPS, center:', mapCenter);
-      // Log de coordenadas del primer nodo para verificar
-      const firstNode = nodesWithGPS[0];
-      const lat = typeof firstNode.latitud === 'string' ? parseFloat(firstNode.latitud) : (firstNode.latitud || 0);
-      const lng = typeof firstNode.longitud === 'string' ? parseFloat(firstNode.longitud) : (firstNode.longitud || 0);
-      console.log('[InteractiveMap] Primer nodo GPS:', { nodo: firstNode.nodo, lat, lng });
-    }
-  }, [nodes.length, nodesWithGPS.length, selectedNode?.nodoid, loading, mapCenter]);
-
   // Función para abrir el popup del nodo seleccionado
   const openSelectedNodePopup = () => {
     if (selectedNode) {

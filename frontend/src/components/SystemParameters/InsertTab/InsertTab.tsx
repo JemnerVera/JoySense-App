@@ -120,18 +120,6 @@ export const InsertTab: React.FC<InsertTabProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  useEffect(() => {
-    console.log('[InsertTab] Montado/Actualizado', {
-      tableName,
-      loading,
-      formDataKeys: Object.keys(formData || {}),
-      visibleColumnsCount: visibleColumns?.length || 0,
-      hasRelatedData: !!relatedData,
-      resetKey,
-      timestamp: Date.now()
-    });
-  }, [tableName, loading, formData, visibleColumns, relatedData, resetKey]);
-
   // Función helper para obtener nombre de columna
   const getColumnDisplayNameHelper = useMemo(() => {
     return getColumnDisplayName || ((columnName: string) => 

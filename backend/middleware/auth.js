@@ -78,7 +78,6 @@ async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    logger.info(`[DEBUG] optionalAuth: No hay header Authorization, usando cliente base`);
     req.user = null;
     req.supabase = baseSupabase; // Usar cliente base sin autenticación
     return next();
@@ -87,7 +86,6 @@ async function optionalAuth(req, res, next) {
   const token = authHeader.substring(7);
   
   if (!token || token.length === 0) {
-    logger.warn(`[DEBUG] optionalAuth: Token vacío después de extraer Bearer`);
     req.user = null;
     req.supabase = baseSupabase;
     return next();

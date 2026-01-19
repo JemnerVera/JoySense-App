@@ -64,28 +64,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   const [originalFormData, setOriginalFormData] = useState<Record<string, any>>({});
   const { showModal } = useModal();
   
-  // Debug: Log cuando se monta o actualiza UpdateTab
-  useEffect(() => {
-    console.log('[UpdateTab] Montado/Actualizado:', {
-      tableName,
-      hasConfig: !!config,
-      configAllowUpdate: config?.allowUpdate,
-      hasInitialSelectedRow: !!initialSelectedRow,
-      initialSelectedRowKeys: initialSelectedRow ? Object.keys(initialSelectedRow) : [],
-      selectedRow: !!selectedRow,
-      showForm,
-      tableDataCount: tableData?.length || 0
-    });
-  }, [tableName, config, initialSelectedRow, selectedRow, showForm, tableData]);
-  
   // Sincronizar selectedRow cuando cambia initialSelectedRow
   useEffect(() => {
     if (initialSelectedRow) {
-      console.log('[UpdateTab] Sincronizando initialSelectedRow:', {
-        tableName,
-        initialSelectedRowKeys: Object.keys(initialSelectedRow),
-        initialSelectedRow
-      });
       setSelectedRow(initialSelectedRow);
       setShowForm(true);
     } else {

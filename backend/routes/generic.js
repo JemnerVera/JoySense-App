@@ -142,17 +142,6 @@ router.get('/:table/columns', async (req, res) => {
 router.post('/:table', async (req, res) => {
   const { table } = req.params;
   
-  logger.debug(`[POST /:table] Request recibido:`, {
-    table,
-    hasAuthHeader: !!req.headers.authorization,
-    authHeaderPrefix: req.headers.authorization?.substring(0, 20),
-    hasUser: !!req.user,
-    userId: req.user?.id,
-    userEmail: req.user?.email,
-    hasSupabase: !!req.supabase,
-    dataKeys: Object.keys(req.body || {})
-  });
-  
   if (!isTableAllowed(table)) {
     return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
@@ -232,17 +221,6 @@ router.post('/:table', async (req, res) => {
     // El middleware ya configura correctamente el cliente con el token para RLS
     const userSupabase = req.supabase || baseSupabase;
     
-    logger.debug(`[POST /:table] Usando cliente Supabase:`, {
-      table,
-      hasReqSupabase: !!req.supabase,
-      hasBaseSupabase: !!baseSupabase,
-      usingUserSupabase: req.supabase ? 'req.supabase (del middleware)' : 'baseSupabase',
-      hasUser: !!req.user,
-      userId: req.user?.id,
-      hasToken: !!req.headers.authorization,
-      dataToInsertKeys: Object.keys(dataToInsert)
-    });
-    
     // Para usuario_canal, verificar auth.uid() antes de insertar
     if (table === 'usuario_canal' && req.user) {
       try {
@@ -258,15 +236,8 @@ router.post('/:table', async (req, res) => {
             .select('usuarioid')
             .limit(1);
           
-          logger.debug(`[POST /:table] Verificación auth.uid():`, {
-            directQueryWorks: !!directCheck,
-            expectedUserId: req.user.id
-          });
         } else {
-          logger.debug(`[POST /:table] auth.uid() desde función:`, {
-            authUid: authUidCheck,
-            expectedUserId: req.user.id
-          });
+          // No log
         }
       } catch (checkError) {
         logger.warn(`[POST /:table] Error verificando auth.uid() (continuando):`, checkError.message);

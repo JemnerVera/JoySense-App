@@ -111,19 +111,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 }) => {
   const { t } = useLanguage();
   
-  useEffect(() => {
-    console.log('[NormalInsertForm] Montado/Actualizado', {
-      selectedTable,
-      loading,
-      visibleColumnsCount: visibleColumns?.length || 0,
-      formDataKeys: Object.keys(formData || {}),
-      hasPaisesData: !!paisesData && paisesData.length > 0,
-      hasEmpresasData: !!empresasData && empresasData.length > 0,
-      hasFundosData: !!fundosData && fundosData.length > 0,
-      timestamp: Date.now()
-    });
-  }, [selectedTable, loading, visibleColumns, formData, paisesData, empresasData, fundosData]);
-  
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
     const colors = {
@@ -330,15 +317,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 
   // Función helper para actualizar un campo del formulario
   const updateField = useCallback((field: string, value: any) => {
-    // DIAGNÓSTICO: Log para ver qué está pasando
-    logger.debug('[NormalInsertForm] updateField llamado', {
-      field,
-      value,
-      currentValue: formData[field],
-      isResetting: isResettingRef.current,
-      formDataKeys: Object.keys(formData)
-    })
-    
     // NO bloquear actualizaciones aquí - el bloqueo de reset debe ser manejado solo para restauraciones automáticas
     // Las interacciones del usuario (clicks en SelectWithPlaceholder) siempre deben pasar
 
@@ -356,10 +334,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     }
 
     if (updateFormField) {
-      logger.debug('[NormalInsertForm] Llamando updateFormField prop', { field, value })
       updateFormField(field, value);
     } else {
-      logger.debug('[NormalInsertForm] Llamando setFormData directamente', { field, value })
       setFormData({ ...formData, [field]: value });
     }
   }, [formData, updateFormField, setFormData]);
@@ -434,7 +410,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       syncTimeoutRef.current = setTimeout(() => {
         // VERIFICAR NUEVAMENTE después del timeout si estamos en medio de un reset
         if (isResettingRef.current) {
-          logger.debug('[NormalInsertForm] Sincronización país bloqueada - reset en progreso (después de timeout)')
           return;
         }
         
@@ -444,15 +419,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         // Verificar si formData.paisid está vacío/null (formulario reseteado)
         const isPaisidEmpty = !formData.paisid || formData.paisid === '' || formData.paisid === null || formData.paisid === undefined;
         const currentPaisid = formData.paisid;
-        
-        logger.debug('[NormalInsertForm] Sincronización país - evaluación:', {
-          hasGlobalFilter,
-          shouldSync,
-          isPaisidEmpty,
-          currentPaisid,
-          paisSeleccionado,
-          selectedTable
-        })
         
         // CRÍTICO: Si no hay filtro global Y el paisid está vacío, NO hacer nada
         // Esto previene restauraciones no deseadas después de un reset
@@ -475,7 +441,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         
         // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
         if (shouldSync && isPaisidEmpty) {
-          logger.debug('[NormalInsertForm] Sincronizando paisid con filtro global:', paisSeleccionado)
           if (updateFormField) {
             updateFormField('paisid', paisSeleccionado);
           } else {

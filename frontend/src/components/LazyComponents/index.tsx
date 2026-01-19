@@ -24,13 +24,6 @@ const NotificacionesMainLazy = lazy(() =>
   })
 );
 
-// Lazy load Configuration component (placeholder)
-const ConfigurationLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Configuration component not implemented yet</div>
-  })
-);
-
 // Lazy load UmbralesMain component
 const UmbralesMainLazy = lazy(() => 
   import('../Umbrales/UmbralesMain').then(module => ({
@@ -41,7 +34,6 @@ const UmbralesMainLazy = lazy(() =>
 // Lazy load Dashboard component con preload
 const DashboardLazy = lazy(() => 
   import('../Dashboard/DashboardMain').then(module => {
-    console.log('📦 Dashboard cargado dinámicamente');
     return { default: module.default };
   })
 );
@@ -49,101 +41,55 @@ const DashboardLazy = lazy(() =>
 // Lazy load heavy components con preload
 const NormalInsertFormLazy = lazy(() => 
   import('../NormalInsertForm').then(module => {
-    console.log('📦 NormalInsertForm cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const MassiveUmbralFormLazy = lazy(() => 
   import('../MassiveUmbralForm').then(module => {
-    console.log('📦 MassiveUmbralForm cargado dinámicamente');
     return { default: module.MassiveUmbralForm };
   })
 );
 
 const MassivePerfilUmbralFormLazy = lazy(() => 
   import('../MassivePerfilUmbralForm').then(module => {
-    console.log('📦 MassivePerfilUmbralForm cargado dinámicamente');
     return { default: module.MassivePerfilUmbralForm };
   })
 );
 
 const MultipleMetricaSensorFormLazy = lazy(() => 
   import('../MultipleMetricaSensorForm').then(module => {
-    console.log('📦 MultipleMetricaSensorForm cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const DashboardHierarchyLazy = lazy(() => 
   import('../DashboardHierarchy').then(module => {
-    console.log('📦 DashboardHierarchy cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const MetricaPorLoteLazy = lazy(() => 
   import('../Reportes/MetricaPorLote').then(module => {
-    console.log('📦 MetricaPorLote cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const UmbralesPorLoteLazy = lazy(() => 
   import('../Reportes/UmbralesPorLote').then(module => {
-    console.log('📦 UmbralesPorLote cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const NodeStatusDashboardLazy = lazy(() => 
   import('../Dashboard/NodeStatusDashboard').then(module => {
-    console.log('📦 NodeStatusDashboard cargado dinámicamente');
     return { default: module.default };
   })
 );
 
 const AlertStatusDashboardLazy = lazy(() => 
   import('../Dashboard/AlertStatusDashboard').then(module => {
-    console.log('📦 AlertStatusDashboard cargado dinámicamente');
     return { default: module.default };
-  })
-);
-
-// Placeholder components for missing modules
-const ReportsLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Reports component not implemented yet</div>
-  })
-);
-
-const SettingsLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Settings component not implemented yet</div>
-  })
-);
-
-const UsersLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Users component not implemented yet</div>
-  })
-);
-
-const AnalyticsLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Analytics component not implemented yet</div>
-  })
-);
-
-const NotificationsLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Notifications component not implemented yet</div>
-  })
-);
-
-const HelpLazy = lazy(() => 
-  Promise.resolve({
-    default: () => <div className="p-4">Help component not implemented yet</div>
   })
 );
 
@@ -231,14 +177,6 @@ export const NotificacionesMainLazyWithBoundary = React.forwardRef<any, any>((pr
   </LazyComponentErrorBoundary>
 ));
 
-export const ConfigurationLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <ConfigurationLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
 export const UmbralesMainLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
@@ -251,54 +189,6 @@ export const DashboardLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
       <DashboardLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const ReportsLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <ReportsLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const SettingsLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <SettingsLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const UsersLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <UsersLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const AnalyticsLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <AnalyticsLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const NotificationsLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <NotificationsLazy />
-    </LazyComponentWrapper>
-  </LazyComponentErrorBoundary>
-);
-
-export const HelpLazyWithBoundary: React.FC = () => (
-  <LazyComponentErrorBoundary>
-    <LazyComponentWrapper>
-      <HelpLazy />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 );
@@ -347,7 +237,6 @@ export const DashboardHierarchyLazyWithBoundary: React.FC<any> = (props) => (
 // Export the original lazy components for direct use
 export {
   SystemParametersLazy,
-  ConfigurationLazy,
   UmbralesMainLazy,
   DashboardLazy,
   NormalInsertFormLazy,
@@ -359,12 +248,6 @@ export {
   UmbralesPorLoteLazy,
   NodeStatusDashboardLazy,
   AlertStatusDashboardLazy,
-  ReportsLazy,
-  SettingsLazy,
-  UsersLazy,
-  AnalyticsLazy,
-  NotificationsLazy,
-  HelpLazy,
   LazyComponentWrapper,
   LazyComponentErrorBoundary
 };
