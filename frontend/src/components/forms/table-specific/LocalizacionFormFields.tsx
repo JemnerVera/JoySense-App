@@ -106,26 +106,18 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
     );
   }
   
-  // Segunda fila: Nombre (localizacion)
+  // Segunda fila: Nombre (localizacion) y Status al extremo derecho
   const localizacionField = visibleColumns.find(c => c.columnName === 'localizacion');
-  if (localizacionField) {
+  const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+
+  if (localizacionField || statusField) {
     result.push(
       <div key="second-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {renderLocalizacionField(localizacionField, 'text')}
-        <div></div> {/* Espacio vacío */}
-        <div></div> {/* Espacio vacío */}
-      </div>
-    );
-  }
-  
-  // Tercera fila: Status al extremo derecho
-  const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-  if (statusField) {
-    result.push(
-      <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div></div> {/* Espacio vacío */}
-        <div></div> {/* Espacio vacío */}
-        {renderField(statusField)}
+        {localizacionField && renderLocalizacionField(localizacionField, 'text')}
+        <div></div> {/* Espacio vacío central */}
+        <div className="flex flex-col justify-start">
+          {statusField && renderField(statusField)}
+        </div>
       </div>
     );
   }

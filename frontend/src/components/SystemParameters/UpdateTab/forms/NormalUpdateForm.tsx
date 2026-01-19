@@ -397,20 +397,11 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           </div>
         )}
         
-        {/* Fila 2: LOCALIZACION, LATITUD, LONGITUD */}
-        {(localizacionField || latitudField || longitudField) && (
+        {/* Fila 2: LOCALIZACION y STATUS */}
+        {(localizacionField || statusField) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {localizacionField && !localizacionField.hidden && renderField(localizacionField)}
-            {latitudField && !latitudField.hidden && renderField(latitudField)}
-            {longitudField && !longitudField.hidden && renderField(longitudField)}
-          </div>
-        )}
-        
-        {/* Fila 3: (VACIO), REFERENCIA, STATUS */}
-        {(referenciaField || statusField) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div></div> {/* Espacio vacío */}
-            {referenciaField && !referenciaField.hidden && renderField(referenciaField)}
+            <div></div> {/* Espacio vacío central */}
             {statusField && !statusField.hidden && renderField(statusField)}
           </div>
         )}

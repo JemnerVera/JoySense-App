@@ -282,20 +282,8 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      if (!token) {
-        console.warn('[DEBUG] getMetricas: No hay token de sesión disponible');
-      } else {
-        console.log('[DEBUG] getMetricas: Token presente, longitud:', token.length);
-      }
-      
       // Usar /metricas en lugar de /metrica porque devuelve un array directo
       const data = await backendAPI.get('/dispositivos/metricas', token || undefined);
-      
-      console.log('[DEBUG] getMetricas: Datos recibidos', {
-        isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 0,
-        sampleMetrica: Array.isArray(data) && data.length > 0 ? data[0] : null
-      });
       
       return data || [];
     } catch (error) {
@@ -364,33 +352,11 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      if (!token) {
-        console.warn('[DEBUG] getNodosConLocalizacion: No hay token de sesión disponible');
-      } else {
-        console.log('[DEBUG] getNodosConLocalizacion: Token presente, longitud:', token.length);
-      }
-      
       const data = await backendAPI.get(`/dispositivos/nodos-con-localizacion?limit=${limit}`, token || undefined);
-      
-      // Solo log cuando hay datos para evitar spam
-      if (Array.isArray(data) && data.length > 0) {
-        console.log('[DEBUG] getNodosConLocalizacion: Datos recibidos del backend:', {
-        esArray: Array.isArray(data),
-        cantidad: Array.isArray(data) ? data.length : 0,
-        primerItem: Array.isArray(data) && data.length > 0 ? {
-          localizacionid: data[0].localizacionid,
-          latitud: data[0].latitud,
-          longitud: data[0].longitud,
-          tieneNodo: !!data[0].nodo,
-          nodoid: data[0].nodo?.nodoid
-        } : null
-        });
-      }
       
       // Transformar datos de localizacion a formato NodeData
       // El backend retorna localizacion con nodo dentro, necesitamos transformarlo
       if (!Array.isArray(data)) {
-        console.warn('[DEBUG] getNodosConLocalizacion: data no es un array, retornando []');
         return [];
       }
       
@@ -444,18 +410,6 @@ export class JoySenseService {
       });
       
       const result = Array.from(nodesMap.values());
-      console.log('[DEBUG] getNodosConLocalizacion: Nodos transformados:', {
-        cantidad: result.length,
-        primerNodo: result.length > 0 ? {
-          nodoid: result[0].nodoid,
-          nodo: result[0].nodo,
-          latitud: result[0].latitud,
-          longitud: result[0].longitud,
-          tipoLatitud: typeof result[0].latitud,
-          tipoLongitud: typeof result[0].longitud
-        } : null
-      });
-      
       return result;
     } catch (error) {
       console.error('Error in getNodosConLocalizacion:', error);
@@ -488,12 +442,6 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      if (!token) {
-        console.warn('[DEBUG] getMediciones: No hay token de sesión disponible');
-      } else {
-        console.log('[DEBUG] getMediciones: Token presente, longitud:', token.length);
-      }
-      
       const params = new URLSearchParams();
       
       if (filters.localizacionId) params.append('localizacionid', filters.localizacionId.toString());
@@ -515,19 +463,11 @@ export class JoySenseService {
         endpoint = `/mediciones/mediciones?${params.toString()}`;
       }
       
-      console.log('[DEBUG] getMediciones: Llamando endpoint:', endpoint, {
-        nodoid: filters.nodoid,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        limit: filters.limit
-      });
-      
       const data = await backendAPI.get(endpoint, token || undefined);
 
       if (filters.countOnly) return data || { count: 0 };
       
       if (!Array.isArray(data)) {
-        console.warn('⚠️ [getMediciones] Backend devolvió datos que no son un array:', typeof data, data);
         return Array.isArray(data?.data) ? data.data : (data ? [data] : []);
       }
       
@@ -1168,18 +1108,6 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      console.log('[JoySenseService.insertTableRow] Preparando inserción:', {
-        tableName,
-        endpoint,
-        hasToken: !!token,
-        tokenLength: token ? token.length : 0,
-        dataKeys: Object.keys(data),
-        dataSample: Object.keys(data).reduce((acc, key) => {
-          acc[key] = typeof data[key];
-          return acc;
-        }, {} as Record<string, string>)
-      });
-      
       const result = await backendAPI.post(endpoint, data, token || undefined);
       return result;
     } catch (error) {
@@ -1253,12 +1181,6 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      if (!token) {
-        console.warn('[DEBUG] getUltimasMedicionesPorLote: No hay token de sesión disponible');
-      } else {
-        console.log('[DEBUG] getUltimasMedicionesPorLote: Token presente, longitud:', token.length);
-      }
-      
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
       queryParams.append('metricaId', params.metricaId.toString());
@@ -1283,29 +1205,11 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      if (!token) {
-        console.warn('[DEBUG] getUmbralesPorLote: No hay token de sesión disponible');
-      } else {
-        console.log('[DEBUG] getUmbralesPorLote: Token presente, longitud:', token.length);
-      }
-      
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
       if (params.metricaId) queryParams.append('metricaId', params.metricaId.toString());
 
-      console.log('[DEBUG] getUmbralesPorLote: Llamando endpoint', {
-        fundoIds: params.fundoIds,
-        metricaId: params.metricaId,
-        endpoint: `/alertas/umbrales-por-lote?${queryParams.toString()}`
-      });
-
       const data = await backendAPI.get(`/alertas/umbrales-por-lote?${queryParams.toString()}`, token || undefined);
-      
-      console.log('[DEBUG] getUmbralesPorLote: Datos recibidos', {
-        isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 0,
-        sample: Array.isArray(data) && data.length > 0 ? data[0] : null
-      });
       
       return Array.isArray(data) ? data : [];
     } catch (error) {

@@ -127,6 +127,14 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(t('create.select_node'));
   }
 
+  if (col.columnName === 'sensorid' && selectedTable === 'localizacion') {
+    return renderSelectField(`${t('buttons.select')} ${t('fields.sensor') || 'SENSOR'}`);
+  }
+
+  if (col.columnName === 'metricaid' && selectedTable === 'localizacion') {
+    return renderSelectField(`${t('buttons.select')} ${t('fields.metric') || 'METRICA'}`);
+  }
+
   // NOTA: La tabla 'tipo' NO tiene campo 'entidadid' según el schema actual
   // Esta condición se eliminó porque entidadid no existe en la tabla tipo
 

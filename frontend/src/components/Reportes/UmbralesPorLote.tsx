@@ -88,12 +88,6 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
           return nodoToFundoMap.has(loc.nodoid);
         });
         
-        console.log('[DEBUG] loadLocalizaciones: Localizaciones cargadas', {
-          totalLocalizaciones: localizacionesData?.length || 0,
-          localizacionesFiltradas: localizacionesFiltradas?.length || 0,
-          selectedFundos
-        });
-        
         setLocalizaciones(localizacionesFiltradas);
       } catch (err: any) {
         console.error('Error cargando localizaciones:', err);
@@ -121,13 +115,6 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         metricaId: selectedMetrica
       });
 
-      console.log('[DEBUG] calcularUmbralesPorLote: Umbrales recibidos', {
-        umbralesLength: umbrales?.length || 0,
-        sampleUmbral: umbrales?.[0],
-        selectedFundos,
-        selectedMetrica
-      });
-
       // Agrupar por localización
       const loteMap = new Map<number, { 
         localizacion: string; 
@@ -142,12 +129,6 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         const tipoid = umbral.tipoid || umbral.localizacion?.sensor?.tipoid || null;
 
         if (!localizacionId || !tipoid) {
-          console.warn('[DEBUG] calcularUmbralesPorLote: Umbral sin localizacionid o tipoid', {
-            umbralid: umbral.umbralid,
-            localizacionid: localizacionId,
-            tipoid: tipoid,
-            umbral: umbral
-          });
           return;
         }
 
@@ -169,16 +150,6 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
           umbral: umbral.umbral,
           criticidadid: umbral.criticidadid
         };
-      });
-
-      console.log('[DEBUG] calcularUmbralesPorLote: Lotes agrupados', {
-        lotesCount: loteMap.size,
-        lotes: Array.from(loteMap.entries()).map(([id, data]) => ({
-          localizacionid: id,
-          localizacion: data.localizacion,
-          umbralCount: data.umbralCount,
-          tiposCount: Object.keys(data.umbralesPorTipo).length
-        }))
       });
 
       // Crear array de datos

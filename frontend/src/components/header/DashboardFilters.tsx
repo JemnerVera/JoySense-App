@@ -170,7 +170,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           const { supabaseAuth } = await import('../../services/supabase-auth');
           const { data: { session } } = await supabaseAuth.auth.getSession();
           if (!session?.access_token) {
-            console.warn('[DEBUG] DashboardFilters: No hay token de sesión, saltando filtro de nodos con GPS');
+            // console.warn('DashboardFilters: No hay token de sesión, saltando filtro de nodos con GPS');
           }
           const nodosConGPS = await JoySenseService.getNodosConLocalizacion();
 

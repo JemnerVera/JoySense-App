@@ -255,55 +255,18 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         renderContextualRow={renderContextualRow}
       />];
     } else if (selectedTable === 'localizacion') {
-      // Layout específico para localizacion:
-      // Fila 1: NODO, ID DEL SENSOR, METRICA
-      // Fila 2: LOCALIZACION, LATITUD, LONGITUD
-      // Fila 3: (VACIO), REFERENCIA, STATUS
-      const nodoField = visibleColumns.find(col => col.columnName === 'nodoid');
-      const sensorField = visibleColumns.find(col => col.columnName === 'sensorid');
-      const metricaField = visibleColumns.find(col => col.columnName === 'metricaid');
-      const localizacionField = visibleColumns.find(col => col.columnName === 'localizacion');
-      const latitudField = visibleColumns.find(col => col.columnName === 'latitud');
-      const longitudField = visibleColumns.find(col => col.columnName === 'longitud');
-      const referenciaField = visibleColumns.find(col => col.columnName === 'referencia');
-      const statusField = visibleColumns.find(col => col.columnName === 'statusid');
-      
-      const result: React.ReactNode[] = [];
-      
-      // Fila 1: NODO, ID DEL SENSOR, METRICA
-      if (nodoField || sensorField || metricaField) {
-        result.push(
-          <div key="row-1" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {nodoField && renderField(nodoField)}
-            {sensorField && renderField(sensorField)}
-            {metricaField && renderField(metricaField)}
-          </div>
-        );
-      }
-      
-      // Fila 2: LOCALIZACION, LATITUD, LONGITUD
-      if (localizacionField || latitudField || longitudField) {
-        result.push(
-          <div key="row-2" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {localizacionField && renderField(localizacionField)}
-            {latitudField && renderField(latitudField)}
-            {longitudField && renderField(longitudField)}
-          </div>
-        );
-      }
-      
-      // Fila 3: (VACIO), REFERENCIA, STATUS
-      if (referenciaField || statusField) {
-        result.push(
-          <div key="row-3" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div></div> {/* Espacio vacío */}
-            {referenciaField && renderField(referenciaField)}
-            {statusField && renderField(statusField)}
-          </div>
-        );
-      }
-      
-      return result;
+      return [<LocalizacionFormFields
+        key="localizacion"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        setFormData={setFormData}
+        updateField={updateField}
+        renderField={renderField}
+        getThemeColor={getThemeColor}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        isFieldRequired={isFieldRequired}
+        renderContextualRow={renderContextualRow}
+      />];
     } else if (selectedTable === 'origen') {
       // Layout específico para origen:
       // Fila 1: ORIGEN, STATUS (en la misma fila, juntos)
