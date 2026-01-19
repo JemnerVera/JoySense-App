@@ -130,6 +130,7 @@ router.get('/mediciones', async (req, res) => {
     
     // Si hay nodoid, obtener localizaciones de ese nodo
     if (nodoid) {
+      console.log(`[backend] Fetching mediciones for nodoid: ${nodoid}`);
       const { data: localizaciones, error: locError } = await userSupabase
         .schema(dbSchema)
         .from('localizacion')
@@ -138,12 +139,21 @@ router.get('/mediciones', async (req, res) => {
         .eq('statusid', 1);
       
       if (locError) {
+        console.error(`[backend] Error fetching localizaciones for nodoid ${nodoid}:`, locError);
         throw locError;
       }
       
       locIds = (localizaciones || []).map(l => l.localizacionid);
+      console.log(`[backend] Found ${locIds.length} localizaciones for nodoid ${nodoid}:`, locIds);
       
       if (locIds.length === 0) {
+        // Log if any localizations exist at all for this node
+        const { data: anyLocs } = await userSupabase
+          .schema(dbSchema)
+          .from('localizacion')
+          .select('localizacionid, statusid')
+          .eq('nodoid', nodoid);
+        console.log(`[backend] ALL localizaciones for nodoid ${nodoid}:`, anyLocs);
         return res.json([]);
       }
     }
@@ -195,12 +205,11 @@ router.get('/mediciones', async (req, res) => {
     const { data, error } = await query;
     
     if (error) {
+      console.error(`[backend] Error fetching mediciones:`, error);
       throw error;
     }
     
-    if ((data || []).length > 0) {
-      // No logs
-    }
+    console.log(`[backend] Found ${data?.length || 0} mediciones for query`);
     
     // Obtener métricas por separado (ya que la relación es a través de metricasensor)
     const metricaIds = [...new Set(

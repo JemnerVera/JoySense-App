@@ -463,6 +463,7 @@ export class JoySenseService {
         endpoint = `/mediciones/mediciones?${params.toString()}`;
       }
       
+      console.log('[JoySenseService] getMediciones calling:', endpoint);
       const data = await backendAPI.get(endpoint, token || undefined);
 
       if (filters.countOnly) return data || { count: 0 };
