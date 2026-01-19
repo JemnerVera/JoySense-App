@@ -393,6 +393,22 @@ export const useInsertForm = ({
       return Object.keys(errors).length === 0
     }
 
+    // Caso especial para regla_perfil: validar reglaid y que haya perfiles seleccionados
+    if (tableName === 'regla_perfil') {
+      if (!formData.reglaid) {
+        errors.reglaid = 'Regla es requerida'
+      }
+      
+      // Verificar que haya al menos un perfil seleccionado
+      const perfilesStatus = formData._perfilesStatus as Record<number, number> | undefined
+      if (!perfilesStatus || Object.values(perfilesStatus).filter(statusid => statusid === 1).length === 0) {
+        errors._perfilesStatus = 'Debe seleccionar al menos un perfil activo'
+      }
+      
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
     // Caso especial para usuario_canal: validar usuarioid y que haya canales seleccionados
     if (tableName === 'usuario_canal') {
       if (!formData.usuarioid) {
@@ -422,6 +438,11 @@ export const useInsertForm = ({
       
       // Para usuarioperfil, no validar perfilid y statusid ya que se manejan de forma especial
       if (tableName === 'usuarioperfil' && (field.name === 'perfilid' || field.name === 'statusid')) {
+        return
+      }
+      
+      // Para regla_perfil, no validar perfilid y statusid ya que se manejan de forma especial
+      if (tableName === 'regla_perfil' && (field.name === 'perfilid' || field.name === 'statusid')) {
         return
       }
       

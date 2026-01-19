@@ -489,7 +489,9 @@ router.get('/localizacion', async (req, res) => {
         nodo:nodoid(
           nodoid,
           nodo,
-          descripcion,
+          latitud,
+          longitud,
+          referencia,
           ubicacionid,
           ubicacion:ubicacionid(
             ubicacionid,
@@ -609,7 +611,13 @@ router.get('/localizaciones', async (req, res) => {
       .from('localizacion')
       .select(`
         *,
-        nodo:nodoid(nodoid, nodo),
+        nodo:nodoid(
+          nodoid, 
+          nodo,
+          latitud,
+          longitud,
+          referencia
+        ),
         metrica:metricaid(metricaid, metrica)
       `)
       .order('localizacionid', { ascending: true });
@@ -782,7 +790,7 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     const { data: allLocalizaciones, error: allError } = await userSupabase
       .schema(dbSchema)
       .from('localizacion')
-      .select('localizacionid, latitud, longitud, statusid, nodoid')
+      .select('localizacionid, statusid, nodoid')
       .limit(10);
     
     logger.info(`[DEBUG] GET /nodos-con-localizacion: Total localizaciones (sin filtros): ${(allLocalizaciones || []).length}`);
@@ -822,16 +830,15 @@ router.get('/nodos-con-localizacion', async (req, res) => {
       .select(`
         localizacionid,
         localizacion,
-        latitud,
-        longitud,
-        referencia,
         nodoid,
         sensorid,
         metricaid,
         nodo:nodoid(
           nodoid,
           nodo,
-          descripcion,
+          latitud,
+          longitud,
+          referencia,
           ubicacionid,
           ubicacion:ubicacionid(
             ubicacionid,
@@ -857,29 +864,34 @@ router.get('/nodos-con-localizacion', async (req, res) => {
           )
         )
       `)
-      .not('latitud', 'is', null)
-      .not('longitud', 'is', null)
       .eq('statusid', 1)
       .limit(parseInt(limit));
     
+    // Filtrar localizaciones que tengan nodo con coordenadas
+    const filteredLocalizaciones = (localizaciones || []).filter(l => {
+      const nodo = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
+      return nodo && nodo.latitud != null && nodo.longitud != null;
+    });
+
     if (locError) {
       logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en consulta principal:`, locError);
       throw locError;
     }
     
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Se obtuvieron ${(localizaciones || []).length} localizaciones`);
-    if ((localizaciones || []).length > 0) {
+    logger.info(`[DEBUG] GET /nodos-con-localizacion: Se obtuvieron ${filteredLocalizaciones.length} localizaciones con coordenadas`);
+    if (filteredLocalizaciones.length > 0) {
+      const firstNodo = filteredLocalizaciones[0].nodo ? (Array.isArray(filteredLocalizaciones[0].nodo) ? filteredLocalizaciones[0].nodo[0] : filteredLocalizaciones[0].nodo) : null;
       logger.info(`[DEBUG] Primera localizacion sample:`, JSON.stringify({
-        localizacionid: localizaciones[0].localizacionid,
-        latitud: localizaciones[0].latitud,
-        longitud: localizaciones[0].longitud,
-        tieneNodo: !!localizaciones[0].nodo,
-        nodoid: localizaciones[0].nodo?.nodoid
+        localizacionid: filteredLocalizaciones[0].localizacionid,
+        latitud: firstNodo?.latitud,
+        longitud: firstNodo?.longitud,
+        tieneNodo: !!filteredLocalizaciones[0].nodo,
+        nodoid: firstNodo?.nodoid
       }));
     }
     
     // Paso 1.5: Obtener métricas por separado (ya que la relación es a través de metricasensor)
-    const metricaIds = [...new Set((localizaciones || []).map(l => l.metricaid).filter(id => id != null))];
+    const metricaIds = [...new Set(filteredLocalizaciones.map(l => l.metricaid).filter(id => id != null))];
     let metricasMap = new Map();
     if (metricaIds.length > 0) {
       const { data: metricas, error: metError } = await userSupabase
@@ -897,7 +909,7 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     }
     
     // Paso 2: Obtener entidades por localizacionid desde entidad_localizacion
-    const localizacionIds = (localizaciones || []).map(l => l.localizacionid);
+    const localizacionIds = filteredLocalizaciones.map(l => l.localizacionid);
     
     let entidadesMap = new Map();
     if (localizacionIds.length > 0) {
@@ -926,7 +938,7 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     }
     
     // Paso 3: Combinar datos
-    const transformed = (localizaciones || []).map(l => {
+    const transformed = filteredLocalizaciones.map(l => {
       const nodo = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
       const metrica = metricasMap.get(l.metricaid) || null;
       const entidad = entidadesMap.get(l.localizacionid) || null;
@@ -934,9 +946,9 @@ router.get('/nodos-con-localizacion', async (req, res) => {
       return {
         localizacionid: l.localizacionid,
         localizacion: l.localizacion,
-        latitud: l.latitud,
-        longitud: l.longitud,
-        referencia: l.referencia,
+        latitud: nodo?.latitud,
+        longitud: nodo?.longitud,
+        referencia: nodo?.referencia,
         nodo: nodo ? {
           ...nodo,
           entidad: entidad

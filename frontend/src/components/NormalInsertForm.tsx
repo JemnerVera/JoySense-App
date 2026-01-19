@@ -18,6 +18,7 @@ import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
 import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
 import { ReglaPerfilFormFields } from './forms/table-specific/ReglaPerfilFormFields';
+import PerfilGeografiaPermisoForm from './PerfilGeografiaPermisoForm';
 import { FormFieldRenderer } from './forms/FormFieldRenderer';
 import { ContextualRow } from './forms/ContextualRow';
 import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
@@ -49,6 +50,7 @@ interface NormalInsertFormProps {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  ubicacionesData?: any[];
   codigotelefonosData?: any[];
   // Props específicas para contacto
   selectedContactType?: 'phone' | 'email' | null;
@@ -62,6 +64,9 @@ interface NormalInsertFormProps {
   perfilesData?: any[];
   // Datos para regla_perfil
   reglasData?: any[];
+  // Datos adicionales para geografía
+  nodosData?: any[];
+  localizacionesData?: any[];
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
@@ -89,6 +94,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   paisesData,
   empresasData,
   fundosData,
+  ubicacionesData,
   codigotelefonosData,
   selectedContactType,
   countryCodes,
@@ -98,6 +104,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     canalesData = [],
     perfilesData = [],
     reglasData = [],
+    nodosData = [],
+    localizacionesData = [],
     themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -781,6 +789,24 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getEmpresaName={getEmpresaName}
             getFundoName={getFundoName}
             renderContextualRow={renderContextualRow}
+          />
+        ) : selectedTable === 'permiso' ? (
+          <PerfilGeografiaPermisoForm
+            formData={formData}
+            setFormData={setFormData}
+            updateFormField={updateField}
+            loading={loading}
+            onInsert={onInsert}
+            onCancel={onCancel}
+            perfilesData={perfilesData}
+            paisesData={paisesData}
+            empresasData={empresasData}
+            fundosData={fundosData}
+            ubicacionesData={ubicacionesData}
+            nodosData={nodosData}
+            localizacionesData={localizacionesData}
+            getUniqueOptionsForField={getUniqueOptionsForField}
+            themeColor="orange"
           />
         ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil'].includes(selectedTable) ? (
           <div>

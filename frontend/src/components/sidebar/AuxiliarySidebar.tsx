@@ -120,21 +120,19 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
   
   // Caso especial: REGLA dentro de NOTIFICACIONES
   const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-  // Verificar si se ha seleccionado una tabla de regla específica (regla, regla_perfil, regla_umbral)
+  // Verificar si se ha seleccionado una tabla de regla específica (regla, regla_perfil, regla_objeto)
   // IMPORTANTE: No confundir 'regla' en selectedTable (que viene del Sidebar 2) con una tabla específica seleccionada
   // Solo considerar que hay una tabla seleccionada si activeTab incluye el nombre de la tabla específica
   // Ej: 'configuracion-notificaciones-regla-regla' o 'configuracion-notificaciones-regla-regla_perfil'
   const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
   const check2 = activeTab.includes('-regla_perfil-');
-  const check3 = activeTab.includes('-regla_umbral-');
   const check4 = activeTab.includes('-regla_objeto-');
   const check5 = activeTab === 'configuracion-notificaciones-regla-regla';
   const check6 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
-  const check7 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
   const check8 = activeTab === 'configuracion-notificaciones-regla-regla_objeto';
-  const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto');
+  const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_objeto');
   const isReglaTableSelected = isReglaNotificaciones && (
-    check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8 || check9
+    check1 || check2 || check4 || check5 || check6 || check8 || check9
   );
 
   // AGRUPACION - Sidebar Auxiliar 1 y 2 (similar a DISPOSITIVOS, USUARIOS, PARAMETROS GEO)
@@ -749,7 +747,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         // handleTableSelect en App.tsx actualiza selectedTable directamente
         // NO extraer de activeTab porque puede estar desincronizado
         const isReglaTable = (table: string) => {
-          return table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto';
+          return table === 'regla' || table === 'regla_perfil' || table === 'regla_objeto';
         };
         
         // PRIORIDAD 1: Usar selectedTable si es una tabla de regla válida (fuente de verdad)

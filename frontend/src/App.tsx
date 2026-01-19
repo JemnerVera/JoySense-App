@@ -2081,9 +2081,8 @@ const AppContentInternal: React.FC<{
                               const table = configPart.replace('dispositivos-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                 if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
                                     'status': 'ESTADO',
                                     'insert': 'CREAR',
@@ -2097,9 +2096,8 @@ const AppContentInternal: React.FC<{
                               const table = configPart.replace('usuarios-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                 if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
                                     'status': 'ESTADO',
                                     'insert': 'CREAR',
@@ -2113,9 +2111,8 @@ const AppContentInternal: React.FC<{
                               const table = configPart.replace('parametros-geo-', '').split('-')[0];
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente en lugar de extraer del activeTab
+                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                 if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
-                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
                                     'status': 'ESTADO',
                                     'insert': 'CREAR',
@@ -2132,15 +2129,13 @@ const AppContentInternal: React.FC<{
                                 const reglaTable = reglaPart.split('-')[0];
                                 if (reglaTable) {
                                   const reglaTableNames: Record<string, string> = {
-                                    'regla': 'REGLA',
-                                    'regla_perfil': 'REGLA_PERFIL',
-                                    'regla_umbral': 'REGLA_UMBRAL',
-                                    'regla_objeto': 'REGLA_OBJETO'
+                                    'regla': 'REGLA & UMBRAL',
+                                    'regla_perfil': 'REGLA DE PERFIL',
+                                    'regla_objeto': 'REGLA DE OBJETO'
                                   };
                                   breadcrumb += ` / ${reglaTableNames[reglaTable]?.toUpperCase() || reglaTable.toUpperCase()}`;
-                                  // Usar activeSubTab directamente
+                                  // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                   if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                    breadcrumb += ' / OPERACIONES';
                                     const subTabNames: { [key: string]: string } = {
                                       'status': 'ESTADO',
                                       'insert': 'CREAR',
@@ -2154,9 +2149,8 @@ const AppContentInternal: React.FC<{
                                 const table = configPart.replace('notificaciones-', '').split('-')[0];
                                 if (table && table !== 'regla') {
                                   breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                  // Usar activeSubTab directamente
+                                  // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                   if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
-                                    breadcrumb += ' / OPERACIONES';
                                     const subTabNames: { [key: string]: string } = {
                                       'status': 'ESTADO',
                                       'insert': 'CREAR',
@@ -2172,9 +2166,8 @@ const AppContentInternal: React.FC<{
                               if (configPart.startsWith('permisos-permisos-')) {
                                 const permisosTipo = configPart.replace('permisos-permisos-', '').split('-')[0];
                                 breadcrumb += ` / ${permisosTipo.toUpperCase()}`;
-                                // Usar activeSubTab directamente
+                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
                                 if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'asignar')) {
-                                  breadcrumb += ' / OPERACIONES';
                                   const subTabNames: { [key: string]: string } = {
                                     'status': 'ESTADO',
                                     'insert': 'CREAR',

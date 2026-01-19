@@ -123,7 +123,6 @@ function getMetricIdFromDataKey(dataKey: string): number {
 }
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
-  console.log('[ModernDashboard] Renderizando con filters:', filters);
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
   
@@ -796,7 +795,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           })
           
           setAvailableNodes(filteredNodes)
-          console.log(`[ModernDashboard] Nodos disponibles para comparación: ${filteredNodes.length} (de ${nodes.length} total)`)
+          // console.log(`[ModernDashboard] Nodos disponibles para comparación: ${filteredNodes.length} (de ${nodes.length} total)`)
         } catch (err) {
           console.error('Error cargando nodos disponibles:', err)
           setAvailableNodes([])
@@ -811,14 +810,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {
     if (!comparisonNode || !detailedStartDate || !detailedEndDate) {
-      console.warn('⚠️ loadComparisonMediciones: Faltan datos requeridos', { comparisonNode, detailedStartDate, detailedEndDate })
+      // console.warn('⚠️ loadComparisonMediciones: Faltan datos requeridos', { comparisonNode, detailedStartDate, detailedEndDate })
       return
     }
 
     // Si hay nodoid, usarlo directamente (más eficiente y directo)
     // Similar a cómo se hace para el nodo principal
     if (!comparisonNode.nodoid) {
-      console.warn('⚠️ loadComparisonMediciones: El nodo de comparación no tiene nodoid')
+      // console.warn('⚠️ loadComparisonMediciones: El nodo de comparación no tiene nodoid')
       return
     }
 
@@ -1781,12 +1780,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           } else {
             // Aún hay muy pocos puntos - el nodo realmente tiene datos escasos
             // Pero aún así mostrar los datos disponibles
-            console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
+            // console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
           }
         } else {
           // Ya estamos usando granularidad fina o no hay suficientes datos
           // Mostrar los datos disponibles de todas formas
-          console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
+          // console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
         }
       }
     }
@@ -2152,7 +2151,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         )
         
         if (!medicion) {
-          console.log(`[DEBUG] ModernDashboard.availableMetrics: No se encontró medición para metricaId ${metricaId} y nodo ${selectedNode.nodoid}`)
+          // console.log(`[DEBUG] ModernDashboard.availableMetrics: No se encontró medición para metricaId ${metricaId} y nodo ${selectedNode.nodoid}`)
           return false
         }
         
@@ -2166,14 +2165,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           .trim()
           .toLowerCase()
         
-        console.log(`[DEBUG] ModernDashboard.availableMetrics: Verificando métrica ${metric.id} con nombre original "${rawMetricName}" -> limpio "${metricName}" (metricaId: ${metricaId})`)
+        // console.log(`[DEBUG] ModernDashboard.availableMetrics: Verificando métrica ${metric.id} con nombre original "${rawMetricName}" -> limpio "${metricName}" (metricaId: ${metricaId})`)
         
         // Mapear nombres comunes (más flexible para manejar variaciones)
         if (metric.id === 'temperatura' && (
           metricName.includes('temperatura') || 
           metricName.includes('temp')
         )) {
-          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         
@@ -2181,7 +2180,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('humedad') || 
           metricName.includes('humidity')
         )) {
-          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         
@@ -2190,7 +2189,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('electroconductividad') ||
           metricName.includes('conductivity')
         )) {
-          console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
+          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         
@@ -3333,10 +3332,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           .map(({ fechaParsed, ...m }) => m)
                         
                         if (!detailedStartDate || !detailedEndDate) {
-                          console.warn('[DEBUG] processComparisonData: Faltan fechas', {
+                          /* console.warn('[DEBUG] processComparisonData: Faltan fechas', {
                             detailedStartDate,
                             detailedEndDate
-                          })
+                          }) */
                           return []
                         }
                         
@@ -3845,10 +3844,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                           const value = props.payload?.[tipoKey]
                                           // No mostrar punto si el valor es null
                                           if (value === null || value === undefined || isNaN(value)) {
-                                            return <g /> // Retornar grupo vacío en lugar de null
+                                            return <g key={`dot-empty-${props.index}`} /> // Retornar grupo vacío en lugar de null
                                           }
                                           const fillColor = getDotColor(value)
-                                          return <circle cx={props.cx} cy={props.cy} r={4} fill={fillColor} />
+                                          return <circle key={`dot-${tipoKey}-${props.index}`} cx={props.cx} cy={props.cy} r={4} fill={fillColor} />
                                         }}
                                         activeDot={{ r: 6, fill: strokeColor }}
                                         connectNulls={false}
@@ -3858,13 +3857,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                     )
                                   })
                                 ) : (() => {
-                                  console.warn('[DEBUG] No hay tipoKeys filtrados para renderizar', {
-                                    tipoKeys,
-                                    filteredTipoKeys,
-                                    visibleTipos: Array.from(visibleTipos),
-                                    chartDataSample: chartData[0],
-                                    finalChartDataSample: finalChartData[0]
-                                  })
+                                  // console.warn('[DEBUG] No hay tipoKeys filtrados para renderizar', {
+                                  //   tipoKeys,
+                                  //   filteredTipoKeys,
+                                  //   visibleTipos: Array.from(visibleTipos),
+                                  //   chartDataSample: chartData[0],
+                                  //   finalChartDataSample: finalChartData[0]
+                                  // })
                                   return null
                                 })()}
                                 {/* Líneas del nodo de comparación (con estilo punteado) */}
@@ -3895,9 +3894,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                             const value = props.payload?.[compKey]
                                             // No mostrar punto si el valor es null
                                             if (value === null || value === undefined || isNaN(value)) {
-                                              return <g /> // Retornar grupo vacío en lugar de null
+                                              return <g key={`dot-comp-empty-${props.index}`} /> // Retornar grupo vacío en lugar de null
                                             }
-                                            return <circle cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
+                                            return <circle key={`dot-comp-${compKey}-${props.index}`} cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
                                           }}
                                           activeDot={{ r: 5, fill: strokeColor }}
                                           connectNulls={false}

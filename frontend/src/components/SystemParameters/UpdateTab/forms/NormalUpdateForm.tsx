@@ -12,6 +12,7 @@ import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFi
 import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
 import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
 import { UsuarioPerfilFormFields } from '../../../forms/table-specific/UsuarioPerfilFormFields';
+import PerfilGeografiaPermisoUpdateForm from '../../../PerfilGeografiaPermisoUpdateForm';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
 import { logger } from '../../../../utils/logger';
@@ -56,6 +57,9 @@ interface NormalUpdateFormProps {
   getColumnDisplayName?: (columnName: string) => string;
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   tableName?: string;
+  nodosData?: any[];
+  localizacionesData?: any[];
+  ubicacionesData?: any[];
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
@@ -69,6 +73,9 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   getColumnDisplayName,
   getUniqueOptionsForField,
   tableName,
+  nodosData = [],
+  localizacionesData = [],
+  ubicacionesData = [],
   themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
@@ -555,6 +562,27 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         correosData={(relatedData as any)?.correosData || []}
         canalesData={(relatedData as any)?.canalesData || []}
         codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+      />
+    );
+  }
+
+  // Caso especial para permisos geográficos
+  if (tableName === 'permiso') {
+    return (
+      <PerfilGeografiaPermisoUpdateForm
+        formData={formData}
+        updateFormField={updateFormField}
+        formErrors={formErrors}
+        loading={false}
+        perfilesData={(relatedData as any)?.perfilesData || []}
+            paisesData={(relatedData as any)?.paisesData || []}
+            empresasData={(relatedData as any)?.empresasData || []}
+            fundosData={(relatedData as any)?.fundosData || []}
+            ubicacionesData={ubicacionesData}
+            nodosData={nodosData}
+            localizacionesData={localizacionesData}
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        themeColor="orange"
       />
     );
   }
