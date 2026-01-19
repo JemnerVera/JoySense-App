@@ -40,6 +40,7 @@ declare module '@supabase/supabase-js' {
       onAuthStateChange: (callback: (event: string, session: Session | null) => void) => { data: { subscription: { unsubscribe: () => void } } };
       getSession: () => Promise<{ data: { session: Session | null }; error: any }>;
       getUser: () => Promise<{ data: { user: User | null }; error: any }>;
+      resetPasswordForEmail: (email: string, options?: { redirectTo?: string }) => Promise<{ data: any; error: any }>;
     };
     from: (table: string) => QueryBuilder;
     schema: (schema: string) => RpcBuilder;

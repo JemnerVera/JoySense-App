@@ -553,18 +553,10 @@ const AppContentInternal: React.FC<{
     // Guardar el activeTab actual antes de cualquier cambio
     const currentTab = activeTabRef.current;
     
-    console.log('[App] handleTabChange llamado', {
-      currentTab,
-      targetTab: tab,
-      activeTabState: activeTab,
-      timestamp: new Date().toISOString()
-    });
-    
     // Usar el sistema del sidebar para verificar cambios sin guardar
     // IMPORTANTE: requestLeave solo muestra el modal si hay cambios, no ejecuta el cambio inmediatamente
     // Pasar activeTab actual y callback para revertir si hay cambios
     sidebar.requestLeave(tab, currentTab, () => {
-      console.log('[App] onRevert ejecutado, revirtiendo activeTab a', currentTab);
       // Revertir activeTab al valor que tenía antes del click
       // Esto previene que el cambio se ejecute antes de que el usuario confirme
       setActiveTab(currentTab);
@@ -596,13 +588,6 @@ const AppContentInternal: React.FC<{
   const handleTableSelect = (table: string) => {
     // Guardar el activeTab actual antes de cualquier cambio
     const currentTab = activeTabRef.current;
-    
-    console.log('[App] handleTableSelect llamado', {
-      currentTab,
-      targetTable: table,
-      activeTabState: activeTab,
-      timestamp: new Date().toISOString()
-    });
     
     // Calcular el nuevo activeTab que se generaría
     const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
