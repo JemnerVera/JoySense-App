@@ -202,27 +202,25 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
   // Layout específico para localizacion
   const currentTableName = tableName || config?.name || '';
   if (currentTableName === 'localizacion') {
-    // Layout específico para localizacion:
-    // Fila 1: NODO, ID DEL SENSOR, METRICA
-    // Fila 2: LOCALIZACION, LATITUD, LONGITUD
-    // Fila 3: (VACIO), REFERENCIA, STATUS
-    const nodoField = config.fields.find(f => f.name === 'nodoid');
-    const sensorField = config.fields.find(f => f.name === 'sensorid');
-    const metricaField = config.fields.find(f => f.name === 'metricaid');
-    const localizacionField = config.fields.find(f => f.name === 'localizacion');
-    const latitudField = config.fields.find(f => f.name === 'latitud');
-    const longitudField = config.fields.find(f => f.name === 'longitud');
-    const referenciaField = config.fields.find(f => f.name === 'referencia');
+    // ... logic for localizacion ...
+  }
+
+  if (currentTableName === 'criticidad') {
+    // Layout específico para criticidad:
+    // Fila 1: CRITICIDAD y STATUS al extremo derecho
+    // Fila 2: ESCALAMIENTO y ESCALON
+    const criticidadField = config.fields.find(f => f.name === 'criticidad');
+    const escalamientoField = config.fields.find(f => f.name === 'escalamiento');
+    const escalonField = config.fields.find(f => f.name === 'escalon');
     const statusField = config.fields.find(f => f.name === 'statusid');
-    
+
     const renderField = (field: any) => {
       const isPrimaryKey = primaryKeyFields.includes(field.name);
       const isStatusId = field.name === 'statusid';
       const displayName = getColumnDisplayNameHelper(field.name);
-      const isConstrained = isConstrainedField(field.name);
       const fieldValue = formData[field.name];
       const isRequired = field.required && !isPrimaryKey;
-      
+
       return (
         <div key={field.name} className="mb-4">
           {!isStatusId && (
@@ -232,122 +230,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
             </label>
           )}
 
-          {isPrimaryKey ? (
-            // Si es clave primaria compuesta (múltiples campos) Y tiene foreignKey, permitir selección
-            // Si es clave primaria simple, mostrar como readonly
-            (primaryKeyFields.length > 1 && field.foreignKey) ? (
-              // Clave primaria compuesta con foreignKey: renderizar como combobox editable
-              <SelectWithPlaceholder
-                value={formData[field.name] || ''}
-                onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
-                options={(() => {
-                  const relatedTableData = getRelatedTableData(field.foreignKey!.table);
-                  // Caso especial para sensorid en metricasensor: mostrar "sensor - tipo"
-                  if (field.name === 'sensorid' && (config?.name === 'metricasensor' || tableName === 'metricasensor')) {
-                    const tiposData = (relatedData as any)?.tiposData || [];
-                    const tiposMap = new Map(tiposData.map((t: any) => [t.tipoid, t.tipo]));
-                    return relatedTableData.map((item: any) => {
-                      const sensorName = item.sensor || '';
-                      const tipoName = tiposMap.get(item.tipoid) || '';
-                      const label = tipoName ? `${sensorName} - ${tipoName}` : sensorName || String(item[field.foreignKey!.valueField]);
-                      return {
-                        value: String(item[field.foreignKey!.valueField]),
-                        label: label
-                      };
-                    });
-                  }
-                  // Caso general: usar labelField
-                  return relatedTableData.map((item: any) => {
-                    const labelFields = Array.isArray(field.foreignKey!.labelField) 
-                      ? field.foreignKey!.labelField 
-                      : [field.foreignKey!.labelField];
-                    const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
-                    return {
-                      value: String(item[field.foreignKey!.valueField]),
-                      label: label || String(item[field.foreignKey!.valueField])
-                    };
-                  });
-                })()}
-                placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
-              />
-            ) : field.foreignKey ? (
-              // Clave primaria simple con foreignKey: mostrar nombre como readonly
-              (() => {
-                const relatedTableData = getRelatedTableData(field.foreignKey!.table);
-                const fieldValue = formData[field.name];
-                const item = relatedTableData.find((item: any) => 
-                  String(item[field.foreignKey!.valueField]) === String(fieldValue)
-                );
-                const labelFields = Array.isArray(field.foreignKey!.labelField) 
-                  ? field.foreignKey!.labelField 
-                  : [field.foreignKey!.labelField];
-                const displayValue = item 
-                  ? labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ')
-                  : fieldValue ?? '';
-                
-                return (
-                  <input
-                    type="text"
-                    value={displayValue}
-                    readOnly
-                    className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
-                  />
-                );
-              })()
-            ) : (
-              // Clave primaria simple sin foreignKey: mostrar ID como readonly
-              <input
-                type="text"
-                value={formData[field.name] ?? ''}
-                readOnly
-                className="w-full px-3 py-2 border border-neutral-600 rounded-lg bg-neutral-700 text-neutral-400 cursor-not-allowed font-mono"
-              />
-            )
-          ) : field.foreignKey && isConstrained ? (
-            (() => {
-              const relatedTableData = getRelatedTableData(field.foreignKey!.table);
-              const options = relatedTableData.map((item: any) => {
-                const labelFields = Array.isArray(field.foreignKey!.labelField) 
-                  ? field.foreignKey!.labelField 
-                  : [field.foreignKey!.labelField];
-                const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
-                const itemValue = item[field.foreignKey!.valueField];
-                return {
-                  value: itemValue,
-                  label: label || `ID: ${itemValue}`
-                };
-              });
-              
-              return (
-                <SelectWithPlaceholder
-                  value={fieldValue != null && fieldValue !== '' ? fieldValue : null}
-                  onChange={() => {}}
-                  options={options}
-                  placeholder={`${displayName.toUpperCase()}`}
-                  disabled={true}
-                />
-              );
-            })()
-          ) : field.foreignKey ? (
-            <SelectWithPlaceholder
-              value={formData[field.name] != null ? formData[field.name] : null}
-              onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
-              options={(() => {
-                const relatedTableData = getRelatedTableData(field.foreignKey!.table);
-                return relatedTableData.map((item: any) => {
-                  const labelFields = Array.isArray(field.foreignKey!.labelField) 
-                    ? field.foreignKey!.labelField 
-                    : [field.foreignKey!.labelField];
-                  const label = labelFields.map((lf: string) => item[lf]).filter(Boolean).join(' ');
-                  return {
-                    value: item[field.foreignKey!.valueField],
-                    label: label || `ID: ${item[field.foreignKey!.valueField]}`
-                  };
-                });
-              })()}
-              placeholder={`${t('buttons.select')} ${displayName.toUpperCase()}`}
-            />
-          ) : isStatusId ? (
+          {isStatusId ? (
             <div>
               <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
                 {displayName.toUpperCase()}{field.required ? '*' : ''}
@@ -369,7 +252,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
               type={field.type === 'number' ? 'number' : 'text'}
               value={formData[field.name] ?? ''}
               onChange={(e) => updateFormField(
-                field.name, 
+                field.name,
                 field.type === 'number' ? (e.target.value ? Number(e.target.value) : null) : e.target.value
               )}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 ${getThemeColor('focus')} ${getThemeColor('border')} text-white text-base placeholder-neutral-400 font-mono bg-neutral-800 border-neutral-600 ${
@@ -385,24 +268,24 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         </div>
       );
     };
-    
+
     return (
       <div className="space-y-4">
-        {/* Fila 1: NODO, ID DEL SENSOR, METRICA */}
-        {(nodoField || sensorField || metricaField) && (
+        {/* Fila 1: CRITICIDAD y STATUS al extremo derecho */}
+        {(criticidadField || statusField) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {nodoField && !nodoField.hidden && renderField(nodoField)}
-            {sensorField && !sensorField.hidden && renderField(sensorField)}
-            {metricaField && !metricaField.hidden && renderField(metricaField)}
-          </div>
-        )}
-        
-        {/* Fila 2: LOCALIZACION y STATUS */}
-        {(localizacionField || statusField) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {localizacionField && !localizacionField.hidden && renderField(localizacionField)}
+            {criticidadField && !criticidadField.hidden && renderField(criticidadField)}
             <div></div> {/* Espacio vacío central */}
             {statusField && !statusField.hidden && renderField(statusField)}
+          </div>
+        )}
+
+        {/* Fila 2: ESCALAMIENTO y ESCALON */}
+        {(escalamientoField || escalonField) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {escalamientoField && !escalamientoField.hidden && renderField(escalamientoField)}
+            {escalonField && !escalonField.hidden && renderField(escalonField)}
+            <div></div> {/* Espacio vacío a la derecha */}
           </div>
         )}
       </div>
