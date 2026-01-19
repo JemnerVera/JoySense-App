@@ -34,7 +34,8 @@ router.get('/usuario', async (req, res) => {
 
 router.get('/usuario/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('usuario');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('usuario', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /usuario/columns:', error);
@@ -319,7 +320,8 @@ router.get('/perfil', async (req, res) => {
 
 router.get('/perfil/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('perfil');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('perfil', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /perfil/columns:', error);
@@ -414,7 +416,8 @@ router.get('/usuarioperfil', async (req, res) => {
 
 router.get('/usuarioperfil/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('usuarioperfil');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('usuarioperfil', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /usuarioperfil/columns:', error);
@@ -490,7 +493,8 @@ router.get('/codigotelefono', async (req, res) => {
 
 router.get('/codigotelefono/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('codigotelefono');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('codigotelefono', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /codigotelefono/columns:', error);
@@ -582,7 +586,8 @@ router.get('/contacto', async (req, res) => {
 
 router.get('/contacto/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('contacto');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('contacto', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /contacto/columns:', error);
@@ -669,7 +674,8 @@ router.get('/correo', async (req, res) => {
 
 router.get('/correo/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('correo');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('correo', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /correo/columns:', error);

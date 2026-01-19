@@ -33,6 +33,7 @@ if (isAzure || isProduction) {
   console.log('🔷 Variables de entorno disponibles:');
   console.log('   - SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Configurada' : '❌ No configurada');
   console.log('   - SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ Configurada' : '❌ No configurada');
+  console.log('   - DB_SCHEMA:', process.env.DB_SCHEMA || 'joysense (default)');
   console.log('   - NODE_ENV:', process.env.NODE_ENV || 'no definido');
   console.log('   - WEBSITE_SITE_NAME:', process.env.WEBSITE_SITE_NAME || 'no definido');
 }

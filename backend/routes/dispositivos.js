@@ -83,7 +83,8 @@ router.get('/nodos', async (req, res) => {
 
 router.get('/nodo/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('nodo');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('nodo', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /nodo/columns:', error);
@@ -161,7 +162,8 @@ router.get('/sensor', async (req, res) => {
 
 router.get('/sensor/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('sensor');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('sensor', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /sensor/columns:', error);
@@ -243,7 +245,8 @@ router.get('/tipos', async (req, res) => {
 
 router.get('/tipo/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('tipo');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('tipo', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /tipo/columns:', error);
@@ -294,7 +297,9 @@ router.put('/tipo/:id', async (req, res) => {
 
 router.get('/metrica', async (req, res) => {
   try {
-    const result = await paginateAndFilter('metrica', { ...req.query, sortBy: 'metricaid' });
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    const result = await paginateAndFilter('metrica', { ...req.query, sortBy: 'metricaid' }, userSupabase);
     res.json(result);
   } catch (error) {
     logger.error('Error en GET /metrica:', error);
@@ -323,7 +328,8 @@ router.get('/metricas', async (req, res) => {
 
 router.get('/metrica/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('metrica');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('metrica', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /metrica/columns:', error);
@@ -415,7 +421,8 @@ router.get('/metricasensor', async (req, res) => {
 
 router.get('/metricasensor/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('metricasensor');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('metricasensor', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /metricasensor/columns:', error);
@@ -640,7 +647,8 @@ router.get('/localizaciones', async (req, res) => {
 
 router.get('/localizacion/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('localizacion');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('localizacion', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /localizacion/columns:', error);
@@ -718,7 +726,8 @@ router.get('/asociacion', async (req, res) => {
 
 router.get('/asociacion/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('asociacion');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('asociacion', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /asociacion/columns:', error);

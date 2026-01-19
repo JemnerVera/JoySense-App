@@ -13,16 +13,21 @@ const { optionalAuth } = require('../middleware/auth');
 // RUTAS ESPECÍFICAS (deben ir ANTES del router genérico)
 // ============================================================================
 
+// Aplicar auth opcional para permitir pruebas con token de usuario
+router.use(optionalAuth);
+
 // Ruta de health check
 router.get('/health', async (req, res) => {
   try {
-    // Verificar conexión a Supabase (ruta pública, usar baseSupabase)
-    const { data, error } = await baseSupabase.schema(dbSchema).from('pais').select('paisid').limit(1);
+    // Usar el cliente del request (puede tener token de usuario)
+    const supabase = req.supabase || baseSupabase;
+    const { data, error } = await supabase.schema(dbSchema).from('pais').select('paisid').limit(1);
     
     res.json({ 
       status: error ? 'error' : 'ok',
       schema: dbSchema,
       database: 'Supabase API',
+      usingToken: !!req.user,
       timestamp: new Date().toISOString(),
       error: error ? error.message : null
     });
@@ -35,34 +40,49 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// Endpoint de prueba para verificar permisos y RPC (ruta pública, usar baseSupabase)
+// Endpoint de prueba para verificar permisos y RPC (usa token si se proporciona)
 router.get('/test-db', async (req, res) => {
+  const supabase = req.supabase || baseSupabase;
   const results = {
-    schema: dbSchema,
-    connection: 'Supabase API',
+    info: {
+      schema: dbSchema,
+      usingToken: !!req.user,
+      userInRequest: req.user?.email || 'anon'
+    },
+    db_context: {},
     tests: {}
   };
   
-  // Test 1: Select directo
+  // Test 0: Identidad Real en la DB
   try {
-    const { data, error } = await baseSupabase.schema(dbSchema).from('pais').select('*').limit(1);
-    results.tests.select_pais = error ? { error: error.message } : { success: true, count: data?.length };
+    const { data, error } = await supabase.rpc('fn_obtener_diagnostico_sesion');
+    if (error) {
+      // Intento manual si la función no existe
+      const { data: qData, error: qError } = await supabase.from('usuario').select('login').limit(1);
+      results.db_context = {
+        error: error.message,
+        code: error.code,
+        manual_select_usuario: qError ? `FALLÓ: ${qError.message}` : 'EXITOSO'
+      };
+    } else {
+      results.db_context = data;
+    }
+  } catch (e) {
+    results.db_context = { exception: e.message };
+  }
+  
+  // Test 1: Select directo pais
+  try {
+    const { data, error } = await supabase.schema(dbSchema).from('pais').select('paisid').limit(1);
+    results.tests.select_pais = error ? { error: error.message, code: error.code } : { success: true };
   } catch (e) {
     results.tests.select_pais = { error: e.message };
   }
   
-  // Test 2: Select usuario
-  try {
-    const { data, error } = await baseSupabase.schema(dbSchema).from('usuario').select('*').limit(1);
-    results.tests.select_usuario = error ? { error: error.message } : { success: true, count: data?.length };
-  } catch (e) {
-    results.tests.select_usuario = { error: e.message };
-  }
-  
   // Test 3: RPC fn_get_table_metadata
   try {
-    const { data, error } = await baseSupabase.schema('joysense').rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
-    results.tests.rpc_metadata = error ? { error: error.message } : { success: true, data };
+    const { data, error } = await supabase.schema('joysense').rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
+    results.tests.rpc_metadata = error ? { error: error.message, code: error.code } : { success: true };
   } catch (e) {
     results.tests.rpc_metadata = { error: e.message };
   }
