@@ -73,7 +73,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           datemodified: new Date().toISOString()
         }
 
-        const correoResult = await JoySenseService.insertCorreo(correoData)
+        const correoResult = await JoySenseService.insertTableRow('correo', correoData)
         
         // Insertar contacto
         const contactoData = {
@@ -86,7 +86,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           datemodified: new Date().toISOString()
         }
 
-        await JoySenseService.insertContacto(contactoData)
+        await JoySenseService.insertTableRow('contacto', contactoData)
 
       } else if (contactType === 'telefono') {
         if (!selectedCodigo) {
@@ -113,7 +113,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           datemodified: new Date().toISOString()
         }
 
-        await JoySenseService.insertContacto(contactoData)
+        await JoySenseService.insertTableRow('contacto', contactoData)
       }
 
       onSuccess?.()

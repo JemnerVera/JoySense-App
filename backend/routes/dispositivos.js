@@ -774,15 +774,11 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Iniciando consulta con schema: ${dbSchema}`);
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Usando userSupabase: ${!!userSupabase}, tiene token: ${!!req.supabase}`);
-    
     // Verificar si el usuario está autenticado
     if (req.supabase) {
       const { data: { user }, error: userError } = await req.supabase.auth.getUser();
-      logger.info(`[DEBUG] GET /nodos-con-localizacion: Usuario autenticado: ${user?.id || 'NO'}, email: ${user?.email || 'NO'}`);
       if (userError) {
-        logger.error(`[DEBUG] GET /nodos-con-localizacion: Error obteniendo usuario:`, userError);
+        // No debug log
       }
     }
     
@@ -793,17 +789,8 @@ router.get('/nodos-con-localizacion', async (req, res) => {
       .select('localizacionid, statusid, nodoid')
       .limit(10);
     
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Total localizaciones (sin filtros): ${(allLocalizaciones || []).length}`);
-    if ((allLocalizaciones || []).length > 0) {
-      logger.info(`[DEBUG] GET /nodos-con-localizacion: Sample sin filtros:`, JSON.stringify(allLocalizaciones[0]));
-    }
     if (allError) {
-      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en consulta sin filtros:`, JSON.stringify({
-        code: allError.code,
-        message: allError.message,
-        details: allError.details,
-        hint: allError.hint
-      }));
+      // No debug log
     }
     
     // También probar con una consulta más simple a otra tabla para verificar conectividad
@@ -813,13 +800,8 @@ router.get('/nodos-con-localizacion', async (req, res) => {
       .select('nodoid, nodo')
       .limit(5);
     
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Test nodos (para verificar RLS): ${(nodosTest || []).length} nodos`);
     if (nodosError) {
-      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en test nodos:`, JSON.stringify({
-        code: nodosError.code,
-        message: nodosError.message,
-        details: nodosError.details
-      }));
+      // No debug log
     }
     
     // Paso 1: Obtener localizaciones con nodos y coordenadas
@@ -874,20 +856,7 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     });
 
     if (locError) {
-      logger.error(`[DEBUG] GET /nodos-con-localizacion: Error en consulta principal:`, locError);
       throw locError;
-    }
-    
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Se obtuvieron ${filteredLocalizaciones.length} localizaciones con coordenadas`);
-    if (filteredLocalizaciones.length > 0) {
-      const firstNodo = filteredLocalizaciones[0].nodo ? (Array.isArray(filteredLocalizaciones[0].nodo) ? filteredLocalizaciones[0].nodo[0] : filteredLocalizaciones[0].nodo) : null;
-      logger.info(`[DEBUG] Primera localizacion sample:`, JSON.stringify({
-        localizacionid: filteredLocalizaciones[0].localizacionid,
-        latitud: firstNodo?.latitud,
-        longitud: firstNodo?.longitud,
-        tieneNodo: !!filteredLocalizaciones[0].nodo,
-        nodoid: firstNodo?.nodoid
-      }));
     }
     
     // Paso 1.5: Obtener métricas por separado (ya que la relación es a través de metricasensor)
@@ -956,17 +925,6 @@ router.get('/nodos-con-localizacion', async (req, res) => {
         metrica: metrica
       };
     });
-    
-    logger.info(`[DEBUG] GET /nodos-con-localizacion: Retornando ${transformed.length} localizaciones transformadas`);
-    if (transformed.length > 0) {
-      logger.info(`[DEBUG] Primera transformada sample:`, JSON.stringify({
-        localizacionid: transformed[0].localizacionid,
-        latitud: transformed[0].latitud,
-        longitud: transformed[0].longitud,
-        tieneNodo: !!transformed[0].nodo,
-        nodoid: transformed[0].nodo?.nodoid
-      }));
-    }
     
     res.json(transformed);
   } catch (error) {

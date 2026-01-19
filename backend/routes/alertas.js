@@ -157,12 +157,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     const localizacionIds = localizaciones.map(l => l.localizacionid);
     
-    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 1 - Localizaciones', {
-      nodoid,
-      localizacionesCount: localizaciones.length,
-      localizacionIds
-    });
-    
     // Paso 2: Obtener el nodo para buscar reglas a nivel de nodo/ubicación también
     const { data: nodoData, error: nodoError } = await userSupabase
       .schema(dbSchema)
@@ -173,7 +167,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       .single();
     
     if (nodoError) {
-      logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo nodo', nodoError);
+      // No log
     }
     
     const ubicacionId = nodoData?.ubicacionid;
@@ -186,7 +180,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       .eq('statusid', 1);
     
     if (fuentesError) {
-      logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo fuentes', fuentesError);
+      // No log
     }
     
     const fuenteMap = new Map();
@@ -199,13 +193,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
     const fuenteLocalizacionId = fuenteMap.get('localizacion');
     const fuenteNodoId = fuenteMap.get('nodo');
     const fuenteUbicacionId = fuenteMap.get('ubicacion');
-    
-    logger.info('[DEBUG] GET /umbral/por-nodo: Fuentes', {
-      fuenteLocalizacionId,
-      fuenteNodoId,
-      fuenteUbicacionId,
-      ubicacionId
-    });
     
     // Obtener reglas que aplican a estas localizaciones/nodo/ubicación
     // Buscar reglas con:
@@ -307,15 +294,10 @@ router.get('/umbral/por-nodo', async (req, res) => {
       const allReglaIds = new Set();
       reglaObjetoResults.forEach((result, index) => {
         if (result.error) {
-          logger.warn(`[DEBUG] GET /umbral/por-nodo: Error en query ${index}`, result.error);
+          // No log
         } else if (result.data) {
           result.data.forEach(r => allReglaIds.add(r.reglaid));
         }
-      });
-      
-      logger.info('[DEBUG] GET /umbral/por-nodo: Reglas encontradas', {
-        reglaIds: Array.from(allReglaIds),
-        cantidad: allReglaIds.size
       });
       
       if (allReglaIds.size === 0) {
@@ -336,11 +318,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
       const { data: reglasObjeto, error: reglasError } = await reglaObjetoQuery;
       
       if (reglasError) throw reglasError;
-      
-      logger.info('[DEBUG] GET /umbral/por-nodo: Reglas encontradas (fallback)', {
-        reglasObjeto,
-        cantidad: reglasObjeto?.length || 0
-      });
       
       if (!reglasObjeto || reglasObjeto.length === 0) {
         return res.json([]);
@@ -365,11 +342,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     const umbralIds = [...new Set(reglasUmbral.map(ru => ru.umbralid))];
     
-    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 3 - Umbrales IDs', {
-      umbralIds,
-      cantidad: umbralIds.length
-    });
-    
     // Paso 4: Obtener los umbrales
     const { data: umbrales, error: umbralError } = await userSupabase
       .schema(dbSchema)
@@ -380,11 +352,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
       .order('umbralid', { ascending: true });
     
     if (umbralError) throw umbralError;
-    
-    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 4 - Umbrales obtenidos', {
-      umbralesCount: umbrales?.length || 0,
-      umbrales: umbrales?.map(u => ({ umbralid: u.umbralid, metricaid: u.metricaid }))
-    });
     
     // Obtener métricas de forma separada
     const metricaIds = [...new Set((umbrales || []).map(u => u.metricaid).filter(Boolean))];
@@ -401,7 +368,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       if (!metricasError && metricas) {
         metricasMap = new Map(metricas.map(m => [m.metricaid, m]));
       } else if (metricasError) {
-        logger.warn('[DEBUG] GET /umbral/por-nodo: Error obteniendo métricas', metricasError);
+        // No log
       }
     }
     
@@ -455,16 +422,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
         criticidad: criticidad || null,
         regla: primeraRegla ? { reglaid: primeraRegla.reglaid, nombre: primeraRegla.nombre } : null
       };
-    });
-    
-    logger.info('[DEBUG] GET /umbral/por-nodo: Paso 7 - Datos transformados', {
-      transformedCount: transformed.length,
-      transformed: transformed.map(t => ({
-        umbralid: t.umbralid,
-        umbral: t.umbral,
-        metrica: t.metrica?.metrica || 'N/A',
-        estandar: t.estandar
-      }))
     });
     
     res.json(transformed);
@@ -526,12 +483,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
   try {
     const { fundoIds, metricaId } = req.query;
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Iniciando', {
-      fundoIds,
-      metricaId,
-      tieneToken: !!req.supabase
-    });
-    
     if (!fundoIds) {
       return res.status(400).json({ error: 'fundoIds es requerido' });
     }
@@ -552,14 +503,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     if (ubicError) throw ubicError;
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 1 - Ubicaciones', {
-      ubicacionesCount: ubicaciones?.length || 0,
-      fundoIdArray,
-      ubicacionIds: ubicaciones?.map(u => u.ubicacionid) || []
-    });
-    
     if (!ubicaciones || ubicaciones.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay ubicaciones, retornando []');
       return res.json([]);
     }
     
@@ -575,14 +519,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     if (nodoError) throw nodoError;
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 2 - Nodos', {
-      nodosCount: nodos?.length || 0,
-      ubicacionIds,
-      nodoIds: nodos?.map(n => n.nodoid) || []
-    });
-    
     if (!nodos || nodos.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay nodos, retornando []');
       return res.json([]);
     }
     
@@ -604,16 +541,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     if (locError) throw locError;
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 3 - Localizaciones', {
-      localizacionesCount: localizaciones?.length || 0,
-      nodoIds,
-      metricaId,
-      localizacionIds: localizaciones?.map(l => l.localizacionid) || [],
-      sampleLocalizacion: localizaciones?.[0]
-    });
-    
     if (!localizaciones || localizaciones.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay localizaciones, retornando []');
       return res.json([]);
     }
     
@@ -632,19 +560,12 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (reglasError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo reglas con umbrales', reglasError);
       throw reglasError;
     }
     
     const reglaIds = [...new Set(reglasConUmbrales?.map(r => r.reglaid).filter(id => id != null) || [])];
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 4 - Reglas con umbrales', {
-      reglasCount: reglaIds.length,
-      sampleRegla: reglasConUmbrales?.[0]
-    });
-    
     if (reglaIds.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay reglas con umbrales, retornando []');
       return res.json([]);
     }
     
@@ -659,7 +580,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (nodosParaReglasError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo nodos para reglas', nodosParaReglasError);
       throw nodosParaReglasError;
     }
     
@@ -674,7 +594,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (ubicacionesParaReglasError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo ubicaciones para reglas', ubicacionesParaReglasError);
       throw ubicacionesParaReglasError;
     }
     
@@ -689,7 +608,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (fundosParaReglasError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo fundos para reglas', fundosParaReglasError);
       throw fundosParaReglasError;
     }
     
@@ -704,7 +622,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (empresasParaReglasError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo empresas para reglas', empresasParaReglasError);
       throw empresasParaReglasError;
     }
     
@@ -720,7 +637,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (fuentesError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo fuentes', fuentesError);
       throw fuentesError;
     }
     
@@ -756,7 +672,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('origenid', 1); // origenid = 1 es GEOGRAFIA
     
     if (reglasObjetoError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo regla_objeto', reglasObjetoError);
       throw reglasObjetoError;
     }
     
@@ -802,13 +717,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
       });
     }
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 5 - Reglas que aplican', {
-      reglasQueAplicanCount: reglasQueAplican.size,
-      reglasQueAplican: Array.from(reglasQueAplican)
-    });
-    
     if (reglasQueAplican.size === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay reglas que apliquen, retornando []');
       return res.json([]);
     }
     
@@ -822,14 +731,12 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (reglasUmbralesError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo regla_umbral', reglasUmbralesError);
       throw reglasUmbralesError;
     }
     
     const umbralIds = [...new Set(reglasUmbrales?.map(ru => ru.umbralid).filter(id => id != null) || [])];
     
     if (umbralIds.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay umbrales en reglas que aplican, retornando []');
       return res.json([]);
     }
     
@@ -848,19 +755,10 @@ router.get('/umbrales-por-lote', async (req, res) => {
     const { data: umbrales, error: umbralError } = await umbralQuery;
     
     if (umbralError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error en query de umbrales', umbralError);
       throw umbralError;
     }
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 7 - Umbrales', {
-      umbralesCount: umbrales?.length || 0,
-      umbralIds,
-      metricaId,
-      sampleUmbral: umbrales?.[0]
-    });
-    
     if (!umbrales || umbrales.length === 0) {
-      logger.info('[DEBUG] GET /umbrales-por-lote: No hay umbrales, retornando []');
       return res.json([]);
     }
     
@@ -872,11 +770,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       metricaid: l.metricaid,
       sensorid: l.sensorid
     }));
-    
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 8 - Localizaciones para mapear', {
-      localizacionesDataLength: localizacionesData.length,
-      localizacionesData: localizacionesData
-    });
     
     const localizacionesMap = new Map();
     localizacionesData.forEach(loc => {
@@ -896,7 +789,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (nodosDataError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo nodos', nodosDataError);
       throw nodosDataError;
     }
     
@@ -920,7 +812,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .eq('statusid', 1);
     
     if (ubicacionesDataError) {
-      logger.error('[DEBUG] GET /umbrales-por-lote: Error obteniendo ubicaciones', ubicacionesDataError);
       throw ubicacionesDataError;
     }
     
@@ -1009,11 +900,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       });
     }
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 11 - Umbral-Regla Map', {
-      umbralReglaMapSize: umbralReglaMap.size,
-      umbralReglaMapEntries: Array.from(umbralReglaMap.entries())
-    });
-    
     // Para cada umbral, obtener las localizaciones a las que aplica
     // a través de las reglas que lo usan
     const umbralLocalizacionMap = new Map(); // umbralid -> [localizacionid]
@@ -1041,33 +927,14 @@ router.get('/umbrales-por-lote', async (req, res) => {
       }
     });
     
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 11 - Umbral-Localizacion Map', {
-      umbralLocalizacionMapSize: umbralLocalizacionMap.size,
-      umbralLocalizacionMapEntries: Array.from(umbralLocalizacionMap.entries()).map(([umbralid, locIds]) => ({
-        umbralid,
-        localizacionIds: locIds
-      }))
-    });
-    
     // Paso 12: Transformar datos - crear una entrada por cada combinación umbral-localizacion
     const transformed = [];
     
     umbrales.forEach(u => {
       const localizacionesDelUmbral = umbralLocalizacionMap.get(u.umbralid) || [];
       
-      logger.info('[DEBUG] GET /umbrales-por-lote: Procesando umbral', {
-        umbralid: u.umbralid,
-        umbral: u.umbral,
-        localizacionesDelUmbralCount: localizacionesDelUmbral.length,
-        localizacionesDelUmbral: localizacionesDelUmbral
-      });
-      
       // Si no hay localizaciones, saltar este umbral
       if (localizacionesDelUmbral.length === 0) {
-        logger.warn('[DEBUG] GET /umbrales-por-lote: Umbral sin localizaciones', {
-          umbralid: u.umbralid,
-          umbral: u.umbral
-        });
         return;
       }
       
@@ -1075,10 +942,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
       localizacionesDelUmbral.forEach(localizacionId => {
         const localizacion = localizacionesMap.get(localizacionId);
         if (!localizacion) {
-          logger.warn('[DEBUG] GET /umbrales-por-lote: Localizacion no encontrada en map', {
-            localizacionId,
-            localizacionesMapKeys: Array.from(localizacionesMap.keys())
-          });
           return;
         }
         
@@ -1099,14 +962,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
         const tipoid = sensor?.tipoid || null;
         
         if (!ubicacionid || !tipoid) {
-          logger.warn('[DEBUG] GET /umbrales-por-lote: Umbral sin ubicacionid o tipoid', {
-            umbralid: u.umbralid,
-            localizacionId,
-            ubicacionid,
-            tipoid,
-            nodo: nodo ? { nodoid: nodo.nodoid, ubicacionid: nodo.ubicacionid } : null,
-            sensor: sensor ? { sensorid: sensor.sensorid, tipoid: sensor.tipoid } : null
-          });
           return;
         }
         
@@ -1136,13 +991,6 @@ router.get('/umbrales-por-lote', async (req, res) => {
           criticidadid: null // El umbral no tiene criticidadid en el schema actual
         });
       });
-    });
-    
-    logger.info('[DEBUG] GET /umbrales-por-lote: Paso 12 - Transformación completada', {
-      transformedCount: transformed.length,
-      sampleTransformed: transformed[0],
-      transformedWithUbicacionid: transformed.filter(t => t.ubicacionid != null).length,
-      transformedWithTipoid: transformed.filter(t => t.tipoid != null).length
     });
     
     res.json(transformed);
@@ -1256,7 +1104,6 @@ router.get('/alerta_regla', async (req, res) => {
     const { data: alertasRegla, error: alertasError } = await query;
     
     if (alertasError) {
-      logger.error('[DEBUG] GET /alerta_regla: Error obteniendo alerta_regla', alertasError);
       throw alertasError;
     }
     
@@ -1271,11 +1118,6 @@ router.get('/alerta_regla', async (req, res) => {
         } : null
       });
     }
-    
-    logger.info('[DEBUG] GET /alerta_regla: Alertas obtenidas', {
-      alertasCount: alertasRegla.length,
-      sampleAlerta: alertasRegla[0]
-    });
     
     // Paso 2: Obtener reglaids, localizacionids, medicionids únicos
     const reglaIds = [...new Set(alertasRegla.map(a => a.reglaid).filter(id => id != null))];
@@ -1361,7 +1203,6 @@ router.get('/alerta_regla', async (req, res) => {
       .eq('statusid', 1);
     
     if (reglasUmbralesError) {
-      logger.error('[DEBUG] GET /alerta_regla: Error obteniendo regla_umbral', reglasUmbralesError);
       throw reglasUmbralesError;
     }
     
@@ -1371,11 +1212,6 @@ router.get('/alerta_regla', async (req, res) => {
     // Paso 8: Obtener umbrales (sin criticidadid, ya que umbral no tiene esa columna)
     let umbralesMap = new Map();
     if (umbralIds.length > 0) {
-      logger.info('[DEBUG] GET /alerta_regla: Obteniendo umbrales', {
-        umbralIds: umbralIds,
-        umbralIdsCount: umbralIds.length
-      });
-      
       const { data: umbrales, error: umbralesError } = await userSupabase
         .schema(dbSchema)
         .from('umbral')
@@ -1384,14 +1220,8 @@ router.get('/alerta_regla', async (req, res) => {
         .eq('statusid', 1);
       
       if (umbralesError) {
-        logger.error('[DEBUG] GET /alerta_regla: Error obteniendo umbrales', umbralesError);
+        // No log
       }
-      
-      logger.info('[DEBUG] GET /alerta_regla: Umbrales obtenidos', {
-        umbralesCount: umbrales?.length || 0,
-        umbrales: umbrales,
-        umbralIdsSolicitados: umbralIds
-      });
       
       if (!umbralesError && umbrales) {
         // La criticidad se obtiene desde la regla, no desde el umbral
@@ -1467,20 +1297,8 @@ router.get('/alerta_regla', async (req, res) => {
           }
           reglaUmbralMap.get(ru.reglaid).push(umbralConCriticidad);
         } else {
-          logger.warn('[DEBUG] GET /alerta_regla: regla_umbral sin umbral en map', {
-            reglaid: ru.reglaid,
-            umbralid: ru.umbralid,
-            umbralesMapKeys: Array.from(umbralesMap.keys()),
-            umbralesMapSize: umbralesMap.size
-          });
+          // No log
         }
-      });
-      
-      logger.info('[DEBUG] GET /alerta_regla: Mapa regla-umbral creado', {
-        reglaUmbralMapSize: reglaUmbralMap.size,
-        reglaUmbralMapKeys: Array.from(reglaUmbralMap.keys()),
-        reglasUmbralesCount: reglasUmbrales.length,
-        umbralesMapSize: umbralesMap.size
       });
     }
     
@@ -1522,17 +1340,6 @@ router.get('/alerta_regla', async (req, res) => {
       
       // Obtener umbrales de la regla (puede haber múltiples umbrales por regla)
       const umbralesDeRegla = regla ? (reglaUmbralMap.get(regla.reglaid) || []) : [];
-      
-      // Debug: Verificar por qué no hay umbral
-      if (!umbralesDeRegla.length && regla) {
-        logger.warn('[DEBUG] GET /alerta_regla: Alerta sin umbrales', {
-          alertaid: ar.uuid_alerta_reglaid,
-          reglaid: ar.reglaid,
-          regla: regla,
-          reglaUmbralMapKeys: Array.from(reglaUmbralMap.keys()),
-          reglaUmbralMapSize: reglaUmbralMap.size
-        });
-      }
       
       // Para compatibilidad con el frontend, usar el primer umbral o crear uno genérico
       const umbralPrincipal = umbralesDeRegla.length > 0 ? umbralesDeRegla[0] : null;

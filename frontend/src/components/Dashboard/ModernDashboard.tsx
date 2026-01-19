@@ -795,7 +795,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           })
           
           setAvailableNodes(filteredNodes)
-          // console.log(`[ModernDashboard] Nodos disponibles para comparación: ${filteredNodes.length} (de ${nodes.length} total)`)
         } catch (err) {
           console.error('Error cargando nodos disponibles:', err)
           setAvailableNodes([])
@@ -2151,7 +2150,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         )
         
         if (!medicion) {
-          // console.log(`[DEBUG] ModernDashboard.availableMetrics: No se encontró medición para metricaId ${metricaId} y nodo ${selectedNode.nodoid}`)
           return false
         }
         
@@ -2165,14 +2163,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           .trim()
           .toLowerCase()
         
-        // console.log(`[DEBUG] ModernDashboard.availableMetrics: Verificando métrica ${metric.id} con nombre original "${rawMetricName}" -> limpio "${metricName}" (metricaId: ${metricaId})`)
-        
         // Mapear nombres comunes (más flexible para manejar variaciones)
         if (metric.id === 'temperatura' && (
           metricName.includes('temperatura') || 
           metricName.includes('temp')
         )) {
-          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         
@@ -2180,7 +2175,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('humedad') || 
           metricName.includes('humidity')
         )) {
-          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         
@@ -2189,7 +2183,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('electroconductividad') ||
           metricName.includes('conductivity')
         )) {
-          // console.log(`[DEBUG] ModernDashboard.availableMetrics: ✓ ${metric.id} coincide con "${metricName}"`)
           return true
         }
         

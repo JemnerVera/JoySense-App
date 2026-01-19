@@ -130,8 +130,6 @@ router.get('/mediciones', async (req, res) => {
     
     // Si hay nodoid, obtener localizaciones de ese nodo
     if (nodoid) {
-      logger.info(`[DEBUG] GET /mediciones: Buscando localizaciones para nodoid: ${nodoid}`);
-      
       const { data: localizaciones, error: locError } = await userSupabase
         .schema(dbSchema)
         .from('localizacion')
@@ -140,19 +138,12 @@ router.get('/mediciones', async (req, res) => {
         .eq('statusid', 1);
       
       if (locError) {
-        logger.error(`[DEBUG] GET /mediciones: Error obteniendo localizaciones:`, locError);
         throw locError;
       }
       
       locIds = (localizaciones || []).map(l => l.localizacionid);
       
-      logger.info(`[DEBUG] GET /mediciones: Localizaciones encontradas para nodoid ${nodoid}:`, {
-        cantidad: locIds.length,
-        localizacionIds: locIds
-      });
-      
       if (locIds.length === 0) {
-        logger.warn(`[DEBUG] GET /mediciones: No se encontraron localizaciones para nodoid ${nodoid}`);
         return res.json([]);
       }
     }
@@ -184,54 +175,31 @@ router.get('/mediciones', async (req, res) => {
     
     if (nodoid && locIds.length > 0) {
       query = query.in('localizacionid', locIds);
-      logger.info(`[DEBUG] GET /mediciones: Filtrando por localizacionid IN [${locIds.join(', ')}]`);
     } else if (localizacionId) {
       query = query.eq('localizacionid', localizacionId);
-      logger.info(`[DEBUG] GET /mediciones: Filtrando por localizacionid = ${localizacionId}`);
     }
     
     if (startDate) {
       query = query.gte('fecha', startDate);
-      logger.info(`[DEBUG] GET /mediciones: Filtrando por fecha >= ${startDate}`);
     }
     if (endDate) {
       query = query.lte('fecha', endDate);
-      logger.info(`[DEBUG] GET /mediciones: Filtrando por fecha <= ${endDate}`);
     }
     
     query = query.order('fecha', { ascending: false });
     
     if (!getAll) {
       query = query.limit(parseInt(limit));
-      logger.info(`[DEBUG] GET /mediciones: Limitando a ${limit} registros`);
     }
-    
-    logger.info(`[DEBUG] GET /mediciones: Ejecutando query final con parámetros:`, {
-      nodoid: nodoid || null,
-      localizacionIds: locIds.length > 0 ? locIds : null,
-      localizacionId: localizacionId || null,
-      startDate: startDate || null,
-      endDate: endDate || null,
-      limit: getAll ? 'all' : limit
-    });
     
     const { data, error } = await query;
     
     if (error) {
-      logger.error(`[DEBUG] GET /mediciones: Error en query:`, error);
       throw error;
     }
     
-    logger.info(`[DEBUG] GET /mediciones: Query exitosa, cantidad de resultados: ${(data || []).length}`);
     if ((data || []).length > 0) {
-      logger.info(`[DEBUG] GET /mediciones: Primera medición sample:`, {
-        medicionid: data[0].medicionid,
-        localizacionid: data[0].localizacionid,
-        fecha: data[0].fecha,
-        medicion: data[0].medicion,
-        hasLocalizacion: !!data[0].localizacion,
-        metricaid: data[0].localizacion?.metricaid
-      });
+      // No logs
     }
     
     // Obtener métricas por separado (ya que la relación es a través de metricasensor)
@@ -243,8 +211,6 @@ router.get('/mediciones', async (req, res) => {
     
     let metricasMap = new Map();
     if (metricaIds.length > 0) {
-      logger.info(`[DEBUG] GET /mediciones: Obteniendo métricas para IDs:`, metricaIds);
-      
       const { data: metricas, error: metError } = await userSupabase
         .schema(dbSchema)
         .from('metrica')
@@ -253,12 +219,11 @@ router.get('/mediciones', async (req, res) => {
         .eq('statusid', 1);
       
       if (metError) {
-        logger.error(`[DEBUG] GET /mediciones: Error obteniendo métricas:`, metError);
+        // No debug log
       } else {
         (metricas || []).forEach(m => {
           metricasMap.set(m.metricaid, m);
         });
-        logger.info(`[DEBUG] GET /mediciones: Métricas obtenidas: ${metricasMap.size}`);
       }
     }
     
@@ -274,8 +239,6 @@ router.get('/mediciones', async (req, res) => {
     
     let sensoresMap = new Map();
     if (sensorIds.length > 0) {
-      logger.info(`[DEBUG] GET /mediciones: Obteniendo sensores para IDs:`, sensorIds);
-      
       const { data: sensores, error: senError } = await userSupabase
         .schema(dbSchema)
         .from('sensor')
@@ -284,12 +247,11 @@ router.get('/mediciones', async (req, res) => {
         .eq('statusid', 1);
       
       if (senError) {
-        logger.error(`[DEBUG] GET /mediciones: Error obteniendo sensores:`, senError);
+        // No debug log
       } else {
         (sensores || []).forEach(s => {
           sensoresMap.set(s.sensorid, s);
         });
-        logger.info(`[DEBUG] GET /mediciones: Sensores obtenidos: ${sensoresMap.size}`);
       }
     }
     
@@ -308,8 +270,6 @@ router.get('/mediciones', async (req, res) => {
         } : null
       };
     });
-    
-    logger.info(`[DEBUG] GET /mediciones: Datos transformados, cantidad: ${transformed.length}`);
     
     res.json(transformed);
   } catch (error) {

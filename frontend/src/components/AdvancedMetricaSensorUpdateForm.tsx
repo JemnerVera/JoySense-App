@@ -41,10 +41,6 @@ export function AdvancedMetricaSensorUpdateForm({
   const entidad = useMemo(() => getEntidadFromSelectedRows(), [selectedRows]);
   const entidadId = entidad?.entidadid;
   
-  // console.log('🔍 Debug - Filas seleccionadas:', selectedRows);
-  // console.log('🔍 Debug - Primer tipoid:', selectedRows[0]?.tipoid);
-  // console.log('🔍 Debug - Entidad encontrada:', entidad);
-  
   // Estados para los tipos, nodos y métricas seleccionados
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
   const [selectedNodos, setSelectedNodos] = useState<string[]>([]);
@@ -100,20 +96,6 @@ export function AdvancedMetricaSensorUpdateForm({
       const tiposUnicos = getTiposFromSelectedRows();
       const nodosUnicos = getNodosFromSelectedRows();
       const metricasUnicas = getMetricasFromSelectedRows();
-      
-      // console.log('🔍 Debug - Tipos extraídos:', tiposUnicos);
-      // console.log('🔍 Debug - Nodos extraídos:', nodosUnicos);
-      // console.log('🔍 Debug - Métricas extraídas:', metricasUnicas);
-      // console.log('🔍 Debug - Filas seleccionadas completas:', selectedRows);
-      
-      // Debug: Mostrar el status de las filas originales
-      const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
-      // console.log('🔍 Debug - Filas originales con status:', allOriginalRows.map(row => ({
-      //   nodoid: row.nodoid,
-      //   tipoid: row.tipoid,
-      //   metricaid: row.metricaid,
-      //   statusid: row.statusid
-      // })));
       
       setSelectedTipos(tiposUnicos);
       setSelectedNodos(nodosUnicos);
