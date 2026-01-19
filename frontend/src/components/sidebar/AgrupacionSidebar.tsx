@@ -72,6 +72,7 @@ const AgrupacionSidebar: React.FC<AgrupacionSidebarProps> = ({
       title="AGRUPACIÓN"
       icon={agrupacionIcon}
       color="green"
+      collapsedText="Joy"
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
@@ -117,4 +118,3 @@ const AgrupacionSidebar: React.FC<AgrupacionSidebarProps> = ({
 };
 
 export default AgrupacionSidebar;
-

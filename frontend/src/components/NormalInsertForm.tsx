@@ -16,6 +16,7 @@ import { UsuarioPerfilFormFields } from './forms/table-specific/UsuarioPerfilFor
 import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
 import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
 import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
+import { CriticidadFormFields } from './forms/table-specific/CriticidadFormFields';
 import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
 import { ReglaPerfilFormFields } from './forms/table-specific/ReglaPerfilFormFields';
 import PerfilGeografiaPermisoForm from './PerfilGeografiaPermisoForm';
@@ -266,6 +267,13 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         getUniqueOptionsForField={getUniqueOptionsForField}
         isFieldRequired={isFieldRequired}
         renderContextualRow={renderContextualRow}
+      />];
+    } else if (selectedTable === 'criticidad') {
+      return [<CriticidadFormFields
+        key="criticidad"
+        visibleColumns={visibleColumns}
+        formData={formData}
+        renderField={renderField}
       />];
     } else if (selectedTable === 'origen') {
       // Layout específico para origen:
@@ -771,7 +779,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getUniqueOptionsForField={getUniqueOptionsForField}
             themeColor="orange"
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil'].includes(selectedTable) ? (
+        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil', 'criticidad'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
