@@ -53,6 +53,21 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     entidadSeleccionada
   } = useFilters()
 
+  const loadNodes = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await JoySenseService.getNodosConLocalizacion()
+      // Los datos ya vienen procesados del backend
+      setNodes(data || [])
+    } catch (err) {
+      setError('Error al cargar nodos')
+      console.error('Error loading nodes:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Cargar nodos con localizaciones
   useEffect(() => {
     loadNodes()
@@ -79,11 +94,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
 
     // Aplicar filtro de búsqueda si hay término de búsqueda
-    if (searchTerm.trim()) {
+    const term = searchTerm.toLowerCase().trim()
+    console.log('[NodeSelector] handleMapNodeClick clearing search term');
+    if (term) {
       filtered = filtered.filter(node =>
-        node.nodo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.ubicacion.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.ubicacion.fundo.fundo.toLowerCase().includes(searchTerm.toLowerCase())
+        node.nodo.toLowerCase().includes(term) ||
+        node.ubicacion.ubicacion.toLowerCase().includes(term) ||
+        node.ubicacion.fundo.fundo.toLowerCase().includes(term) ||
+        node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term)
       )
     }
 
@@ -159,36 +177,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
   }, [entidadSeleccionada, setUbicacionSeleccionada])
 
-  // Filtrar nodos para el searchbar
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const filtered = nodes.filter(node => 
-        node.nodo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.ubicacion.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.ubicacion.fundo.fundo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredNodes(filtered)
-    } else {
-      setFilteredNodes(nodes)
-    }
-  }, [searchTerm, nodes])
-
-  const loadNodes = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await JoySenseService.getNodosConLocalizacion()
-      // Los datos ya vienen procesados del backend
-      setNodes(data || [])
-    } catch (err) {
-      setError('Error al cargar nodos')
-      console.error('Error loading nodes:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleNodeSelect = (node: NodeData) => {
     setSelectedNode(node)
     onNodeSelect(node)
@@ -239,9 +227,12 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
 
   const handleMapNodeClick = (node: NodeData) => {
+    console.log('[NodeSelector] handleMapNodeClick:', node.nodo, node.nodoid);
     try {
       setSelectedNode(node)
       onNodeSelect(node)
+      setIsSearchDropdownOpen(false)
+      setSearchTerm('')
     } catch (error) {
       console.error('Error al seleccionar nodo:', error);
     }
