@@ -67,14 +67,14 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
   // Determinar qué tabla está activa basándome en selectedTable o activeTab
   const getCurrentTablePrefix = (): string => {
     // PRIORIDAD 1: Usar selectedTable si está disponible (es la fuente más confiable)
-    if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
+    if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_objeto')) {
       return `configuracion-notificaciones-regla-${selectedTable}`;
     }
     
     // PRIORIDAD 2: Intentar extraer de activeTab usando el mismo método que App.tsx
     if (activeTab && activeTab.startsWith('configuracion-notificaciones-regla-')) {
       const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
+      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_objeto')) {
         return `configuracion-notificaciones-regla-${reglaTable}`;
       }
     }
@@ -82,9 +82,6 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     // Fallback para compatibilidad con sistema antiguo
     if (activeTab?.startsWith('alertas-regla_objeto')) {
       return 'alertas-regla_objeto';
-    }
-    if (activeTab?.startsWith('alertas-regla_umbral')) {
-      return 'alertas-regla_umbral';
     }
     if (activeTab?.startsWith('alertas-regla_perfil')) {
       return 'alertas-regla_perfil';
@@ -106,28 +103,22 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
     if (tableName === 'regla_perfil') {
       return 'REGLA DE PERFIL';
     }
-    if (tableName === 'regla_umbral') {
-      return 'REGLA DE UMBRAL';
-    }
     if (tableName === 'regla_objeto') {
       return 'REGLA DE OBJETO';
     }
     if (tableName === 'regla') {
-      return 'REGLAS';
+      return 'REGLA & UMBRAL';
     }
     
     // Fallback para compatibilidad
     if (activeTab?.startsWith('alertas-regla_objeto')) {
       return t('alerts.rule_object');
     }
-    if (activeTab?.startsWith('alertas-regla_umbral')) {
-      return t('alerts.rule_threshold');
-    }
     if (activeTab?.startsWith('alertas-regla_perfil')) {
       return t('alerts.rule_profile');
     }
     
-    return 'REGLAS';
+    return 'REGLA & UMBRAL';
   };
 
   const currentTablePrefix = getCurrentTablePrefix();
@@ -157,13 +148,13 @@ const ReglaOperationsSidebar: React.FC<ReglaOperationsSidebarProps> = ({
                     // Si no hay selectedTable, intentar extraer de activeTab usando el mismo método que App.tsx
                     if (!tableToUse && activeTab && activeTab.startsWith('configuracion-notificaciones-regla-')) {
                       const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-                      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_umbral' || reglaTable === 'regla_objeto')) {
+                      if (reglaTable && (reglaTable === 'regla' || reglaTable === 'regla_perfil' || reglaTable === 'regla_objeto')) {
                         tableToUse = reglaTable;
                       }
                     }
                     
                     // Fallback a 'regla' si no se puede determinar
-                    if (!tableToUse || (tableToUse !== 'regla' && tableToUse !== 'regla_perfil' && tableToUse !== 'regla_umbral' && tableToUse !== 'regla_objeto')) {
+                    if (!tableToUse || (tableToUse !== 'regla' && tableToUse !== 'regla_perfil' && tableToUse !== 'regla_objeto')) {
                       tableToUse = 'regla';
                     }
                     

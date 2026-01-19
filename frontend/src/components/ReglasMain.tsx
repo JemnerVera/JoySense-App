@@ -359,9 +359,11 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
         return { success: false, error: `Error al actualizar regla: ${reglaResult.error || 'Error desconocido'}` };
       }
 
-      // 2. Obtener umbrales existentes de la regla
+      // 2. Obtener umbrales existentes de la regla - solo activos (statusid: 1)
       const existingUmbrales = await JoySenseService.getTableData('regla_umbral', 1000);
-      const existingUmbralesFiltrados = (existingUmbrales || []).filter((ru: any) => ru.reglaid === reglaid);
+      const existingUmbralesFiltrados = (existingUmbrales || []).filter((ru: any) => 
+        ru.reglaid === reglaid && ru.statusid === 1
+      );
 
       // 3. Preparar umbrales nuevos con tempId para identificar cuáles son nuevos y cuáles existentes
       // Los umbrales que vienen de formData tienen tempId que incluye el regla_umbralid si existe
@@ -386,15 +388,19 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
         };
       });
 
-      // 4. Identificar umbrales a eliminar (existen en BD pero no en la lista nueva)
+      // 4. Identificar umbrales a desactivar (existen en BD pero no en la lista nueva)
       const umbralesIdsNuevos = umbralesNuevos
         .map(u => u.regla_umbralid)
         .filter(id => id !== null) as number[];
       
       for (const existingUmbral of existingUmbralesFiltrados) {
         if (!umbralesIdsNuevos.includes(existingUmbral.regla_umbralid)) {
-          // Eliminar umbral que ya no está en la lista nueva
-          await JoySenseService.deleteTableRow('regla_umbral', existingUmbral.regla_umbralid.toString());
+          // Desactivar umbral que ya no está en la lista nueva (statusid: 0)
+          await JoySenseService.updateTableRow('regla_umbral', existingUmbral.regla_umbralid.toString(), {
+            statusid: 0,
+            usermodifiedid: user?.user_metadata?.usuarioid || 1,
+            datemodified: new Date().toISOString()
+          });
         }
       }
 
@@ -592,6 +598,9 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
             }}
             setMessage={setMessage}
             themeColor="orange"
+            onFormDataChange={(formData) => {
+              setUpdateFormData(formData);
+            }}
           />
         );
       

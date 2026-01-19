@@ -18,13 +18,15 @@ interface PerfilGeografiaPermisoUpdateFormProps {
   empresasData?: any[];
   fundosData?: any[];
   ubicacionesData?: any[];
+  nodosData?: any[];
+  localizacionesData?: any[];
   // Funciones auxiliares
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
-type GeografiaType = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | null;
+type GeografiaType = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'nodo' | 'localizacion' | null;
 
 const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFormProps> = ({
   formData,
@@ -36,6 +38,8 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
   empresasData = [],
   fundosData = [],
   ubicacionesData = [],
+  nodosData = [],
+  localizacionesData = [],
   getUniqueOptionsForField,
   themeColor = 'orange'
 }) => {
@@ -89,10 +93,14 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
       setGeografiaType('fundo');
     } else if (formData.ubicacionid) {
       setGeografiaType('ubicacion');
+    } else if (formData.nodoid) {
+      setGeografiaType('nodo');
+    } else if (formData.localizacionid) {
+      setGeografiaType('localizacion');
     } else {
       setGeografiaType(null);
     }
-  }, [formData.paisid, formData.empresaid, formData.fundoid, formData.ubicacionid]);
+  }, [formData.paisid, formData.empresaid, formData.fundoid, formData.ubicacionid, formData.nodoid, formData.localizacionid]);
 
   // Limpiar otros campos de geografía cuando se selecciona un tipo
   const handleGeografiaTypeChange = (type: GeografiaType) => {
@@ -106,6 +114,8 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
       updateFormField('empresaid', null);
       updateFormField('fundoid', null);
       updateFormField('ubicacionid', null);
+      updateFormField('nodoid', null);
+      updateFormField('localizacionid', null);
     }
   };
 
@@ -118,6 +128,8 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
     updateFormField('empresaid', null);
     updateFormField('fundoid', null);
     updateFormField('ubicacionid', null);
+    updateFormField('nodoid', null);
+    updateFormField('localizacionid', null);
     
     // Resetear tipo de geografía
     setGeografiaType(null);
@@ -128,7 +140,9 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
     { value: 'pais', label: 'País' },
     { value: 'empresa', label: 'Empresa' },
     { value: 'fundo', label: 'Fundo' },
-    { value: 'ubicacion', label: 'Ubicación' }
+    { value: 'ubicacion', label: 'Ubicación' },
+    { value: 'nodo', label: 'Nodo' },
+    { value: 'localizacion', label: 'Localización' }
   ], []);
 
   // Opciones para perfiles
@@ -179,10 +193,26 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
           value: u.ubicacionid,
           label: u.ubicacion || `Ubicación ${u.ubicacionid}`
         }));
+      case 'nodo':
+        if (getUniqueOptionsForField) {
+          return getUniqueOptionsForField('nodoid');
+        }
+        return nodosData.map(n => ({
+          value: n.nodoid,
+          label: n.nodo || `Nodo ${n.nodoid}`
+        }));
+      case 'localizacion':
+        if (getUniqueOptionsForField) {
+          return getUniqueOptionsForField('localizacionid');
+        }
+        return localizacionesData.map(l => ({
+          value: l.localizacionid,
+          label: l.localizacion || `Localización ${l.localizacionid}`
+        }));
       default:
         return [];
     }
-  }, [geografiaType, paisesData, empresasData, fundosData, ubicacionesData, getUniqueOptionsForField]);
+  }, [geografiaType, paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, getUniqueOptionsForField]);
 
   // Handler para cambiar el valor de geografía dinámico
   const handleGeografiaValueChange = (value: any) => {
@@ -193,6 +223,8 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
     updateFormField('empresaid', null);
     updateFormField('fundoid', null);
     updateFormField('ubicacionid', null);
+    updateFormField('nodoid', null);
+    updateFormField('localizacionid', null);
     
     // Establecer el campo correspondiente
     const fieldName = `${geografiaType}id`;
@@ -211,6 +243,10 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
         return formData.fundoid || null;
       case 'ubicacion':
         return formData.ubicacionid || null;
+      case 'nodo':
+        return formData.nodoid || null;
+      case 'localizacion':
+        return formData.localizacionid || null;
       default:
         return null;
     }
@@ -279,7 +315,9 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
               }`}>
                 {geografiaType === 'pais' ? 'PAÍS' : 
                  geografiaType === 'empresa' ? 'EMPRESA' :
-                 geografiaType === 'fundo' ? 'FUNDO' : 'UBICACIÓN'} *
+                 geografiaType === 'fundo' ? 'FUNDO' : 
+                 geografiaType === 'ubicacion' ? 'UBICACIÓN' :
+                 geografiaType === 'nodo' ? 'NODO' : 'LOCALIZACIÓN'} *
               </label>
               <SelectWithPlaceholder
                 value={getCurrentGeografiaValue() || ''}
@@ -287,7 +325,9 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
                 options={geografiaOptionsDynamic}
                 placeholder={geografiaType === 'pais' ? 'PAÍS' : 
                                          geografiaType === 'empresa' ? 'EMPRESA' :
-                                         geografiaType === 'fundo' ? 'FUNDO' : 'UBICACIÓN'}
+                                         geografiaType === 'fundo' ? 'FUNDO' : 
+                                         geografiaType === 'ubicacion' ? 'UBICACIÓN' :
+                                         geografiaType === 'nodo' ? 'NODO' : 'LOCALIZACIÓN'}
                 disabled={!isGeografiaValueEnabled || loading}
               />
             </div>

@@ -87,44 +87,32 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   const renderNodoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    const otherFields = visibleColumns.filter(col => !['paisid', 'empresaid', 'fundoid', 'statusid'].includes(col.columnName));
+    // Fila 1: Nombre Nodo, Ubicación, Referencia (Layout 3 columnas)
+    const nodoField = visibleColumns.find(c => c.columnName === 'nodo');
+    const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
+    const referenciaField = visibleColumns.find(c => c.columnName === 'referencia');
     
-    // Renderizar campos principales
-    if (otherFields.length > 0) {
-      // Si hay 2 campos y status, ponerlos en la misma fila
-      if (otherFields.length === 2 && statusField) {
-        result.push(
-          <div key="fields-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {otherFields.map(col => renderField(col))}
-            {statusField && renderField(statusField)}
-          </div>
-        );
-      } else {
-        // Renderizar campos principales
-        result.push(
-          <div key="fields-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {otherFields.map(col => renderField(col))}
-          </div>
-        );
-        // Renderizar status en fila separada si existe
-        if (statusField) {
-          result.push(
-            <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div></div>
-              <div></div>
-              {renderField(statusField)}
-            </div>
-          );
-        }
-      }
-    } else if (statusField) {
-      // Solo status
+    if (nodoField || ubicacionField || referenciaField) {
       result.push(
-        <div key="status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div></div>
-          <div></div>
-          {renderField(statusField)}
+        <div key="nodo-main-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {nodoField && renderField(nodoField)}
+          {ubicacionField && renderField(ubicacionField)}
+          {referenciaField && renderField(referenciaField)}
+        </div>
+      );
+    }
+
+    // Fila 2: Latitud, Longitud, Status
+    const latitudField = visibleColumns.find(c => c.columnName === 'latitud');
+    const longitudField = visibleColumns.find(c => c.columnName === 'longitud');
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+
+    if (latitudField || longitudField || statusField) {
+      result.push(
+        <div key="nodo-coords-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {latitudField && renderField(latitudField)}
+          {longitudField && renderField(longitudField)}
+          {statusField && renderField(statusField)}
         </div>
       );
     }

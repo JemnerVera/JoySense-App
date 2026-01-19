@@ -584,16 +584,14 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         // Solo considerar que hay una tabla seleccionada si activeTab incluye el nombre de la tabla específica
         const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
         const check2 = activeTab.includes('-regla_perfil-');
-        const check3 = activeTab.includes('-regla_umbral-');
         const check4 = activeTab.includes('-regla_objeto-');
         const check5 = activeTab === 'configuracion-notificaciones-regla-regla';
         const check6 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
-        const check7 = activeTab === 'configuracion-notificaciones-regla-regla_umbral';
         const check8 = activeTab === 'configuracion-notificaciones-regla-regla_objeto';
-        const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto');
+        const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_objeto');
         const check10 = (selectedTable === 'regla' && activeTab !== 'configuracion-notificaciones-regla');
         const isReglaTableSelected = isReglaNotificaciones && (
-          check1 || check2 || check3 || check4 || check5 || check6 || check7 || check8 || check9 || check10
+          check1 || check2 || check4 || check5 || check6 || check8 || check9 || check10
         );
         const hasAux = hasAuxiliarySidebar(activeTab);
         const shouldShow = isReglaTableSelected && hasAux;
@@ -682,7 +680,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       {hasAuxiliarySidebar(activeTab) && (
         (activeTab === 'alertas-regla' || activeTab.startsWith('alertas-regla-')) ||
         (activeTab === 'alertas-regla_objeto' || activeTab.startsWith('alertas-regla_objeto-')) ||
-        (activeTab === 'alertas-regla_umbral' || activeTab.startsWith('alertas-regla_umbral-')) ||
         (activeTab === 'alertas-regla_perfil' || activeTab.startsWith('alertas-regla_perfil-'))
       ) && (
         <div className="flex-shrink-0 z-30">

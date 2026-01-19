@@ -142,9 +142,22 @@ Documentation
 - Maintain the project documentation in docs/ directory.
 
 Project-Specific Guidelines
-- Always use the 'sense' schema for database queries.
+- Always use the 'joysense' schema for database queries.
 - Follow the established error handling patterns.
 - Use the existing authentication and authorization system.
 - Maintain consistency with the established UI/UX patterns.
 - Follow the established deployment and build processes.
 - Use the established logging and debugging patterns.
+
+
+# .cursorrules
+
+- match: "*"
+  rules:
+    # 🔹 Regla 1: limitar tamaño de respuesta
+    - "Responde únicamente con lo mínimo necesario, sin explicaciones largas ni detalles innecesarios."
+
+    # 🔹 Regla 2: control de creación de archivos
+    - "Solo crear archivos si el usuario lo solicita explícitamente."
+    - "Los formatos permitidos son únicamente `.md` o `.txt`."
+    - "No crear archivos en otros formatos bajo ninguna circunstancia."

@@ -21,6 +21,7 @@ interface ReglaUpdateFormProps {
   onCancel: () => void;
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
+  onFormDataChange?: (formData: Record<string, any>) => void;
 }
 
 export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
@@ -30,7 +31,8 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
   onUpdate,
   onCancel,
   setMessage,
-  themeColor = 'orange'
+  themeColor = 'orange',
+  onFormDataChange
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -83,7 +85,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       setReglaUmbralData([]);
       // Limpiar formData cuando no hay regla seleccionada
       // No crear una fila vacía inicialmente para evitar mostrar filas vacías antes de cargar datos
-      setFormData({
+      const emptyFormData = {
         nombre: '',
         criticidadid: null,
         ventana: null,
@@ -91,7 +93,10 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         prioridad: null,
         requiere_escalamiento: false,
         _reglaUmbralRows: []
-      });
+      };
+      setFormData(emptyFormData);
+      // Notificar al padre que no hay datos (limpiar detección de cambios)
+      onFormDataChange?.({});
     }
   }, [selectedReglaid]);
 
@@ -106,9 +111,11 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         return;
       }
 
-      // Cargar umbrales relacionados (regla_umbral)
+      // Cargar umbrales relacionados (regla_umbral) - solo activos (statusid: 1)
       const reglaUmbrales = await JoySenseService.getTableData('regla_umbral', 1000);
-      const umbralesFiltrados = (reglaUmbrales || []).filter((ru: any) => ru.reglaid === reglaid);
+      const umbralesFiltrados = (reglaUmbrales || []).filter((ru: any) => 
+        ru.reglaid === reglaid && ru.statusid === 1
+      );
 
       // Ordenar por orden
       umbralesFiltrados.sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
@@ -138,6 +145,11 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       
       // Actualizar formData directamente - React debería detectar el cambio
       setFormData(initialFormData);
+      // Notificar cambios al padre para detección de cambios sin guardar
+      // Solo notificar si hay una regla seleccionada (datos reales)
+      if (reglaid) {
+        onFormDataChange?.(initialFormData);
+      }
     } catch (error: any) {
       console.error('Error cargando datos de regla:', error);
       setMessage?.({ type: 'error', text: error.message || 'Error al cargar datos de la regla' });
@@ -146,13 +158,23 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
     }
   }, [reglasData, setMessage]);
 
+  // Wrapper para setFormData que notifica cambios al padre
+  const handleSetFormData = useCallback((data: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
+    setFormData(prev => {
+      const newData = typeof data === 'function' ? data(prev) : data;
+      // Notificar cambios al padre para detección de cambios sin guardar
+      onFormDataChange?.(newData);
+      return newData;
+    });
+  }, [onFormDataChange]);
+
   // Función para actualizar un campo del formulario
   const updateFormField = useCallback((field: string, value: any) => {
-    setFormData(prev => ({
+    handleSetFormData(prev => ({
       ...prev,
       [field]: value
     }));
-  }, []);
+  }, [handleSetFormData]);
 
   // Función para validar el formulario
   const validateForm = useCallback((): boolean => {
@@ -300,7 +322,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
             selectedTable="regla"
             visibleColumns={visibleColumns}
             formData={formData}
-            setFormData={setFormData}
+            setFormData={handleSetFormData}
             updateField={updateFormField}
             getThemeColor={getThemeColor}
             getUniqueOptionsForField={getUniqueOptionsForField}

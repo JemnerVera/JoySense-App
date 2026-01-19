@@ -64,11 +64,16 @@ router.get('/medicion', async (req, res) => {
         localizacion:localizacionid(
           localizacionid,
           localizacion,
-          latitud,
-          longitud,
           nodoid,
           metricaid,
-          nodo:nodoid(nodoid, nodo, ubicacionid),
+          nodo:nodoid(
+            nodoid, 
+            nodo, 
+            ubicacionid,
+            latitud,
+            longitud,
+            referencia
+          ),
           metrica:metricaid(metricaid, metrica, unidad)
         )
       `);
@@ -167,7 +172,13 @@ router.get('/mediciones', async (req, res) => {
           nodoid,
           metricaid,
           sensorid,
-          nodo:nodoid(nodoid, nodo)
+          nodo:nodoid(
+            nodoid, 
+            nodo,
+            latitud,
+            longitud,
+            referencia
+          )
         )
       `);
     
@@ -344,7 +355,13 @@ router.get('/mediciones-con-entidad', async (req, res) => {
         localizacion:localizacionid(
           localizacionid,
           localizacion,
-          nodo:nodoid(nodoid, nodo),
+          nodo:nodoid(
+            nodoid, 
+            nodo,
+            latitud,
+            longitud,
+            referencia
+          ),
           metrica:metricaid(metricaid, metrica, unidad)
         )
       `)
@@ -534,7 +551,14 @@ router.get('/ultimas-mediciones-por-lote', async (req, res) => {
           nodoid,
           metricaid,
           sensorid,
-          nodo:nodoid(nodoid, nodo, ubicacionid)
+          nodo:nodoid(
+            nodoid, 
+            nodo, 
+            ubicacionid,
+            latitud,
+            longitud,
+            referencia
+          )
         )
       `)
       .in('localizacionid', localizacionIds);

@@ -431,6 +431,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               getColumnDisplayName={getColumnDisplayName}
               getUniqueOptionsForField={getUniqueOptionsForField}
               tableName={tableName}
+              nodosData={relatedData.nodosData}
+              localizacionesData={relatedData.localizacionesData}
+              ubicacionesData={relatedData.ubicacionesData}
               themeColor={themeColor}
             />
 

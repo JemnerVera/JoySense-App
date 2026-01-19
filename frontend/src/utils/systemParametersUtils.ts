@@ -744,8 +744,14 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'localizacion':
-      if (!data.nodoid || !data.latitud || !data.longitud) {
-        return 'Nodo, latitud y longitud son obligatorios';
+      if (!data.nodoid || !data.localizacion) {
+        return 'Nodo y nombre de localización son obligatorios';
+      }
+      break;
+
+    case 'nodo':
+      if (!data.ubicacionid || !data.nodo || !data.latitud || !data.longitud) {
+        return 'Ubicación, nombre de nodo, latitud y longitud son obligatorios';
       }
       break;
     

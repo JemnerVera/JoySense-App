@@ -6,8 +6,6 @@ JoySense is a sensor monitoring dashboard application for agricultural monitorin
 ## Tech Stack
 - **Frontend**: React 18 with TypeScript, Tailwind CSS
 - **Backend**: Node.js with Express
-- **Database**: Supabase with PostgreSQL
-- **Deployment**: Electron for desktop app, Vercel for web deployment
 
 ## Project Structure
 ```

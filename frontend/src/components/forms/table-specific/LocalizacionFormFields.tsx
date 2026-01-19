@@ -34,8 +34,8 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
   const { t } = useLanguage();
 
   // Función para renderizar campos de localización según el schema actual
-  // Schema actual: nodoid, sensorid, metricaid, localizacion, latitud, longitud, referencia
-  const renderLocalizacionField = (col: any, fieldType: 'select' | 'text' | 'coordenadas'): React.ReactNode => {
+  // Schema actual: nodoid, sensorid, metricaid, localizacion
+  const renderLocalizacionField = (col: any, fieldType: 'select' | 'text'): React.ReactNode => {
     const displayName = getColumnDisplayNameTranslated(col.columnName, t);
     if (!displayName) return null;
     
@@ -84,34 +84,11 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
       );
     }
 
-    // Renderizar campos de coordenadas (latitud, longitud, referencia)
-    if (fieldType === 'coordenadas') {
-      return (
-        <div key={col.columnName} className="mb-4">
-          <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-            {displayName.toUpperCase()}{isRequired ? '*' : ''}
-          </label>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => updateField(
-              col.columnName,
-              col.columnName === 'latitud' || col.columnName === 'longitud' 
-                ? parseFloat(e.target.value) || '' 
-                : e.target.value
-            )}
-            placeholder={`${displayName.toUpperCase()}`}
-            className="w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-orange-500 focus:border-orange-500 border-neutral-600"
-          />
-        </div>
-      );
-    }
-
     return null;
   };
 
   // Función principal para renderizar campos de localización según el schema actual
-  // Schema: nodoid, sensorid, metricaid, localizacion, latitud, longitud, referencia, statusid
+  // Schema: nodoid, sensorid, metricaid, localizacion, statusid
   const result: React.ReactNode[] = [];
   
   // Primera fila: Nodo, Sensor, Métrica
@@ -141,26 +118,11 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
     );
   }
   
-  // Tercera fila: Latitud, Longitud, Referencia
-  const latitudField = visibleColumns.find(c => c.columnName === 'latitud');
-  const longitudField = visibleColumns.find(c => c.columnName === 'longitud');
-  const referenciaField = visibleColumns.find(c => c.columnName === 'referencia');
-  
-  if (latitudField || longitudField || referenciaField) {
-    result.push(
-      <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {latitudField && renderLocalizacionField(latitudField, 'coordenadas')}
-        {longitudField && renderLocalizacionField(longitudField, 'coordenadas')}
-        {referenciaField && renderLocalizacionField(referenciaField, 'coordenadas')}
-      </div>
-    );
-  }
-  
-  // Cuarta fila: Status al extremo derecho
+  // Tercera fila: Status al extremo derecho
   const statusField = visibleColumns.find(c => c.columnName === 'statusid');
   if (statusField) {
     result.push(
-      <div key="fourth-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div key="third-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div></div> {/* Espacio vacío */}
         <div></div> {/* Espacio vacío */}
         {renderField(statusField)}
