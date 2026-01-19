@@ -114,7 +114,10 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       
       if (countError) {
         const errorMessage = countError.message || (typeof countError === 'string' ? countError : JSON.stringify(countError)) || 'Error desconocido en count';
-        logger.error(`❌ Error obteniendo count para ${tableName}: ${errorMessage}`);
+        logger.error(`❌ [paginateAndFilter] Error obteniendo count para ${tableName}: [${countError.code || 'N/A'}] ${errorMessage}`);
+        if (countError.details) logger.error(`   Detalles: ${countError.details}`);
+        if (countError.hint) logger.error(`   Hint: ${countError.hint}`);
+        
         const error = new Error(errorMessage);
         if (countError.code) error.code = countError.code;
         if (countError.details) error.details = countError.details;
@@ -207,7 +210,9 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     
     if (dataError) {
       const errorMessage = dataError.message || 'Error desconocido obteniendo datos';
-      logger.error(`❌ Error obteniendo datos para ${tableName}: ${errorMessage}`);
+      logger.error(`❌ [paginateAndFilter] Error obteniendo datos para ${tableName}: [${dataError.code || 'N/A'}] ${errorMessage}`);
+      if (dataError.details) logger.error(`   Detalles: ${dataError.details}`);
+      if (dataError.hint) logger.error(`   Hint: ${dataError.hint}`);
       throw dataError;
     }
     
@@ -264,6 +269,9 @@ function clearMetadataCache(tableName = null) {
 async function getTableMetadata(tableName, userSupabase = null) {
   // Usar el cliente con token de usuario si está disponible, sino usar el base
   const supabase = userSupabase || baseSupabase;
+  const isUsingUserToken = !!userSupabase;
+  
+  // LOG DE DIAGNÓSTICO INICIAL (Eliminado por ser verboso)
   
   if (metadataCache.has(tableName)) {
     const cached = metadataCache.get(tableName);
@@ -282,6 +290,7 @@ async function getTableMetadata(tableName, userSupabase = null) {
   try {
     // Intentar primero con RPC (la función consulta information_schema, no está afectada por RLS)
     // IMPORTANTE: Usar el cliente con token de usuario para que la función pueda verificar autenticación
+    
     const { data: rpcData, error: rpcError } = await supabase
       .schema('joysense')
       .rpc('fn_get_table_metadata', { tbl_name: tableName });
@@ -292,9 +301,22 @@ async function getTableMetadata(tableName, userSupabase = null) {
       return rpcData;
     }
     
-    // Si la función RPC falló por permisos, registrar el error
-    if (rpcError && rpcError.code === '42501') {
-      logger.warn(`⚠️ [getTableMetadata] RPC falló por permisos para: ${tableName} - ${rpcError.message}`);
+    // Si la función RPC falló, registrar el error detallado
+    if (rpcError) {
+      const isPermissionError = rpcError.code === '42501' || (rpcError.message && rpcError.message.includes('permission denied'));
+      const logMsg = `❌ [getTableMetadata] RPC falló para ${tableName}: [${rpcError.code || 'N/A'}] ${rpcError.message}`;
+      
+      if (isPermissionError) {
+        logger.error(`⚠️ ⚠️ ${logMsg}`);
+        logger.error(`   👉 Pista: El rol ${isUsingUserToken ? 'authenticated' : 'anon'} no tiene USAGE en esquema joysense o EXECUTE en fn_get_table_metadata`);
+        logger.error(`   👉 Contexto: tableName=${tableName}, dbSchema=${dbSchema}`);
+        logger.error(`   👉 COMANDO SQL RECOMENDADO: GRANT USAGE ON SCHEMA joysense TO authenticated, anon, service_role;`);
+      } else {
+        logger.warn(logMsg);
+      }
+      
+      if (rpcError.details) logger.warn(`   Detalles: ${rpcError.details}`);
+      if (rpcError.hint) logger.warn(`   Hint: ${rpcError.hint}`);
     }
     
     // Fallback: usar query directa si RPC falló
@@ -307,7 +329,10 @@ async function getTableMetadata(tableName, userSupabase = null) {
       .limit(1);
     
     if (queryError) {
-      logger.warn(`⚠️ [getTableMetadata] Error en query fallback para: ${tableName} - ${queryError.message}`);
+      logger.error(`❌ [getTableMetadata] Fallback falló para ${tableName}: [${queryError.code || 'N/A'}] ${queryError.message}`);
+      if (queryError.details) logger.error(`   Detalles: ${queryError.details}`);
+      if (queryError.hint) logger.error(`   Hint: ${queryError.hint}`);
+      
       const emptyMetadata = {
         columns: [],
         constraints: [],
@@ -356,7 +381,6 @@ async function getTableMetadata(tableName, userSupabase = null) {
     };
     
     metadataCache.set(tableName, metadata);
-    logger.info(`✅ Metadatos inferidos para: ${tableName} (${columns.length} columnas) desde primera fila`);
     
     return metadata;
   } catch (error) {
@@ -392,17 +416,6 @@ function inferDataType(value) {
   }
   if (value instanceof Date) return 'timestamp';
   return 'text';
-}
-
-/**
- * Limpiar cache de metadatos
- */
-function clearMetadataCache(tableName = null) {
-  if (tableName) {
-    metadataCache.delete(tableName);
-  } else {
-    metadataCache.clear();
-  }
 }
 
 module.exports = {

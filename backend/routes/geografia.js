@@ -32,7 +32,8 @@ router.get('/pais', async (req, res) => {
 
 router.get('/pais/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('pais');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('pais', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /pais/columns:', error);
@@ -113,7 +114,8 @@ router.get('/empresa', async (req, res) => {
 
 router.get('/empresa/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('empresa');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('empresa', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /empresa/columns:', error);
@@ -197,7 +199,8 @@ router.get('/fundo', async (req, res) => {
 
 router.get('/fundo/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('fundo');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('fundo', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /fundo/columns:', error);
@@ -278,7 +281,8 @@ router.get('/ubicacion', async (req, res) => {
 
 router.get('/ubicacion/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('ubicacion');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('ubicacion', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /ubicacion/columns:', error);
@@ -330,7 +334,8 @@ router.get('/entidad', async (req, res) => {
 
 router.get('/entidad/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('entidad');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('entidad', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /entidad/columns:', error);

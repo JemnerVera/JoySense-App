@@ -39,7 +39,8 @@ router.get('/criticidad', async (req, res) => {
 
 router.get('/criticidad/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('criticidad');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('criticidad', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /criticidad/columns:', error);
@@ -433,7 +434,8 @@ router.get('/umbral/por-nodo', async (req, res) => {
 
 router.get('/umbral/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('umbral');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('umbral', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /umbral/columns:', error);
@@ -1059,7 +1061,8 @@ router.get('/alerta', async (req, res) => {
 
 router.get('/alerta/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('alerta');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('alerta', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /alerta/columns:', error);
@@ -1408,7 +1411,8 @@ router.get('/alerta_regla', async (req, res) => {
 
 router.get('/alerta_regla/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('alerta_regla');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('alerta_regla', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /alerta_regla/columns:', error);
@@ -1468,7 +1472,8 @@ router.get('/alerta_regla_consolidado', async (req, res) => {
 
 router.get('/alerta_regla_consolidado/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('alerta_regla_consolidado');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('alerta_regla_consolidado', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /alerta_regla_consolidado/columns:', error);
@@ -1525,7 +1530,8 @@ router.get('/mensaje', async (req, res) => {
 
 router.get('/mensaje/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('mensaje');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('mensaje', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /mensaje/columns:', error);
@@ -1586,7 +1592,8 @@ router.get('/audit_log_umbral', async (req, res) => {
 
 router.get('/audit_log_umbral/columns', async (req, res) => {
   try {
-    const metadata = await getTableMetadata('audit_log_umbral');
+    const userSupabase = req.supabase || baseSupabase;
+    const metadata = await getTableMetadata('audit_log_umbral', userSupabase);
     res.json(metadata.columns);
   } catch (error) {
     logger.error('Error en GET /audit_log_umbral/columns:', error);
