@@ -229,13 +229,6 @@ export const useInsertForm = ({
   
   // Actualizar campo del formulario
   const updateFormField = useCallback((field: string, value: any) => {
-    logger.debug('[useInsertForm] updateFormField llamado', {
-      field,
-      value,
-      previousValue: formData[field],
-      formDataKeys: Object.keys(formData)
-    })
-    
     // Marcar que el usuario seleccionó este campo manualmente (si es un campo de geografía)
     if (field === 'paisid' && value) {
       userSelectedPaisRef.current = true
@@ -259,28 +252,17 @@ export const useInsertForm = ({
         ...prev,
         [field]: value
       }
-      logger.debug('[useInsertForm] Actualizando formDataState', {
-        field,
-        value,
-        previousValue: prev[field],
-        newDataKeys: Object.keys(newData),
-        newDataValue: newData[field],
-        userSelected: field === 'paisid' ? userSelectedPaisRef.current : 
-                     field === 'empresaid' ? userSelectedEmpresaRef.current :
-                     field === 'fundoid' ? userSelectedFundoRef.current : false
-      })
       return newData
     })
     
     // Limpiar error del campo cuando se modifica
-    if (formErrors[field]) {
-      setFormErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
-    }
-  }, [formErrors, formData])
+    setFormErrors(prev => {
+      if (!prev[field]) return prev
+      const newErrors = { ...prev }
+      delete newErrors[field]
+      return newErrors
+    })
+  }, []) // Removido formErrors y formData de dependencias para evitar loops
   
   // Establecer datos del formulario (para compatibilidad)
   // Soporta tanto objeto directo como función de actualización
@@ -403,6 +385,22 @@ export const useInsertForm = ({
       const perfilesStatus = formData._perfilesStatus as Record<number, number> | undefined
       if (!perfilesStatus || Object.values(perfilesStatus).filter(statusid => statusid === 1).length === 0) {
         errors._perfilesStatus = 'Debe seleccionar al menos un perfil activo'
+      }
+      
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
+    // Caso especial para regla_objeto: validar reglaid, fuenteid y _objetosSeleccionados
+    if (tableName === 'regla_objeto') {
+      if (!formData.reglaid) {
+        errors.reglaid = 'Regla es requerida'
+      }
+      if (!formData.fuenteid) {
+        errors.fuenteid = 'Fuente es requerida'
+      }
+      if (!formData._objetosSeleccionados || !Array.isArray(formData._objetosSeleccionados) || formData._objetosSeleccionados.length === 0) {
+        errors._objetosSeleccionados = 'Debe seleccionar al menos un objeto'
       }
       
       setFormErrors(errors)
@@ -859,6 +857,53 @@ export const useInsertForm = ({
         
         setIsSubmitting(false);
         setMessage?.({ type: 'success', text: `Regla creada con ${results.length - 1} umbral(es) correctamente` });
+        resetForm();
+        onSuccess?.();
+        return;
+      }
+      
+      // Caso especial para tabla 'regla_objeto': crear múltiples registros si _objetosSeleccionados está presente
+      if (tableName === 'regla_objeto' && formData._objetosSeleccionados && Array.isArray(formData._objetosSeleccionados)) {
+        const objetosSeleccionados = formData._objetosSeleccionados as number[];
+        const reglaid = formData.reglaid;
+        const origenid = formData.origenid || 1;
+        const fuenteid = formData.fuenteid;
+        
+        if (!reglaid) throw new Error('Debe seleccionar una regla');
+        if (!fuenteid) throw new Error('Debe seleccionar un nivel de objeto');
+        if (objetosSeleccionados.length === 0) throw new Error('Debe seleccionar al menos un objeto');
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        const now = new Date().toISOString();
+        
+        // Crear un array de registros, uno por cada objeto seleccionado
+        const recordsToInsert = objetosSeleccionados.map(objetoid => ({
+          reglaid: reglaid,
+          origenid: origenid,
+          fuenteid: fuenteid,
+          objetoid: objetoid,
+          statusid: 1,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }));
+        
+        // Insertar múltiples registros
+        const results = [];
+        for (const record of recordsToInsert) {
+          const result = await insertRow(record);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al asignar objeto ${record.objetoid}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} objeto(s) a la regla correctamente` });
         resetForm();
         onSuccess?.();
         return;

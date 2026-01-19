@@ -148,14 +148,16 @@ router.post('/:table', async (req, res) => {
   
   try {
     // Preparar datos para inserción
-    let dataToInsert = { ...req.body };
+    // Si es un array, es una inserción masiva. Si es un objeto, es una inserción simple.
+    let dataToInsert = Array.isArray(req.body) ? req.body : { ...req.body };
     
-      // Lógica especial para tabla 'usuario'
+    // Lógica especial para tabla 'usuario' (solo para inserciones individuales)
+    if (!Array.isArray(dataToInsert) && table === 'usuario') {
       // Si viene empresas_ids, primero crear el usuario normalmente, luego asociar empresas
       let empresasIdsToAssociate = null;
       let isDefaultEmpresaToAssociate = null;
       
-      if (table === 'usuario' && dataToInsert.empresas_ids && Array.isArray(dataToInsert.empresas_ids) && dataToInsert.empresas_ids.length > 0) {
+      if (dataToInsert.empresas_ids && Array.isArray(dataToInsert.empresas_ids) && dataToInsert.empresas_ids.length > 0) {
         // Guardar empresas_ids para usar después de crear el usuario
         empresasIdsToAssociate = dataToInsert.empresas_ids;
         isDefaultEmpresaToAssociate = dataToInsert.is_default_empresa || null;
@@ -163,13 +165,12 @@ router.post('/:table', async (req, res) => {
         // Remover empresas_ids del dataToInsert para que no se intente insertar en la tabla usuario
         delete dataToInsert.empresas_ids;
         delete dataToInsert.is_default_empresa;
-        
       }
       
       // Lógica especial para tabla 'usuario' (sin empresas_ids - comportamiento legacy)
       // IMPORTANTE: Después de insertar, se sincroniza automáticamente con Supabase Auth
       // usando fn_sync_usuario_con_auth_wait (ver código más abajo)
-      if (table === 'usuario') {
+      
       // Validar que login sea un email válido
       if (dataToInsert.login && !dataToInsert.login.includes('@')) {
         return res.status(400).json({ 
@@ -210,6 +211,10 @@ router.post('/:table', async (req, res) => {
         dataToInsert.statusid = 0; // Temporalmente inactivo
         req._usuario_temporal_inactivo = true;
         req._usuario_statusid_original = originalStatusid !== undefined ? originalStatusid : 1;
+        
+        // Guardar para uso posterior
+        req._empresasIdsToAssociate = empresasIdsToAssociate;
+        req._isDefaultEmpresaToAssociate = isDefaultEmpresaToAssociate;
       }
       
       // NOTA: La sincronización con Supabase Auth se realiza automáticamente después del INSERT
@@ -339,6 +344,9 @@ router.post('/:table', async (req, res) => {
         // Tiene su propio try-catch para que errores aquí no afecten la sincronización
         // NUEVO: Usa fn_asignar_empresa_a_usuario (una empresa a la vez) según diseño del DBA
         // ====================================================================
+        const empresasIdsToAssociate = req._empresasIdsToAssociate;
+        const isDefaultEmpresaToAssociate = req._isDefaultEmpresaToAssociate;
+        
         if (empresasIdsToAssociate && Array.isArray(empresasIdsToAssociate) && empresasIdsToAssociate.length > 0) {
           try {
             let empresasAsignadas = 0;
