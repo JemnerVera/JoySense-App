@@ -295,7 +295,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               break
             }
           } catch (error: any) {
-            console.error(`[DEBUG] ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
+            console.error(`ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
             // Si es timeout o error 500, continuar con el siguiente rango
             // Los errores 500 pueden ser timeouts del backend, así que intentamos rangos más pequeños
             const isTimeoutOr500 = error.message?.includes('timeout') || 

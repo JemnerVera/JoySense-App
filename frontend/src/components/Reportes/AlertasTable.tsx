@@ -121,15 +121,6 @@ const AlertasTable: React.FC = () => {
               allData = result;
             }
             
-            // Debug: Verificar umbrales en los datos
-            console.log('[DEBUG] AlertasTable: Datos recibidos', {
-              total: allData.length,
-              sampleAlerta: allData[0],
-              alertasConUmbral: allData.filter(a => a.umbral).length,
-              alertasSinUmbral: allData.filter(a => !a.umbral).length,
-              primeraAlertaSinUmbral: allData.find(a => !a.umbral)
-            });
-            
             setAllAlertas(allData);
             
             // Extraer opciones disponibles para los filtros

@@ -261,7 +261,9 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'nodoid', label: 'ID', type: 'number', hidden: true, readonly: true },
       { name: 'ubicacionid', label: 'Ubicación', type: 'select', required: true, foreignKey: { table: 'ubicacion', valueField: 'ubicacionid', labelField: 'ubicacion' } },
       { name: 'nodo', label: 'Nombre', type: 'text', required: true },
-      { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+      { name: 'latitud', label: 'Latitud', type: 'number' },
+      { name: 'longitud', label: 'Longitud', type: 'number' },
+      { name: 'referencia', label: 'Referencia', type: 'text' },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
@@ -269,7 +271,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
   localizacion: {
     name: 'localizacion',
     displayName: 'Localización',
-    description: 'Punto de medición (nodo + sensor + métrica + coordenadas)',
+    description: 'Punto de medición (nodo + sensor + métrica)',
     icon: '📌',
     category: 'dispositivos',
     primaryKey: 'localizacionid',
@@ -283,9 +285,6 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensor' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
       { name: 'localizacion', label: 'Nombre', type: 'text', required: true },
-      { name: 'latitud', label: 'Latitud', type: 'number' },
-      { name: 'longitud', label: 'Longitud', type: 'number' },
-      { name: 'referencia', label: 'Referencia', type: 'text' },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },

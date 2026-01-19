@@ -488,7 +488,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 try {
                   onNodeSelect(node);
                 } catch (error) {
-                  console.error('[DEBUG] InteractiveMap: Error al llamar onNodeSelect:', error);
+                  console.error('InteractiveMap: Error al llamar onNodeSelect:', error);
                 }
               }
             }}

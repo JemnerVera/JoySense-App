@@ -444,32 +444,22 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={(e) => {
-                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
-                    subTabId: subTab.id,
-                    activeTab: activeTab,
-                    timestamp: new Date().toISOString()
-                  });
-                  
                   // Prevenir que el click cause que los sidebars se colapsen
                   e.stopPropagation();
                   // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
                   // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
                   if (subTab.id === 'historial') {
-                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
                     // Expandir tanto aux1 como aux2 antes de cambiar el tab
                     // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
                     if (onExpandAllSidebars) {
-                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
                       onExpandAllSidebars();
                     } else {
-                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
                       onMouseEnter?.();
                     }
                     // Cambiar el tab después de expandir los sidebars
                     onTabChange(`reportes-${subTab.id}`);
                   } else {
                     // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
-                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
                     onMouseEnter?.();
                     onTabChange(`reportes-${subTab.id}`);
                   }
@@ -544,32 +534,22 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={(e) => {
-                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
-                    subTabId: subTab.id,
-                    activeTab: activeTab,
-                    timestamp: new Date().toISOString()
-                  });
-                  
                   // Prevenir que el click cause que los sidebars se colapsen
                   e.stopPropagation();
                   // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
                   // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
                   if (subTab.id === 'historial') {
-                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
                     // Expandir tanto aux1 como aux2 antes de cambiar el tab
                     // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
                     if (onExpandAllSidebars) {
-                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
                       onExpandAllSidebars();
                     } else {
-                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
                       onMouseEnter?.();
                     }
                     // Cambiar el tab después de expandir los sidebars
                     onTabChange(`reportes-${subTab.id}`);
                   } else {
                     // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
-                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
                     onMouseEnter?.();
                     onTabChange(`reportes-${subTab.id}`);
                   }
@@ -623,32 +603,22 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
               <button
                 key={subTab.id}
                 onClick={(e) => {
-                  console.log('[DEBUG] AuxiliarySidebar: Click en subTab', {
-                    subTabId: subTab.id,
-                    activeTab: activeTab,
-                    timestamp: new Date().toISOString()
-                  });
-                  
                   // Prevenir que el click cause que los sidebars se colapsen
                   e.stopPropagation();
                   // Para HISTORIAL, usar onExpandAllSidebars para expandir tanto aux1 como aux2
                   // porque necesitamos mantener ambos sidebars expandidos (similar a cómo funciona DASHBOARD)
                   if (subTab.id === 'historial') {
-                    console.log('[DEBUG] AuxiliarySidebar: Click en HISTORIAL - usando onExpandAllSidebars');
                     // Expandir tanto aux1 como aux2 antes de cambiar el tab
                     // Esto asegura que ambos sidebars estén expandidos y marcados como hovered
                     if (onExpandAllSidebars) {
-                      console.log('[DEBUG] AuxiliarySidebar: Llamando onExpandAllSidebars para mantener aux1 y aux2 expandidos');
                       onExpandAllSidebars();
                     } else {
-                      console.warn('[DEBUG] AuxiliarySidebar: onExpandAllSidebars no está definido, usando onMouseEnter como fallback');
                       onMouseEnter?.();
                     }
                     // Cambiar el tab después de expandir los sidebars
                     onTabChange(`reportes-${subTab.id}`);
                   } else {
                     // Para otras pestañas (como DASHBOARD), usar el comportamiento normal
-                    console.log('[DEBUG] AuxiliarySidebar: Click en otra pestaña - usando comportamiento normal');
                     onMouseEnter?.();
                     onTabChange(`reportes-${subTab.id}`);
                   }

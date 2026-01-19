@@ -40,22 +40,12 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        console.log('[DEBUG] loadInitialData: Iniciando carga de datos iniciales')
         const [metricasData, fundosData, localizacionesData, tiposData] = await Promise.all([
           JoySenseService.getMetricas(),
           JoySenseService.getFundos(),
           JoySenseService.getLocalizaciones(), // Usar getLocalizaciones() que incluye join con nodo.ubicacionid
           JoySenseService.getTipos()
         ]);
-        
-        console.log('[DEBUG] loadInitialData: Datos cargados', {
-          metricasLength: metricasData?.length || 0,
-          fundosLength: fundosData?.length || 0,
-          localizacionesLength: localizacionesData?.length || 0,
-          tiposLength: tiposData?.length || 0,
-          sampleMetrica: metricasData?.[0],
-          sampleFundo: fundosData?.[0]
-        })
         
         setMetricas(metricasData || []);
         setFundos(fundosData || []);
@@ -116,23 +106,9 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       }
 
       try {
-        console.log('[DEBUG] loadUbicaciones: Iniciando carga', {
-          selectedFundosLength: selectedFundos.length,
-          selectedFundos,
-          localizacionesLength: localizaciones.length
-        })
-        
         const ubicacionesData = await JoySenseService.getTableData('ubicacion', 1000);
-        console.log('[DEBUG] loadUbicaciones: Ubicaciones obtenidas', {
-          ubicacionesDataLength: ubicacionesData?.length || 0,
-          sampleUbicacion: ubicacionesData?.[0]
-        })
         
         const ubicacionesFiltradas = ubicacionesData.filter((u: any) => selectedFundos.includes(u.fundoid));
-        console.log('[DEBUG] loadUbicaciones: Ubicaciones filtradas por fundo', {
-          ubicacionesFiltradasLength: ubicacionesFiltradas.length,
-          sampleUbicacionFiltrada: ubicacionesFiltradas[0]
-        })
         
         // CRÍTICO: En el nuevo schema, localizacion tiene nodoid, y nodo tiene ubicacionid
         // Necesitamos verificar que haya nodos con esas ubicaciones que tengan localizaciones
@@ -148,21 +124,11 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
           return tieneLocalizacion
         });
         
-        console.log('[DEBUG] loadUbicaciones: Ubicaciones con localizacion', {
-          ubicacionesConLocalizacionLength: ubicacionesConLocalizacion.length,
-          sampleUbicacionConLocalizacion: ubicacionesConLocalizacion[0]
-        })
-        
         // Si no hay ubicaciones con localizaciones, usar todas las ubicaciones del fundo
         // El backend se encargará de filtrar
         const ubicacionesFinales = ubicacionesConLocalizacion.length > 0 
           ? ubicacionesConLocalizacion 
           : ubicacionesFiltradas
-        
-        console.log('[DEBUG] loadUbicaciones: Ubicaciones finales', {
-          ubicacionesFinalesLength: ubicacionesFinales.length,
-          usandoFiltradas: ubicacionesConLocalizacion.length === 0
-        })
         
         setUbicaciones(ubicacionesFinales);
       } catch (err: any) {
@@ -176,21 +142,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
   // Calcular valores de métrica por lote
   const calcularMetricaPorLote = async () => {
-    console.log('[DEBUG] calcularMetricaPorLote: Iniciando', {
-      selectedMetrica,
-      startDate,
-      endDate,
-      selectedFundosLength: selectedFundos.length,
-      selectedFundos
-    })
-    
     if (!selectedMetrica || !startDate || !endDate || selectedFundos.length === 0) {
-      console.warn('[DEBUG] calcularMetricaPorLote: Faltan datos requeridos', {
-        hasSelectedMetrica: !!selectedMetrica,
-        hasStartDate: !!startDate,
-        hasEndDate: !!endDate,
-        hasSelectedFundos: selectedFundos.length > 0
-      })
       setLotesData([]);
       return;
     }
@@ -203,24 +155,10 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       const ubicacionesFundos = ubicaciones.filter(u => selectedFundos.includes(u.fundoid));
       const ubicacionIds = ubicacionesFundos.map(u => u.ubicacionid);
 
-      console.log('[DEBUG] calcularMetricaPorLote: Ubicaciones filtradas', {
-        ubicacionesLength: ubicaciones.length,
-        ubicacionesFundosLength: ubicacionesFundos.length,
-        ubicacionIds
-      })
-
       if (ubicacionIds.length === 0) {
-        console.warn('[DEBUG] calcularMetricaPorLote: No hay ubicaciones para los fundos seleccionados')
         setLotesData([]);
         return;
       }
-
-      console.log('[DEBUG] calcularMetricaPorLote: Llamando getUltimasMedicionesPorLote', {
-        fundoIds: selectedFundos,
-        metricaId: selectedMetrica,
-        startDate: `${startDate} 00:00:00`,
-        endDate: `${endDate} 23:59:59`
-      })
 
       // Usar endpoint optimizado para obtener solo las últimas mediciones por lote
       const ultimasMedicionesRaw = await JoySenseService.getUltimasMedicionesPorLote({
@@ -229,12 +167,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         startDate: `${startDate} 00:00:00`,
         endDate: `${endDate} 23:59:59`
       });
-
-      console.log('[DEBUG] calcularMetricaPorLote: Respuesta recibida', {
-        isArray: Array.isArray(ultimasMedicionesRaw),
-        length: Array.isArray(ultimasMedicionesRaw) ? ultimasMedicionesRaw.length : 0,
-        firstItem: Array.isArray(ultimasMedicionesRaw) && ultimasMedicionesRaw.length > 0 ? ultimasMedicionesRaw[0] : null
-      })
 
       // CRÍTICO: Transformar datos para asegurar que tipoid, ubicacionid, etc. estén disponibles
       // Helper para transformar datos del backend al formato con campos legacy
@@ -261,27 +193,8 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
       const ultimasMediciones = transformMedicionData(ultimasMedicionesRaw)
 
-      console.log('[DEBUG] calcularMetricaPorLote: Datos transformados', {
-        originalLength: ultimasMedicionesRaw.length,
-        transformedLength: ultimasMediciones.length,
-        sampleMedicion: ultimasMediciones.length > 0 ? {
-          medicionid: ultimasMediciones[0].medicionid,
-          ubicacionid: ultimasMediciones[0].ubicacionid,
-          tipoid: ultimasMediciones[0].tipoid,
-          valor: ultimasMediciones[0].valor ?? ultimasMediciones[0].medicion,
-          hasLocalizacion: !!ultimasMediciones[0].localizacion,
-          localizacionNodoUbicacionid: ultimasMediciones[0].localizacion?.nodo?.ubicacionid,
-          localizacionSensorTipoid: ultimasMediciones[0].localizacion?.sensor?.tipoid
-        } : null
-      })
-
       // Obtener tipos únicos en los datos
       const tiposUnicos: number[] = Array.from(new Set(ultimasMediciones.map((m: any) => m.tipoid).filter((id): id is number => id !== undefined && id !== null && id !== 0))) as number[];
-
-      console.log('[DEBUG] calcularMetricaPorLote: Tipos únicos encontrados', {
-        tiposUnicos,
-        cantidad: tiposUnicos.length
-      })
 
       // Obtener localizaciones que pertenecen a nodos de las ubicaciones seleccionadas
       const localizacionesFiltradas = localizaciones.filter((loc: any) => {
@@ -309,17 +222,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         const medicionCount = medicion.medicionCount || 1
 
         if (!localizacionId || localizacionId === 0 || !tipoid || tipoid === 0 || valor == null || isNaN(valor) || !fecha) {
-          if (medicionesProcesadas <= 3) {
-            console.warn('[DEBUG] calcularMetricaPorLote: Medición filtrada', {
-              medicionid: medicion.medicionid,
-              localizacionId,
-              tipoid,
-              valor,
-              fecha,
-              hasValor: valor != null && !isNaN(valor),
-              hasFecha: !!fecha
-            })
-          }
           medicionesFiltradas++
           return
         }
@@ -352,14 +254,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         }
       });
 
-      console.log('[DEBUG] calcularMetricaPorLote: Procesamiento completado', {
-        medicionesProcesadas,
-        medicionesFiltradas,
-        medicionesValidas: medicionesProcesadas - medicionesFiltradas,
-        lotesEncontrados: loteMap.size,
-        sampleLote: loteMap.size > 0 ? Array.from(loteMap.entries())[0] : null
-      })
-
       // Crear array de datos con valores por tipo
       const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([localizacionid, data]) => {
         return {
@@ -384,11 +278,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         });
       }
 
-      console.log('[DEBUG] calcularMetricaPorLote: Lotes finales', {
-        lotesArrayLength: lotesArray.length,
-        sampleLote: lotesArray.length > 0 ? lotesArray[0] : null
-      })
-
       setLotesData(lotesArray);
     } catch (err: any) {
       console.error('Error calculando métrica por lote:', err);
@@ -401,21 +290,9 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
   // Recalcular cuando cambian los filtros
   useEffect(() => {
-    console.log('[DEBUG] useEffect calcularMetricaPorLote: Verificando condiciones', {
-      selectedMetrica,
-      startDate,
-      endDate,
-      selectedFundosLength: selectedFundos.length,
-      selectedFundos,
-      ubicacionesLength: ubicaciones.length,
-      todasLasCondiciones: !!(selectedMetrica && startDate && endDate && selectedFundos.length > 0)
-    })
-    
     if (selectedMetrica && startDate && endDate && selectedFundos.length > 0) {
-      console.log('[DEBUG] useEffect calcularMetricaPorLote: Todas las condiciones cumplidas, llamando calcularMetricaPorLote')
       calcularMetricaPorLote();
     } else {
-      console.warn('[DEBUG] useEffect calcularMetricaPorLote: Condiciones no cumplidas, limpiando lotesData')
       setLotesData([]);
     }
   }, [selectedMetrica, startDate, endDate, orden, selectedFundos, ubicaciones]);
@@ -743,17 +620,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                 </tr>
               </thead>
               <tbody>
-                {(() => {
-                  console.log('[DEBUG] Renderizando tabla: lotesData', {
-                    lotesDataLength: lotesData.length,
-                    lotesData: lotesData,
-                    selectedMetrica,
-                    selectedFundosLength: selectedFundos.length,
-                    startDate,
-                    endDate
-                  })
-                  return null
-                })()}
                 {lotesData.length > 0 ? (
                   lotesData.map((lote) => {
                     // Calcular promedio de todos los valores por tipo
