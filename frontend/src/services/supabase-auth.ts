@@ -202,39 +202,34 @@ export const authService = {
     }
   },
 
-  // Reset de contraseña
-  async resetPassword(login: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  // Reset de contraseña usando Supabase API directamente
+  async resetPassword(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001/api/joysense';
-      const response = await fetch(`${backendUrl}/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ login })
+      logger.debug('[AUTH] Iniciando reset de contraseña para:', email);
+      
+      const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        logger.error('Error al resetear contraseña:', result.error);
+      if (error) {
+        logger.error('Error al resetear contraseña con Supabase:', error.message);
         return { 
           success: false, 
-          error: result.error || 'Error al resetear la contraseña' 
+          error: error.message || 'Error al enviar el correo de recuperación' 
         };
       }
 
-      logger.info('Reset de contraseña exitoso');
+      logger.info('Solicitud de reset de contraseña enviada exitosamente');
       return { 
         success: true, 
-        message: result.message || 'Se ha enviado una nueva contraseña al correo registrado' 
+        message: 'Se ha enviado un correo para restablecer tu contraseña' 
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error inesperado durante reset de contraseña:', error);
       return { 
         success: false, 
-        error: 'Error inesperado durante el reset de contraseña' 
+        error: error?.message || 'Error inesperado durante el reset de contraseña' 
       };
     }
   },

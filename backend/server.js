@@ -59,14 +59,6 @@ const apiRoutes = require('./routes');
 // Montar rutas bajo /api/joysense (nuevo schema)
 app.use('/api/joysense', apiRoutes);
 
-// Compatibilidad con rutas antiguas /api/sense (redirect)
-app.use('/api/sense', (req, res, next) => {
-  logger.warn(`Ruta deprecada /api/sense usada: ${req.path}`);
-  // Redirigir internamente a joysense
-  req.url = req.url; // Mantener la ruta original
-  apiRoutes(req, res, next);
-});
-
 // ============================================================================
 // SERVIR FRONTEND EN PRODUCCIÓN
 // ============================================================================
