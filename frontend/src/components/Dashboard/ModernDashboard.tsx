@@ -365,10 +365,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       if (selectedNode) {
         console.log('[ModernDashboard] Fetching data for selectedNode:', selectedNode);
-        // ESTRATEGIA PROGRESIVA: Empezar con rango pequeño y expandir si no hay datos
-        // Esto evita timeouts en el backend cuando hay muchos datos antiguos
-        const now = new Date()
-        const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59) // Final del día actual
         
         const formatDate = (date: Date) => {
           const year = date.getFullYear()
@@ -379,51 +375,88 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const seconds = String(date.getSeconds()).padStart(2, '0')
           return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
         }
-        
-        // ESTRATEGIA: Intentar primero rangos pequeños (más rápidos) y luego expandir
-        // Esto evita timeouts en nodos con muchos datos
-        // Orden: 24 horas -> 7 días -> 14 días -> 30 días
-        const ranges = [
-          { days: 1, limit: 1000, label: '24 horas' },
-          { days: 7, limit: 5000, label: '7 días' },
-          { days: 14, limit: 10000, label: '14 días' },
-          { days: 30, limit: 20000, label: '30 días' }
-        ]
-        
-        // Intentar con rangos recientes (de menor a mayor)
-        for (const range of ranges) {
-          const startDate = new Date(endDate.getTime() - range.days * 24 * 60 * 60 * 1000)
-          const startDateStr = formatDate(startDate)
-          const endDateStr = formatDate(endDate)
+
+        // 1. INTENTAR PRIMERO CON LOS FILTROS GLOBALES DE FECHA SI EXISTEN
+        if (filters.startDate && filters.endDate) {
+          console.log('[ModernDashboard] Using global date filters:', { start: filters.startDate, end: filters.endDate });
+          
+          const startDateFormatted = `${filters.startDate} 00:00:00`
+          const endDateFormatted = `${filters.endDate} 23:59:59`
           
           try {
             const data = await JoySenseService.getMediciones({
               nodoid: selectedNode.nodoid,
               localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
-              startDate: startDateStr,
-              endDate: endDateStr,
-              limit: range.limit
+              startDate: startDateFormatted,
+              endDate: endDateFormatted,
+              limit: 20000 // Límite para el rango seleccionado
             })
             
-            // Asegurar que data es un array
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
-            
             if (dataArray.length > 0) {
               allData = dataArray
-              break
+              console.log('[ModernDashboard] Data loaded using global filters. Count:', allData.length);
             }
           } catch (error: any) {
-            console.error(`ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
-            // Si es timeout o error 500, continuar con el siguiente rango
-            const isTimeoutOr500 = error.message?.includes('timeout') || 
-                                   error.code === '57014' || 
-                                   error.message?.includes('500') ||
-                                   error.message?.includes('HTTP error! status: 500')
+            console.error('[ModernDashboard] Error loading with global filters:', error);
+            // Fallback a estrategia progresiva si hay error de timeout/500
+          }
+        }
+
+        // 2. ESTRATEGIA PROGRESIVA: Solo si no se obtuvieron datos con los filtros globales
+        if (allData.length === 0) {
+          console.log('[ModernDashboard] No data from global filters or no filters provided. Using progressive strategy.');
+          
+          // ESTRATEGIA PROGRESIVA: Empezar con rango pequeño y expandir si no hay datos
+          // Esto evita timeouts en el backend cuando hay muchos datos antiguos
+          const now = new Date()
+          const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59) // Final del día actual
+          
+          // ESTRATEGIA: Intentar primero rangos pequeños (más rápidos) y luego expandir
+          // Esto evita timeouts en nodos con muchos datos
+          // Orden: 24 horas -> 7 días -> 14 días -> 30 días
+          const ranges = [
+            { days: 1, limit: 1000, label: '24 horas' },
+            { days: 7, limit: 5000, label: '7 días' },
+            { days: 14, limit: 10000, label: '14 días' },
+            { days: 30, limit: 20000, label: '30 días' }
+          ]
+          
+          // Intentar con rangos recientes (de menor a mayor)
+          for (const range of ranges) {
+            const startDate = new Date(endDate.getTime() - range.days * 24 * 60 * 60 * 1000)
+            const startDateStr = formatDate(startDate)
+            const endDateStr = formatDate(endDate)
             
-            if (isTimeoutOr500) {
+            try {
+              const data = await JoySenseService.getMediciones({
+                nodoid: selectedNode.nodoid,
+                localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
+                startDate: startDateStr,
+                endDate: endDateStr,
+                limit: range.limit
+              })
+              
+              // Asegurar que data es un array
+              const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
+              
+              if (dataArray.length > 0) {
+                allData = dataArray
+                break
+              }
+            } catch (error: any) {
+              console.error(`ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
+              // Si es timeout o error 500, continuar con el siguiente rango
+              const isTimeoutOr500 = error.message?.includes('timeout') || 
+                                     error.code === '57014' || 
+                                     error.message?.includes('500') ||
+                                     error.message?.includes('HTTP error! status: 500')
+              
+              if (isTimeoutOr500) {
+                continue
+              }
               continue
             }
-            continue
           }
         }
         
@@ -570,7 +603,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setLoading(false)
       }
     }
-  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid, selectedPointIds])
+  }, [filters.entidadId, filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds])
 
   // Crear array de dependencias estable para evitar warnings de React
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
@@ -578,6 +611,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const useEffectDependencies = useMemo(() => {
     const deps = [
       filters.entidadId, 
+      filters.startDate,
+      filters.endDate,
       selectedNode?.nodoid, 
       selectedPointIds,
       loadMediciones
@@ -588,7 +623,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       deps.push(filters.ubicacionId)
     }
     return deps
-  }, [filters.entidadId, selectedNode?.nodoid, selectedPointIds, loadMediciones, selectedNode])
+  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds, loadMediciones, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
@@ -1495,9 +1530,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // 2. Ordenar y Filtrar por Rango (si es fallback)
     const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
     let filteredMediciones = sortedMediciones
-    let isDateRange = false
     let timeSpan = 3 * 60 * 60 * 1000
-
+    
     if (useCustomRange && detailedStartDate && detailedEndDate) {
       const [sY, sM, sD] = detailedStartDate.split('-').map(Number);
       const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
@@ -1516,7 +1550,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       console.log('[ModernDashboard] processChartData: filtered records for range:', filteredMediciones.length);
       timeSpan = endDate.getTime() - startDate.getTime()
-      isDateRange = (timeSpan / (1000 * 3600 * 24)) > 1
+    } else if (filters.startDate && filters.endDate && sortedMediciones.length > 0) {
+      // Aplicar filtros globales de fecha si existen para los minigráficos
+      const [sY, sM, sD] = filters.startDate.split('-').map(Number);
+      const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+      const [eY, eM, eD] = filters.endDate.split('-').map(Number);
+      const endDate = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
+      
+      filteredMediciones = sortedMediciones.filter(m => {
+        const d = new Date(m.fecha).getTime();
+        return d >= startDate.getTime() && d <= endDate.getTime();
+      })
+      console.log('[ModernDashboard] processChartData applying global filters:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        count: filteredMediciones.length
+      });
+      timeSpan = endDate.getTime() - startDate.getTime()
     } else if (sortedMediciones.length > 0) {
       const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
@@ -1528,11 +1578,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // 3. Determinar Granularidad y Agrupar
     const hoursSpan = timeSpan / (1000 * 60 * 60)
     const daysSpan = hoursSpan / 24
+    const pointCount = filteredMediciones.length
     
-    let useDays = overrideGranularity ? overrideGranularity.useDays : (isDateRange && daysSpan > 7)
-    let useHours = overrideGranularity ? overrideGranularity.useHours : (!useDays && hoursSpan >= 48)
+    // Decidir granularidad: 
+    // - Si hay más de 2 días: días
+    // - Si hay más de 1000 puntos: horas
+    // - Si no, 15 minutos
+    let useDays = overrideGranularity ? overrideGranularity.useDays : (daysSpan >= 2)
+    let useHours = overrideGranularity ? overrideGranularity.useHours : (!useDays && (hoursSpan >= 48 || pointCount > 1000))
     
-    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, useDays, useHours });
+    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, useDays, useHours });
 
     const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter(id => id != null)))
     
@@ -1742,36 +1797,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return `${year}-${month}-${day}`
     }
     
-    // Obtener la fecha de hoy para el fallback
+    // Obtener el intervalo de un día (últimas 24 horas) solicitado por el usuario
     const today = new Date()
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
     
-    let startDateStr = toLocalDateString(yesterday)
-    let endDateStr = toLocalDateString(today)
+    // El gráfico de detalle debe salir con el intervalo de un día por defecto
+    const startDateStr = toLocalDateString(yesterday)
+    const endDateStr = toLocalDateString(today)
     
-    if (metricMediciones.length > 0) {
-      // Encontrar la primera y última fecha disponible para usar el rango completo de datos
-      const sortedMediciones = [...metricMediciones].sort((a, b) => 
-        new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-      )
-      const firstAvailableDate = new Date(sortedMediciones[0].fecha)
-      const lastAvailableDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
-      
-      startDateStr = toLocalDateString(firstAvailableDate)
-      endDateStr = toLocalDateString(lastAvailableDate)
-      
-      console.log('[ModernDashboard] openDetailedAnalysis: Dates derived from data', { 
-        startDateStr, 
-        endDateStr,
-        firstRaw: sortedMediciones[0].fecha,
-        lastRaw: sortedMediciones[sortedMediciones.length - 1].fecha
-      });
-    } else {
-      console.log('[ModernDashboard] openDetailedAnalysis: No data found for metric, using default range', {
-        startDateStr,
-        endDateStr
-      });
-    }
+    console.log('[ModernDashboard] openDetailedAnalysis: Setting initial 24h range', { 
+      startDateStr, 
+      endDateStr
+    });
     
     // Limpiar estados temporales al abrir el modal
     setTempStartDate('')
@@ -3055,14 +3092,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       const timeSpan = endDate.getTime() - startDate.getTime();
                       const hoursSpan = timeSpan / (1000 * 60 * 60);
                       const daysSpan = hoursSpan / 24;
-                      const isDateRange = daysSpan > 1;
                       
-                      // Granularidad (debe ser consistente con processChartData)
-                      // Nota: simplificamos useMinutes ya que no tenemos medicionesParaProcesar.length todavía,
-                      // pero usamos hoursSpan < 48 que es el criterio principal en processChartData
-                      let useMinutes = !isDateRange && hoursSpan < 48;
-                      let useHours = !isDateRange && !useMinutes && hoursSpan < 168;
-                      let useDays = isDateRange && daysSpan > 7;
+                      // Granularidad mejorada para el gráfico detallado: usar días si el intervalo es >= 2 días
+                      const useDays = daysSpan >= 2;
+                      const useHours = !useDays && hoursSpan >= 48;
+                      const granularity = { useDays, useHours };
 
                       // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
                       if (loadingDetailedData) {
@@ -3078,7 +3112,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         );
                       }
                       
-                      const granularity = { useDays, useHours };
                       const chartData = processChartData(selectedDetailedMetric, true, granularity);
                       // Verificar que hay datos del nodo principal
                       if (chartData.length === 0) {
