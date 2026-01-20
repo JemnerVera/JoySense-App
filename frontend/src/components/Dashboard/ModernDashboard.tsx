@@ -32,14 +32,23 @@ interface MedicionData {
     localizacion: string
     nodoid: number
     metricaid: number
+    sensorid: number
     latitud?: number
     longitud?: number
     nodo?: { nodoid: number; nodo: string }
     metrica?: { metricaid: number; metrica: string; unidad: string }
+    sensor?: { 
+      sensorid: number; 
+      sensor: string; 
+      nombre: string; 
+      tipoid: number;
+      tipo?: { tipoid: number; tipo: string } 
+    }
   }
   // Campos legacy para compatibilidad - usados para indexación
   metricaid: number
   nodoid: number
+  sensorid: number
   tipoid: number
   ubicacionid: number
 }
@@ -61,6 +70,7 @@ function transformMedicionData(data: any[]): MedicionData[] {
       // Extraer campos desde localizacion si existen
       metricaid: Number(m.metricaid ?? localizacion?.metricaid ?? 0),
       nodoid: Number(m.nodoid ?? localizacion?.nodoid ?? 0),
+      sensorid: Number(m.sensorid ?? localizacion?.sensorid ?? 0),
       tipoid: Number(m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0),
       ubicacionid: Number(m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0)
     }
@@ -197,7 +207,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
     
     // Obtener información del tipo
-    const tipoId = sensorInfo?.tipoid || medicion.tipoid || medicion.localizacion?.tipoid
+    const tipoId = sensorInfo?.tipoid || medicion.tipoid
     const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
     const tipoName = tipoInfo?.tipo || 'Sensor'
     
@@ -671,14 +681,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones para el análisis detallado con rango de fechas específico
   const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
-    // Cuando hay un nodo seleccionado, no requerir ubicacionId (el nodoid es suficiente)
-    // El backend puede filtrar directamente por nodoid sin necesidad de ubicacionId
-    if (!filters.entidadId || !selectedNode) {
+    console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis started', { startDateStr, endDateStr });
+    
+    if (!selectedNode) {
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: missing selectedNode');
       setLoadingDetailedData(false)
       return
     }
 
-    // Si el request fue cancelado, no continuar
     if (signal?.aborted) {
       setLoadingDetailedData(false)
       return
@@ -687,26 +697,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setLoadingDetailedData(true)
     
     try {
-      const formatDate = (dateStr: string, isEnd: boolean = false) => {
-        // IMPORTANTE: Parsear la fecha como fecha local, no UTC
-        // dateStr viene en formato 'YYYY-MM-DD', necesitamos parsearlo correctamente
+      const formatDateForBackend = (dateStr: string, isEnd: boolean = false) => {
         const [year, month, day] = dateStr.split('-').map(Number)
-        // Crear fecha en zona horaria local
-        const date = new Date(year, month - 1, day)
-        
-        const yearStr = String(date.getFullYear())
-        const monthStr = String(date.getMonth() + 1).padStart(2, '0')
-        const dayStr = String(date.getDate()).padStart(2, '0')
         if (isEnd) {
-          return `${yearStr}-${monthStr}-${dayStr} 23:59:59`
+          return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 23:59:59`
         }
-        return `${yearStr}-${monthStr}-${dayStr} 00:00:00`
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 00:00:00`
       }
 
-      const startDateFormatted = formatDate(startDateStr, false)
-      const endDateFormatted = formatDate(endDateStr, true)
+      const startDateFormatted = formatDateForBackend(startDateStr, false)
+      const endDateFormatted = formatDateForBackend(endDateStr, true)
+      
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Dates for backend:', { 
+        startDateFormatted, 
+        endDateFormatted 
+      });
 
-      // IMPORTANTE: Crear fechas en zona horaria local para evitar problemas de UTC
       const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number)
       const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
       
@@ -714,162 +720,65 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
-      // ESTRATEGIA DESHABILITADA: No usar estrategia sin filtro de fecha para evitar timeouts
-      // Los nodos con muchos datos requieren filtros de fecha obligatorios
-      // Si el usuario necesita ver datos antiguos, debe usar el análisis detallado con un rango específico
-      const USE_STRATEGY_WITHOUT_DATE_FILTER = false // DESHABILITADO: Siempre requerir filtros de fecha
-      
       let filteredData: any[] = []
       
-      if (USE_STRATEGY_WITHOUT_DATE_FILTER) {
-        // ESTRATEGIA 1: Para rangos grandes, buscar últimas mediciones sin filtro de fecha
-        // Esto es mucho más rápido porque el backend solo necesita ordenar por fecha descendente
-        // Para nodos con muchos datos, usar límites MUY conservadores
-        // Empezar con 5000 y aumentar progresivamente solo si es necesario
-        const initialLimit = 5000 // Límite inicial muy conservador
-        const fallbackLimits = [3000, 2000, 1000, 500] // Límites de fallback progresivos
-        
-        let success = false
-        
-        // Intentar primero con el límite inicial
-        try {
-          const response = await JoySenseService.getMediciones({
-            entidadId: filters.entidadId,
-            nodoid: selectedNode.nodoid,
-            limit: initialLimit
-            // NO pasar startDate ni endDate - esto hace que el backend solo ordene por fecha descendente
-          })
-          
-          filteredData = Array.isArray(response) ? response : []
-          success = true
-        } catch (error: any) {
-          // Si el error indica que se requiere filtro de fecha, no intentar más
-          if (error.code === 'TIMEOUT' || error.message?.includes('filtros de fecha') || error.message?.includes('demasiados datos')) {
-            filteredData = []
-            success = false
-            // Mostrar mensaje al usuario (se manejará en el código que verifica filteredData.length === 0)
-            return // Salir temprano, no intentar más
-          }
-          
-          // Si falla por otro motivo, intentar con límites progresivamente más pequeños
-          for (const fallbackLimit of fallbackLimits) {
-            if (signal?.aborted) {
-              setLoadingDetailedData(false)
-              return
-            }
-            
-            try {
-              const response2 = await JoySenseService.getMediciones({
-                entidadId: filters.entidadId,
-                nodoid: selectedNode.nodoid,
-                localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
-                limit: fallbackLimit
-              })
-              
-              filteredData = Array.isArray(response2) ? response2 : []
-              
-              if (filteredData.length > 0) {
-                success = true
-                break
-              }
-            } catch (e2: any) {
-              // Si el error indica que se requiere filtro de fecha, no continuar
-              if (e2.code === 'TIMEOUT' || e2.message?.includes('filtros de fecha') || e2.message?.includes('demasiados datos')) {
-                filteredData = []
-                success = false
-                break
-              }
-              continue
-            }
-          }
-          
-          if (!success) {
-            filteredData = []
-          }
-        }
-        
-        // Si obtuvimos datos, filtrar por rango de fechas en el frontend
-        if (success && filteredData.length > 0) {
-          const startTimestamp = startDate.getTime()
-          const endTimestamp = endDate.getTime()
-          
-          filteredData = filteredData.filter(m => {
-            const medicionDate = new Date(m.fecha).getTime()
-            return medicionDate >= startTimestamp && medicionDate <= endTimestamp
-          })
-        }
-      } else {
-        // ESTRATEGIA 2: Para rangos pequeños, usar filtro de fecha normal
-        let maxLimit = 10000 // Límite conservador para evitar timeouts
-        
-        if (daysDiff > 14) {
-          maxLimit = 15000
-        } else if (daysDiff > 7) {
-          maxLimit = 12000
-        }
-        
-        try {
-          const response = await JoySenseService.getMediciones({
-            entidadId: filters.entidadId,
-            nodoid: selectedNode.nodoid,
-            localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
-            startDate: startDateFormatted,
-            endDate: endDateFormatted,
-            limit: maxLimit
-          })
-          
-          filteredData = Array.isArray(response) ? response : []
-          
-        } catch (error: any) {
-          // Si hay un error (como timeout 500), NO intentar estrategia sin filtro de fecha
-          if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
-            filteredData = []
-            // No intentar estrategia sin filtro de fecha - esto causaría más timeouts
-          } else {
-            throw error // Re-lanzar el error para que se maneje en el catch principal
-          }
-        }
-      }
-
-      // Verificar que filteredData sea un array
-      if (!Array.isArray(filteredData)) {
-        setLoadingDetailedData(false)
-        return
-      }
+      let maxLimit = 15000 
+      if (daysDiff > 30) maxLimit = 50000
+      else if (daysDiff > 14) maxLimit = 30000
+      else if (daysDiff > 7) maxLimit = 20000
       
-      // Si no hay datos, también detener el loading
-      if (filteredData.length === 0) {
-        setLoadingDetailedData(false)
-        return
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching from API', {
+        nodoid: selectedNode.nodoid,
+        startDateFormatted,
+        endDateFormatted,
+        maxLimit
+      });
+
+      try {
+        const response = await JoySenseService.getMediciones({
+          entidadId: filters.entidadId ?? undefined,
+          nodoid: selectedNode.nodoid,
+          localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
+          startDate: startDateFormatted,
+          endDate: endDateFormatted,
+          limit: maxLimit
+        })
+        
+        filteredData = Array.isArray(response) ? response : []
+        console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: API response records:', filteredData.length);
+        
+      } catch (error: any) {
+        console.error('[ModernDashboard] loadMedicionesForDetailedAnalysis: API Error:', error);
+        if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
+          filteredData = []
+        } else {
+          throw error 
+        }
       }
 
-      // El backend devuelve datos ordenados descendente (más recientes primero)
-      // Necesitamos ordenarlos ascendente para el procesamiento correcto
-      const sortedFilteredData = filteredData
+      if (!Array.isArray(filteredData)) {
+        filteredData = []
+      }
+
+      // Ordenar cronológicamente (API devuelve desc)
+      const sortedFilteredData = [...filteredData]
         .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
         .sort((a, b) => a.fechaParsed - b.fechaParsed)
         .map(({ fechaParsed, ...m }) => m)
       
-      // CRÍTICO: Transformar los datos para asegurar que nodoid, tipoid, metricaid estén disponibles directamente
-      // Esto es necesario porque el backend devuelve estos campos anidados en localizacion
       const transformedData = transformMedicionData(sortedFilteredData)
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Final transformed data count:', transformedData.length);
       
-      // Actualizar mediciones para el análisis detallado
-      // IMPORTANTE: NO tocar las mediciones globales del dashboard
-      // Detailed usa su propio estado (detailedMediciones) para no interferir con los minigráficos
       setDetailedMediciones(transformedData)
     } catch (err: any) {
-      // Ignorar errores de cancelación
       if (err.name === 'AbortError' || signal?.aborted) {
         setLoadingDetailedData(false)
         return
       }
-      console.error('Error cargando datos para análisis detallado:', err)
-      // Siempre detener el loading en caso de error
+      console.error('[ModernDashboard] loadMedicionesForDetailedAnalysis error:', err)
+      setError(err.message || 'Error cargando datos detallados')
       setLoadingDetailedData(false)
     } finally {
-      // SIEMPRE actualizar loading a false, incluso si fue cancelado
-      // Esto asegura que el modal no quede en estado de carga infinito
       setLoadingDetailedData(false)
     }
   }, [filters.entidadId, selectedNode, selectedPointIds])
@@ -884,12 +793,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       try {
         const localizaciones = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid)
+        // Guardar nombres de localización únicos
         const nombres = Array.from(new Set(localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)))
         const map = new Map<number, string[]>()
         if (nombres.length > 0) {
           map.set(selectedNode.nodoid, nombres)
         }
         setLocalizacionesPorNodo(map)
+        
+        // Debug: mostrar localizaciones cargadas
+        console.log('[ModernDashboard] localizacionesPorNodo updated:', { 
+          nodoid: selectedNode.nodoid, 
+          nombres,
+          count: localizaciones.length 
+        });
       } catch (error) {
         console.error('Error cargando localizaciones:', error)
         setLocalizacionesPorNodo(new Map())
@@ -976,16 +893,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       if (daysDiff > 60) {
         // Para rangos grandes, usar getAll pero con límite más pequeño
-        maxLimit = 15000
+        maxLimit = 20000
         useGetAll = true
       } else if (daysDiff > 30) {
-        maxLimit = 12000
+        maxLimit = 30000
       } else if (daysDiff > 14) {
-        maxLimit = 10000
+        maxLimit = 20000
       } else if (daysDiff > 7) {
-        maxLimit = 8000
+        maxLimit = 15000
       } else {
-        maxLimit = 5000
+        maxLimit = 10000
       }
       
       // Usar nodoid directamente (más eficiente que filtrar por entidadId y ubicacionId)
@@ -1217,10 +1134,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
   }, [detailedStartDate, detailedEndDate, selectedDetailedMetric, showDetailedAnalysis, selectedNode?.nodoid, loadMedicionesForDetailedAnalysis])
 
-  // Resetear ajuste del eje Y cuando cambia el nodo seleccionado
+  // Resetear ajuste del eje Y cuando cambia el nodo o la métrica
   useEffect(() => {
     setYAxisDomain({ min: null, max: null })
-  }, [selectedNode?.nodoid])
+  }, [selectedNode?.nodoid, selectedDetailedMetric])
 
   // Inicializar tipos visibles cuando se abre el modal o cambia la métrica/nodo
   useEffect(() => {
@@ -1263,9 +1180,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const tiposDisponibles = new Set<string>()
     
     metricMediciones.forEach(m => {
-      const tipo = tipos.find(t => t.tipoid === m.tipoid)
-      if (tipo) {
-        tiposDisponibles.add(tipo.tipo)
+      // Obtener el tipo de sensor usando el estado global de sensores y tipos
+      const sensorId = m.localizacion?.sensorid || m.sensorid
+      const sensorInfo = sensores.find(s => s.sensorid === sensorId)
+      const tipoId = sensorInfo?.tipoid || m.tipoid
+      const tipoInfo = tipos.find(t => t.tipoid === tipoId)
+      
+      if (tipoInfo) {
+        tiposDisponibles.add(tipoInfo.tipo)
       }
     })
     
@@ -1298,9 +1220,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       
       comparisonMetricMediciones.forEach(m => {
-        const tipo = tipos.find(t => t.tipoid === m.tipoid)
-        if (tipo) {
-          tiposDisponibles.add(tipo.tipo)
+        const sensorId = m.localizacion?.sensorid || m.sensorid
+        const sensorInfo = sensores.find(s => s.sensorid === sensorId)
+        const tipoId = sensorInfo?.tipoid || m.tipoid
+        const tipoInfo = tipos.find(t => t.tipoid === tipoId)
+        
+        if (tipoInfo) {
+          tiposDisponibles.add(tipoInfo.tipo)
         }
       })
     }
@@ -1309,7 +1235,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (visibleTipos.size === 0 || !Array.from(tiposDisponibles).every(tipo => visibleTipos.has(tipo))) {
       setVisibleTipos(new Set(tiposDisponibles))
     }
-  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos])
+  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos, sensores])
 
   // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
   useEffect(() => {
@@ -1550,408 +1476,150 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
-    // Fuente de datos: para el análisis detallado usar detailedMediciones si existen,
-    // para el resto de vistas usar mediciones globales
-    const sourceMediciones = useCustomRange && detailedMediciones.length > 0
-      ? detailedMediciones
-      : mediciones
-
-    if (!sourceMediciones.length || !tipos.length || !selectedNode) {
-      return []
-    }
-
-    // Filtrar mediciones del nodo seleccionado
-    const nodeMediciones = sourceMediciones.filter(m => {
-      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
-      // REMOVIDO: No filtrar por punto seleccionado
-      return matchNode;
-    })
+    const sourceMediciones = useCustomRange && detailedMediciones.length > 0 ? detailedMediciones : mediciones
     
-    // Buscar mediciones que coincidan con el dataKey por nombre de métrica
-    const metricMediciones = nodeMediciones.filter(m => {
-      // Limpiar espacios, saltos de línea y caracteres especiales
+    console.log('[ModernDashboard] processChartData start:', { 
+      dataKey, 
+      useCustomRange, 
+      sourceMedicionesCount: sourceMediciones.length,
+      isUsingDetailedMediciones: useCustomRange && detailedMediciones.length > 0
+    });
+
+    if (!sourceMediciones.length || !tipos.length || !selectedNode) return []
+
+    // 1. Filtrar por Nodo y Métrica
+    const metricMediciones = sourceMediciones.filter(m => {
+      if (Number(m.nodoid) !== Number(selectedNode.nodoid)) return false
       const rawMetricName = m.localizacion?.metrica?.metrica || ''
-      const metricName = rawMetricName
-        .replace(/\r\n/g, ' ')
-        .replace(/\n/g, ' ')
-        .replace(/\r/g, ' ')
-        .trim()
-        .toLowerCase()
-      
-      if (dataKey === 'temperatura' && (
-        metricName.includes('temperatura') || metricName.includes('temp')
-      )) return true
-      
-      if (dataKey === 'humedad' && (
-        metricName.includes('humedad') || metricName.includes('humidity')
-      )) return true
-      
-      if (dataKey === 'conductividad' && (
-        metricName.includes('conductividad') || 
-        metricName.includes('electroconductividad') ||
-        metricName.includes('conductivity')
-      )) return true
-      
+      const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
+      if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
+      if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
+      if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) return true
       return false
     })
     
-    if (!metricMediciones.length) {
-      return []
-    }
+    console.log('[ModernDashboard] processChartData: after metric filter:', metricMediciones.length);
 
-    // Ordenar por fecha (ascendente: más antiguas primero)
-    // Esto asegura que los datos más recientes estén al final
-    const sortedMediciones = metricMediciones
-      .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
-      .sort((a, b) => a.fechaParsed - b.fechaParsed)
-      .map(({ fechaParsed, ...m }) => m)
-    
+    if (!metricMediciones.length) return []
+
+    // 2. Ordenar y Filtrar por Rango (si es fallback)
+    const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
     let filteredMediciones = sortedMediciones
     let isDateRange = false
-    let timeSpan = 3 * 60 * 60 * 1000 // 3 horas por defecto
+    let timeSpan = 3 * 60 * 60 * 1000
 
     if (useCustomRange && detailedStartDate && detailedEndDate) {
-      // Usar rango personalizado de fechas del modal de detalle
-      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
-      const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
-      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+      const [sY, sM, sD] = detailedStartDate.split('-').map(Number);
+      const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+      const [eY, eM, eD] = detailedEndDate.split('-').map(Number);
+      const endDate = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
       
-      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
-      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-      
+      console.log('[ModernDashboard] processChartData applying custom range filter:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+
+      // Aplicar filtro de fecha siempre que sea un rango personalizado
       filteredMediciones = sortedMediciones.filter(m => {
-        const medicionDate = new Date(m.fecha)
-        return medicionDate >= startDate && medicionDate <= endDate
+        const d = new Date(m.fecha).getTime();
+        return d >= startDate.getTime() && d <= endDate.getTime();
       })
-      
-      // Determinar si es un rango de días (más de 1 día)
+      console.log('[ModernDashboard] processChartData: filtered records for range:', filteredMediciones.length);
       timeSpan = endDate.getTime() - startDate.getTime()
-      const daysDiff = timeSpan / (1000 * 3600 * 24)
-      isDateRange = daysDiff > 1
-      
-    } else {
-      // Usar lógica de 3 horas (comportamiento por defecto)
-      // IMPORTANTE: Usar la fecha más reciente disponible en los datos, no la fecha actual
-      // Esto asegura que siempre mostremos los datos más recientes disponibles
-      const latestDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
-      const now = new Date()
-      const threeHoursAgo = new Date(latestDate.getTime() - 3 * 60 * 60 * 1000)
-      
-      // NUEVA ESTRATEGIA: Detectar el último segmento continuo de datos
-      // Esto evita incluir datos antiguos con gaps grandes
-      const findLastContinuousSegment = (mediciones: any[], maxGapHours: number = 2): any[] => {
-        if (mediciones.length === 0) return []
-        
-        // Ordenar por fecha ascendente (más antiguas primero)
-        const sorted = [...mediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-        
-        // Empezar desde la medición más reciente
-        const result: any[] = []
-        const maxGapMs = maxGapHours * 60 * 60 * 1000
-        
-        // Agregar la medición más reciente
-        result.push(sorted[sorted.length - 1])
-        
-        // Ir hacia atrás, agregando mediciones consecutivas
-        for (let i = sorted.length - 2; i >= 0; i--) {
-          const currentDate = new Date(sorted[i].fecha).getTime()
-          const nextDate = new Date(result[0].fecha).getTime()
-          const gap = nextDate - currentDate
-          
-          // Si el gap es menor al máximo permitido, es parte del segmento continuo
-          if (gap <= maxGapMs) {
-            result.unshift(sorted[i]) // Agregar al inicio para mantener orden cronológico
-          } else {
-            // Gap grande detectado - este es el límite del segmento continuo
-            break
-          }
-        }
-        
-        return result
-      }
-      
-      // Detectar el último segmento continuo (sin gaps mayores a 2 horas)
-      let continuousSegment = findLastContinuousSegment(sortedMediciones, 2)
-      
-      // Usar el segmento continuo como base
-      filteredMediciones = continuousSegment
-      
-      // Si el segmento continuo tiene menos de 10 mediciones, expandir hacia atrás
-      // pero sin cruzar gaps grandes (máximo 4 horas de gap)
-      if (filteredMediciones.length < 10 && sortedMediciones.length > filteredMediciones.length) {
-        // Expandir hacia atrás permitiendo gaps de hasta 4 horas
-        const expandedSegment = findLastContinuousSegment(sortedMediciones, 4)
-        
-        if (expandedSegment.length > filteredMediciones.length) {
-          filteredMediciones = expandedSegment
-        }
-      }
-      
-      // Si aún hay muy pocos datos (menos de 5), expandir más agresivamente
-      // Permitir gaps de hasta 12 horas para capturar más mediciones
-      if (filteredMediciones.length < 5 && sortedMediciones.length > filteredMediciones.length) {
-        const expandedSegment12h = findLastContinuousSegment(sortedMediciones, 12)
-        
-        if (expandedSegment12h.length > filteredMediciones.length) {
-          filteredMediciones = expandedSegment12h
-        }
-      }
-      
-      // Si aún hay muy pocos datos (menos de 3), expandir aún más (24 horas de gap)
-      if (filteredMediciones.length < 3 && sortedMediciones.length > filteredMediciones.length) {
-        const expandedSegment24h = findLastContinuousSegment(sortedMediciones, 24)
-        
-        if (expandedSegment24h.length > filteredMediciones.length) {
-          filteredMediciones = expandedSegment24h
-        }
-      }
-      
-      // Si aún hay muy pocos datos (menos de 2), usar las últimas mediciones disponibles
-      // sin importar gaps, para asegurar que siempre mostremos algo
-      if (filteredMediciones.length < 2 && sortedMediciones.length > 0) {
-        // Usar las últimas 100 mediciones como fallback final
-        const last100 = sortedMediciones.slice(-100)
-        filteredMediciones = last100
-        
-        // Si aún no hay suficientes, usar todas las mediciones disponibles
-        if (filteredMediciones.length < 2 && sortedMediciones.length > 0) {
-          filteredMediciones = sortedMediciones
-        }
-      }
+      isDateRange = (timeSpan / (1000 * 3600 * 24)) > 1
+    } else if (sortedMediciones.length > 0) {
+      const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
+      filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
+      console.log('[ModernDashboard] processChartData: fallback 3h filter:', filteredMediciones.length);
     }
-    
-    // Determinar granularidad de agrupación basada en cantidad de datos y rango
-    const totalMediciones = filteredMediciones.length
+
+    if (filteredMediciones.length === 0) return []
+
+    // 3. Determinar Granularidad y Agrupar
     const hoursSpan = timeSpan / (1000 * 60 * 60)
     const daysSpan = hoursSpan / 24
+    let useDays = isDateRange && daysSpan > 7
+    let useHours = !useDays && hoursSpan >= 48
     
-    // Para el gráfico detallado, hacer muestreo inteligente si hay demasiados datos
-    // El agrupamiento por tiempo reduce los puntos, pero si hay > 30k puntos, muestrear primero
-    let medicionesParaProcesar = filteredMediciones
-    if (useCustomRange && totalMediciones > 30000) {
-      // Muestreo inteligente: mantener distribución temporal uniforme
-      // Calcular puntos necesarios: ~4 puntos por hora × número de horas
-      const estimatedHours = Math.ceil(hoursSpan)
-      const minPointsNeeded = estimatedHours * 4 // Al menos 4 puntos por hora (cada 15 min)
-      const maxPoints = Math.min(Math.max(minPointsNeeded, 15000), 25000) // Entre 15k-25k puntos
-      const step = Math.ceil(totalMediciones / maxPoints)
-      medicionesParaProcesar = filteredMediciones.filter((_, index) => index % step === 0)
-    }
-    
-    // Agrupar por localización (cada localizacionid es una serie de datos única)
-    const locsEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.localizacionid).filter((id): id is number => id !== undefined && id !== null)))
-    const datosPorLoc: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
-    
-    // Inicializar datos para cada localización
-    locsEnMediciones.forEach(locid => {
-      datosPorLoc[locid] = []
-    })
-    
-    // Decidir granularidad: si hay pocos datos o rango pequeño, usar minutos; si hay muchos datos, usar horas/días
-    const useMinutes = !isDateRange && (medicionesParaProcesar.length < 500 || hoursSpan < 48)
-    const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
-    const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
-    
-    // Agrupar mediciones por localización y tiempo
-    medicionesParaProcesar.forEach(medicion => {
-      if (medicion.localizacionid === undefined || medicion.localizacionid === null) {
-        return
-      }
-      
-      const date = new Date(medicion.fecha)
-      let timeKey: string
-      
-      if (useDays) {
-        const day = String(date.getDate()).padStart(2, '0')
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        timeKey = `${day}/${month}`
-      } else if (useHours) {
-        const hour = String(date.getHours()).padStart(2, '0')
-        timeKey = `${hour}:00`
-      } else {
-        const minutes = date.getMinutes()
-        const roundedMinutes = Math.floor(minutes / 15) * 15
-        const hour = String(date.getHours()).padStart(2, '0')
-        const minute = String(roundedMinutes).padStart(2, '0')
-        timeKey = `${hour}:${minute}`
-      }
-      
-      // Obtener label descriptivo: "Punto (Tipo)"
-      const label = getSeriesLabel(medicion)
+    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, useDays, useHours });
 
-      // Buscar si ya existe un punto para esta localización y tiempo
-      const existingPoint = datosPorLoc[medicion.localizacionid]?.find(p => p.time === timeKey)
+    const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter(id => id != null)))
+    
+    const performGrouping = (data: any[], d: boolean, h: boolean) => {
+      const grouped: { [locid: number]: any[] } = {}
+      locsEnMediciones.forEach(id => { grouped[id] = [] })
       
-      if (existingPoint) {
-        // Promediar si hay múltiples medidas en el mismo bucket de tiempo para la misma localización
-        const currentValue = existingPoint.value
-        const currentCount = existingPoint.count
-        const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
-        existingPoint.value = newValue
-        existingPoint.count = currentCount + 1
-        if (date.getTime() > existingPoint.timestamp) {
-          existingPoint.timestamp = date.getTime()
+      data.forEach(m => {
+        const date = new Date(m.fecha)
+        let timeKey: string
+        if (d) timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+        else if (h) timeKey = `${String(date.getHours()).padStart(2, '0')}:00`
+        else {
+          const roundedMin = Math.floor(date.getMinutes() / 15) * 15
+          timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`
         }
-      } else {
-        // Crear nuevo punto
-        datosPorLoc[medicion.localizacionid].push({
-          timestamp: date.getTime(),
-          time: timeKey,
-          value: medicion.medicion,
-          count: 1,
-          locid: medicion.localizacionid,
-          label: label
-        })
-      }
-    })
-    
-    // Ordenar los datos de cada localización por timestamp
-    locsEnMediciones.forEach(locid => {
-      if (datosPorLoc[locid]) {
-        datosPorLoc[locid].sort((a, b) => a.timestamp - b.timestamp)
-      }
-    })
-    
-    // Verificar si después de agrupar tenemos muy pocos puntos por localización
-    // Si hay muy pocos puntos, intentar usar granularidad más fina o mostrar todos los datos disponibles
-    if (filteredMediciones.length > 0) {
-      const locsConPocosPuntos = locsEnMediciones.filter(locid => 
-        datosPorLoc[locid] && datosPorLoc[locid].length <= 2
-      )
-      
-      if (locsConPocosPuntos.length === locsEnMediciones.length && locsEnMediciones.length > 0) {
-        // Todas las localizaciones tienen 2 o menos puntos después de agrupar
-        // Intentar usar granularidad más fina si hay datos suficientes
-        if (filteredMediciones.length >= 3 && !useMinutes) {
-          const datosPorLocMinutos: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
-          locsEnMediciones.forEach(locid => {
-            datosPorLocMinutos[locid] = []
-          })
-          
-          filteredMediciones.forEach(medicion => {
-            if (medicion.localizacionid === undefined || medicion.localizacionid === null) return
-            
-            const date = new Date(medicion.fecha)
-            const minutes = date.getMinutes()
-            const roundedMinutes = Math.floor(minutes / 15) * 15
-            const hour = String(date.getHours()).padStart(2, '0')
-            const minute = String(roundedMinutes).padStart(2, '0')
-            const timeKey = `${hour}:${minute}`
-            
-            const label = getSeriesLabel(medicion)
-
-            if (!datosPorLocMinutos[medicion.localizacionid]) {
-              datosPorLocMinutos[medicion.localizacionid] = []
-            }
-            
-            const existingPoint = datosPorLocMinutos[medicion.localizacionid].find(p => p.time === timeKey)
-            
-            if (existingPoint) {
-              const currentValue = existingPoint.value
-              const currentCount = existingPoint.count
-              const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
-              existingPoint.value = newValue
-              existingPoint.count = currentCount + 1
-              if (date.getTime() > existingPoint.timestamp) {
-                existingPoint.timestamp = date.getTime()
-              }
-            } else {
-              datosPorLocMinutos[medicion.localizacionid].push({
-                timestamp: date.getTime(),
-                time: timeKey,
-                value: medicion.medicion,
-                count: 1,
-                locid: medicion.localizacionid,
-                label: label
-              })
-            }
-          })
-          
-          // Actualizar datosPorLoc con los nuevos puntos si son más que antes
-          locsEnMediciones.forEach(locid => {
-            if (datosPorLocMinutos[locid] && datosPorLocMinutos[locid].length > (datosPorLoc[locid]?.length || 0)) {
-              datosPorLoc[locid] = datosPorLocMinutos[locid]
-            }
-          })
-        }
-      }
-    }
-    
-    // Obtener todos los timestamps únicos de todas las localizaciones para el eje X
-    const allTimeStamps = new Set<number>()
-    locsEnMediciones.forEach(locid => {
-      datosPorLoc[locid]?.forEach(p => {
-        const date = new Date(p.timestamp)
-        let periodStart: Date
-        if (useDays) {
-          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-        } else if (useHours) {
-          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours())
+        
+        const label = getSeriesLabel(m)
+        const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey)
+        if (existing) {
+          existing.value = (existing.value * existing.count + m.medicion) / (existing.count + 1)
+          existing.count += 1
         } else {
-          const minutes = date.getMinutes()
-          const roundedMinutes = Math.floor(minutes / 15) * 15
-          periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes)
-        }
-        allTimeStamps.add(periodStart.getTime())
-      })
-    })
-    
-    // Convertir timestamps a timeKeys y ordenar
-    const allTimes = Array.from(allTimeStamps)
-      .sort((a, b) => a - b)
-      .map(timestamp => {
-        const date = new Date(timestamp)
-        if (useDays) {
-          const day = String(date.getDate()).padStart(2, '0')
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          return `${day}/${month}`
-        } else if (useHours) {
-          const hour = String(date.getHours()).padStart(2, '0')
-          return `${hour}:00`
-        } else {
-          const hour = String(date.getHours()).padStart(2, '0')
-          const minute = String(date.getMinutes()).padStart(2, '0')
-          return `${hour}:${minute}`
+          grouped[m.localizacionid].push({ timestamp: date.getTime(), time: timeKey, value: m.medicion, count: 1, label })
         }
       })
+      return grouped
+    }
+
+    let groupedData = performGrouping(filteredMediciones, useDays, useHours)
     
-    // Crear estructura de datos con todas las líneas (una por cada localización)
-    const result: any[] = []
-    
-    allTimes.forEach(time => {
-      const timeData: any = { time }
-      let hasAnyValue = false
-      
-      locsEnMediciones.forEach(locid => {
-        const locData = datosPorLoc[locid]?.find(p => p.time === time)
-        const label = datosPorLoc[locid][0]?.label || `Sensor ${locid}`
-        
-        let value = locData ? locData.value : null
-        
-        if (value !== null && value !== undefined) {
-          // Filtrar valores fuera del rango del eje Y si está configurado
+    // Fallback de resolución si hay muy pocos puntos
+    if (useDays && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+      useDays = false; useHours = true;
+      groupedData = performGrouping(filteredMediciones, useDays, useHours)
+    }
+    if (useHours && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+      useHours = false;
+      groupedData = performGrouping(filteredMediciones, useDays, useHours)
+    }
+
+    // 4. Formatear para Recharts
+    const allTimestamps = new Set<number>()
+    Object.values(groupedData).forEach(list => list.forEach(p => {
+      const date = new Date(p.timestamp)
+      let ts: number
+      if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+      else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime()
+      allTimestamps.add(ts)
+    }))
+
+    const sortedTimes = Array.from(allTimestamps).sort((a, b) => a - b).map(ts => {
+      const date = new Date(ts)
+      if (useDays) return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+      if (useHours) return `${String(date.getHours()).padStart(2, '0')}:00`
+      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    })
+
+    const finalData = sortedTimes.map(time => {
+      const entry: any = { time }
+      let hasValue = false
+      locsEnMediciones.forEach(id => {
+        const point = (groupedData[id] || []).find(p => p.time === time)
+        if (point) {
+          let val = point.value
           if (useCustomRange) {
-            const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
-            const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
-            
-            if ((hasMinLimit && value < yAxisDomain.min!) || (hasMaxLimit && value > yAxisDomain.max!)) {
-              value = null
-            }
+            const { min, max } = yAxisDomain
+            if ((min !== null && val < min) || (max !== null && val > max)) val = null
           }
-        }
-        
-        if (value !== null && value !== undefined) {
-          timeData[label] = value
-          hasAnyValue = true
+          if (val !== null) { entry[point.label] = val; hasValue = true }
         }
       })
-      
-      if (hasAnyValue) {
-        result.push(timeData)
-      }
-    })
-    
-    return result
+      return hasValue ? entry : null
+    }).filter(e => e !== null)
+
+    console.log('[ModernDashboard] processChartData: final data count:', finalData.length);
+    return finalData
   }
 
   const getMetricName = (metricaid: number): string | null => {
@@ -2073,8 +1741,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return false
     })
     
-    let endDate: Date
-    let startDate: Date
+    // Función helper para formatear como YYYY-MM-DD local
+    const toLocalDateString = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    
+    // Obtener la fecha de hoy para el fallback
+    const today = new Date()
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+    
+    let startDateStr = toLocalDateString(yesterday)
+    let endDateStr = toLocalDateString(today)
     
     if (metricMediciones.length > 0) {
       // Encontrar la primera y última fecha disponible para usar el rango completo de datos
@@ -2084,31 +1764,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const firstAvailableDate = new Date(sortedMediciones[0].fecha)
       const lastAvailableDate = new Date(sortedMediciones[sortedMediciones.length - 1].fecha)
       
-      // Normalizar fechas a inicio del día
-      firstAvailableDate.setHours(0, 0, 0, 0)
-      lastAvailableDate.setHours(23, 59, 59, 999)
+      startDateStr = toLocalDateString(firstAvailableDate)
+      endDateStr = toLocalDateString(lastAvailableDate)
       
-      // Usar el rango completo de datos disponibles, pero con un mínimo de 1 día
-      const daysDiff = (lastAvailableDate.getTime() - firstAvailableDate.getTime()) / (1000 * 3600 * 24)
-      
-      if (daysDiff < 1) {
-        // Si todos los datos están en el mismo día, mostrar ese día completo
-        startDate = new Date(firstAvailableDate)
-        endDate = new Date(lastAvailableDate)
-      } else {
-        // Si hay datos en múltiples días, usar el rango completo
-        startDate = new Date(firstAvailableDate)
-        endDate = new Date(lastAvailableDate)
-      }
-      
+      console.log('[ModernDashboard] openDetailedAnalysis: Dates derived from data', { 
+        startDateStr, 
+        endDateStr,
+        firstRaw: sortedMediciones[0].fecha,
+        lastRaw: sortedMediciones[sortedMediciones.length - 1].fecha
+      });
     } else {
-      // Si no hay datos, usar el comportamiento por defecto (hoy - 1 día)
-      endDate = new Date()
-      startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000) // 1 día hacia atrás
+      console.log('[ModernDashboard] openDetailedAnalysis: No data found for metric, using default range', {
+        startDateStr,
+        endDateStr
+      });
     }
-    
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = endDate.toISOString().split('T')[0]
     
     // Limpiar estados temporales al abrir el modal
     setTempStartDate('')
@@ -2118,10 +1788,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setDetailedStartDate(startDateStr)
     setDetailedEndDate(endDateStr)
     
-    // Abrir el modal - el useEffect se encargará de cargar los datos
-    // Usar setTimeout para asegurar que las fechas se establezcan antes de que el useEffect se ejecute
+    // Abrir el modal
     setTimeout(() => {
-    setShowDetailedAnalysis(true)
+      setShowDetailedAnalysis(true)
     }, 0)
   }
 
@@ -3374,6 +3043,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
                       }
                       
+                      console.log('[ModernDashboard] Render IIFE: range:', { 
+                        detailedStartDate, 
+                        detailedEndDate,
+                        startDate: startDate.toISOString(),
+                        endDate: endDate.toISOString()
+                      });
+                      
                       const timeSpan = endDate.getTime() - startDate.getTime();
                       const hoursSpan = timeSpan / (1000 * 60 * 60);
                       const daysSpan = hoursSpan / 24;
@@ -3382,9 +3058,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // Granularidad (debe ser consistente con processChartData)
                       // Nota: simplificamos useMinutes ya que no tenemos medicionesParaProcesar.length todavía,
                       // pero usamos hoursSpan < 48 que es el criterio principal en processChartData
-                      const useMinutes = !isDateRange && hoursSpan < 48;
-                      const useHours = !isDateRange && !useMinutes && hoursSpan < 168;
-                      const useDays = isDateRange && daysSpan > 7;
+                      let useMinutes = !isDateRange && hoursSpan < 48;
+                      let useHours = !isDateRange && !useMinutes && hoursSpan < 168;
+                      let useDays = isDateRange && daysSpan > 7;
 
                       // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
                       if (loadingDetailedData) {
@@ -3403,6 +3079,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // Procesar datos principales
                       // CRÍTICO: Siempre procesar datos del nodo principal primero
                       const chartData = processChartData(selectedDetailedMetric, true);
+                      console.log('[ModernDashboard] Render IIFE: chartData count:', chartData.length);
                       
                       // Verificar que hay datos del nodo principal
                       if (chartData.length === 0) {
@@ -3412,18 +3089,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // Procesar datos de comparación si están disponibles
                       // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
                       // para asegurar que las claves de tiempo coincidan perfectamente
-                      const processComparisonData = (comparisonData: MedicionData[], dataKey: string): any[] => {
+                      const processComparisonData = (comparisonData: any[], dataKey: string): any[] => {
                         if (!comparisonData.length || !tipos.length) return []
                         
+                        // 1. Filtrar por Métrica
                         const metricMediciones = comparisonData.filter(m => {
                           const rawMetricName = m.localizacion?.metrica?.metrica || ''
-                          const metricName = rawMetricName
-                            .replace(/\r\n/g, ' ')
-                            .replace(/\n/g, ' ')
-                            .replace(/\r/g, ' ')
-                            .trim()
-                            .toLowerCase()
-                          
+                          const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
                           if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
                           if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
                           if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) return true
@@ -3432,6 +3104,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         
                         if (!metricMediciones.length) return []
 
+                        // 2. Ordenar y Filtrar por Rango
                         const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
                         const filteredMediciones = sortedMediciones.filter(m => {
                           const d = new Date(m.fecha)
@@ -3441,50 +3114,66 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         if (filteredMediciones.length === 0) return []
                         
                         const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter((id): id is number => id !== undefined && id !== null)))
-                        const datosPorLoc: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
-                        
-                        locsEnMediciones.forEach(locid => {
-                          datosPorLoc[locid] = []
-                        })
-                        
-                        filteredMediciones.forEach(medicion => {
-                          if (medicion.localizacionid === undefined || medicion.localizacionid === null) return
-                          
-                          const date = new Date(medicion.fecha)
-                          let timeKey: string
-                          
-                          if (useDays) {
-                            timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
-                          } else if (useHours) {
-                            timeKey = `${String(date.getHours()).padStart(2, '0')}:00`
-                          } else {
-                            const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15
-                            timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`
-                          }
-                          
-                          const label = getSeriesLabel(medicion)
 
-                          const existingPoint = datosPorLoc[medicion.localizacionid].find(p => p.time === timeKey)
-                          if (existingPoint) {
-                            const currentValue = existingPoint.value
-                            const currentCount = existingPoint.count
-                            existingPoint.value = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
-                            existingPoint.count = currentCount + 1
-                          } else {
-                            datosPorLoc[medicion.localizacionid].push({
-                              timestamp: date.getTime(),
-                              time: timeKey,
-                              value: medicion.medicion,
-                              count: 1,
-                              locid: medicion.localizacionid,
-                              label: label
-                            })
-                          }
-                        })
+                        const performGrouping = (data: any[]) => {
+                          const grouped: { [locid: number]: any[] } = {}
+                          locsEnMediciones.forEach((locid: number) => { grouped[locid] = [] })
+                          
+                          data.forEach(medicion => {
+                            if (medicion.localizacionid === undefined || medicion.localizacionid === null) return
+                            
+                            const date = new Date(medicion.fecha)
+                            let timeKey: string
+                            
+                            if (useDays) {
+                              timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+                            } else if (useHours) {
+                              timeKey = `${String(date.getHours()).padStart(2, '0')}:00`
+                            } else {
+                              const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15
+                              timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`
+                            }
+                            
+                            const label = getSeriesLabel(medicion)
+                            const existingPoint = (grouped[medicion.localizacionid] || []).find(p => p.time === timeKey)
+                            
+                            if (existingPoint) {
+                              const currentValue = existingPoint.value
+                              const currentCount = existingPoint.count
+                              existingPoint.value = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
+                              existingPoint.count = currentCount + 1
+                            } else {
+                              if (!grouped[medicion.localizacionid]) grouped[medicion.localizacionid] = []
+                              grouped[medicion.localizacionid].push({
+                                timestamp: date.getTime(),
+                                time: timeKey,
+                                value: medicion.medicion,
+                                count: 1,
+                                locid: medicion.localizacionid,
+                                label: label
+                              })
+                            }
+                          })
+                          return grouped
+                        }
+
+                        let datosPorLoc = performGrouping(filteredMediciones)
                         
+                        // Si hay muy pocos puntos por localización, intentar granularidad más fina
+                        const locsConPocosPuntos = locsEnMediciones.filter(locid => (datosPorLoc[locid] || []).length <= 2)
+                        if (locsConPocosPuntos.length === locsEnMediciones.length && locsEnMediciones.length > 0 && filteredMediciones.length >= 3) {
+                          if (useDays) {
+                            useDays = false; useHours = true;
+                            datosPorLoc = performGrouping(filteredMediciones)
+                          } else if (useHours) {
+                            useHours = false; // useMinutes = true implicitly
+                            datosPorLoc = performGrouping(filteredMediciones)
+                          }
+                        }
+
                         const allTimeStamps = new Set<number>()
                         locsEnMediciones.forEach(locid => {
-                          datosPorLoc[locid].forEach(p => {
+                          (datosPorLoc[locid] || []).forEach(p => {
                             const date = new Date(p.timestamp)
                             let periodStart: Date
                             if (useDays) periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -3508,16 +3197,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           const point: any = { time }
                           let hasAnyValue = false
                           locsEnMediciones.forEach(locid => {
-                            const locData = datosPorLoc[locid].find(p => p.time === time)
+                            const locData = (datosPorLoc[locid] || []).find(p => p.time === time)
                             if (locData) {
                               let value: number | null = locData.value
-                              if (useCustomRange) {
-                                const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
-                                const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
-                                if ((hasMinLimit && value < yAxisDomain.min!) || (hasMaxLimit && value > yAxisDomain.max!)) value = null
+                              if (useCustomRange && value !== null) {
+                                const { min, max } = yAxisDomain
+                                const hasMinLimit = min !== null && !isNaN(min)
+                                const hasMaxLimit = max !== null && !isNaN(max)
+                                if ((hasMinLimit && value < min!) || (hasMaxLimit && value > max!)) {
+                                  value = null
+                                }
                               }
                               if (value !== null && value !== undefined) {
-                                point[datosPorLoc[locid][0].label] = value
+                                point[locData.label] = value
                                 hasAnyValue = true
                               }
                             }
@@ -3643,6 +3335,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         // Si son horas (HH:MM), comparar directamente como string
                         return timeA.localeCompare(timeB)
                       })
+                      console.log('[ModernDashboard] Render IIFE: Final Chart Data (sorted/filtered):', finalChartData.length);
                       
                       
                       // Solo mostrar "No hay datos" si NO está cargando y no hay datos
@@ -3696,14 +3389,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           if (tiposValidos.length > 0) {
                             const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
                             const nombresTipos = tiposSeleccionados.map(t => t.tipo)
-                            return nombresTipos.includes(tipoKey)
+                            // Verificar si tipoKey coincide con alguno de los tipos seleccionados
+                            return nombresTipos.some(vTipo => tipoKey.startsWith(`${vTipo} -`) || tipoKey === vTipo)
                           }
                         }
                         // Si visibleTipos está vacío, mostrar todos los tipoKeys disponibles
                         if (visibleTipos.size === 0) {
                           return true
                         }
-                        return visibleTipos.has(tipoKey)
+                        // Buscar si el inicio de tipoKey (que es "Tipo - Sensor") coincide con algún tipo en visibleTipos
+                        return Array.from(visibleTipos).some(vTipo => tipoKey.startsWith(`${vTipo} -`) || tipoKey === vTipo)
                       })
                       
                       const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
@@ -3732,38 +3427,42 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             tickLine={false}
                             tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                             domain={(() => {
-                              // Si hay valores min/max definidos, usarlos estrictamente como array fijo
-                              if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
-                                return [yAxisDomain.min, yAxisDomain.max]
-                              }
-                              if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
-                                // Si solo hay min, calcular max desde los datos
-                                const allValues: number[] = []
-                                finalChartData.forEach(point => {
-                                  Object.keys(point).forEach(key => {
-                                    if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
-                                      allValues.push(point[key])
-                                    }
+                              const calculatedDomain = (() => {
+                                // Si hay valores min/max definidos, usarlos estrictamente como array fijo
+                                if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                                  return [yAxisDomain.min, yAxisDomain.max]
+                                }
+                                if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
+                                  // Si solo hay min, calcular max desde los datos
+                                  const allValues: number[] = []
+                                  finalChartData.forEach(point => {
+                                    Object.keys(point).forEach(key => {
+                                      if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                                        allValues.push(point[key])
+                                      }
+                                    })
                                   })
-                                })
-                                const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10
-                                return [yAxisDomain.min, dataMax]
-                              }
-                              if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
-                                // Si solo hay max, calcular min desde los datos
-                                const allValues: number[] = []
-                                finalChartData.forEach(point => {
-                                  Object.keys(point).forEach(key => {
-                                    if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
-                                      allValues.push(point[key])
-                                    }
+                                  const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10
+                                  return [yAxisDomain.min, dataMax]
+                                }
+                                if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                                  // Si solo hay max, calcular min desde los datos
+                                  const allValues: number[] = []
+                                  finalChartData.forEach(point => {
+                                    Object.keys(point).forEach(key => {
+                                      if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                                        allValues.push(point[key])
+                                      }
+                                    })
                                   })
-                                })
-                                const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10
-                                return [dataMin, yAxisDomain.max]
-                              }
-                              // Si no hay límites, usar función para calcular desde datos
-                              return ([dataMin, dataMax]: [number, number]) => [dataMin, dataMax]
+                                  const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10
+                                  return [dataMin, yAxisDomain.max]
+                                }
+                                // Si no hay límites, usar auto
+                                return ['auto', 'auto']
+                              })();
+                              console.log('[ModernDashboard] YAxis Domain:', calculatedDomain, 'yAxisDomain state:', yAxisDomain);
+                              return calculatedDomain;
                             })()}
                             allowDataOverflow={false}
                             allowDecimals={true}
@@ -3864,7 +3563,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                           return <circle key={`dot-${tipoKey}-${props.index}`} cx={props.cx} cy={props.cy} r={4} fill={fillColor} />
                                         }}
                                         activeDot={{ r: 6, fill: strokeColor }}
-                                        connectNulls={false}
+                                        connectNulls={true}
                                         isAnimationActive={true}
                                         animationDuration={300}
                                       />
@@ -3885,7 +3584,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   comparisonKeys
                                     .filter(compKey => {
                                       const originalKey = compKey.replace('comp_', '')
-                                      return visibleTipos.has(originalKey)
+                                      // Buscar si el inicio de originalKey coincide con algún tipo en visibleTipos
+                                      return Array.from(visibleTipos).some(vTipo => originalKey.startsWith(`${vTipo} -`) || originalKey === vTipo)
                                     })
                                     .map((compKey, index) => {
                                       const originalKey = compKey.replace('comp_', '')
@@ -3913,7 +3613,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                             return <circle key={`dot-comp-${compKey}-${props.index}`} cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
                                           }}
                                           activeDot={{ r: 5, fill: strokeColor }}
-                                          connectNulls={false}
+                                          connectNulls={true}
                                           isAnimationActive={true}
                                           animationDuration={300}
                                         />
@@ -3958,17 +3658,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               const isComparison = name.startsWith('comp_')
                               let displayName: string
                               if (isComparison) {
-                                displayName = `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comparación'})`
+                                displayName = `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comp.'})`
                               } else {
-                                // Cuando hay comparación, también mostrar el nombre del nodo original
                                 displayName = comparisonNode 
-                                  ? `${name} (${selectedNode?.nodo || 'Nodo Original'})`
+                                  ? `${name} (${selectedNode?.nodo || 'Original'})`
                                   : name
                               }
                               return [
-                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                  {displayName}: {value ? value.toFixed(1) : '--'} {getTranslatedMetrics.find(m => m.dataKey === selectedDetailedMetric)?.unit}
-                              </span>
+                                <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
+                                  {displayName}: {value ? value.toFixed(1) : '--'}
+                                </span>
                               ]
                             }}
                             contentStyle={{
@@ -3992,14 +3691,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
                                     {selectedNode?.nodo || 'Nodo Original'}
                                   </div>
-                                  <div className="flex flex-wrap gap-3">
+                                  <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
                                     {tipoKeys.map((tipoKey, index) => (
                                       <div key={tipoKey} className="flex items-center gap-2">
                                         <div 
-                                          className="w-4 h-0.5" 
+                                          className="w-4 h-1 rounded-full" 
                                           style={{ backgroundColor: colors[index % colors.length] }}
                                         />
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
                                           {tipoKey}
                                         </span>
                                       </div>
@@ -4015,10 +3714,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
                                     {comparisonNode.nodo}
                                   </div>
-                                  <div className="flex flex-wrap gap-3">
+                                  <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
                                     {(() => {
-                                      // CRÍTICO: Solo verificar datos de comparación DESPUÉS de que se hayan cargado
-                                      // No mostrar mensaje mientras se está cargando
                                       if (loadingComparisonData) {
                                         return (
                                           <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
@@ -4027,22 +3724,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                         )
                                       }
                                       
-                                      // Verificar si hay algún dato de comparación
                                       const hasAnyComparisonData = tipoKeys.some((tipoKey) => {
                                         const compKey = `comp_${tipoKey}`
                                         return finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
                                       })
                                       
-                                      // Si no hay datos de comparación DESPUÉS de cargar, mostrar mensaje
                                       if (!hasAnyComparisonData) {
                                         return (
                                           <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
-                                            El nodo no tiene datos en este intervalo
+                                            Sin datos en este intervalo
                                           </div>
                                         )
                                       }
                                       
-                                      // Si hay datos, mostrar las líneas de comparación
                                       return tipoKeys.map((tipoKey, index) => {
                                         const compKey = `comp_${tipoKey}`
                                         const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
@@ -4051,10 +3745,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                         return (
                                           <div key={compKey} className="flex items-center gap-2">
                                             <div 
-                                              className="w-4 h-0.5 border-dashed border-t-2" 
-                                              style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
+                                              className="w-4 h-1 rounded-full border border-dashed" 
+                                              style={{ borderColor: comparisonColors[index % comparisonColors.length], backgroundColor: 'transparent' }}
                                             />
-                                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
+                                            <span className="text-xs text-indigo-400 font-mono font-bold">
                                               {tipoKey}
                                             </span>
                                           </div>
