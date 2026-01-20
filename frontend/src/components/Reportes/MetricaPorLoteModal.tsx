@@ -1056,15 +1056,27 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     const allMetrics: MetricConfig[] = [];
     const processedIds = new Set<number>();
 
-    // 1. Agregar métricas estándar si están en availableMetricIds
-    getTranslatedMetrics().forEach(m => {
-      if (availableMetricIds.has(m.id)) {
-        allMetrics.push(m);
-        processedIds.add(m.id);
+    // SEGUIR EL ORDEN DE metricas (catálogo) para que coincida con el combobox
+    metricas.forEach(m => {
+      if (availableMetricIds.has(m.metricaid)) {
+        // Buscar si es una métrica estándar
+        const standardMetric = getTranslatedMetrics().find(sm => sm.id === m.metricaid);
+        
+        if (standardMetric) {
+          allMetrics.push(standardMetric);
+        } else {
+          allMetrics.push({
+            id: m.metricaid,
+            dataKey: `metrica_${m.metricaid}`,
+            title: m.metrica,
+            unit: m.unidad || ''
+          });
+        }
+        processedIds.add(m.metricaid);
       }
     });
 
-    // 2. Agregar la métrica inicial si no se ha procesado aún
+    // Agregar la métrica inicial si por alguna razón no estaba en el catálogo o en availableMetricIds (seguridad)
     if (initialMetricaId && !processedIds.has(initialMetricaId)) {
       const metricInfo = metricas.find(m => m.metricaid === initialMetricaId);
       const title = initialMetricaNombre || metricInfo?.metrica || `Métrica ${initialMetricaId}`;
@@ -1086,23 +1098,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       processedIds.add(initialMetricaId);
     }
 
-    // 3. Agregar CUALQUIER otra métrica encontrada en availableMetricIds
-    availableMetricIds.forEach(id => {
-      if (!processedIds.has(id)) {
-        const metricInfo = metricas.find(m => m.metricaid === id);
-        if (metricInfo) {
-          allMetrics.push({
-            id: id,
-            dataKey: `metrica_${id}`,
-            title: metricInfo.metrica,
-            unit: metricInfo.unidad || ''
-          });
-          processedIds.add(id);
-        }
-      }
-    });
-
-    return allMetrics.sort((a, b) => a.title.localeCompare(b.title));
+    return allMetrics;
   }, [metricas, availableMetricIds, initialMetricaId, initialMetricaNombre]);
 
   // Asegurar que la métrica seleccionada esté disponible
@@ -1447,10 +1443,10 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }
                         }}
                         disabled={loadingComparisonData}
-                        className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar"
+                        className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar-blue"
                         style={{
                           scrollbarWidth: 'thin',
-                          scrollbarColor: '#22c55e #d1d5db'
+                          scrollbarColor: '#3b82f6 #d1d5db'
                         }}
                       >
                         <option value="">Ninguno</option>

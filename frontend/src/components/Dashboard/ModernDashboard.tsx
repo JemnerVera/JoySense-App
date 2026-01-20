@@ -1177,14 +1177,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // 1. Obtener tipos del nodo principal
     metricMediciones.forEach(m => {
-      const sensorId = m.localizacion?.sensorid || m.sensorid
-      const sensorInfo = sensores.find(s => s.sensorid === sensorId)
-      const tipoId = sensorInfo?.tipoid || m.tipoid
-      const tipoInfo = tipos.find(t => t.tipoid === tipoId)
-      
-      if (tipoInfo) {
-        tiposDisponibles.add(`main:${tipoInfo.tipo}`)
-      }
+      const label = getSeriesLabel(m)
+      // Extraer solo la parte del sensor: "Ubicación (Sensor)" -> "Sensor"
+      const sensorLabel = label.match(/\(([^)]+)\)/)?.[1] || label
+      tiposDisponibles.add(`main:${sensorLabel}`)
     })
     
     // 2. Obtener tipos del nodo de comparación
@@ -1216,22 +1212,27 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       
       comparisonMetricMediciones.forEach(m => {
-        const sensorId = m.localizacion?.sensorid || m.sensorid
-        const sensorInfo = sensores.find(s => s.sensorid === sensorId)
-        const tipoId = sensorInfo?.tipoid || m.tipoid
-        const tipoInfo = tipos.find(t => t.tipoid === tipoId)
-        
-        if (tipoInfo) {
-          tiposDisponibles.add(`comp:${tipoInfo.tipo}`)
-        }
+        const label = getSeriesLabel(m)
+        const sensorLabel = label.match(/\(([^)]+)\)/)?.[1] || label
+        tiposDisponibles.add(`comp:${sensorLabel}`)
       })
     }
     
     // Si visibleTipos está vacío o no contiene todos los tipos actuales, inicializar
-    if (visibleTipos.size === 0 || !Array.from(tiposDisponibles).every(tipo => visibleTipos.has(tipo))) {
-      setVisibleTipos(new Set(tiposDisponibles))
-    }
-  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos, sensores])
+    setVisibleTipos(prev => {
+      const newVisible = new Set(prev)
+      let changed = false
+      
+      tiposDisponibles.forEach(tipo => {
+        if (!newVisible.has(tipo)) {
+          newVisible.add(tipo)
+          changed = true
+        }
+      })
+      
+      return changed ? newVisible : prev
+    })
+  }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos, sensores, getSeriesLabel])
 
   // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
   useEffect(() => {
@@ -3361,8 +3362,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       const mainKeys = allKeys.filter(k => !k.startsWith('comp_'))
                       const compKeys = allKeys.filter(k => k.startsWith('comp_'))
                       
-                      // Filtrar mainKeys por umbrales y visibilidad
-                      let filteredMainKeys = mainKeys
+                      // 1. Filtrar mainKeys solo por umbrales (para la leyenda)
+                      let legendMainKeys = mainKeys
                       if (umbralAplicado && umbralNodoSeleccionado) {
                         const tiposValidos = umbralTiposSeleccionados.length > 0 
                           ? umbralTiposSeleccionados 
@@ -3371,14 +3372,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         if (tiposValidos.length > 0) {
                           const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
                           const nombresTipos = tiposSeleccionados.map(t => t.tipo)
-                          filteredMainKeys = mainKeys.filter(key => 
+                          legendMainKeys = mainKeys.filter(key => 
                             nombresTipos.some(vTipo => key.includes(`(${vTipo}`) || key.startsWith(`${vTipo} -`) || key === vTipo)
                           )
                         }
                       }
-                      
-                      // Filtrar por visibilidad (sidebar)
-                      filteredMainKeys = filteredMainKeys.filter(key => {
+
+                      // 2. Filtrar legendMainKeys por visibilidad (para las LÍNEAS del gráfico)
+                      const filteredMainKeys = legendMainKeys.filter(key => {
                         if (visibleTipos.size === 0) return true
                         return Array.from(visibleTipos).some(vKey => {
                           if (!vKey.startsWith('main:')) return false
@@ -3387,7 +3388,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         })
                       })
                       
-                      // Filtrar compKeys por visibilidad
+                      // 3. Filtrar compKeys por visibilidad (para las LÍNEAS del gráfico)
                       const filteredCompKeys = compKeys.filter(key => {
                         if (visibleTipos.size === 0) return true
                         const originalKey = key.replace('comp_', '')
@@ -3640,8 +3641,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </LineChart>
                       </ResponsiveContainer>
                           </div>
-                          {/* Leyenda de colores por nodo cuando hay comparación */}
-                          {comparisonNode && (
+                          {/* Leyenda con checkboxes - siempre visible cuando hay datos */}
+                          {finalChartData.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
                               <div className="flex flex-wrap items-center gap-6 justify-center">
                                 {/* Leyenda del nodo original */}
@@ -3650,13 +3651,28 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                     {selectedNode?.nodo || 'Nodo Original'}
                                   </div>
                                   <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
-                                    {filteredMainKeys.map((tipoKey) => {
+                                    {legendMainKeys.map((tipoKey) => {
                                       const originalIndex = mainKeys.indexOf(tipoKey)
                                       // Simplificar la etiqueta para la leyenda: "Ubicación (Tipo)" -> "Tipo"
                                       const simplifiedLabel = tipoKey.match(/\(([^)]+)\)/)?.[1] || tipoKey
+                                      const isVisible = visibleTipos.has(`main:${simplifiedLabel}`)
                                       
                                       return (
                                         <div key={tipoKey} className="flex items-center gap-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={isVisible}
+                                            onChange={(e) => {
+                                              const newVisible = new Set(visibleTipos)
+                                              if (e.target.checked) {
+                                                newVisible.add(`main:${simplifiedLabel}`)
+                                              } else {
+                                                newVisible.delete(`main:${simplifiedLabel}`)
+                                              }
+                                              setVisibleTipos(newVisible)
+                                            }}
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                          />
                                           <div 
                                             className="w-4 h-1 rounded-full" 
                                             style={{ backgroundColor: colors[originalIndex % colors.length] }}
@@ -3670,56 +3686,73 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   </div>
                                 </div>
                                 
-                                {/* Separador */}
-                                <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>
+                                {/* Separador (solo si hay comparación) */}
+                                {comparisonNode && <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>}
                                 
                                 {/* Leyenda del nodo de comparación */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
-                                    {comparisonNode.nodo}
-                                  </div>
-                                  <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
-                                    {(() => {
-                                      if (loadingComparisonData) {
-                                        return (
-                                          <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
-                                            Cargando datos de comparación...
-                                          </div>
-                                        )
-                                      }
-                                      
-                                      if (filteredCompKeys.length === 0) {
-                                        return (
-                                          <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
-                                            {compKeys.length > 0 ? 'Oculto por filtros' : 'Sin datos en este intervalo'}
-                                          </div>
-                                        )
-                                      }
-                                      
-                                      return filteredCompKeys.map((compKey) => {
-                                        const originalIndex = compKeys.indexOf(compKey)
-                                        const originalKey = compKey.replace('comp_', '')
-                                        // Simplificar la etiqueta para la leyenda: "Ubicación (Tipo)" -> "Tipo"
-                                        const simplifiedLabel = originalKey.match(/\(([^)]+)\)/)?.[1] || originalKey
+                                {comparisonNode && (
+                                  <div className="flex flex-col gap-2">
+                                    <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
+                                      {comparisonNode.nodo}
+                                    </div>
+                                    <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
+                                      {(() => {
+                                        if (loadingComparisonData) {
+                                          return (
+                                            <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
+                                              Cargando datos de comparación...
+                                            </div>
+                                          )
+                                        }
+                                        
+                                        if (filteredCompKeys.length === 0 && compKeys.length === 0) {
+                                          return (
+                                            <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
+                                              Sin datos en este intervalo
+                                            </div>
+                                          )
+                                        }
+                                        
+                                        return compKeys.map((compKey) => {
+                                          const originalIndex = compKeys.indexOf(compKey)
+                                          const originalKey = compKey.replace('comp_', '')
+                                          // Simplificar la etiqueta para la leyenda: "Ubicación (Tipo)" -> "Tipo"
+                                          const simplifiedLabel = originalKey.match(/\(([^)]+)\)/)?.[1] || originalKey
+                                          const isVisible = visibleTipos.has(`comp:${simplifiedLabel}`)
 
-                                        return (
-                                          <div key={compKey} className="flex items-center gap-2">
-                                            <div 
-                                              className="w-4 h-1 rounded-full border border-dashed" 
-                                              style={{ borderColor: comparisonColors[originalIndex % comparisonColors.length], backgroundColor: 'transparent' }}
-                                            />
-                                            <span className="text-xs text-indigo-400 font-mono font-bold">
-                                              {simplifiedLabel}
-                                            </span>
-                                          </div>
-                                        )
-                                      })
-                                    })()}
+                                          return (
+                                            <div key={compKey} className="flex items-center gap-2">
+                                              <input
+                                                type="checkbox"
+                                                checked={isVisible}
+                                                onChange={(e) => {
+                                                  const newVisible = new Set(visibleTipos)
+                                                  if (e.target.checked) {
+                                                    newVisible.add(`comp:${simplifiedLabel}`)
+                                                  } else {
+                                                    newVisible.delete(`comp:${simplifiedLabel}`)
+                                                  }
+                                                  setVisibleTipos(newVisible)
+                                                }}
+                                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                              />
+                                              <div 
+                                                className="w-4 h-1 rounded-full border border-dashed" 
+                                                style={{ borderColor: comparisonColors[originalIndex % comparisonColors.length], backgroundColor: 'transparent' }}
+                                              />
+                                              <span className="text-xs text-indigo-400 font-mono font-bold">
+                                                {simplifiedLabel}
+                                              </span>
+                                            </div>
+                                          )
+                                        })
+                                      })()}
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
-                    </div>
-                    )}
+                            </div>
+                          )}
                         </>
                       );
                     })()}

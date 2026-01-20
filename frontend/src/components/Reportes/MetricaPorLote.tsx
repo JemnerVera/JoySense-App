@@ -391,7 +391,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
               </svg>
             </button>
             {isFundoDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar-blue">
                 {/* Opción "Seleccionar todos" */}
                 <button
                   onClick={handleSelectAllFundos}
@@ -451,7 +451,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
               </svg>
             </button>
             {isMetricaDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto dashboard-scrollbar-blue">
                 {metricas.map((metrica) => (
                   <button
                     key={metrica.metricaid}

@@ -1685,7 +1685,7 @@ const AppContentInternal: React.FC<{
     } else if (activeTab === 'alertas' || activeTab?.startsWith('alertas-')) {
       return 'theme-red';
     } else if (activeTab === 'reportes' || activeTab?.startsWith('reportes-')) {
-      return 'theme-brown';
+      return 'theme-gray';
     } else {
       // Por defecto
       return 'theme-gray';
