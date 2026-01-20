@@ -55,7 +55,7 @@ router.get('/test-db', async (req, res) => {
   
   // Test 0: Identidad Real en la DB
   try {
-    const { data, error } = await supabase.rpc('fn_obtener_diagnostico_sesion');
+    const { data, error } = await supabase.schema('joysense').rpc('fn_obtener_diagnostico_sesion');
     if (error) {
       // Intento manual si la función no existe
       const { data: qData, error: qError } = await supabase.from('usuario').select('login').limit(1);

@@ -231,6 +231,7 @@ router.post('/:table', async (req, res) => {
       try {
         // Verificar qué devuelve auth.uid() en una query simple
         const { data: authUidCheck, error: authUidError } = await userSupabase
+          .schema('joysense')
           .rpc('fn_obtener_auth_uid')
           .single();
         

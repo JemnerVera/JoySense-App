@@ -1290,6 +1290,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar entidades, ubicaciones, métricas, tipos y sensores
   useEffect(() => {
+    console.log('[ModernDashboard] useEffect: Iniciando carga de metadatos iniciales...');
     loadEntidades()
     loadUbicaciones()
     loadMetricas()
@@ -1298,42 +1299,50 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [])
 
   const loadEntidades = async () => {
+    console.log('[ModernDashboard] loadEntidades: Iniciando...');
     try {
       const data = await JoySenseService.getEntidades()
+      console.log('[ModernDashboard] loadEntidades: Respuesta recibida:', { count: data?.length || 0, data });
       setEntidades(data)
     } catch (err) {
-      console.error("Error loading entidades:", err)
+      console.error("[ModernDashboard] loadEntidades: Error:", err)
     }
   }
 
   const loadUbicaciones = async () => {
+    console.log('[ModernDashboard] loadUbicaciones: Iniciando...');
     try {
       const data = await JoySenseService.getUbicaciones()
+      console.log('[ModernDashboard] loadUbicaciones: Respuesta recibida:', { count: data?.length || 0, data });
       setUbicaciones(data)
     } catch (err) {
-      console.error("Error loading ubicaciones:", err)
+      console.error("[ModernDashboard] loadUbicaciones: Error:", err)
     }
   }
 
   const loadMetricas = async () => {
+    console.log('[ModernDashboard] loadMetricas: Iniciando...');
     try {
       const data = await JoySenseService.getMetricas()
+      console.log('[ModernDashboard] loadMetricas: Respuesta recibida:', { count: data?.length || 0, data });
       setMetricas(Array.isArray(data) ? data : [])
       if (Array.isArray(data) && data.length > 0) {
         setSelectedMetrica(data[0].metricaid)
       }
     } catch (err) {
-      console.error("Error loading metricas:", err)
+      console.error("[ModernDashboard] loadMetricas: Error:", err)
     }
   }
 
   const loadTipos = async () => {
+    console.log('[ModernDashboard] loadTipos: Iniciando...');
     try {
       const data = await JoySenseService.getTipos()
+      console.log('[ModernDashboard] loadTipos: Respuesta recibida:', { count: data?.length || 0, data });
       setTipos(Array.isArray(data) ? data : [])
       setTiposDisponibles(Array.isArray(data) ? data : [])
     } catch (err) {
-      console.error("Error loading tipos:", err)
+      console.error("[ModernDashboard] loadTipos: Error:", err)
     }
   }
 
