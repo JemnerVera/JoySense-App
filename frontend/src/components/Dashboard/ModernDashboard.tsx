@@ -298,7 +298,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [comparisonNode, setComparisonNode] = useState<any>(null) // Nodo para comparación
   const [comparisonMediciones, setComparisonMediciones] = useState<MedicionData[]>([]) // Mediciones del nodo de comparación
   const [loadingComparisonData, setLoadingComparisonData] = useState(false) // Loading para datos de comparación
-  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null) // Recomendaciones de umbrales por nodo
+  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [nodeId: string]: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null) // Recomendaciones de umbrales por nodo
   const [showThresholdModal, setShowThresholdModal] = useState(false) // Modal para mostrar recomendaciones
   const [availableNodes, setAvailableNodes] = useState<any[]>([]) // Lista de nodos disponibles para comparación
   const [localizacionesPorNodo, setLocalizacionesPorNodo] = useState<Map<number, string[]>>(new Map()) // Localizaciones por nodo
@@ -984,7 +984,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
     
     // Función auxiliar para calcular recomendaciones de un conjunto de mediciones
-    const calculateRecommendations = (medicionesData: any[]): { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } => {
+    const calculateRecommendations = (medicionesData: any[]): { [label: string]: { min: number; max: number; avg: number; stdDev: number } } => {
       // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
       const filteredMediciones = medicionesData.filter(m => {
         const medicionDate = new Date(m.fecha)
@@ -1021,31 +1021,24 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return {}
       }
 
-      // Agrupar por tipo de sensor
-      const medicionesPorTipo: { [tipoid: number]: number[] } = {}
+      // Agrupar por etiqueta de sensor (como en MetricaPorLoteModal)
+      const medicionesPorLabel: { [label: string]: number[] } = {}
       
       filteredMediciones.forEach(m => {
-        // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
-        const tipoid = m.tipoid ?? m.localizacion?.sensor?.tipoid ?? 0
-        
-        if (!tipoid || tipoid === 0) {
-          return
-        }
-        
-        if (!medicionesPorTipo[tipoid]) {
-          medicionesPorTipo[tipoid] = []
+        const label = getSeriesLabel(m)
+        if (!medicionesPorLabel[label]) {
+          medicionesPorLabel[label] = []
         }
         if (m.medicion != null && !isNaN(m.medicion)) {
-          medicionesPorTipo[tipoid].push(m.medicion)
+          medicionesPorLabel[label].push(m.medicion)
         }
       })
       
-      // Calcular estadísticas y recomendar umbrales para cada tipo
-      const recommendations: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } = {}
+      // Calcular estadísticas y recomendar umbrales para cada etiqueta
+      const recommendations: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } = {}
       
-      Object.keys(medicionesPorTipo).forEach(tipoidStr => {
-        const tipoid = parseInt(tipoidStr)
-        const valores = medicionesPorTipo[tipoid]
+      Object.keys(medicionesPorLabel).forEach(label => {
+        const valores = medicionesPorLabel[label]
         
         if (valores.length === 0) return
         
@@ -1064,7 +1057,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const recommendedMin = Math.max(0, p5 - margin) // No permitir valores negativos
         const recommendedMax = p95 + margin
         
-        recommendations[tipoid] = {
+        recommendations[label] = {
           min: Math.round(recommendedMin * 100) / 100,
           max: Math.round(recommendedMax * 100) / 100,
           avg: Math.round(avg * 100) / 100,
@@ -1086,7 +1079,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return
     }
 
-    const allRecommendations: { [nodeId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } = {
+    const allRecommendations: { [nodeId: string]: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } } = {
       [`node_${selectedNode?.nodoid || 'main'}`]: mainNodeRecommendations
     }
 
@@ -3843,20 +3836,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
                           {nodeName}
                         </h3>
-                        {Object.keys(nodeRecommendations).map(tipoidStr => {
-                          const tipoid = parseInt(tipoidStr)
-                          const tipo = tipos.find(t => t.tipoid === tipoid)
-                          const rec = nodeRecommendations[tipoid]
+                        {Object.keys(nodeRecommendations).map(label => {
+                          const rec = nodeRecommendations[label]
                           
-                          if (!tipo || !rec) return null
+                          if (!rec) return null
                           
                           return (
                             <div
-                              key={`${nodeId}_${tipoid}`}
+                              key={`${nodeId}_${label}`}
                               className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
                             >
                               <h4 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
-                                {tipo.tipo}
+                                {label}
                               </h4>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
