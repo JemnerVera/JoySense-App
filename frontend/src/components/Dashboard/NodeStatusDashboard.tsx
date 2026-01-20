@@ -226,8 +226,8 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
           // Obtener localizaciones del nodo primero
           const localizacionesData = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
           const localizacionIds = (localizacionesData || []).map((l: any) => l.localizacionid);
-          // Extraer solo el nombre de la localización (antes del guion si existe)
-          const nombresLocalizaciones = localizacionesData
+          // Extraer solo el nombre de la localización (antes del guion si existe) y eliminar duplicados
+          const nombresLocalizaciones = Array.from(new Set(localizacionesData
             .map((loc: any) => {
               const nombreCompleto = loc.localizacion || '';
               // Si contiene un guion, tomar solo la parte antes del guion
@@ -236,7 +236,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                 : nombreCompleto.trim();
               return nombreLimpio;
             })
-            .filter((n: string) => n);
+            .filter((n: string) => n)));
           setLocalizacionesNodo(nombresLocalizaciones);
           
           if (localizacionIds.length > 0) {
