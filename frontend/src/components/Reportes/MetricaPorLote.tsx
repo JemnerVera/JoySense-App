@@ -280,9 +280,14 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
       // Crear array de datos con valores por tipo
       const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => {
+        // Encontrar TODOS los IDs de localización que tengan el mismo nombre en este fundo/ubicación
+        const allIdsForThisLoteName = localizacionesFiltradas
+          .filter((loc: any) => loc.localizacion === data.localizacion)
+          .map((loc: any) => loc.localizacionid);
+
         return {
           localizacionid: data.localizacionIds[0], // Usamos el primer ID para compatibilidad
-          localizacionids: data.localizacionIds,
+          localizacionids: allIdsForThisLoteName.length > 0 ? allIdsForThisLoteName : data.localizacionIds,
           localizacion: data.localizacion,
           valoresPorSensor: data.valoresPorSensor,
           medicionCount: data.medicionCount
