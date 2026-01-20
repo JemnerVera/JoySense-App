@@ -56,13 +56,19 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const loadNodes = async () => {
     setLoading(true)
     setError(null)
+    console.log('[NodeSelector] loadNodes: Iniciando carga de nodos con localización...');
     try {
       const data = await JoySenseService.getNodosConLocalizacion()
+      console.log('[NodeSelector] loadNodes: Respuesta recibida:', {
+        count: data?.length || 0,
+        sample: data?.length > 0 ? data[0] : 'null',
+        data: data
+      });
       // Los datos ya vienen procesados del backend
       setNodes(data || [])
     } catch (err) {
       setError('Error al cargar nodos')
-      console.error('Error loading nodes:', err)
+      console.error('[NodeSelector] loadNodes: Error crítico cargando nodos:', err)
     } finally {
       setLoading(false)
     }

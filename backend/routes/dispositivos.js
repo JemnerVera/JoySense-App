@@ -485,9 +485,20 @@ router.get('/localizacion', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Usar Supabase API con joins anidados profundos
-    // NOTA: No podemos hacer join directo a sensor ni a metrica desde localizacion
-    // La relación con metrica es a través de metricasensor, y sensor necesita obtenerse por separado
+    // SI HAY NODOID: Usar la nueva función RPC optimizada para saltar RLS jerárquico
+    if (nodoid) {
+      const { data, error } = await userSupabase
+        .schema('joysense')
+        .rpc('fn_get_localizaciones_detalle', { p_nodoid: parseInt(nodoid) });
+
+      if (error) {
+        logger.error('Error en RPC fn_get_localizaciones_detalle:', error);
+        throw error;
+      }
+      return res.json(data || []);
+    }
+    
+    // SI NO HAY NODOID: Mantener el flujo original (por ahora para otros usos)
     let query = userSupabase
       .schema(dbSchema)
       .from('localizacion')
@@ -783,159 +794,20 @@ router.get('/nodos-con-localizacion', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Verificar si el usuario está autenticado
-    if (req.supabase) {
-      const { data: { user }, error: userError } = await req.supabase.auth.getUser();
-      if (userError) {
-        // No debug log
-      }
-    }
-    
-    // Primero, verificar si hay localizaciones sin filtros
-    const { data: allLocalizaciones, error: allError } = await userSupabase
-      .schema(dbSchema)
-      .from('localizacion')
-      .select('localizacionid, statusid, nodoid')
-      .limit(10);
-    
-    if (allError) {
-      // No debug log
-    }
-    
-    // También probar con una consulta más simple a otra tabla para verificar conectividad
-    const { data: nodosTest, error: nodosError } = await userSupabase
-      .schema(dbSchema)
-      .from('nodo')
-      .select('nodoid, nodo')
-      .limit(5);
-    
-    if (nodosError) {
-      // No debug log
-    }
-    
-    // Paso 1: Obtener localizaciones con nodos y coordenadas
-    // Nota: localizacion tiene FK compuesta (sensorid, metricaid) -> metricasensor, no directa a metrica
-    const { data: localizaciones, error: locError } = await userSupabase
-      .schema(dbSchema)
-      .from('localizacion')
-      .select(`
-        localizacionid,
-        localizacion,
-        nodoid,
-        sensorid,
-        metricaid,
-        nodo:nodoid(
-          nodoid,
-          nodo,
-          latitud,
-          longitud,
-          referencia,
-          ubicacionid,
-          ubicacion:ubicacionid(
-            ubicacionid,
-            ubicacion,
-            fundoid,
-            fundo:fundoid(
-              fundoid,
-              fundo,
-              fundoabrev,
-              empresaid,
-              empresa:empresaid(
-                empresaid,
-                empresa,
-                empresabrev,
-                paisid,
-                pais:paisid(
-                  paisid,
-                  pais,
-                  paisabrev
-                )
-              )
-            )
-          )
-        )
-      `)
-      .eq('statusid', 1)
-      .limit(parseInt(limit));
-    
-    // Filtrar localizaciones que tengan nodo con coordenadas
-    const filteredLocalizaciones = (localizaciones || []).filter(l => {
-      const nodo = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
-      return nodo && nodo.latitud != null && nodo.longitud != null;
-    });
+    // Llamar a la nueva función RPC que salta el RLS profundo y aplica permisos manuales
+    // Esta función consolida localizacion, nodo, ubicacion, fundo, empresa, pais, metrica y entidad
+    // IMPORTANTE: Especificar el esquema 'joysense' explícitamente
+    const { data, error: rpcError } = await userSupabase
+      .schema('joysense')
+      .rpc('fn_get_nodos_con_localizacion_dashboard', { p_limit: parseInt(limit) });
 
-    if (locError) {
-      throw locError;
+    if (rpcError) {
+      logger.error('Error en RPC fn_get_nodos_con_localizacion_dashboard:', rpcError);
+      throw rpcError;
     }
     
-    // Paso 1.5: Obtener métricas por separado (ya que la relación es a través de metricasensor)
-    const metricaIds = [...new Set(filteredLocalizaciones.map(l => l.metricaid).filter(id => id != null))];
-    let metricasMap = new Map();
-    if (metricaIds.length > 0) {
-      const { data: metricas, error: metError } = await userSupabase
-        .schema(dbSchema)
-        .from('metrica')
-        .select('metricaid, metrica, unidad')
-        .in('metricaid', metricaIds)
-        .eq('statusid', 1);
-      
-      if (metError) throw metError;
-      
-      (metricas || []).forEach(m => {
-        metricasMap.set(m.metricaid, m);
-      });
-    }
-    
-    // Paso 2: Obtener entidades por localizacionid desde entidad_localizacion
-    const localizacionIds = filteredLocalizaciones.map(l => l.localizacionid);
-    
-    let entidadesMap = new Map();
-    if (localizacionIds.length > 0) {
-      const { data: entidadLocalizaciones, error: elError } = await userSupabase
-        .schema(dbSchema)
-        .from('entidad_localizacion')
-        .select(`
-          localizacionid,
-          entidad:entidadid(
-            entidadid,
-            entidad
-          )
-        `)
-        .in('localizacionid', localizacionIds)
-        .eq('statusid', 1);
-      
-      if (elError) throw elError;
-      
-      // Crear mapa de localizacionid -> entidad
-      (entidadLocalizaciones || []).forEach(el => {
-        const entidad = el.entidad ? (Array.isArray(el.entidad) ? el.entidad[0] : el.entidad) : null;
-        if (entidad) {
-          entidadesMap.set(el.localizacionid, entidad);
-        }
-      });
-    }
-    
-    // Paso 3: Combinar datos
-    const transformed = filteredLocalizaciones.map(l => {
-      const nodo = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
-      const metrica = metricasMap.get(l.metricaid) || null;
-      const entidad = entidadesMap.get(l.localizacionid) || null;
-      
-      return {
-        localizacionid: l.localizacionid,
-        localizacion: l.localizacion,
-        latitud: nodo?.latitud,
-        longitud: nodo?.longitud,
-        referencia: nodo?.referencia,
-        nodo: nodo ? {
-          ...nodo,
-          entidad: entidad
-        } : null,
-        metrica: metrica
-      };
-    });
-    
-    res.json(transformed);
+    // Los datos ya vienen formateados correctamente desde la función RPC
+    res.json(data || []);
   } catch (error) {
     logger.error('Error en GET /nodos-con-localizacion:', error);
     res.status(500).json({ error: error.message });

@@ -154,36 +154,28 @@ router.get('/mediciones', async (req, res) => {
     // Aceptar tanto localizacionId como localizacionid para compatibilidad
     const localizacionId = req.query.localizacionId || req.query.localizacionid;
     
-    let locIds = [];
-    
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    
-    // Si hay nodoid, obtener localizaciones de ese nodo
-    if (nodoid) {
-      const { data: localizaciones, error: locError } = await userSupabase
-        .schema(dbSchema)
-        .from('localizacion')
-        .select('localizacionid')
-        .eq('nodoid', nodoid)
-        .eq('statusid', 1);
-      
-      if (locError) {
-        console.error(`[backend] Error fetching localizaciones for nodoid ${nodoid}:`, locError);
-        throw locError;
+
+    // SI HAY NODOID: Usar la nueva función RPC optimizada para el dashboard
+    if (nodoid && startDate && endDate) {
+      const { data, error } = await userSupabase
+        .schema('joysense')
+        .rpc('fn_get_mediciones_dashboard', {
+          p_nodoid: parseInt(nodoid),
+          p_start_date: startDate,
+          p_end_date: endDate,
+          p_limit: getAll ? 50000 : parseInt(limit)
+        });
+
+      if (error) {
+        logger.error('Error en RPC fn_get_mediciones_dashboard:', error);
+        throw error;
       }
-      
-      locIds = (localizaciones || []).map(l => l.localizacionid);
-      if (locIds.length === 0) {
-        // Log if any localizations exist at all for this node
-        const { data: anyLocs } = await userSupabase
-          .schema(dbSchema)
-          .from('localizacion')
-          .select('localizacionid, statusid')
-          .eq('nodoid', nodoid);
-        return res.json([]);
-      }
+      return res.json(data || []);
     }
+    
+    let locIds = [];
     
     // Usar Supabase API con joins anidados
     // NOTA: localizacion no tiene FK directa a metrica, la relación es a través de metricasensor
