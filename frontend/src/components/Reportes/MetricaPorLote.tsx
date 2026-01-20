@@ -56,40 +56,13 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         setTipos(tiposData || []);
         setSensores(sensoresData || []);
         
-        // Obtener la última fecha con datos disponible
-        try {
-          // Obtener la última medición disponible (usar cualquier métrica)
-          const ultimasMediciones = await JoySenseService.getMediciones({
-            limit: 1,
-            getAll: false
-          });
-          
-          // Verificar que sea un array y tenga elementos
-          if (Array.isArray(ultimasMediciones) && ultimasMediciones.length > 0 && ultimasMediciones[0]?.fecha) {
-            const ultimaFecha = new Date(ultimasMediciones[0].fecha);
-            const fechaAnterior = new Date(ultimaFecha);
-            fechaAnterior.setDate(ultimaFecha.getDate() - 1);
-            
-            setEndDate(ultimaFecha.toISOString().split('T')[0]);
-            setStartDate(fechaAnterior.toISOString().split('T')[0]);
-          } else {
-            // Fallback: usar hoy y ayer
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            
-            setEndDate(today.toISOString().split('T')[0]);
-            setStartDate(yesterday.toISOString().split('T')[0]);
-          }
-        } catch (err) {
-          // Fallback: usar hoy y ayer si hay error
-          const today = new Date();
-          const yesterday = new Date(today);
-          yesterday.setDate(today.getDate() - 1);
-          
-          setEndDate(today.toISOString().split('T')[0]);
-          setStartDate(yesterday.toISOString().split('T')[0]);
-        }
+        // Establecer el rango de fechas: hoy y ayer
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        
+        setEndDate(today.toISOString().split('T')[0]);
+        setStartDate(yesterday.toISOString().split('T')[0]);
       } catch (err: any) {
         console.error('Error cargando datos iniciales:', err);
         setError('Error al cargar métricas y fundos');

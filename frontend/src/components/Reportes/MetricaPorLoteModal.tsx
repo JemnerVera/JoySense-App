@@ -192,8 +192,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     yAxisDomainFilter?: { min: number | null; max: number | null }
   ): ChartDataPoint[] => {
     // Determinar granularidad
-    const useHours = daysDiff <= 7;
-    const useDays = daysDiff > 30;
+    const useDays = daysDiff >= 2;
+    const useHours = !useDays && daysDiff <= 7;
 
     // Agrupar por fecha y tipo con granularidad adaptativa
     const dataByTimeAndLabel = new Map<string, { [label: string]: { sum: number; count: number; timestamp: number } }>();
@@ -212,10 +212,12 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         const hour = String(fechaObj.getHours()).padStart(2, '0');
         timeKey = `${day}/${month} ${hour}:00`;
       } else {
+        // Alta resolución (menos de un día): 15 min para detalle
         const day = String(fechaObj.getDate()).padStart(2, '0');
         const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
-        const hour = Math.floor(fechaObj.getHours() / 4) * 4;
-        timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`;
+        const hour = String(fechaObj.getHours()).padStart(2, '0');
+        const min = String(Math.floor(fechaObj.getMinutes() / 15) * 15).padStart(2, '0');
+        timeKey = `${day}/${month} ${hour}:${min}`;
       }
 
       if (!dataByTimeAndLabel.has(timeKey)) {
@@ -1422,7 +1424,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
                   {/* Selector de lote para comparación */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 tracking-wider">Comparar con Lote:</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 tracking-wider">Comparar con Loc.:</label>
                     <div className="flex items-center gap-2">
                       <select
                         value={comparisonLote?.localizacionid || ''}
