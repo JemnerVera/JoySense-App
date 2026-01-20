@@ -323,7 +323,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
-    console.log('[ModernDashboard] loadMediciones started. selectedNode:', selectedNode?.nodoid, 'filters:', filters);
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
@@ -410,7 +409,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
             
             if (dataArray.length > 0) {
-              console.log(`[ModernDashboard] loadMediciones: Found ${dataArray.length} mediciones in range ${range.label}`);
               allData = dataArray
               break
             }
@@ -681,8 +679,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones para el análisis detallado con rango de fechas específico
   const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
-    console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis started', { startDateStr, endDateStr });
-    
     if (!selectedNode) {
       console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: missing selectedNode');
       setLoadingDetailedData(false)
@@ -1179,19 +1175,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     const tiposDisponibles = new Set<string>()
     
+    // 1. Obtener tipos del nodo principal
     metricMediciones.forEach(m => {
-      // Obtener el tipo de sensor usando el estado global de sensores y tipos
       const sensorId = m.localizacion?.sensorid || m.sensorid
       const sensorInfo = sensores.find(s => s.sensorid === sensorId)
       const tipoId = sensorInfo?.tipoid || m.tipoid
       const tipoInfo = tipos.find(t => t.tipoid === tipoId)
       
       if (tipoInfo) {
-        tiposDisponibles.add(tipoInfo.tipo)
+        tiposDisponibles.add(`main:${tipoInfo.tipo}`)
       }
     })
     
-    // Si hay nodo de comparación, agregar también sus tipos
+    // 2. Obtener tipos del nodo de comparación
     if (comparisonNode && comparisonMediciones.length > 0) {
       const comparisonMetricMediciones = comparisonMediciones.filter(m => {
         const rawMetricName = m.localizacion?.metrica?.metrica || ''
@@ -1226,7 +1222,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const tipoInfo = tipos.find(t => t.tipoid === tipoId)
         
         if (tipoInfo) {
-          tiposDisponibles.add(tipoInfo.tipo)
+          tiposDisponibles.add(`comp:${tipoInfo.tipo}`)
         }
       })
     }
@@ -1475,16 +1471,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
-  const processChartData = (dataKey: string, useCustomRange: boolean = false) => {
+  const processChartData = (dataKey: string, useCustomRange: boolean = false, overrideGranularity?: { useDays: boolean, useHours: boolean }) => {
     const sourceMediciones = useCustomRange && detailedMediciones.length > 0 ? detailedMediciones : mediciones
     
-    console.log('[ModernDashboard] processChartData start:', { 
-      dataKey, 
-      useCustomRange, 
-      sourceMedicionesCount: sourceMediciones.length,
-      isUsingDetailedMediciones: useCustomRange && detailedMediciones.length > 0
-    });
-
     if (!sourceMediciones.length || !tipos.length || !selectedNode) return []
 
     // 1. Filtrar por Nodo y Métrica
@@ -1538,8 +1527,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // 3. Determinar Granularidad y Agrupar
     const hoursSpan = timeSpan / (1000 * 60 * 60)
     const daysSpan = hoursSpan / 24
-    let useDays = isDateRange && daysSpan > 7
-    let useHours = !useDays && hoursSpan >= 48
+    
+    let useDays = overrideGranularity ? overrideGranularity.useDays : (isDateRange && daysSpan > 7)
+    let useHours = overrideGranularity ? overrideGranularity.useHours : (!useDays && hoursSpan >= 48)
     
     console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, useDays, useHours });
 
@@ -1573,14 +1563,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     let groupedData = performGrouping(filteredMediciones, useDays, useHours)
     
-    // Fallback de resolución si hay muy pocos puntos
-    if (useDays && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
-      useDays = false; useHours = true;
-      groupedData = performGrouping(filteredMediciones, useDays, useHours)
-    }
-    if (useHours && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
-      useHours = false;
-      groupedData = performGrouping(filteredMediciones, useDays, useHours)
+    // Fallback de resolución si hay muy pocos puntos (solo si no hay override)
+    if (!overrideGranularity) {
+      if (useDays && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+        useDays = false; useHours = true;
+        groupedData = performGrouping(filteredMediciones, useDays, useHours)
+      }
+      if (useHours && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+        useHours = false;
+        groupedData = performGrouping(filteredMediciones, useDays, useHours)
+      }
     }
 
     // 4. Formatear para Recharts
@@ -2325,36 +2317,45 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     </div>
                   )}
                   
-                  {/* Leyenda de tipos de sensores */}
-                  {showDetailedAnalysis && selectedDetailedMetric && tipos.length > 0 && (() => {
-                    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
-                    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
-                    const tiposDisponiblesSet = new Set<string>()
-                    
-                    // Obtener tipos del nodo principal
-                    metricMediciones.forEach(m => {
-                      const tipo = tipos.find(t => t.tipoid === m.tipoid)
-                      if (tipo) {
-                        tiposDisponiblesSet.add(tipo.tipo)
-                      }
-                    })
-                    
-                    // Obtener tipos del nodo de comparación si existe
-                    if (comparisonNode && comparisonMediciones.length > 0) {
-                      const comparisonMetricMediciones = comparisonMediciones.filter(m => m.metricaid === metricId)
-                      comparisonMetricMediciones.forEach(m => {
-                        const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                    {(() => {
+                      const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+                      const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+                      const metricMediciones = dataSource.filter(m => m.metricaid === metricId)
+                      const tiposDisponiblesSet = new Set<string>()
+                      
+                      // Obtener tipos del nodo principal
+                      metricMediciones.forEach(m => {
+                        const tipoId = m.tipoid || m.localizacion?.sensor?.tipoid || m.localizacion?.sensor?.tipoid
+                        const tipo = tipos.find(t => t.tipoid === tipoId)
                         if (tipo) {
                           tiposDisponiblesSet.add(tipo.tipo)
+                        } else if (tipoId) {
+                          console.warn('[ModernDashboard] Legend: Tipo no encontrado para tipoId:', tipoId, 'en medicion:', m.medicionid);
                         }
                       })
-                    }
+                      
+                      // Obtener tipos del nodo de comparación si existe
+                      if (comparisonNode && comparisonMediciones.length > 0) {
+                        const comparisonMetricMediciones = comparisonMediciones.filter(m => m.metricaid === metricId)
+                        console.log('[ModernDashboard] Legend: comparisonMetricMediciones size:', comparisonMetricMediciones.length);
+                        
+                        comparisonMetricMediciones.forEach(m => {
+                          const tipoId = m.tipoid || m.localizacion?.sensor?.tipoid
+                          const tipo = tipos.find(t => t.tipoid === tipoId)
+                          if (tipo) {
+                            tiposDisponiblesSet.add(tipo.tipo)
+                          }
+                        })
+                      }
                     
                     const tiposArray = Array.from(tiposDisponiblesSet).sort()
+                    console.log('[ModernDashboard] Legend: Final tiposArray:', tiposArray);
+                    
                     const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                     const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
                     
                     if (tiposArray.length === 0) {
+                      console.log('[ModernDashboard] Legend: No hay tipos para mostrar');
                       return null
                     }
                     
@@ -2365,7 +2366,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         </div>
                         <div className="space-y-3">
                           {tiposArray.map((tipoNombre, index) => {
-                            const isVisible = visibleTipos.has(tipoNombre)
+                            const isVisible = visibleTipos.size === 0 || visibleTipos.has(tipoNombre)
                             const color = colors[index % colors.length]
                             const compColor = comparisonColors[index % comparisonColors.length]
                             
@@ -2374,7 +2375,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             // Verificar si este tipo existe en el nodo principal
                             const existsInMain = metricMediciones.some(m => {
-                              const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                              const tipoId = m.tipoid || m.localizacion?.sensor?.tipoid
+                              const tipo = tipos.find(t => t.tipoid === tipoId)
                               return tipo && tipo.tipo === tipoNombre
                             })
                             
@@ -2388,7 +2390,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             // Verificar si este tipo existe en el nodo de comparación
                             const existsInComparison = comparisonNode && comparisonMediciones.length > 0 && comparisonMediciones.some(m => {
-                              const tipo = tipos.find(t => t.tipoid === m.tipoid)
+                              const tipoId = m.tipoid || m.localizacion?.sensor?.tipoid
+                              const tipo = tipos.find(t => t.tipoid === tipoId)
                               return tipo && tipo.tipo === tipoNombre && m.metricaid === metricId
                             })
                             
@@ -2406,42 +2409,47 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             
                             return (
                               <div key={tipoNombre} className="space-y-1">
-                                {/* Checkbox y nombre del tipo de sensor */}
+                                {/* Nombre del tipo de sensor (sin checkbox global) */}
                                 <div className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={isVisible}
-                                    onChange={(e) => {
-                                      const newVisibleTipos = new Set(visibleTipos)
-                                      if (e.target.checked) {
-                                        newVisibleTipos.add(tipoNombre)
-                                      } else {
-                                        newVisibleTipos.delete(tipoNombre)
-                                      }
-                                      setVisibleTipos(newVisibleTipos)
-                                    }}
-                                    className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500"
-                                  />
-                                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 font-semibold">
+                                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-300 font-bold uppercase tracking-wider">
                                     {tipoNombre}
                                   </span>
                                 </div>
                                 
-                                {/* Nodos con este tipo, indentados */}
-                                {nodosConEsteTipo.map((nodoInfo, nodoIndex) => (
-                                  <div key={`${tipoNombre}-${nodoIndex}`} className="flex items-center space-x-2 pl-6">
-                                    <div 
-                                      className={`w-3 h-3 rounded-full flex-shrink-0 ${nodoInfo.isComparison ? 'border-2 border-dashed' : ''}`}
-                                      style={{ 
-                                        backgroundColor: nodoInfo.isComparison ? 'transparent' : nodoInfo.color,
-                                        borderColor: nodoInfo.isComparison ? nodoInfo.color : undefined
-                                      }}
-                                    />
-                                    <span className={`text-xs font-mono truncate ${nodoInfo.isComparison ? 'text-gray-500 dark:text-neutral-400' : 'text-gray-700 dark:text-neutral-300'}`}>
-                                      {nodoInfo.nodo}
-                                    </span>
-                                  </div>
-                                ))}
+                                {/* Nodos con este tipo, con sus propios checkboxes */}
+                                {nodosConEsteTipo.map((nodoInfo, nodoIndex) => {
+                                  const key = `${nodoInfo.isComparison ? 'comp' : 'main'}:${tipoNombre}`
+                                  const isVisible = visibleTipos.has(key)
+                                  
+                                  return (
+                                    <div key={`${tipoNombre}-${nodoIndex}`} className="flex items-center space-x-2 pl-4 py-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={isVisible}
+                                        onChange={(e) => {
+                                          const newVisibleTipos = new Set(visibleTipos)
+                                          if (e.target.checked) {
+                                            newVisibleTipos.add(key)
+                                          } else {
+                                            newVisibleTipos.delete(key)
+                                          }
+                                          setVisibleTipos(newVisibleTipos)
+                                        }}
+                                        className="w-3.5 h-3.5 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                      />
+                                      <div 
+                                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${nodoInfo.isComparison ? 'border-2 border-dashed' : ''}`}
+                                        style={{ 
+                                          backgroundColor: nodoInfo.isComparison ? 'transparent' : nodoInfo.color,
+                                          borderColor: nodoInfo.isComparison ? nodoInfo.color : undefined
+                                        }}
+                                      />
+                                      <span className={`text-xs font-mono truncate ${nodoInfo.isComparison ? 'text-indigo-500 dark:text-indigo-400 font-semibold' : 'text-gray-700 dark:text-neutral-300'}`}>
+                                        {nodoInfo.nodo}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
                               </div>
                             )
                           })}
@@ -3043,13 +3051,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
                       }
                       
-                      console.log('[ModernDashboard] Render IIFE: range:', { 
-                        detailedStartDate, 
-                        detailedEndDate,
-                        startDate: startDate.toISOString(),
-                        endDate: endDate.toISOString()
-                      });
-                      
                       const timeSpan = endDate.getTime() - startDate.getTime();
                       const hoursSpan = timeSpan / (1000 * 60 * 60);
                       const daysSpan = hoursSpan / 24;
@@ -3076,11 +3077,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         );
                       }
                       
-                      // Procesar datos principales
-                      // CRÍTICO: Siempre procesar datos del nodo principal primero
-                      const chartData = processChartData(selectedDetailedMetric, true);
-                      console.log('[ModernDashboard] Render IIFE: chartData count:', chartData.length);
-                      
+                      const granularity = { useDays, useHours };
+                      const chartData = processChartData(selectedDetailedMetric, true, granularity);
                       // Verificar que hay datos del nodo principal
                       if (chartData.length === 0) {
                         console.warn('⚠️ No hay datos del nodo principal para el rango seleccionado')
@@ -3102,15 +3100,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           return false
                         })
                         
+                        console.log('[ModernDashboard] processComparisonData: after metric filter:', metricMediciones.length);
                         if (!metricMediciones.length) return []
 
                         // 2. Ordenar y Filtrar por Rango
                         const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
                         const filteredMediciones = sortedMediciones.filter(m => {
-                          const d = new Date(m.fecha)
-                          return d >= startDate && d <= endDate
+                          const d = new Date(m.fecha).getTime()
+                          return d >= startDate.getTime() && d <= endDate.getTime()
                         })
                         
+                        console.log('[ModernDashboard] processComparisonData: after range filter:', filteredMediciones.length);
                         if (filteredMediciones.length === 0) return []
                         
                         const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter((id): id is number => id !== undefined && id !== null)))
@@ -3163,11 +3163,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         const locsConPocosPuntos = locsEnMediciones.filter(locid => (datosPorLoc[locid] || []).length <= 2)
                         if (locsConPocosPuntos.length === locsEnMediciones.length && locsEnMediciones.length > 0 && filteredMediciones.length >= 3) {
                           if (useDays) {
-                            useDays = false; useHours = true;
-                            datosPorLoc = performGrouping(filteredMediciones)
-                          } else if (useHours) {
-                            useHours = false; // useMinutes = true implicitly
-                            datosPorLoc = performGrouping(filteredMediciones)
+                            console.log('[ModernDashboard] processComparisonData: fallback to hours');
+                            // Nota: esto puede romper el alineamiento si el nodo principal no hizo fallback
+                            // useDays = false; useHours = true; // Evitamos modificar las variables de cierre para mantener consistencia
+                            // En su lugar, deberíamos usar lo que processChartData decidió.
                           }
                         }
 
@@ -3193,7 +3192,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
                         })
                         
-                        return allTimes.map(time => {
+                        const result = allTimes.map(time => {
                           const point: any = { time }
                           let hasAnyValue = false
                           locsEnMediciones.forEach(locid => {
@@ -3216,6 +3215,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           })
                           return hasAnyValue ? point : null
                         }).filter(p => p !== null)
+
+                        console.log('[ModernDashboard] processComparisonData: final data count:', result.length);
+                        return result
                       }
                       
                       let comparisonChartData: any[] = []
@@ -3302,11 +3304,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           Object.keys(p).some(k => k.startsWith('comp_'))
                         )
                         if (pointsWithComparison.length > 0) {
-                          console.log('✅ Datos combinados correctamente:', {
-                            totalPuntos: timeMap.size,
-                            puntosConComparacion: pointsWithComparison.length,
-                            muestra: pointsWithComparison[0]
-                          })
                         } else {
                           console.warn('⚠️ No se encontraron claves comp_ en los datos combinados', {
                             chartDataLength: chartData.length,
@@ -3335,8 +3332,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         // Si son horas (HH:MM), comparar directamente como string
                         return timeA.localeCompare(timeB)
                       })
-                      console.log('[ModernDashboard] Render IIFE: Final Chart Data (sorted/filtered):', finalChartData.length);
-                      
                       
                       // Solo mostrar "No hay datos" si NO está cargando y no hay datos
                       if (finalChartData.length === 0) {
@@ -3356,15 +3351,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       }
                       
                       // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
-                      // CRÍTICO: Obtener tipoKeys del nodo principal (chartData), NO de finalChartData
-                      // Esto asegura que siempre se muestren las líneas del nodo principal
-                      let tipoKeys = Array.from(
+                      // Obtener todas las claves disponibles en los datos
+                      const allKeys = Array.from(
                         new Set(
-                          chartData.flatMap(item => Object.keys(item).filter(key => key !== 'time' && !key.startsWith('comp_')))
+                          finalChartData.flatMap(item => Object.keys(item).filter(key => key !== 'time'))
                         )
                       )
                       
-                      // Si se aplicaron umbrales, filtrar solo los tipos seleccionados
+                      const mainKeys = allKeys.filter(k => !k.startsWith('comp_'))
+                      const compKeys = allKeys.filter(k => k.startsWith('comp_'))
+                      
+                      // Filtrar mainKeys por umbrales y visibilidad
+                      let filteredMainKeys = mainKeys
                       if (umbralAplicado && umbralNodoSeleccionado) {
                         const tiposValidos = umbralTiposSeleccionados.length > 0 
                           ? umbralTiposSeleccionados 
@@ -3373,32 +3371,31 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         if (tiposValidos.length > 0) {
                           const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
                           const nombresTipos = tiposSeleccionados.map(t => t.tipo)
-                          tipoKeys = tipoKeys.filter(key => nombresTipos.includes(key))
+                          filteredMainKeys = mainKeys.filter(key => 
+                            nombresTipos.some(vTipo => key.includes(`(${vTipo}`) || key.startsWith(`${vTipo} -`) || key === vTipo)
+                          )
                         }
                       }
                       
-                      // Filtrar tipoKeys por visibleTipos ANTES de renderizar
-                      // IMPORTANTE: Si visibleTipos está vacío pero hay tipoKeys, usar todos los tipoKeys
-                      const filteredTipoKeys = tipoKeys.filter(tipoKey => {
-                        // Si se aplicaron umbrales, mostrar solo los tipos seleccionados
-                        if (umbralAplicado && umbralNodoSeleccionado) {
-                          const tiposValidos = umbralTiposSeleccionados.length > 0 
-                            ? umbralTiposSeleccionados 
-                            : (umbralTipoSeleccionado ? [umbralTipoSeleccionado] : [])
-                          
-                          if (tiposValidos.length > 0) {
-                            const tiposSeleccionados = tipos.filter(t => tiposValidos.includes(t.tipoid))
-                            const nombresTipos = tiposSeleccionados.map(t => t.tipo)
-                            // Verificar si tipoKey coincide con alguno de los tipos seleccionados
-                            return nombresTipos.some(vTipo => tipoKey.startsWith(`${vTipo} -`) || tipoKey === vTipo)
-                          }
-                        }
-                        // Si visibleTipos está vacío, mostrar todos los tipoKeys disponibles
-                        if (visibleTipos.size === 0) {
-                          return true
-                        }
-                        // Buscar si el inicio de tipoKey (que es "Tipo - Sensor") coincide con algún tipo en visibleTipos
-                        return Array.from(visibleTipos).some(vTipo => tipoKey.startsWith(`${vTipo} -`) || tipoKey === vTipo)
+                      // Filtrar por visibilidad (sidebar)
+                      filteredMainKeys = filteredMainKeys.filter(key => {
+                        if (visibleTipos.size === 0) return true
+                        return Array.from(visibleTipos).some(vKey => {
+                          if (!vKey.startsWith('main:')) return false
+                          const vTipo = vKey.replace('main:', '')
+                          return key.includes(`(${vTipo}`) || key.startsWith(`${vTipo} -`) || key === vTipo
+                        })
+                      })
+                      
+                      // Filtrar compKeys por visibilidad
+                      const filteredCompKeys = compKeys.filter(key => {
+                        if (visibleTipos.size === 0) return true
+                        const originalKey = key.replace('comp_', '')
+                        return Array.from(visibleTipos).some(vKey => {
+                          if (!vKey.startsWith('comp:')) return false
+                          const vTipo = vKey.replace('comp:', '')
+                          return originalKey.includes(`(${vTipo}`) || originalKey.startsWith(`${vTipo} -`) || originalKey === vTipo
+                        })
                       })
                       
                       const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
@@ -3461,7 +3458,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                 // Si no hay límites, usar auto
                                 return ['auto', 'auto']
                               })();
-                              console.log('[ModernDashboard] YAxis Domain:', calculatedDomain, 'yAxisDomain state:', yAxisDomain);
                               return calculatedDomain;
                             })()}
                             allowDataOverflow={false}
@@ -3481,28 +3477,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             if (finalChartData.length === 0) return null
                             
                             // Obtener todas las claves de tipo (excluyendo 'time')
-                            // tipoKeys, colors y comparisonColors ya están definidos arriba
-                            // Buscar claves comp_ en TODOS los puntos, no solo en el primero
-                            const allComparisonKeys = new Set<string>()
-                            finalChartData.forEach(point => {
-                              Object.keys(point).forEach(key => {
-                                if (key.startsWith('comp_')) {
-                                  allComparisonKeys.add(key)
-                                }
-                              })
-                            })
-                            const comparisonKeys = Array.from(allComparisonKeys)
-                            
-                            // Debug: verificar claves de comparación encontradas
-                            if (comparisonNode && comparisonKeys.length === 0 && comparisonChartData.length > 0) {
-                              console.warn('⚠️ No se encontraron claves comp_ en finalChartData aunque hay datos de comparación', {
-                                comparisonChartDataLength: comparisonChartData.length,
-                                finalChartDataLength: finalChartData.length,
-                                samplePoint: finalChartData[0],
-                                comparisonSamplePoint: comparisonChartData[0],
-                                allKeysInSample: Object.keys(finalChartData[0] || {})
-                              })
-                            }
+                            // mainKeys, compKeys, colors y comparisonColors ya están definidos arriba
                             
                             return (
                               <>
@@ -3528,10 +3503,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                   )
                                 )}
                                 {/* Líneas del nodo principal */}
-                                {filteredTipoKeys.length > 0 ? (
-                                  filteredTipoKeys.map((tipoKey, index) => {
-                                    // Recalcular el índice basado en la posición original en tipoKeys
-                                    const originalIndex = tipoKeys.indexOf(tipoKey)
+                                {filteredMainKeys.length > 0 ? (
+                                  filteredMainKeys.map((tipoKey, index) => {
+                                    // Recalcular el índice basado en la posición original en mainKeys
+                                    const originalIndex = mainKeys.indexOf(tipoKey)
                                     const strokeColor = colors[originalIndex % colors.length]
                                     
                                     // Función para determinar el color del punto basado en umbrales
@@ -3569,56 +3544,35 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                       />
                                     )
                                   })
-                                ) : (() => {
-                                  // console.warn('[DEBUG] No hay tipoKeys filtrados para renderizar', {
-                                  //   tipoKeys,
-                                  //   filteredTipoKeys,
-                                  //   visibleTipos: Array.from(visibleTipos),
-                                  //   chartDataSample: chartData[0],
-                                  //   finalChartDataSample: finalChartData[0]
-                                  // })
-                                  return null
-                                })()}
+                                ) : null}
                                 {/* Líneas del nodo de comparación (con estilo punteado) */}
-                                {comparisonKeys.length > 0 ? (
-                                  comparisonKeys
-                                    .filter(compKey => {
-                                      const originalKey = compKey.replace('comp_', '')
-                                      // Buscar si el inicio de originalKey coincide con algún tipo en visibleTipos
-                                      return Array.from(visibleTipos).some(vTipo => originalKey.startsWith(`${vTipo} -`) || originalKey === vTipo)
-                                    })
-                                    .map((compKey, index) => {
-                                      const originalKey = compKey.replace('comp_', '')
-                                      // Buscar el índice del tipo original en tipoKeys, o usar el índice de comparisonKeys como fallback
-                                      let tipoIndex = tipoKeys.indexOf(originalKey)
-                                      if (tipoIndex === -1) {
-                                        // Si el tipo no está en el nodo principal, usar el índice de comparisonKeys
-                                        tipoIndex = comparisonKeys.indexOf(compKey)
-                                      }
-                                      const strokeColor = comparisonColors[tipoIndex % comparisonColors.length]
-                                      return (
-                                        <Line
-                                          key={compKey}
-                                          type="monotone"
-                                          dataKey={compKey}
-                                          stroke={strokeColor}
-                                          strokeWidth={2}
-                                          strokeDasharray="5 5"
-                                          dot={(props: any) => {
-                                            const value = props.payload?.[compKey]
-                                            // No mostrar punto si el valor es null
-                                            if (value === null || value === undefined || isNaN(value)) {
-                                              return <g key={`dot-comp-empty-${props.index}`} /> // Retornar grupo vacío en lugar de null
-                                            }
-                                            return <circle key={`dot-comp-${compKey}-${props.index}`} cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
-                                          }}
-                                          activeDot={{ r: 5, fill: strokeColor }}
-                                          connectNulls={true}
-                                          isAnimationActive={true}
-                                          animationDuration={300}
-                                        />
-                                      )
-                                    })
+                                {filteredCompKeys.length > 0 ? (
+                                  filteredCompKeys.map((compKey, index) => {
+                                    const originalIndex = compKeys.indexOf(compKey)
+                                    const strokeColor = comparisonColors[originalIndex % comparisonColors.length]
+                                    return (
+                                      <Line
+                                        key={compKey}
+                                        type="monotone"
+                                        dataKey={compKey}
+                                        stroke={strokeColor}
+                                        strokeWidth={2}
+                                        strokeDasharray="5 5"
+                                        dot={(props: any) => {
+                                          const value = props.payload?.[compKey]
+                                          // No mostrar punto si el valor es null
+                                          if (value === null || value === undefined || isNaN(value)) {
+                                            return <g key={`dot-comp-empty-${props.index}`} /> // Retornar grupo vacío en lugar de null
+                                          }
+                                          return <circle key={`dot-comp-${compKey}-${props.index}`} cx={props.cx} cy={props.cy} r={3} fill={strokeColor} />
+                                        }}
+                                        activeDot={{ r: 5, fill: strokeColor }}
+                                        connectNulls={true}
+                                        isAnimationActive={true}
+                                        animationDuration={300}
+                                      />
+                                    )
+                                  })
                                 ) : null}
                               </>
                             )
@@ -3656,13 +3610,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             }}
                             formatter={(value: number, name: string) => {
                               const isComparison = name.startsWith('comp_')
+                              const rawName = isComparison ? name.replace('comp_', '') : name
+                              // Simplificar la etiqueta: "Ubicación (Tipo)" -> "Tipo"
+                              const simplifiedName = rawName.match(/\(([^)]+)\)/)?.[1] || rawName
+                              
                               let displayName: string
                               if (isComparison) {
-                                displayName = `${name.replace('comp_', '')} (${comparisonNode?.nodo || 'Comp.'})`
+                                displayName = `${simplifiedName} (${comparisonNode?.nodo || 'Comp.'})`
                               } else {
                                 displayName = comparisonNode 
-                                  ? `${name} (${selectedNode?.nodo || 'Original'})`
-                                  : name
+                                  ? `${simplifiedName} (${selectedNode?.nodo || 'Original'})`
+                                  : simplifiedName
                               }
                               return [
                                 <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
@@ -3692,17 +3650,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                     {selectedNode?.nodo || 'Nodo Original'}
                                   </div>
                                   <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
-                                    {tipoKeys.map((tipoKey, index) => (
-                                      <div key={tipoKey} className="flex items-center gap-2">
-                                        <div 
-                                          className="w-4 h-1 rounded-full" 
-                                          style={{ backgroundColor: colors[index % colors.length] }}
-                                        />
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
-                                          {tipoKey}
-                                        </span>
-                                      </div>
-                                    ))}
+                                    {filteredMainKeys.map((tipoKey) => {
+                                      const originalIndex = mainKeys.indexOf(tipoKey)
+                                      // Simplificar la etiqueta para la leyenda: "Ubicación (Tipo)" -> "Tipo"
+                                      const simplifiedLabel = tipoKey.match(/\(([^)]+)\)/)?.[1] || tipoKey
+                                      
+                                      return (
+                                        <div key={tipoKey} className="flex items-center gap-2">
+                                          <div 
+                                            className="w-4 h-1 rounded-full" 
+                                            style={{ backgroundColor: colors[originalIndex % colors.length] }}
+                                          />
+                                          <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
+                                            {simplifiedLabel}
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                                 
@@ -3724,32 +3688,28 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                                         )
                                       }
                                       
-                                      const hasAnyComparisonData = tipoKeys.some((tipoKey) => {
-                                        const compKey = `comp_${tipoKey}`
-                                        return finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
-                                      })
-                                      
-                                      if (!hasAnyComparisonData) {
+                                      if (filteredCompKeys.length === 0) {
                                         return (
                                           <div className="text-xs text-gray-500 dark:text-neutral-500 font-mono italic">
-                                            Sin datos en este intervalo
+                                            {compKeys.length > 0 ? 'Oculto por filtros' : 'Sin datos en este intervalo'}
                                           </div>
                                         )
                                       }
                                       
-                                      return tipoKeys.map((tipoKey, index) => {
-                                        const compKey = `comp_${tipoKey}`
-                                        const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null)
-                                        if (!hasComparisonData) return null
-                                        
+                                      return filteredCompKeys.map((compKey) => {
+                                        const originalIndex = compKeys.indexOf(compKey)
+                                        const originalKey = compKey.replace('comp_', '')
+                                        // Simplificar la etiqueta para la leyenda: "Ubicación (Tipo)" -> "Tipo"
+                                        const simplifiedLabel = originalKey.match(/\(([^)]+)\)/)?.[1] || originalKey
+
                                         return (
                                           <div key={compKey} className="flex items-center gap-2">
                                             <div 
                                               className="w-4 h-1 rounded-full border border-dashed" 
-                                              style={{ borderColor: comparisonColors[index % comparisonColors.length], backgroundColor: 'transparent' }}
+                                              style={{ borderColor: comparisonColors[originalIndex % comparisonColors.length], backgroundColor: 'transparent' }}
                                             />
                                             <span className="text-xs text-indigo-400 font-mono font-bold">
-                                              {tipoKey}
+                                              {simplifiedLabel}
                                             </span>
                                           </div>
                                         )
