@@ -71,7 +71,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
   const [sensores, setSensores] = useState<any[]>([]);
   const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
   const [showMapModal, setShowMapModal] = useState(false);
@@ -248,12 +248,30 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       try {
         setLoading(true);
         
+        // Determinar límite basado en el rango de días
+        const start = new Date(dateRange.start);
+        const end = new Date(dateRange.end);
+        const daysDiff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+        
+        let maxLimit = 5000;
+        if (daysDiff > 30) maxLimit = 50000;
+        else if (daysDiff > 14) maxLimit = 30000;
+        else if (daysDiff > 7) maxLimit = 20000;
+        else if (daysDiff >= 2) maxLimit = 10000;
+
+        console.log('[NodeStatusDashboard] Loading data for range:', { 
+          start: dateRange.start, 
+          end: dateRange.end, 
+          daysDiff, 
+          maxLimit 
+        });
+
         // Cargar mediciones del nodo
         const medicionesData = await JoySenseService.getMediciones({
           nodoid: selectedNode.nodoid,
           startDate: `${dateRange.start} 00:00:00`,
           endDate: `${dateRange.end} 23:59:59`,
-          limit: 1000
+          limit: maxLimit
         });
         // Verificar si es un array o un objeto con count
         const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
@@ -466,16 +484,28 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       const metricId = parseInt(metricIdStr);
       const grouped: { [dateKey: string]: any } = {};
 
+      const start = new Date(dateRange.start).getTime();
+      const end = new Date(dateRange.end).getTime();
+      const spanDays = (end - start) / (1000 * 3600 * 24);
+
       metricMediciones.forEach((m: any) => {
         const date = new Date(m.fecha);
-        // Redondear a intervalos de 30 minutos para alinear series en minigráficos
-        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
-        const fechaKey = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin).toISOString();
+        let fechaKey: string;
+        
+        if (spanDays >= 2) {
+          // Resolución diaria
+          fechaKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          // Redondear a intervalos de 30 minutos para alinear series en minigráficos
+          const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
+          const fechaObj = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin);
+          fechaKey = fechaObj.toISOString();
+        }
         
         const label = getSeriesLabel(m);
         
         if (!grouped[fechaKey]) {
-          grouped[fechaKey] = { fechaKey, fechaOriginal: new Date(fechaKey) };
+          grouped[fechaKey] = { fechaKey, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), spanDays >= 2 ? 0 : date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 30) * 30) };
         }
         
         const valor = m.medicion || m.valor;
@@ -524,17 +554,23 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       const start = new Date(dateRange.start).getTime();
       const end = new Date(dateRange.end).getTime();
       const spanHours = (end - start) / (1000 * 60 * 60);
+      const spanDays = spanHours / 24;
       
       let timeKey: string;
       let fechaLabel: string;
       
-      if (spanHours > 72) {
-        // Más de 3 días: agrupar por hora
+      if (spanDays >= 2) {
+        // Intervalos de 2 días o más: agrupar por día (fecha)
+        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+        fechaLabel = timeKey;
+      } else if (spanHours >= 48) {
+        // Entre 48h y 2 días (caso borde): agrupar por hora
         const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0);
         timeKey = roundedDate.toISOString();
         fechaLabel = roundedDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       } else {
-        // Menos de 3 días: agrupar por intervalos de 15 min
+        // Menos de 48 horas: agrupar por intervalos de 15 min
         const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
         const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin, 0);
         timeKey = roundedDate.toISOString();
@@ -544,7 +580,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
       const label = getSeriesLabel(m);
       
       if (!grouped[timeKey]) {
-        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: new Date(timeKey) };
+        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 15) * 15) };
       }
       
       const valor = m.medicion || m.valor;
