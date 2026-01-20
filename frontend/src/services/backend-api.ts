@@ -426,7 +426,7 @@ export class JoySenseService {
     empresaId?: number;
     fundoId?: number;
     ubicacionId?: number;
-    localizacionId?: number;
+    localizacionId?: number | string;
     metricaId?: number;
     nodoid?: number;
     entidadId?: number;
@@ -563,7 +563,7 @@ export class JoySenseService {
 
   static async getAlertas(filters?: {
     reglaId?: number;
-    localizacionId?: number;
+    localizacionId?: number | string;
     startDate?: string;
     endDate?: string;
     limit?: number;
@@ -1228,7 +1228,7 @@ export class JoySenseService {
     empresaId?: number;
     fundoId?: number;
     ubicacionId?: number;
-    localizacionId?: number;
+    localizacionId?: number | string;
     startDate?: string;
     endDate?: string;
   }): Promise<Array<{ name: string; value: number; timestamp: string; metrica: string; unidad: string }>> {

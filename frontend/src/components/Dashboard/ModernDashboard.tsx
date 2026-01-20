@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { flushSync } from "react-dom"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts"
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, Legend } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
@@ -122,6 +122,11 @@ function getMetricIdFromDataKey(dataKey: string): number {
   return metricMap[dataKey] || 1
 }
 
+interface MeasurementPoint {
+  name: string;
+  ids: number[];
+}
+
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
@@ -134,6 +139,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       color: "#f59e0b",
       unit: "°C",
       dataKey: "temperatura",
+      // ... more code ...
       description: "Temperatura del suelo/sustrato",
       ranges: { min: 15, max: 35, optimal: [20, 28] }
     },
@@ -168,6 +174,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [isModalExpanded, setIsModalExpanded] = useState(false)
   const [metricas, setMetricas] = useState<any[]>([])
   const [tipos, setTipos] = useState<any[]>([])
+  const [sensores, setSensores] = useState<any[]>([])
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null)
   const [selectedMetricForAnalysis, setSelectedMetricForAnalysis] = useState<MetricConfig | null>(null)
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
@@ -176,13 +183,103 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
+  const [measurementPoints, setMeasurementPoints] = useState<MeasurementPoint[]>([])
+  const [selectedPointName, setSelectedPointName] = useState<string | null>(null)
+  const [loadingLocalizaciones, setLoadingLocalizaciones] = useState(false)
+  
+  // Helper para obtener etiqueta de serie de datos (agrupación inteligente)
+  const getSeriesLabel = useCallback((medicion: any) => {
+    const locName = medicion.localizacion?.localizacion || `Punto ${medicion.localizacionid}`
+    
+    // Obtener información del sensor desde el estado global
+    const sensorId = medicion.localizacion?.sensorid || medicion.sensorid
+    const sensorInfo = sensores.find(s => s.sensorid === sensorId)
+    const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
+    
+    // Obtener información del tipo
+    const tipoId = sensorInfo?.tipoid || medicion.tipoid || medicion.localizacion?.tipoid
+    const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
+    const tipoName = tipoInfo?.tipo || 'Sensor'
+    
+    // Construir etiqueta descriptiva: "Tipo - Sensor"
+    let sensorLabel = tipoName
+    if (sensorName && sensorName !== tipoName) {
+      sensorLabel = `${tipoName} - ${sensorName}`
+    }
+
+    // Si estamos filtrando por un punto específico (agrupado por nombre), 
+    // solo mostramos el tipo/sensor para que el gráfico sea más legible.
+    if (selectedPointName && locName === selectedPointName) {
+      return sensorLabel
+    }
+    
+    // Si no hay punto seleccionado, mostrar Localización + Tipo/Sensor
+    return `${locName} (${sensorLabel})`
+  }, [tipos, sensores, selectedPointName])
+
+  const selectedPointIds = useMemo(() => {
+    return measurementPoints.find(p => p.name === selectedPointName)?.ids || [];
+  }, [measurementPoints, selectedPointName]);
   
   // Log selectedNode changes
   useEffect(() => {
     if (selectedNode) {
       console.log('[ModernDashboard] selectedNode changed:', selectedNode);
+    } else {
+      // Limpiar localizaciones cuando no hay nodo seleccionado
+      setMeasurementPoints([]);
+      setSelectedPointName(null);
     }
   }, [selectedNode])
+
+  // Cargar localizaciones cuando cambia el nodo seleccionado
+  useEffect(() => {
+    if (!selectedNode?.nodoid) return;
+
+    const fetchLocalizaciones = async () => {
+      setLoadingLocalizaciones(true);
+      try {
+        console.log('[ModernDashboard] Loading localizations for node:', selectedNode.nodoid);
+        const data = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
+        const activeLocalizaciones = data.filter((l: any) => l.statusid === 1);
+        
+        // Agrupar por nombre de localización (campo 'localizacion')
+        const pointsMap = new Map<string, number[]>();
+        activeLocalizaciones.forEach((loc: any) => {
+          const name = loc.localizacion;
+          if (!pointsMap.has(name)) {
+            pointsMap.set(name, []);
+          }
+          pointsMap.get(name)?.push(loc.localizacionid);
+        });
+
+        const points: MeasurementPoint[] = Array.from(pointsMap.entries()).map(([name, ids]) => ({
+          name,
+          ids
+        }));
+
+        setMeasurementPoints(points);
+        
+        // Auto-seleccionar si solo hay un punto físico (agrupado)
+        if (points.length === 1) {
+          console.log('[ModernDashboard] Auto-selecting single measurement point:', points[0].name);
+          setSelectedPointName(points[0].name);
+        } else if (points.length > 1) {
+          console.log('[ModernDashboard] Multiple measurement points found. User selection required.');
+          setSelectedPointName(null);
+        } else {
+          console.warn('[ModernDashboard] No active localizations found for node:', selectedNode.nodoid);
+          setSelectedPointName(null);
+        }
+      } catch (err) {
+        console.error('[ModernDashboard] Error loading localizations:', err);
+      } finally {
+        setLoadingLocalizaciones(false);
+      }
+    };
+
+    fetchLocalizaciones();
+  }, [selectedNode?.nodoid])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
   
@@ -283,7 +380,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           { days: 14, limit: 10000, label: '14 días' },
           { days: 30, limit: 20000, label: '30 días' }
         ]
-        let foundDataInRange = false
         
         // Intentar con rangos recientes (de menor a mayor)
         for (const range of ranges) {
@@ -294,6 +390,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           try {
             const data = await JoySenseService.getMediciones({
               nodoid: selectedNode.nodoid,
+              localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
               startDate: startDateStr,
               endDate: endDateStr,
               limit: range.limit
@@ -305,26 +402,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             if (dataArray.length > 0) {
               console.log(`[ModernDashboard] loadMediciones: Found ${dataArray.length} mediciones in range ${range.label}`);
               allData = dataArray
-              foundDataInRange = true
               break
             }
           } catch (error: any) {
             console.error(`ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
             // Si es timeout o error 500, continuar con el siguiente rango
-            // Los errores 500 pueden ser timeouts del backend, así que intentamos rangos más pequeños
             const isTimeoutOr500 = error.message?.includes('timeout') || 
                                    error.code === '57014' || 
                                    error.message?.includes('500') ||
                                    error.message?.includes('HTTP error! status: 500')
             
             if (isTimeoutOr500) {
-              // Continuar con el siguiente rango más pequeño
-              // Si es 30 días y falla, ya intentamos rangos más pequeños antes
               continue
             }
-            
-            // Si no es timeout/500, puede ser un error de red u otro error crítico
-            // Continuar de todas formas para intentar otros rangos
             continue
           }
         }
@@ -472,7 +562,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setLoading(false)
       }
     }
-  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid])
+  }, [filters.entidadId, filters.ubicacionId, selectedNode?.nodoid, selectedPointIds])
 
   // Crear array de dependencias estable para evitar warnings de React
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
@@ -481,6 +571,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const deps = [
       filters.entidadId, 
       selectedNode?.nodoid, 
+      selectedPointIds,
       loadMediciones
     ]
     // Solo incluir ubicacionId si NO hay nodo seleccionado
@@ -489,7 +580,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       deps.push(filters.ubicacionId)
     }
     return deps
-  }, [filters.entidadId, selectedNode?.nodoid, loadMediciones, selectedNode])
+  }, [filters.entidadId, selectedNode?.nodoid, selectedPointIds, loadMediciones, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
@@ -671,6 +762,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               const response2 = await JoySenseService.getMediciones({
                 entidadId: filters.entidadId,
                 nodoid: selectedNode.nodoid,
+                localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
                 limit: fallbackLimit
               })
               
@@ -720,6 +812,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const response = await JoySenseService.getMediciones({
             entidadId: filters.entidadId,
             nodoid: selectedNode.nodoid,
+            localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
             startDate: startDateFormatted,
             endDate: endDateFormatted,
             limit: maxLimit
@@ -779,7 +872,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Esto asegura que el modal no quede en estado de carga infinito
       setLoadingDetailedData(false)
     }
-  }, [filters.entidadId, selectedNode])
+  }, [filters.entidadId, selectedNode, selectedPointIds])
 
   // Cargar localizaciones del nodo seleccionado
   useEffect(() => {
@@ -791,7 +884,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       try {
         const localizaciones = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid)
-        const nombres = localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)
+        const nombres = Array.from(new Set(localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)))
         const map = new Map<number, string[]>()
         if (nombres.length > 0) {
           map.set(selectedNode.nodoid, nombres)
@@ -1244,12 +1337,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
   }, [detailedStartDate, detailedEndDate, comparisonNode?.nodoid, showDetailedAnalysis, loadComparisonMediciones])
 
-  // Cargar entidades, ubicaciones, métricas y tipos
+  // Cargar entidades, ubicaciones, métricas, tipos y sensores
   useEffect(() => {
     loadEntidades()
     loadUbicaciones()
     loadMetricas()
     loadTipos()
+    loadSensores()
   }, [])
 
   const loadEntidades = async () => {
@@ -1289,6 +1383,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       setTiposDisponibles(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error("Error loading tipos:", err)
+    }
+  }
+
+  const loadSensores = async () => {
+    try {
+      const data = await JoySenseService.getSensores()
+      setSensores(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error("Error loading sensores:", err)
     }
   }
 
@@ -1458,7 +1561,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     // Filtrar mediciones del nodo seleccionado
-    const nodeMediciones = sourceMediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
+    const nodeMediciones = sourceMediciones.filter(m => {
+      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
+      // REMOVIDO: No filtrar por punto seleccionado
+      return matchNode;
+    })
     
     // Buscar mediciones que coincidan con el dataKey por nombre de métrica
     const metricMediciones = nodeMediciones.filter(m => {
@@ -1631,29 +1738,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       medicionesParaProcesar = filteredMediciones.filter((_, index) => index % step === 0)
     }
     
-    // Agrupar por tipo de sensor y luego por tiempo (usar datos muestreados)
-    const tiposEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.tipoid).filter((id): id is number => id !== undefined && id !== null)))
-    const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
+    // Agrupar por localización (cada localizacionid es una serie de datos única)
+    const locsEnMediciones = Array.from(new Set(medicionesParaProcesar.map(m => m.localizacionid).filter((id): id is number => id !== undefined && id !== null)))
+    const datosPorLoc: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
     
-    // Inicializar datos para cada tipo
-    tiposEnMediciones.forEach(tipoid => {
-      datosPorTipo[tipoid] = []
+    // Inicializar datos para cada localización
+    locsEnMediciones.forEach(locid => {
+      datosPorLoc[locid] = []
     })
     
     // Decidir granularidad: si hay pocos datos o rango pequeño, usar minutos; si hay muchos datos, usar horas/días
-    // Para sensores LoRaWAN que emiten cada 15 minutos, necesitamos más granularidad
-    // Para el gráfico detallado, usar granularidad más fina para mantener curvas suaves
-    // Solo agrupar por días si el rango es muy grande (> 7 días)
     const useMinutes = !isDateRange && (medicionesParaProcesar.length < 500 || hoursSpan < 48)
     const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
     const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
     
-    // Agrupar mediciones por tipo y tiempo (usar datos muestreados si aplica)
-    let medicionesSinTipoid = 0
+    // Agrupar mediciones por localización y tiempo
     medicionesParaProcesar.forEach(medicion => {
-      // Filtrar mediciones sin tipoid válido
-      if (medicion.tipoid === undefined || medicion.tipoid === null) {
-        medicionesSinTipoid++
+      if (medicion.localizacionid === undefined || medicion.localizacionid === null) {
         return
       }
       
@@ -1661,17 +1762,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       let timeKey: string
       
       if (useDays) {
-        // Agrupar por fecha (DD/MM) para rangos de días
         const day = String(date.getDate()).padStart(2, '0')
         const month = String(date.getMonth() + 1).padStart(2, '0')
         timeKey = `${day}/${month}`
       } else if (useHours) {
-        // Agrupar por hora (HH:00) para rangos de horas
         const hour = String(date.getHours()).padStart(2, '0')
         timeKey = `${hour}:00`
       } else {
-        // Agrupar por 15 minutos (HH:MM) para rangos pequeños o pocos datos
-        // Redondear a múltiplos de 15 minutos para agrupar mediciones cercanas
         const minutes = date.getMinutes()
         const roundedMinutes = Math.floor(minutes / 15) * 15
         const hour = String(date.getHours()).padStart(2, '0')
@@ -1679,82 +1776,60 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         timeKey = `${hour}:${minute}`
       }
       
-      // Buscar si ya existe un punto para este tipo y tiempo
-      const existingPoint = datosPorTipo[medicion.tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
+      // Obtener label descriptivo: "Punto (Tipo)"
+      const label = getSeriesLabel(medicion)
+
+      // Buscar si ya existe un punto para esta localización y tiempo
+      const existingPoint = datosPorLoc[medicion.localizacionid]?.find(p => p.time === timeKey)
       
       if (existingPoint) {
-        // Promediar con el valor existente
+        // Promediar si hay múltiples medidas en el mismo bucket de tiempo para la misma localización
         const currentValue = existingPoint.value
         const currentCount = existingPoint.count
         const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
         existingPoint.value = newValue
         existingPoint.count = currentCount + 1
-        // Actualizar timestamp si esta medición es más reciente
         if (date.getTime() > existingPoint.timestamp) {
           existingPoint.timestamp = date.getTime()
         }
       } else {
         // Crear nuevo punto
-        if (!datosPorTipo[medicion.tipoid]) {
-          datosPorTipo[medicion.tipoid] = []
-        }
-        datosPorTipo[medicion.tipoid].push({
+        datosPorLoc[medicion.localizacionid].push({
           timestamp: date.getTime(),
           time: timeKey,
           value: medicion.medicion,
           count: 1,
-          tipoid: medicion.tipoid,
-          tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
+          locid: medicion.localizacionid,
+          label: label
         })
       }
     })
     
-    // Ordenar los datos de cada tipo por timestamp antes de crear la estructura final
-    tiposEnMediciones.forEach(tipoid => {
-      if (datosPorTipo[tipoid]) {
-        datosPorTipo[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
-        
-        // Verificar si hay gaps significativos en los datos
-        if (datosPorTipo[tipoid].length > 1) {
-          for (let i = 1; i < datosPorTipo[tipoid].length; i++) {
-            const prevTime = datosPorTipo[tipoid][i - 1].timestamp
-            const currTime = datosPorTipo[tipoid][i].timestamp
-            const timeDiff = currTime - prevTime
-            // Si hay un gap mayor a 6 horas, es significativo
-            // Comentado para evitar spam en consola - solo activar si es necesario para debugging
-            // if (timeDiff > 6 * 60 * 60 * 1000) {
-            //   console.warn(`⚠️ Gap significativo detectado en tipo ${tipoid}: ${Math.round(timeDiff / (60 * 60 * 1000))} horas`)
-            //   break
-            // }
-          }
-        }
+    // Ordenar los datos de cada localización por timestamp
+    locsEnMediciones.forEach(locid => {
+      if (datosPorLoc[locid]) {
+        datosPorLoc[locid].sort((a, b) => a.timestamp - b.timestamp)
       }
     })
     
-    // Verificar si después de agrupar tenemos muy pocos puntos por tipo
+    // Verificar si después de agrupar tenemos muy pocos puntos por localización
     // Si hay muy pocos puntos, intentar usar granularidad más fina o mostrar todos los datos disponibles
-    // IMPORTANTE: Aplicar esta lógica también cuando useCustomRange es true
     if (filteredMediciones.length > 0) {
-      const tiposConPocosPuntos = tiposEnMediciones.filter(tipoid => 
-        datosPorTipo[tipoid] && datosPorTipo[tipoid].length <= 2
+      const locsConPocosPuntos = locsEnMediciones.filter(locid => 
+        datosPorLoc[locid] && datosPorLoc[locid].length <= 2
       )
       
-      if (tiposConPocosPuntos.length === tiposEnMediciones.length && tiposEnMediciones.length > 0) {
-        // Todos los tipos tienen 2 o menos puntos después de agrupar
-        // Esto puede deberse a que hay muy pocos datos o a que la agrupación es demasiado agresiva
-        // Intentar usar granularidad más fina (minutos en lugar de horas) si hay datos suficientes
+      if (locsConPocosPuntos.length === locsEnMediciones.length && locsEnMediciones.length > 0) {
+        // Todas las localizaciones tienen 2 o menos puntos después de agrupar
+        // Intentar usar granularidad más fina si hay datos suficientes
         if (filteredMediciones.length >= 3 && !useMinutes) {
-          // Re-agrupar con granularidad de minutos para capturar más puntos
-          const datosPorTipoMinutos: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
-          tiposEnMediciones.forEach(tipoid => {
-            datosPorTipoMinutos[tipoid] = []
+          const datosPorLocMinutos: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
+          locsEnMediciones.forEach(locid => {
+            datosPorLocMinutos[locid] = []
           })
           
           filteredMediciones.forEach(medicion => {
-            // Filtrar mediciones sin tipoid válido
-            if (medicion.tipoid === undefined || medicion.tipoid === null) {
-              return
-            }
+            if (medicion.localizacionid === undefined || medicion.localizacionid === null) return
             
             const date = new Date(medicion.fecha)
             const minutes = date.getMinutes()
@@ -1763,11 +1838,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             const minute = String(roundedMinutes).padStart(2, '0')
             const timeKey = `${hour}:${minute}`
             
-            if (!datosPorTipoMinutos[medicion.tipoid]) {
-              datosPorTipoMinutos[medicion.tipoid] = []
+            const label = getSeriesLabel(medicion)
+
+            if (!datosPorLocMinutos[medicion.localizacionid]) {
+              datosPorLocMinutos[medicion.localizacionid] = []
             }
             
-            const existingPoint = datosPorTipoMinutos[medicion.tipoid].find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
+            const existingPoint = datosPorLocMinutos[medicion.localizacionid].find(p => p.time === timeKey)
             
             if (existingPoint) {
               const currentValue = existingPoint.value
@@ -1779,58 +1856,38 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                 existingPoint.timestamp = date.getTime()
               }
             } else {
-              datosPorTipoMinutos[medicion.tipoid].push({
+              datosPorLocMinutos[medicion.localizacionid].push({
                 timestamp: date.getTime(),
                 time: timeKey,
                 value: medicion.medicion,
                 count: 1,
-                tipoid: medicion.tipoid,
-                tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
+                locid: medicion.localizacionid,
+                label: label
               })
             }
           })
           
-          // Verificar si con granularidad de minutos tenemos más puntos
-          const tiposConMasPuntos = tiposEnMediciones.filter(tipoid => 
-            datosPorTipoMinutos[tipoid] && datosPorTipoMinutos[tipoid].length > 2
-          )
-          
-          if (tiposConMasPuntos.length > 0) {
-            // Usar los datos con granularidad de minutos
-            tiposEnMediciones.forEach(tipoid => {
-              if (datosPorTipoMinutos[tipoid]) {
-                datosPorTipoMinutos[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
-                datosPorTipo[tipoid] = datosPorTipoMinutos[tipoid]
-              }
-            })
-          } else {
-            // Aún hay muy pocos puntos - el nodo realmente tiene datos escasos
-            // Pero aún así mostrar los datos disponibles
-            // console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
-          }
-        } else {
-          // Ya estamos usando granularidad fina o no hay suficientes datos
-          // Mostrar los datos disponibles de todas formas
-          // console.warn(`⚠️ Todos los tipos tienen 2 o menos puntos después de agrupar. Mostrando datos disponibles (${filteredMediciones.length} mediciones).`)
+          // Actualizar datosPorLoc con los nuevos puntos si son más que antes
+          locsEnMediciones.forEach(locid => {
+            if (datosPorLocMinutos[locid] && datosPorLocMinutos[locid].length > (datosPorLoc[locid]?.length || 0)) {
+              datosPorLoc[locid] = datosPorLocMinutos[locid]
+            }
+          })
         }
       }
     }
     
-    // Obtener todos los tiempos únicos ordenados por timestamp
+    // Obtener todos los timestamps únicos de todas las localizaciones para el eje X
     const allTimeStamps = new Set<number>()
-    tiposEnMediciones.forEach(tipoid => {
-      datosPorTipo[tipoid]?.forEach((point: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => {
-        // Obtener el timestamp del inicio del período según la granularidad
-        const date = new Date(point.timestamp)
+    locsEnMediciones.forEach(locid => {
+      datosPorLoc[locid]?.forEach(p => {
+        const date = new Date(p.timestamp)
         let periodStart: Date
         if (useDays) {
-          // Inicio del día
           periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
         } else if (useHours) {
-          // Inicio de la hora
           periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours())
         } else {
-          // Inicio del período de 15 minutos
           const minutes = date.getMinutes()
           const roundedMinutes = Math.floor(minutes / 15) * 15
           periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes)
@@ -1845,85 +1902,50 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       .map(timestamp => {
         const date = new Date(timestamp)
         if (useDays) {
-        const day = String(date.getDate()).padStart(2, '0')
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        return `${day}/${month}`
+          const day = String(date.getDate()).padStart(2, '0')
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          return `${day}/${month}`
         } else if (useHours) {
           const hour = String(date.getHours()).padStart(2, '0')
           return `${hour}:00`
-      } else {
-        const hour = String(date.getHours()).padStart(2, '0')
-        const minute = String(date.getMinutes()).padStart(2, '0')
-        return `${hour}:${minute}`
-      }
-    })
+        } else {
+          const hour = String(date.getHours()).padStart(2, '0')
+          const minute = String(date.getMinutes()).padStart(2, '0')
+          return `${hour}:${minute}`
+        }
+      })
     
-    // Crear estructura de datos con todas las líneas
+    // Crear estructura de datos con todas las líneas (una por cada localización)
     const result: any[] = []
-    
-    // Para suavizar líneas incompletas, encontrar el primer valor no-null para cada tipo
-    const firstValueByType: { [tipoName: string]: number | null } = {}
-    tiposEnMediciones.forEach(tipoid => {
-      const tipo = tipos.find(t => t.tipoid === tipoid)
-      const tipoName = tipo?.tipo || `Tipo ${tipoid}`
-      const firstDataPoint = datosPorTipo[tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.value !== null && p.value !== undefined)
-      firstValueByType[tipoName] = firstDataPoint ? firstDataPoint.value : null
-    })
     
     allTimes.forEach(time => {
       const timeData: any = { time }
       let hasAnyValue = false
       
-      tiposEnMediciones.forEach(tipoid => {
-        // Buscar el punto más cercano para este tiempo y tipo
-        // Si no hay punto exacto, buscar el más cercano dentro de un rango razonable
-        const tipoData = datosPorTipo[tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === time)
-        const tipo = tipos.find(t => t.tipoid === tipoid)
-        const tipoName = tipo?.tipo || `Tipo ${tipoid}`
+      locsEnMediciones.forEach(locid => {
+        const locData = datosPorLoc[locid]?.find(p => p.time === time)
+        const label = datosPorLoc[locid][0]?.label || `Sensor ${locid}`
         
-        // Usar el nombre del tipo como key para la línea
-        let value = tipoData ? tipoData.value : null
+        let value = locData ? locData.value : null
         
-        // Si no hay valor y estamos al inicio del gráfico (primeros tiempos),
-        // usar el primer valor disponible del tipo para suavizar la línea
-        // Solo aplicar esto si no estamos en modo detallado (useCustomRange)
-        if (value === null && !useCustomRange && firstValueByType[tipoName] !== null) {
-          // Verificar si este tiempo está antes del primer punto de datos de este tipo
-          const firstPoint = datosPorTipo[tipoid]?.[0]
-          if (firstPoint) {
-            const currentTimeIndex = allTimes.indexOf(time)
-            const firstTimeIndex = allTimes.indexOf(firstPoint.time)
-            // Si estamos antes del primer punto (o muy cerca, hasta 2 posiciones antes),
-            // usar el primer valor para suavizar la línea
-            if (currentTimeIndex >= 0 && firstTimeIndex >= 0 && currentTimeIndex < firstTimeIndex + 2) {
-              value = firstValueByType[tipoName]
+        if (value !== null && value !== undefined) {
+          // Filtrar valores fuera del rango del eje Y si está configurado
+          if (useCustomRange) {
+            const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
+            const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
+            
+            if ((hasMinLimit && value < yAxisDomain.min!) || (hasMaxLimit && value > yAxisDomain.max!)) {
+              value = null
             }
           }
         }
         
-        // Filtrar valores fuera del rango del eje Y si está configurado
-        if (value !== null && value !== undefined && useCustomRange) {
-          const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
-          const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
-          
-          if (hasMinLimit && value < yAxisDomain.min!) {
-            value = null // Ocultar valor si está por debajo del mínimo
-          } else if (hasMaxLimit && value > yAxisDomain.max!) {
-            value = null // Ocultar valor si está por encima del máximo
-          }
-        }
-        
-        timeData[tipoName] = value
-        
-        // Verificar si hay al menos un valor no-null
         if (value !== null && value !== undefined) {
+          timeData[label] = value
           hasAnyValue = true
         }
       })
       
-      // Solo incluir tiempos que tengan al menos un valor no-null
-      // Esto evita líneas incompletas al inicio del gráfico
-      // IMPORTANTE: Si todos los valores fueron filtrados (null), no incluir el punto
       if (hasAnyValue) {
         result.push(timeData)
       }
@@ -1945,7 +1967,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (!mediciones.length || !selectedNode) return 0
     
     // Filtrar mediciones del nodo seleccionado
-    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
+    const nodeMediciones = mediciones.filter(m => {
+      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
+      // REMOVIDO: No filtrar por punto seleccionado
+      return matchNode;
+    })
     
     // Buscar mediciones que coincidan con el dataKey por nombre de métrica
     const matchingMediciones = nodeMediciones.filter(m => {
@@ -2016,7 +2042,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Obtener la última fecha disponible de los datos para esta métrica
     // Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
-    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode?.nodoid))
+    const nodeMediciones = mediciones.filter(m => {
+      const matchNode = Number(m.nodoid) === Number(selectedNode?.nodoid);
+      // REMOVIDO: No filtrar por punto seleccionado
+      return matchNode;
+    })
     const metricMediciones = nodeMediciones.filter(m => {
       const rawMetricName = m.localizacion?.metrica?.metrica || ''
       const metricName = rawMetricName
@@ -2155,8 +2185,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Obtener métricas únicas del nodo desde la fuente de datos
     const nodeMediciones = dataSource.filter(m => {
-      const match = Number(m.nodoid) === Number(selectedNode.nodoid);
-      return match;
+      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
+      // REMOVIDO: No filtrar por punto seleccionado para mostrar visión global del nodo
+      return matchNode;
     })
     console.log('[ModernDashboard] Calculating availableMetrics. dataSource size:', dataSource.length, 'nodeMediciones count:', nodeMediciones.length, 'for nodoid:', selectedNode.nodoid);
     if (nodeMediciones.length > 0) {
@@ -2241,7 +2272,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Buscar métricas que coincidan con el dataKey
-    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
+    const nodeMediciones = mediciones.filter(m => {
+      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
+      // REMOVIDO: No filtrar por punto seleccionado
+      return matchNode;
+    })
     
     if (nodeMediciones.length === 0) {
       // Log only once per metric to avoid console flood
@@ -2338,6 +2373,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           onUbicacionChange={onUbicacionChange}
         />
 
+        {/* REMOVIDO: El selector de puntos físicos ya no es necesario para filtrar las métricas, 
+            ya que ahora se muestran todas las líneas por sensor en cada gráfico de métrica. */}
+
         {/* Loading State - Mostrar después del mapa, donde van los gráficos */}
         {loading && selectedNode && (
           <div className="flex items-center justify-center py-12">
@@ -2345,7 +2383,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           </div>
         )}
 
-{/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
+        {/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {availableMetrics.map((metric) => {
@@ -2401,32 +2439,47 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                               return Math.floor(chartData.length / 4)
                             })()}
                           />
-                          <YAxis hide />
+                          <YAxis hide domain={['auto', 'auto']} />
                           {(() => {
                             const chartData = processChartData(metric.dataKey)
                             if (chartData.length === 0) return null
                             
-                            // Obtener todas las claves de tipo (excluyendo 'time')
-                            const tipoKeys = Object.keys(chartData[0] || {}).filter(key => key !== 'time')
-                            const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                            // Obtener TODAS las claves únicas de series (excluyendo 'time') de todo el set de datos
+                            const allSeriesKeys = Array.from(
+                              new Set(
+                                chartData.flatMap(item => Object.keys(item).filter(key => key !== 'time'))
+                              )
+                            )
                             
-                            return [
-                              ...tipoKeys.map((tipoKey, index) => (
-                                <Line
-                                  key={tipoKey}
-                                  type="monotone"
-                                  dataKey={tipoKey}
-                                  stroke={colors[index % colors.length]}
-                                  strokeWidth={2}
-                                  dot={false}
-                                  activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
-                                  strokeOpacity={0.8}
-                                  connectNulls={true}
-                                />
-                              ))
-                            ]
-                          })()}
-                          <Tooltip
+                            const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899', '#10b981']
+                            
+                            return allSeriesKeys.map((seriesKey, index) => (
+                              <Line
+                                key={seriesKey}
+                                type="monotone"
+                                dataKey={seriesKey}
+                                stroke={colors[index % colors.length]}
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
+                                strokeOpacity={0.8}
+                                connectNulls={true}
+                                isAnimationActive={false}
+                            />
+                          ))
+                        })()}
+                        <Legend
+                          verticalAlign="bottom"
+                          height={20}
+                          iconType="circle"
+                          iconSize={8}
+                          wrapperStyle={{
+                            fontSize: '9px',
+                            fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+                            paddingTop: '10px'
+                          }}
+                        />
+                        <Tooltip
                             labelFormatter={(label) => {
                               // Detectar si el label es una fecha (contiene "/") o una hora
                               const isDate = label && typeof label === 'string' && label.includes('/')
@@ -2561,9 +2614,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         {/* Localización */}
                         {(() => {
                           const localizaciones = localizacionesPorNodo.get(selectedNode.nodoid)
-                          return localizaciones && localizaciones.length > 0 ? (
+                          // Usar un Set para asegurar que no haya nombres duplicados en la visualización
+                          const uniqueLocalizaciones = Array.from(new Set(localizaciones || []))
+                          const nameToShow = selectedPointName || (uniqueLocalizaciones.length > 0 ? uniqueLocalizaciones.join(', ') : null)
+                          return nameToShow ? (
                             <div className="truncate pl-2">
-                              <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {localizaciones.join(', ')}
+                              <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {nameToShow}
                             </div>
                           ) : null
                         })()}
@@ -3299,10 +3355,37 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                         {selectedNode?.nodo || 'Nodo'}
+                        {selectedPointName && ` - ${selectedPointName}`}
                         {comparisonNode && ` vs ${comparisonNode.nodo}`}
-                    </h3>
+                      </h3>
                     </div>
                     {(() => {
+                      // Definir variables de tiempo que faltaban (necesarias para processComparisonData)
+                      // Estas deben coincidir con la lógica de processChartData cuando useCustomRange es true
+                      const useCustomRange = true;
+                      let startDate = new Date();
+                      let endDate = new Date();
+                      
+                      if (detailedStartDate && detailedEndDate) {
+                        const [sYear, sMonth, sDay] = detailedStartDate.split('-').map(Number);
+                        startDate = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+                        
+                        const [eYear, eMonth, eDay] = detailedEndDate.split('-').map(Number);
+                        endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
+                      }
+                      
+                      const timeSpan = endDate.getTime() - startDate.getTime();
+                      const hoursSpan = timeSpan / (1000 * 60 * 60);
+                      const daysSpan = hoursSpan / 24;
+                      const isDateRange = daysSpan > 1;
+                      
+                      // Granularidad (debe ser consistente con processChartData)
+                      // Nota: simplificamos useMinutes ya que no tenemos medicionesParaProcesar.length todavía,
+                      // pero usamos hoursSpan < 48 que es el criterio principal en processChartData
+                      const useMinutes = !isDateRange && hoursSpan < 48;
+                      const useHours = !isDateRange && !useMinutes && hoursSpan < 168;
+                      const useDays = isDateRange && daysSpan > 7;
+
                       // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
                       if (loadingDetailedData) {
                         return (
@@ -3330,11 +3413,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
                       // para asegurar que las claves de tiempo coincidan perfectamente
                       const processComparisonData = (comparisonData: MedicionData[], dataKey: string): any[] => {
-                        if (!comparisonData.length || !tipos.length) {
-                          return []
-                        }
+                        if (!comparisonData.length || !tipos.length) return []
                         
-                        // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
                         const metricMediciones = comparisonData.filter(m => {
                           const rawMetricName = m.localizacion?.metrica?.metrica || ''
                           const metricName = rawMetricName
@@ -3344,212 +3424,106 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                             .trim()
                             .toLowerCase()
                           
-                          if (dataKey === 'temperatura' && (
-                            metricName.includes('temperatura') || metricName.includes('temp')
-                          )) return true
-                          
-                          if (dataKey === 'humedad' && (
-                            metricName.includes('humedad') || metricName.includes('humidity')
-                          )) return true
-                          
-                          if (dataKey === 'conductividad' && (
-                            metricName.includes('conductividad') || 
-                            metricName.includes('electroconductividad') ||
-                            metricName.includes('conductivity')
-                          )) return true
-                          
+                          if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
+                          if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
+                          if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) return true
                           return false
                         })
                         
-                        if (!metricMediciones.length) {
-                          return []
-                        }
-                        
-                        // Ordenar por fecha (ascendente)
-                        const sortedMediciones = metricMediciones
-                          .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
-                          .sort((a, b) => a.fechaParsed - b.fechaParsed)
-                          .map(({ fechaParsed, ...m }) => m)
-                        
-                        if (!detailedStartDate || !detailedEndDate) {
-                          /* console.warn('[DEBUG] processComparisonData: Faltan fechas', {
-                            detailedStartDate,
-                            detailedEndDate
-                          }) */
-                          return []
-                        }
-                        
-                        // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
-                        const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
-                        const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
-                        
-                        const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
-                        const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-                        
+                        if (!metricMediciones.length) return []
+
+                        const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
                         const filteredMediciones = sortedMediciones.filter(m => {
-                          const medicionDate = new Date(m.fecha)
-                          return medicionDate >= startDate && medicionDate <= endDate
+                          const d = new Date(m.fecha)
+                          return d >= startDate && d <= endDate
                         })
                         
-                        if (filteredMediciones.length === 0) {
-                          return []
-                        }
+                        if (filteredMediciones.length === 0) return []
                         
-                        // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
-                        // Calcular el rango de tiempo para determinar la granularidad
-                        const timeSpan = endDate.getTime() - startDate.getTime()
-                        const daysSpan = timeSpan / (1000 * 3600 * 24)
-                        const hoursSpan = timeSpan / (1000 * 60 * 60)
-                        const isDateRange = daysSpan > 1
+                        const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter((id): id is number => id !== undefined && id !== null)))
+                        const datosPorLoc: { [locid: number]: Array<{ timestamp: number; time: string; value: number; count: number; locid: number; label: string }> } = {}
                         
-                        // USAR LA MISMA LÓGICA QUE processChartData (líneas 1194-1196)
-                        const useMinutes = !isDateRange && (filteredMediciones.length < 500 || hoursSpan < 48)
-                        const useHours = !isDateRange && !useMinutes && hoursSpan < 168 // 7 días
-                        const useDays = isDateRange && daysSpan > 7 // Solo días si es rango personalizado y > 7 días
-                        
-                        // Obtener tipos únicos en las mediciones de comparación
-                        const tiposEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.tipoid).filter((id): id is number => id !== undefined && id !== null)))
-                        
-                        // Inicializar estructura de datos por tipo
-                        const datosPorTipo: { [tipoid: number]: Array<{ timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }> } = {}
-                        tiposEnMediciones.forEach(tipoid => {
-                          datosPorTipo[tipoid] = []
+                        locsEnMediciones.forEach(locid => {
+                          datosPorLoc[locid] = []
                         })
                         
-                        // Agrupar mediciones por tipo y tiempo (igual que processChartData)
                         filteredMediciones.forEach(medicion => {
-                          if (medicion.medicion == null || isNaN(medicion.medicion)) return
-                          if (medicion.tipoid === undefined || medicion.tipoid === null) return
+                          if (medicion.localizacionid === undefined || medicion.localizacionid === null) return
                           
                           const date = new Date(medicion.fecha)
                           let timeKey: string
                           
                           if (useDays) {
-                            const day = String(date.getDate()).padStart(2, '0')
-                            const month = String(date.getMonth() + 1).padStart(2, '0')
-                            timeKey = `${day}/${month}`
+                            timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
                           } else if (useHours) {
-                            const hour = String(date.getHours()).padStart(2, '0')
-                            timeKey = `${hour}:00`
+                            timeKey = `${String(date.getHours()).padStart(2, '0')}:00`
                           } else {
-                            const minutes = date.getMinutes()
-                            const roundedMinutes = Math.floor(minutes / 15) * 15
-                            const hour = String(date.getHours()).padStart(2, '0')
-                            const minute = String(roundedMinutes).padStart(2, '0')
-                            timeKey = `${hour}:${minute}`
+                            const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15
+                            timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`
                           }
                           
-                          // Buscar si ya existe un punto para este tipo y tiempo
-                          const existingPoint = datosPorTipo[medicion.tipoid]?.find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === timeKey)
-                          
+                          const label = getSeriesLabel(medicion)
+
+                          const existingPoint = datosPorLoc[medicion.localizacionid].find(p => p.time === timeKey)
                           if (existingPoint) {
                             const currentValue = existingPoint.value
                             const currentCount = existingPoint.count
-                            const newValue = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
-                            existingPoint.value = newValue
+                            existingPoint.value = (currentValue * currentCount + medicion.medicion) / (currentCount + 1)
                             existingPoint.count = currentCount + 1
-                            if (date.getTime() > existingPoint.timestamp) {
-                              existingPoint.timestamp = date.getTime()
-                            }
                           } else {
-                            if (!datosPorTipo[medicion.tipoid]) {
-                              datosPorTipo[medicion.tipoid] = []
-                            }
-                            datosPorTipo[medicion.tipoid].push({
+                            datosPorLoc[medicion.localizacionid].push({
                               timestamp: date.getTime(),
                               time: timeKey,
                               value: medicion.medicion,
                               count: 1,
-                              tipoid: medicion.tipoid,
-                              tipo: tipos.find(t => t.tipoid === medicion.tipoid)?.tipo || `Tipo ${medicion.tipoid}`
+                              locid: medicion.localizacionid,
+                              label: label
                             })
                           }
                         })
                         
-                        // Ordenar los datos de cada tipo por timestamp
-                        tiposEnMediciones.forEach(tipoid => {
-                          if (datosPorTipo[tipoid]) {
-                            datosPorTipo[tipoid].sort((a: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }, b: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => a.timestamp - b.timestamp)
-                          }
-                        })
-                        
-                        // Obtener todos los tiempos únicos ordenados por timestamp (igual que processChartData)
                         const allTimeStamps = new Set<number>()
-                        tiposEnMediciones.forEach(tipoid => {
-                          if (datosPorTipo[tipoid]) {
-                            datosPorTipo[tipoid].forEach((point: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => {
-                              // Calcular el inicio del período para el timeKey
-                              const periodStart = new Date(point.timestamp)
-                              if (useDays) {
-                                periodStart.setHours(0, 0, 0, 0)
-                              } else if (useHours) {
-                                periodStart.setMinutes(0, 0, 0)
-                              } else {
-                                const roundedMinutes = Math.floor(periodStart.getMinutes() / 15) * 15
-                                periodStart.setMinutes(roundedMinutes, 0, 0)
-                              }
-                              allTimeStamps.add(periodStart.getTime())
-                            })
-                          }
+                        locsEnMediciones.forEach(locid => {
+                          datosPorLoc[locid].forEach(p => {
+                            const date = new Date(p.timestamp)
+                            let periodStart: Date
+                            if (useDays) periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+                            else if (useHours) periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours())
+                            else {
+                              const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15
+                              periodStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes)
+                            }
+                            allTimeStamps.add(periodStart.getTime())
+                          })
                         })
                         
-                        // Convertir timestamps a timeKeys y ordenar
-                        const allTimes = Array.from(allTimeStamps)
-                          .sort((a, b) => a - b)
-                          .map(ts => {
-                            const date = new Date(ts)
-                            if (useDays) {
-                              const day = String(date.getDate()).padStart(2, '0')
-                              const month = String(date.getMonth() + 1).padStart(2, '0')
-                              return `${day}/${month}`
-                            } else if (useHours) {
-                              const hour = String(date.getHours()).padStart(2, '0')
-                              return `${hour}:00`
-                            } else {
-                              const minutes = date.getMinutes()
-                              const roundedMinutes = Math.floor(minutes / 15) * 15
-                              const hour = String(date.getHours()).padStart(2, '0')
-                              const minute = String(roundedMinutes).padStart(2, '0')
-                              return `${hour}:${minute}`
-                            }
-                          })
+                        const allTimes = Array.from(allTimeStamps).sort((a, b) => a - b).map(ts => {
+                          const date = new Date(ts)
+                          if (useDays) return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+                          if (useHours) return `${String(date.getHours()).padStart(2, '0')}:00`
+                          return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+                        })
                         
-                        // Crear estructura de datos para el gráfico
                         return allTimes.map(time => {
                           const point: any = { time }
                           let hasAnyValue = false
-                          
-                          tiposEnMediciones.forEach(tipoid => {
-                            const tipo = tipos.find(t => t.tipoid === tipoid)
-                            if (tipo && datosPorTipo[tipoid]) {
-                              const tipoPoint = datosPorTipo[tipoid].find((p: { timestamp: number; time: string; value: number; count: number; tipoid: number; tipo: string }) => p.time === time)
-                              if (tipoPoint) {
-                                let value: number | null = tipoPoint.value
-                                
-                                // Filtrar valores fuera del rango del eje Y si está configurado
-                                if (value !== null && value !== undefined) {
-                                  const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
-                                  const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
-                                  
-                                  if (hasMinLimit && value < yAxisDomain.min!) {
-                                    value = null // Ocultar valor si está por debajo del mínimo
-                                  } else if (hasMaxLimit && value > yAxisDomain.max!) {
-                                    value = null // Ocultar valor si está por encima del máximo
-                                  }
-                                  
-                                  if (value !== null && value !== undefined) {
-                                    hasAnyValue = true
-                                  }
-                                }
-                                
-                                point[tipo.tipo] = value
+                          locsEnMediciones.forEach(locid => {
+                            const locData = datosPorLoc[locid].find(p => p.time === time)
+                            if (locData) {
+                              let value: number | null = locData.value
+                              if (useCustomRange) {
+                                const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min)
+                                const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max)
+                                if ((hasMinLimit && value < yAxisDomain.min!) || (hasMaxLimit && value > yAxisDomain.max!)) value = null
+                              }
+                              if (value !== null && value !== undefined) {
+                                point[datosPorLoc[locid][0].label] = value
+                                hasAnyValue = true
                               }
                             }
                           })
-                          
-                          // Solo retornar puntos que tengan al menos un valor válido
                           return hasAnyValue ? point : null
-                        }).filter((p): p is any => p !== null)
+                        }).filter(p => p !== null)
                       }
                       
                       let comparisonChartData: any[] = []
@@ -3691,11 +3665,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       // Renderizar el gráfico con los datos procesados (usar finalChartData que incluye comparación)
                       // CRÍTICO: Obtener tipoKeys del nodo principal (chartData), NO de finalChartData
                       // Esto asegura que siempre se muestren las líneas del nodo principal
-                      let tipoKeys = chartData.length > 0 
-                        ? Object.keys(chartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
-                        : (finalChartData.length > 0 
-                          ? Object.keys(finalChartData[0] || {}).filter(key => key !== 'time' && !key.startsWith('comp_'))
-                          : [])
+                      let tipoKeys = Array.from(
+                        new Set(
+                          chartData.flatMap(item => Object.keys(item).filter(key => key !== 'time' && !key.startsWith('comp_')))
+                        )
+                      )
                       
                       // Si se aplicaron umbrales, filtrar solo los tipos seleccionados
                       if (umbralAplicado && umbralNodoSeleccionado) {

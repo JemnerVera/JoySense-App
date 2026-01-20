@@ -593,7 +593,7 @@ export interface FilterState {
   empresaId?: number;
   fundoId?: number;
   ubicacionId?: number;
-  localizacionId?: number;
+  localizacionId?: number | string;
   startDate?: string;
   endDate?: string;
 }

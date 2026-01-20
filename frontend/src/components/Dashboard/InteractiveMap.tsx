@@ -205,7 +205,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         const map = new Map<number, string[]>();
         nodoIds.forEach((nodoid, index) => {
           const localizaciones = localizacionesArrays[index] || [];
-          const nombres = localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n);
+          // Usar Set para evitar duplicados de nombres de localización en el mismo nodo
+          const nombres = Array.from(new Set(localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)));
           if (nombres.length > 0) {
             map.set(nodoid, nombres);
           }
