@@ -6,7 +6,7 @@ import { flushSync } from 'react-dom';
 interface MetricaPorLoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  localizacionId: number;
+  localizacionIds: number[];
   localizacionNombre: string;
   metricaId: number;
   metricaNombre: string;
@@ -85,7 +85,7 @@ const getTranslatedMetrics = (): MetricConfig[] => [
 const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   isOpen,
   onClose,
-  localizacionId,
+  localizacionIds,
   localizacionNombre,
   metricaId: initialMetricaId,
   metricaNombre: initialMetricaNombre,
@@ -97,6 +97,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tipos, setTipos] = useState<any[]>([]);
+  const [sensores, setSensores] = useState<any[]>([]);
   const [tiposEnDatos, setTiposEnDatos] = useState<number[]>([]);
   const [mediciones, setMediciones] = useState<MedicionData[]>([]);
   
@@ -122,13 +123,42 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   const [comparisonLote, setComparisonLote] = useState<any>(null);
   const [comparisonMediciones, setComparisonMediciones] = useState<MedicionData[]>([]);
   const [loadingComparisonData, setLoadingComparisonData] = useState(false);
-  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [loteId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null);
+  const [thresholdRecommendations, setThresholdRecommendations] = useState<{ [loteId: string]: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } } | null>(null);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [availableLotes, setAvailableLotes] = useState<any[]>([]);
   const [isModalExpanded, setIsModalExpanded] = useState(false);
   const [visibleTipos, setVisibleTipos] = useState<Set<string>>(new Set()); // Tipos de sensores visibles en el gráfico
   const [availableMetricIds, setAvailableMetricIds] = useState<Set<number>>(new Set()); // Métricas disponibles en las mediciones
   
+  // Función para obtener la etiqueta de la serie (compartida entre gráficos)
+  const getSeriesLabel = useCallback((m: any) => {
+    const sensorId = m.sensorid || m.localizacion?.sensorid;
+    const sensorInfo = sensores.find((s: any) => s.sensorid === sensorId);
+    
+    // Buscar nombre del sensor en múltiples niveles del objeto
+    const sensorName = sensorInfo?.sensor || 
+                       sensorInfo?.nombre || 
+                       sensorInfo?.modelo || 
+                       m.localizacion?.sensor?.sensor || 
+                       m.localizacion?.sensor?.nombre;
+    
+    // Buscar tipo en múltiples niveles
+    const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid || m.localizacion?.sensor?.tipo?.tipoid;
+    const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+    const tipoName = tipoInfo?.tipo || m.localizacion?.sensor?.tipo?.tipo || 'Sensor';
+    
+    if (sensorName && sensorName !== tipoName) {
+      return `${tipoName} - ${sensorName}`;
+    }
+    
+    // Si no hay nombre de sensor distintivo, usar ID para asegurar unicidad
+    if (sensorId && sensorId !== tipoId) {
+      return `${tipoName} (ID: ${sensorId})`;
+    }
+    
+    return tipoName;
+  }, [sensores, tipos]);
+
   // Refs para cancelar requests
   const loadChartDataAbortControllerRef = useRef<AbortController | null>(null);
   const loadChartDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -165,7 +195,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     const useDays = daysDiff > 30;
 
     // Agrupar por fecha y tipo con granularidad adaptativa
-    const dataByTimeAndTipo = new Map<string, { [tipoid: number]: { sum: number; count: number; timestamp: number } }>();
+    const dataByTimeAndLabel = new Map<string, { [label: string]: { sum: number; count: number; timestamp: number } }>();
 
       medicionesFiltradas.forEach((medicion) => {
       const fechaObj = new Date(medicion.fecha);
@@ -187,43 +217,37 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`;
       }
 
-      if (!dataByTimeAndTipo.has(timeKey)) {
-        dataByTimeAndTipo.set(timeKey, {});
+      if (!dataByTimeAndLabel.has(timeKey)) {
+        dataByTimeAndLabel.set(timeKey, {});
       }
 
-      const timeData = dataByTimeAndTipo.get(timeKey)!;
+      const timeData = dataByTimeAndLabel.get(timeKey)!;
       const timestamp = fechaObj.getTime();
       
-      // CRÍTICO: Obtener tipoid desde múltiples fuentes posibles
-      const tipoid = medicion.tipoid ?? medicion.localizacion?.sensor?.tipoid ?? 0
+      const label = getSeriesLabel(medicion);
       
-      // Filtrar mediciones sin tipoid válido
-      if (tipoid === undefined || tipoid === null || tipoid === 0) {
-        return;
+      if (!timeData[label]) {
+        timeData[label] = { sum: 0, count: 0, timestamp };
       }
       
-      if (!timeData[tipoid]) {
-        timeData[tipoid] = { sum: 0, count: 0, timestamp };
-      }
-      
-      timeData[tipoid].sum += parseFloat(medicion.medicion.toString());
-      timeData[tipoid].count += 1;
-      if (timestamp > timeData[tipoid].timestamp) {
-        timeData[tipoid].timestamp = timestamp;
+      timeData[label].sum += parseFloat(medicion.medicion.toString());
+      timeData[label].count += 1;
+      if (timestamp > timeData[label].timestamp) {
+        timeData[label].timestamp = timestamp;
       }
     });
 
     // Convertir a array de puntos de datos
-    const allTimeStamps = Array.from(dataByTimeAndTipo.entries())
-      .map(([timeKey, tiposData]) => {
-        const timestamps = Object.values(tiposData).map(t => t.timestamp);
+    const allTimeStamps = Array.from(dataByTimeAndLabel.entries())
+      .map(([timeKey, labelsData]) => {
+        const timestamps = Object.values(labelsData).map(t => t.timestamp);
         const maxTimestamp = timestamps.length > 0 ? Math.max(...timestamps) : 0;
         return { timeKey, timestamp: maxTimestamp };
       })
       .sort((a, b) => a.timestamp - b.timestamp);
 
     const dataPoints: ChartDataPoint[] = allTimeStamps.map(({ timeKey }) => {
-      const timeDataByTipo = dataByTimeAndTipo.get(timeKey)!;
+      const timeDataByLabel = dataByTimeAndLabel.get(timeKey)!;
       const fechaFormatted = timeKey;
 
       const point: ChartDataPoint = {
@@ -231,13 +255,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         fechaFormatted
       };
 
-      tiposUnicos.forEach(tipoid => {
-        const tipo = tiposData.find(t => t.tipoid === tipoid);
-        const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
-        const tipoDataForTipo = timeDataByTipo[tipoid];
+      Object.keys(timeDataByLabel).forEach(label => {
+        const labelData = timeDataByLabel[label];
         
-        if (tipoDataForTipo && tipoDataForTipo.count > 0) {
-          let promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+        if (labelData && labelData.count > 0) {
+          let promedio = labelData.sum / labelData.count;
           
           // Filtrar valores fuera del rango del eje Y si está configurado
           if (yAxisDomainFilter) {
@@ -251,9 +273,9 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
             }
           }
           
-          point[tipoNombre] = promedio;
+          point[label] = promedio;
         } else {
-          point[tipoNombre] = null;
+          point[label] = null;
         }
       });
 
@@ -261,19 +283,21 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     });
 
     return dataPoints;
-  }, [yAxisDomain]);
+  }, [yAxisDomain, getSeriesLabel]);
 
   // Cargar tipos de sensores y ubicaciones disponibles
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [tiposData, localizacionesData] = await Promise.all([
+        const [tiposData, sensoresData, localizacionesData] = await Promise.all([
           JoySenseService.getTipos(),
+          JoySenseService.getSensores(),
           JoySenseService.getLocalizaciones()
         ]);
         setTipos(tiposData || []);
-        // Filtrar localizaciones disponibles (excluyendo la actual)
-        const lotesDisponibles = (localizacionesData || []).filter((l: any) => l.localizacionid !== localizacionId);
+        setSensores(sensoresData || []);
+        // Filtrar localizaciones disponibles (excluyendo las actuales)
+        const lotesDisponibles = (localizacionesData || []).filter((l: any) => !localizacionIds.includes(l.localizacionid));
         setAvailableLotes(lotesDisponibles);
       } catch (err) {
         console.error('Error cargando datos iniciales:', err);
@@ -282,21 +306,21 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     if (isOpen) {
       loadInitialData();
     }
-  }, [isOpen, localizacionId]);
+  }, [isOpen, localizacionIds]);
 
   // Cargar métricas disponibles para la localización
   const loadAvailableMetrics = useCallback(async () => {
-    if (!isOpen || !localizacionId || !detailedStartDate || !detailedEndDate) {
+    if (!isOpen || !localizacionIds.length || !detailedStartDate || !detailedEndDate) {
       return;
     }
 
     try {
-      // Cargar una muestra pequeña de mediciones sin filtrar por métrica para detectar métricas disponibles
+      // Cargar una muestra pequeña de mediciones para todos los IDs en un solo request
       const sampleMediciones = await JoySenseService.getMediciones({
-        localizacionId,
+        localizacionId: localizacionIds.join(','),
         startDate: `${detailedStartDate} 00:00:00`,
         endDate: `${detailedEndDate} 23:59:59`,
-        limit: 100 // Solo necesitamos una muestra para detectar métricas
+        limit: 200 // Un poco más para cubrir múltiples sensores
       });
 
       if (Array.isArray(sampleMediciones) && sampleMediciones.length > 0) {
@@ -321,11 +345,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     } catch (err) {
       console.error('Error cargando métricas disponibles:', err);
     }
-  }, [isOpen, localizacionId, detailedStartDate, detailedEndDate, initialMetricaId]);
+  }, [isOpen, localizacionIds, detailedStartDate, detailedEndDate, initialMetricaId]);
 
   // Cargar datos del gráfico
   const loadChartData = useCallback(async () => {
-    if (!isOpen || !localizacionId || !detailedStartDate || !detailedEndDate) {
+    if (!isOpen || !localizacionIds.length || !detailedStartDate || !detailedEndDate) {
       return;
     }
 
@@ -375,9 +399,9 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
       const currentMetricId = getMetricIdFromDataKey(selectedMetric);
 
-      // Obtener mediciones para la localización y métrica seleccionados
+      // Obtener mediciones para TODOS los IDs de localización en un solo request
       const medicionesData = await JoySenseService.getMediciones({
-        localizacionId,
+        localizacionId: localizacionIds.join(','),
         metricaId: currentMetricId,
         startDate: `${detailedStartDate} 00:00:00`,
         endDate: `${detailedEndDate} 23:59:59`,
@@ -453,7 +477,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         setLoading(false);
       }
     }
-  }, [isOpen, localizacionId, selectedMetric, detailedStartDate, detailedEndDate, tipos, processChartData]);
+  }, [isOpen, localizacionIds, selectedMetric, detailedStartDate, detailedEndDate, tipos, processChartData]);
 
   // Cargar datos de comparación
   const loadComparisonMediciones = useCallback(async (comparisonLote: any) => {
@@ -534,7 +558,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     
     // CRÍTICO: Usar mapeo dinámico por nombre de métrica en lugar de ID hardcodeado
     // Función auxiliar para calcular recomendaciones
-    const calculateRecommendations = (medicionesData: MedicionData[]): { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } => {
+    const calculateRecommendations = (medicionesData: MedicionData[]): { [label: string]: { min: number; max: number; avg: number; stdDev: number } } => {
       const filteredMediciones = medicionesData.filter(m => {
         const medicionDate = new Date(m.fecha)
         const isInDateRange = medicionDate >= startDate && medicionDate <= endDate
@@ -563,6 +587,13 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
           metricName.includes('conductivity')
         )) matchesMetric = true
         
+        // Formato metrica_X
+        if (selectedMetric.startsWith('metrica_')) {
+          const targetId = parseInt(selectedMetric.replace('metrica_', ''))
+          const mId = m.metricaid ?? m.localizacion?.metricaid
+          if (mId === targetId) matchesMetric = true
+        }
+        
         return isInDateRange && matchesMetric
       });
 
@@ -570,27 +601,22 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         return {};
       }
 
-      const medicionesPorTipo: { [tipoid: number]: number[] } = {};
+      const medicionesPorLabel: { [label: string]: number[] } = {};
       
       filteredMediciones.forEach(m => {
-        // Filtrar mediciones sin tipoid válido
-        if (m.tipoid === undefined || m.tipoid === null) {
-          return;
-        }
-        
-        if (!medicionesPorTipo[m.tipoid]) {
-          medicionesPorTipo[m.tipoid] = [];
+        const label = getSeriesLabel(m);
+        if (!medicionesPorLabel[label]) {
+          medicionesPorLabel[label] = [];
         }
         if (m.medicion != null && !isNaN(m.medicion)) {
-          medicionesPorTipo[m.tipoid].push(m.medicion);
+          medicionesPorLabel[label].push(m.medicion);
         }
       });
 
-      const recommendations: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } = {};
+      const recommendations: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } = {};
       
-      Object.keys(medicionesPorTipo).forEach(tipoidStr => {
-        const tipoid = parseInt(tipoidStr);
-        const valores = medicionesPorTipo[tipoid];
+      Object.keys(medicionesPorLabel).forEach(label => {
+        const valores = medicionesPorLabel[label];
         
         if (valores.length === 0) return;
         
@@ -606,7 +632,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         const recommendedMin = Math.max(0, p5 - margin);
         const recommendedMax = p95 + margin;
         
-        recommendations[tipoid] = {
+        recommendations[label] = {
           min: Math.round(recommendedMin * 100) / 100,
           max: Math.round(recommendedMax * 100) / 100,
           avg: Math.round(avg * 100) / 100,
@@ -625,8 +651,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return;
     }
 
-    const allRecommendations: { [loteId: string]: { [tipoid: number]: { min: number; max: number; avg: number; stdDev: number } } } = {
-      [`localizacion_${localizacionId}`]: mainLoteRecommendations
+    const allRecommendations: { [loteId: string]: { [label: string]: { min: number; max: number; avg: number; stdDev: number } } } = {
+      [`localizacion_${localizacionIds.join('_')}`]: mainLoteRecommendations
     };
 
     // Si hay lote de comparación, calcular también sus recomendaciones
@@ -639,7 +665,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
     setThresholdRecommendations(allRecommendations);
     setShowThresholdModal(true);
-  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedMetric, localizacionId, comparisonLote]);
+  }, [mediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedMetric, localizacionIds, comparisonLote]);
 
   // Inicializar métricas disponibles con la métrica inicial cuando se abre el modal
   useEffect(() => {
@@ -652,14 +678,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
   // Cargar métricas disponibles cuando se abre el modal o cambian las fechas
   useEffect(() => {
-    if (isOpen && localizacionId && detailedStartDate && detailedEndDate) {
+    if (isOpen && localizacionIds.length && detailedStartDate && detailedEndDate) {
       loadAvailableMetrics();
     }
-  }, [isOpen, localizacionId, detailedStartDate, detailedEndDate, loadAvailableMetrics]);
+  }, [isOpen, localizacionIds, detailedStartDate, detailedEndDate, loadAvailableMetrics]);
 
   // Recargar datos cuando cambien las fechas o métrica
   useEffect(() => {
-    if (!isOpen || !localizacionId || !detailedStartDate || !detailedEndDate) {
+    if (!isOpen || !localizacionIds.length || !detailedStartDate || !detailedEndDate) {
       return;
     }
     
@@ -683,7 +709,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         loadChartDataAbortControllerRef.current.abort();
       }
     };
-  }, [detailedStartDate, detailedEndDate, selectedMetric, isOpen, localizacionId, loadChartData]);
+  }, [detailedStartDate, detailedEndDate, selectedMetric, isOpen, localizacionIds, loadChartData]);
 
   // Recargar datos de comparación cuando cambien las fechas o métrica
   useEffect(() => {
@@ -722,7 +748,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   // Resetear ajuste del eje Y cuando cambia el lote seleccionado
   useEffect(() => {
     setYAxisDomain({ min: null, max: null });
-  }, [localizacionId]);
+  }, [localizacionIds]);
 
   // Reprocesar datos cuando cambia el ajuste del eje Y
   useEffect(() => {
@@ -750,14 +776,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     // Obtener tipos disponibles de los datos del gráfico
     const tiposDisponibles = new Set<string>();
     
-    // Agregar tipos del lote principal
-    if (chartData.length > 0) {
-      Object.keys(chartData[0]).forEach(key => {
+    // Agregar tipos del lote principal (escaneando todos los puntos para mayor seguridad)
+    chartData.forEach(point => {
+      Object.keys(point).forEach(key => {
         if (key !== 'fecha' && key !== 'fechaFormatted' && key !== 'time' && !key.startsWith('comp_')) {
           tiposDisponibles.add(key);
         }
       });
-    }
+    });
 
     // Agregar tipos del lote de comparación si existe
     // Los tipos de comparación se agregan cuando se procesan los datos de comparación
@@ -771,7 +797,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       }
       return prev;
     });
-  }, [isOpen, chartData, selectedMetric, localizacionId]);
+  }, [isOpen, chartData, selectedMetric, localizacionIds]);
 
   // Procesar datos de comparación si están disponibles
   // CRÍTICO: Usar EXACTAMENTE la misma lógica de granularidad que processChartData
@@ -808,11 +834,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       return [];
     }
     
-    // Obtener tipos únicos en los datos de comparación
-    const tiposUnicos = Array.from(new Set(filteredMediciones.map(m => m.tipoid).filter(Boolean)));
-    
     // Agrupar por fecha y tipo con granularidad adaptativa (MISMA LÓGICA QUE processChartData)
-    const dataByTimeAndTipo = new Map<string, { [tipoid: number]: { sum: number; count: number; timestamp: number } }>();
+    const dataByTimeAndLabel = new Map<string, { [label: string]: { sum: number; count: number; timestamp: number } }>();
     
     filteredMediciones.forEach((medicion) => {
       if (medicion.medicion == null || isNaN(medicion.medicion)) return;
@@ -837,40 +860,37 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`;
       }
       
-      if (!dataByTimeAndTipo.has(timeKey)) {
-        dataByTimeAndTipo.set(timeKey, {});
+      if (!dataByTimeAndLabel.has(timeKey)) {
+        dataByTimeAndLabel.set(timeKey, {});
       }
       
-      const timeData = dataByTimeAndTipo.get(timeKey)!;
+      const timeData = dataByTimeAndLabel.get(timeKey)!;
       const timestamp = fechaObj.getTime();
       
-      // Filtrar mediciones sin tipoid válido
-      if (medicion.tipoid === undefined || medicion.tipoid === null) {
-        return;
+      const label = getSeriesLabel(medicion);
+      
+      if (!timeData[label]) {
+        timeData[label] = { sum: 0, count: 0, timestamp };
       }
       
-      if (!timeData[medicion.tipoid]) {
-        timeData[medicion.tipoid] = { sum: 0, count: 0, timestamp };
-      }
-      
-      timeData[medicion.tipoid].sum += parseFloat(medicion.medicion.toString());
-      timeData[medicion.tipoid].count += 1;
-      if (timestamp > timeData[medicion.tipoid].timestamp) {
-        timeData[medicion.tipoid].timestamp = timestamp;
+      timeData[label].sum += parseFloat(medicion.medicion.toString());
+      timeData[label].count += 1;
+      if (timestamp > timeData[label].timestamp) {
+        timeData[label].timestamp = timestamp;
       }
     });
     
     // Convertir a array de puntos de datos (MISMA LÓGICA QUE processChartData)
-    const allTimeStamps = Array.from(dataByTimeAndTipo.entries())
-      .map(([timeKey, tiposData]) => {
-        const timestamps = Object.values(tiposData).map(t => t.timestamp);
+    const allTimeStamps = Array.from(dataByTimeAndLabel.entries())
+      .map(([timeKey, labelsData]) => {
+        const timestamps = Object.values(labelsData).map(t => t.timestamp);
         const maxTimestamp = timestamps.length > 0 ? Math.max(...timestamps) : 0;
         return { timeKey, timestamp: maxTimestamp };
       })
       .sort((a, b) => a.timestamp - b.timestamp);
     
     const dataPoints: ChartDataPoint[] = allTimeStamps.map(({ timeKey }) => {
-      const timeDataByTipo = dataByTimeAndTipo.get(timeKey)!;
+      const timeDataByLabel = dataByTimeAndLabel.get(timeKey)!;
       const fechaFormatted = timeKey;
       
       const point: ChartDataPoint = {
@@ -879,29 +899,27 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
         time: timeKey // Agregar 'time' para compatibilidad con combineChartData
       };
       
-      tiposUnicos.forEach(tipoid => {
-        const tipo = tipos.find(t => t.tipoid === tipoid);
-        const tipoNombre = tipo?.tipo || `Tipo ${tipoid}`;
-        const tipoDataForTipo = timeDataByTipo[tipoid];
+      Object.keys(timeDataByLabel).forEach(label => {
+        const labelData = timeDataByLabel[label];
         
-        if (tipoDataForTipo && tipoDataForTipo.count > 0) {
-          let promedio = tipoDataForTipo.sum / tipoDataForTipo.count;
+        if (labelData && labelData.count > 0) {
+          let promedio = labelData.sum / labelData.count;
           
           // Filtrar valores fuera del rango del eje Y si está configurado
-          if (yAxisDomain) {
-            const hasMinLimit = yAxisDomain.min !== null && !isNaN(yAxisDomain.min);
-            const hasMaxLimit = yAxisDomain.max !== null && !isNaN(yAxisDomain.max);
+          if (yAxisDomainFilter) {
+            const hasMinLimit = yAxisDomainFilter.min !== null && !isNaN(yAxisDomainFilter.min);
+            const hasMaxLimit = yAxisDomainFilter.max !== null && !isNaN(yAxisDomainFilter.max);
             
-            if (hasMinLimit && promedio < yAxisDomain.min!) {
+            if (hasMinLimit && promedio < yAxisDomainFilter.min!) {
               promedio = null as any; // Ocultar valor si está por debajo del mínimo
-            } else if (hasMaxLimit && promedio > yAxisDomain.max!) {
+            } else if (hasMaxLimit && promedio > yAxisDomainFilter.max!) {
               promedio = null as any; // Ocultar valor si está por encima del máximo
             }
           }
           
-          point[tipoNombre] = promedio;
+          point[label] = promedio;
         } else {
-          point[tipoNombre] = null;
+          point[label] = null;
         }
       });
       
@@ -1352,7 +1370,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                         value={comparisonLote?.localizacionid || ''}
                         onChange={(e) => {
                           const loteId = parseInt(e.target.value);
-                          if (loteId && loteId !== localizacionId) {
+                          if (loteId && !localizacionIds.includes(loteId)) {
                             const lote = availableLotes.find(l => l.localizacionid === loteId);
                             if (lote) {
                               setComparisonLote(lote);
@@ -1434,10 +1452,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                     );
                   }
 
-                  const tipoKeys = Object.keys(finalChartData[0] || {}).filter(key => key !== 'fecha' && key !== 'fechaFormatted' && !key.startsWith('comp_'));
-                  const comparisonKeys = Object.keys(finalChartData[0] || {}).filter(key => key.startsWith('comp_'));
-                  const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16'];
-                  const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4'];
+                  const allKeys = Array.from(new Set(finalChartData.flatMap(point => Object.keys(point))));
+                  const tipoKeys = allKeys.filter(key => key !== 'fecha' && key !== 'fechaFormatted' && key !== 'time' && !key.startsWith('comp_')).sort();
+                  const comparisonKeys = allKeys.filter(key => key.startsWith('comp_')).sort();
+                  const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#8b5cf6', '#3b82f6'];
+                  const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4', '#ef4444', '#f59e0b'];
 
                   return (
                     <>
@@ -1495,17 +1514,19 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                               }}
                               formatter={(value: number, name: string) => {
                                 const isComparison = name.startsWith('comp_');
+                                const rawName = isComparison ? name.replace('comp_', '') : name;
+                                
                                 let displayName: string;
                                 if (isComparison) {
-                                  displayName = `${name.replace('comp_', '')} (${comparisonLote?.localizacion || 'Comparación'})`;
+                                  displayName = `${rawName} (${comparisonLote?.localizacion || 'Comparación'})`;
                                 } else {
                                   displayName = comparisonLote 
-                                    ? `${name} (${localizacionNombre})`
-                                    : name;
+                                    ? `${rawName} (${localizacionNombre})`
+                                    : rawName;
                                 }
                                 return [
                                   <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                    {displayName}: {value ? value.toFixed(1) : '--'} {currentMetric?.unit || ''}
+                                    {displayName}: {value != null ? value.toFixed(1) : '--'} {currentMetric?.unit || ''}
                                   </span>
                                 ];
                               }}
@@ -1738,7 +1759,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
               <div className="space-y-6">
                 {Object.keys(thresholdRecommendations).map(loteId => {
                   const loteRecommendations = thresholdRecommendations[loteId];
-                  const isMainLote = loteId.startsWith(`localizacion_${localizacionId}`);
+                  const isMainLote = loteId.startsWith(`localizacion_${localizacionIds.join('_')}`);
                   const loteName = isMainLote 
                     ? localizacionNombre
                     : (comparisonLote?.localizacion || 'Localización de Comparación');
@@ -1748,20 +1769,18 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                       <h3 className="text-xl font-bold text-blue-500 dark:text-blue-500 font-mono border-b border-gray-300 dark:border-neutral-700 pb-2">
                         {loteName}
                       </h3>
-                      {Object.keys(loteRecommendations).map(tipoidStr => {
-                        const tipoid = parseInt(tipoidStr);
-                        const tipo = tipos.find(t => t.tipoid === tipoid);
-                        const rec = loteRecommendations[tipoid];
+                      {Object.keys(loteRecommendations).map(label => {
+                        const rec = loteRecommendations[label];
                         
-                        if (!tipo || !rec) return null;
+                        if (!rec) return null;
                         
                         return (
                           <div
-                            key={`${loteId}_${tipoid}`}
+                            key={`${loteId}_${label}`}
                             className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
                           >
                             <h4 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
-                              {tipo.tipo}
+                              {label}
                             </h4>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               <div>

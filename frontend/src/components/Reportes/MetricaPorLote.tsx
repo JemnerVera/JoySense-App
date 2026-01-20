@@ -6,9 +6,10 @@ import MetricaPorLoteModal from './MetricaPorLoteModal';
 interface MetricaPorLoteProps {}
 
 interface LoteMetricaData {
-  localizacionid: number;
+  localizacionid: number; // Primer ID encontrado para compatibilidad
+  localizacionids: number[]; // Todos los IDs asociados a este nombre (Lote)
   localizacion: string;
-  valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
+  valoresPorSensor: { [sensorKey: string]: { valor: number; fecha: string; tipoNombre: string; sensorNombre: string } };
   medicionCount: number;
 }
 
@@ -19,6 +20,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [localizaciones, setLocalizaciones] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
+  const [sensores, setSensores] = useState<any[]>([]);
   const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string>('');
@@ -40,17 +42,19 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [metricasData, fundosData, localizacionesData, tiposData] = await Promise.all([
+        const [metricasData, fundosData, localizacionesData, tiposData, sensoresData] = await Promise.all([
           JoySenseService.getMetricas(),
           JoySenseService.getFundos(),
           JoySenseService.getLocalizaciones(), // Usar getLocalizaciones() que incluye join con nodo.ubicacionid
-          JoySenseService.getTipos()
+          JoySenseService.getTipos(),
+          JoySenseService.getSensores()
         ]);
         
         setMetricas(metricasData || []);
         setFundos(fundosData || []);
         setLocalizaciones(localizacionesData || []);
         setTipos(tiposData || []);
+        setSensores(sensoresData || []);
         
         // Obtener la última fecha con datos disponible
         try {
@@ -202,10 +206,11 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         return nodoUbicacionId && ubicacionIds.includes(nodoUbicacionId);
       });
 
-      // Agrupar por localización
-      const loteMap = new Map<number, { 
+      // Agrupar por NOMBRE de localización (Lote) para incluir todos sus sensores
+      const loteMap = new Map<string, { 
         localizacion: string; 
-        valoresPorTipo: { [tipoid: number]: { valor: number; fecha: string } };
+        localizacionIds: number[];
+        valoresPorSensor: { [sensorKey: string]: { valor: number; fecha: string; tipoNombre: string; sensorNombre: string } };
         medicionCount: number;
       }>();
 
@@ -217,6 +222,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         // CRÍTICO: Obtener localizacionid y tipoid desde múltiples fuentes posibles
         const localizacionId = medicion.localizacionid ?? medicion.localizacion?.localizacionid ?? 0
         const tipoid = medicion.tipoid ?? medicion.localizacion?.sensor?.tipoid ?? 0
+        const sensorId = medicion.sensorid ?? medicion.localizacion?.sensorid ?? 0
         const valor = medicion.valor ?? medicion.medicion
         const fecha = medicion.fecha
         const medicionCount = medicion.medicionCount || 1
@@ -233,50 +239,62 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
           return
         }
 
-        if (!loteMap.has(localizacionId)) {
-          const nombreLocalizacion = localizacion?.localizacion || medicion.localizacion?.localizacion || `Localización ${localizacionId}`;
-          loteMap.set(localizacionId, {
+        const nombreLocalizacion = localizacion?.localizacion || medicion.localizacion?.localizacion || `Localización ${localizacionId}`;
+        
+        if (!loteMap.has(nombreLocalizacion)) {
+          loteMap.set(nombreLocalizacion, {
             localizacion: nombreLocalizacion,
-            valoresPorTipo: {},
+            localizacionIds: [],
+            valoresPorSensor: {},
             medicionCount: 0
           })
         }
 
-        const lote = loteMap.get(localizacionId)!
+        const lote = loteMap.get(nombreLocalizacion)!
         lote.medicionCount = Math.max(lote.medicionCount, medicionCount)
-        // Solo actualizar si es la medición más reciente para este tipo
-        const existingTipo = lote.valoresPorTipo[tipoid]
-        if (!existingTipo || new Date(fecha) > new Date(existingTipo.fecha)) {
-          lote.valoresPorTipo[tipoid] = {
+        
+        // Agregar ID si no existe
+        if (!lote.localizacionIds.includes(localizacionId)) {
+          lote.localizacionIds.push(localizacionId);
+        }
+        
+        // Obtener nombres de tipo y sensor para la etiqueta
+        const tipo = tipos.find((t: any) => t.tipoid === tipoid);
+        const sensorInfo = sensores.find((s: any) => s.sensorid === sensorId);
+        const tipoNombre = tipo?.tipo || 'Sensor';
+        const sensorNombre = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || '';
+        
+        const sensorKey = `${tipoid}_${sensorId}`;
+        
+        // Solo actualizar si es la medición más reciente para este sensor específico
+        const existingSensor = lote.valoresPorSensor[sensorKey]
+        if (!existingSensor || new Date(fecha) > new Date(existingSensor.fecha)) {
+          lote.valoresPorSensor[sensorKey] = {
             valor: parseFloat(valor.toString()),
-            fecha: fecha
+            fecha: fecha,
+            tipoNombre,
+            sensorNombre
           }
         }
       });
 
       // Crear array de datos con valores por tipo
-      const lotesArray: LoteMetricaData[] = Array.from(loteMap.entries()).map(([localizacionid, data]) => {
+      const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => {
         return {
-          localizacionid,
+          localizacionid: data.localizacionIds[0], // Usamos el primer ID para compatibilidad
+          localizacionids: data.localizacionIds,
           localizacion: data.localizacion,
-          valoresPorTipo: data.valoresPorTipo,
+          valoresPorSensor: data.valoresPorSensor,
           medicionCount: data.medicionCount
         };
       });
 
-      // Ordenar según el orden seleccionado (usar el primer tipo disponible para ordenar)
-      if (tiposUnicos.length > 0) {
-        const primerTipo = tiposUnicos[0];
-        lotesArray.sort((a, b) => {
-          const valorA = a.valoresPorTipo[primerTipo]?.valor || 0;
-          const valorB = b.valoresPorTipo[primerTipo]?.valor || 0;
-          if (orden === 'desc') {
-            return valorB - valorA;
-          } else {
-            return valorA - valorB;
-          }
-        });
-      }
+      // Ordenar según el orden seleccionado (usar el primer sensor disponible para ordenar)
+      lotesArray.sort((a, b) => {
+        const valA = Object.values(a.valoresPorSensor)[0]?.valor || 0;
+        const valB = Object.values(b.valoresPorSensor)[0]?.valor || 0;
+        return orden === 'desc' ? valB - valA : valA - valB;
+      });
 
       setLotesData(lotesArray);
     } catch (err: any) {
@@ -622,23 +640,26 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
               <tbody>
                 {lotesData.length > 0 ? (
                   lotesData.map((lote) => {
-                    // Calcular promedio de todos los valores por tipo
-                    const valores = Object.values(lote.valoresPorTipo).map(v => v.valor);
+                    // Calcular promedio de todos los valores por sensor
+                    const valores = Object.values(lote.valoresPorSensor).map(v => v.valor);
                     const promedio = valores.length > 0 
                       ? valores.reduce((sum, val) => sum + val, 0) / valores.length 
                       : null;
 
-                    // Preparar detalle por tipo para el tooltip
-                    const detallePorTipo = Object.entries(lote.valoresPorTipo)
-                      .map(([tipoid, data]) => {
-                        const tipo = tipos.find(t => t.tipoid === Number(tipoid));
+                    // Preparar detalle por sensor para el tooltip
+                    const detallePorSensor = Object.values(lote.valoresPorSensor)
+                      .map((data) => {
+                        const label = data.sensorNombre && data.sensorNombre !== data.tipoNombre
+                          ? `${data.tipoNombre} - ${data.sensorNombre}`
+                          : data.tipoNombre;
+                        
                         return {
-                          tipoNombre: tipo?.tipo || `Tipo ${tipoid}`,
+                          label,
                           valor: data.valor,
                           fecha: data.fecha
                         };
                       })
-                      .sort((a, b) => a.tipoNombre.localeCompare(b.tipoNombre));
+                      .sort((a, b) => a.label.localeCompare(b.label));
 
                     return (
                       <tr
@@ -656,17 +677,17 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                               {/* Tooltip - Posicionado al costado derecho */}
                               <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-64 bg-gray-900 dark:bg-neutral-800 text-white text-xs rounded-lg shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none p-3">
                                 <div className="font-bold mb-2 text-blue-500 font-mono border-b border-gray-700 pb-1">
-                                  DETALLE POR TIPO DE SENSOR
+                                  DETALLE POR SENSOR
                                 </div>
                                 <div className="space-y-1">
-                                  {detallePorTipo.map((detalle, idx) => (
+                                  {detallePorSensor.map((detalle, idx) => (
                                     <div key={idx} className="flex justify-between items-center font-mono">
-                                      <span className="text-gray-300">{detalle.tipoNombre}:</span>
+                                      <span className="text-gray-300">{detalle.label}:</span>
                                       <span className="font-bold text-white ml-2">{detalle.valor.toFixed(2)}</span>
                                     </div>
                                   ))}
                                 </div>
-                                {detallePorTipo.length === 0 && (
+                                {detallePorSensor.length === 0 && (
                                   <div className="text-gray-400 font-mono text-center py-1">
                                     Sin datos
                                   </div>
@@ -707,7 +728,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         <MetricaPorLoteModal
           isOpen={showModal}
           onClose={handleCloseModal}
-          localizacionId={selectedLote.localizacionid}
+          localizacionIds={selectedLote.localizacionids}
           localizacionNombre={selectedLote.localizacion}
           metricaId={selectedMetrica}
           metricaNombre={metricas.find(m => m.metricaid === selectedMetrica)?.metrica || 'Métrica'}

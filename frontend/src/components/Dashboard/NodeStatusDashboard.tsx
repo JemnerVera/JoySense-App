@@ -67,6 +67,9 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
   const [alertas, setAlertas] = useState<AlertData[]>([]);
   const [umbrales, setUmbrales] = useState<UmbralData[]>([]);
   const [statistics, setStatistics] = useState<{ [metricId: number]: StatisticData }>({});
+  const [tipos, setTipos] = useState<any[]>([]);
+  const [sensores, setSensores] = useState<any[]>([]);
+  const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
@@ -74,6 +77,35 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
   const [showMapModal, setShowMapModal] = useState(false);
   const [localizacionesNodo, setLocalizacionesNodo] = useState<string[]>([]);
   
+  // Función para obtener la etiqueta de la serie (compartida entre gráficos)
+  const getSeriesLabel = useCallback((m: any) => {
+    const sensorId = m.sensorid || m.localizacion?.sensorid;
+    const sensorInfo = sensores.find(s => s.sensorid === sensorId);
+    
+    // Buscar nombre del sensor en múltiples lugares
+    const sensorName = sensorInfo?.sensor || 
+                       sensorInfo?.nombre || 
+                       sensorInfo?.modelo || 
+                       m.localizacion?.sensor?.sensor || 
+                       m.localizacion?.sensor?.nombre;
+    
+    // Buscar tipo en múltiples lugares
+    const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid || m.localizacion?.sensor?.tipo?.tipoid;
+    const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+    const tipoName = tipoInfo?.tipo || m.localizacion?.sensor?.tipo?.tipo || 'Sensor';
+    
+    if (sensorName && sensorName !== tipoName) {
+      return `${tipoName} - ${sensorName}`;
+    }
+    
+    // Si no hay nombre de sensor distintivo, usar ID para asegurar unicidad si es posible
+    if (sensorId && sensorId !== tipoId) {
+      return `${tipoName} (ID: ${sensorId})`;
+    }
+    
+    return tipoName;
+  }, [sensores, tipos]);
+
   // Estados para comboboxes con searchbar
   const [isUbicacionDropdownOpen, setIsUbicacionDropdownOpen] = useState(false);
   const [isNodoDropdownOpen, setIsNodoDropdownOpen] = useState(false);
@@ -86,15 +118,21 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
 
   // Cargar ubicaciones disponibles
   useEffect(() => {
-    const loadUbicaciones = async () => {
+    const loadInitialData = async () => {
       try {
-        const ubicacionesData = await JoySenseService.getUbicaciones();
+        const [ubicacionesData, tiposData, sensoresData] = await Promise.all([
+          JoySenseService.getUbicaciones(),
+          JoySenseService.getTipos(),
+          JoySenseService.getSensores()
+        ]);
         setUbicaciones(ubicacionesData || []);
+        setTipos(tiposData || []);
+        setSensores(sensoresData || []);
       } catch (err: any) {
-        console.error('[NodeStatusDashboard] Error cargando ubicaciones:', err);
+        console.error('[NodeStatusDashboard] Error cargando datos iniciales:', err);
       }
     };
-    loadUbicaciones();
+    loadInitialData();
   }, []);
 
   // Cargar nodos disponibles
@@ -330,6 +368,16 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
         });
 
         setStatistics(statsByMetric);
+
+        // Establecer métrica por defecto si no hay una seleccionada o la seleccionada no está en los nuevos datos
+        const availableMetricIds = Object.keys(statsByMetric).map(Number);
+        if (availableMetricIds.length > 0) {
+          if (!selectedMetricId || !availableMetricIds.includes(selectedMetricId)) {
+            setSelectedMetricId(availableMetricIds[0]);
+          }
+        } else {
+          setSelectedMetricId(null);
+        }
       } catch (err: any) {
         console.error('[NodeStatusDashboard] Error cargando datos del nodo:', err);
         showError('Error', 'Error al cargar datos del nodo');
@@ -389,39 +437,140 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
     return map;
   }, [mediciones]);
 
-  // Preparar datos para gráficos
-  const chartData = useMemo(() => {
-    if (!selectedNode || mediciones.length === 0) return [];
+  // Lista de métricas disponibles para los botones de selección
+  const availableMetrics = useMemo(() => {
+    return Object.keys(statistics).map(id => ({
+      id: parseInt(id),
+      name: metricNamesMap[parseInt(id)]
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [statistics, metricNamesMap]);
 
-    // Agrupar por fecha y métrica, manteniendo la fecha original para ordenar
+  // Preparar datos para los minigráficos de todas las métricas
+  const allSparklineData = useMemo(() => {
+    if (!selectedNode || mediciones.length === 0) return {};
+
+    console.log('[NodeStatusDashboard] allSparklineData start. Mediciones:', mediciones.length);
+
+    const sparklines: { [metricId: number]: any[] } = {};
+
+    // Agrupar mediciones por métrica
+    const medicionesPorMetrica: { [metricId: number]: any[] } = {};
+    mediciones.forEach((m: any) => {
+      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
+      if (!medicionesPorMetrica[metricId]) medicionesPorMetrica[metricId] = [];
+      medicionesPorMetrica[metricId].push(m);
+    });
+
+    // Para cada métrica, preparar sus datos agrupados por sensor
+    Object.entries(medicionesPorMetrica).forEach(([metricIdStr, metricMediciones]) => {
+      const metricId = parseInt(metricIdStr);
+      const grouped: { [dateKey: string]: any } = {};
+
+      metricMediciones.forEach((m: any) => {
+        const date = new Date(m.fecha);
+        // Redondear a intervalos de 30 minutos para alinear series en minigráficos
+        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
+        const fechaKey = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin).toISOString();
+        
+        const label = getSeriesLabel(m);
+        
+        if (!grouped[fechaKey]) {
+          grouped[fechaKey] = { fechaKey, fechaOriginal: new Date(fechaKey) };
+        }
+        
+        const valor = m.medicion || m.valor;
+        if (valor != null && !isNaN(valor)) {
+          // Si ya existe un valor para este sensor en este intervalo, promediar
+          if (grouped[fechaKey][label] !== undefined) {
+            grouped[fechaKey][label] = (grouped[fechaKey][label] + parseFloat(valor)) / 2;
+          } else {
+            grouped[fechaKey][label] = parseFloat(valor);
+          }
+        }
+      });
+
+      sparklines[metricId] = Object.values(grouped)
+        .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime());
+      
+      console.log(`[NodeStatusDashboard] Sparkline data for metric ${metricId}:`, {
+        points: sparklines[metricId].length,
+        labels: sparklines[metricId].length > 0 ? Object.keys(sparklines[metricId][0]).filter(k => k !== 'fechaKey' && k !== 'fechaOriginal') : []
+      });
+    });
+
+    return sparklines;
+  }, [mediciones, selectedNode, tipos, sensores, getSeriesLabel]);
+
+  // Preparar datos para el gráfico de evolución (agrupado por sensor para la métrica seleccionada)
+  const sensorChartData = useMemo(() => {
+    if (!selectedNode || !selectedMetricId || mediciones.length === 0) return [];
+
+    // Filtrar mediciones por la métrica seleccionada
+    const filteredMediciones = mediciones.filter(m => 
+      (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
+    );
+
+    console.log('[NodeStatusDashboard] sensorChartData filtering. Selected metric:', selectedMetricId, 'Filtered size:', filteredMediciones.length);
+
+    if (filteredMediciones.length === 0) return [];
+
+    // Agrupar por fecha y sensor con redondeo para alineación (similar a ModernDashboard)
     const grouped: { [dateKey: string]: any } = {};
     
-    mediciones.forEach((m: any) => {
-      const fechaOriginal = new Date(m.fecha);
-      const fecha = fechaOriginal.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
-      const fechaKey = fechaOriginal.toISOString().split('T')[0]; // Usar fecha completa como key
-      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
-      const valor = m.medicion || m.valor;
+    filteredMediciones.forEach((m: any) => {
+      const date = new Date(m.fecha);
       
-      if (!grouped[fechaKey]) {
-        grouped[fechaKey] = { fecha, fechaOriginal, [metricId]: 0 };
+      // Determinar granularidad basada en el rango de fechas
+      const start = new Date(dateRange.start).getTime();
+      const end = new Date(dateRange.end).getTime();
+      const spanHours = (end - start) / (1000 * 60 * 60);
+      
+      let timeKey: string;
+      let fechaLabel: string;
+      
+      if (spanHours > 72) {
+        // Más de 3 días: agrupar por hora
+        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0);
+        timeKey = roundedDate.toISOString();
+        fechaLabel = roundedDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } else {
+        // Menos de 3 días: agrupar por intervalos de 15 min
+        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
+        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin, 0);
+        timeKey = roundedDate.toISOString();
+        fechaLabel = roundedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       }
+      
+      const label = getSeriesLabel(m);
+      
+      if (!grouped[timeKey]) {
+        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: new Date(timeKey) };
+      }
+      
+      const valor = m.medicion || m.valor;
       if (valor != null && !isNaN(valor)) {
-        grouped[fechaKey][metricId] = parseFloat(valor);
+        if (grouped[timeKey][label] !== undefined) {
+          grouped[timeKey][label] = (grouped[timeKey][label] + parseFloat(valor)) / 2;
+        } else {
+          grouped[timeKey][label] = parseFloat(valor);
+        }
       }
     });
 
-    // Ordenar por fecha de menor a mayor
-    return Object.values(grouped)
+    const result = Object.values(grouped)
       .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime())
       .map((item: any) => {
-        const { fechaOriginal, fecha, ...rest } = item;
-        return {
-          fecha,
-          ...rest
-        };
+        const { fechaOriginal, ...rest } = item;
+        return rest;
       });
-  }, [mediciones, selectedNode]);
+
+    console.log('[NodeStatusDashboard] sensorChartData result:', {
+      rows: result.length,
+      series: result.length > 0 ? Object.keys(result[0]).filter(k => k !== 'fecha') : []
+    });
+
+    return result;
+  }, [mediciones, selectedNode, selectedMetricId, tipos, sensores, getSeriesLabel, dateRange]);
 
   // Datos para gráfico de alertas por criticidad
   const alertasByCriticidad = useMemo(() => {
@@ -584,9 +733,9 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             </button>
           )}
           
-          <div className={`flex items-start gap-2 flex-nowrap overflow-x-auto dashboard-scrollbar-blue ${!selectedNode ? 'justify-center' : ''}`} style={{ maxWidth: '100%', width: '100%' }}>
+          <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
             {/* Selector de Ubicación */}
-            <div className="flex flex-col flex-shrink-0" ref={ubicacionDropdownRef}>
+            <div className="flex flex-col items-center flex-shrink-0" ref={ubicacionDropdownRef}>
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Ubicación:
               </label>
@@ -657,7 +806,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
             {/* Selector de Nodo */}
-            <div className="flex flex-col flex-shrink-0" ref={nodoDropdownRef}>
+            <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Nodo:
               </label>
@@ -735,7 +884,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
             {/* Botón Nodo en Mapa */}
-            <div className="flex flex-col flex-shrink-0">
+            <div className="flex flex-col items-center flex-shrink-0">
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Mapa:
               </label>
@@ -752,12 +901,12 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
             {/* Intervalo de Fechas - Siempre visible pero deshabilitado hasta seleccionar nodo */}
-            <div className="flex flex-col flex-shrink-0">
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Intervalo de Fechas:
+              </label>
               <div className="flex items-center gap-2">
-                <div className="flex flex-col">
-                  <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
-                    Fecha Inicio:
-                  </label>
+                <div className="flex flex-col items-center">
                   <input
                     type="date"
                     value={dateRange.start}
@@ -769,11 +918,9 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                       WebkitAppearance: 'none'
                     }}
                   />
+                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Inicio</span>
                 </div>
-                <div className="flex flex-col">
-                  <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
-                    Fecha Fin:
-                  </label>
+                <div className="flex flex-col items-center">
                   <input
                     type="date"
                     value={dateRange.end}
@@ -786,6 +933,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                       WebkitAppearance: 'none'
                     }}
                   />
+                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Fin</span>
                 </div>
               </div>
             </div>
@@ -794,7 +942,7 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
             {/* Información del Nodo - Siempre visible pero sin info hasta seleccionar nodo */}
-            <div className="flex flex-col flex-shrink-0">
+            <div className="flex flex-col items-center flex-shrink-0">
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Información del Nodo:
               </label>
@@ -844,10 +992,30 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
             </div>
 
             {/* Gráficos: Evolución de Mediciones y Estadísticas por Métrica en la misma fila */}
-            {chartData.length > 0 && (
+            {mediciones.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Evolución de Mediciones</h2>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                    <h2 className="text-xl font-bold text-blue-500 font-mono uppercase tracking-wider">Evolución de Mediciones</h2>
+                    
+                    {/* Selector de Métricas (Tabs) */}
+                    <div className="flex flex-wrap gap-2">
+                      {availableMetrics.map(metric => (
+                        <button
+                          key={metric.id}
+                          onClick={() => setSelectedMetricId(metric.id)}
+                          className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                            selectedMetricId === metric.id
+                              ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                              : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                          }`}
+                        >
+                          {metric.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <style dangerouslySetInnerHTML={{
                     __html: `
                       .recharts-tooltip-wrapper,
@@ -857,25 +1025,57 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                     `
                   }} />
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="fecha" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      {Object.keys(statistics).map((metricId, index) => {
-                        const metricIdNum = parseInt(metricId);
-                        const metricName = metricNamesMap[metricIdNum] || `Métrica ${metricId}`;
-                        return (
+                    <LineChart data={sensorChartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.2} />
+                      <XAxis 
+                        dataKey="fecha" 
+                        tick={{ fontSize: 10, fill: '#888' }}
+                        tickLine={{ stroke: '#888' }}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 10, fill: '#888' }}
+                        tickLine={{ stroke: '#888' }}
+                        domain={['auto', 'auto']}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1f2937', 
+                          border: 'none', 
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '12px'
+                        }}
+                        itemStyle={{ padding: '2px 0' }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                      />
+                      {(() => {
+                        if (sensorChartData.length === 0) return null;
+                        
+                        // Obtener TODAS las claves únicas de series de todo el set de datos
+                        const allSeriesKeys = Array.from(
+                          new Set(
+                            sensorChartData.flatMap(item => 
+                              Object.keys(item).filter(key => key !== 'fecha' && key !== 'fechaOriginal')
+                            )
+                          )
+                        ).sort();
+
+                        return allSeriesKeys.map((label, index) => (
                           <Line
-                            key={metricId}
+                            key={label}
                             type="monotone"
-                            dataKey={metricId}
+                            dataKey={label}
                             stroke={COLORS[index % COLORS.length]}
-                            name={metricName}
+                            strokeWidth={2}
+                            dot={{ r: 2 }}
+                            activeDot={{ r: 4 }}
+                            name={label}
+                            connectNulls={true}
                           />
-                        );
-                      })}
+                        ));
+                      })()}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -884,32 +1084,73 @@ export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
                 {Object.keys(statistics).length > 0 && (
                   <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Estadísticas por Métrica</h2>
-                    <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto">
-                      {Object.entries(statistics).map(([metricId, stats]) => {
-                        const metric = mediciones.find((m: any) => 
-                          (m.metricaid || m.localizacion?.metricaid || 0) === parseInt(metricId)
-                        );
-                        const metricName = metric?.localizacion?.metrica?.metrica || `Métrica ${metricId}`;
+                    <div className="grid grid-cols-1 gap-3 max-h-[320px] overflow-y-auto pr-2 dashboard-scrollbar-blue">
+                      {Object.entries(statistics).map(([metricIdStr, stats]) => {
+                        const metricId = parseInt(metricIdStr);
+                        const metricName = metricNamesMap[metricId] || `Métrica ${metricId}`;
                         
+                        // Datos para el minigráfico (sparkline)
+                        const sparklineData = allSparklineData[metricId] || [];
+
                         return (
-                          <div key={metricId} className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm font-mono">{metricName}</h3>
-                            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Promedio:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{stats.promedio}</span>
+                          <div key={metricId} className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-neutral-750 transition-colors">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-gray-900 dark:text-white text-sm font-mono uppercase tracking-tight">{metricName}</h3>
+                              <div className="text-right">
+                                <span className="text-xs font-mono font-bold text-blue-500">{stats.ultimaMedicion}</span>
+                                <p className="text-[10px] text-gray-400 font-mono">{new Date(stats.ultimaFecha).toLocaleDateString()}</p>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Mínimo:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{stats.minimo}</span>
+                            </div>
+                            
+                            <div className="flex gap-4 items-center">
+                              {/* Minigráfico (Sparkline) */}
+                              <div className="w-1/3 h-12">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={sparklineData}>
+                                    {(() => {
+                                      const seriesKeys = Array.from(
+                                        new Set(
+                                          sparklineData.flatMap(item => 
+                                            Object.keys(item).filter(k => k !== 'fechaKey' && k !== 'fechaOriginal')
+                                          )
+                                        )
+                                      ).sort();
+
+                                      return seriesKeys.map((key, idx) => (
+                                        <Line 
+                                          key={key}
+                                          type="monotone" 
+                                          dataKey={key} 
+                                          stroke={COLORS[idx % COLORS.length]} 
+                                          strokeWidth={1.5} 
+                                          dot={false} 
+                                          isAnimationActive={false}
+                                          connectNulls={true}
+                                        />
+                                      ));
+                                    })()}
+                                    <YAxis hide domain={['auto', 'auto']} />
+                                  </LineChart>
+                                </ResponsiveContainer>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Máximo:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{stats.maximo}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Desviación:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{stats.desviacion}</span>
+
+                              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
+                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
+                                  <span className="text-gray-500 uppercase">Prom:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.promedio}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
+                                  <span className="text-gray-500 uppercase">Mín:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.minimo}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
+                                  <span className="text-gray-500 uppercase">Máx:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.maximo}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
+                                  <span className="text-gray-500 uppercase">Desv:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.desviacion}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
