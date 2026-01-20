@@ -99,15 +99,33 @@ router.get('/medicion', async (req, res) => {
     
     query = query.order('fecha', { ascending: false });
     
-    if (!getAll) {
-      const finalLimit = parseInt(limit);
-      console.log(`[backend] Applying limit: ${finalLimit}`);
-      query = query.limit(finalLimit);
+    // Si el límite es mayor a 1000, realizar peticiones paginadas para superar el límite de PostgREST
+    let allData = [];
+    const finalLimit = getAll ? 50000 : parseInt(limit);
+    const CHUNK_SIZE = 1000;
+    let currentOffset = 0;
+
+    while (allData.length < finalLimit) {
+      const remainingLimit = finalLimit - allData.length;
+      const nextLimit = Math.min(CHUNK_SIZE, remainingLimit);
+      
+      const { data: chunk, error: chunkError } = await query
+        .range(currentOffset, currentOffset + nextLimit - 1);
+
+      if (chunkError) {
+        console.error(`[backend] Error fetching chunk at offset ${currentOffset}:`, chunkError);
+        throw chunkError;
+      }
+
+      if (!chunk || chunk.length === 0) break;
+
+      allData = allData.concat(chunk);
+      if (chunk.length < nextLimit) break;
+      currentOffset += nextLimit;
+      if (currentOffset >= 50000) break;
     }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
+
+    const data = allData;
     
     // Transformar datos para mantener formato compatible
     const transformed = (data || []).map(m => ({
@@ -133,8 +151,6 @@ router.get('/mediciones', async (req, res) => {
       getAll
     } = req.query;
     
-    console.log(`[backend] GET /mediciones - nodoid: ${nodoid}, limit: ${limit}, startDate: ${startDate}, endDate: ${endDate}`);
-    
     // Aceptar tanto localizacionId como localizacionid para compatibilidad
     const localizacionId = req.query.localizacionId || req.query.localizacionid;
     
@@ -145,7 +161,6 @@ router.get('/mediciones', async (req, res) => {
     
     // Si hay nodoid, obtener localizaciones de ese nodo
     if (nodoid) {
-      console.log(`[backend] Fetching mediciones for nodoid: ${nodoid}`);
       const { data: localizaciones, error: locError } = await userSupabase
         .schema(dbSchema)
         .from('localizacion')
@@ -159,8 +174,6 @@ router.get('/mediciones', async (req, res) => {
       }
       
       locIds = (localizaciones || []).map(l => l.localizacionid);
-      console.log(`[backend] Found ${locIds.length} localizaciones for nodoid ${nodoid}:`, locIds);
-      
       if (locIds.length === 0) {
         // Log if any localizations exist at all for this node
         const { data: anyLocs } = await userSupabase
@@ -168,7 +181,6 @@ router.get('/mediciones', async (req, res) => {
           .from('localizacion')
           .select('localizacionid, statusid')
           .eq('nodoid', nodoid);
-        console.log(`[backend] ALL localizaciones for nodoid ${nodoid}:`, anyLocs);
         return res.json([]);
       }
     }
@@ -225,8 +237,6 @@ router.get('/mediciones', async (req, res) => {
     const CHUNK_SIZE = 1000;
     let currentOffset = 0;
 
-    console.log(`[backend] Starting chunked fetch. finalLimit: ${finalLimit}`);
-
     while (allData.length < finalLimit) {
       const remainingLimit = finalLimit - allData.length;
       const nextLimit = Math.min(CHUNK_SIZE, remainingLimit);
@@ -241,15 +251,11 @@ router.get('/mediciones', async (req, res) => {
       }
 
       if (!chunk || chunk.length === 0) {
-        console.log(`[backend] No more data found at offset ${currentOffset}`);
         break;
       }
 
       allData = allData.concat(chunk);
-      console.log(`[backend] Fetched chunk: ${chunk.length} items. Total so far: ${allData.length}`);
-      
       if (chunk.length < nextLimit) {
-        console.log(`[backend] Chunk smaller than requested (${chunk.length} < ${nextLimit}), ending fetch`);
         break;
       }
       
@@ -262,8 +268,6 @@ router.get('/mediciones', async (req, res) => {
     }
 
     const data = allData;
-    console.log(`[backend] Found ${data?.length || 0} total mediciones for query`);
-    
     // Obtener métricas por separado (ya que la relación es a través de metricasensor)
     const metricaIds = [...new Set(
       (data || [])
