@@ -48,7 +48,7 @@ export interface UseTableCRUDReturn {
   config: TableConfig | undefined;
 
   // Acciones de datos
-  loadData: (options?: { page?: number; search?: string; filters?: Record<string, any> }) => Promise<void>;
+  loadData: (options?: { page?: number; pageSize?: number; search?: string; filters?: Record<string, any> }) => Promise<void>;
   refreshData: () => Promise<void>;
   loadRelatedData: () => Promise<void>;
 
@@ -130,7 +130,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
   // DATA LOADING
   // ============================================================================
 
-  const loadData = useCallback(async (loadOptions?: { page?: number; search?: string; filters?: Record<string, any> }) => {
+  const loadData = useCallback(async (loadOptions?: { page?: number; pageSize?: number; search?: string; filters?: Record<string, any> }) => {
     if (!tableName) return;
 
     setTableState(prev => ({ ...prev, loading: true, error: null }));
@@ -138,12 +138,20 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     try {
       const requestParams = {
         page: loadOptions?.page || tableState.currentPage,
-        pageSize: tableState.pageSize,
+        pageSize: loadOptions?.pageSize || tableState.pageSize, // Usar pageSize de las opciones si existe
         search: loadOptions?.search,
         ...loadOptions?.filters
       };
       
+      console.log(`🔍 [useTableCRUD] Loading ${tableName} with params:`, requestParams);
+      
       const result = await JoySenseService.getTableDataPaginated(tableName, requestParams);
+
+      console.log(`✅ [useTableCRUD] Response for ${tableName}:`, {
+        dataCount: result.data?.length || 0,
+        pagination: result.pagination,
+        fullResult: result
+      });
 
       const data = result.data || [];
       const pagination = result.pagination;

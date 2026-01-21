@@ -55,6 +55,12 @@ export const useStatusTable = ({
     data: tableData
   });
 
+  console.log(`📊 [useStatusTable] Data for ${tableName}:`, {
+    inputCount: tableData.length,
+    filteredByGlobalCount: filteredTableData.length,
+    tableName
+  });
+
   // Hook de búsqueda y filtrado
   const {
     statusSearchTerm,
