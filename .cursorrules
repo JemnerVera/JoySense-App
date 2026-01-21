@@ -149,6 +149,62 @@ Project-Specific Guidelines
 - Follow the established deployment and build processes.
 - Use the established logging and debugging patterns.
 
+System Commands and Git Operations
+- **CRITICAL: Use appropriate commands for each OS**:
+  - **Windows/PowerShell**: Use `Move-Item` instead of `mv`, `Remove-Item` instead of `rm`, `Copy-Item` instead of `cp`
+  - **Unix/Linux**: Use `mv`, `rm`, `cp` as usual
+  - **Never mix commands** between different OS environments
+
+- **Git Operations Best Practices**:
+  - **Always check git status** before operations: `git status`
+  - **For ignored files**: Use `git add -f <file>` to force add ignored files
+  - **For moving files**: Use `git mv <source> <destination>` to track renames properly
+  - **For deletions**: Use `git rm <file>` for tracked files, `git rm --cached <file>` to untrack without deleting
+  - **Commit messages**: Use descriptive messages explaining what and why, not just what
+  - **Large file operations**: Break into smaller commits when possible
+
+- **File Operations in Windows Environment**:
+  - **Moving files**: `Move-Item source destination` (not `mv`)
+  - **Copying files**: `Copy-Item source destination` (not `cp`)
+  - **Removing files**: `Remove-Item file` (not `rm`)
+  - **Creating directories**: `New-Item -ItemType Directory -Path path` (not `mkdir`)
+  - **Path separators**: Use forward slashes `/` in paths, PowerShell handles conversion automatically
+
+- **Error Prevention**:
+  - **Check file existence** before operations: `Test-Path file`
+  - **Use absolute paths** when working with ignored files
+  - **Verify commands** work in target environment before assuming they work everywhere
+  - **Use quotes** around paths with spaces: `"path with spaces"`
+  - **Check PowerShell execution policy** if commands fail unexpectedly
+
+- **Common Command Translations**:
+  - Unix `mv file1 file2` → PowerShell `Move-Item file1 file2`
+  - Unix `cp file1 file2` → PowerShell `Copy-Item file1 file2`
+  - Unix `rm file` → PowerShell `Remove-Item file`
+  - Unix `mkdir dir` → PowerShell `New-Item -ItemType Directory -Path dir`
+  - Unix `ls` → PowerShell `Get-ChildItem` or `dir`
+  - Unix `cat file` → PowerShell `Get-Content file`
+
+- **Git Commands in Different Contexts**:
+  - **Adding ignored files**: `git add -f schema/funciones_permisos/`
+  - **Committing ignored files**: Works normally after `git add -f`
+  - **Status of ignored files**: Shows as untracked until added with `-f`
+  - **Moving ignored files**: `Move-Item` then `git add -f` in new location
+
+- **Debugging Command Issues**:
+  - **Check current directory**: `pwd` or `Get-Location`
+  - **List files**: `Get-ChildItem` or `ls` or `dir`
+  - **Check if path exists**: `Test-Path path`
+  - **Check command availability**: `Get-Command command-name`
+  - **Check PowerShell version**: `$PSVersionTable.PSVersion`
+
+- **Best Practices for File Operations**:
+  - **Test commands** in PowerShell console before using in scripts
+  - **Use absolute paths** for critical operations
+  - **Verify operations** with `Get-ChildItem` after file operations
+  - **Check git status** frequently during complex operations
+  - **Use descriptive commit messages** that explain the purpose and scope
+
 
 # .cursorrules
 
