@@ -1020,12 +1020,16 @@ export class JoySenseService {
       const queryString = params.toString();
       const endpoint = `/generic/${tableName}${queryString ? '?' + queryString : ''}`;
       
+      console.log(`📡 [JoySenseService] getTableDataPaginated calling: ${endpoint}`);
+      
       // Obtener token de sesión de Supabase para enviarlo al backend
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
       const response = await backendAPI.get(endpoint, token || undefined);
+      
+      console.log(`📥 [JoySenseService] getTableDataPaginated response for ${tableName}:`, response);
       
       if (response && response.pagination) return response;
       

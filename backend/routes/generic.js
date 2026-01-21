@@ -96,6 +96,12 @@ router.get('/:table', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
     
+    if (req.user) {
+      logger.info(`👤 [GET /${table}] User authenticated: ${req.user.email} (${req.user.id})`);
+    } else {
+      logger.warn(`👤 [GET /${table}] No user in request, using baseSupabase`);
+    }
+
     const result = await paginateAndFilter(table, req.query, userSupabase);
     res.json(result);
   } catch (error) {
