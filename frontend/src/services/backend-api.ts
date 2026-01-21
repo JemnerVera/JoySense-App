@@ -297,7 +297,7 @@ export class JoySenseService {
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
-      const data = await backendAPI.get('/dispositivos/nodo', token || undefined);
+      const data = await backendAPI.get('/geografia/nodo', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getNodos:', error);
@@ -323,7 +323,7 @@ export class JoySenseService {
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
-      const data = await backendAPI.get('/dispositivos/localizacion', token || undefined);
+      const data = await backendAPI.get('/geografia/localizacion', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getLocalizaciones:', error);
@@ -337,7 +337,7 @@ export class JoySenseService {
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
-      const data = await backendAPI.get(`/dispositivos/localizacion?nodoid=${nodoid}`, token || undefined);
+      const data = await backendAPI.get(`/geografia/localizacion?nodoid=${nodoid}`, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getLocalizacionesByNodo:', error);
@@ -352,7 +352,7 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      const data = await backendAPI.get(`/dispositivos/nodos-con-localizacion?limit=${limit}`, token || undefined);
+      const data = await backendAPI.get(`/geografia/nodos-con-localizacion?limit=${limit}`, token || undefined);
       
       // Transformar datos de localizacion a formato NodeData
       // El backend retorna localizacion con nodo dentro, necesitamos transformarlo
@@ -876,7 +876,7 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      const data = await backendAPI.get(`/dispositivos/localizacion?ubicacionId=${ubicacionId}`, token || undefined);
+      const data = await backendAPI.get(`/geografia/localizacion?ubicacionId=${ubicacionId}`, token || undefined);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in getLocalizacionesByUbicacion:', error);
