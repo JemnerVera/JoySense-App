@@ -1,0 +1,30 @@
+-- 1. VERIFICACIÓN DE IDENTIDAD DEL USUARIO
+
+[
+  {
+    "seccion": "=== IDENTIDAD DEL USUARIO ===",
+    "verificacion_usuario": "❌ Usuario diferente - resultados pueden variar",
+    "useruuid_actual": null,
+    "useruuid_esperado": "cb84a9ff-57f3-4570-a924-3c6a28fbaa71",
+    "usuarioid_actual": null,
+    "usuarioid_esperado": 4,
+    "es_admin_global": false
+  }
+]
+
+-- 2. VERIFICACIÓN DE PERFIL ASIGNADO
+Success. No rows returned
+
+-- 3. EMPRESAS ASIGNADAS (DEBERÍAN SER 1,2,3,4,5)
+Success. No rows returned
+
+-- 4. PERMISOS ESPECÍFICOS DEL USUARIO DEMO
+Success. No rows returned
+
+-- 5. PRUEBA DE ACCESO A PAISES (SOLO PAÍS 1)
+Error: Failed to run sql query: ERROR: 42883: function joysense.fn_tiene_permiso_geo_objeto(integer, integer, integer) does not exist LINE 5: joysense.fn_tiene_permiso_geo_objeto(1, p.paisid, 1) as tiene_permiso, ^ HINT: No function matches the given name and argument types. You might need to add explicit type casts.
+
+-- 6. PRUEBA DE ACCESO A EMPRESAS (SOLO EMPRESA 1)
+Error: Failed to run sql query: ERROR: 42883: function joysense.fn_tiene_permiso_geo_objeto(integer, integer, integer) does not exist LINE 6: joysense.fn_tiene_permiso_geo_objeto(2, e.empresaid, 1) as permiso_directo, ^ HINT: No function matches the given name and argument types. You might need to add explicit type casts.
+
+....
