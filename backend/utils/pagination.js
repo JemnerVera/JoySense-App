@@ -216,7 +216,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       throw dataError;
     }
     
-    logger.info(`✅ [paginateAndFilter] Success for ${tableName}: Found ${data?.length || 0} records. filters=${JSON.stringify(whereFilters)}`);
+    // Success logging removed for reduced verbosity
     
     // Si no hay paginación, retornar solo los datos (modo legacy)
     if (!usePagination) {
