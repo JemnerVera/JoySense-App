@@ -321,8 +321,81 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     setIsFechasDropdownOpen(!isFechasDropdownOpen);
   };
 
+  // Calcular filtros activos para indicadores visuales
+  const activeFiltersCount = [
+    paisSeleccionado && 'País',
+    empresaSeleccionada && 'Empresa',
+    fundoSeleccionado && 'Fundo',
+    selectedEntidad && 'Entidad',
+    selectedUbicacion && 'Ubicación',
+    startDate && endDate && 'Fechas'
+  ].filter(Boolean).length;
+
+  // Atajo de teclado para reset (Ctrl+R)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'r' && e.target === document.body) {
+        e.preventDefault();
+        // Reset all filters
+        setPaisSeleccionado('');
+        setEmpresaSeleccionada('');
+        setFundoSeleccionado('');
+        setEntidadSeleccionada(null);
+        setUbicacionSeleccionada(null);
+        setStartDate('');
+        setEndDate('');
+        setIsFechasDropdownOpen(false);
+        console.log('🔄 Filtros reseteados con Ctrl+R');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setPaisSeleccionado, setEmpresaSeleccionada, setFundoSeleccionado, setEntidadSeleccionada, setUbicacionSeleccionada]);
+
   return (
     <div className="flex items-center space-x-3">
+      {/* Indicador de filtros activos */}
+      {activeFiltersCount > 0 && (
+        <div
+          className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800"
+          title={`Filtros activos: ${[
+            paisSeleccionado && `País: ${selectedPais?.pais || 'Seleccionado'}`,
+            empresaSeleccionada && `Empresa: ${selectedEmpresa?.empresa || 'Seleccionada'}`,
+            fundoSeleccionado && `Fundo: ${selectedFundo?.fundo || 'Seleccionado'}`,
+            selectedEntidad && `Entidad: ${selectedEntidad?.entidad || 'Seleccionada'}`,
+            selectedUbicacion && `Ubicación: ${selectedUbicacion?.ubicacion || 'Seleccionada'}`,
+            startDate && endDate && `Fechas: ${formatDateRange()}`
+          ].filter(Boolean).join(', ')}`}
+        >
+          <div className="flex items-center space-x-1">
+            <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              {activeFiltersCount} filtro{activeFiltersCount !== 1 ? 's' : ''} activo{activeFiltersCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setPaisSeleccionado('');
+              setEmpresaSeleccionada('');
+              setFundoSeleccionado('');
+              setEntidadSeleccionada(null);
+              setUbicacionSeleccionada(null);
+              setStartDate('');
+              setEndDate('');
+              setIsFechasDropdownOpen(false);
+            }}
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 transition-colors ml-2"
+            title="Limpiar todos los filtros (Ctrl+R)"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Dropdown de Fechas - Solo mostrar si showDateFilters es true */}
       {showDateFilters && (
         <div className="relative" ref={fechasDropdownRef}>
@@ -330,11 +403,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             onClick={() => !fundoSeleccionado ? null : handleFechasToggle()}
             disabled={!fundoSeleccionado}
             className={`min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-green-600 dark:text-green-500 font-mono tracking-wider ${
-              startDate && endDate ? 'border-amber-800' : ''
+              startDate && endDate ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''
             }`}
+            title={!fundoSeleccionado ? 'Selecciona un fundo primero' : 'Seleccionar rango de fechas'}
           >
             <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <span className={`${startDate && endDate ? 'text-green-600 dark:text-green-500' : 'text-gray-500 dark:text-neutral-400'} truncate`}>
+              <span className={`${startDate && endDate ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-neutral-400'} truncate`}>
                 {formatDateRange()}
               </span>
             </div>
@@ -346,8 +420,13 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           {isFechasDropdownOpen && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50 max-h-60 overflow-hidden">
               {!fundoSeleccionado ? (
-                <div className="px-3 py-2 text-sm text-gray-600 dark:text-neutral-400 font-mono">
-                  SELECCIONA UN FUNDO PRIMERO
+                <div className="px-4 py-3 text-sm text-amber-600 dark:text-amber-400 font-mono bg-amber-50 dark:bg-amber-900/20">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>SELECCIONA UN FUNDO PRIMERO</span>
+                  </div>
                 </div>
               ) : (
                 <div className="p-4">
@@ -357,7 +436,15 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                       <input
                         type="date"
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => {
+                          const newStartDate = e.target.value;
+                          setStartDate(newStartDate);
+                          // Auto-ajustar fecha final si es anterior
+                          if (endDate && newStartDate > endDate) {
+                            setEndDate(newStartDate);
+                          }
+                        }}
+                        max={endDate || undefined}
                         className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white rounded-lg border border-gray-300 dark:border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
                       />
                     </div>
@@ -366,11 +453,28 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                       <input
                         type="date"
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={(e) => {
+                          const newEndDate = e.target.value;
+                          setEndDate(newEndDate);
+                          // Auto-ajustar fecha inicial si es posterior
+                          if (startDate && newEndDate < startDate) {
+                            setStartDate(newEndDate);
+                          }
+                        }}
+                        min={startDate || undefined}
                         className="w-full px-3 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white rounded-lg border border-gray-300 dark:border-neutral-600 focus:border-orange-500 focus:outline-none text-sm font-mono"
                       />
                     </div>
-                    <div className="flex justify-end pt-2">
+                    <div className="flex justify-between items-center pt-2">
+                      <button
+                        onClick={() => {
+                          setStartDate('');
+                          setEndDate('');
+                        }}
+                        className="px-3 py-1.5 text-xs bg-gray-500 hover:bg-gray-600 text-white rounded transition-colors font-mono"
+                      >
+                        LIMPIAR
+                      </button>
                       <button
                         onClick={() => setIsFechasDropdownOpen(false)}
                         className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors font-mono tracking-wider"
