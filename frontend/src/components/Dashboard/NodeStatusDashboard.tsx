@@ -54,7 +54,7 @@ interface StatisticData {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export function NodeStatusDashboard({}: NodeStatusDashboardProps) {
+export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
   
