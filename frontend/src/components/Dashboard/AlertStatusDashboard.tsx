@@ -53,7 +53,7 @@ interface MedicionConAlerta {
   valorAlerta?: number;
 }
 
-export function AlertStatusDashboard({}: AlertStatusDashboardProps) {
+export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
   

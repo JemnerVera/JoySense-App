@@ -669,8 +669,8 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       break;
     
     case 'nodo':
-      if (!data.nodo || !data.ubicacionid) {
-        return 'Nodo y ubicación son obligatorios';
+      if (!data.ubicacionid || !data.nodo || !data.latitud || !data.longitud) {
+        return 'Ubicación, nombre de nodo, latitud y longitud son obligatorios';
       }
       break;
     
@@ -749,12 +749,6 @@ export const validateInsertData = (tableName: string, data: any): string | null 
       }
       break;
 
-    case 'nodo':
-      if (!data.ubicacionid || !data.nodo || !data.latitud || !data.longitud) {
-        return 'Ubicación, nombre de nodo, latitud y longitud son obligatorios';
-      }
-      break;
-    
     case 'criticidad':
       if (!data.criticidad) {
         return 'Criticidad es obligatoria';
