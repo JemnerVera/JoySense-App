@@ -155,12 +155,30 @@ System Commands and Git Operations
   - **Unix/Linux**: Use `mv`, `rm`, `cp` as usual
   - **Never mix commands** between different OS environments
 
+- **PowerShell Specific Limitations**:
+  - **NEVER use `&&`**: PowerShell does NOT support `&&` operator for chaining commands
+    - ❌ WRONG: `git add -A && git status`
+    - ✅ CORRECT: Use `;` or separate Shell calls: `git add -A ; git status` OR make two separate Shell tool calls
+  - **NEVER use HEREDOC (`<<'EOF'`)**: PowerShell does NOT support bash-style heredocs
+    - ❌ WRONG: `git commit -m "$(cat <<'EOF' ... EOF)"`
+    - ✅ CORRECT: Use simple quoted strings: `git commit -m "Message line 1`n`nMessage line 2"`
+  - **For multi-line strings in PowerShell**:
+    - Use backtick-n for newlines: `` `n ``
+    - Or use simple double quotes with actual line breaks
+  - **Command separation**:
+    - Use `;` (semicolon) to chain commands that should run sequentially
+    - Use separate Shell tool calls for better error handling
+    - Prefer separate calls over chaining when possible
+
 - **Git Operations Best Practices**:
   - **Always check git status** before operations: `git status`
   - **For ignored files**: Use `git add -f <file>` to force add ignored files
   - **For moving files**: Use `git mv <source> <destination>` to track renames properly
   - **For deletions**: Use `git rm <file>` for tracked files, `git rm --cached <file>` to untrack without deleting
-  - **Commit messages**: Use descriptive messages explaining what and why, not just what
+  - **Commit messages in PowerShell**: 
+    - Simple message: `git commit -m "Single line message"`
+    - Multi-line: `git commit -m "Title`n`nBody paragraph 1`n`nBody paragraph 2"`
+    - Complex multi-line: Make separate Shell calls (commit -m with simple message)
   - **Large file operations**: Break into smaller commits when possible
 
 - **File Operations in Windows Environment**:
