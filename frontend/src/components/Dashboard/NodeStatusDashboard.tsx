@@ -259,12 +259,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         else if (daysDiff > 7) maxLimit = 20000;
         else if (daysDiff >= 2) maxLimit = 10000;
 
-        console.log('[NodeStatusDashboard] Loading data for range:', { 
-          start: dateRange.start, 
-          end: dateRange.end, 
-          daysDiff, 
-          maxLimit 
-        });
 
         // Cargar mediciones del nodo
         const medicionesData = await JoySenseService.getMediciones({
@@ -273,8 +267,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           endDate: `${dateRange.end} 23:59:59`,
           limit: maxLimit
         });
+
         // Verificar si es un array o un objeto con count
         const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
+
         setMediciones(medicionesArray);
 
         // Cargar alertas del nodo
@@ -282,12 +278,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           // Obtener localizaciones del nodo primero
           const localizacionesData = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
           const localizacionIds = (localizacionesData || []).map((l: any) => l.localizacionid);
+
           // Extraer solo el nombre de la localización (antes del guion si existe) y eliminar duplicados
           const nombresLocalizaciones = Array.from(new Set(localizacionesData
             .map((loc: any) => {
               const nombreCompleto = loc.localizacion || '';
               // Si contiene un guion, tomar solo la parte antes del guion
-              const nombreLimpio = nombreCompleto.includes(' - ') 
+              const nombreLimpio = nombreCompleto.includes(' - ')
                 ? nombreCompleto.split(' - ')[0].trim()
                 : nombreCompleto.trim();
               return nombreLimpio;
@@ -302,9 +299,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
               endDate: `${dateRange.end} 23:59:59`,
               pageSize: 100
             });
-            
+
             const alertasArray = Array.isArray(alertasData) ? alertasData : (alertasData as any)?.data || [];
-            const alertasFiltradas = alertasArray.filter((a: any) => 
+
+            const alertasFiltradas = alertasArray.filter((a: any) =>
               localizacionIds.includes(a.localizacionid)
             );
             
@@ -467,7 +465,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const allSparklineData = useMemo(() => {
     if (!selectedNode || mediciones.length === 0) return {};
 
-    console.log('[NodeStatusDashboard] allSparklineData start. Mediciones:', mediciones.length);
 
     const sparklines: { [metricId: number]: any[] } = {};
 
@@ -522,10 +519,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       sparklines[metricId] = Object.values(grouped)
         .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime());
       
-      console.log(`[NodeStatusDashboard] Sparkline data for metric ${metricId}:`, {
-        points: sparklines[metricId].length,
-        labels: sparklines[metricId].length > 0 ? Object.keys(sparklines[metricId][0]).filter(k => k !== 'fechaKey' && k !== 'fechaOriginal') : []
-      });
     });
 
     return sparklines;
@@ -540,7 +533,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
     );
 
-    console.log('[NodeStatusDashboard] sensorChartData filtering. Selected metric:', selectedMetricId, 'Filtered size:', filteredMediciones.length);
 
     if (filteredMediciones.length === 0) return [];
 
@@ -600,10 +592,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         return rest;
       });
 
-    console.log('[NodeStatusDashboard] sensorChartData result:', {
-      rows: result.length,
-      series: result.length > 0 ? Object.keys(result[0]).filter(k => k !== 'fecha') : []
-    });
 
     return result;
   }, [mediciones, selectedNode, selectedMetricId, tipos, sensores, getSeriesLabel, dateRange]);
@@ -1011,6 +999,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
         {selectedNode && !loading && (
           <>
+
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               {kpis.map((kpi, index) => (
