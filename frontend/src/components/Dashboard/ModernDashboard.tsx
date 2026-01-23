@@ -231,10 +231,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     return measurementPoints.find(p => p.name === selectedPointName)?.ids || [];
   }, [measurementPoints, selectedPointName]);
   
-  // Log selectedNode changes
+  // Efecto para manejar cambios en selectedNode
   useEffect(() => {
     if (selectedNode) {
-      console.log('[ModernDashboard] selectedNode changed:', selectedNode);
+      // Nodo seleccionado cambió
     } else {
       // Limpiar localizaciones cuando no hay nodo seleccionado
       setMeasurementPoints([]);
@@ -249,7 +249,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const fetchLocalizaciones = async () => {
       setLoadingLocalizaciones(true);
       try {
-        console.log('[ModernDashboard] Loading localizations for node:', selectedNode.nodoid);
         const data = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
         const activeLocalizaciones = data.filter((l: any) => l.statusid === 1);
         
@@ -272,13 +271,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         
         // Auto-seleccionar si solo hay un punto físico (agrupado)
         if (points.length === 1) {
-          console.log('[ModernDashboard] Auto-selecting single measurement point:', points[0].name);
           setSelectedPointName(points[0].name);
         } else if (points.length > 1) {
-          console.log('[ModernDashboard] Multiple measurement points found. User selection required.');
           setSelectedPointName(null);
         } else {
-          console.warn('[ModernDashboard] No active localizations found for node:', selectedNode.nodoid);
           setSelectedPointName(null);
         }
       } catch (err) {
@@ -323,22 +319,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
-    // ===== DIAGNOSTICO DE PERMISOS =====
-    console.log('[ModernDashboard] ===== PERMISOS CHECK =====');
-    try {
-      const medicionPerms = await JoySenseService.getUserPermissions('medicion');
-      const metricaPerms = await JoySenseService.getUserPermissions('metrica');
-      const localizacionPerms = await JoySenseService.getUserPermissions('localizacion');
-      const sensorPerms = await JoySenseService.getUserPermissions('sensor');
-
-      console.log('[ModernDashboard] Permisos - medicion:', medicionPerms);
-      console.log('[ModernDashboard] Permisos - metrica:', metricaPerms);
-      console.log('[ModernDashboard] Permisos - localizacion:', localizacionPerms);
-      console.log('[ModernDashboard] Permisos - sensor:', sensorPerms);
-    } catch (error) {
-      console.error('[ModernDashboard] Error verificando permisos:', error);
-    }
-    console.log('[ModernDashboard] ===== END PERMISOS CHECK =====');
 
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
@@ -358,13 +338,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     // Verificar si esta petición ya fue invalidada por una nueva selección
     if (currentRequestKeyRef.current !== null && currentRequestKeyRef.current !== thisRequestKey) {
-      console.log('[ModernDashboard] loadMediciones: Request invalidated by newer one. Canceling.');
       return
     }
-    
+
     // Verificar si el nodo cambió mientras se estaba cargando
     if (thisNodeId !== null && Number(selectedNode?.nodoid) !== Number(thisNodeId)) {
-      console.log('[ModernDashboard] loadMediciones: Node changed from', thisNodeId, 'to', selectedNode?.nodoid, '. Canceling.');
       return
     }
     
