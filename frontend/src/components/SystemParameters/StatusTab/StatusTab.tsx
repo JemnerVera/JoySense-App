@@ -24,7 +24,7 @@ interface StatusTabProps {
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
 }
 
-export const StatusTab: React.FC<StatusTabProps> = ({
+const StatusTabComponent: React.FC<StatusTabProps> = ({
   tableName,
   tableData,
   columns,
@@ -105,4 +105,6 @@ export const StatusTab: React.FC<StatusTabProps> = ({
     </div>
   );
 };
+
+export const StatusTab = React.memo(StatusTabComponent);
 

@@ -6,6 +6,16 @@ import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
 
+// Constantes para límites de datos
+const DATA_LIMITS = {
+  RANGE_SELECTED: 20000,
+  HOURS_24: 1000,
+  DAYS_7: 5000,
+  DAYS_14: 10000,
+  DAYS_30: 20000,
+  LAST_HOURS: 5000
+} as const
+
 interface ModernDashboardProps {
   filters: {
     entidadId: number | null
@@ -326,7 +336,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
 
     if (!hasRequiredFilters) {
-      console.log('[ModernDashboard] loadMediciones: Missing required filters, clearing mediciones');
       setMediciones([])
       setLoading(false)
       return
@@ -359,8 +368,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       let allData: any[] = []
       
       if (selectedNode) {
-        console.log('[ModernDashboard] Fetching data for selectedNode:', selectedNode);
-        
         const formatDate = (date: Date) => {
           const year = date.getFullYear()
           const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -384,7 +391,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
               startDate: startDateFormatted,
               endDate: endDateFormatted,
-              limit: 20000 // Límite para el rango seleccionado
+              limit: DATA_LIMITS.RANGE_SELECTED
             })
             
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
@@ -411,10 +418,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           // Esto evita timeouts en nodos con muchos datos
           // Orden: 24 horas -> 7 días -> 14 días -> 30 días
           const ranges = [
-            { days: 1, limit: 1000, label: '24 horas' },
-            { days: 7, limit: 5000, label: '7 días' },
-            { days: 14, limit: 10000, label: '14 días' },
-            { days: 30, limit: 20000, label: '30 días' }
+            { days: 1, limit: DATA_LIMITS.HOURS_24, label: '24 horas' },
+            { days: 7, limit: DATA_LIMITS.DAYS_7, label: '7 días' },
+            { days: 14, limit: DATA_LIMITS.DAYS_14, label: '14 días' },
+            { days: 30, limit: DATA_LIMITS.DAYS_30, label: '30 días' }
           ]
           
           // Intentar con rangos recientes (de menor a mayor)
