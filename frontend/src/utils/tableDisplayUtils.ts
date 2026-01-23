@@ -45,12 +45,6 @@ export const formatUserCell = (
   return getUserName(userId, userData);
 };
 
-/**
- * Formatea el valor de datecreated o datemodified
- */
-export const formatDateCell = (dateString: string): string => {
-  return formatDate(dateString);
-};
 
 /**
  * Formatea el valor de password_hash con toggle de visibilidad
@@ -105,7 +99,7 @@ export const getCellDisplayValue = (
   // Datecreated / Datemodified - Fecha formateada
   if (columnName === 'datecreated' || columnName === 'datemodified') {
     return {
-      value: formatDateCell(row[columnName]),
+      value: formatDate(row[columnName]),
       type: 'date'
     };
   }

@@ -286,22 +286,7 @@ export interface Umbral {
   criticidad?: Criticidad;
 }
 
-/**
- * @deprecated Tabla 'alerta' fue eliminada en SCHEMA_04.01.2025
- * Usar 'alerta_regla' en su lugar
- */
-// export interface Alerta {
-//   uuid_alertaid: string;
-//   medicionid: number;
-//   umbralid: number;
-//   fecha: string;
-//   statusid: number;
-//   usercreatedid: number;
-//   datecreated: string;
-//   // Relaciones
-//   medicion?: Medicion;
-//   umbral?: Umbral;
-// }
+// @deprecated Tabla 'alerta' eliminada en SCHEMA_04.01.2025 - usar 'alerta_regla'
 
 /**
  * AlertaRegla - NUEVO MODELO (reemplaza 'alerta')
