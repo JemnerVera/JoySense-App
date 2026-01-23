@@ -57,8 +57,8 @@ const MassivePerfilUmbralFormLazy = lazy(() =>
   })
 );
 
-const MultipleMetricaSensorFormLazy = lazy(() => 
-  import('../MultipleMetricaSensorForm').then(module => {
+const MultipleMetricaSensorFormLazy = lazy(() =>
+  import('../forms/multiple/MultipleMetricaSensorForm').then(module => {
     return { default: module.default };
   })
 );

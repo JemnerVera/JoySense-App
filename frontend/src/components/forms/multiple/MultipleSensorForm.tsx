@@ -1,7 +1,7 @@
 import React from 'react';
-import SelectWithPlaceholder from './SelectWithPlaceholder';
-import ReplicateButton from './ReplicateButton';
-import { useLanguage } from '../contexts/LanguageContext';
+import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import ReplicateButton from '../../ReplicateButton';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface MultipleSensorFormProps {
   selectedNodo: string;

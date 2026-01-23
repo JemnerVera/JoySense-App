@@ -3,8 +3,8 @@
 // ============================================================================
 
 import React, { memo } from 'react';
-import ReplicateButton from './ReplicateButton';
-import { useLanguage } from '../contexts/LanguageContext';
+import ReplicateButton from '../../ReplicateButton';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 // ============================================================================
 // INTERFACES & TYPES

@@ -1,27 +1,27 @@
 import React from 'react';
-import ReplicateButton from './ReplicateButton';
-import { useLanguage } from '../contexts/LanguageContext';
+import ReplicateButton from '../../ReplicateButton';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-interface MultipleReglaPerfilFormProps {
-  selectedReglas: string[];
-  setSelectedReglas: (value: string[]) => void;
+interface MultipleUsuarioPerfilFormProps {
+  selectedUsuarios: string[];
+  setSelectedUsuarios: (value: string[]) => void;
   selectedPerfiles: string[];
   setSelectedPerfiles: (value: string[]) => void;
   selectedStatus: boolean;
   setSelectedStatus: (value: boolean) => void;
-  multipleReglaPerfiles: any[];
-  setMultipleReglaPerfiles: (value: any[]) => void;
-  reglasData: any[];
+  multipleUsuarioPerfiles: any[];
+  setMultipleUsuarioPerfiles: (value: any[]) => void;
+  userData: any[];
   perfilesData: any[];
-  reglaPerfilData: any[]; // Datos existentes de regla_perfil
+  usuarioperfilData: any[]; // Datos existentes de usuarioperfil
   loading: boolean;
-  onInitializeReglaPerfiles: (reglas: string[], perfiles: string[]) => Promise<void>;
-  onInsertReglaPerfiles: () => void;
+  onInitializeUsuarioPerfiles: (usuarios: string[], perfiles: string[]) => Promise<void>;
+  onInsertUsuarioPerfiles: () => void;
   onCancel: () => void;
-  getUniqueOptionsForField: (columnName: string, filterParams?: { reglaid?: string; perfilid?: string }) => Array<{value: any, label: string}>;
+  getUniqueOptionsForField: (columnName: string, filterParams?: { usuarioid?: string; perfilid?: string }) => Array<{value: any, label: string}>;
   // Props para replicación
   onReplicateClick?: () => void;
-  // Prop para indicar si estamos en modo replicación (solo una regla)
+  // Prop para indicar si estamos en modo replicación (solo un usuario)
   isReplicateMode?: boolean;
   // Filtros globales para contextualizar
   paisSeleccionado?: string;
@@ -33,21 +33,21 @@ interface MultipleReglaPerfilFormProps {
   fundosData?: any[];
 }
 
-const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
-  selectedReglas,
-  setSelectedReglas,
+const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
+  selectedUsuarios,
+  setSelectedUsuarios,
   selectedPerfiles,
   setSelectedPerfiles,
   selectedStatus,
   setSelectedStatus,
-  multipleReglaPerfiles,
-  setMultipleReglaPerfiles,
-  reglasData,
+  multipleUsuarioPerfiles,
+  setMultipleUsuarioPerfiles,
+  userData,
   perfilesData,
-  reglaPerfilData,
+  usuarioperfilData,
   loading,
-  onInitializeReglaPerfiles,
-  onInsertReglaPerfiles,
+  onInitializeUsuarioPerfiles,
+  onInsertUsuarioPerfiles,
   onCancel,
   getUniqueOptionsForField,
   // Props para replicación
@@ -62,15 +62,15 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
   fundosData
 }) => {
   const { t } = useLanguage();
-  const [reglasDropdownOpen, setReglasDropdownOpen] = React.useState(false);
+  const [usuariosDropdownOpen, setUsuariosDropdownOpen] = React.useState(false);
   const [perfilesDropdownOpen, setPerfilesDropdownOpen] = React.useState(false);
   
   // Estados para términos de búsqueda
-  const [reglasSearchTerm, setReglasSearchTerm] = React.useState('');
+  const [usuariosSearchTerm, setUsuariosSearchTerm] = React.useState('');
   const [perfilesSearchTerm, setPerfilesSearchTerm] = React.useState('');
   
-  // Estados para reglas y perfiles seleccionados con checkboxes
-  const [selectedReglasCheckboxes, setSelectedReglasCheckboxes] = React.useState<string[]>([]);
+  // Estados para usuarios y perfiles seleccionados con checkboxes
+  const [selectedUsuariosCheckboxes, setSelectedUsuariosCheckboxes] = React.useState<string[]>([]);
   const [selectedPerfilesCheckboxes, setSelectedPerfilesCheckboxes] = React.useState<string[]>([]);
   const [combinacionesStatus, setCombinacionesStatus] = React.useState<{[key: string]: boolean}>({});
 
@@ -79,7 +79,7 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.dropdown-container')) {
-        setReglasDropdownOpen(false);
+        setUsuariosDropdownOpen(false);
         setPerfilesDropdownOpen(false);
       }
     };
@@ -90,13 +90,13 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     };
   }, []);
 
-  // Sincronizar checkboxes con selectedReglas
+  // Sincronizar checkboxes con selectedUsuarios
   React.useEffect(() => {
-    if (selectedReglas.length !== selectedReglasCheckboxes.length || 
-        !selectedReglas.every(id => selectedReglasCheckboxes.includes(id))) {
-      setSelectedReglasCheckboxes(selectedReglas);
+    if (selectedUsuarios.length !== selectedUsuariosCheckboxes.length || 
+        !selectedUsuarios.every(id => selectedUsuariosCheckboxes.includes(id))) {
+      setSelectedUsuariosCheckboxes(selectedUsuarios);
     }
-  }, [selectedReglas]);
+  }, [selectedUsuarios]);
 
   // Sincronizar checkboxes con selectedPerfiles
   React.useEffect(() => {
@@ -106,58 +106,109 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     }
   }, [selectedPerfiles]);
 
-  // Actualizar selectedReglas y selectedPerfiles cuando cambien los checkboxes
+  // Actualizar selectedUsuarios y selectedPerfiles cuando cambien los checkboxes
   React.useEffect(() => {
-    setSelectedReglas(selectedReglasCheckboxes);
-  }, [selectedReglasCheckboxes, setSelectedReglas]);
+    setSelectedUsuarios(selectedUsuariosCheckboxes);
+  }, [selectedUsuariosCheckboxes]);
 
   React.useEffect(() => {
     setSelectedPerfiles(selectedPerfilesCheckboxes);
-  }, [selectedPerfilesCheckboxes, setSelectedPerfiles]);
+  }, [selectedPerfilesCheckboxes]);
 
-  // Generar las combinaciones para multipleReglaPerfiles
+  // Generar las combinaciones para multipleUsuarioPerfiles
   React.useEffect(() => {
-    if (selectedReglasCheckboxes.length > 0 && selectedPerfilesCheckboxes.length > 0) {
+    if (selectedUsuariosCheckboxes.length > 0 && selectedPerfilesCheckboxes.length > 0) {
       const combinaciones: Array<{
-        reglaid: number;
+        usuarioid: number;
         perfilid: number;
         statusid: number;
       }> = [];
       
-      selectedReglasCheckboxes.forEach((reglaId) => {
+      selectedUsuariosCheckboxes.forEach((usuarioId) => {
         selectedPerfilesCheckboxes.forEach((perfilId) => {
-          const key = `${reglaId}-${perfilId}`;
+          const key = `${usuarioId}-${perfilId}`;
           combinaciones.push({
-            reglaid: parseInt(reglaId),
+            usuarioid: parseInt(usuarioId),
             perfilid: parseInt(perfilId),
             statusid: combinacionesStatus[key] !== false ? 1 : 0 // Por defecto true (activo)
           });
         });
       });
       
-      setMultipleReglaPerfiles(combinaciones);
+      setMultipleUsuarioPerfiles(combinaciones);
     } else {
-      setMultipleReglaPerfiles([]);
+      setMultipleUsuarioPerfiles([]);
     }
-  }, [selectedReglasCheckboxes, selectedPerfilesCheckboxes, combinacionesStatus, setMultipleReglaPerfiles]);
+  }, [selectedUsuariosCheckboxes, selectedPerfilesCheckboxes, combinacionesStatus]);
 
-  // Obtener reglas disponibles (solo activas)
-  const getReglasDisponibles = () => {
-    return reglasData.filter(regla => regla.statusid === 1);
+  // Obtener usuarios que no tienen perfil asignado
+  const getUsuariosSinPerfil = () => {
+    console.log('🔍 Debug - getUsuariosSinPerfil INPUT:', {
+      userData: userData,
+      usuarioperfilData: usuarioperfilData,
+      userDataLength: userData?.length,
+      usuarioperfilDataLength: usuarioperfilData?.length
+    });
+
+    // Usar los datos reales de usuarioperfil de la base de datos
+    const usuariosConPerfil = new Set(
+      usuarioperfilData
+        .filter(up => up.statusid === 1)
+        .map(up => up.usuarioid)
+    );
+    
+    console.log('🔍 Debug - getUsuariosSinPerfil PROCESSING:', {
+      totalUsuarios: userData.length,
+      usuariosConPerfil: usuariosConPerfil.size,
+      usuarioperfilData: usuarioperfilData.length,
+      usuariosConPerfilIds: Array.from(usuariosConPerfil),
+      usuariosActivos: userData.filter(u => u.statusid === 1).length,
+      usuariosInactivos: userData.filter(u => u.statusid === 0).length
+    });
+
+    const usuariosSinPerfil = userData.filter(usuario => 
+      !usuariosConPerfil.has(usuario.usuarioid)
+      // Removido: && usuario.statusid === 1
+      // Ahora incluye usuarios activos e inactivos
+    );
+
+    console.log('🔍 Debug - getUsuariosSinPerfil RESULT:', {
+      usuariosSinPerfil: usuariosSinPerfil,
+      usuariosSinPerfilCount: usuariosSinPerfil.length,
+      usuariosSinPerfilIds: usuariosSinPerfil.map(u => u.usuarioid)
+    });
+    
+    return usuariosSinPerfil;
   };
 
-  // Obtener perfiles disponibles (solo activos)
+  // Obtener perfiles disponibles
   const getPerfilesDisponibles = () => {
     return perfilesData.filter(perfil => perfil.statusid === 1);
   };
 
-  // Filtrar reglas por término de búsqueda
-  const reglasDisponibles = getReglasDisponibles();
+  // Filtrar usuarios por término de búsqueda
+  const usuariosSinPerfil = getUsuariosSinPerfil();
   
-  const filteredReglas = reglasDisponibles.filter(regla => {
-    const nombreMatch = regla.nombre?.toLowerCase().includes(reglasSearchTerm.toLowerCase());
-    return nombreMatch;
+  const filteredUsuarios = usuariosSinPerfil.filter(usuario => {
+    const nombreMatch = usuario.nombre?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const emailMatch = usuario.email?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const loginMatch = usuario.login?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const firstnameMatch = usuario.firstname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    const lastnameMatch = usuario.lastname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
+    
+    console.log('🔍 Debug - filtrado usuario:', {
+      usuario: usuario,
+      usuariosSearchTerm: usuariosSearchTerm,
+      nombreMatch: nombreMatch,
+      emailMatch: emailMatch,
+      loginMatch: loginMatch,
+      firstnameMatch: firstnameMatch,
+      lastnameMatch: lastnameMatch
+    });
+    
+    return nombreMatch || emailMatch || loginMatch || firstnameMatch || lastnameMatch;
   });
+  
 
   // Filtrar perfiles por término de búsqueda
   const filteredPerfiles = getPerfilesDisponibles().filter(perfil =>
@@ -165,11 +216,11 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     perfil.descripcion?.toLowerCase().includes(perfilesSearchTerm.toLowerCase())
   );
 
-  const handleReglaToggle = (reglaId: string) => {
-    setSelectedReglasCheckboxes(prev => 
-      prev.includes(reglaId) 
-        ? prev.filter(id => id !== reglaId)
-        : [...prev, reglaId]
+  const handleUsuarioToggle = (usuarioId: string) => {
+    setSelectedUsuariosCheckboxes(prev => 
+      prev.includes(usuarioId) 
+        ? prev.filter(id => id !== usuarioId)
+        : [...prev, usuarioId]
     );
   };
 
@@ -188,9 +239,9 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     }));
   };
 
-  const handleSelectAllReglas = () => {
-    const allReglaIds = filteredReglas.map(r => r.reglaid.toString());
-    setSelectedReglasCheckboxes(allReglaIds);
+  const handleSelectAllUsuarios = () => {
+    const allUsuarioIds = filteredUsuarios.map(u => u.usuarioid.toString());
+    setSelectedUsuariosCheckboxes(allUsuarioIds);
   };
 
   const handleSelectAllPerfiles = () => {
@@ -198,8 +249,8 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
     setSelectedPerfilesCheckboxes(allPerfilIds);
   };
 
-  const handleClearAllReglas = () => {
-    setSelectedReglasCheckboxes([]);
+  const handleClearAllUsuarios = () => {
+    setSelectedUsuariosCheckboxes([]);
   };
 
   const handleClearAllPerfiles = () => {
@@ -209,60 +260,49 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
   return (
     <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-6">
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Contenedor 1: Reglas disponibles */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Contenedor 1: Usuarios sin perfil */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-              REGLAS DISPONIBLES
+              {t('userprofile.users_without_profile')}
             </h4>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSelectAllReglas}
-                className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 font-mono"
-              >
-                SELECCIONAR TODAS
-              </button>
-              <button
-                onClick={handleClearAllReglas}
-                className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 font-mono"
-              >
-                LIMPIAR
-              </button>
-            </div>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="Buscar reglas..."
-              value={reglasSearchTerm}
-              onChange={(e) => setReglasSearchTerm(e.target.value)}
+              placeholder={t('userprofile.search_users')}
+              value={usuariosSearchTerm}
+              onChange={(e) => setUsuariosSearchTerm(e.target.value)}
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
             />
             
             <div className="mt-2 max-h-60 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded custom-scrollbar">
-              {filteredReglas.map((regla) => (
+              {filteredUsuarios.map((usuario) => (
                 <label
-                  key={regla.reglaid}
+                  key={usuario.usuarioid}
                   className="flex items-center p-3 hover:bg-neutral-700 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={selectedReglasCheckboxes.includes(regla.reglaid.toString())}
-                    onChange={() => handleReglaToggle(regla.reglaid.toString())}
+                    checked={selectedUsuariosCheckboxes.includes(usuario.usuarioid.toString())}
+                    onChange={() => handleUsuarioToggle(usuario.usuarioid.toString())}
                     className="mr-3 text-orange-500 focus:ring-orange-500"
                   />
                   <div className="flex-1">
                     <div className="text-white font-medium font-mono">
-                      {regla.nombre || `Regla ${regla.reglaid}`}
+                      {usuario.nombre || usuario.firstname || usuario.login || `Usuario ${usuario.usuarioid}`}
+                    </div>
+                    <div className="text-neutral-400 text-sm font-mono">
+                      {usuario.email || usuario.login || 'Sin email'}
                     </div>
                   </div>
                 </label>
               ))}
-              {filteredReglas.length === 0 && (
+              {filteredUsuarios.length === 0 && (
                 <div className="p-3 text-neutral-400 text-center font-mono">
-                  {reglasSearchTerm ? 'No se encontraron reglas' : 'No hay reglas disponibles'}
+                  {usuariosSearchTerm ? t('userprofile.no_users_found') : t('userprofile.no_users_without_profile')}
                 </div>
               )}
             </div>
@@ -273,28 +313,14 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider">
-              PERFILES DISPONIBLES
+              {t('userprofile.profiles_available')}
             </h4>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSelectAllPerfiles}
-                className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 font-mono"
-              >
-                SELECCIONAR TODOS
-              </button>
-              <button
-                onClick={handleClearAllPerfiles}
-                className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 font-mono"
-              >
-                LIMPIAR
-              </button>
-            </div>
           </div>
           
           <div className="relative dropdown-container">
             <input
               type="text"
-              placeholder="Buscar perfiles..."
+              placeholder={t('userprofile.search_profiles')}
               value={perfilesSearchTerm}
               onChange={(e) => setPerfilesSearchTerm(e.target.value)}
               className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
@@ -320,7 +346,7 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
               ))}
               {filteredPerfiles.length === 0 && (
                 <div className="p-3 text-neutral-400 text-center font-mono">
-                  {perfilesSearchTerm ? 'No se encontraron perfiles' : 'No hay perfiles disponibles'}
+                  {perfilesSearchTerm ? t('userprofile.no_profiles_found') : t('userprofile.no_profiles_available')}
                 </div>
               )}
             </div>
@@ -329,58 +355,11 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
 
       </div>
 
-      {/* Grid de combinaciones */}
-      {multipleReglaPerfiles.length > 0 && (
-        <div className="mt-6">
-          <h4 className="text-lg font-bold text-orange-500 font-mono tracking-wider mb-4">
-            COMBINACIONES REGLA - PERFIL ({multipleReglaPerfiles.length})
-          </h4>
-          <div className="max-h-96 overflow-y-auto bg-neutral-800 border border-neutral-600 rounded custom-scrollbar">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-4">
-              {multipleReglaPerfiles.map((combinacion, index) => {
-                const regla = reglasData.find(r => r.reglaid === combinacion.reglaid);
-                const perfil = perfilesData.find(p => p.perfilid === combinacion.perfilid);
-                const key = `${combinacion.reglaid}-${combinacion.perfilid}`;
-                const isActive = combinacionesStatus[key] !== false;
-                
-                return (
-                  <div
-                    key={index}
-                    className={`p-3 rounded border ${
-                      isActive 
-                        ? 'bg-green-900 border-green-600' 
-                        : 'bg-neutral-700 border-neutral-600'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="text-white font-mono text-sm">
-                          {regla?.nombre || `Regla ${combinacion.reglaid}`}
-                        </div>
-                        <div className="text-neutral-400 font-mono text-xs">
-                          {perfil?.perfil || `Perfil ${combinacion.perfilid}`}
-                        </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={() => handleCombinacionStatusToggle(key)}
-                        className="ml-2 text-orange-500 focus:ring-orange-500"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Botones de acción */}
       <div className="flex justify-center gap-4 mt-6">
         <button
-          onClick={onInsertReglaPerfiles}
-          disabled={loading || multipleReglaPerfiles.filter(c => c.statusid === 1).length === 0}
+          onClick={onInsertUsuarioPerfiles}
+          disabled={loading || multipleUsuarioPerfiles.length === 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>
@@ -391,7 +370,7 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
         {onReplicateClick && !isReplicateMode && (
           <ReplicateButton
             onClick={onReplicateClick}
-            disabled={selectedReglasCheckboxes.length === 0 || selectedPerfilesCheckboxes.length === 0}
+            disabled={selectedUsuariosCheckboxes.length === 0 || selectedPerfilesCheckboxes.length === 0}
           />
         )}
         
@@ -407,5 +386,4 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
   );
 };
 
-export default MultipleReglaPerfilForm;
-
+export default MultipleUsuarioPerfilForm;
