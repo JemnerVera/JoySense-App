@@ -18,8 +18,8 @@ const SystemParametersLazy = lazy(() =>
 
 
 // Lazy load NotificacionesMain component
-const NotificacionesMainLazy = lazy(() => 
-  import('../NotificacionesMain').then(module => {
+const NotificacionesMainLazy = lazy(() =>
+  import('../MainComponents/NotificacionesMain').then(module => {
     return { default: module.default };
   })
 );
