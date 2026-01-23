@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import SelectWithPlaceholder from './SelectWithPlaceholder';
+import SelectWithPlaceholder from './selectors/SelectWithPlaceholder';
 import { useLanguage } from '../contexts/LanguageContext';
 import { JoySenseService } from '../services/backend-api';
 

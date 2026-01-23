@@ -1,5 +1,5 @@
 import React from 'react';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 import ReplicateButton from '../../ReplicateButton';
 import { useLanguage } from '../../../contexts/LanguageContext';
 

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 
 interface PerfilFormFieldsProps {

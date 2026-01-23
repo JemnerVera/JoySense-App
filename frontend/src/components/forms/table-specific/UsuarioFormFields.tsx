@@ -5,8 +5,8 @@
 
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import MultiSelectWithPlaceholder from '../../MultiSelectWithPlaceholder';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import MultiSelectWithPlaceholder from '../../selectors/MultiSelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 
 interface UsuarioFormFieldsProps {
   visibleColumns: any[];
