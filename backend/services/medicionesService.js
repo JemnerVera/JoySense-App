@@ -38,41 +38,63 @@ const _loadMedicionesDetailsFallback = async (supabase, data) => {
   const metricaIds = [...new Set(data.map(m => m.localizacion?.metricaid).filter(id => id != null))];
   const sensorIds = [...new Set(data.map(m => m.localizacion?.sensorid).filter(id => id != null))];
 
+
   let metricasMap = new Map();
   if (metricaIds.length > 0) {
-    const { data: metricas } = await supabase
-      .schema(dbSchema)
-      .from('metrica')
-      .select('metricaid, metrica, unidad')
-      .in('metricaid', metricaIds)
-      .eq('statusid', 1);
-    (metricas || []).forEach(m => metricasMap.set(m.metricaid, m));
+    try {
+      const { data: metricas, error } = await supabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+
+      if (!error && metricas) {
+        (metricas || []).forEach(m => metricasMap.set(m.metricaid, m));
+      }
+    } catch (error) {
+      console.warn('[medicionesService] Error accediendo a tabla metrica:', error.message);
+      // No crear valores por defecto - dejar que el sistema funcione con datos reales
+    }
   }
 
   let sensoresMap = new Map();
   if (sensorIds.length > 0) {
-    const { data: sensores } = await supabase
-      .schema(dbSchema)
-      .from('sensor')
-      .select('sensorid, tipoid')
-      .in('sensorid', sensorIds)
-      .eq('statusid', 1);
-    (sensores || []).forEach(s => sensoresMap.set(s.sensorid, s));
+    try {
+      const { data: sensores, error } = await supabase
+        .schema(dbSchema)
+        .from('sensor')
+        .select('sensorid, tipoid')
+        .in('sensorid', sensorIds)
+        .eq('statusid', 1);
+
+      if (!error && sensores) {
+        (sensores || []).forEach(s => sensoresMap.set(s.sensorid, s));
+      }
+    } catch (error) {
+      console.warn('[medicionesService] Error accediendo a tabla sensor:', error.message);
+      // No crear valores por defecto - dejar que el sistema funcione con datos reales
+    }
   }
 
-  return data.map(m => {
+  const result = data.map(m => {
     const loc = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
     if (!loc) return { ...m, localizacion: null };
+
+    const metricaData = loc.metricaid ? metricasMap.get(loc.metricaid) : null;
+    const sensorData = loc.sensorid ? sensoresMap.get(loc.sensorid) : null;
 
     return {
       ...m,
       localizacion: {
         ...loc,
-        metrica: loc.metricaid ? metricasMap.get(loc.metricaid) : null,
-        sensor: loc.sensorid ? sensoresMap.get(loc.sensorid) : null
+        metrica: metricaData,
+        sensor: sensorData
       }
     };
   });
+
+  return result;
 };
 
 /**
@@ -92,8 +114,8 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
         metricaid,
         sensorid,
         nodo:nodoid(
-          nodoid, 
-          nodo, 
+          nodoid,
+          nodo,
           ubicacionid,
           latitud,
           longitud,
@@ -143,32 +165,11 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
 
 /**
  * Obtiene mediciones optimizadas para el dashboard.
- * Intenta usar RPC optimizado, si falla usa el Fallback manual.
+ * Método directo usando RLS para control de permisos.
  */
 exports.getMedicionesDashboard = async (supabase, { nodoid, startDate, endDate, limit = 1000, getAll = false }) => {
-  // [METODO RPC]
-  try {
-    const { data, error } = await supabase
-      .schema('joysense')
-      .rpc('fn_get_mediciones_dashboard', {
-        p_nodoid: parseInt(nodoid),
-        p_start_date: startDate,
-        p_end_date: endDate,
-        p_limit: getAll ? 50000 : parseInt(limit)
-      });
-
-    if (!error) return data || [];
-
-    if (error.code === 'P0001' || error.code === 'PGRST202' || error.message?.includes('does not exist')) {
-      logger.warn(`[medicionesService] RPC fn_get_mediciones_dashboard no disponible. Usando fallback.`);
-    } else {
-      throw error;
-    }
-  } catch (error) {
-    logger.error('Error en getMedicionesDashboard (RPC), intentando fallback:', error);
-  }
-
-  // [METODO FALLBACK]
+  // [METODO DIRECTO] - RLS ya maneja los permisos correctamente
+  // Eliminado RPC fn_get_mediciones_dashboard ya que RLS funciona mejor
   return await this.getMedicionesWithDetails(supabase, { nodoid, startDate, endDate, limit, getAll });
 };
 

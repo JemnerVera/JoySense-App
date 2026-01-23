@@ -384,26 +384,8 @@ const _getLocalizacionesFallback = async (supabase, { nodoid, ubicacionId }) => 
  * Intenta usar RPC optimizado, si falla usa el Fallback manual.
  */
 const getLocalizaciones = async (supabase, { nodoid, ubicacionId }) => {
-  // [METODO RPC]
-  if (nodoid) {
-    try {
-      const { data, error } = await supabase
-        .schema('joysense')
-        .rpc('fn_get_localizaciones_detalle', { p_nodoid: parseInt(nodoid) });
-
-      if (!error) return data || [];
-      
-      if (error.code !== 'P0001' && error.code !== 'PGRST202' && !error.message?.includes('does not exist')) {
-        logger.error('Error en RPC fn_get_localizaciones_detalle:', error);
-      } else {
-        logger.warn(`[geografiaService] RPC fn_get_localizaciones_detalle no disponible. Usando fallback.`);
-      }
-    } catch (err) {
-      logger.error('Excepción en RPC fn_get_localizaciones_detalle, usando fallback:', err);
-    }
-  }
-
-  // [METODO FALLBACK]
+  // [METODO DIRECTO] - RLS maneja los permisos correctamente
+  // Eliminado RPC fn_get_localizaciones_detalle ya que RLS funciona mejor
   return await _getLocalizacionesFallback(supabase, { nodoid, ubicacionId });
 };
 
@@ -540,27 +522,11 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit }) =>
 
 /**
  * Obtener nodos con localización para el dashboard.
- * Intenta usar RPC optimizado, si falla usa el Fallback manual.
+ * Método directo usando RLS para control de permisos.
  */
 const getNodosConLocalizacionDashboard = async (supabase, { limit = 1000 }) => {
-  // [METODO RPC]
-  try {
-    const { data, error } = await supabase
-      .schema('joysense')
-      .rpc('fn_get_nodos_con_localizacion_dashboard', { p_limit: parseInt(limit) });
-
-    if (!error) return data || [];
-
-    if (error.code !== 'P0001' && error.code !== 'PGRST202' && !error.message?.includes('does not exist')) {
-      logger.error('Error en RPC fn_get_nodos_con_localizacion_dashboard:', error);
-    } else {
-      logger.warn(`[geografiaService] RPC fn_get_nodos_con_localizacion_dashboard no disponible. Usando fallback.`);
-    }
-  } catch (error) {
-    logger.error('Excepción en RPC getNodosConLocalizacionDashboard, usando fallback:', error);
-  }
-
-  // [METODO FALLBACK]
+  // [METODO DIRECTO] - RLS maneja los permisos correctamente
+  // Eliminado RPC fn_get_nodos_con_localizacion_dashboard ya que RLS funciona mejor
   return await _getNodosConLocalizacionDashboardFallback(supabase, { limit: parseInt(limit) });
 };
 
