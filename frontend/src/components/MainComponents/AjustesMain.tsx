@@ -4,7 +4,7 @@
  */
 
 import React, { forwardRef, useImperativeHandle } from 'react';
-import ConfigurationPanel from './ConfigurationPanel';
+import ConfigurationPanel from '../ConfigurationPanel';
 
 export interface AjustesMainRef {
   hasUnsavedChanges: () => boolean;

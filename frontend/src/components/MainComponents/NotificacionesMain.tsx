@@ -6,41 +6,41 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
 // Contexts
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useFilters } from '../contexts/FilterContext';
-import { useSidebar } from '../contexts/SidebarContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useFilters } from '../../contexts/FilterContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 // Config & Types
-import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../config/tables.config';
-import { TableName, PRIMARY_KEY_MAP } from '../types';
-import type { ColumnInfo } from '../types/systemParameters';
+import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../../config/tables.config';
+import { TableName, PRIMARY_KEY_MAP } from '../../types';
+import type { ColumnInfo } from '../../types/systemParameters';
 
 // Hooks
-import { useTableCRUD } from '../hooks/useTableCRUD';
-import { useTableDataManagement } from '../hooks/useTableDataManagement';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
-import { useInsertForm } from '../hooks/useInsertForm';
+import { useTableCRUD } from '../../hooks/useTableCRUD';
+import { useTableDataManagement } from '../../hooks/useTableDataManagement';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useInsertForm } from '../../hooks/useInsertForm';
 
 // Components
-import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
-import { MessageDisplay } from './SystemParameters/MessageDisplay';
-import { PaginationControls } from './SystemParameters/PaginationControls';
-import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
-import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
-import { TableSelector } from './SystemParameters/components/TableSelector';
-import { MassiveOperationsRenderer } from './SystemParameters/components/MassiveOperationsRenderer';
-import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
-import { logger } from '../utils/logger';
+import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
+import { MessageDisplay } from '../SystemParameters/MessageDisplay';
+import { PaginationControls } from '../SystemParameters/PaginationControls';
+import { SearchBarWithCounter } from '../SystemParameters/SearchBarWithCounter';
+import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
+import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';
+import { UpdateTab } from '../SystemParameters/UpdateTab/UpdateTab';
+import { TableSelector } from '../SystemParameters/components/TableSelector';
+import { MassiveOperationsRenderer } from '../SystemParameters/components/MassiveOperationsRenderer';
+import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { logger } from '../../utils/logger';
 
 // Hooks
-import { useSystemParametersUtils } from './SystemParameters/hooks/useSystemParametersUtils';
-import { useSystemParametersCRUD } from './SystemParameters/hooks/useSystemParametersCRUD';
-import { useMassiveOperations } from './SystemParameters/hooks/useMassiveOperations';
-import { useSystemParametersSync } from './SystemParameters/hooks/useSystemParametersSync';
-import { getUniqueOptionsForField } from './SystemParameters/utils/getUniqueOptionsForField';
+import { useSystemParametersUtils } from '../SystemParameters/hooks/useSystemParametersUtils';
+import { useSystemParametersCRUD } from '../SystemParameters/hooks/useSystemParametersCRUD';
+import { useMassiveOperations } from '../SystemParameters/hooks/useMassiveOperations';
+import { useSystemParametersSync } from '../SystemParameters/hooks/useSystemParametersSync';
+import { getUniqueOptionsForField } from '../SystemParameters/utils/getUniqueOptionsForField';
 
 // ============================================================================
 // INTERFACES

@@ -6,26 +6,26 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
 // Contexts
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useModal } from '../contexts/ModalContext';
-import { useSidebar } from '../contexts/SidebarContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useModal } from '../../contexts/ModalContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 // Hooks
-import { useTableCRUD } from '../hooks/useTableCRUD';
-import { useTableDataManagement } from '../hooks/useTableDataManagement';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useTableCRUD } from '../../hooks/useTableCRUD';
+import { useTableDataManagement } from '../../hooks/useTableDataManagement';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
-import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
-import { MessageDisplay } from './SystemParameters/MessageDisplay';
-import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
-import { AsignarPermisosTab } from './Permisos/AsignarPermisosTab';
-import { PermisosSkillTree } from './Permisos/PermisosSkillTree';
-import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
-import { TableName, PRIMARY_KEY_MAP } from '../types';
+import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
+import { MessageDisplay } from '../SystemParameters/MessageDisplay';
+import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
+import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';
+import { UpdateTab } from '../SystemParameters/UpdateTab/UpdateTab';
+import { AsignarPermisosTab } from '../Permisos/AsignarPermisosTab';
+import { PermisosSkillTree } from '../Permisos/PermisosSkillTree';
+import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { TableName, PRIMARY_KEY_MAP } from '../../types';
 
 // ============================================================================
 // INTERFACES

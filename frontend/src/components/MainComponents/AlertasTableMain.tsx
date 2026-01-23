@@ -6,23 +6,23 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
 
 // Contexts
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useModal } from '../contexts/ModalContext';
-import { useSidebar } from '../contexts/SidebarContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useModal } from '../../contexts/ModalContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 // Hooks
-import { useTableCRUD } from '../hooks/useTableCRUD';
-import { useTableDataManagement } from '../hooks/useTableDataManagement';
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useTableCRUD } from '../../hooks/useTableCRUD';
+import { useTableDataManagement } from '../../hooks/useTableDataManagement';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
-import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
-import { MessageDisplay } from './SystemParameters/MessageDisplay';
-import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
-import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
+import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
+import { MessageDisplay } from '../SystemParameters/MessageDisplay';
+import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
+import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';
+import { UpdateTab } from '../SystemParameters/UpdateTab/UpdateTab';
+import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 
 // ============================================================================
 // INTERFACES
