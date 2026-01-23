@@ -36,52 +36,57 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
 
   // Obtener las tablas de parámetros geo
   const allParametrosGeoTables = getParametrosGeoTables();
-  
-  // Obtener nombres de tablas para verificar permisos
-  const tableNames = allParametrosGeoTables.map(table => table.name);
-  
-  // Estado para almacenar permisos individuales de cada tabla
+
+  // Verificar permisos individuales para cada tabla de geografía
   const [tablePermissionsMap, setTablePermissionsMap] = useState<Record<string, boolean>>({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
-  
-  // Verificar permisos individuales para cada tabla
+
   useEffect(() => {
     const checkTablePermissions = async () => {
       if (!user) {
         setLoadingPermissions(false);
         return;
       }
-      
+
       const permissions: Record<string, boolean> = {};
-      
-      // Verificar permisos para cada tabla
+
+      // Verificar permisos para cada tabla de geografía
+      // UBICACION, NODO y LOCALIZACION siempre aparecen (sin verificar permisos)
+      const alwaysVisibleTables = ['ubicacion', 'nodo', 'localizacion'];
+
       await Promise.all(
-        tableNames.map(async (tableName) => {
+        allParametrosGeoTables.map(async (table) => {
+          // Si es una tabla que siempre debe aparecer, marcar como true
+          if (alwaysVisibleTables.includes(table.name)) {
+            permissions[table.name] = true;
+            return;
+          }
+
           try {
-            const perms = await JoySenseService.getUserPermissions(tableName);
-            permissions[tableName] = perms?.puede_ver === true;
+            const perms = await JoySenseService.getUserPermissions(table.name);
+            permissions[table.name] = perms?.puede_ver === true;
           } catch (error) {
-            console.error(`[ParametrosGeoSidebar] Error verificando permisos para ${tableName}:`, error);
-            permissions[tableName] = false;
+            console.error(`[ParametrosGeoSidebar] Error verificando permisos para ${table.name}:`, error);
+            permissions[table.name] = false;
           }
         })
       );
-      
+
       setTablePermissionsMap(permissions);
       setLoadingPermissions(false);
     };
-    
+
     checkTablePermissions();
-  }, [user, tableNames.join(',')]);
+  }, [user, allParametrosGeoTables]);
   
-  // Filtrar tablas basándose en permisos
+  // Filtrar tablas basándose en permisos con lógica de cascada
   const parametrosGeoTables = useMemo(() => {
     // Si aún se están cargando permisos, mostrar todas las tablas (evita parpadeo)
     if (loadingPermissions) {
       return allParametrosGeoTables;
     }
-    
-    // Filtrar solo las tablas que el usuario puede ver
+
+    // Filtrar solo las tablas que el usuario puede ver (con lógica de cascada aplicada)
     return allParametrosGeoTables.filter(table => {
       return tablePermissionsMap[table.name] === true;
     });
@@ -167,13 +172,19 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
-          <nav className="space-y-1">
-            {parametrosGeoTables.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
-                <p className="text-sm font-mono">No hay tablas disponibles</p>
-              </div>
-            ) : (
-              parametrosGeoTables.map((table) => {
+          {/* Mostrar loading state mientras se verifican permisos */}
+          {loadingPermissions ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+          ) : (
+            <nav className="space-y-1">
+              {parametrosGeoTables.length === 0 ? (
+                <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
+                  <p className="text-sm font-mono">No hay tablas disponibles</p>
+                </div>
+              ) : (
+                parametrosGeoTables.map((table) => {
                 // Solo marcar como activa si selectedTable no está vacío
                 // Esto evita que se marque como activa cuando activeTab es exactamente 'configuracion-parametros-geo'
                 const isActive = selectedTable !== '' && selectedTable === table.name;
@@ -205,7 +216,8 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
                 );
               })
             )}
-          </nav>
+            </nav>
+          )}
         </div>
       </div>
     </BaseAuxiliarySidebar>

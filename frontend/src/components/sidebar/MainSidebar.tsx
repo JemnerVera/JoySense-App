@@ -29,6 +29,9 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     tableName: 'entidad'
   });
 
+  // Estado de carga general mientras se verifican permisos
+  const isLoadingPermissions = agrupacionLoading;
+
   // Construir el array de pestañas de forma inmutable
   // NUEVA ESTRUCTURA: Solo 4 pestañas principales
   const mainTabs = useMemo(() => {
@@ -81,21 +84,23 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       }
     ];
 
+    // Si aún se están cargando permisos, no mostrar ninguna pestaña
+    if (isLoadingPermissions) {
+      return [];
+    }
+
     // Filtrar pestañas basándose en permisos
     return tabs.filter(tab => {
       if (!tab.requiresPermission) return true;
-      
-      // Si requiere permiso y aún se están cargando, mostrar la pestaña (evita parpadeo)
-      if (agrupacionLoading) return true;
-      
+
       // Si requiere permiso para 'entidad', verificar que tenga puede_ver
       if (tab.id === 'agrupacion' && tab.requiredTable === 'entidad') {
         return agrupacionPermissions.puede_ver;
       }
-      
+
       return true;
     });
-  }, [t, agrupacionPermissions.puede_ver, agrupacionLoading]);
+  }, [t, agrupacionPermissions.puede_ver, isLoadingPermissions]);
 
   const getTabColor = (color: string) => {
     switch (color) {
@@ -164,8 +169,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         )}
       </div>
 
-      {/* Filtros globales */}
-      {isExpanded && (
+      {/* Filtros globales - Solo mostrar después de verificar permisos */}
+      {isExpanded && !isLoadingPermissions && (
         <div className="px-4 py-4 border-b border-gray-300 dark:border-neutral-700">
           <SidebarFilters authToken={authToken} />
         </div>
@@ -173,37 +178,43 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
       {/* Pestañas principales - Tactical Style */}
       <div className="py-4">
-        <nav className="space-y-2">
-          {mainTabs.map((tab) => {
-            const isActive = activeTab === tab.id || activeTab.startsWith(tab.id + '-');
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  onTabChange(tab.id);
-                }}
-                className={`w-full flex items-center p-3 rounded transition-colors ${
-                  isExpanded ? 'gap-3' : 'justify-center'
-                } ${
-                  isActive
-                    ? `${getActiveTabColor(tab.color)} text-white`
-                    : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
-                }`}
-              >
-                <div className="flex-shrink-0">
-                  {tab.icon}
-                </div>
-                {isExpanded && (
-                  <span className="text-sm font-medium tracking-wider">{tab.label.toUpperCase()}</span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        {isLoadingPermissions ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+          </div>
+        ) : (
+          <nav className="space-y-2">
+            {mainTabs.map((tab) => {
+              const isActive = activeTab === tab.id || activeTab.startsWith(tab.id + '-');
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    onTabChange(tab.id);
+                  }}
+                  className={`w-full flex items-center p-3 rounded transition-colors ${
+                    isExpanded ? 'gap-3' : 'justify-center'
+                  } ${
+                    isActive
+                      ? `${getActiveTabColor(tab.color)} text-white`
+                      : "text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-neutral-800"
+                  }`}
+                >
+                  <div className="flex-shrink-0">
+                    {tab.icon}
+                  </div>
+                  {isExpanded && (
+                    <span className="text-sm font-medium tracking-wider">{tab.label.toUpperCase()}</span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        )}
       </div>
 
       {/* System Status - Tactical Style */}
-      {isExpanded && (
+      {isExpanded && !isLoadingPermissions && (
         <div className="mt-8 p-4 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded mx-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>

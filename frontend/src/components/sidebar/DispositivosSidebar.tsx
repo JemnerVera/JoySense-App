@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 import ProtectedParameterButton from '../ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { getDispositivosTables } from '../../config/tables.config';
+import { getDispositivosTables, type TableConfig } from '../../config/tables.config';
 
 interface DispositivosSidebarProps {
   selectedTable: string;
@@ -98,7 +98,51 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
   }, [user]);
 
   // Obtener las tablas de dispositivos
-  const dispositivosTables = getDispositivosTables();
+  const allDispositivosTables = getDispositivosTables();
+
+  // Estado para permisos de dispositivos
+  const [dispositivosPermissions, setDispositivosPermissions] = useState<Record<string, boolean>>({});
+
+  // Verificar permisos para tablas de dispositivos
+  useEffect(() => {
+    const checkDispositivosPermissions = async () => {
+      if (!user || loadingPerfil) return;
+
+      const permissions: Record<string, boolean> = {};
+
+      await Promise.all(
+        allDispositivosTables.map(async (table: TableConfig) => {
+          try {
+            const perms = await JoySenseService.getUserPermissions(table.name);
+            permissions[table.name] = perms?.puede_ver === true;
+          } catch (error) {
+            console.error(`[DispositivosSidebar] Error verificando permisos para ${table.name}:`, error);
+            permissions[table.name] = false;
+          }
+        })
+      );
+
+      setDispositivosPermissions(permissions);
+    };
+
+    checkDispositivosPermissions();
+  }, [user, allDispositivosTables, loadingPerfil]);
+
+  // También necesito tipar el parámetro en el useEffect de fetchUserPerfil
+
+  // Estado de carga de permisos
+  const loadingPermissions = loadingPerfil || Object.keys(dispositivosPermissions).length === 0;
+
+  // Filtrar tablas según permisos
+  const dispositivosTables = useMemo(() => {
+    if (loadingPermissions) {
+      return []; // No mostrar nada mientras carga
+    }
+
+    return allDispositivosTables.filter((table: TableConfig) => {
+      return dispositivosPermissions[table.name] === true;
+    });
+  }, [allDispositivosTables, dispositivosPermissions, loadingPermissions]);
 
   // Mapear tablas a formato de sidebar con iconos
   const getTableIcon = (tableName: string) => {
@@ -150,13 +194,18 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
     >
       <div className={`h-full overflow-y-auto ${isExpanded ? 'custom-scrollbar' : 'scrollbar-hide'}`}>
         <div className="py-4">
-          <nav className="space-y-1">
-            {dispositivosTables.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
-                <p className="text-sm font-mono">No hay tablas disponibles</p>
-              </div>
-            ) : (
-              dispositivosTables.map((table) => {
+          {/* Mostrar loading state mientras se verifican permisos */}
+          {loadingPermissions ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+          ) : dispositivosTables.length === 0 ? (
+            <div className="p-4 text-center text-gray-500 dark:text-neutral-400">
+              <p className="text-sm font-mono">No hay tablas disponibles</p>
+            </div>
+          ) : (
+            <nav className="space-y-1">
+              {dispositivosTables.map((table: TableConfig) => {
               // Solo marcar como activa si selectedTable no está vacío
               // Esto evita que se marque como activa cuando activeTab es exactamente 'configuracion-dispositivos'
               const isActive = selectedTable !== '' && selectedTable === table.name;
@@ -186,8 +235,9 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
                   )}
                 </ProtectedParameterButton>
               );
-            }))}
-          </nav>
+            })}
+            </nav>
+          )}
         </div>
       </div>
     </BaseAuxiliarySidebar>

@@ -37,7 +37,7 @@ const PermisosTipoSidebar: React.FC<PermisosTipoSidebarProps> = ({
   const { t } = useLanguage();
 
   // Tablas de geografía (para PERMISOS GEO)
-  const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'];
+  const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', /* 'localizacion' */];
   
   // Tablas de configuración (para PERMISOS CONF) - excluyendo geografía
   const configuracionTables = ['tipo', 'metrica', 'sensor', 'metricasensor', 'criticidad', 'umbral', 'regla'];

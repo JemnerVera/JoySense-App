@@ -31,14 +31,12 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
   const { t } = useLanguage();
   const config = getTableConfig(selectedTable);
 
-  // Obtener permisos del usuario para la tabla actual
+  // Verificar permisos del usuario para la tabla actual
   const { permissions, loading: permissionsLoading } = useUserPermissions({
     tableName: selectedTable,
     origenid: null, // Se determinará automáticamente
     fuenteid: null // Se determinará automáticamente
   });
-
-  // Log cuando permissionsLoading cambia
 
   // Operaciones disponibles según la tabla
   const getAllOperations = (): Array<{
@@ -98,7 +96,7 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
     if (permissionsLoading) {
       return [];
     }
-    
+
     const filtered = allOperations.filter(op => {
       // Verificar permisos de configuración de la tabla
       if (op.id === 'insert' && !config?.allowInsert) {
@@ -110,7 +108,7 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
       if (op.id === 'massive' && !config?.allowMassive) {
         return false;
       }
-      
+
       // Verificar permisos del usuario (solo cuando ya se cargaron)
       if (op.requiredPermission === 'ver' && !permissions.puede_ver) {
         return false;
@@ -121,7 +119,7 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
       if (op.requiredPermission === 'actualizar' && !permissions.puede_actualizar) {
         return false;
       }
-      
+
       return true;
     });
 
@@ -152,7 +150,7 @@ const ParametrosGeoOperationsSidebar: React.FC<ParametrosGeoOperationsSidebarPro
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
             </div>
           )}
-          
+
           {/* Solo mostrar operaciones después de verificar permisos */}
           {!permissionsLoading && (
             <nav className="space-y-1">
