@@ -4,7 +4,7 @@
 // Componente específico para renderizar campos de localización con dependencias en cascada
 
 import React from 'react';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 

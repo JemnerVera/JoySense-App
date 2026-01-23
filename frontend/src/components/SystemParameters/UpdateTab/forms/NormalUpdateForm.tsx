@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { getPrimaryKey } from '../../../../config/tables.config';
-import SelectWithPlaceholder from '../../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../../../components/selectors/SelectWithPlaceholder';
 import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
 import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
@@ -522,7 +522,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
               return (
                 <SelectWithPlaceholder
                   value={formData[field.name] || null}
-                  onChange={(newValue) => updateFormField(field.name, newValue || '')}
+                  onChange={(newValue: string | number | null) => updateFormField(field.name, newValue || '')}
                   options={operadorOptions}
                   placeholder="SELECCIONAR OPERACIÓN"
                   themeColor="orange"
@@ -545,7 +545,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           ) : field.foreignKey ? (
             <SelectWithPlaceholder
               value={formData[field.name] != null ? formData[field.name] : null}
-              onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+              onChange={(newValue: string | number | null) => updateFormField(field.name, newValue ? Number(newValue) : null)}
               options={(() => {
                 const relatedTableData = getRelatedTableData(field.foreignKey!.table);
                 return relatedTableData.map((item: any) => {
@@ -660,7 +660,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   // Clave primaria compuesta con foreignKey: renderizar como combobox editable
                   <SelectWithPlaceholder
                     value={formData[field.name] || ''}
-                    onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                    onChange={(newValue: string | number | null) => updateFormField(field.name, newValue ? Number(newValue) : null)}
                     options={(() => {
                       const relatedTableData = getRelatedTableData(field.foreignKey!.table);
                       // Caso especial para sensorid en metricasensor: mostrar "sensor - tipo"
@@ -729,7 +729,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                 // Caso especial para jefeid en perfil: usar getUniqueOptionsForField para formato "nivel - perfil"
                 <SelectWithPlaceholder
                   value={formData[field.name] != null ? String(formData[field.name]) : ''}
-                  onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                  onChange={(newValue: string | number | null) => updateFormField(field.name, newValue ? Number(newValue) : null)}
                   options={getUniqueOptionsForField(field.name)}
                   placeholder="SELECCIONAR JEFE (NIVEL - PERFIL)"
                   themeColor="orange"
@@ -753,7 +753,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                   return (
                     <SelectWithPlaceholder
                       value={selectedNivel}
-                      onChange={(newValue) => {
+                      onChange={(newValue: string | number | null) => {
                         const parsedValue = newValue !== null && newValue !== undefined ? parseInt(newValue.toString()) : null;
                         updateFormField('nivel', parsedValue);
                       }}
@@ -850,7 +850,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
                 // Select para foreign keys sin constraint: usar SelectWithPlaceholder
                 <SelectWithPlaceholder
                   value={formData[field.name] != null ? formData[field.name] : null}
-                  onChange={(newValue) => updateFormField(field.name, newValue ? Number(newValue) : null)}
+                  onChange={(newValue: string | number | null) => updateFormField(field.name, newValue ? Number(newValue) : null)}
                   options={(() => {
                     const relatedTableData = getRelatedTableData(field.foreignKey!.table);
                     return relatedTableData.map((item: any) => {

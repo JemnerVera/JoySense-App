@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 
 interface ReglaPerfilFormFieldsProps {
   visibleColumns: any[];

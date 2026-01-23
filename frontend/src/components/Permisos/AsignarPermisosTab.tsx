@@ -9,8 +9,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { MessageDisplay } from '../SystemParameters/MessageDisplay';
-import MultiSelectWithPlaceholder from '../MultiSelectWithPlaceholder';
-import SelectWithPlaceholder from '../SelectWithPlaceholder';
+import MultiSelectWithPlaceholder from '../selectors/MultiSelectWithPlaceholder';
+import SelectWithPlaceholder from '../selectors/SelectWithPlaceholder';
 import { 
   getGeografiaLevelOrder, 
   areFuentesConsecutive, 

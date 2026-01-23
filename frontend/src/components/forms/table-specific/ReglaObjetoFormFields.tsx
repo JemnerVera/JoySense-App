@@ -4,8 +4,8 @@
 // Componente específico para renderizar formulario de asignación de objetos a reglas
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
-import MultiSelectWithPlaceholder from '../../MultiSelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
+import MultiSelectWithPlaceholder from '../../selectors/MultiSelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 

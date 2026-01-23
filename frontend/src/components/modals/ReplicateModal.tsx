@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import SelectWithPlaceholder from '../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../selectors/SelectWithPlaceholder';
 
 interface ReplicateModalProps {
   isOpen: boolean;

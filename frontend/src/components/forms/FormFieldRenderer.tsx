@@ -4,7 +4,7 @@
 // Componente genérico para renderizar campos de formulario con lógica específica por tabla
 
 import React from 'react';
-import SelectWithPlaceholder from '../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../selectors/SelectWithPlaceholder';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 import { LocationSelector } from './LocationSelector';

@@ -4,7 +4,7 @@
 // Componente específico para renderizar campos del formulario de Contacto
 
 import React from 'react';
-import SelectWithPlaceholder from '../../SelectWithPlaceholder';
+import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 import { logger } from '../../../utils/logger';
