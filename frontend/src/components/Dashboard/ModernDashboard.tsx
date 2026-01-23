@@ -629,7 +629,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
-    console.log('[ModernDashboard] useEffect triggered. selectedNode:', selectedNode?.nodoid, 'filters:', filters);
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
     const requiresUbicacionId = !selectedNode
@@ -1292,7 +1291,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar entidades, ubicaciones, métricas, tipos y sensores
   useEffect(() => {
-    console.log('[ModernDashboard] useEffect: Iniciando carga de metadatos iniciales...');
     loadEntidades()
     loadUbicaciones()
     loadMetricas()
@@ -1301,7 +1299,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [])
 
   const loadEntidades = async () => {
-    console.log('[ModernDashboard] loadEntidades: Iniciando...');
     try {
       const data = await JoySenseService.getEntidades()
       console.log('[ModernDashboard] loadEntidades: Respuesta recibida:', { count: data?.length || 0, data });
@@ -1879,7 +1876,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   const availableMetrics = useMemo(() => {
     if (!selectedNode) {
-      console.log('[ModernDashboard] Calculating availableMetrics: No selectedNode');
       return []
     }
     
@@ -1892,10 +1888,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // REMOVIDO: No filtrar por punto seleccionado para mostrar visión global del nodo
       return matchNode;
     })
-    console.log('[ModernDashboard] Calculating availableMetrics. dataSource size:', dataSource.length, 'nodeMediciones count:', nodeMediciones.length, 'for nodoid:', selectedNode.nodoid);
-    if (nodeMediciones.length > 0) {
-      console.log('[ModernDashboard] nodeMediciones sample:', nodeMediciones[0]);
-    }
     const uniqueMetricIds = new Set<number>()
     nodeMediciones.forEach(m => {
       if (m.metricaid) {
@@ -2079,8 +2071,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     return hasRecentData
   }, [mediciones, selectedNode])
-
-  console.log('[ModernDashboard] Render state:', { loading, error: !!error, availableMetricsCount: availableMetrics.length, selectedNode: selectedNode?.nodo });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue">
