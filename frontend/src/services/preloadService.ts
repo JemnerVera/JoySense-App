@@ -170,7 +170,7 @@ class PreloadService {
       'DashboardMain': () => import('../components/Dashboard/DashboardMain'),
       'NormalInsertForm': () => import('../components/NormalInsertForm'),
       'MassiveUmbralForm': () => import('../components/MassiveUmbralForm'),
-      'MultipleMetricaSensorForm': () => import('../components/MultipleMetricaSensorForm'),
+      'MultipleMetricaSensorForm': () => import('../components/forms/multiple/MultipleMetricaSensorForm'),
       'DashboardHierarchy': () => import('../components/DashboardHierarchy'),
       'UmbralesMain': () => import('../components/Umbrales/UmbralesMain'),
       'AlertasMain': () => import('../components/Reportes/AlertasMain'),
