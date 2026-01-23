@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import SelectWithPlaceholder from './SelectWithPlaceholder';
+import SelectWithPlaceholder from '../SelectWithPlaceholder';
 
 interface ReplicateModalProps {
   isOpen: boolean;
@@ -213,7 +213,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           </label>
           <SelectWithPlaceholder
             value={selectedEntry ? (tableName === 'nodo' ? selectedEntry.nodoid : selectedEntry.id) : null}
-            onChange={(newValue) => {
+            onChange={(newValue: string | number | null) => {
               const selectedId = newValue?.toString();
               const entry = filteredData.find(entry => {
                 if (tableName === 'nodo') return entry.nodoid.toString() === selectedId;
