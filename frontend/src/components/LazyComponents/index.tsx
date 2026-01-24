@@ -40,19 +40,19 @@ const DashboardLazy = lazy(() =>
 
 // Lazy load heavy components con preload
 const NormalInsertFormLazy = lazy(() => 
-  import('../NormalInsertForm').then(module => {
+  import('../forms/NormalInsertForm').then(module => {
     return { default: module.default };
   })
 );
 
 const MassiveUmbralFormLazy = lazy(() => 
-  import('../MassiveUmbralForm').then(module => {
+  import('../forms/MassiveUmbralForm').then(module => {
     return { default: module.MassiveUmbralForm };
   })
 );
 
 const MassivePerfilUmbralFormLazy = lazy(() => 
-  import('../MassivePerfilUmbralForm').then(module => {
+  import('../forms/MassivePerfilUmbralForm').then(module => {
     return { default: module.MassivePerfilUmbralForm };
   })
 );
