@@ -3,9 +3,9 @@
 // ============================================================================
 
 import React from 'react';
-import { MassiveUmbralForm } from '../../MassiveUmbralForm';
-import { MassiveSensorForm } from '../../MassiveSensorForm';
-import { MassiveMetricaSensorForm } from '../../MassiveMetricaSensorForm';
+import { MassiveUmbralForm } from '../../forms/MassiveUmbralForm';
+// import { MassiveSensorForm } from '../../forms/MassiveSensorForm';
+// import { MassiveMetricaSensorForm } from '../../forms/MassiveMetricaSensorForm';
 
 interface MassiveOperationsRendererProps {
   selectedTable: string;
@@ -68,28 +68,30 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
 
   // Si es la tabla sensor, renderizar el formulario masivo de sensores
   if (selectedTable === 'sensor') {
-    return (
-      <MassiveSensorForm
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        onApply={onApply}
-        onCancel={onCancel}
-        loading={formState.isSubmitting}
-        entidadesData={entidadesData || []}
-      />
-    );
+    // return (
+    //   <MassiveSensorForm
+    //     getUniqueOptionsForField={getUniqueOptionsForField}
+    //     onApply={onApply}
+    //     onCancel={onCancel}
+    //     loading={formState.isSubmitting}
+    //     entidadesData={entidadesData || []}
+    //   />
+    // );
+    return <div>Formulario sensor masivo no disponible temporalmente</div>;
   }
 
   // Si es la tabla metricasensor, renderizar el formulario masivo de metricasensor
   if (selectedTable === 'metricasensor') {
-    return (
-      <MassiveMetricaSensorForm
-        getUniqueOptionsForField={getUniqueOptionsForField}
-        onApply={onApply}
-        onCancel={onCancel}
-        loading={formState.isSubmitting}
-        onFormDataChange={onFormDataChange}
-      />
-    );
+    // return (
+    //   <MassiveMetricaSensorForm
+    //     getUniqueOptionsForField={getUniqueOptionsForField}
+    //     onApply={onApply}
+    //     onCancel={onCancel}
+    //     loading={formState.isSubmitting}
+    //     onFormDataChange={onFormDataChange}
+    //   />
+    // );
+    return <div>Formulario métrica sensor masivo no disponible temporalmente</div>;
   }
 
   // Para otras tablas, mostrar mensaje de "próximamente"

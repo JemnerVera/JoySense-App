@@ -3,29 +3,29 @@
 // ============================================================================
 
 import React, { memo, useEffect, useMemo, useRef, useCallback } from 'react';
-import SelectWithPlaceholder from './selectors/SelectWithPlaceholder';
-import { tableValidationSchemas } from '../utils/validations';
-import { useLanguage } from '../contexts/LanguageContext';
-import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
-import { UsuarioFormFields } from './forms/table-specific/UsuarioFormFields';
-import { GeografiaFormFields } from './forms/table-specific/GeografiaFormFields';
-import { ContactoFormFields } from './forms/table-specific/ContactoFormFields';
-import { UsuarioCanalFormFields } from './forms/table-specific/UsuarioCanalFormFields';
-import { PerfilFormFields } from './forms/table-specific/PerfilFormFields';
-import { UsuarioPerfilFormFields } from './forms/table-specific/UsuarioPerfilFormFields';
-import { DispositivosFormFields } from './forms/table-specific/DispositivosFormFields';
-import { AlertasFormFields } from './forms/table-specific/AlertasFormFields';
-import { LocalizacionFormFields } from './forms/table-specific/LocalizacionFormFields';
-import { CriticidadFormFields } from './forms/table-specific/CriticidadFormFields';
-import { ReglaFormFields } from './forms/table-specific/ReglaFormFields';
-import { ReglaPerfilFormFields } from './forms/table-specific/ReglaPerfilFormFields';
-import { ReglaObjetoFormFields } from './forms/table-specific/ReglaObjetoFormFields';
-import PerfilGeografiaPermisoForm from './PerfilGeografiaPermisoForm';
-import { FormFieldRenderer } from './forms/FormFieldRenderer';
-import { ContextualRow } from './forms/ContextualRow';
-import { useProgressiveEnablement } from '../hooks/useProgressiveEnablement';
-import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
-import { logger } from '../utils/logger';
+import SelectWithPlaceholder from '../selectors/SelectWithPlaceholder';
+import { tableValidationSchemas } from '../../utils/validations';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { UsuarioFormFields } from './table-specific/UsuarioFormFields';
+import { GeografiaFormFields } from './table-specific/GeografiaFormFields';
+import { ContactoFormFields } from './table-specific/ContactoFormFields';
+import { UsuarioCanalFormFields } from './table-specific/UsuarioCanalFormFields';
+import { PerfilFormFields } from './table-specific/PerfilFormFields';
+import { UsuarioPerfilFormFields } from './table-specific/UsuarioPerfilFormFields';
+import { DispositivosFormFields } from './table-specific/DispositivosFormFields';
+import { AlertasFormFields } from './table-specific/AlertasFormFields';
+import { LocalizacionFormFields } from './table-specific/LocalizacionFormFields';
+import { CriticidadFormFields } from './table-specific/CriticidadFormFields';
+import { ReglaFormFields } from './table-specific/ReglaFormFields';
+import { ReglaPerfilFormFields } from './table-specific/ReglaPerfilFormFields';
+import { ReglaObjetoFormFields } from './table-specific/ReglaObjetoFormFields';
+import PerfilGeografiaPermisoForm from '../PerfilGeografiaPermisoForm';
+import { FormFieldRenderer } from './FormFieldRenderer';
+import { ContextualRow } from './ContextualRow';
+import { useProgressiveEnablement } from '../../hooks/useProgressiveEnablement';
+import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // INTERFACES & TYPES

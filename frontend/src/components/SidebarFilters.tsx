@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFilterData } from '../hooks/useFilterData';
 import { useCascadingFilters } from '../hooks/useCascadingFilters';
-import CollapsibleGlobalFilters from './CollapsibleGlobalFilters';
+import CollapsibleGlobalFilters from './filters/CollapsibleGlobalFilters';
 
 interface SidebarFiltersProps {
   authToken: string;
