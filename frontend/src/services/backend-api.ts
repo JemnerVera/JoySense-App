@@ -959,6 +959,101 @@ export class JoySenseService {
   }
 
   /**
+   * Obtiene el acceso completo al menú para el perfil del usuario actual
+   */
+  static async getUserMenuAccess(): Promise<{
+    menuid: number;
+    menu: string;
+    nivel: number;
+    padreid: number | null;
+    tiene_acceso: boolean;
+  }[] | null> {
+    try {
+      const perfilid = await this.getCurrentPerfilid();
+      if (!perfilid) return null;
+
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_user_menu_access', { perfilid_param: perfilid });
+
+      if (error) {
+        console.error('❌ Error calling fn_get_user_menu_access:', error);
+        return null;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error in getUserMenuAccess:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica si el usuario tiene acceso a un menú específico
+   */
+  static async checkMenuAccess(menuid: number): Promise<boolean> {
+    try {
+      const perfilid = await this.getCurrentPerfilid();
+      if (!perfilid) return false;
+
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_check_menu_access', { 
+          menuid_param: menuid, 
+          perfilid_param: perfilid 
+        });
+
+      if (error) {
+        console.error('❌ Error calling fn_check_menu_access:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('❌ Error in checkMenuAccess:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Obtiene la jerarquía completa del menú con información de acceso
+   */
+  static async getMenuHierarchy(): Promise<{
+    menuid: number;
+    menu: string;
+    nivel: number;
+    padreid: number | null;
+    menu_padre: string | null;
+    tiene_acceso: boolean;
+    hijos_con_acceso: number;
+  }[] | null> {
+    try {
+      const perfilid = await this.getCurrentPerfilid();
+      if (!perfilid) return null;
+
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_menu_hierarchy', { perfilid_param: perfilid });
+
+      if (error) {
+        console.error('❌ Error calling fn_get_menu_hierarchy:', error);
+        return null;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error in getMenuHierarchy:', error);
+      return null;
+    }
+  }
+
+  /**
    * Obtiene los permisos del usuario actual para una tabla específica usando la función RPC
    * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
    */

@@ -1,5 +1,6 @@
 /**
- * Hook para verificar permisos de múltiples tablas de una sección
+ * Hook para verificar permisos de múltiples tablas de una sección (NEW SYSTEM)
+ * Usa el nuevo sistema de menú basado en joysense.menu + joysense.menuperfil
  * Retorna true si el usuario tiene permiso para ver al menos una tabla de la sección
  */
 
@@ -40,19 +41,33 @@ export function useSectionPermissions({
       }
 
       try {
-        // Verificar permisos para cada tabla usando la función RPC
-        const permissionChecks = await Promise.all(
-          tableNames.map(async (tableName) => {
-            const permissions = await JoySenseService.getUserPermissions(tableName);
-            return permissions?.puede_ver === true;
-          })
+        // Obtener acceso al menú del usuario actual usando el nuevo sistema
+        const menuAccess = await JoySenseService.getUserMenuAccess();
+        
+        if (!menuAccess || menuAccess.length === 0) {
+          setHasAccess(false);
+          setLoading(false);
+          return;
+        }
+
+        // Crear un mapa de nombres de menú en minúsculas para comparación
+        const accessibleMenuItems = menuAccess
+          .filter(item => item.tiene_acceso)
+          .map(item => item.menu.toLowerCase());
+
+        // Verificar si al menos uno de los tableNames está en los elementos de menú accesibles
+        // Comparar ignorando mayúsculas/minúsculas
+        const hasAnyAccess = tableNames.some(tableName => 
+          accessibleMenuItems.some(menuItem => 
+            menuItem === tableName.toLowerCase() ||
+            menuItem.includes(tableName.toLowerCase()) ||
+            tableName.toLowerCase().includes(menuItem)
+          )
         );
 
-        // Si al menos una tabla tiene permiso de ver, permitir acceso a la sección
-        const hasAnyAccess = permissionChecks.some(hasPermission => hasPermission === true);
         setHasAccess(hasAnyAccess);
       } catch (error) {
-        console.error('[useSectionPermissions] Error verificando permisos:', error);
+        console.error('[useSectionPermissions] Error verificando permisos del menú:', error);
         // En caso de error, no permitir acceso
         setHasAccess(false);
       } finally {
