@@ -37,7 +37,7 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
   // Obtener las tablas de parámetros geo
   const allParametrosGeoTables = getParametrosGeoTables();
 
-  // Verificar permisos individuales para cada tabla de geografía
+  // Verificar permisos individuales para cada tabla de geografía usando el nuevo sistema
   const [tablePermissionsMap, setTablePermissionsMap] = useState<Record<string, boolean>>({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
 
@@ -54,23 +54,42 @@ const ParametrosGeoSidebar: React.FC<ParametrosGeoSidebarProps> = ({
       // UBICACION, NODO y LOCALIZACION siempre aparecen (sin verificar permisos)
       const alwaysVisibleTables = ['ubicacion', 'nodo', 'localizacion'];
 
-      await Promise.all(
-        allParametrosGeoTables.map(async (table) => {
-          // Si es una tabla que siempre debe aparecer, marcar como true
-          if (alwaysVisibleTables.includes(table.name)) {
-            permissions[table.name] = true;
-            return;
-          }
+      try {
+        // Obtener acceso al menú del usuario actual usando el nuevo sistema
+        const menuAccess = await JoySenseService.getUserMenuAccess();
+        
+        const accessibleMenuItems = menuAccess 
+          ? menuAccess
+              .filter(item => item.tiene_acceso)
+              .map(item => item.menu.toLowerCase())
+          : [];
 
-          try {
-            const perms = await JoySenseService.getUserPermissions(table.name);
-            permissions[table.name] = perms?.puede_ver === true;
-          } catch (error) {
-            console.error(`[ParametrosGeoSidebar] Error verificando permisos para ${table.name}:`, error);
-            permissions[table.name] = false;
-          }
-        })
-      );
+        await Promise.all(
+          allParametrosGeoTables.map(async (table) => {
+            // Si es una tabla que siempre debe aparecer, marcar como true
+            if (alwaysVisibleTables.includes(table.name)) {
+              permissions[table.name] = true;
+              return;
+            }
+
+            // Verificar si el nombre de la tabla está en los elementos de menú accesibles
+            const hasAccess = accessibleMenuItems.some(menuItem => 
+              menuItem === table.name.toLowerCase() ||
+              menuItem.includes(table.name.toLowerCase()) ||
+              table.name.toLowerCase().includes(menuItem)
+            );
+            
+            permissions[table.name] = hasAccess;
+          })
+        );
+      } catch (error) {
+        console.error(`[ParametrosGeoSidebar] Error verificando permisos del menú:`, error);
+        // En caso de error, establecer permisos predeterminados
+        allParametrosGeoTables.forEach(table => {
+          const alwaysVisibleTables = ['ubicacion', 'nodo', 'localizacion'];
+          permissions[table.name] = alwaysVisibleTables.includes(table.name);
+        });
+      }
 
       setTablePermissionsMap(permissions);
       setLoadingPermissions(false);

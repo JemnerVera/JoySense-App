@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { useUserPermissions } from '../../hooks/useUserPermissions';
+import { useMenuPermissions } from '../../hooks/useMenuPermissions';
 
 interface MainSidebarProps {
   isExpanded: boolean;
@@ -29,8 +30,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     tableName: 'entidad'
   });
 
+  // Cargar permisos del nuevo sistema de menú
+  const { menuAccess, loading: menuLoading, hasAccessById } = useMenuPermissions();
+
   // Estado de carga general mientras se verifican permisos
-  const isLoadingPermissions = agrupacionLoading;
+  const isLoadingPermissions = agrupacionLoading || menuLoading;
 
   // Construir el array de pestañas de forma inmutable
   // NUEVA ESTRUCTURA: Solo 4 pestañas principales

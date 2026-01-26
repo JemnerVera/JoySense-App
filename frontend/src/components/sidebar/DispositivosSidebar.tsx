@@ -103,24 +103,40 @@ const DispositivosSidebar: React.FC<DispositivosSidebarProps> = ({
   // Estado para permisos de dispositivos
   const [dispositivosPermissions, setDispositivosPermissions] = useState<Record<string, boolean>>({});
 
-  // Verificar permisos para tablas de dispositivos
+  // Verificar permisos para tablas de dispositivos usando el nuevo sistema
   useEffect(() => {
     const checkDispositivosPermissions = async () => {
       if (!user || loadingPerfil) return;
 
       const permissions: Record<string, boolean> = {};
 
-      await Promise.all(
-        allDispositivosTables.map(async (table: TableConfig) => {
-          try {
-            const perms = await JoySenseService.getUserPermissions(table.name);
-            permissions[table.name] = perms?.puede_ver === true;
-          } catch (error) {
-            console.error(`[DispositivosSidebar] Error verificando permisos para ${table.name}:`, error);
-            permissions[table.name] = false;
-          }
-        })
-      );
+      try {
+        // Obtener acceso al menú del usuario actual usando el nuevo sistema
+        const menuAccess = await JoySenseService.getUserMenuAccess();
+        
+        const accessibleMenuItems = menuAccess 
+          ? menuAccess
+              .filter(item => item.tiene_acceso)
+              .map(item => item.menu.toLowerCase())
+          : [];
+
+        allDispositivosTables.forEach((table: TableConfig) => {
+          // Verificar si el nombre de la tabla está en los elementos de menú accesibles
+          const hasAccess = accessibleMenuItems.some(menuItem => 
+            menuItem === table.name.toLowerCase() ||
+            menuItem.includes(table.name.toLowerCase()) ||
+            table.name.toLowerCase().includes(menuItem)
+          );
+          
+          permissions[table.name] = hasAccess;
+        });
+      } catch (error) {
+        console.error(`[DispositivosSidebar] Error verificando permisos del menú:`, error);
+        // En caso de error, establecer todos los permisos como false
+        allDispositivosTables.forEach((table: TableConfig) => {
+          permissions[table.name] = false;
+        });
+      }
 
       setDispositivosPermissions(permissions);
     };
