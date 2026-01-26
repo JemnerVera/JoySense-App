@@ -1055,7 +1055,8 @@ export class JoySenseService {
 
   /**
    * Obtiene los permisos del usuario actual para una tabla específica usando la función RPC
-   * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
+   * NOTA: Este método se mantiene para verificar permisos CRUD específicos (ver, insertar, actualizar)
+   * No debe usarse para verificar visibilidad de menús - usar getUserMenuAccess() para eso
    */
   static async getUserPermissions(tableName: string): Promise<{
     puede_ver: boolean;

@@ -3,7 +3,6 @@ import SidebarFilters from '../SidebarFilters';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { useUserPermissions } from '../../hooks/useUserPermissions';
 import { useMenuPermissions } from '../../hooks/useMenuPermissions';
 
 interface MainSidebarProps {
@@ -25,16 +24,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 }) => {
   const { t } = useLanguage();
   
-  // Verificar permisos para AGRUPACIÓN (necesita permiso para 'entidad')
-  const { permissions: agrupacionPermissions, loading: agrupacionLoading } = useUserPermissions({
-    tableName: 'entidad'
-  });
-
   // Cargar permisos del nuevo sistema de menú
-  const { menuAccess, loading: menuLoading, hasAccessById } = useMenuPermissions();
+  const { menuAccess, loading: menuLoading, hasAccess } = useMenuPermissions();
 
   // Estado de carga general mientras se verifican permisos
-  const isLoadingPermissions = agrupacionLoading || menuLoading;
+  const isLoadingPermissions = menuLoading;
 
   // Construir el array de pestañas de forma inmutable
   // NUEVA ESTRUCTURA: Solo 4 pestañas principales
@@ -61,7 +55,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         ),
         color: 'green',
         requiresPermission: true,
-        requiredTable: 'entidad'
+        requiredMenu: 'entidad'
       },
       {
         id: 'configuracion',
@@ -97,14 +91,14 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     return tabs.filter(tab => {
       if (!tab.requiresPermission) return true;
 
-      // Si requiere permiso para 'entidad', verificar que tenga puede_ver
-      if (tab.id === 'agrupacion' && tab.requiredTable === 'entidad') {
-        return agrupacionPermissions.puede_ver;
+      // Si requiere permiso para 'entidad', verificar que tenga acceso
+      if (tab.id === 'agrupacion' && tab.requiredMenu === 'entidad') {
+        return hasAccess('entidad');
       }
 
       return true;
     });
-  }, [t, agrupacionPermissions.puede_ver, isLoadingPermissions]);
+  }, [t, hasAccess, isLoadingPermissions]);
 
   const getTabColor = (color: string) => {
     switch (color) {
