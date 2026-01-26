@@ -19,7 +19,8 @@ export const useMenuPermissions = () => {
         const access = await JoySenseService.getUserMenuAccess();
         setMenuAccess(access || []);
       } catch (error) {
-        console.error('Error loading menu access:', error);
+        console.error('[useMenuPermissions] Error:', error);
+        setMenuAccess([]);
       } finally {
         setLoading(false);
       }
