@@ -76,6 +76,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   });
   const [showMapModal, setShowMapModal] = useState(false);
   const [localizacionesNodo, setLocalizacionesNodo] = useState<string[]>([]);
+  const [selectedBoxplotMetricId, setSelectedBoxplotMetricId] = useState<number | null>(null);
   
   // Función para obtener la etiqueta de la serie (compartida entre gráficos)
   const getSeriesLabel = useCallback((m: any) => {
@@ -394,6 +395,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         } else {
           setSelectedMetricId(null);
         }
+        
+        // Resetear la selección de métrica del boxplot cuando cambian los datos
+        setSelectedBoxplotMetricId(null);
       } catch (err: any) {
         console.error('[NodeStatusDashboard] Error cargando datos del nodo:', err);
         showError('Error', 'Error al cargar datos del nodo');
@@ -646,7 +650,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   }, [alertas]);
 
   // Calcular estadísticas para boxplot por métrica
-  const boxplotData = useMemo(() => {
+  const boxplotDataAll = useMemo(() => {
     if (!selectedNode || mediciones.length === 0 || umbrales.length === 0) return [];
     
     const result: any[] = [];
@@ -732,6 +736,22 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
     return result;
   }, [mediciones, umbrales, selectedNode]);
+
+  // Filtrar boxplotData según la métrica seleccionada
+  const boxplotData = useMemo(() => {
+    if (selectedBoxplotMetricId === null) {
+      return boxplotDataAll;
+    }
+    return boxplotDataAll.filter(item => item.metricId === selectedBoxplotMetricId);
+  }, [boxplotDataAll, selectedBoxplotMetricId]);
+
+  // Obtener métricas disponibles para el boxplot
+  const availableBoxplotMetrics = useMemo(() => {
+    return boxplotDataAll.map(item => ({
+      id: item.metricId,
+      name: item.metrica
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [boxplotDataAll]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 p-6">
@@ -1230,7 +1250,36 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 {/* Boxplot de Mediciones vs Umbral Estándar */}
                 {boxplotData.length > 0 && (
                   <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Distribución vs Umbral Estándar</h2>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                      <h2 className="text-xl font-bold text-blue-500 font-mono uppercase tracking-wider">Distribución vs Umbral Estándar</h2>
+                      
+                      {/* Selector de Métricas (Tabs) para Boxplot */}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setSelectedBoxplotMetricId(null)}
+                          className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                            selectedBoxplotMetricId === null
+                              ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                              : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                          }`}
+                        >
+                          Todas
+                        </button>
+                        {availableBoxplotMetrics.map(metric => (
+                          <button
+                            key={metric.id}
+                            onClick={() => setSelectedBoxplotMetricId(metric.id)}
+                            className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                              selectedBoxplotMetricId === metric.id
+                                ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                                : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                            }`}
+                          >
+                            {metric.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <style dangerouslySetInnerHTML={{
                       __html: `
                         .recharts-tooltip-wrapper,
