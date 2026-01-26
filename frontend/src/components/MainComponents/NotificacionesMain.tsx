@@ -1052,7 +1052,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 relatedData={relatedDataForStatus}
                 userData={userData || []}
                 loading={tableDataLoading} // Usar loading de useTableDataManagement
-                onRowClick={handleRowSelect}
                 themeColor={themeColor}
               />
             )}

@@ -431,7 +431,6 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
             relatedData={relatedData}
             userData={userData}
             loading={tableDataLoading}
-            onRowClick={handleRowSelect}
             themeColor="red"
           />
         );

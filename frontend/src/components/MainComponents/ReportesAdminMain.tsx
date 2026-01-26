@@ -199,7 +199,6 @@ const ReportesAdminMain = forwardRef<ReportesAdminMainRef, ReportesAdminMainProp
           relatedData={relatedDataForStatus}
           userData={userData || []}
           loading={tableDataLoading}
-          onRowClick={handleRowSelect}
           themeColor={themeColor}
         />
       </div>
