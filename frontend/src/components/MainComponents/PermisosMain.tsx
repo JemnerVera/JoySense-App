@@ -516,7 +516,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
             relatedData={relatedData}
             userData={userData}
             loading={tableDataLoading}
-            onRowClick={handleRowSelect}
             themeColor="purple"
           />
         );

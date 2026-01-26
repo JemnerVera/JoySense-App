@@ -1009,7 +1009,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 relatedData={relatedDataForStatus}
                 userData={userData || []}
                 loading={tableDataLoading} // Usar loading de useTableDataManagement
-                onRowClick={handleRowSelect}
                 themeColor={themeColor}
               />
             )}
