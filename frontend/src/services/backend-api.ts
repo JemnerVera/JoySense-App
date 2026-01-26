@@ -970,7 +970,11 @@ export class JoySenseService {
   }[] | null> {
     try {
       const perfilid = await this.getCurrentPerfilid();
-      if (!perfilid) return null;
+      
+      if (!perfilid) {
+        console.error('[JoySenseService] ❌ No se pudo obtener perfilid');
+        return null;
+      }
 
       const { supabaseAuth } = await import('./supabase-auth');
       
@@ -979,13 +983,13 @@ export class JoySenseService {
         .rpc('fn_get_user_menu_access', { perfilid_param: perfilid });
 
       if (error) {
-        console.error('❌ Error calling fn_get_user_menu_access:', error);
+        console.error('[JoySenseService] ❌ Error en getUserMenuAccess:', error);
         return null;
       }
 
       return data || [];
     } catch (error) {
-      console.error('❌ Error in getUserMenuAccess:', error);
+      console.error('[JoySenseService] ❌ Error en getUserMenuAccess:', error);
       return null;
     }
   }

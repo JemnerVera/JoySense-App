@@ -30,6 +30,28 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   // Estado de carga general mientras se verifican permisos
   const isLoadingPermissions = menuLoading;
 
+  // Función para verificar si tiene acceso a un menú padre (como CONFIGURACIÓN)
+  // Retorna true si tiene acceso directo O a cualquiera de sus submenús
+  const hasAccessToMenu = (menuName: string): boolean => {
+    // Buscar si existe un menú con ese nombre y tiene acceso
+    const hasDirectAccess = menuAccess.some(item => 
+      item.menu === menuName && item.tiene_acceso
+    );
+    
+    if (hasDirectAccess) return true;
+    
+    // Si no tiene acceso directo, buscar en submenús
+    const parentMenu = menuAccess.find(m => m.menu === menuName);
+    if (parentMenu) {
+      const hasChildAccess = menuAccess.some(item => 
+        item.padreid === parentMenu.menuid && item.tiene_acceso
+      );
+      return hasChildAccess;
+    }
+    
+    return false;
+  };
+
   // Construir el array de pestañas de forma inmutable
   // NUEVA ESTRUCTURA: Solo 4 pestañas principales
   const mainTabs = useMemo(() => {
@@ -43,7 +65,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           </svg>
         ),
         color: 'blue',
-        requiresPermission: false // Reportes siempre visible
+        requiresPermission: true,
+        requiredMenu: 'REPORTES'
       },
       {
         id: 'agrupacion',
@@ -67,7 +90,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           </svg>
         ),
         color: 'orange',
-        requiresPermission: false // Configuración siempre visible (se filtra por secciones internas)
+        requiresPermission: true,
+        requiredMenu: 'CONFIGURACIÓN'
       },
       {
         id: 'ajustes',
@@ -78,7 +102,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           </svg>
         ),
         color: 'gray',
-        requiresPermission: false // Ajustes siempre visible
+        requiresPermission: true,
+        requiredMenu: 'AJUSTES'
       }
     ];
 
@@ -88,17 +113,36 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     }
 
     // Filtrar pestañas basándose en permisos
-    return tabs.filter(tab => {
-      if (!tab.requiresPermission) return true;
+    const filteredTabs = tabs.filter(tab => {
+      if (!tab.requiresPermission) {
+        return true;
+      }
 
       // Si requiere permiso para 'entidad', verificar que tenga acceso
-      if (tab.id === 'agrupacion' && tab.requiredMenu === 'entidad') {
+      if (tab.id === 'agrupacion') {
         return hasAccess('entidad');
       }
 
-      return true;
+      // Si requiere permiso para 'CONFIGURACIÓN', verificar acceso
+      if (tab.id === 'configuracion') {
+        return hasAccessToMenu('CONFIGURACIÓN');
+      }
+
+      // Si requiere permiso para 'REPORTES', verificar acceso
+      if (tab.id === 'reportes') {
+        return hasAccessToMenu('REPORTES');
+      }
+
+      // Si requiere permiso para 'AJUSTES', verificar acceso
+      if (tab.id === 'ajustes') {
+        return hasAccessToMenu('AJUSTES');
+      }
+
+      return false;
     });
-  }, [t, hasAccess, isLoadingPermissions]);
+
+    return filteredTabs;
+  }, [t, hasAccess, hasAccessToMenu, isLoadingPermissions, menuAccess]);
 
   const getTabColor = (color: string) => {
     switch (color) {
