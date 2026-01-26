@@ -120,6 +120,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
             }
           }}
           showDateFilters={false} // No mostrar filtros de fecha en la vista inicial
+          showActiveFiltersCount={activeTab === 'reportes-dashboard'} // Solo mostrar contador en dashboard, no en mapeo
         />
       );
     }

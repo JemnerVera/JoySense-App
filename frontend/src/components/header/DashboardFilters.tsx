@@ -12,11 +12,13 @@ interface DashboardFiltersProps {
     endDate: string;
   }) => void;
   showDateFilters?: boolean; // Nueva prop para controlar si mostrar filtros de fecha
+  showActiveFiltersCount?: boolean; // Nueva prop para controlar si mostrar contador de filtros activos
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   onFiltersChange,
-  showDateFilters = true // Por defecto mostrar filtros de fecha
+  showDateFilters = true, // Por defecto mostrar filtros de fecha
+  showActiveFiltersCount = false // Por defecto no mostrar contador de filtros activos
 }) => {
   const { 
     paisSeleccionado, 
@@ -355,7 +357,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   return (
     <div className="flex items-center space-x-3">
       {/* Indicador de filtros activos */}
-      {activeFiltersCount > 0 && (
+      {showActiveFiltersCount && activeFiltersCount > 0 && (
         <div
           className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800"
           title={`Filtros activos: ${[

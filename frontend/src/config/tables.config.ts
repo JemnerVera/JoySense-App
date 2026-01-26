@@ -974,7 +974,8 @@ export function getPermisosTables(): TableConfig[] {
 
 /**
  * Obtener tablas de NOTIFICACIONES
- * Incluye: criticidad, umbral, regla, regla_objeto
+ * Incluye: criticidad, umbral, regla
+ * NOTA: regla_objeto ahora es una sub-tabla dentro de GESTIÓN DE REGLAS
  * NOTA: canal y usuario_canal ahora están en USUARIOS
  * NOTA: 'destino' no existe como tabla, se usa 'mensaje_destino' que está en REPORTES ADMINISTRADOR
  */
@@ -982,8 +983,7 @@ export function getNotificacionesTables(): TableConfig[] {
   const notificacionesTableNames: TableName[] = [
     'criticidad',
     'umbral',
-    'regla',
-    'regla_objeto'
+    'regla'
   ];
   const tables = notificacionesTableNames.map(name => {
     const config = TABLES_CONFIG[name];
