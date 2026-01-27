@@ -1,7 +1,7 @@
 /**
  * Rutas de Alertas: umbral, alerta, alerta_regla_consolidado, criticidad, mensaje
  * Nota: perfilumbral fue eliminado - usar regla, regla_perfil, regla_umbral
- * Versión Supabase API con RLS
+ * Versi├│n Supabase API con RLS
  */
 
 const express = require('express');
@@ -11,7 +11,7 @@ const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const { optionalAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-// Aplicar middleware de autenticación opcional a todas las rutas
+// Aplicar middleware de autenticaci├│n opcional a todas las rutas
 // Esto permite que las queries usen el token del usuario para RLS
 router.use(optionalAuth);
 
@@ -21,7 +21,7 @@ router.use(optionalAuth);
 
 router.get('/criticidad', async (req, res) => {
   try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase
       .schema(dbSchema)
@@ -50,7 +50,7 @@ router.get('/criticidad/columns', async (req, res) => {
 
 router.post('/criticidad', async (req, res) => {
   try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase
       .schema(dbSchema)
@@ -68,7 +68,7 @@ router.post('/criticidad', async (req, res) => {
 
 router.put('/criticidad/:id', async (req, res) => {
   try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase
       .schema(dbSchema)
@@ -93,10 +93,10 @@ router.get('/umbral', async (req, res) => {
   try {
     const { metricaId } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Según el schema, umbral solo tiene metricaid como FK opcional
+    // Seg├║n el schema, umbral solo tiene metricaid como FK opcional
     // No tiene criticidadid ni localizacionid directamente
     let query = userSupabase
       .schema(dbSchema)
@@ -131,7 +131,7 @@ router.get('/umbral', async (req, res) => {
 });
 
 // Nuevo endpoint para obtener umbrales relacionados con un nodo
-// La relación es: nodo -> localizaciones -> regla_objeto -> regla -> regla_umbral -> umbral
+// La relaci├│n es: nodo -> localizaciones -> regla_objeto -> regla -> regla_umbral -> umbral
 router.get('/umbral/por-nodo', async (req, res) => {
   try {
     const { nodoid } = req.query;
@@ -158,7 +158,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     const localizacionIds = localizaciones.map(l => l.localizacionid);
     
-    // Paso 2: Obtener el nodo para buscar reglas a nivel de nodo/ubicación también
+    // Paso 2: Obtener el nodo para buscar reglas a nivel de nodo/ubicaci├│n tambi├®n
     const { data: nodoData, error: nodoError } = await userSupabase
       .schema(dbSchema)
       .from('nodo')
@@ -195,7 +195,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
     const fuenteNodoId = fuenteMap.get('nodo');
     const fuenteUbicacionId = fuenteMap.get('ubicacion');
     
-    // Obtener reglas que aplican a estas localizaciones/nodo/ubicación
+    // Obtener reglas que aplican a estas localizaciones/nodo/ubicaci├│n
     // Buscar reglas con:
     // 1. objetoid IS NULL (globales)
     // 2. fuenteid=localizacion y objetoid IN localizacionIds
@@ -208,13 +208,13 @@ router.get('/umbral/por-nodo', async (req, res) => {
       .eq('origenid', 1)
       .eq('statusid', 1);
     
-    // Construir condiciones OR para buscar en múltiples niveles
+    // Construir condiciones OR para buscar en m├║ltiples niveles
     const conditions = [];
     
     // Reglas globales (objetoid IS NULL)
     conditions.push('objetoid.is.null');
     
-    // Reglas a nivel de localización
+    // Reglas a nivel de localizaci├│n
     if (fuenteLocalizacionId && localizacionIds.length > 0) {
       conditions.push(`and(fuenteid.eq.${fuenteLocalizacionId},objetoid.in.(${localizacionIds.join(',')}))`);
     }
@@ -224,14 +224,14 @@ router.get('/umbral/por-nodo', async (req, res) => {
       conditions.push(`and(fuenteid.eq.${fuenteNodoId},objetoid.eq.${nodoid})`);
     }
     
-    // Reglas a nivel de ubicación
+    // Reglas a nivel de ubicaci├│n
     if (fuenteUbicacionId && ubicacionId) {
       conditions.push(`and(fuenteid.eq.${fuenteUbicacionId},objetoid.eq.${ubicacionId})`);
     }
     
     // Usar or() para combinar condiciones
     if (conditions.length > 0) {
-      // Para Supabase, necesitamos hacer múltiples queries o usar una query más compleja
+      // Para Supabase, necesitamos hacer m├║ltiples queries o usar una query m├ís compleja
       // Por ahora, haremos queries separadas y combinaremos resultados
       const reglaObjetoQueries = [];
       
@@ -246,7 +246,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
           .is('objetoid', null)
       );
       
-      // Query 2: Reglas a nivel de localización
+      // Query 2: Reglas a nivel de localizaci├│n
       if (fuenteLocalizacionId && localizacionIds.length > 0) {
         reglaObjetoQueries.push(
           userSupabase
@@ -274,7 +274,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
         );
       }
       
-      // Query 4: Reglas a nivel de ubicación
+      // Query 4: Reglas a nivel de ubicaci├│n
       if (fuenteUbicacionId && ubicacionId) {
         reglaObjetoQueries.push(
           userSupabase
@@ -307,7 +307,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       
       var reglaIds = Array.from(allReglaIds);
     } else {
-      // Fallback: buscar solo por localización (código original)
+      // Fallback: buscar solo por localizaci├│n (c├│digo original)
       if (fuenteLocalizacionId) {
         reglaObjetoQuery = reglaObjetoQuery
           .eq('fuenteid', fuenteLocalizacionId)
@@ -327,7 +327,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       var reglaIds = [...new Set(reglasObjeto.map(r => r.reglaid))];
     }
     
-    // Paso 3: Obtener umbrales de estas reglas a través de regla_umbral
+    // Paso 3: Obtener umbrales de estas reglas a trav├®s de regla_umbral
     const { data: reglasUmbral, error: reglasUmbralError } = await userSupabase
       .schema(dbSchema)
       .from('regla_umbral')
@@ -337,7 +337,10 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (reglasUmbralError) throw reglasUmbralError;
     
+    console.log(`[DEBUG /umbral/por-nodo] Paso 3: reglasUmbral encontradas:`, reglasUmbral?.length || 0, 'reglaIds usados:', reglaIds);
+    
     if (!reglasUmbral || reglasUmbral.length === 0) {
+      console.log(`[DEBUG /umbral/por-nodo] No hay umbrales asociados. reglaIds que se buscaron:`, reglaIds);
       return res.json([]);
     }
     
@@ -354,7 +357,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (umbralError) throw umbralError;
     
-    // Obtener métricas de forma separada
+    // Obtener m├®tricas de forma separada
     const metricaIds = [...new Set((umbrales || []).map(u => u.metricaid).filter(Boolean))];
     let metricasMap = new Map();
     
@@ -383,7 +386,15 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (reglasDataError) throw reglasDataError;
     
+    console.log(`[DEBUG /umbral/por-nodo] Paso 5: reglas encontradas:`, reglas?.length || 0);
+    if (reglas && reglas.length > 0) {
+      console.log(`[DEBUG /umbral/por-nodo] Reglas details:`, JSON.stringify(reglas));
+    }
+    
+    // Crear mapa de reglas
     const reglasMap = new Map(reglas?.map(r => [r.reglaid, r]) || []);
+    
+    // Crear mapa de umbralid -> reglaids
     const reglaUmbralMap = new Map();
     
     reglasUmbral.forEach(ru => {
@@ -393,37 +404,60 @@ router.get('/umbral/por-nodo', async (req, res) => {
       reglaUmbralMap.get(ru.umbralid).push(ru.reglaid);
     });
     
-    // Paso 6: Obtener criticidades
+    // Paso 6: Obtener criticidades desde las reglas asociadas a los umbrales
+    // Extraer los criticidadids de las reglas
     const criticidadIds = [...new Set(reglas?.map(r => r.criticidadid).filter(Boolean) || [])];
+    console.log(`[DEBUG /umbral/por-nodo] Paso 6: criticidadIds a buscar (desde reglas):`, criticidadIds);
+    
     let criticidadesMap = new Map();
     
     if (criticidadIds.length > 0) {
       const { data: criticidades, error: criticidadesError } = await userSupabase
         .schema(dbSchema)
         .from('criticidad')
-        .select('criticidadid, criticidad, grado')
+        .select('criticidadid, criticidad')
         .in('criticidadid', criticidadIds)
         .eq('statusid', 1);
       
+      console.log(`[DEBUG /umbral/por-nodo] Paso 6b: criticidades encontradas:`, criticidades?.length || 0);
+      if (criticidades && criticidades.length > 0) {
+        console.log(`[DEBUG /umbral/por-nodo] Criticidades details:`, JSON.stringify(criticidades));
+      }
+      
       if (!criticidadesError && criticidades) {
         criticidadesMap = new Map(criticidades.map(c => [c.criticidadid, c]));
+        console.log(`[DEBUG /umbral/por-nodo] criticidadesMap keys:`, Array.from(criticidadesMap.keys()));
+      } else if (criticidadesError) {
+        console.log(`[DEBUG /umbral/por-nodo] Error obteniendo criticidades:`, criticidadesError);
       }
     }
     
     // Paso 7: Transformar datos
     const transformed = (umbrales || []).map(u => {
+      // Obtener las reglas asociadas a este umbral
       const reglaIdsDelUmbral = reglaUmbralMap.get(u.umbralid) || [];
       const primeraRegla = reglaIdsDelUmbral.length > 0 ? reglasMap.get(reglaIdsDelUmbral[0]) : null;
+      
+      // Obtener criticidad desde la regla
       const criticidad = primeraRegla?.criticidadid ? criticidadesMap.get(primeraRegla.criticidadid) : null;
       const metrica = u.metricaid ? metricasMap.get(u.metricaid) : null;
+      
+      // Log para debug
+      console.log(`[DEBUG /umbral/por-nodo] Umbral ${u.umbralid}:`, {
+        reglaIds: reglaIdsDelUmbral,
+        primeraRegla: primeraRegla,
+        criticidadid: primeraRegla?.criticidadid,
+        criticidad: criticidad
+      });
       
       return {
         ...u,
         metrica: metrica || null,
-        criticidad: criticidad || null,
-        regla: primeraRegla ? { reglaid: primeraRegla.reglaid, nombre: primeraRegla.nombre } : null
+        criticidad: criticidad || null
       };
     });
+    
+    console.log(`[DEBUG /umbral/por-nodo] Respuesta final:`, transformed);
     
     res.json(transformed);
   } catch (error) {
@@ -445,7 +479,7 @@ router.get('/umbral/columns', async (req, res) => {
 
 router.post('/umbral', async (req, res) => {
   try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase
       .schema(dbSchema)
@@ -463,7 +497,7 @@ router.post('/umbral', async (req, res) => {
 
 router.put('/umbral/:id', async (req, res) => {
   try {
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase
       .schema(dbSchema)
@@ -491,10 +525,10 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const fundoIdArray = fundoIds.split(',').map(Number);
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Convertir CTEs a múltiples queries con Supabase API
+    // Convertir CTEs a m├║ltiples queries con Supabase API
     // Paso 1: Obtener ubicaciones
     const { data: ubicaciones, error: ubicError } = await userSupabase
       .schema(dbSchema)
@@ -527,7 +561,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const nodoIds = nodos.map(n => n.nodoid);
     
-    // Paso 3: Obtener localizaciones (necesitamos nodoid, metricaid, sensorid para mapear después)
+    // Paso 3: Obtener localizaciones (necesitamos nodoid, metricaid, sensorid para mapear despu├®s)
     let locQuery = userSupabase
       .schema(dbSchema)
       .from('localizacion')
@@ -551,8 +585,8 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     // Paso 4: Obtener reglas que aplican a estas localizaciones
     // NOTA: En el schema actual, umbral NO tiene localizacionid directamente
-    // La relación es: umbral → regla_umbral → regla → regla_objeto → localizaciones
-    // O también: umbral → regla_umbral → regla → alerta_regla → localizaciones
+    // La relaci├│n es: umbral ÔåÆ regla_umbral ÔåÆ regla ÔåÆ regla_objeto ÔåÆ localizaciones
+    // O tambi├®n: umbral ÔåÆ regla_umbral ÔåÆ regla ÔåÆ alerta_regla ÔåÆ localizaciones
     
     // Primero, obtener todas las reglas activas que tienen umbrales
     const { data: reglasConUmbrales, error: reglasError } = await userSupabase
@@ -571,9 +605,9 @@ router.get('/umbrales-por-lote', async (req, res) => {
       return res.json([]);
     }
     
-    // Paso 5: Verificar qué reglas aplican a las localizaciones encontradas
+    // Paso 5: Verificar qu├® reglas aplican a las localizaciones encontradas
     // Usar regla_objeto para verificar si la regla aplica a alguna de nuestras localizaciones
-    // Necesitamos obtener los IDs geográficos de nuestras localizaciones
+    // Necesitamos obtener los IDs geogr├íficos de nuestras localizaciones
     const { data: nodosParaReglas, error: nodosParaReglasError } = await userSupabase
       .schema(dbSchema)
       .from('nodo')
@@ -629,7 +663,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const paisIdsParaReglas = [...new Set(empresasParaReglas?.map(e => e.paisid).filter(id => id != null) || [])];
     
-    // Obtener fuenteids para los diferentes niveles geográficos
+    // Obtener fuenteids para los diferentes niveles geogr├íficos
     // Necesitamos obtener los fuenteid para 'pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion'
     const { data: fuentes, error: fuentesError } = await userSupabase
       .schema(dbSchema)
@@ -656,7 +690,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     const fuenteNodo = fuenteMap.get('nodo');
     const fuenteLocalizacion = fuenteMap.get('localizacion');
     
-    // Obtener reglas que aplican a nuestras localizaciones a través de regla_objeto
+    // Obtener reglas que aplican a nuestras localizaciones a trav├®s de regla_objeto
     // Una regla aplica si tiene un regla_objeto con:
     // - objetoid IS NULL (global)
     // - fuenteid = fuentePais y objetoid = algun paisid
@@ -688,7 +722,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
         if (ro.objetoid == null) {
           aplica = true;
         }
-        // País
+        // Pa├¡s
         else if (ro.fuenteid === fuentePais && paisIdsParaReglas.includes(Number(ro.objetoid))) {
           aplica = true;
         }
@@ -700,7 +734,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
         else if (ro.fuenteid === fuenteFundo && fundoIdsParaReglas.includes(Number(ro.objetoid))) {
           aplica = true;
         }
-        // Ubicación
+        // Ubicaci├│n
         else if (ro.fuenteid === fuenteUbicacion && ubicacionIdsParaReglas.includes(Number(ro.objetoid))) {
           aplica = true;
         }
@@ -708,7 +742,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
         else if (ro.fuenteid === fuenteNodo && nodoIds.includes(Number(ro.objetoid))) {
           aplica = true;
         }
-        // Localización
+        // Localizaci├│n
         else if (ro.fuenteid === fuenteLocalizacion && localizacionIds.includes(Number(ro.objetoid))) {
           aplica = true;
         }
@@ -845,7 +879,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
       }
     }
     
-    // Paso 9: Obtener métricas por separado (desde umbrales y localizaciones)
+    // Paso 9: Obtener m├®tricas por separado (desde umbrales y localizaciones)
     const metricaIdsFromUmbrales = [...new Set(umbrales.map(u => u.metricaid).filter(id => id != null))];
     const metricaIdsFromLocalizaciones = [...new Set(
       localizacionesData?.map(l => l.metricaid).filter(id => id != null) || []
@@ -890,8 +924,8 @@ router.get('/umbrales-por-lote', async (req, res) => {
     }
     
     // Paso 11: Crear un mapa de umbralid -> localizaciones que aplican
-    // Para cada umbral, necesitamos determinar a qué localizaciones aplica
-    // Esto se hace a través de las reglas que lo usan
+    // Para cada umbral, necesitamos determinar a qu├® localizaciones aplica
+    // Esto se hace a trav├®s de las reglas que lo usan
     const umbralReglaMap = new Map(); // umbralid -> [reglaid]
     if (reglasUmbrales) {
       reglasUmbrales.forEach(ru => {
@@ -903,7 +937,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     }
     
     // Para cada umbral, obtener las localizaciones a las que aplica
-    // a través de las reglas que lo usan
+    // a trav├®s de las reglas que lo usan
     const umbralLocalizacionMap = new Map(); // umbralid -> [localizacionid]
     
     umbrales.forEach(u => {
@@ -913,10 +947,10 @@ router.get('/umbrales-por-lote', async (req, res) => {
       reglasDelUmbral.forEach(reglaid => {
         // Si la regla aplica a alguna de nuestras localizaciones, agregarla
         if (reglasQueAplican.has(reglaid)) {
-          // La regla aplica a todas nuestras localizaciones (o a un subconjunto según regla_objeto)
-          // Por simplicidad, asignamos todas las localizaciones que coinciden con la métrica
+          // La regla aplica a todas nuestras localizaciones (o a un subconjunto seg├║n regla_objeto)
+          // Por simplicidad, asignamos todas las localizaciones que coinciden con la m├®trica
           localizaciones.forEach(loc => {
-            // Si el umbral tiene metricaid, solo aplica a localizaciones con esa métrica
+            // Si el umbral tiene metricaid, solo aplica a localizaciones con esa m├®trica
             if (!u.metricaid || loc.metricaid === u.metricaid) {
               localizacionesDelUmbral.add(loc.localizacionid);
             }
@@ -929,7 +963,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
       }
     });
     
-    // Paso 12: Transformar datos - crear una entrada por cada combinación umbral-localizacion
+    // Paso 12: Transformar datos - crear una entrada por cada combinaci├│n umbral-localizacion
     const transformed = [];
     
     umbrales.forEach(u => {
@@ -940,7 +974,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
         return;
       }
       
-      // Para cada localización, crear una entrada
+      // Para cada localizaci├│n, crear una entrada
       localizacionesDelUmbral.forEach(localizacionId => {
         const localizacion = localizacionesMap.get(localizacionId);
         if (!localizacion) {
@@ -989,7 +1023,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
           tipoid: tipoid,
           metricaid: u.metricaid || localizacion?.metricaid || null,
           localizacionid: localizacionId,
-          // Agregar criticidadid si está disponible (aunque umbral no lo tiene directamente)
+          // Agregar criticidadid si est├í disponible (aunque umbral no lo tiene directamente)
           criticidadid: null // El umbral no tiene criticidadid en el schema actual
         });
       });
@@ -1010,7 +1044,7 @@ router.get('/alerta', async (req, res) => {
   try {
     const { umbralId, startDate, endDate, limit = 100 } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
     // Usar Supabase API con joins anidados profundos
@@ -1078,7 +1112,7 @@ router.get('/alerta_regla', async (req, res) => {
   try {
     const { startDate, endDate, limit = 100, page = 1, pageSize = 20 } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
     // Paso 1: Obtener alerta_regla (sin joins directos para evitar errores PGRST200)
@@ -1096,7 +1130,7 @@ router.get('/alerta_regla', async (req, res) => {
     
     query = query.order('fecha', { ascending: false });
     
-    // Aplicar paginación si se proporciona
+    // Aplicar paginaci├│n si se proporciona
     if (page && pageSize) {
       const offset = (parseInt(page) - 1) * parseInt(pageSize);
       query = query.range(offset, offset + parseInt(pageSize) - 1);
@@ -1122,7 +1156,7 @@ router.get('/alerta_regla', async (req, res) => {
       });
     }
     
-    // Paso 2: Obtener reglaids, localizacionids, medicionids únicos
+    // Paso 2: Obtener reglaids, localizacionids, medicionids ├║nicos
     const reglaIds = [...new Set(alertasRegla.map(a => a.reglaid).filter(id => id != null))];
     const localizacionIds = [...new Set(alertasRegla.map(a => a.localizacionid).filter(id => id != null))];
     const medicionIds = [...new Set(alertasRegla.map(a => a.medicionid).filter(id => id != null))];
@@ -1143,7 +1177,7 @@ router.get('/alerta_regla', async (req, res) => {
           reglasMap.set(r.reglaid, r);
         });
         
-        // Obtener criticidadids únicos de las reglas
+        // Obtener criticidadids ├║nicos de las reglas
         const criticidadIds = [...new Set(reglas.map(r => r.criticidadid).filter(id => id != null))];
         
         // Obtener criticidades
@@ -1151,7 +1185,7 @@ router.get('/alerta_regla', async (req, res) => {
           const { data: criticidades, error: criticidadesError } = await userSupabase
             .schema(dbSchema)
             .from('criticidad')
-            .select('criticidadid, criticidad, grado')
+            .select('criticidadid, criticidad')
             .in('criticidadid', criticidadIds)
             .eq('statusid', 1);
           
@@ -1209,7 +1243,7 @@ router.get('/alerta_regla', async (req, res) => {
       throw reglasUmbralesError;
     }
     
-    // Paso 7: Obtener umbralids únicos
+    // Paso 7: Obtener umbralids ├║nicos
     const umbralIds = [...new Set(reglasUmbrales?.map(ru => ru.umbralid).filter(id => id != null) || [])];
     
     // Paso 8: Obtener umbrales (sin criticidadid, ya que umbral no tiene esa columna)
@@ -1229,7 +1263,7 @@ router.get('/alerta_regla', async (req, res) => {
       if (!umbralesError && umbrales) {
         // La criticidad se obtiene desde la regla, no desde el umbral
         // Por ahora, solo guardamos los umbrales sin criticidad
-        // La criticidad se agregará cuando se mapee con la regla
+        // La criticidad se agregar├í cuando se mapee con la regla
         umbrales.forEach(u => {
           umbralesMap.set(u.umbralid, u);
         });
@@ -1248,7 +1282,7 @@ router.get('/alerta_regla', async (req, res) => {
         .eq('statusid', 1);
       
       if (!nodosError && nodos) {
-        // Obtener ubicacionids únicos
+        // Obtener ubicacionids ├║nicos
         const ubicacionIds = [...new Set(nodos.map(n => n.ubicacionid).filter(id => id != null))];
         
         // Obtener ubicaciones
@@ -1305,7 +1339,7 @@ router.get('/alerta_regla', async (req, res) => {
       });
     }
     
-    // Paso 10: Obtener total para paginación
+    // Paso 10: Obtener total para paginaci├│n
     let total = 0;
     if (page && pageSize) {
       const countQuery = userSupabase
@@ -1329,22 +1363,23 @@ router.get('/alerta_regla', async (req, res) => {
     // Paso 11: Transformar datos
     const transformed = alertasRegla.map(ar => {
       const regla = reglasMap.get(ar.reglaid) || null;
+      const criticidad = regla?.criticidadid ? criticidadesMap.get(regla.criticidadid) : null;
       const localizacionRaw = localizacionesMap.get(ar.localizacionid) || null;
       const medicion = ar.medicionid ? (medicionesMap.get(ar.medicionid) || null) : null;
       
-      // Obtener nodo para la localización
+      // Obtener nodo para la localizaci├│n
       const nodo = localizacionRaw?.nodoid ? (nodosMap.get(localizacionRaw.nodoid) || null) : null;
       
-      // Combinar localización con nodo
+      // Combinar localizaci├│n con nodo
       const localizacion = localizacionRaw ? {
         ...localizacionRaw,
         nodo: nodo
       } : null;
       
-      // Obtener umbrales de la regla (puede haber múltiples umbrales por regla)
+      // Obtener umbrales de la regla (puede haber m├║ltiples umbrales por regla)
       const umbralesDeRegla = regla ? (reglaUmbralMap.get(regla.reglaid) || []) : [];
       
-      // Para compatibilidad con el frontend, usar el primer umbral o crear uno genérico
+      // Para compatibilidad con el frontend, usar el primer umbral o crear uno gen├®rico
       const umbralPrincipal = umbralesDeRegla.length > 0 ? umbralesDeRegla[0] : null;
       
       return {
@@ -1355,17 +1390,20 @@ router.get('/alerta_regla', async (req, res) => {
         localizacionid: ar.localizacionid,
         medicionid: ar.medicionid,
         fecha: ar.fecha,
-        valor: ar.valor, // Valor que activó la alerta
+        valor: ar.valor, // Valor que activ├│ la alerta
         statusid: ar.statusid,
         usercreatedid: ar.usercreatedid,
         datecreated: ar.datecreated,
         
         // Relaciones
-        regla: regla,
+        regla: regla ? {
+          ...regla,
+          criticidad: criticidad
+        } : null,
         localizacion: localizacion,
         medicion: medicion,
         
-        // Umbral (usar el primero si hay múltiples)
+        // Umbral (usar el primero si hay m├║ltiples)
         umbral: umbralPrincipal ? {
           umbralid: umbralPrincipal.umbralid,
           umbral: umbralPrincipal.umbral,
@@ -1389,7 +1427,7 @@ router.get('/alerta_regla', async (req, res) => {
       };
     });
     
-    // Respuesta con paginación si se solicitó
+    // Respuesta con paginaci├│n si se solicit├│
     if (page && pageSize) {
       return res.json({
         data: transformed,
@@ -1428,7 +1466,7 @@ router.get('/alerta_regla_consolidado', async (req, res) => {
   try {
     const { statusid = 1, limit = 100 } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
     // Usar Supabase API con joins anidados profundos
@@ -1489,7 +1527,7 @@ router.get('/mensaje', async (req, res) => {
   try {
     const { tipo_origen, limit = 100 } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
     // Usar Supabase API con joins anidados
@@ -1547,7 +1585,7 @@ router.get('/mensaje/columns', async (req, res) => {
 //                         regla <-> regla_umbral <-> umbral
 
 // Las operaciones CRUD para regla, regla_perfil y regla_umbral
-// se manejan a través de las rutas genéricas en routes/generic.js
+// se manejan a trav├®s de las rutas gen├®ricas en routes/generic.js
 
 
 // ============================================================================
@@ -1558,7 +1596,7 @@ router.get('/audit_log_umbral', async (req, res) => {
   try {
     const { umbralId, limit = 100 } = req.query;
     
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
     // Usar Supabase API con join anidado

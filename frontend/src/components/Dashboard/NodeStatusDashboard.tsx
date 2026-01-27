@@ -326,17 +326,22 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         // Cargar umbrales del nodo
         try {
           const umbralesData = await JoySenseService.getUmbralesPorNodo(selectedNode.nodoid);
-          setUmbrales((umbralesData || []).map((u: any) => ({
-            umbralid: u.umbralid,
-            minimo: u.minimo,
-            maximo: u.maximo,
-            estandar: u.estandar,
-            umbral: u.umbral || 'Umbral',
-            criticidad: u.criticidad?.criticidad || 'Media',
-            metrica: u.metrica?.metrica || 'N/A',
-            unidad: u.metrica?.unidad || '',
-            metricaid: u.metricaid
-          })));
+          console.log('[DEBUG NodeStatusDashboard] umbralesData:', umbralesData);
+          setUmbrales((umbralesData || []).map((u: any) => {
+            const criticidadValue = u.criticidad?.criticidad || u.criticidad || null;
+            console.log(`[DEBUG] Umbral ${u.umbralid}: criticidad valor =`, criticidadValue, 'criticidad object =', u.criticidad);
+            return {
+              umbralid: u.umbralid,
+              minimo: u.minimo,
+              maximo: u.maximo,
+              estandar: u.estandar,
+              umbral: u.umbral || 'Umbral',
+              criticidad: criticidadValue || 'Sin Criticidad',
+              metrica: u.metrica?.metrica || 'N/A',
+              unidad: u.metrica?.unidad || '',
+              metricaid: u.metricaid
+            };
+          }));
         } catch (err) {
           console.error('Error cargando umbrales:', err);
           setUmbrales([]);
