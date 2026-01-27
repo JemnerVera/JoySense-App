@@ -93,6 +93,12 @@ const AlertStatusDashboardLazy = lazy(() =>
   })
 );
 
+const MedicionesDashboardLazy = lazy(() => 
+  import('../Dashboard/MedicionesDashboard').then(module => {
+    return { default: module.default };
+  })
+);
+
 // Wrapper component for lazy loading with error boundary
 interface LazyComponentWrapperProps {
   children: React.ReactNode;
@@ -248,6 +254,7 @@ export {
   UmbralesPorLoteLazy,
   NodeStatusDashboardLazy,
   AlertStatusDashboardLazy,
+  MedicionesDashboardLazy,
   LazyComponentWrapper,
   LazyComponentErrorBoundary
 };

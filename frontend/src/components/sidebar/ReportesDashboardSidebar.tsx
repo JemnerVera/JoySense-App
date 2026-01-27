@@ -2,8 +2,8 @@ import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
 
 interface ReportesDashboardSidebarProps {
-  activeSubTab?: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-  onSubTabChange: (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
+  activeSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  onSubTabChange: (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
   isExpanded: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -18,6 +18,15 @@ const ReportesDashboardSidebar: React.FC<ReportesDashboardSidebarProps> = ({
 }) => {
   // Tabs disponibles para el Dashboard
   const dashboardTabs = [
+    {
+      id: 'mediciones' as const,
+      label: 'MEDICIONES',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    },
     {
       id: 'mapeo' as const,
       label: 'MAPEO DE NODOS',
