@@ -326,10 +326,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         // Cargar umbrales del nodo
         try {
           const umbralesData = await JoySenseService.getUmbralesPorNodo(selectedNode.nodoid);
-          console.log('[DEBUG NodeStatusDashboard] umbralesData:', umbralesData);
           setUmbrales((umbralesData || []).map((u: any) => {
             const criticidadValue = u.criticidad?.criticidad || u.criticidad || null;
-            console.log(`[DEBUG] Umbral ${u.umbralid}: criticidad valor =`, criticidadValue, 'criticidad object =', u.criticidad);
             return {
               umbralid: u.umbralid,
               minimo: u.minimo,
