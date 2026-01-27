@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 import { JoySenseService } from '../../services/backend-api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { InteractiveLocalizacionMap } from './InteractiveLocalizacionMap';
 
 interface MedicionesDashboardProps {}
 
@@ -429,18 +430,18 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             {/* Separador visual */}
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
-            {/* Botón Nodo en Mapa */}
+            {/* Botón Localización en Mapa */}
             <div className="flex flex-col items-center flex-shrink-0">
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Mapa:
               </label>
               <button
                 onClick={() => setShowMapModal(true)}
-                disabled={!selectedLocalizacion}
+                disabled={localizaciones.length === 0}
                 className="h-8 px-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
-                title="Ver localizaciones en el mapa"
+                title="Seleccionar localización en el mapa"
               >
-                Nodo en Mapa
+                Localización en Mapa
               </button>
             </div>
 
@@ -720,50 +721,52 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
         )}
 
-        {/* Modal del Mapa */}
+        {/* Modal del Mapa con Leaflet */}
         {showMapModal && (
-          <div className="fixed inset-0 z-[10000] bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
-                <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">Seleccionar Localización en Mapa</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-5xl flex flex-col">
+              {/* Header del Modal */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-neutral-700">
+                <h2 className="text-lg font-bold text-blue-500 font-mono uppercase">
+                  Seleccionar Localización en el Mapa
+                </h2>
                 <button
                   onClick={() => setShowMapModal(false)}
-                  className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center transition-colors"
-                  title="Cerrar"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-              <div className="flex-1 overflow-auto">
-                <div className="p-4">
-                  <p className="text-gray-600 dark:text-gray-300 font-mono text-sm">
-                    Haz clic en una localización de la lista para seleccionarla en el mapa.
-                  </p>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                    {localizaciones.map((localizacion: any) => (
-                      <button
-                        key={localizacion.localizacionid}
-                        onClick={() => {
-                          setSelectedLocalizacion(localizacion);
-                          setShowMapModal(false);
-                          setLocalizacionSearchTerm('');
-                        }}
-                        className={`p-3 rounded text-left font-mono text-sm transition-all ${
-                          selectedLocalizacion?.localizacionid === localizacion.localizacionid
-                            ? 'bg-blue-500 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-700'
-                        }`}
-                      >
-                        <div className="font-bold">{localizacion.localizacion}</div>
-                        {localizacion.latitud && localizacion.longitud && (
-                          <div className="text-xs mt-1 opacity-75">
-                            {localizacion.latitud.toFixed(4)}, {localizacion.longitud.toFixed(4)}
-                          </div>
-                        )}
-                      </button>
-                    ))}
+
+              {/* Contenido del Modal - Mapa */}
+              <div className="p-2">
+                <div 
+                  className="overflow-hidden"
+                  style={{ height: '500px' }}
+                >
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      .mediciones-map-container > div {
+                        height: 100% !important;
+                      }
+                      .mediciones-map-container > div > div {
+                        height: 100% !important;
+                      }
+                    `
+                  }} />
+                  <div className="mediciones-map-container h-full">
+                    <InteractiveLocalizacionMap
+                      localizaciones={localizaciones}
+                      selectedLocalizacion={selectedLocalizacion}
+                      onLocalizacionSelect={(localizacion) => {
+                        setSelectedLocalizacion(localizacion);
+                        setShowMapModal(false);
+                        setLocalizacionSearchTerm('');
+                      }}
+                      loading={loading}
+                    />
                   </div>
                 </div>
               </div>
