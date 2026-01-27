@@ -127,6 +127,8 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         const localizacionId = umbral.localizacionid || umbral.localizacion?.localizacionid || null;
         // Obtener tipoid desde múltiples fuentes posibles
         const tipoid = umbral.tipoid || umbral.localizacion?.sensor?.tipoid || null;
+        // Obtener criticidadid desde múltiples fuentes posibles
+        const criticidadId = umbral.criticidadid || umbral.criticidad?.criticidadid || null;
 
         if (!localizacionId || !tipoid) {
           return;
@@ -148,7 +150,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
           minimo: umbral.minimo,
           maximo: umbral.maximo,
           umbral: umbral.umbral,
-          criticidadid: umbral.criticidadid
+          criticidadid: criticidadId
         };
       });
 
@@ -640,13 +642,18 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         const detallePorTipo = Object.entries(selectedLote.umbralesPorTipo)
           .map(([tipoid, data]) => {
             const tipo = tipos.find(t => t.tipoid === Number(tipoid));
-            const criticidad = criticidades.find(c => c.criticidadid === data.criticidadid);
+            // Buscar criticidad por ID o por defecto usar 'N/A'
+            let criticidadNombre = 'N/A';
+            if (data.criticidadid) {
+              const criticidad = criticidades.find(c => c.criticidadid === data.criticidadid);
+              criticidadNombre = criticidad?.criticidad || 'N/A';
+            }
             return {
               tipoNombre: tipo?.tipo || `Tipo ${tipoid}`,
               minimo: data.minimo,
               maximo: data.maximo,
               umbral: data.umbral,
-              criticidad: criticidad?.criticidad || 'N/A'
+              criticidad: criticidadNombre
             };
           })
           .sort((a, b) => a.tipoNombre.localeCompare(b.tipoNombre));
