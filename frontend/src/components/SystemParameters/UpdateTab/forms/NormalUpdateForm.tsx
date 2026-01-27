@@ -386,8 +386,6 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         }}
         renderField={renderFieldForUpdate}
         getThemeColor={getThemeColor}
-        empresasData={(relatedData as any)?.empresasData || []}
-        getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
       />
     );
   }

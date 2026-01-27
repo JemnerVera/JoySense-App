@@ -548,19 +548,6 @@ export const useInsertForm = ({
         }
       })
       
-      // Caso especial para tabla 'usuario': incluir empresas_ids aunque no esté en la configuración
-      // porque no es un campo de la tabla, sino un campo especial para la lógica de negocio
-      if (tableName === 'usuario' && formData.empresas_ids !== undefined) {
-        if (Array.isArray(formData.empresas_ids) && formData.empresas_ids.length > 0) {
-          filteredData.empresas_ids = formData.empresas_ids
-        }
-      }
-      
-      // También incluir is_default_empresa si existe
-      if (tableName === 'usuario' && formData.is_default_empresa !== undefined) {
-        filteredData.is_default_empresa = formData.is_default_empresa
-      }
-      
       // Caso especial para tabla 'usuario': incluir password aunque no esté en la configuración
       // porque password_hash está oculto y password es el campo que el usuario ingresa
       if (tableName === 'usuario' && formData.password !== undefined && formData.password !== null && formData.password !== '') {
@@ -1014,11 +1001,7 @@ export const useInsertForm = ({
         tableName,
         usercreatedid: dataToInsert.usercreatedid,
         usermodifiedid: dataToInsert.usermodifiedid,
-        dataKeys: Object.keys(dataToInsert),
-        empresas_ids: dataToInsert.empresas_ids,
-        empresas_idsType: typeof dataToInsert.empresas_ids,
-        empresas_idsIsArray: Array.isArray(dataToInsert.empresas_ids),
-        fullDataToInsert: tableName === 'usuario' ? dataToInsert : 'hidden'
+        dataKeys: Object.keys(dataToInsert)
       })
 
       const result = await insertRow(dataToInsert)

@@ -647,8 +647,6 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             setFormData={setFormData}
             renderField={renderField}
             getThemeColor={getThemeColor}
-            empresasData={empresasData}
-            getUniqueOptionsForField={getUniqueOptionsForField}
           />
         ) : selectedTable === 'pais' ? (
           <GeografiaFormFields
