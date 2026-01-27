@@ -32,7 +32,8 @@ jobs:
         env:
           REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
           REACT_APP_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.REACT_APP_SUPABASE_PUBLISHABLE_KEY }}
-          REACT_APP_BACKEND_URL: /api
+          REACT_APP_BACKEND_URL: ''
+          NODE_ENV: production
         run: |
           cd frontend
           npm install

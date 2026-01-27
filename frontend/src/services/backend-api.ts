@@ -18,21 +18,22 @@ const API_PREFIX = '/api/joysense';
 
 /**
  * Obtiene y valida la URL del backend
- * Usa fallback a localhost solo en desarrollo
+ * - En producción con URL vacía: usa rutas relativas (el mismo origen)
+ * - En desarrollo: fallback a localhost
  */
 function getBackendUrl(): string {
   let url = process.env.REACT_APP_BACKEND_URL;
+  
+  // En producción con URL vacía o no configurada: usar rutas relativas
+  if (process.env.NODE_ENV === 'production' && (!url || url === '')) {
+    console.log('✅ [Backend API] Usando rutas relativas (mismo origen)');
+    return API_PREFIX;
+  }
   
   // En desarrollo, permitir fallback a localhost
   if (process.env.NODE_ENV === 'development' && !url) {
     console.warn('⚠️ REACT_APP_BACKEND_URL no configurada, usando localhost por defecto');
     return `http://localhost:3001${API_PREFIX}`;
-  }
-  
-  // En producción, requerir configuración explícita
-  if (process.env.NODE_ENV === 'production' && !url) {
-    console.error('❌ ERROR: REACT_APP_BACKEND_URL no configurada en producción');
-    throw new Error('REACT_APP_BACKEND_URL is required in production');
   }
   
   // Limpiar URL: remover /api si ya está incluido para evitar duplicación
