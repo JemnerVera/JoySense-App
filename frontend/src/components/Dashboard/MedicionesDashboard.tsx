@@ -20,6 +20,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
   const [sensores, setSensores] = useState<any[]>([]);
+  const [selectedNodoId, setSelectedNodoId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
@@ -69,35 +70,46 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return tipoName;
   }, [sensores, tipos]);
 
-  // Mapa de nombres de métricas
+  // Mapa de nombres de métricas - mejorado para buscar en diferentes lugares
   const metricNamesMap = useMemo(() => {
     const map: { [key: number]: string } = {};
     if (mediciones.length > 0) {
       mediciones.forEach((m: any) => {
-        const metricId = m.metricaid || 0;
-        const metricName = m.metrica || m.nombre || `Métrica ${metricId}`;
+        // Intentar obtener metricId desde múltiples fuentes
+        const metricId = m.metricaid || m.localizacion?.metricaid || 0;
         if (metricId && !map[metricId]) {
+          // Intentar obtener nombre desde múltiples fuentes
+          const metricName = m.metrica || 
+                            m.localizacion?.metrica?.metrica ||
+                            m.localizacion?.metrica ||
+                            m.nombre || 
+                            `Métrica ${metricId}`;
           map[metricId] = metricName;
         }
       });
     }
+    console.log('[MedicionesDashboard] metricNamesMap:', map);
     return map;
   }, [mediciones]);
 
-  // Obtener métricas disponibles
+  // Obtener métricas disponibles - mejorado
   const availableMetrics = useMemo(() => {
     if (!selectedLocalizacion || mediciones.length === 0) return [];
     
     const metricsSet = new Set<number>();
     mediciones.forEach((m: any) => {
-      const metricId = m.metricaid || 0;
+      // Intentar obtener metricId desde múltiples fuentes
+      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
       if (metricId) metricsSet.add(metricId);
     });
     
-    return Array.from(metricsSet).map(id => ({
+    const metrics = Array.from(metricsSet).map(id => ({
       id,
       name: metricNamesMap[id] || `Métrica ${id}`
     })).sort((a, b) => a.name.localeCompare(b.name));
+    
+    console.log('[MedicionesDashboard] availableMetrics:', metrics);
+    return metrics;
   }, [selectedLocalizacion, mediciones, metricNamesMap]);
 
   // Establecer la métrica seleccionada por defecto cuando hay métricas disponibles
@@ -172,8 +184,13 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   useEffect(() => {
     if (!selectedLocalizacion) {
       setMediciones([]);
+      setSelectedNodoId(null);
       return;
     }
+
+    // Cuando se selecciona una localización, extraer su nodo
+    const nodoId = selectedLocalizacion.nodoid || selectedLocalizacion.nodo?.nodoid;
+    setSelectedNodoId(nodoId);
 
     const loadMediciones = async () => {
       try {
@@ -190,13 +207,19 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         else if (daysDiff > 7) maxLimit = 20000;
         else if (daysDiff >= 2) maxLimit = 10000;
 
+        // Cargar mediciones del NODO (no solo de una localización)
+        // Esto incluirá datos de todos los sensores del nodo
         const medicionesData = await JoySenseService.getMediciones({
-          localizacionId: selectedLocalizacion.localizacionid,
+          nodoid: nodoId,
           startDate: `${dateRange.start} 00:00:00`,
           endDate: `${dateRange.end} 23:59:59`,
           limit: maxLimit
         });
         const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
+        console.log('[MedicionesDashboard] Mediciones cargadas:', medicionesArray.length, 'records');
+        if (medicionesArray.length > 0) {
+          console.log('[MedicionesDashboard] Primer registro:', medicionesArray[0]);
+        }
         setMediciones(medicionesArray);
       } catch (err: any) {
         console.error('[MedicionesDashboard] Error cargando mediciones:', err);
@@ -223,13 +246,15 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     if (selectedMetricId) {
       // Filtrar mediciones por métrica seleccionada
       medicionesAGraficar = mediciones.filter((m: any) => {
-        const metricId = m.metricaid || 0;
+        const metricId = m.metricaid || m.localizacion?.metricaid || 0;
         return metricId === selectedMetricId;
       });
     }
 
     if (medicionesAGraficar.length === 0) return [];
 
+    // Crear agrupación por tiempo Y por sensor
+    // Estructura: { timeKey: { sensorLabel: { values: [], count: number }, __metadata__: { fecha, fechaObj } } }
     const grouped: { [timeKey: string]: any } = {};
 
     medicionesAGraficar.forEach((m: any) => {
@@ -262,20 +287,41 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       const label = getSeriesLabel(m);
       
       if (!grouped[timeKey]) {
-        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: fechaObj };
+        grouped[timeKey] = {
+          __metadata__: { fecha: fechaLabel, fechaObj }
+        };
+      }
+
+      if (!grouped[timeKey][label]) {
+        grouped[timeKey][label] = { values: [], count: 0 };
       }
       
       const valor = m.medicion || m.valor;
       if (valor != null && !isNaN(valor)) {
-        if (grouped[timeKey][label] !== undefined) {
-          grouped[timeKey][label] = (grouped[timeKey][label] + parseFloat(valor)) / 2;
-        } else {
-          grouped[timeKey][label] = parseFloat(valor);
-        }
+        grouped[timeKey][label].values.push(parseFloat(valor));
+        grouped[timeKey][label].count += 1;
       }
     });
 
-    const result = Object.values(grouped)
+    // Convertir a formato para Recharts: una clave por sensor
+    const result = Object.entries(grouped)
+      .map(([timeKey, sensorData]) => {
+        const entry: any = { 
+          fecha: sensorData.__metadata__.fecha,
+          fechaOriginal: sensorData.__metadata__.fechaObj
+        };
+        
+        // Por cada sensor en este intervalo de tiempo, calcular el promedio
+        Object.entries(sensorData).forEach(([sensorLabel, data]: any) => {
+          if (sensorLabel !== '__metadata__') {
+            // Calcular promedio de valores para este sensor en este intervalo
+            const avg = data.values.reduce((a: number, b: number) => a + b, 0) / data.count;
+            entry[sensorLabel] = avg;
+          }
+        });
+        
+        return entry;
+      })
       .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime())
       .map((item: any) => {
         const { fechaOriginal, ...rest } = item;
@@ -307,7 +353,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             </button>
           )}
           
-          <div className="flex items-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full pb-2">
+          <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full pb-2">
             {/* Selector de Localización (reemplaza Nodo) */}
             <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
