@@ -1898,63 +1898,31 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     console.log('[ModernDashboard] Unique metric IDs found:', Array.from(uniqueMetricIds));
 
     if (uniqueMetricIds.size === 0) {
-      console.log('[ModernDashboard] No unique metrics found for node, showing all default metrics as NODO OBSERVADO');
       return getTranslatedMetrics;
     }
-    
-    // DEBUG: Verificar acceso real a datos
-    console.log('[ModernDashboard] ===== DEBUGGING METRICS ACCESS =====');
-    console.log('[ModernDashboard] nodeMediciones detailed:', nodeMediciones.map(m => ({
-      medicionid: m.medicionid,
-      metricaid: m.metricaid,
-      localizacion: m.localizacion,
-      localizacion_metrica: m.localizacion?.metrica,
-      localizacion_sensor: m.localizacion?.sensor
-    })));
-
-    console.log('[ModernDashboard] NOTA: Para verificar acceso real a tablas, ejecutar manualmente:');
-    console.log('[ModernDashboard] JoySenseService.getTableData("metrica", 10)');
-    console.log('[ModernDashboard] JoySenseService.getTableData("sensor", 10)');
-    console.log('[ModernDashboard] JoySenseService.getTableData("localizacion", 10)');
-    console.log('[ModernDashboard] ===== END DEBUGGING =====');
 
     // Filtrar las métricas traducidas para mostrar solo las que tienen datos
     const filtered = getTranslatedMetrics.filter(metric => {
-      console.log(`[ModernDashboard] Verificando métrica: ${metric.id}`);
-
       // Buscar si hay alguna medición con una métrica que coincida con el nombre
       const hasData = Array.from(uniqueMetricIds).some(metricaId => {
-        console.log(`[ModernDashboard] Buscando medicion con metricaid: ${metricaId}`);
-
         // Buscar una medición con este metricaid y verificar si el nombre coincide
         const medicion = nodeMediciones.find(m =>
           Number(m.metricaid) === Number(metricaId)
         )
 
         if (!medicion) {
-          console.log(`[ModernDashboard] No se encontró medicion para metricaid: ${metricaId}`);
           return false
         }
-
-        console.log(`[ModernDashboard] Encontrada medicion:`, {
-          medicionid: medicion.medicionid,
-          metricaid: medicion.metricaid,
-          valor: medicion.medicion
-        });
 
         // Obtener el nombre de la métrica desde los datos expandidos o inferirlo
         // Limpiar espacios, saltos de línea y caracteres especiales
         const rawMetricName = medicion.localizacion?.metrica?.metrica || ''
-        console.log('[ModernDashboard] Raw metric name from expanded data:', rawMetricName);
 
         // Si no hay nombre expandido, intentar acceder directamente a la tabla metrica
         let finalMetricName = rawMetricName;
         if (!finalMetricName && medicion.metricaid) {
-          console.log(`[ModernDashboard] Intentando obtener nombre de métrica ${medicion.metricaid} directamente...`);
           // Nota: Esto es async, pero estamos en un filter sync, así que por ahora usamos lo que tenemos
         }
-
-        console.log(`[ModernDashboard] Final metric name: "${finalMetricName}" for metric.id: ${metric.id}`);
 
         const metricName = finalMetricName
           .replace(/\r\n/g, ' ')
@@ -1962,8 +1930,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           .replace(/\r/g, ' ')
           .trim()
           .toLowerCase()
-
-        console.log(`[ModernDashboard] Processed metric name: "${metricName}"`);
 
         // Mapear nombres comunes (más flexible para manejar variaciones)
         if (metric.id === 'temperatura' && (
