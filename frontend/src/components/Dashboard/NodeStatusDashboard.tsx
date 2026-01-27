@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
 import { NodeData } from '../../types/NodeData';
@@ -74,6 +75,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+  
+  // Estados para fechas temporales (antes de aplicar)
+  const [pendingDateRange, setPendingDateRange] = useState<{ start: string; end: string }>({
+    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  
   const [showMapModal, setShowMapModal] = useState(false);
   const [localizacionesNodo, setLocalizacionesNodo] = useState<string[]>([]);
   const [selectedBoxplotMetricId, setSelectedBoxplotMetricId] = useState<number | null>(null);
@@ -233,6 +241,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       setLocalizacionesNodo([]);
     }
   }, [selectedUbicacion]);
+
+  // Sincronizar pendingDateRange con dateRange cuando cambia selectedNode
+  useEffect(() => {
+    setPendingDateRange(dateRange);
+  }, [selectedNode]);
 
   // Cargar datos cuando se selecciona un nodo
   useEffect(() => {
@@ -956,8 +969,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 <div className="flex flex-col items-center">
                   <input
                     type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    value={pendingDateRange.start}
+                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, start: e.target.value })}
                     disabled={!selectedNode}
                     className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -970,9 +983,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 <div className="flex flex-col items-center">
                   <input
                     type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    min={dateRange.start || undefined}
+                    value={pendingDateRange.end}
+                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, end: e.target.value })}
+                    min={pendingDateRange.start || undefined}
                     disabled={!selectedNode}
                     className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -984,6 +997,34 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 </div>
               </div>
             </div>
+
+            {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
+            {selectedNode && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
+              <div className="flex flex-col items-center flex-shrink-0">
+                <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+                <button
+                  onClick={() => {
+                    // Validar fechas antes de aplicar
+                    if (pendingDateRange.start && pendingDateRange.end && new Date(pendingDateRange.start) > new Date(pendingDateRange.end)) {
+                      showError(
+                        'Fecha inválida',
+                        'La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.'
+                      );
+                      return;
+                    }
+
+                    // Aplicar cambios
+                    flushSync(() => {
+                      setDateRange(pendingDateRange);
+                    });
+                  }}
+                  disabled={loading}
+                  className="h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                >
+                  Aplicar
+                </button>
+              </div>
+            )}
 
             {/* Separador visual */}
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
@@ -1019,6 +1060,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           </div>
         )}
 
+
+        {!selectedNode && !loading && (
+          <div className="flex items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
+            <p>Selecciona un nodo para ver el estado y mediciones.</p>
+          </div>
+        )}
 
         {selectedNode && !loading && (
           <>

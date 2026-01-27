@@ -616,7 +616,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         {selectedLocalizacion && !loading && (
           <>
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Mediciones por Tipo de Sensor y Sensor</h2>
               <style dangerouslySetInnerHTML={{
                 __html: `
                   .recharts-tooltip-wrapper,
