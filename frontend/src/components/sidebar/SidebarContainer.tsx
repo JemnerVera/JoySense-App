@@ -16,8 +16,8 @@ interface SidebarContainerProps {
   onTableSelect?: (table: string) => void;
   activeSubTab?: string;
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
-  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
+  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;

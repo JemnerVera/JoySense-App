@@ -14,7 +14,7 @@ import ReportesAlertasWrapper from './components/ReportesAlertasWrapper';
 import LoginForm from './components/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
-import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
+import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, MedicionesDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import AlertasMain from './components/Reportes/AlertasMain';
 import MensajesMain from './components/Reportes/MensajesMain';
 import PermisosMain, { PermisosMainRef } from './components/MainComponents/PermisosMain';
@@ -175,7 +175,7 @@ const AppContentInternal: React.FC<{
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mapeo');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mediciones');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -203,13 +203,13 @@ const AppContentInternal: React.FC<{
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-      if (subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     } else if (activeTab === 'reportes-dashboard') {
-      // Si solo es 'reportes-dashboard' sin subTab, establecer 'mapeo' por defecto
-      setDashboardSubTab('mapeo');
+      // Si solo es 'reportes-dashboard' sin subTab, establecer 'mediciones' por defecto
+      setDashboardSubTab('mediciones');
     }
   }, [activeTab]);
 
@@ -817,7 +817,7 @@ const AppContentInternal: React.FC<{
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
+  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1305,6 +1305,19 @@ const AppContentInternal: React.FC<{
       if (reporteTab.startsWith('dashboard-')) {
         const dashboardSubTab = reporteTab.replace('dashboard-', '');
         switch (dashboardSubTab) {
+          case 'mediciones':
+            return (
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-gray-400">Cargando Mediciones...</p>
+                  </div>
+                </div>
+              }>
+                <MedicionesDashboardLazy />
+              </Suspense>
+            );
           case 'mapeo':
           return (
             <Suspense fallback={
@@ -1384,10 +1397,10 @@ const AppContentInternal: React.FC<{
               </Suspense>
             );
           default:
-            // Si solo es 'dashboard' sin subTab, redirigir a 'mapeo' por defecto
+            // Si solo es 'dashboard' sin subTab, redirigir a 'mediciones' por defecto
             if (reporteTab === 'dashboard') {
               startTransition(() => {
-                setActiveTab('reportes-dashboard-mapeo');
+                setActiveTab('reportes-dashboard-mediciones');
               });
               return null;
             }
@@ -1396,9 +1409,9 @@ const AppContentInternal: React.FC<{
       
       switch (reporteTab) {
         case 'dashboard':
-          // Redirigir a mapeo por defecto
+          // Redirigir a mediciones por defecto
           startTransition(() => {
-            setActiveTab('reportes-dashboard-mapeo');
+            setActiveTab('reportes-dashboard-mediciones');
           });
           return null;
         case 'historial':

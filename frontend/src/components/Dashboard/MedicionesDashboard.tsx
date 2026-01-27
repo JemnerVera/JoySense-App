@@ -1,0 +1,631 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { flushSync } from 'react-dom';
+import { JoySenseService } from '../../services/backend-api';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+
+interface MedicionesDashboardProps {}
+
+// Colores para las líneas de los gráficos
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1'];
+
+export function MedicionesDashboard(_props: MedicionesDashboardProps) {
+  const { t } = useLanguage();
+  const { showError, showWarning } = useToast();
+
+  const [localizaciones, setLocalizaciones] = useState<any[]>([]);
+  const [selectedLocalizacion, setSelectedLocalizacion] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [mediciones, setMediciones] = useState<any[]>([]);
+  const [tipos, setTipos] = useState<any[]>([]);
+  const [sensores, setSensores] = useState<any[]>([]);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  
+  // Estados para fechas temporales (antes de aplicar)
+  const [pendingDateRange, setPendingDateRange] = useState<{ start: string; end: string }>({
+    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+
+  // Estado para la métrica seleccionada
+  const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null);
+  
+  // Estado para el modal del mapa
+  const [showMapModal, setShowMapModal] = useState(false);
+
+  // Estados para combobox con searchbar
+  const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
+  const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
+  const localizacionDropdownRef = useRef<HTMLDivElement>(null);
+  const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // Función para obtener la etiqueta de la serie
+  const getSeriesLabel = useCallback((m: any) => {
+    const sensorId = m.sensorid || m.localizacion?.sensorid;
+    const sensorInfo = sensores.find(s => s.sensorid === sensorId);
+    
+    const sensorName = sensorInfo?.sensor || 
+                       sensorInfo?.nombre || 
+                       sensorInfo?.modelo || 
+                       m.localizacion?.sensor?.sensor || 
+                       m.localizacion?.sensor?.nombre;
+    
+    const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid || m.localizacion?.sensor?.tipo?.tipoid;
+    const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+    const tipoName = tipoInfo?.tipo || m.localizacion?.sensor?.tipo?.tipo || 'Sensor';
+    
+    if (sensorName && sensorName !== tipoName) {
+      return `${tipoName} - ${sensorName}`;
+    }
+    
+    if (sensorId && sensorId !== tipoId) {
+      return `${tipoName} (ID: ${sensorId})`;
+    }
+    
+    return tipoName;
+  }, [sensores, tipos]);
+
+  // Mapa de nombres de métricas
+  const metricNamesMap = useMemo(() => {
+    const map: { [key: number]: string } = {};
+    if (mediciones.length > 0) {
+      mediciones.forEach((m: any) => {
+        const metricId = m.metricaid || 0;
+        const metricName = m.metrica || m.nombre || `Métrica ${metricId}`;
+        if (metricId && !map[metricId]) {
+          map[metricId] = metricName;
+        }
+      });
+    }
+    return map;
+  }, [mediciones]);
+
+  // Obtener métricas disponibles
+  const availableMetrics = useMemo(() => {
+    if (!selectedLocalizacion || mediciones.length === 0) return [];
+    
+    const metricsSet = new Set<number>();
+    mediciones.forEach((m: any) => {
+      const metricId = m.metricaid || 0;
+      if (metricId) metricsSet.add(metricId);
+    });
+    
+    return Array.from(metricsSet).map(id => ({
+      id,
+      name: metricNamesMap[id] || `Métrica ${id}`
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedLocalizacion, mediciones, metricNamesMap]);
+
+  // Establecer la métrica seleccionada por defecto cuando hay métricas disponibles
+  useEffect(() => {
+    if (availableMetrics.length > 0 && (!selectedMetricId || !availableMetrics.find(m => m.id === selectedMetricId))) {
+      setSelectedMetricId(availableMetrics[0].id);
+    }
+  }, [availableMetrics]);
+
+  // Filtrar localizaciones por término de búsqueda
+  const filteredLocalizaciones = useMemo(() => {
+    if (!localizacionSearchTerm.trim()) {
+      return localizaciones;
+    }
+    return localizaciones.filter((localizacion: any) =>
+      localizacion.localizacion?.toLowerCase().includes(localizacionSearchTerm.toLowerCase())
+    );
+  }, [localizaciones, localizacionSearchTerm]);
+
+  // Calcular posición del dropdown de localización cuando se abre
+  useEffect(() => {
+    if (isLocalizacionDropdownOpen && localizacionDropdownRef.current) {
+      const rect = localizacionDropdownRef.current.getBoundingClientRect();
+      setLocalizacionDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    } else {
+      setLocalizacionDropdownPosition(null);
+    }
+  }, [isLocalizacionDropdownOpen]);
+
+  // Cerrar dropdown cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (localizacionDropdownRef.current && !localizacionDropdownRef.current.contains(event.target as Node)) {
+        setIsLocalizacionDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cargar localizaciones, tipos y sensores disponibles al inicio
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+        const [localizacionesData, tiposData, sensoresData] = await Promise.all([
+          JoySenseService.getLocalizaciones(),
+          JoySenseService.getTipos(),
+          JoySenseService.getSensores()
+        ]);
+        setLocalizaciones(localizacionesData || []);
+        setTipos(tiposData || []);
+        setSensores(sensoresData || []);
+      } catch (err: any) {
+        console.error('[MedicionesDashboard] Error cargando datos iniciales:', err);
+        showError('Error', 'Error al cargar datos iniciales');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialData();
+  }, [showError]);
+
+  // Cargar mediciones cuando cambia la localización o el rango de fechas
+  useEffect(() => {
+    if (!selectedLocalizacion) {
+      setMediciones([]);
+      return;
+    }
+
+    const loadMediciones = async () => {
+      try {
+        setLoading(true);
+        
+        // Determinar límite basado en el rango de días
+        const start = new Date(dateRange.start);
+        const end = new Date(dateRange.end);
+        const daysDiff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+        
+        let maxLimit = 5000;
+        if (daysDiff > 30) maxLimit = 50000;
+        else if (daysDiff > 14) maxLimit = 30000;
+        else if (daysDiff > 7) maxLimit = 20000;
+        else if (daysDiff >= 2) maxLimit = 10000;
+
+        const medicionesData = await JoySenseService.getMediciones({
+          localizacionId: selectedLocalizacion.localizacionid,
+          startDate: `${dateRange.start} 00:00:00`,
+          endDate: `${dateRange.end} 23:59:59`,
+          limit: maxLimit
+        });
+        const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
+        setMediciones(medicionesArray);
+      } catch (err: any) {
+        console.error('[MedicionesDashboard] Error cargando mediciones:', err);
+        showError('Error', 'Error al cargar mediciones');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMediciones();
+  }, [selectedLocalizacion, dateRange, showError]);
+
+  // Sincronizar pendingDateRange con dateRange cuando cambia selectedLocalizacion
+  useEffect(() => {
+    setPendingDateRange(dateRange);
+  }, [selectedLocalizacion]);
+
+  // Preparar datos para el gráfico de evolución por sensor/tipo de sensor (filtrados por métrica)
+  const chartData = useMemo(() => {
+    if (mediciones.length === 0) return [];
+
+    // Si no hay métrica seleccionada, usar todas las mediciones (para compatibilidad)
+    let medicionesAGraficar = mediciones;
+    
+    if (selectedMetricId) {
+      // Filtrar mediciones por métrica seleccionada
+      medicionesAGraficar = mediciones.filter((m: any) => {
+        const metricId = m.metricaid || 0;
+        return metricId === selectedMetricId;
+      });
+    }
+
+    if (medicionesAGraficar.length === 0) return [];
+
+    const grouped: { [timeKey: string]: any } = {};
+
+    medicionesAGraficar.forEach((m: any) => {
+      const date = new Date(m.fecha);
+      
+      const start = new Date(dateRange.start).getTime();
+      const end = new Date(dateRange.end).getTime();
+      const spanHours = (end - start) / (1000 * 60 * 60);
+      const spanDays = spanHours / 24;
+      
+      let timeKey: string;
+      let fechaLabel: string;
+      let fechaObj: Date;
+      
+      if (spanDays >= 2) {
+        fechaObj = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+        fechaLabel = timeKey;
+      } else if (spanHours >= 48) {
+        fechaObj = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0);
+        timeKey = fechaObj.toISOString();
+        fechaLabel = fechaObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } else {
+        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
+        fechaObj = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin, 0);
+        timeKey = fechaObj.toISOString();
+        fechaLabel = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      const label = getSeriesLabel(m);
+      
+      if (!grouped[timeKey]) {
+        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: fechaObj };
+      }
+      
+      const valor = m.medicion || m.valor;
+      if (valor != null && !isNaN(valor)) {
+        if (grouped[timeKey][label] !== undefined) {
+          grouped[timeKey][label] = (grouped[timeKey][label] + parseFloat(valor)) / 2;
+        } else {
+          grouped[timeKey][label] = parseFloat(valor);
+        }
+      }
+    });
+
+    const result = Object.values(grouped)
+      .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime())
+      .map((item: any) => {
+        const { fechaOriginal, ...rest } = item;
+        return rest;
+      });
+
+    return result;
+  }, [mediciones, selectedMetricId, getSeriesLabel, dateRange]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 p-6">
+      <div className="max-w-[95vw] mx-auto">
+        {/* Header - Similar a STATUS DE NODOS pero adaptado */}
+        <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-6 relative">
+          {/* Botón X para cancelar selección - Extremo superior derecho */}
+          {selectedLocalizacion && (
+            <button
+              onClick={() => {
+                setSelectedLocalizacion(null);
+                setLocalizacionSearchTerm('');
+                setSelectedMetricId(null);
+              }}
+              className="absolute top-2 right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center transition-colors"
+              title="Cancelar selección"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          
+          <div className="flex items-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full pb-2">
+            {/* Selector de Localización (reemplaza Nodo) */}
+            <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
+              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Localización:
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
+                  className="h-8 min-w-[150px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
+                >
+                  <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                    {selectedLocalizacion?.localizacion || 'Selecciona Localización'}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {isLocalizacionDropdownOpen && localizacionDropdownPosition && (
+                  <div 
+                    className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
+                    style={{
+                      top: `${localizacionDropdownPosition.top}px`,
+                      left: `${localizacionDropdownPosition.left}px`,
+                      width: `${localizacionDropdownPosition.width}px`
+                    }}
+                  >
+                    <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
+                      <input
+                        type="text"
+                        value={localizacionSearchTerm}
+                        onChange={(e) => setLocalizacionSearchTerm(e.target.value)}
+                        placeholder="Buscar..."
+                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
+                      {filteredLocalizaciones.length > 0 ? (
+                        filteredLocalizaciones.map((localizacion: any) => (
+                          <button
+                            key={localizacion.localizacionid}
+                            onClick={() => {
+                              setSelectedLocalizacion(localizacion);
+                              setIsLocalizacionDropdownOpen(false);
+                              setLocalizacionSearchTerm('');
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                              selectedLocalizacion?.localizacionid === localizacion.localizacionid
+                                ? 'bg-blue-500 text-white'
+                                : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                            }`}
+                          >
+                            {localizacion.localizacion}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+                          No se encontraron resultados
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Separador visual */}
+            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+            {/* Botón Nodo en Mapa */}
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Mapa:
+              </label>
+              <button
+                onClick={() => setShowMapModal(true)}
+                disabled={!selectedLocalizacion}
+                className="h-8 px-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                title="Ver localizaciones en el mapa"
+              >
+                Nodo en Mapa
+              </button>
+            </div>
+
+            {/* Separador visual */}
+            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+            {/* Intervalo de Fechas */}
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Intervalo de Fechas:
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center">
+                  <input
+                    type="date"
+                    value={pendingDateRange.start}
+                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, start: e.target.value })}
+                    disabled={!selectedLocalizacion}
+                    className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      colorScheme: 'dark',
+                      WebkitAppearance: 'none'
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Inicio</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <input
+                    type="date"
+                    value={pendingDateRange.end}
+                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, end: e.target.value })}
+                    min={pendingDateRange.start || undefined}
+                    disabled={!selectedLocalizacion}
+                    className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      colorScheme: 'dark',
+                      WebkitAppearance: 'none'
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Fin</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
+            {(pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) ? (
+              <div className="flex flex-col items-center flex-shrink-0">
+                <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+                <button
+                  onClick={() => {
+                    // Validar fechas antes de aplicar
+                    if (pendingDateRange.start && pendingDateRange.end && new Date(pendingDateRange.start) > new Date(pendingDateRange.end)) {
+                      showWarning(
+                        'Fecha inválida',
+                        'La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.'
+                      );
+                      return;
+                    }
+
+                    // Aplicar cambios
+                    flushSync(() => {
+                      setDateRange(pendingDateRange);
+                    });
+                  }}
+                  disabled={loading}
+                  className="h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                >
+                  Aplicar
+                </button>
+              </div>
+            ) : null}
+
+            {/* Separador visual */}
+            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+
+            {/* Selector de Métricas - Extremo derecho */}
+            {selectedLocalizacion && availableMetrics.length > 0 && (
+              <div className="flex flex-col items-center flex-shrink-0 ml-auto">
+                <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                  Métricas:
+                </label>
+                <div className="flex flex-wrap gap-2 items-center justify-center">
+                  {availableMetrics.map(metric => (
+                    <button
+                      key={metric.id}
+                      onClick={() => setSelectedMetricId(metric.id)}
+                      className={`px-2 py-1 rounded text-xs font-mono font-bold transition-all whitespace-nowrap ${
+                        selectedMetricId === metric.id
+                          ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                          : 'bg-gray-300 dark:bg-neutral-600 text-gray-700 dark:text-neutral-300 hover:bg-gray-400 dark:hover:bg-neutral-500'
+                      }`}
+                    >
+                      {metric.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+
+        {selectedLocalizacion && !loading && (
+          <>
+            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-bold text-blue-500 font-mono mb-4 uppercase tracking-wider">Mediciones por Tipo de Sensor y Sensor</h2>
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                  .recharts-tooltip-wrapper,
+                  .recharts-legend-wrapper {
+                    font-family: 'JetBrains Mono', monospace !important;
+                  }
+                `
+              }} />
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.2} />
+                  <XAxis 
+                    dataKey="fecha" 
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={{ stroke: '#888' }}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={{ stroke: '#888' }}
+                    domain={['auto', 'auto']}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: 'none', 
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                    itemStyle={{ padding: '2px 0' }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                  />
+                  {(() => {
+                    if (chartData.length === 0) return null;
+                    
+                    const allSeriesKeys = Array.from(
+                      new Set(
+                        chartData.flatMap(item => 
+                          Object.keys(item).filter(key => key !== 'fecha' && key !== 'fechaOriginal')
+                        )
+                      )
+                    ).sort();
+
+                    return allSeriesKeys.map((label, index) => (
+                      <Line
+                        key={label}
+                        type="monotone"
+                        dataKey={label}
+                        stroke={COLORS[index % COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 2 }}
+                        activeDot={{ r: 4 }}
+                        name={label}
+                        connectNulls={true}
+                      />
+                    ));
+                  })()}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+
+        {!selectedLocalizacion && !loading && (
+          <div className="flex items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
+            <p>Selecciona una localización para ver las mediciones.</p>
+          </div>
+        )}
+
+        {/* Modal del Mapa */}
+        {showMapModal && (
+          <div className="fixed inset-0 z-[10000] bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
+                <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">Seleccionar Localización en Mapa</h2>
+                <button
+                  onClick={() => setShowMapModal(false)}
+                  className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center transition-colors"
+                  title="Cerrar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto">
+                <div className="p-4">
+                  <p className="text-gray-600 dark:text-gray-300 font-mono text-sm">
+                    Haz clic en una localización de la lista para seleccionarla en el mapa.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                    {localizaciones.map((localizacion: any) => (
+                      <button
+                        key={localizacion.localizacionid}
+                        onClick={() => {
+                          setSelectedLocalizacion(localizacion);
+                          setShowMapModal(false);
+                          setLocalizacionSearchTerm('');
+                        }}
+                        className={`p-3 rounded text-left font-mono text-sm transition-all ${
+                          selectedLocalizacion?.localizacionid === localizacion.localizacionid
+                            ? 'bg-blue-500 text-white shadow-md'
+                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-neutral-700'
+                        }`}
+                      >
+                        <div className="font-bold">{localizacion.localizacion}</div>
+                        {localizacion.latitud && localizacion.longitud && (
+                          <div className="text-xs mt-1 opacity-75">
+                            {localizacion.latitud.toFixed(4)}, {localizacion.longitud.toFixed(4)}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default MedicionesDashboard;

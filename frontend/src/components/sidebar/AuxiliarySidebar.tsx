@@ -32,8 +32,8 @@ interface AuxiliarySidebarProps {
   activeSubTab?: string;
   // onSubTabChange se usa en múltiples secciones; para PERMISOS también debe aceptar 'asignar'
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => void;
-  dashboardSubTab?: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-  onDashboardSubTabChange?: (subTab: 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
+  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  onDashboardSubTabChange?: (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => void;
   formData?: Record<string, any>;
   multipleData?: any[];
   massiveFormData?: Record<string, any>;
@@ -404,7 +404,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       // Si activeTab es exactamente 'reportes-dashboard', no pasar ningún subTab para que no se marque ninguna pestaña como activa
       const dashboardSubTabValue = activeTab === 'reportes-dashboard' 
         ? undefined 
-        : (dashboardSubTab || (activeTab.replace('reportes-dashboard-', '') || 'mapeo') as 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales');
+        : (dashboardSubTab || (activeTab.replace('reportes-dashboard-', '') || 'mediciones') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales');
       
       return (
         <ReportesDashboardSidebar
