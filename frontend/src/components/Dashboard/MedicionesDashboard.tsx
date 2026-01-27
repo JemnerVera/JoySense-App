@@ -38,6 +38,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Estado para el modal del mapa
   const [showMapModal, setShowMapModal] = useState(false);
 
+  // Estado para ajuste del eje Y
+  const [yAxisDomain, setYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
+
   // Estados para combobox con searchbar
   const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
   const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
@@ -234,6 +237,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Sincronizar pendingDateRange con dateRange cuando cambia selectedLocalizacion
   useEffect(() => {
     setPendingDateRange(dateRange);
+    setYAxisDomain({ min: null, max: null }); // Reset del ajuste del eje Y
   }, [selectedLocalizacion]);
 
   // Preparar datos para el gráfico de evolución por sensor/tipo de sensor (filtrados por métrica)
@@ -510,11 +514,76 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             ) : null}
 
             {/* Separador visual */}
-            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            {selectedLocalizacion && (
+              <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            )}
 
-            {/* Selector de Métricas - Extremo derecho */}
+            {/* Ajuste del eje Y */}
+            {selectedLocalizacion && (
+              <div className="flex flex-col items-center flex-shrink-0">
+                <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                  Ajuste Eje Y:
+                </label>
+                <div className="flex items-center gap-2 h-8">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="-999999"
+                    max="999999"
+                    value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                    onChange={(e) => {
+                      const inputValue = e.target.value
+                      if (inputValue === '') {
+                        setYAxisDomain(prev => ({ ...prev, min: null }))
+                        return
+                      }
+                      const numValue = Number(inputValue)
+                      if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                        setYAxisDomain(prev => ({ ...prev, min: numValue }))
+                      }
+                    }}
+                    placeholder="Min"
+                    className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+                  />
+                  <span className="text-gray-600 dark:text-neutral-400 text-xs">-</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="-999999"
+                    max="999999"
+                    value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                    onChange={(e) => {
+                      const inputValue = e.target.value
+                      if (inputValue === '') {
+                        setYAxisDomain(prev => ({ ...prev, max: null }))
+                        return
+                      }
+                      const numValue = Number(inputValue)
+                      if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                        setYAxisDomain(prev => ({ ...prev, max: numValue }))
+                      }
+                    }}
+                    placeholder="Max"
+                    className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+                  />
+                  <button
+                    onClick={() => setYAxisDomain({ min: null, max: null })}
+                    className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Separador visual */}
             {selectedLocalizacion && availableMetrics.length > 0 && (
-              <div className="flex flex-col items-center flex-shrink-0 ml-auto">
+              <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            )}
+
+            {/* Selector de Métricas */}
+            {selectedLocalizacion && availableMetrics.length > 0 && (
+              <div className="flex flex-col items-center flex-shrink-0">
                 <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                   Métricas:
                 </label>
@@ -567,7 +636,40 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   <YAxis 
                     tick={{ fontSize: 10, fill: '#888' }}
                     tickLine={{ stroke: '#888' }}
-                    domain={['auto', 'auto']}
+                    domain={(() => {
+                      // Si hay valores min/max definidos, usarlos estrictamente como array fijo
+                      if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                        return [yAxisDomain.min, yAxisDomain.max]
+                      }
+                      if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
+                        // Si solo hay min, calcular max desde los datos
+                        const allValues: number[] = []
+                        chartData.forEach(point => {
+                          Object.keys(point).forEach(key => {
+                            if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                              allValues.push(point[key])
+                            }
+                          })
+                        })
+                        const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10
+                        return [yAxisDomain.min, dataMax]
+                      }
+                      if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                        // Si solo hay max, calcular min desde los datos
+                        const allValues: number[] = []
+                        chartData.forEach(point => {
+                          Object.keys(point).forEach(key => {
+                            if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                              allValues.push(point[key])
+                            }
+                          })
+                        })
+                        const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10
+                        return [dataMin, yAxisDomain.max]
+                      }
+                      // Si no hay límites, usar auto
+                      return ['auto', 'auto']
+                    })()}
                   />
                   <Tooltip 
                     contentStyle={{ 
