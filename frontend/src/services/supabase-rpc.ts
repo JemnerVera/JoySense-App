@@ -342,12 +342,11 @@ export class SupabaseRPCService {
         console.log('[SupabaseRPCService] getUmbralesPorNodo:', params);
       }
 
-      const { data, error } = await supabaseAuth.rpc(
-        'joysense.fn_get_umbrales_por_nodo',
-        {
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_umbrales_por_nodo', {
           p_nodoid: params.nodoid
-        }
-      );
+        });
 
       if (error) {
         throw new Error(`RPC error: ${error.message}`);
