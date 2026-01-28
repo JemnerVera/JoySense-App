@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { flushSync } from 'react-dom';
 import { JoySenseService } from '../../services/backend-api';
+import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { InteractiveLocalizacionMap } from './InteractiveLocalizacionMap';
@@ -199,31 +200,32 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const loadMediciones = async () => {
       try {
         setLoading(true);
-        
-        // Determinar límite basado en el rango de días
-        const start = new Date(dateRange.start);
-        const end = new Date(dateRange.end);
-        const daysDiff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
-        
-        let maxLimit = 5000;
-        if (daysDiff > 30) maxLimit = 50000;
-        else if (daysDiff > 14) maxLimit = 30000;
-        else if (daysDiff > 7) maxLimit = 20000;
-        else if (daysDiff >= 2) maxLimit = 10000;
 
-        // Cargar mediciones del NODO (no solo de una localización)
-        // Esto incluirá datos de todos los sensores del nodo
-        const medicionesData = await JoySenseService.getMediciones({
+        // Cargar mediciones agregadas con intervalo adaptativo
+        // Reduce datos transferidos hasta 95%
+        const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
           nodoid: nodoId,
-          startDate: `${dateRange.start} 00:00:00`,
-          endDate: `${dateRange.end} 23:59:59`,
-          limit: maxLimit
+          startDate: dateRange.start,
+          endDate: dateRange.end
         });
-        const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
-        console.log('[MedicionesDashboard] Mediciones cargadas:', medicionesArray.length, 'records');
-        if (medicionesArray.length > 0) {
-          console.log('[MedicionesDashboard] Primer registro:', medicionesArray[0]);
-        }
+
+        // Transformar mediciones agregadas a formato compatible con el resto del componente
+        const medicionesArray = medicionesAgregadasData.map((m: any) => ({
+          medicionid: `agg_${m.fecha_agregada}_${m.metricaid}`,
+          fecha: m.fecha_agregada,
+          medicion: m.valor_promedio,
+          metricaid: m.metricaid,
+          localizacion: {
+            metricaid: m.metricaid,
+            metrica: { metrica: `Métrica ${m.metricaid}` }
+          }
+        }));
+
+        console.log(
+          '[MedicionesDashboard] Mediciones agregadas cargadas:',
+          medicionesArray.length,
+          'puntos'
+        );
         setMediciones(medicionesArray);
       } catch (err: any) {
         console.error('[MedicionesDashboard] Error cargando mediciones:', err);

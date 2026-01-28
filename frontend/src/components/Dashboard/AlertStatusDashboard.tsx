@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
+import SupabaseRPCService from '../../services/supabase-rpc';
 import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -71,30 +72,22 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
     const loadNodesWithAlerts = async () => {
       try {
         setLoading(true);
-        
-        // Obtener todas las alertas activas (sin fecha de fin o status activo)
-        const alertasData = await JoySenseService.getAlertasRegla({
-          pageSize: 1000
-        });
-        
-        const alertasArray = Array.isArray(alertasData) ? alertasData : (alertasData as any)?.data || [];
-        
-        // Obtener nodos únicos que tienen alertas
-        const nodoIds = new Set<number>();
-        alertasArray.forEach((alerta: any) => {
-          if (alerta.localizacion?.nodoid) {
-            nodoIds.add(alerta.localizacion.nodoid);
-          }
-        });
-        
-        // Obtener todos los nodos y filtrar solo los que tienen alertas
+
+        // Obtener nodos que tienen alertas usando RPC
+        const nodesConAlertasData = await SupabaseRPCService.getNodosConAlertas();
+
+        // Obtener todos los nodos
         const allNodes = await JoySenseService.getNodosConLocalizacion(1000);
-        const nodesWithAlertsData = (allNodes || []).filter((node: NodeData) => 
-          nodoIds.has(node.nodoid)
+
+        // Filtrar solo los nodos que tienen alertas
+        const nodoIdsConAlertas = new Set(
+          nodesConAlertasData.map((n: any) => n.nodoid)
         );
-        
+        const nodesWithAlertsData = (allNodes || []).filter((node: NodeData) =>
+          nodoIdsConAlertas.has(node.nodoid)
+        );
+
         setNodesWithAlerts(nodesWithAlertsData);
-        setAlertas(alertasArray);
       } catch (err: any) {
         console.error('Error cargando nodos con alertas:', err);
         showError('Error', 'Error al cargar nodos con alertas');
@@ -102,7 +95,7 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
         setLoading(false);
       }
     };
-    
+
     loadNodesWithAlerts();
   }, [showError]);
 
@@ -117,55 +110,38 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
     const loadNodeData = async () => {
       try {
         setLoading(true);
-        
-        // Obtener alertas del nodo seleccionado
-        const alertasDelNodo = alertas.filter((a: any) => 
-          a.localizacion?.nodoid === selectedNode.nodoid
-        );
-        
-        // Obtener localizaciones del nodo
-        const localizaciones = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
-        const localizacionIds = (localizaciones || []).map((l: any) => l.localizacionid);
-        
-        // Obtener mediciones del nodo (últimos 30 días)
+
+        // Obtener mediciones agregadas del nodo (últimos 30 días)
         const endDate = new Date();
         const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-        
-        const medicionesData = await JoySenseService.getMediciones({
+
+        const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
           nodoid: selectedNode.nodoid,
-          startDate: startDate.toISOString().split('T')[0] + ' 00:00:00',
-          endDate: endDate.toISOString().split('T')[0] + ' 23:59:59',
-          limit: 1000
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          intervalMinutes: 60 // 1 hora de intervalo para 30 días
         });
-        
-        // Asegurarse de que medicionesData es un array
-        const medicionesArray = Array.isArray(medicionesData) 
-          ? medicionesData 
-          : (medicionesData as any)?.data || [];
-        
-        // Combinar mediciones con información de alertas
-        const medicionesConAlertas: MedicionConAlerta[] = medicionesArray.map((m: any) => {
-          // Buscar si esta medición tiene una alerta asociada
-          const alertaAsociada = alertasDelNodo.find((a: any) => a.medicionid === m.medicionid);
-          
-          return {
-            medicionid: m.medicionid,
-            fecha: m.fecha,
-            medicion: m.medicion,
-            metricaid: m.metricaid || m.localizacion?.metricaid || 0,
-            metrica: m.localizacion?.metrica?.metrica || '',
-            unidad: m.localizacion?.metrica?.unidad || '',
-            tieneAlerta: !!alertaAsociada,
-            fechaAlerta: alertaAsociada?.fecha,
-            valorAlerta: alertaAsociada?.valor
-          };
-        });
-        
+
+        // Transformar mediciones agregadas
+        const medicionesConAlertas: MedicionConAlerta[] = medicionesAgregadasData.map(
+          (m: any, index: number) => ({
+            medicionid: index, // Usar índice como ID único
+            fecha: m.fecha_agregada,
+            medicion: m.valor_promedio,
+            metricaid: m.metricaid,
+            metrica: `Métrica ${m.metricaid}`,
+            unidad: '',
+            tieneAlerta: false,
+            fechaAlerta: undefined,
+            valorAlerta: undefined
+          })
+        );
+
         setMediciones(medicionesConAlertas);
-        
+
         // Obtener métricas únicas del nodo
         const metricasUnicas = new Map<number, any>();
-        medicionesConAlertas.forEach(m => {
+        medicionesConAlertas.forEach((m) => {
           if (m.metricaid && !metricasUnicas.has(m.metricaid)) {
             metricasUnicas.set(m.metricaid, {
               metricaid: m.metricaid,
@@ -174,7 +150,7 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
             });
           }
         });
-        
+
         setMetricas(Array.from(metricasUnicas.values()));
       } catch (err: any) {
         console.error('Error cargando datos del nodo:', err);
@@ -185,7 +161,7 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
     };
 
     loadNodeData();
-  }, [selectedNode, alertas, showError]);
+  }, [selectedNode, showError]);
 
   // Preparar datos para los minigráficos
   const prepareChartData = useCallback((metricaid: number) => {
