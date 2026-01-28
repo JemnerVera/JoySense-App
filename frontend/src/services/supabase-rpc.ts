@@ -128,7 +128,7 @@ export interface UmbralConEstadisticas {
  * Nodos con alertas activas
  */
 export interface NodoConAlertas {
-  nodoid: number;
+  nodoid: number | string;
   nodo: string;
   total_alertas: number;
   criticidad_maxima: string;
