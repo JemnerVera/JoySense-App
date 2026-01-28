@@ -263,9 +263,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar mediciones COMPLETAS del nodo: incluye TODAS las localizaciones
-        // incluso si NO tienen datos en el rango específico
-        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoCompleto({
+        // Cargar mediciones detalladas del nodo para garantizar todas las líneas de sensores
+        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
@@ -274,14 +273,23 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         // Transformar mediciones detalladas a formato para gráficos
         // IMPORTANTE: Calcular label aquí para evitar problemas de recreación de funciones
         const medicionesTransformadas = medicionesDetalladas.map((m: any) => {
-          // Calcular el label aquí mismo para asegurar consistencia
-          const tipoName = m.tipo_nombre || 'Sensor';
-          const sensorName = m.sensor_nombre || `Sensor ${m.sensorid}`;
+          // getMedicionesNodoDetallado ya viene con estructura anidada de localizacion
+          const sensorId = m.sensorid || m.localizacion?.sensorid;
+          const sensorInfo = sensores.find(s => s.sensorid === sensorId);
+          const sensorName = m.localizacion?.sensor?.sensor || 
+                            sensorInfo?.sensor || 
+                            sensorInfo?.nombre || 
+                            `Sensor ${sensorId}`;
+          
+          const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid;
+          const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+          const tipoName = tipoInfo?.tipo || 'Sensor';
+
           let label = '';
           if (sensorName && sensorName !== tipoName) {
             label = `${tipoName} - ${sensorName}`;
-          } else if (m.sensorid && m.sensorid !== m.tipoid) {
-            label = `${tipoName} (ID: ${m.sensorid})`;
+          } else if (sensorId && sensorId !== tipoId) {
+            label = `${tipoName} (ID: ${sensorId})`;
           } else {
             label = tipoName;
           }
@@ -289,30 +297,30 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           return {
             medicionid: m.medicionid,
             fecha: m.fecha,
-            medicion: parseFloat(m.medicion),
-            metricaid: m.metricaid,
-            sensorid: m.sensorid,
-            tipoid: m.tipoid,
-            localizacionid: m.localizacionid,
-            seriesLabel: label, // Almacenar el label calculado aquí
-            localizacion: {
+            medicion: parseFloat(m.medicion || m.valor || 0),
+            metricaid: m.metricaid || m.localizacion?.metricaid,
+            metrica_nombre: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
+            sensorid: sensorId,
+            tipoid: tipoId,
+            localizacionid: m.localizacionid || m.localizacion?.localizacionid,
+            seriesLabel: label,
+            localizacion: m.localizacion || {
               localizacionid: m.localizacionid,
               metricaid: m.metricaid,
-              sensorid: m.sensorid,
-              tipoid: m.tipoid,
-              metrica: { 
-                metricaid: m.metricaid,
-                metrica: m.metrica_nombre || `Métrica ${m.metricaid}`,
-                unidad: m.unidad
-              },
+              sensorid: sensorId,
               sensor: {
-                sensorid: m.sensorid,
-                sensor: m.sensor_nombre || `Sensor ${m.sensorid}`,
-                tipoid: m.tipoid,
+                sensorid: sensorId,
+                sensor: sensorName,
+                tipoid: tipoId,
                 tipo: {
-                  tipoid: m.tipoid,
-                  tipo: m.tipo_nombre || 'Sensor'
+                  tipoid: tipoId,
+                  tipo: tipoName
                 }
+              },
+              metrica: {
+                metricaid: m.metricaid,
+                metrica: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
+                unidad: m.unidad
               }
             }
           };
@@ -477,8 +485,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     mediciones.forEach((m: any) => {
       const metricId = m.metricaid || m.localizacion?.metricaid || 0;
       if (metricId && !map[metricId]) {
-        const metricName = m.localizacion?.metrica?.metrica || `Métrica ${metricId}`;
-        map[metricId] = metricName;
+        // Ahora m.metrica_nombre está disponible en el objeto transformado
+        const metricName = m.metrica_nombre || `Métrica ${metricId}`;
+        map[metricId] = metricName.trim();
       }
     });
     return map;
@@ -556,91 +565,110 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   }, [mediciones, selectedNode, tipos, sensores, getSeriesLabel]);
 
   // Preparar datos para el gráfico de evolución (agrupado por sensor para la métrica seleccionada)
+  // Replicando la lógica robusta de ModernDashboard.processChartData
   const sensorChartData = useMemo(() => {
     if (!selectedNode || !selectedMetricId || mediciones.length === 0) return [];
 
-    // Filtrar mediciones por la métrica seleccionada
+    // 1. Filtrar mediciones por la métrica seleccionada
     const filteredMediciones = mediciones.filter(m => 
       (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
     );
 
-    console.log(
-      '[NodeStatusDashboard] sensorChartData: Total mediciones:',
-      mediciones.length,
-      ', Filtradas para métrica',
-      selectedMetricId,
-      ':',
-      filteredMediciones.length
-    );
-
     if (filteredMediciones.length === 0) {
-      console.warn('[NodeStatusDashboard] sensorChartData: No hay mediciones para métrica', selectedMetricId);
       return [];
     }
 
-    // Agrupar por fecha y sensor con redondeo para alineación (similar a ModernDashboard)
-    const grouped: { [dateKey: string]: any } = {};
-    
+    // 2. Determinar granularidad basada en el rango de fechas
+    const start = new Date(dateRange.start).getTime();
+    const end = new Date(dateRange.end).getTime();
+    const timeSpan = end - start;
+    const spanHours = timeSpan / (1000 * 60 * 60);
+    const spanDays = spanHours / 24;
+
+    let useDays = spanDays >= 2;
+    let useHours = !useDays && spanHours >= 48;
+
+    // 3. Obtener TODAS las localizacionesID únicas en los datos filtrados
+    const localizacionesEnDatos = Array.from(
+      new Set(filteredMediciones.map((m: any) => m.localizacionid || m.localizacion?.localizacionid).filter((id: any) => id != null))
+    ) as (string | number)[];
+
+    // 4. Agrupar datos por localizacionid y tiempo
+    const grouped: { [locid: string]: any[] } = {};
+    (localizacionesEnDatos as (string | number)[]).forEach((id: string | number) => { grouped[String(id)] = []; });
+
     filteredMediciones.forEach((m: any) => {
+      const locid = String(m.localizacionid || m.localizacion?.localizacionid);
       const date = new Date(m.fecha);
       
-      // Determinar granularidad basada en el rango de fechas
-      const start = new Date(dateRange.start).getTime();
-      const end = new Date(dateRange.end).getTime();
-      const spanHours = (end - start) / (1000 * 60 * 60);
-      const spanDays = spanHours / 24;
-      
       let timeKey: string;
-      let fechaLabel: string;
-      
-      if (spanDays >= 2) {
-        // Intervalos de 2 días o más: agrupar por día (fecha)
-        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      if (useDays) {
         timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-        fechaLabel = timeKey;
-      } else if (spanHours >= 48) {
-        // Entre 48h y 2 días (caso borde): agrupar por hora
-        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0);
-        timeKey = roundedDate.toISOString();
-        fechaLabel = roundedDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } else if (useHours) {
+        timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
       } else {
-        // Menos de 48 horas: agrupar por intervalos de 15 min
         const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
-        const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin, 0);
-        timeKey = roundedDate.toISOString();
-        fechaLabel = roundedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
       }
-      
-      // Usar el label pre-calculado en los datos
+
       const label = m.seriesLabel || getSeriesLabel(m);
-      
-      if (!grouped[timeKey]) {
-        grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 15) * 15) };
-      }
+      const existing = (grouped[locid] || []).find((p: any) => p.time === timeKey);
       
       const valor = m.medicion || m.valor;
       if (valor != null && !isNaN(valor)) {
-        if (grouped[timeKey][label] !== undefined) {
-          grouped[timeKey][label] = (grouped[timeKey][label] + parseFloat(valor)) / 2;
+        if (existing) {
+          existing.value = (existing.value * existing.count + parseFloat(valor)) / (existing.count + 1);
+          existing.count += 1;
         } else {
-          grouped[timeKey][label] = parseFloat(valor);
+          grouped[locid].push({ 
+            timestamp: date.getTime(), 
+            time: timeKey, 
+            value: parseFloat(valor), 
+            count: 1, 
+            label 
+          });
         }
       }
     });
 
-    const result = Object.values(grouped)
-      .sort((a: any, b: any) => a.fechaOriginal.getTime() - b.fechaOriginal.getTime())
-      .map((item: any) => {
-        const { fechaOriginal, ...rest } = item;
-        return rest;
-      });
+    // 5. Colectar todos los timestamps únicos
+    const allTimestamps = new Set<number>();
+    Object.values(grouped).forEach((list: any) => 
+      list.forEach((p: any) => {
+        const date = new Date(p.timestamp);
+        let ts: number;
+        if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
+        allTimestamps.add(ts);
+      })
+    );
 
-    // Log detallado para debugging
-    const allKeys = result.length > 0 ? Object.keys(result[0]).filter(k => k !== 'fecha') : [];
-    console.log('[NodeStatusDashboard] sensorChartData: Etiquetas de sensores:', allKeys);
-    console.log('[NodeStatusDashboard] sensorChartData: Puntos generados:', result.length);
-    return result;
-  }, [mediciones, selectedNode, selectedMetricId, dateRange]);
+    // 6. Formatear para Recharts
+    const sortedTimes = Array.from(allTimestamps).sort((a, b) => a - b).map((ts: number) => {
+      const date = new Date(ts);
+      if (useDays) return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (useHours) return `${String(date.getHours()).padStart(2, '0')}:00`;
+      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    });
+
+    const finalData = sortedTimes.map((time: string) => {
+      const entry: any = { fecha: time };
+      let hasValue = false;
+      
+      (localizacionesEnDatos as (string | number)[]).forEach((id: string | number) => {
+        const point = (grouped[String(id)] || []).find((p: any) => p.time === time);
+        if (point && point.value !== null) {
+          entry[point.label] = point.value;
+          hasValue = true;
+        }
+      });
+      
+      return hasValue ? entry : null;
+    }).filter((e: any) => e !== null);
+
+    return finalData;
+  }, [mediciones, selectedNode, selectedMetricId, dateRange, tipos, sensores, getSeriesLabel]);
 
   // Datos para gráfico de alertas por criticidad
   const alertasByCriticidad = useMemo(() => {
@@ -746,11 +774,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       const max = valores[n - 1];
       const iqr = q3 - q1; // Rango intercuartílico
       
-      // Obtener nombre de métrica
-      const metric = mediciones.find((m: any) => 
-        (m.metricaid || m.localizacion?.metricaid || 0) === metricId
-      );
-      const metricName = metric?.localizacion?.metrica?.metrica || `Métrica ${metricId}`;
+      // Obtener nombre de métrica usando el mapa pre-calculado
+      const metricName = metricNamesMap[metricId] || `Métrica ${metricId}`;
       
       // Calcular offsets para barras apiladas
       const minOffset = min;
