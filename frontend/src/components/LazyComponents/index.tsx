@@ -95,7 +95,7 @@ const AlertStatusDashboardLazy = lazy(() =>
 
 const MedicionesDashboardLazy = lazy(() => 
   import('../Dashboard/MedicionesDashboard').then(module => {
-    return { default: module.default };
+    return { default: module.MedicionesDashboard };
   })
 );
 

@@ -695,6 +695,58 @@ export class SupabaseRPCService {
       throw err;
     }
   }
+
+  /**
+   * Obtiene TODAS las mediciones de un nodo con información completa de sensores.
+   * A diferencia de getMedicionesNodoDetallado, esta función devuelve TODAS las localizaciones
+   * del nodo, incluso si NO tienen mediciones en el rango específico.
+   * Esto garantiza que TODOS los sensores se muestren en los gráficos.
+   * @param params Parámetros de la consulta
+   * @returns Array de mediciones con información completa de sensores
+   */
+  static async getMedicionesNodoCompleto(params: {
+    nodoid: number;
+    startDate: string;
+    endDate: string;
+  }): Promise<any[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid es requerido y debe ser > 0');
+      }
+
+      if (this.DEBUG) {
+        console.log('[SupabaseRPCService] getMedicionesNodoCompleto:', params);
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_mediciones_nodo_completo', {
+          p_nodoid: params.nodoid,
+          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
+          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
+        });
+
+      if (error) {
+        // Si la función aún no existe, retornar array vacío
+        if (error.message.includes('does not exist')) {
+          console.warn(
+            '[SupabaseRPCService] fn_get_mediciones_nodo_completo no existe aún'
+          );
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getMedicionesNodoCompleto:', err);
+      throw err;
+    }
+  }
 }
 
 export default SupabaseRPCService;
