@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { flushSync } from "react-dom"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, Legend } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
+import SupabaseRPCService from "../../services/supabase-rpc"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
@@ -466,33 +467,59 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // Se mostrará "NODO OBSERVADO"
         
       } else {
-        // Sin nodo seleccionado, usar las últimas 6 horas
-        const endDate = new Date()
-        const startDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000) // Últimas 6 horas
+        // Sin nodo seleccionado: cargar resumen ligero del mapa para mostrar estado general
+        // Esto evita cargar todas las mediciones de todos los nodos
+        console.log('[ModernDashboard] No node selected. Loading map summary...');
         
-        const formatDate = (date: Date) => {
-          const year = date.getFullYear()
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          const day = String(date.getDate()).padStart(2, '0')
-          const hours = String(date.getHours()).padStart(2, '0')
-          const minutes = String(date.getMinutes()).padStart(2, '0')
-          const seconds = String(date.getSeconds()).padStart(2, '0')
-          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-        }
-        
-        const startDateStr = formatDate(startDate)
-        const endDateStr = formatDate(endDate)
+        try {
+          // Usar RPC para obtener resumen ligero del mapa
+          const resumenNodos = await SupabaseRPCService.getResumenMapaNodos({
+            ubicacionId: filters.ubicacionId || undefined
+          });
+          
+          console.log('[ModernDashboard] Map summary loaded. Node count:', resumenNodos.length);
+          
+          // Convertir resumen a formato compatible con mediciones para mostrar en el mapa
+          // Usar última medición de cada nodo
+          allData = resumenNodos.map((nodo: any) => ({
+            nodoid: nodo.nodoid,
+            fecha: nodo.ultima_medicion_fecha || new Date().toISOString(),
+            medicion: 0, // No usamos el valor en resumen
+            localizacion: {
+              nodoid: nodo.nodoid,
+              metricaid: 1 // Métrica default
+            }
+          }));
+          
+        } catch (error: any) {
+          console.error('[ModernDashboard] Error loading map summary:', error);
+          // Fallback: cargar últimas 6 horas si el RPC falla
+          const endDate = new Date()
+          const startDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000) // Últimas 6 horas
+          
+          const formatDate = (date: Date) => {
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            const hours = String(date.getHours()).padStart(2, '0')
+            const minutes = String(date.getMinutes()).padStart(2, '0')
+            const seconds = String(date.getSeconds()).padStart(2, '0')
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+          }
+          
+          const startDateStr = formatDate(startDate)
+          const endDateStr = formatDate(endDate)
 
-        const dataSinNodo = await JoySenseService.getMediciones({
-          entidadId: filters.entidadId || undefined,
-          ubicacionId: filters.ubicacionId || undefined,
-          startDate: startDateStr,
-          endDate: endDateStr,
-          limit: 5000 // Límite razonable para las últimas horas
-        })
-        
-        // Asegurar que dataSinNodo es un array
-        allData = Array.isArray(dataSinNodo) ? dataSinNodo : (dataSinNodo ? [dataSinNodo] : [])
+          const dataSinNodo = await JoySenseService.getMediciones({
+            entidadId: filters.entidadId || undefined,
+            ubicacionId: filters.ubicacionId || undefined,
+            startDate: startDateStr,
+            endDate: endDateStr,
+            limit: 5000
+          })
+          
+          allData = Array.isArray(dataSinNodo) ? dataSinNodo : (dataSinNodo ? [dataSinNodo] : [])
+        }
       }
 
       // Verificar nuevamente si la petición sigue siendo válida después de la llamada async
@@ -729,76 +756,56 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setLoadingDetailedData(true)
     
     try {
-      const formatDateForBackend = (dateStr: string, isEnd: boolean = false) => {
-        const [year, month, day] = dateStr.split('-').map(Number)
-        if (isEnd) {
-          return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 23:59:59`
-        }
-        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 00:00:00`
-      }
-
-      const startDateFormatted = formatDateForBackend(startDateStr, false)
-      const endDateFormatted = formatDateForBackend(endDateStr, true)
-      
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Dates for backend:', { 
-        startDateFormatted, 
-        endDateFormatted 
-      });
-
-      const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number)
-      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
-      
-      const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number)
-      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
-      
-      let filteredData: any[] = []
-      
-      let maxLimit = 15000 
-      if (daysDiff > 30) maxLimit = 50000
-      else if (daysDiff > 14) maxLimit = 30000
-      else if (daysDiff > 7) maxLimit = 20000
-      
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching from API', {
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching aggregated data', {
         nodoid: selectedNode.nodoid,
-        startDateFormatted,
-        endDateFormatted,
-        maxLimit
+        startDate: startDateStr,
+        endDate: endDateStr
       });
 
-      try {
-        const response = await JoySenseService.getMediciones({
-          entidadId: filters.entidadId ?? undefined,
-          nodoid: selectedNode.nodoid,
-          localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
-          startDate: startDateFormatted,
-          endDate: endDateFormatted,
-          limit: maxLimit
-        })
-        
-        filteredData = Array.isArray(response) ? response : []
-        console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: API response records:', filteredData.length);
-        
-      } catch (error: any) {
-        console.error('[ModernDashboard] loadMedicionesForDetailedAnalysis: API Error:', error);
-        if (error.message?.includes('500') || error.message?.includes('timeout') || error.message?.includes('57014')) {
-          filteredData = []
-        } else {
-          throw error 
-        }
-      }
-
-      if (!Array.isArray(filteredData)) {
-        filteredData = []
-      }
-
-      // Ordenar cronológicamente (API devuelve desc)
-      const sortedFilteredData = [...filteredData]
-        .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
-        .sort((a, b) => a.fechaParsed - b.fechaParsed)
-        .map(({ fechaParsed, ...m }) => m)
+      // Usar RPC con intervalos adaptativos en lugar de cargar datos sin procesar
+      const interval = SupabaseRPCService.calculateInterval(startDateStr, endDateStr);
       
-      const transformedData = transformMedicionData(sortedFilteredData)
+      const medicionesAgregadas = await SupabaseRPCService.getMedicionesAgregadas({
+        nodoid: selectedNode.nodoid,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        intervalMinutes: interval
+      });
+      
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: RPC response records:', medicionesAgregadas.length);
+      
+      if (!Array.isArray(medicionesAgregadas)) {
+        setDetailedMediciones([]);
+        return;
+      }
+
+      // Transformar datos agregados al formato esperado
+      // Los datos de RPC vienen con: fecha_agregada, metricaid, valor_promedio, valor_min, valor_max, cantidad
+      // Necesitamos convertirlos al formato MedicionData para compatibilidad con los gráficos
+      const transformedData: MedicionData[] = medicionesAgregadas.map((agg: any) => ({
+        medicionid: 0, // No tenemos IDs individuales de mediciones agregadas
+        localizacionid: 0,
+        fecha: agg.fecha_agregada,
+        medicion: agg.valor_promedio, // Usar valor promedio para gráficos
+        localizacion: {
+          localizacionid: 0,
+          localizacion: '',
+          nodoid: selectedNode.nodoid,
+          metricaid: agg.metricaid,
+          sensorid: 0,
+          metrica: {
+            metricaid: agg.metricaid,
+            metrica: '',
+            unidad: ''
+          }
+        },
+        metricaid: agg.metricaid,
+        nodoid: selectedNode.nodoid,
+        sensorid: 0,
+        tipoid: 0,
+        ubicacionid: 0
+      }));
+      
       console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Final transformed data count:', transformedData.length);
       
       setDetailedMediciones(transformedData)
@@ -813,7 +820,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     } finally {
       setLoadingDetailedData(false)
     }
-  }, [filters.entidadId, selectedNode, selectedPointIds])
+  }, [selectedNode])
 
   // Cargar localizaciones del nodo seleccionado
   useEffect(() => {

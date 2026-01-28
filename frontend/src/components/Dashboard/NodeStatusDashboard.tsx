@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
+import SupabaseRPCService from '../../services/supabase-rpc';
 import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -261,148 +262,118 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const loadNodeData = async () => {
       try {
         setLoading(true);
-        
-        // Determinar límite basado en el rango de días
-        const start = new Date(dateRange.start);
-        const end = new Date(dateRange.end);
-        const daysDiff = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
-        
-        let maxLimit = 5000;
-        if (daysDiff > 30) maxLimit = 50000;
-        else if (daysDiff > 14) maxLimit = 30000;
-        else if (daysDiff > 7) maxLimit = 20000;
-        else if (daysDiff >= 2) maxLimit = 10000;
 
-
-        // Cargar mediciones del nodo
-        const medicionesData = await JoySenseService.getMediciones({
+        // Cargar mediciones agregadas del nodo
+        const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
           nodoid: selectedNode.nodoid,
-          startDate: `${dateRange.start} 00:00:00`,
-          endDate: `${dateRange.end} 23:59:59`,
-          limit: maxLimit
+          startDate: dateRange.start,
+          endDate: dateRange.end
         });
 
-        // Verificar si es un array o un objeto con count
-        const medicionesArray = Array.isArray(medicionesData) ? medicionesData : [];
+        // Transformar mediciones agregadas a formato para gráficos
+        const medicionesTransformadas = medicionesAgregadasData.map((m: any) => ({
+          ...m,
+          medicion: m.valor_promedio,
+          fecha: m.fecha_agregada,
+          localizacion: { metricaid: m.metricaid }
+        }));
 
-        setMediciones(medicionesArray);
+        setMediciones(medicionesTransformadas);
+
+        // Cargar KPIs consolidados (incluye estadísticas y alertas por métrica)
+        const kpisData = await SupabaseRPCService.getKPIsNodo({
+          nodoid: selectedNode.nodoid,
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        });
+
+        // Convertir KPIs a formato de estadísticas
+        const statsByMetric: { [metricId: number]: StatisticData } = {};
+        kpisData.forEach((kpi: any) => {
+          statsByMetric[kpi.metricaid] = {
+            promedio: kpi.promedio,
+            minimo: kpi.minimo,
+            maximo: kpi.maximo,
+            desviacion: kpi.desviacion,
+            ultimaMedicion: kpi.ultima_valor,
+            ultimaFecha: kpi.ultima_fecha
+          };
+        });
+
+        setStatistics(statsByMetric);
 
         // Cargar alertas del nodo
         try {
-          // Obtener localizaciones del nodo primero
-          const localizacionesData = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
-          const localizacionIds = (localizacionesData || []).map((l: any) => l.localizacionid);
+          const alertasData = await SupabaseRPCService.getAlertasPorNodo({
+            nodoid: selectedNode.nodoid,
+            startDate: dateRange.start,
+            endDate: dateRange.end
+          });
 
-          // Extraer solo el nombre de la localización (antes del guion si existe) y eliminar duplicados
-          const nombresLocalizaciones = Array.from(new Set(localizacionesData
-            .map((loc: any) => {
-              const nombreCompleto = loc.localizacion || '';
-              // Si contiene un guion, tomar solo la parte antes del guion
-              const nombreLimpio = nombreCompleto.includes(' - ')
-                ? nombreCompleto.split(' - ')[0].trim()
-                : nombreCompleto.trim();
-              return nombreLimpio;
-            })
-            .filter((n: string) => n)));
-          setLocalizacionesNodo(nombresLocalizaciones);
-          
-          if (localizacionIds.length > 0) {
-            // Obtener alertas para estas localizaciones
-            const alertasData = await JoySenseService.getAlertasRegla({
-              startDate: `${dateRange.start} 00:00:00`,
-              endDate: `${dateRange.end} 23:59:59`,
-              pageSize: 100
-            });
-
-            const alertasArray = Array.isArray(alertasData) ? alertasData : (alertasData as any)?.data || [];
-
-            const alertasFiltradas = alertasArray.filter((a: any) =>
-              localizacionIds.includes(a.localizacionid)
-            );
-            
-            setAlertas(alertasFiltradas.map((a: any) => ({
-              alertaid: a.uuid_alerta_reglaid || a.alertaid,
-              alerta: a.regla?.nombre || 'Alerta',
-              criticidad: a.regla?.criticidad?.criticidad || 'Media',
-              fecha: a.fecha || a.datecreated,
+          setAlertas(
+            (alertasData || []).map((a: any) => ({
+              alertaid: a.alertaid,
+              alerta: a.regla_nombre || 'Alerta',
+              criticidad: a.criticidad || 'Media',
+              fecha: a.fecha,
               valor: a.valor || 0,
-              regla: a.regla?.nombre || 'N/A'
-            })));
-          } else {
-            setAlertas([]);
-          }
+              regla: a.regla_nombre || 'N/A'
+            }))
+          );
         } catch (err) {
-          console.error('Error cargando alertas:', err);
+          console.error('[NodeStatusDashboard] Error cargando alertas:', err);
           setAlertas([]);
         }
 
         // Cargar umbrales del nodo
         try {
-          const umbralesData = await JoySenseService.getUmbralesPorNodo(selectedNode.nodoid);
-          setUmbrales((umbralesData || []).map((u: any) => {
-            const criticidadValue = u.criticidad?.criticidad || u.criticidad || null;
-            return {
+          const umbralesData = await SupabaseRPCService.getUmbralesPorNodo({
+            nodoid: selectedNode.nodoid
+          });
+
+          setUmbrales(
+            (umbralesData || []).map((u: any) => ({
               umbralid: u.umbralid,
               minimo: u.minimo,
               maximo: u.maximo,
               estandar: u.estandar,
-              umbral: u.umbral || 'Umbral',
-              criticidad: criticidadValue || 'Sin Criticidad',
-              metrica: u.metrica?.metrica || 'N/A',
-              unidad: u.metrica?.unidad || '',
+              umbral: u.metrica_nombre || 'Umbral',
+              criticidad: u.criticidad || 'Sin Criticidad',
+              metrica: u.metrica_nombre || 'N/A',
+              unidad: u.unidad || '',
               metricaid: u.metricaid
-            };
-          }));
+            }))
+          );
         } catch (err) {
-          console.error('Error cargando umbrales:', err);
+          console.error('[NodeStatusDashboard] Error cargando umbrales:', err);
           setUmbrales([]);
         }
 
-        // Calcular estadísticas por métrica
-        const statsByMetric: { [metricId: number]: StatisticData } = {};
-        const metricGroups: { [metricId: number]: number[] } = {};
-        
-        // Usar medicionesArray que ya fue declarado arriba
-        medicionesArray.forEach((m: any) => {
-          const metricId = m.metricaid || m.localizacion?.metricaid || 0;
-          if (!metricGroups[metricId]) {
-            metricGroups[metricId] = [];
-          }
-          const valor = m.medicion;
-          if (valor != null && !isNaN(valor)) {
-            metricGroups[metricId].push(parseFloat(valor));
-          }
-        });
+        // Obtener localizaciones únicas del nodo
+        try {
+          const localizacionesData = await JoySenseService.getLocalizacionesByNodo(
+            selectedNode.nodoid
+          );
+          const nombresLocalizaciones = Array.from(
+            new Set(
+              localizacionesData
+                .map((loc: any) => {
+                  const nombreCompleto = loc.localizacion || '';
+                  const nombreLimpio = nombreCompleto.includes(' - ')
+                    ? nombreCompleto.split(' - ')[0].trim()
+                    : nombreCompleto.trim();
+                  return nombreLimpio;
+                })
+                .filter((n: string) => n)
+            )
+          );
+          setLocalizacionesNodo(nombresLocalizaciones);
+        } catch (err) {
+          console.error('[NodeStatusDashboard] Error cargando localizaciones:', err);
+          setLocalizacionesNodo([]);
+        }
 
-        Object.keys(metricGroups).forEach(metricIdStr => {
-          const metricId = parseInt(metricIdStr);
-          const values = metricGroups[metricId];
-          if (values.length > 0) {
-            const promedio = values.reduce((a, b) => a + b, 0) / values.length;
-            const minimo = Math.min(...values);
-            const maximo = Math.max(...values);
-            const variance = values.reduce((sum, val) => sum + Math.pow(val - promedio, 2), 0) / values.length;
-            const desviacion = Math.sqrt(variance);
-            
-            // Obtener última medición
-            const ultimaMedicionData = medicionesArray
-              .filter((m: any) => (m.metricaid || m.localizacion?.metricaid || 0) === metricId)
-              .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0];
-            
-            statsByMetric[metricId] = {
-              promedio: Number(promedio.toFixed(2)),
-              minimo: Number(minimo.toFixed(2)),
-              maximo: Number(maximo.toFixed(2)),
-              desviacion: Number(desviacion.toFixed(2)),
-              ultimaMedicion: ultimaMedicionData ? (ultimaMedicionData.medicion || 0) : 0,
-              ultimaFecha: ultimaMedicionData?.fecha || ''
-            };
-          }
-        });
-
-        setStatistics(statsByMetric);
-
-        // Establecer métrica por defecto si no hay una seleccionada o la seleccionada no está en los nuevos datos
+        // Establecer métrica por defecto si no hay una seleccionada
         const availableMetricIds = Object.keys(statsByMetric).map(Number);
         if (availableMetricIds.length > 0) {
           if (!selectedMetricId || !availableMetricIds.includes(selectedMetricId)) {
@@ -411,7 +382,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         } else {
           setSelectedMetricId(null);
         }
-        
+
         // Resetear la selección de métrica del boxplot cuando cambian los datos
         setSelectedBoxplotMetricId(null);
       } catch (err: any) {

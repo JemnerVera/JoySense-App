@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../services/backend-api';
+import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import MetricaPorLoteModal from './MetricaPorLoteModal';
 
@@ -128,146 +129,69 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       setLoading(true);
       setError(null);
 
-      // Obtener ubicaciones de los fundos seleccionados
-      const ubicacionesFundos = ubicaciones.filter(u => selectedFundos.includes(u.fundoid));
-      const ubicacionIds = ubicacionesFundos.map(u => u.ubicacionid);
-
-      if (ubicacionIds.length === 0) {
-        setLotesData([]);
-        return;
-      }
-
-      // Usar endpoint optimizado para obtener solo las últimas mediciones por lote
-      const ultimasMedicionesRaw = await JoySenseService.getUltimasMedicionesPorLote({
+      // Usar RPC para obtener métricas por localización
+      // Esto es mucho más eficiente que cargar todos los datos y filtrar en frontend
+      const metricasData = await SupabaseRPCService.getMetricasPorLocalizacion({
         fundoIds: selectedFundos,
         metricaId: selectedMetrica,
-        startDate: `${startDate} 00:00:00`,
-        endDate: `${endDate} 23:59:59`
+        startDate,
+        endDate
       });
 
-      // CRÍTICO: Transformar datos para asegurar que tipoid, ubicacionid, etc. estén disponibles
-      // Helper para transformar datos del backend al formato con campos legacy
-      const transformMedicionData = (data: any[]): any[] => {
-        return data.map(m => {
-          const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
-          const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null
-          
-          return {
-            ...m,
-            localizacion: localizacion ? {
-              ...localizacion,
-              sensor: sensor
-            } : null,
-            metricaid: m.metricaid ?? localizacion?.metricaid ?? 0,
-            nodoid: m.nodoid ?? localizacion?.nodoid ?? 0,
-            tipoid: m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0,
-            ubicacionid: m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0,
-            valor: m.medicion ?? m.valor, // Asegurar que 'valor' esté disponible
-            medicionCount: m.medicionCount || 1
-          }
-        })
-      }
-
-      const ultimasMediciones = transformMedicionData(ultimasMedicionesRaw)
-
-      // Obtener tipos únicos en los datos
-      const tiposUnicos: number[] = Array.from(new Set(ultimasMediciones.map((m: any) => m.tipoid).filter((id): id is number => id !== undefined && id !== null && id !== 0))) as number[];
-
-      // Obtener localizaciones que pertenecen a nodos de las ubicaciones seleccionadas
-      const localizacionesFiltradas = localizaciones.filter((loc: any) => {
-        const nodoUbicacionId = loc.nodo?.ubicacionid;
-        return nodoUbicacionId && ubicacionIds.includes(nodoUbicacionId);
-      });
-
-      // Agrupar por NOMBRE de localización (Lote) para incluir todos sus sensores
-      const loteMap = new Map<string, { 
-        localizacion: string; 
+      // Agrupar por nombre de localización (Lote)
+      const loteMap = new Map<string, {
+        localizacion: string;
         localizacionIds: number[];
         valoresPorSensor: { [sensorKey: string]: { valor: number; fecha: string; tipoNombre: string; sensorNombre: string } };
         medicionCount: number;
       }>();
 
-      let medicionesProcesadas = 0
-      let medicionesFiltradas = 0
+      metricasData.forEach((metrica: any) => {
+        const nombreLocalizacion = metrica.localizacion_nombre;
 
-      ultimasMediciones.forEach((medicion: any) => {
-        medicionesProcesadas++
-        // CRÍTICO: Obtener localizacionid y tipoid desde múltiples fuentes posibles
-        const localizacionId = medicion.localizacionid ?? medicion.localizacion?.localizacionid ?? 0
-        const tipoid = medicion.tipoid ?? medicion.localizacion?.sensor?.tipoid ?? 0
-        const sensorId = medicion.sensorid ?? medicion.localizacion?.sensorid ?? 0
-        const valor = medicion.valor ?? medicion.medicion
-        const fecha = medicion.fecha
-        const medicionCount = medicion.medicionCount || 1
-
-        if (!localizacionId || localizacionId === 0 || !tipoid || tipoid === 0 || valor == null || isNaN(valor) || !fecha) {
-          medicionesFiltradas++
-          return
-        }
-
-        // Verificar que la localización pertenezca a los fundos seleccionados
-        const localizacion = localizacionesFiltradas.find((loc: any) => loc.localizacionid === localizacionId);
-        if (!localizacion) {
-          medicionesFiltradas++
-          return
-        }
-
-        const nombreLocalizacion = localizacion?.localizacion || medicion.localizacion?.localizacion || `Localización ${localizacionId}`;
-        
         if (!loteMap.has(nombreLocalizacion)) {
           loteMap.set(nombreLocalizacion, {
             localizacion: nombreLocalizacion,
             localizacionIds: [],
             valoresPorSensor: {},
             medicionCount: 0
-          })
+          });
         }
 
-        const lote = loteMap.get(nombreLocalizacion)!
-        lote.medicionCount = Math.max(lote.medicionCount, medicionCount)
-        
+        const lote = loteMap.get(nombreLocalizacion)!;
+        lote.medicionCount = Math.max(lote.medicionCount, metrica.total_mediciones);
+
         // Agregar ID si no existe
-        if (!lote.localizacionIds.includes(localizacionId)) {
-          lote.localizacionIds.push(localizacionId);
+        if (!lote.localizacionIds.includes(metrica.localizacionid)) {
+          lote.localizacionIds.push(metrica.localizacionid);
         }
-        
-        // Obtener nombres de tipo y sensor para la etiqueta
-        const tipo = tipos.find((t: any) => t.tipoid === tipoid);
-        const sensorInfo = sensores.find((s: any) => s.sensorid === sensorId);
+
+        // Obtener nombres de tipo y sensor
+        const tipo = tipos.find((t: any) => t.tipoid === metrica.tipoid);
+        const sensorInfo = sensores.find((s: any) => s.sensorid === metrica.sensorid);
         const tipoNombre = tipo?.tipo || 'Sensor';
         const sensorNombre = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || '';
-        
-        const sensorKey = `${tipoid}_${sensorId}`;
-        
-        // Solo actualizar si es la medición más reciente para este sensor específico
-        const existingSensor = lote.valoresPorSensor[sensorKey]
-        if (!existingSensor || new Date(fecha) > new Date(existingSensor.fecha)) {
-          lote.valoresPorSensor[sensorKey] = {
-            valor: parseFloat(valor.toString()),
-            fecha: fecha,
-            tipoNombre,
-            sensorNombre
-          }
-        }
-      });
 
-      // Crear array de datos con valores por tipo
-      const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => {
-        // Encontrar TODOS los IDs de localización que tengan el mismo nombre en este fundo/ubicación
-        const allIdsForThisLoteName = localizacionesFiltradas
-          .filter((loc: any) => loc.localizacion === data.localizacion)
-          .map((loc: any) => loc.localizacionid);
+        const sensorKey = `${metrica.tipoid}_${metrica.sensorid}`;
 
-        return {
-          localizacionid: data.localizacionIds[0], // Usamos el primer ID para compatibilidad
-          localizacionids: allIdsForThisLoteName.length > 0 ? allIdsForThisLoteName : data.localizacionIds,
-          localizacion: data.localizacion,
-          valoresPorSensor: data.valoresPorSensor,
-          medicionCount: data.medicionCount
+        lote.valoresPorSensor[sensorKey] = {
+          valor: metrica.ultimo_valor,
+          fecha: metrica.ultima_fecha,
+          tipoNombre,
+          sensorNombre
         };
       });
 
-      // Ordenar según el orden seleccionado (usar el primer sensor disponible para ordenar)
+      // Crear array de datos
+      const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => ({
+        localizacionid: data.localizacionIds[0],
+        localizacionids: data.localizacionIds,
+        localizacion: data.localizacion,
+        valoresPorSensor: data.valoresPorSensor,
+        medicionCount: data.medicionCount
+      }));
+
+      // Ordenar según el orden seleccionado
       lotesArray.sort((a, b) => {
         const valA = Object.values(a.valoresPorSensor)[0]?.valor || 0;
         const valB = Object.values(b.valoresPorSensor)[0]?.valor || 0;
