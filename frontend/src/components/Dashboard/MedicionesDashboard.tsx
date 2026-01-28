@@ -201,35 +201,53 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar mediciones agregadas con intervalo adaptativo
-        // Reduce datos transferidos hasta 95%
-        const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
+        // Cargar mediciones detalladas con información de sensores
+        // Esto permite mostrar TODAS las líneas de sensores para cada métrica
+        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: nodoId,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
 
-        // Transformar mediciones agregadas a formato compatible con el resto del componente
-        const medicionesArray = medicionesAgregadasData.map((m: any) => ({
-          medicionid: `agg_${m.fecha_agregada}_${m.metricaid}`,
-          fecha: m.fecha_agregada,
-          medicion: m.valor_promedio,
+        // Transformar mediciones detalladas a formato compatible
+        // Mantenemos toda la información de sensores, métricas y tipos
+        const medicionesArray = medicionesDetalladas.map((m: any) => ({
+          medicionid: m.medicionid,
+          fecha: m.fecha,
+          medicion: parseFloat(m.medicion),
           metricaid: m.metricaid,
+          sensorid: m.sensorid,
+          tipoid: m.tipoid,
           localizacion: {
             metricaid: m.metricaid,
-            metrica: { metrica: `Métrica ${m.metricaid}` }
+            sensorid: m.sensorid,
+            tipoid: m.tipoid,
+            metrica: { 
+              metricaid: m.metricaid,
+              metrica: m.metrica_nombre || `Métrica ${m.metricaid}`,
+              unidad: m.unidad
+            },
+            sensor: {
+              sensorid: m.sensorid,
+              sensor: m.sensor_nombre || `Sensor ${m.sensorid}`,
+              tipoid: m.tipoid,
+              tipo: {
+                tipoid: m.tipoid,
+                tipo: m.tipo_nombre || 'Sensor'
+              }
+            }
           }
         }));
 
         console.log(
-          '[MedicionesDashboard] Mediciones agregadas cargadas:',
+          '[MedicionesDashboard] Mediciones detalladas cargadas:',
           medicionesArray.length,
-          'puntos'
+          'puntos con información de sensores'
         );
         setMediciones(medicionesArray);
       } catch (err: any) {
         console.error('[MedicionesDashboard] Error cargando mediciones:', err);
-        showError('Error', 'Error al cargar mediciones');
+        showError('Error', 'Error al cargar mediciones detalladas');
       } finally {
         setLoading(false);
       }
