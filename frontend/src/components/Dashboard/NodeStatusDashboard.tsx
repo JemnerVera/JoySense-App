@@ -263,19 +263,41 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar mediciones agregadas del nodo
-        const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
+        // Cargar mediciones detalladas del nodo con información de sensores
+        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
 
-        // Transformar mediciones agregadas a formato para gráficos
-        const medicionesTransformadas = medicionesAgregadasData.map((m: any) => ({
-          ...m,
-          medicion: m.valor_promedio,
-          fecha: m.fecha_agregada,
-          localizacion: { metricaid: m.metricaid }
+        // Transformar mediciones detalladas a formato para gráficos
+        // Mantenemos información completa de sensores, métricas y tipos
+        const medicionesTransformadas = medicionesDetalladas.map((m: any) => ({
+          medicionid: m.medicionid,
+          fecha: m.fecha,
+          medicion: parseFloat(m.medicion),
+          metricaid: m.metricaid,
+          sensorid: m.sensorid,
+          tipoid: m.tipoid,
+          localizacion: {
+            metricaid: m.metricaid,
+            sensorid: m.sensorid,
+            tipoid: m.tipoid,
+            metrica: { 
+              metricaid: m.metricaid,
+              metrica: m.metrica_nombre || `Métrica ${m.metricaid}`,
+              unidad: m.unidad
+            },
+            sensor: {
+              sensorid: m.sensorid,
+              sensor: m.sensor_nombre || `Sensor ${m.sensorid}`,
+              tipoid: m.tipoid,
+              tipo: {
+                tipoid: m.tipoid,
+                tipo: m.tipo_nombre || 'Sensor'
+              }
+            }
+          }
         }));
 
         setMediciones(medicionesTransformadas);
