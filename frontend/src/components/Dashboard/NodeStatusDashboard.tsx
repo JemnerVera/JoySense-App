@@ -1192,6 +1192,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           fontSize: '12px'
                         }}
                         itemStyle={{ padding: '2px 0' }}
+                        formatter={(value: any) => {
+                          if (typeof value === 'number') {
+                            return value.toFixed(2);
+                          }
+                          return value;
+                        }}
                       />
                       <Legend 
                         wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
@@ -1327,7 +1333,14 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="fecha" />
                       <YAxis />
-                      <Tooltip />
+                      <Tooltip 
+                        formatter={(value: any) => {
+                          if (typeof value === 'number') {
+                            return value.toFixed(2);
+                          }
+                          return value;
+                        }}
+                      />
                       <Legend />
                       {Array.from(new Set(alertas.map(a => a.criticidad))).map((criticidad, index) => {
                         const colorMap: { [key: string]: string } = {
