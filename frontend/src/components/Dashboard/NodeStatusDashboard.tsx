@@ -92,12 +92,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const sensorId = m.sensorid || m.localizacion?.sensorid;
     const sensorInfo = sensores.find(s => s.sensorid === sensorId);
     
-    // Buscar nombre del sensor en múltiples lugares
-    const sensorName = sensorInfo?.sensor || 
+    // IMPORTANTE: Usar m.localizacion?.sensor?.sensor primero (viene de la BD con nombre completo)
+    const sensorName = m.localizacion?.sensor?.sensor || 
+                       m.localizacion?.sensor?.nombre ||
+                       sensorInfo?.sensor || 
                        sensorInfo?.nombre || 
-                       sensorInfo?.modelo || 
-                       m.localizacion?.sensor?.sensor || 
-                       m.localizacion?.sensor?.nombre;
+                       sensorInfo?.modelo;
     
     // Buscar tipo en múltiples lugares
     const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid || m.localizacion?.sensor?.tipo?.tipoid;
@@ -263,42 +263,60 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar mediciones detalladas del nodo con información de sensores
-        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
+        // Cargar mediciones COMPLETAS del nodo: incluye TODAS las localizaciones
+        // incluso si NO tienen datos en el rango específico
+        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoCompleto({
           nodoid: selectedNode.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
 
         // Transformar mediciones detalladas a formato para gráficos
-        // Mantenemos información completa de sensores, métricas y tipos
-        const medicionesTransformadas = medicionesDetalladas.map((m: any) => ({
-          medicionid: m.medicionid,
-          fecha: m.fecha,
-          medicion: parseFloat(m.medicion),
-          metricaid: m.metricaid,
-          sensorid: m.sensorid,
-          tipoid: m.tipoid,
-          localizacion: {
+        // IMPORTANTE: Calcular label aquí para evitar problemas de recreación de funciones
+        const medicionesTransformadas = medicionesDetalladas.map((m: any) => {
+          // Calcular el label aquí mismo para asegurar consistencia
+          const tipoName = m.tipo_nombre || 'Sensor';
+          const sensorName = m.sensor_nombre || `Sensor ${m.sensorid}`;
+          let label = '';
+          if (sensorName && sensorName !== tipoName) {
+            label = `${tipoName} - ${sensorName}`;
+          } else if (m.sensorid && m.sensorid !== m.tipoid) {
+            label = `${tipoName} (ID: ${m.sensorid})`;
+          } else {
+            label = tipoName;
+          }
+          
+          return {
+            medicionid: m.medicionid,
+            fecha: m.fecha,
+            medicion: parseFloat(m.medicion),
             metricaid: m.metricaid,
             sensorid: m.sensorid,
             tipoid: m.tipoid,
-            metrica: { 
+            localizacionid: m.localizacionid,
+            seriesLabel: label, // Almacenar el label calculado aquí
+            localizacion: {
+              localizacionid: m.localizacionid,
               metricaid: m.metricaid,
-              metrica: m.metrica_nombre || `Métrica ${m.metricaid}`,
-              unidad: m.unidad
-            },
-            sensor: {
               sensorid: m.sensorid,
-              sensor: m.sensor_nombre || `Sensor ${m.sensorid}`,
               tipoid: m.tipoid,
-              tipo: {
+              metrica: { 
+                metricaid: m.metricaid,
+                metrica: m.metrica_nombre || `Métrica ${m.metricaid}`,
+                unidad: m.unidad
+              },
+              sensor: {
+                sensorid: m.sensorid,
+                sensor: m.sensor_nombre || `Sensor ${m.sensorid}`,
                 tipoid: m.tipoid,
-                tipo: m.tipo_nombre || 'Sensor'
+                tipo: {
+                  tipoid: m.tipoid,
+                  tipo: m.tipo_nombre || 'Sensor'
+                }
               }
             }
-          }
-        }));
+          };
+        });
 
         setMediciones(medicionesTransformadas);
 
@@ -546,8 +564,19 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
     );
 
+    console.log(
+      '[NodeStatusDashboard] sensorChartData: Total mediciones:',
+      mediciones.length,
+      ', Filtradas para métrica',
+      selectedMetricId,
+      ':',
+      filteredMediciones.length
+    );
 
-    if (filteredMediciones.length === 0) return [];
+    if (filteredMediciones.length === 0) {
+      console.warn('[NodeStatusDashboard] sensorChartData: No hay mediciones para métrica', selectedMetricId);
+      return [];
+    }
 
     // Agrupar por fecha y sensor con redondeo para alineación (similar a ModernDashboard)
     const grouped: { [dateKey: string]: any } = {};
@@ -582,7 +611,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         fechaLabel = roundedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       }
       
-      const label = getSeriesLabel(m);
+      // Usar el label pre-calculado en los datos
+      const label = m.seriesLabel || getSeriesLabel(m);
       
       if (!grouped[timeKey]) {
         grouped[timeKey] = { fecha: fechaLabel, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 15) * 15) };
@@ -605,9 +635,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         return rest;
       });
 
-
+    // Log detallado para debugging
+    const allKeys = result.length > 0 ? Object.keys(result[0]).filter(k => k !== 'fecha') : [];
+    console.log('[NodeStatusDashboard] sensorChartData: Etiquetas de sensores:', allKeys);
+    console.log('[NodeStatusDashboard] sensorChartData: Puntos generados:', result.length);
     return result;
-  }, [mediciones, selectedNode, selectedMetricId, tipos, sensores, getSeriesLabel, dateRange]);
+  }, [mediciones, selectedNode, selectedMetricId, dateRange]);
 
   // Datos para gráfico de alertas por criticidad
   const alertasByCriticidad = useMemo(() => {
