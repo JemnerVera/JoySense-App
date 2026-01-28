@@ -143,6 +143,16 @@ function getMetricIdFromDataKey(dataKey: string): number {
   return metricMap[dataKey] || 1
 }
 
+// Función pura: obtener nombre y unidad de métrica desde metricaid
+function getMetricInfoFromId(metricaid: number): { nombre: string; unidad: string } {
+  const metricMap: { [key: number]: { nombre: string; unidad: string } } = {
+    1: { nombre: 'temperatura', unidad: '°C' },
+    2: { nombre: 'humedad', unidad: '%' },
+    3: { nombre: 'conductividad', unidad: 'uS/cm' }
+  }
+  return metricMap[metricaid] || { nombre: 'desconocida', unidad: '' }
+}
+
 interface MeasurementPoint {
   name: string;
   ids: number[];
@@ -210,6 +220,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   
   // Helper para obtener etiqueta de serie de datos (agrupación inteligente)
   const getSeriesLabel = useCallback((medicion: any) => {
+    // Para datos agregados (sin sensorid específico)
+    if (!medicion.sensorid || medicion.sensorid === 0) {
+      // Retornar solo el nombre de la métrica para datos agregados
+      const metricName = medicion.localizacion?.metrica?.metrica || 'Métrica'
+      return metricName.charAt(0).toUpperCase() + metricName.slice(1) // Capitalizar primera letra
+    }
+    
     const locName = medicion.localizacion?.localizacion || `Punto ${medicion.localizacionid}`
     
     // Obtener información del sensor desde el estado global
@@ -643,8 +660,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       filters.startDate,
       filters.endDate,
       selectedNode?.nodoid, 
-      selectedPointIds,
-      loadMediciones
+      selectedPointIds
+      // CRÍTICO: NO incluir loadMediciones aquí
+      // Es una función callback que cambia cuando sus dependencias cambian
+      // Esto causaría un ciclo infinito
     ]
     // Solo incluir ubicacionId si NO hay nodo seleccionado
     // Cuando hay nodo, el nodoid es suficiente y ubicacionId puede cambiar sin afectar la carga
@@ -652,7 +671,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       deps.push(filters.ubicacionId)
     }
     return deps
-  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds, loadMediciones, selectedNode])
+  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
@@ -754,59 +773,91 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     setLoadingDetailedData(true)
+    // CRÍTICO: Limpiar datos detallados ANTES de cargar nuevos (evita usar datos stale)
+    setDetailedMediciones([])
     
     try {
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching aggregated data', {
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching detailed data with full sensor info', {
         nodoid: selectedNode.nodoid,
         startDate: startDateStr,
         endDate: endDateStr
       });
 
-      // Usar RPC con intervalos adaptativos en lugar de cargar datos sin procesar
-      const interval = SupabaseRPCService.calculateInterval(startDateStr, endDateStr);
+      // CRÍTICO: Cargar datos EFICIENTEMENTE usando RPC con agregación inteligente
+      // La función fn_get_mediciones_nodo_detallado:
+      // - Para rangos <= 7 días: retorna todos los puntos (sin agregación)
+      // - Para rangos 7-30 días: retorna agregados por hora (preserva sensores)
+      // - Para rangos 30-60 días: retorna agregados por 6 horas (preserva sensores)
+      // Esto mantiene ALL LOS SENSORES mientras reduce la cantidad de datos para rangos grandes
       
-      const medicionesAgregadas = await SupabaseRPCService.getMedicionesAgregadas({
+      const detailedData = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedNode.nodoid,
         startDate: startDateStr,
-        endDate: endDateStr,
-        intervalMinutes: interval
+        endDate: endDateStr
       });
       
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: RPC response records:', medicionesAgregadas.length);
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Backend RPC response records:', Array.isArray(detailedData) ? detailedData.length : 0);
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Sample RPC data:', 
+        Array.isArray(detailedData) && detailedData.length > 0 ? {
+          metrica: detailedData[0]?.metrica_nombre,
+          sensor: detailedData[0]?.sensor_nombre,
+          valor: detailedData[0]?.medicion,
+          fecha: detailedData[0]?.fecha
+        } : null);
       
-      if (!Array.isArray(medicionesAgregadas)) {
+      if (!Array.isArray(detailedData)) {
         setDetailedMediciones([]);
         return;
       }
 
-      // Transformar datos agregados al formato esperado
-      // Los datos de RPC vienen con: fecha_agregada, metricaid, valor_promedio, valor_min, valor_max, cantidad
-      // Necesitamos convertirlos al formato MedicionData para compatibilidad con los gráficos
-      const transformedData: MedicionData[] = medicionesAgregadas.map((agg: any) => ({
-        medicionid: 0, // No tenemos IDs individuales de mediciones agregadas
-        localizacionid: 0,
-        fecha: agg.fecha_agregada,
-        medicion: agg.valor_promedio, // Usar valor promedio para gráficos
+      // Transformar datos de la RPC al formato MedicionData
+      // Los datos de la RPC vienen con información completa expandida
+      const transformedData: MedicionData[] = detailedData.map((rpcData: any) => ({
+        medicionid: rpcData.medicionid || 0,
+        localizacionid: rpcData.localizacionid || 0,
+        fecha: rpcData.fecha,
+        medicion: Number(rpcData.medicion),
         localizacion: {
-          localizacionid: 0,
+          localizacionid: rpcData.localizacionid || 0,
           localizacion: '',
           nodoid: selectedNode.nodoid,
-          metricaid: agg.metricaid,
-          sensorid: 0,
+          metricaid: rpcData.metricaid,
+          sensorid: rpcData.sensorid || 0,
           metrica: {
-            metricaid: agg.metricaid,
-            metrica: '',
-            unidad: ''
-          }
+            metricaid: rpcData.metricaid,
+            metrica: rpcData.metrica_nombre || '',
+            unidad: rpcData.unidad || ''
+          },
+          sensor: rpcData.sensorid ? {
+            sensorid: rpcData.sensorid,
+            sensor: rpcData.sensor_nombre || '',
+            nombre: rpcData.sensor_nombre || '',
+            modelo: '',
+            deveui: '',
+            tipoid: rpcData.tipoid || 0,
+            tipo: {
+              tipoid: rpcData.tipoid || 0,
+              tipo: rpcData.tipo_nombre || 'Sensor'
+            }
+          } : undefined
         },
-        metricaid: agg.metricaid,
+        metricaid: rpcData.metricaid,
         nodoid: selectedNode.nodoid,
-        sensorid: 0,
-        tipoid: 0,
+        sensorid: rpcData.sensorid || 0,
+        tipoid: rpcData.tipoid || 0,
         ubicacionid: 0
       }));
       
+      
       console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Final transformed data count:', transformedData.length);
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Unique sensors:', 
+        new Set(transformedData.map(m => m.localizacion?.sensor?.sensor)).size);
+      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Sample transformed data:', transformedData.length > 0 ? {
+        metrica: transformedData[0].localizacion?.metrica?.metrica,
+        sensor: transformedData[0].localizacion?.sensor?.sensor,
+        valor: transformedData[0].medicion,
+        fecha: transformedData[0].fecha
+      } : null);
       
       setDetailedMediciones(transformedData)
     } catch (err: any) {
@@ -1516,7 +1567,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false, overrideGranularity?: { useDays: boolean, useHours: boolean }) => {
-    const sourceMediciones = useCustomRange && detailedMediciones.length > 0 ? detailedMediciones : mediciones
+    // CRÍTICO: Para gráfico detallado, SIEMPRE usar detailedMediciones
+    // Para minigráficos, usar mediciones normales
+    let sourceMediciones = mediciones
+    
+    if (useCustomRange) {
+      // En modo gráfico detallado, SIEMPRE usar datos detallados
+      // Si no hay datos detallados, retornar vacío (no caer a minigráficos)
+      sourceMediciones = detailedMediciones
+    }
     
     if (!sourceMediciones.length || !tipos.length || !selectedNode) return []
 
@@ -1531,7 +1590,18 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return false
     })
     
-    console.log('[ModernDashboard] processChartData: after metric filter:', metricMediciones.length);
+    console.log('[ModernDashboard] processChartData:', { 
+      dataKey, 
+      useCustomRange, 
+      sourceMedicionesCount: sourceMediciones.length,
+      selectedNodeId: selectedNode.nodoid,
+      metricMedicionesCount: metricMediciones.length,
+      sampleData: metricMediciones.length > 0 ? {
+        metrica: metricMediciones[0].localizacion?.metrica?.metrica,
+        valor: metricMediciones[0].medicion,
+        fecha: metricMediciones[0].fecha
+      } : null
+    });
 
     if (!metricMediciones.length) return []
 
@@ -2367,8 +2437,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   )}
                   
                     {(() => {
+                      // CRÍTICO: En modo gráfico detallado, usar SIEMPRE detailedMediciones
+                      // NO caer a mediciones que tienen estructura diferente
                       const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
-                      const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+                      
+                      // Si estamos en modo detallado pero no hay datos, mostrar vacío
+                      if (showDetailedAnalysis && detailedMediciones.length === 0) {
+                        return null // No mostrar leyenda si no hay datos detallados
+                      }
+                      
+                      const dataSource = showDetailedAnalysis && detailedMediciones.length > 0 ? detailedMediciones : mediciones
                       const metricMediciones = dataSource.filter(m => m.metricaid === metricId)
                       const tiposDisponiblesSet = new Set<string>()
                       
@@ -3109,14 +3187,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                       const useHours = !useDays && hoursSpan >= 48;
                       const granularity = { useDays, useHours };
 
-                      // Si está cargando, siempre mostrar pantalla de carga (ocultar gráfico anterior)
-                      if (loadingDetailedData) {
+    if (loadingDetailedData) {
                         return (
                           <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                             <div className="text-center">
                               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                               <div className="text-gray-600 dark:text-neutral-400 text-lg font-mono">
-                                Cargando datos...
+                                Cargando datos del rango seleccionado...
                               </div>
                             </div>
                           </div>

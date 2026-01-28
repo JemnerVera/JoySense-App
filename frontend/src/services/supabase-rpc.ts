@@ -643,6 +643,58 @@ export class SupabaseRPCService {
       throw err;
     }
   }
+
+  /**
+   * Obtiene mediciones detalladas de un nodo con agregación inteligente según el rango
+   * - Para rangos <= 7 días: Devuelve datos detallados (todos los puntos)
+   * - Para rangos 7-30 días: Agrupa por hora preservando sensores
+   * - Para rangos 30-60 días: Agrupa por 6 horas preservando sensores
+   * @param params Parámetros de la consulta
+   * @returns Array de mediciones con información completa de sensores
+   */
+  static async getMedicionesNodoDetallado(params: {
+    nodoid: number;
+    startDate: string;
+    endDate: string;
+  }): Promise<any[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid es requerido y debe ser > 0');
+      }
+
+      if (this.DEBUG) {
+        console.log('[SupabaseRPCService] getMedicionesNodoDetallado:', params);
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_mediciones_nodo_detallado', {
+          p_nodoid: params.nodoid,
+          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
+          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
+        });
+
+      if (error) {
+        // Si la función aún no existe, retornar array vacío
+        if (error.message.includes('does not exist')) {
+          console.warn(
+            '[SupabaseRPCService] fn_get_mediciones_nodo_detallado no existe aún'
+          );
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getMedicionesNodoDetallado:', err);
+      throw err;
+    }
+  }
 }
 
 export default SupabaseRPCService;
