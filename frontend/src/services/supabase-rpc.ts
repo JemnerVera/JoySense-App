@@ -149,6 +149,17 @@ export interface ResumenMapaNodo {
   metricas_disponibles: number[];
 }
 
+/**
+ * Medición con información de agregación
+ */
+export interface MedicionConAgregacion {
+  medicionid: number;
+  localizacionid: number;
+  fecha: string;
+  medicion: number;
+  es_agregada: boolean;
+}
+
 // ============================================================================
 // SERVICIO RPC
 // ============================================================================
@@ -431,15 +442,14 @@ export class SupabaseRPCService {
         console.log('[SupabaseRPCService] getMetricasPorLocalizacion:', params);
       }
 
-      const { data, error } = await supabaseAuth.rpc(
-        'joysense.fn_get_metricas_por_localizacion',
-        {
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_metricas_por_localizacion', {
           p_fundoid: params.fundoIds,
           p_metricaid: params.metricaId,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
           p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        }
-      );
+        });
 
       if (error) {
         throw new Error(`RPC error: ${error.message}`);
@@ -577,6 +587,59 @@ export class SupabaseRPCService {
       return data;
     } catch (err: any) {
       console.error('[SupabaseRPCService] Error en getResumenMapaNodos:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene mediciones agregadas por rango (optimizado para 90 días)
+   * La agregación se hace automáticamente en la BD según el rango:
+   * - ≤7 días: Datos detallados
+   * - 7-30 días: Agregados por hora
+   * - >30 días: Agregados por 6 horas
+   * @param params Parámetros de la consulta
+   * @returns Array de mediciones (detalladas o agregadas)
+   */
+  static async getMedicionesAgregadasPorRango(params: {
+    localizacionids: number[];
+    startDate: string;
+    endDate: string;
+  }): Promise<MedicionConAgregacion[]> {
+    try {
+      if (!params.localizacionids || params.localizacionids.length === 0) {
+        throw new Error('localizacionids es requerido');
+      }
+
+      if (this.DEBUG) {
+        console.log('[SupabaseRPCService] getMedicionesAgregadasPorRango:', params);
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_mediciones_agregadas_por_rango', {
+          p_localizacionids: params.localizacionids,
+          p_start_date: params.startDate,
+          p_end_date: params.endDate
+        });
+
+      if (error) {
+        // Si la función aún no existe, retornar array vacío
+        if (error.message.includes('does not exist')) {
+          console.warn(
+            '[SupabaseRPCService] fn_get_mediciones_agregadas_por_rango no existe aún'
+          );
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getMedicionesAgregadasPorRango:', err);
       throw err;
     }
   }

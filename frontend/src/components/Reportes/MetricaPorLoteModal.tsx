@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
+import { SupabaseRPCService } from '../../services/supabase-rpc';
 import { flushSync } from 'react-dom';
 
 interface MetricaPorLoteModalProps {
@@ -66,6 +67,53 @@ function transformMedicionData(data: any[]): MedicionData[] {
       ubicacionid: m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0
     }
   })
+}
+
+// Helper para transformar datos agregados de la función RPC al formato MedicionData
+// Los datos agregados vienen sin localizacion completa, necesitamos obtenerla
+async function transformAgregatedData(
+  aggregatedData: any[],
+  localizacionIds: number[],
+  metricaId: number
+): Promise<MedicionData[]> {
+  // Obtener información básica de localizaciones para completar los datos
+  // Usamos una muestra pequeña de mediciones para obtener la estructura de localizaciones
+  const sampleMediciones = await JoySenseService.getMediciones({
+    localizacionId: localizacionIds.join(','),
+    metricaId: metricaId,
+    limit: 10 // Solo necesitamos estructura, no datos
+  });
+
+  // Crear mapa de localizaciones desde la muestra
+  const localizacionesMap = new Map();
+  if (Array.isArray(sampleMediciones)) {
+    sampleMediciones.forEach((m: any) => {
+      const loc = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null;
+      if (loc && !localizacionesMap.has(m.localizacionid)) {
+        localizacionesMap.set(m.localizacionid, loc);
+      }
+    });
+  }
+
+  return aggregatedData.map(m => {
+    const localizacion = localizacionesMap.get(m.localizacionid);
+    const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null;
+
+    return {
+      medicionid: m.medicionid,
+      localizacionid: m.localizacionid,
+      fecha: typeof m.fecha === 'string' ? m.fecha : new Date(m.fecha).toISOString(),
+      medicion: Number(m.medicion),
+      localizacion: localizacion ? {
+        ...localizacion,
+        sensor: sensor
+      } : undefined,
+      metricaid: localizacion?.metricaid ?? metricaId,
+      nodoid: localizacion?.nodoid ?? 0,
+      tipoid: sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0,
+      ubicacionid: localizacion?.nodo?.ubicacionid ?? 0
+    };
+  });
 }
 
 // Configuración de métricas
@@ -418,40 +466,97 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       // Calcular diferencia de días para determinar estrategia de carga
       const daysDiff = (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24);
       
-      // Estrategia de carga similar a ModernDashboard
-      let maxLimit = 20000;
-      let useGetAll = false;
-      
+      // VALIDACIÓN: Máximo 60 días
       if (daysDiff > 60) {
-        useGetAll = true;
-      } else if (daysDiff > 30) {
-        maxLimit = 30000;
-      } else if (daysDiff > 14) {
-        maxLimit = 25000;
-      } else if (daysDiff > 7) {
-        maxLimit = 20000;
-      } else {
-        maxLimit = 15000;
+        setError(`El rango máximo permitido es de 60 días. Has seleccionado ${Math.ceil(daysDiff)} días. Por favor, reduce el rango de fechas.`);
+        setLoading(false);
+        return;
       }
 
       const currentMetricId = getMetricIdFromDataKey(selectedMetric);
 
-      // Obtener mediciones para TODOS los IDs de localización en un solo request
-      const medicionesData = await JoySenseService.getMediciones({
-        localizacionId: localizacionIds.join(','),
-        metricaId: currentMetricId,
-        startDate: `${detailedStartDate} 00:00:00`,
-        endDate: `${detailedEndDate} 23:59:59`,
-        getAll: useGetAll,
-        limit: !useGetAll ? maxLimit : undefined
-      });
+      let medicionesData: any[] = [];
+      let transformedData: MedicionData[] = [];
 
-      if (abortController.signal.aborted) {
-        return;
+      // ESTRATEGIA: Usar agregación para rangos > 30 días, datos detallados para ≤ 30 días
+      if (daysDiff > 30) {
+        // Usar función RPC con agregación (optimizada para rangos largos sin índices)
+        try {
+          const aggregatedData = await SupabaseRPCService.getMedicionesAgregadasPorRango({
+            localizacionids: localizacionIds,
+            startDate: `${detailedStartDate} 00:00:00`,
+            endDate: `${detailedEndDate} 23:59:59`
+          });
+
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          // Transformar datos agregados al formato esperado
+          transformedData = await transformAgregatedData(aggregatedData, localizacionIds, currentMetricId);
+        } catch (aggError: any) {
+          console.warn('Error usando agregación, fallback a datos detallados:', aggError);
+          // Fallback a método normal si la agregación falla
+          const daysDiffFallback = daysDiff;
+          let maxLimit = 20000;
+          let useGetAll = false;
+          
+          if (daysDiffFallback > 30) {
+            maxLimit = 30000;
+          } else if (daysDiffFallback > 14) {
+            maxLimit = 25000;
+          } else if (daysDiffFallback > 7) {
+            maxLimit = 20000;
+          } else {
+            maxLimit = 15000;
+          }
+
+          const medicionesResponse = await JoySenseService.getMediciones({
+            localizacionId: localizacionIds.join(','),
+            metricaId: currentMetricId,
+            startDate: `${detailedStartDate} 00:00:00`,
+            endDate: `${detailedEndDate} 23:59:59`,
+            getAll: useGetAll,
+            limit: !useGetAll ? maxLimit : undefined
+          });
+
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          medicionesData = Array.isArray(medicionesResponse) ? medicionesResponse : [];
+          transformedData = transformMedicionData(medicionesData);
+        }
+      } else {
+        // Rangos ≤ 30 días: usar datos detallados (método normal)
+        let maxLimit = 20000;
+        let useGetAll = false;
+        
+        if (daysDiff > 14) {
+          maxLimit = 25000;
+        } else if (daysDiff > 7) {
+          maxLimit = 20000;
+        } else {
+          maxLimit = 15000;
+        }
+
+        const medicionesResponse = await JoySenseService.getMediciones({
+          localizacionId: localizacionIds.join(','),
+          metricaId: currentMetricId,
+          startDate: `${detailedStartDate} 00:00:00`,
+          endDate: `${detailedEndDate} 23:59:59`,
+          getAll: useGetAll,
+          limit: !useGetAll ? maxLimit : undefined
+        });
+
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        medicionesData = Array.isArray(medicionesResponse) ? medicionesResponse : [];
+        // CRÍTICO: Transformar datos para asegurar que tipoid, nodoid, metricaid estén disponibles
+        transformedData = transformMedicionData(medicionesData);
       }
-
-      // CRÍTICO: Transformar datos para asegurar que tipoid, nodoid, metricaid estén disponibles
-      const transformedData = transformMedicionData(Array.isArray(medicionesData) ? medicionesData : [])
       
       // Ordenar por fecha ascendente y filtrar
       const medicionesFiltradas = transformedData
@@ -532,19 +637,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       
       const daysDiff = (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24);
       
-      let maxLimit = 20000;
-      let useGetAll = false;
-      
+      // VALIDACIÓN: Máximo 60 días (misma validación que en loadChartData)
       if (daysDiff > 60) {
-        useGetAll = true;
-      } else if (daysDiff > 30) {
-        maxLimit = 30000;
-      } else if (daysDiff > 14) {
-        maxLimit = 25000;
-      } else if (daysDiff > 7) {
-        maxLimit = 20000;
-      } else {
-        maxLimit = 15000;
+        console.warn(`Rango máximo de 60 días excedido en comparación: ${Math.ceil(daysDiff)} días`);
+        setLoadingComparisonData(false);
+        return;
       }
 
       const currentMetricId = getMetricIdFromDataKey(selectedMetric);
@@ -552,22 +649,81 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       // Usar todos los IDs asociados al lote de comparación
       const comparisonIds = comparisonLote.ids || [comparisonLote.localizacionid];
 
-      const comparisonData = await JoySenseService.getMediciones({
-        localizacionId: comparisonIds.join(','),
-        metricaId: currentMetricId,
-        startDate: `${detailedStartDate} 00:00:00`,
-        endDate: `${detailedEndDate} 23:59:59`,
-        getAll: useGetAll,
-        limit: !useGetAll ? maxLimit : undefined
-      });
+      let comparisonData: any[] = [];
+      let transformedComparisonData: MedicionData[] = [];
 
-      if (!Array.isArray(comparisonData)) {
-        console.warn('⚠️ Datos de comparación no válidos');
-        return;
+      // ESTRATEGIA: Usar agregación para rangos > 30 días, datos detallados para ≤ 30 días
+      if (daysDiff > 30) {
+        // Usar función RPC con agregación
+        try {
+          const aggregatedData = await SupabaseRPCService.getMedicionesAgregadasPorRango({
+            localizacionids: comparisonIds,
+            startDate: `${detailedStartDate} 00:00:00`,
+            endDate: `${detailedEndDate} 23:59:59`
+          });
+
+          // Transformar datos agregados al formato esperado
+          transformedComparisonData = await transformAgregatedData(aggregatedData, comparisonIds, currentMetricId);
+        } catch (aggError: any) {
+          console.warn('Error usando agregación en comparación, fallback a datos detallados:', aggError);
+          // Fallback a método normal
+          let maxLimit = 20000;
+          if (daysDiff > 14) {
+            maxLimit = 25000;
+          } else if (daysDiff > 7) {
+            maxLimit = 20000;
+          } else {
+            maxLimit = 15000;
+          }
+
+          const comparisonResponse = await JoySenseService.getMediciones({
+            localizacionId: comparisonIds.join(','),
+            metricaId: currentMetricId,
+            startDate: `${detailedStartDate} 00:00:00`,
+            endDate: `${detailedEndDate} 23:59:59`,
+            getAll: false,
+            limit: maxLimit
+          });
+
+          comparisonData = Array.isArray(comparisonResponse) ? comparisonResponse : [];
+          
+          if (comparisonData.length === 0) {
+            console.warn('⚠️ Datos de comparación no válidos');
+            return;
+          }
+
+          transformedComparisonData = transformMedicionData(comparisonData);
+        }
+      } else {
+        // Rangos ≤ 30 días: usar datos detallados
+        let maxLimit = 20000;
+        if (daysDiff > 14) {
+          maxLimit = 25000;
+        } else if (daysDiff > 7) {
+          maxLimit = 20000;
+        } else {
+          maxLimit = 15000;
+        }
+
+        const comparisonResponse = await JoySenseService.getMediciones({
+          localizacionId: comparisonIds.join(','),
+          metricaId: currentMetricId,
+          startDate: `${detailedStartDate} 00:00:00`,
+          endDate: `${detailedEndDate} 23:59:59`,
+          getAll: false,
+          limit: maxLimit
+        });
+
+        comparisonData = Array.isArray(comparisonResponse) ? comparisonResponse : [];
+        
+        if (comparisonData.length === 0) {
+          console.warn('⚠️ Datos de comparación no válidos');
+          return;
+        }
+
+        // CRÍTICO: Transformar datos primero para asegurar que tipoid esté disponible
+        transformedComparisonData = transformMedicionData(comparisonData);
       }
-
-      // CRÍTICO: Transformar datos primero para asegurar que tipoid esté disponible
-      const transformedComparisonData = transformMedicionData(Array.isArray(comparisonData) ? comparisonData : [])
       
       const sortedComparisonData = transformedComparisonData
         .map(m => ({ ...m, fechaParsed: new Date(m.fecha).getTime() }))
