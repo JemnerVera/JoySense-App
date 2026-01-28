@@ -397,6 +397,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   fontSize: '11px'
                 }}
                 labelStyle={{ color: '#e5e7eb' }}
+                formatter={(value: any) => {
+                  if (typeof value === 'number') {
+                    return value.toFixed(2);
+                  }
+                  return value;
+                }}
               />
               <Legend 
                 wrapperStyle={{ fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
