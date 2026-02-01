@@ -394,9 +394,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     loadNodeData();
   }, [selectedNode, dateRange, showError]);
 
-  // Cargar mediciones cuando cambia métrica seleccionada o rango de fechas
+  // Cargar mediciones cuando cambia rango de fechas o métrica seleccionada
   useEffect(() => {
-    if (!selectedNode?.nodoid || !selectedMetricId) {
+    if (!selectedNode?.nodoid) {
       setMediciones([]);
       return;
     }
@@ -414,9 +414,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const loadMediciones = async () => {
       try {
         setLoading(true);
+        // Si hay métrica seleccionada, cargar solo esa métrica
+        // Si no hay métrica seleccionada, cargar TODAS las mediciones (sin filtro)
         const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
-          metricaid: selectedMetricId,
+          metricaid: selectedMetricId || undefined,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
@@ -492,7 +494,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     };
 
     loadMediciones();
-  }, [selectedNode, selectedMetricId, dateRange, sensores, tipos, showError]);
+  }, [selectedNode, dateRange, sensores, tipos, showError]);
 
   // Calcular KPIs
   const kpis = useMemo((): KPI[] => {
@@ -617,12 +619,15 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   // Preparar datos para el gráfico de evolución (agrupado por sensor para la métrica seleccionada)
   // Replicando la lógica robusta de ModernDashboard.processChartData
   const sensorChartData = useMemo(() => {
-    if (!selectedNode || !selectedMetricId || mediciones.length === 0) return [];
+    if (!selectedNode || mediciones.length === 0) return [];
 
-    // 1. Filtrar mediciones por la métrica seleccionada
-    const filteredMediciones = mediciones.filter(m => 
-      (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
-    );
+    // 1. Filtrar mediciones por la métrica seleccionada (si existe)
+    // Si no hay métrica seleccionada, mostrar TODAS las mediciones
+    const filteredMediciones = selectedMetricId
+      ? mediciones.filter(m => 
+          (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
+        )
+      : mediciones;
 
     if (filteredMediciones.length === 0) {
       return [];
