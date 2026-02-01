@@ -112,6 +112,40 @@ function getMetricIdFromDataKey(dataKey: string): number {
   return metricMap[dataKey] || 1
 }
 
+// Función pura: verificar si un nombre de métrica coincide con un ID de métrica
+function matchesMetricId(metricName: string, metricId: string): boolean {
+  const cleanedName = metricName
+    .replace(/\r\n/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, ' ')
+    .trim()
+    .toLowerCase()
+
+  if (metricId === 'temperatura' && (
+    cleanedName.includes('temperatura') ||
+    cleanedName.includes('temp')
+  )) {
+    return true
+  }
+
+  if (metricId === 'humedad' && (
+    cleanedName.includes('humedad') ||
+    cleanedName.includes('humidity')
+  )) {
+    return true
+  }
+
+  if (metricId === 'conductividad' && (
+    cleanedName.includes('conductividad') ||
+    cleanedName.includes('electroconductividad') ||
+    cleanedName.includes('conductivity')
+  )) {
+    return true
+  }
+
+  return false
+}
+
 // Función pura: obtener nombre y unidad de métrica desde metricaid
 function getMetricInfoFromId(metricaid: number): { nombre: string; unidad: string } {
   const metricMap: { [key: number]: { nombre: string; unidad: string } } = {
@@ -1464,10 +1498,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       if (Number(m.nodoid) !== Number(selectedNode.nodoid)) return false
       const rawMetricName = m.localizacion?.metrica?.metrica || ''
       const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
-      if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
-      if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
-      if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) return true
-      return false
+      return matchesMetricId(rawMetricName, dataKey)
     })
     
 
@@ -1869,30 +1900,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           .trim()
           .toLowerCase()
 
-        // Mapear nombres comunes (más flexible para manejar variaciones)
-        if (metric.id === 'temperatura' && (
-          metricName.includes('temperatura') ||
-          metricName.includes('temp')
-        )) {
-          return true
-        }
-
-        if (metric.id === 'humedad' && (
-          metricName.includes('humedad') ||
-          metricName.includes('humidity')
-        )) {
-          return true
-        }
-
-        if (metric.id === 'conductividad' && (
-          metricName.includes('conductividad') ||
-          metricName.includes('electroconductividad') ||
-          metricName.includes('conductivity')
-        )) {
-          return true
-        }
-
-        return false
+        // Usar la función pura para matching
+        return matchesMetricId(rawMetricName, metric.id)
       })
 
       return hasData
