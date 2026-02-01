@@ -398,8 +398,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
         // 1. INTENTAR PRIMERO CON LOS FILTROS GLOBALES DE FECHA SI EXISTEN
         if (filters.startDate && filters.endDate) {
-          console.log('[ModernDashboard] Using global date filters:', { start: filters.startDate, end: filters.endDate });
-          
           const startDateFormatted = `${filters.startDate} 00:00:00`
           const endDateFormatted = `${filters.endDate} 23:59:59`
           
@@ -415,17 +413,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
             if (dataArray.length > 0) {
               allData = dataArray
-              console.log('[ModernDashboard] Data loaded using global filters. Count:', allData.length);
             }
           } catch (error: any) {
-            console.error('[ModernDashboard] Error loading with global filters:', error);
             // Fallback a estrategia progresiva si hay error de timeout/500
           }
         }
 
         // 2. ESTRATEGIA PROGRESIVA: Solo si no se obtuvieron datos con los filtros globales
         if (allData.length === 0) {
-          console.log('[ModernDashboard] No data from global filters or no filters provided. Using progressive strategy.');
           
           // ESTRATEGIA PROGRESIVA: Empezar con rango pequeño y expandir si no hay datos
           // Esto evita timeouts en el backend cuando hay muchos datos antiguos
@@ -486,7 +481,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       } else {
         // Sin nodo seleccionado: cargar resumen ligero del mapa para mostrar estado general
         // Esto evita cargar todas las mediciones de todos los nodos
-        console.log('[ModernDashboard] No node selected. Loading map summary...');
         
         try {
           // Usar RPC para obtener resumen ligero del mapa
@@ -494,7 +488,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             ubicacionId: filters.ubicacionId || undefined
           });
           
-          console.log('[ModernDashboard] Map summary loaded. Node count:', resumenNodos.length);
           
           // Convertir resumen a formato compatible con mediciones para mostrar en el mapa
           // Usar última medición de cada nodo
@@ -541,12 +534,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar nuevamente si la petición sigue siendo válida después de la llamada async
       if (currentRequestKeyRef.current !== thisRequestKey) {
-        console.log('[ModernDashboard] loadMediciones: Request key changed during fetch. Canceling.');
         return
       }
       
       if (thisNodeId !== null && Number(selectedNode?.nodoid) !== Number(thisNodeId)) {
-        console.log('[ModernDashboard] loadMediciones: Node changed after fetch. Canceling.');
         return
       }
 
@@ -603,19 +594,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar una última vez antes de actualizar el estado
       if (currentRequestKeyRef.current !== thisRequestKey) {
-        console.log('[ModernDashboard] loadMediciones: Request key changed before update. Canceling.');
         return
       }
       
       if (thisNodeId !== null && Number(selectedNode?.nodoid) !== Number(thisNodeId)) {
-        console.log('[ModernDashboard] loadMediciones: Node changed before update. Canceling.');
         return
       }
 
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       // Transformar datos para agregar campos legacy
       const transformed = transformMedicionData(sortedData)
-      console.log('[ModernDashboard] Data transformed. Count:', transformed.length, 'Sample:', transformed.slice(0, 2));
       
       setMediciones(transformed)
       setError(null) // Limpiar cualquier error previo
@@ -762,7 +750,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Función para cargar mediciones para el análisis detallado con rango de fechas específico
   const loadMedicionesForDetailedAnalysis = useCallback(async (startDateStr: string, endDateStr: string, signal?: AbortSignal) => {
     if (!selectedNode) {
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: missing selectedNode');
       setLoadingDetailedData(false)
       return
     }
@@ -777,11 +764,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setDetailedMediciones([])
     
     try {
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Fetching detailed data with full sensor info', {
-        nodoid: selectedNode.nodoid,
-        startDate: startDateStr,
-        endDate: endDateStr
-      });
 
       // CRÍTICO: Cargar datos EFICIENTEMENTE usando RPC con agregación inteligente
       // La función fn_get_mediciones_nodo_detallado:
@@ -795,15 +777,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         startDate: startDateStr,
         endDate: endDateStr
       });
-      
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Backend RPC response records:', Array.isArray(detailedData) ? detailedData.length : 0);
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Sample RPC data:', 
-        Array.isArray(detailedData) && detailedData.length > 0 ? {
-          metrica: detailedData[0]?.metrica_nombre,
-          sensor: detailedData[0]?.sensor_nombre,
-          valor: detailedData[0]?.medicion,
-          fecha: detailedData[0]?.fecha
-        } : null);
       
       if (!Array.isArray(detailedData)) {
         setDetailedMediciones([]);
@@ -1590,18 +1563,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return false
     })
     
-    console.log('[ModernDashboard] processChartData:', { 
-      dataKey, 
-      useCustomRange, 
-      sourceMedicionesCount: sourceMediciones.length,
-      selectedNodeId: selectedNode.nodoid,
-      metricMedicionesCount: metricMediciones.length,
-      sampleData: metricMediciones.length > 0 ? {
-        metrica: metricMediciones[0].localizacion?.metrica?.metrica,
-        valor: metricMediciones[0].medicion,
-        fecha: metricMediciones[0].fecha
-      } : null
-    });
 
     if (!metricMediciones.length) return []
 
@@ -1616,17 +1577,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const [eY, eM, eD] = detailedEndDate.split('-').map(Number);
       const endDate = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
       
-      console.log('[ModernDashboard] processChartData applying custom range filter:', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
 
       // Aplicar filtro de fecha siempre que sea un rango personalizado
       filteredMediciones = sortedMediciones.filter(m => {
         const d = new Date(m.fecha).getTime();
         return d >= startDate.getTime() && d <= endDate.getTime();
       })
-      console.log('[ModernDashboard] processChartData: filtered records for range:', filteredMediciones.length);
       timeSpan = endDate.getTime() - startDate.getTime()
     } else if (filters.startDate && filters.endDate && sortedMediciones.length > 0) {
       // Aplicar filtros globales de fecha si existen para los minigráficos
@@ -1648,7 +1604,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     } else if (sortedMediciones.length > 0) {
       const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
-      console.log('[ModernDashboard] processChartData: fallback 3h filter:', filteredMediciones.length);
     }
 
     if (filteredMediciones.length === 0) return []
@@ -1744,7 +1699,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return hasValue ? entry : null
     }).filter(e => e !== null)
 
-    console.log('[ModernDashboard] processChartData: final data count:', finalData.length);
     return finalData
   }
 
@@ -2013,7 +1967,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('temperatura') ||
           metricName.includes('temp')
         )) {
-          console.log(`[ModernDashboard] ✅ MATCH: temperatura con "${metricName}"`);
           return true
         }
 
@@ -2021,7 +1974,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('humedad') ||
           metricName.includes('humidity')
         )) {
-          console.log(`[ModernDashboard] ✅ MATCH: humedad con "${metricName}"`);
           return true
         }
 
@@ -2030,19 +1982,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           metricName.includes('electroconductividad') ||
           metricName.includes('conductivity')
         )) {
-          console.log(`[ModernDashboard] ✅ MATCH: conductividad con "${metricName}"`);
           return true
         }
 
-        console.log(`[ModernDashboard] ❌ NO MATCH: ${metric.id} con "${metricName}"`);
         return false
       })
 
-      console.log(`[ModernDashboard] Métrica ${metric.id} hasData: ${hasData}`);
       return hasData
     })
     
-    console.log('[ModernDashboard] availableMetrics calculated:', filtered.map(m => m.id), 'nodeMediciones total:', nodeMediciones.length);
     return filtered
   }, [getTranslatedMetrics, mediciones, detailedMediciones, selectedNode])
 
