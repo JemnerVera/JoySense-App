@@ -224,17 +224,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Si no hay punto seleccionado, mostrar Localización + Tipo/Sensor
     return `${locName} (${sensorLabel})`
   }, [tipos, sensores])
-
-  const selectedPointIds = useMemo(() => {
-    return [];
-  }, []);
-  
-  // Efecto para manejar cambios en selectedNode
-  useEffect(() => {
-    if (!selectedNode) {
-      // Limpiar estado cuando no hay nodo seleccionado
-    }
-  }, [selectedNode])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
   
