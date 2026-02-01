@@ -102,6 +102,93 @@ interface MetricConfig {
   }
 }
 
+// Mapeo de colores por nombre de métrica (puede extenderse por empresa)
+const METRIC_COLOR_MAP: { [key: string]: string } = {
+  'temperatura': '#f59e0b',      // Ámbar
+  'temp': '#f59e0b',
+  'humedad': '#3b82f6',           // Azul
+  'humidity': '#3b82f6',
+  'conductividad': '#10b981',     // Verde
+  'electroconductividad': '#10b981',
+  'conductivity': '#10b981',
+  'ph': '#ef4444',                // Rojo
+  'luz': '#fbbf24',               // Amarillo
+  'light': '#fbbf24',
+  'co2': '#6366f1',               // Índigo
+  'presion': '#8b5cf6',           // Púrpura
+  'pressure': '#8b5cf6',
+};
+
+// Rangos por defecto por nombre de métrica
+const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; optimal: [number, number] } } = {
+  'temperatura': { min: 15, max: 35, optimal: [20, 28] },
+  'temp': { min: 15, max: 35, optimal: [20, 28] },
+  'humedad': { min: 40, max: 90, optimal: [60, 75] },
+  'humidity': { min: 40, max: 90, optimal: [60, 75] },
+  'conductividad': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
+  'electroconductividad': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
+  'conductivity': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
+  'ph': { min: 6, max: 8, optimal: [6.5, 7.5] },
+  'luz': { min: 0, max: 100000, optimal: [20000, 50000] },
+  'light': { min: 0, max: 100000, optimal: [20000, 50000] },
+  'co2': { min: 300, max: 2000, optimal: [800, 1200] },
+  'presion': { min: 900, max: 1100, optimal: [1000, 1020] },
+  'pressure': { min: 900, max: 1100, optimal: [1000, 1020] },
+};
+
+// Función para obtener color de métrica según nombre
+function getMetricColor(metricaName: string): string {
+  const normalizedName = metricaName.toLowerCase().trim();
+  return METRIC_COLOR_MAP[normalizedName] || '#94a3b8'; // Color gris por defecto
+}
+
+// Función para obtener rangos de métrica según nombre
+function getMetricRanges(metricaName: string): { min: number; max: number; optimal: [number, number] } {
+  const normalizedName = metricaName.toLowerCase().trim();
+  return METRIC_RANGES_MAP[normalizedName] || { min: 0, max: 100, optimal: [20, 80] };
+}
+
+// Función para normalizar nombre de métrica a dataKey estándar
+function normalizeMetricDataKey(metricaName: string): string {
+  const normalized = metricaName.toLowerCase().trim();
+  
+  // Mapear variaciones a dataKey estándar
+  const keyMap: { [key: string]: string } = {
+    'temperatura': 'temperatura',
+    'temp': 'temperatura',
+    'humedad': 'humedad',
+    'humidity': 'humedad',
+    'conductividad': 'conductividad',
+    'electroconductividad': 'conductividad', // IMPORTANTE: normalizar a conductividad
+    'conductivity': 'conductividad',
+    'ec': 'conductividad',
+    'ph': 'ph',
+    'luz': 'luz',
+    'light': 'luz',
+    'co2': 'co2',
+    'presion': 'presion',
+    'pressure': 'presion',
+  };
+  
+  return keyMap[normalized] || normalized;
+}
+
+// Función pura: convertir Metrica del backend a MetricConfig
+function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
+  const metricaName = (metrica.metrica || '').toLowerCase().trim();
+  const normalizedDataKey = normalizeMetricDataKey(metrica.metrica);
+  
+  return {
+    id: normalizedDataKey,
+    title: metrica.metrica || 'Métrica Desconocida',
+    color: getMetricColor(metrica.metrica),
+    unit: metrica.unidad || '',
+    dataKey: normalizedDataKey,
+    description: `Medición de ${metrica.metrica}`,
+    ranges: getMetricRanges(metrica.metrica),
+  };
+}
+
 // Función pura: obtener metricId desde dataKey (extraída fuera del componente)
 function getMetricIdFromDataKey(dataKey: string): number {
   const metricMap: { [key: string]: number } = {
@@ -174,51 +261,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
   
-  // Memoizar métricas traducidas para evitar recrearlas en cada render
-  const getTranslatedMetrics = useMemo((): MetricConfig[] => [
-    {
-      id: "temperatura",
-      title: t('dashboard.metrics.temperature'),
-      color: "#f59e0b",
-      unit: "°C",
-      dataKey: "temperatura",
-      // ... more code ...
-      description: "Temperatura del suelo/sustrato",
-      ranges: { min: 15, max: 35, optimal: [20, 28] }
-    },
-    {
-      id: "humedad",
-      title: t('dashboard.metrics.humidity'),
-      color: "#3b82f6",
-      unit: "%",
-      dataKey: "humedad",
-      description: "Humedad relativa del suelo",
-      ranges: { min: 40, max: 90, optimal: [60, 75] }
-    },
-    {
-      id: "conductividad",
-      title: t('dashboard.metrics.electroconductivity'),
-      color: "#10b981",
-      unit: "uS/cm",
-      dataKey: "conductividad",
-      description: "Conductividad eléctrica del sustrato",
-      ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
-    }
-  ], [t])
-  
-  const [mediciones, setMediciones] = useState<MedicionData[]>([])
-  
-  // Mediciones usadas exclusivamente para el análisis detallado (modal grande)
-  const [detailedMediciones, setDetailedMediciones] = useState<MedicionData[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [entidades, setEntidades] = useState<any[]>([])
-  const [ubicaciones, setUbicaciones] = useState<any[]>([])
-  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false)
-  const [isModalExpanded, setIsModalExpanded] = useState(false)
+  // Estados para datos del sistema
   const [metricas, setMetricas] = useState<any[]>([])
   const [tipos, setTipos] = useState<any[]>([])
   const [sensores, setSensores] = useState<any[]>([])
+  const [entidades, setEntidades] = useState<any[]>([])
+  const [ubicaciones, setUbicaciones] = useState<any[]>([])
+  
+  // Estados para mediciones
+  const [mediciones, setMediciones] = useState<MedicionData[]>([])
+  const [detailedMediciones, setDetailedMediciones] = useState<MedicionData[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Estados para UI
+  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false)
+  const [isModalExpanded, setIsModalExpanded] = useState(false)
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null)
   const [selectedMetricForAnalysis, setSelectedMetricForAnalysis] = useState<MetricConfig | null>(null)
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
@@ -227,6 +285,48 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
+  
+  // Generar métricas dinámicamente desde los datos cargados del backend
+  // Si no hay métricas cargadas, usar un conjunto mínimo por defecto
+  const getTranslatedMetrics = useMemo((): MetricConfig[] => {
+    if (!metricas || metricas.length === 0) {
+      // Fallback a métricas por defecto si no se cargaron del backend
+      return [
+        {
+          id: "temperatura",
+          title: t('dashboard.metrics.temperature') || 'Temperatura',
+          color: "#f59e0b",
+          unit: "°C",
+          dataKey: "temperatura",
+          description: "Temperatura del suelo/sustrato",
+          ranges: { min: 15, max: 35, optimal: [20, 28] }
+        },
+        {
+          id: "humedad",
+          title: t('dashboard.metrics.humidity') || 'Humedad',
+          color: "#3b82f6",
+          unit: "%",
+          dataKey: "humedad",
+          description: "Humedad relativa del suelo",
+          ranges: { min: 40, max: 90, optimal: [60, 75] }
+        },
+        {
+          id: "conductividad",
+          title: t('dashboard.metrics.electroconductivity') || 'Electroconductividad',
+          color: "#10b981",
+          unit: "uS/cm",
+          dataKey: "conductividad",
+          description: "Conductividad eléctrica del sustrato",
+          ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
+        }
+      ];
+    }
+
+    // Transformar métricas del backend a formato MetricConfig
+    return metricas
+      .filter((m: any) => m.statusid === 1) // Solo métricas activas
+      .map((m: any) => transformBackendMetricaToConfig(m, t));
+  }, [metricas, t])
   
   // Helper para obtener etiqueta de serie de datos (agrupación inteligente)
   const getSeriesLabel = useCallback((medicion: any) => {
