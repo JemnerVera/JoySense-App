@@ -153,9 +153,18 @@ function getMetricInfoFromId(metricaid: number): { nombre: string; unidad: strin
   return metricMap[metricaid] || { nombre: 'desconocida', unidad: '' }
 }
 
-interface MeasurementPoint {
-  name: string;
-  ids: number[];
+interface MetricConfig {
+  id: string
+  title: string
+  color: string
+  unit: string
+  dataKey: string
+  description: string
+  ranges: {
+    min: number
+    max: number
+    optimal: [number, number]
+  }
 }
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
@@ -195,6 +204,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   ], [t])
   
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
+  
   // Mediciones usadas exclusivamente para el análisis detallado (modal grande)
   const [detailedMediciones, setDetailedMediciones] = useState<MedicionData[]>([])
   const [loading, setLoading] = useState(false)
@@ -214,9 +224,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
-  const [measurementPoints, setMeasurementPoints] = useState<MeasurementPoint[]>([])
-  const [selectedPointName, setSelectedPointName] = useState<string | null>(null)
-  const [loadingLocalizaciones, setLoadingLocalizaciones] = useState(false)
   
   // Helper para obtener etiqueta de serie de datos (agrupación inteligente)
   const getSeriesLabel = useCallback((medicion: any) => {
@@ -245,75 +252,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       sensorLabel = `${tipoName} - ${sensorName}`
     }
 
-    // Si estamos filtrando por un punto específico (agrupado por nombre), 
-    // solo mostramos el tipo/sensor para que el gráfico sea más legible.
-    if (selectedPointName && locName === selectedPointName) {
-      return sensorLabel
-    }
-    
     // Si no hay punto seleccionado, mostrar Localización + Tipo/Sensor
     return `${locName} (${sensorLabel})`
-  }, [tipos, sensores, selectedPointName])
+  }, [tipos, sensores])
 
   const selectedPointIds = useMemo(() => {
-    return measurementPoints.find(p => p.name === selectedPointName)?.ids || [];
-  }, [measurementPoints, selectedPointName]);
+    return [];
+  }, []);
   
   // Efecto para manejar cambios en selectedNode
   useEffect(() => {
-    if (selectedNode) {
-      // Nodo seleccionado cambió
-    } else {
-      // Limpiar localizaciones cuando no hay nodo seleccionado
-      setMeasurementPoints([]);
-      setSelectedPointName(null);
+    if (!selectedNode) {
+      // Limpiar estado cuando no hay nodo seleccionado
     }
   }, [selectedNode])
-
-  // Cargar localizaciones cuando cambia el nodo seleccionado
-  useEffect(() => {
-    if (!selectedNode?.nodoid) return;
-
-    const fetchLocalizaciones = async () => {
-      setLoadingLocalizaciones(true);
-      try {
-        const data = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid);
-        const activeLocalizaciones = data.filter((l: any) => l.statusid === 1);
-        
-        // Agrupar por nombre de localización (campo 'localizacion')
-        const pointsMap = new Map<string, number[]>();
-        activeLocalizaciones.forEach((loc: any) => {
-          const name = loc.localizacion;
-          if (!pointsMap.has(name)) {
-            pointsMap.set(name, []);
-          }
-          pointsMap.get(name)?.push(loc.localizacionid);
-        });
-
-        const points: MeasurementPoint[] = Array.from(pointsMap.entries()).map(([name, ids]) => ({
-          name,
-          ids
-        }));
-
-        setMeasurementPoints(points);
-        
-        // Auto-seleccionar si solo hay un punto físico (agrupado)
-        if (points.length === 1) {
-          setSelectedPointName(points[0].name);
-        } else if (points.length > 1) {
-          setSelectedPointName(null);
-        } else {
-          setSelectedPointName(null);
-        }
-      } catch (err) {
-        console.error('[ModernDashboard] Error loading localizations:', err);
-      } finally {
-        setLoadingLocalizaciones(false);
-      }
-    };
-
-    fetchLocalizaciones();
-  }, [selectedNode?.nodoid])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
   
@@ -404,7 +356,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           try {
             const data = await JoySenseService.getMediciones({
               nodoid: selectedNode.nodoid,
-              localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
               startDate: startDateFormatted,
               endDate: endDateFormatted,
               limit: DATA_LIMITS.RANGE_SELECTED
@@ -446,7 +397,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             try {
               const data = await JoySenseService.getMediciones({
                 nodoid: selectedNode.nodoid,
-                localizacionId: selectedPointIds.length > 0 ? selectedPointIds.join(',') : undefined,
                 startDate: startDateStr,
                 endDate: endDateStr,
                 limit: range.limit
@@ -637,7 +587,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setLoading(false)
       }
     }
-  }, [filters.entidadId, filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds])
+  }, [filters.entidadId, filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid])
 
   // Crear array de dependencias estable para evitar warnings de React
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
@@ -647,8 +597,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       filters.entidadId, 
       filters.startDate,
       filters.endDate,
-      selectedNode?.nodoid, 
-      selectedPointIds
+      selectedNode?.nodoid
       // CRÍTICO: NO incluir loadMediciones aquí
       // Es una función callback que cambia cuando sus dependencias cambian
       // Esto causaría un ciclo infinito
@@ -659,7 +608,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       deps.push(filters.ubicacionId)
     }
     return deps
-  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedPointIds, selectedNode])
+  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
@@ -2410,7 +2359,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           const localizaciones = localizacionesPorNodo.get(selectedNode.nodoid)
                           // Usar un Set para asegurar que no haya nombres duplicados en la visualización
                           const uniqueLocalizaciones = Array.from(new Set(localizaciones || []))
-                          const nameToShow = selectedPointName || (uniqueLocalizaciones.length > 0 ? uniqueLocalizaciones.join(', ') : null)
+                          const nameToShow = (uniqueLocalizaciones.length > 0 ? uniqueLocalizaciones.join(', ') : null)
                           return nameToShow ? (
                             <div className="truncate pl-2">
                               <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {nameToShow}
@@ -3173,7 +3122,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                         {selectedNode?.nodo || 'Nodo'}
-                        {selectedPointName && ` - ${selectedPointName}`}
                         {comparisonNode && ` vs ${comparisonNode.nodo}`}
                       </h3>
                     </div>
