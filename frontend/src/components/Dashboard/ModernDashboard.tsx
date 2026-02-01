@@ -6,63 +6,17 @@ import SupabaseRPCService from "../../services/supabase-rpc"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
-
-// Constantes para límites de datos
-const DATA_LIMITS = {
-  RANGE_SELECTED: 20000,
-  HOURS_24: 1000,
-  DAYS_7: 5000,
-  DAYS_14: 10000,
-  DAYS_30: 20000,
-  LAST_HOURS: 5000
-} as const
-
-interface ModernDashboardProps {
-  filters: {
-    entidadId: number | null
-    ubicacionId: number | null
-    startDate: string
-    endDate: string
-  }
-  onFiltersChange: (filters: any) => void
-  // Callbacks para actualizar filtros del header
-  onEntidadChange?: (entidad: any) => void
-  onUbicacionChange?: (ubicacion: any) => void
-}
-
-interface MedicionData {
-  medicionid: number
-  localizacionid: number
-  fecha: string
-  medicion: number
-  usercreatedid?: number
-  datecreated?: string
-  // Datos expandidos desde localizacion
-  localizacion?: {
-    localizacionid: number
-    localizacion: string
-    nodoid: number
-    metricaid: number
-    sensorid: number
-    latitud?: number
-    longitud?: number
-    nodo?: { nodoid: number; nodo: string }
-    metrica?: { metricaid: number; metrica: string; unidad: string }
-    sensor?: { 
-      sensorid: number; 
-      sensor: string; 
-      nombre: string; 
-      tipoid: number;
-      tipo?: { tipoid: number; tipo: string } 
-    }
-  }
-  // Campos legacy para compatibilidad - usados para indexación
-  metricaid: number
-  nodoid: number
-  sensorid: number
-  tipoid: number
-  ubicacionid: number
-}
+import { useMedicionesLoader, useSystemData } from "./hooks"
+import {
+  DATA_LIMITS,
+  getMetricColor,
+  getMetricRanges,
+  normalizeMetricDataKey,
+  getMetricIdFromDataKey,
+  getMetricInfoFromId,
+  matchesMetricId
+} from "./utils/metricUtils"
+import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
 
 // Helper para transformar datos del backend al formato MedicionData con campos legacy
 function transformMedicionData(data: any[]): MedicionData[] {
@@ -86,20 +40,6 @@ function transformMedicionData(data: any[]): MedicionData[] {
       ubicacionid: Number(m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0)
     }
   })
-}
-
-interface MetricConfig {
-  id: string
-  title: string
-  color: string
-  unit: string
-  dataKey: string
-  description: string
-  ranges: {
-    min: number
-    max: number
-    optimal: [number, number]
-  }
 }
 
 // Mapeo de colores por nombre de métrica (puede extenderse por empresa)
@@ -136,46 +76,8 @@ const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; optimal: [
   'pressure': { min: 900, max: 1100, optimal: [1000, 1020] },
 };
 
-// Función para obtener color de métrica según nombre
-function getMetricColor(metricaName: string): string {
-  const normalizedName = metricaName.toLowerCase().trim();
-  return METRIC_COLOR_MAP[normalizedName] || '#94a3b8'; // Color gris por defecto
-}
-
-// Función para obtener rangos de métrica según nombre
-function getMetricRanges(metricaName: string): { min: number; max: number; optimal: [number, number] } {
-  const normalizedName = metricaName.toLowerCase().trim();
-  return METRIC_RANGES_MAP[normalizedName] || { min: 0, max: 100, optimal: [20, 80] };
-}
-
-// Función para normalizar nombre de métrica a dataKey estándar
-function normalizeMetricDataKey(metricaName: string): string {
-  const normalized = metricaName.toLowerCase().trim();
-  
-  // Mapear variaciones a dataKey estándar
-  const keyMap: { [key: string]: string } = {
-    'temperatura': 'temperatura',
-    'temp': 'temperatura',
-    'humedad': 'humedad',
-    'humidity': 'humedad',
-    'conductividad': 'conductividad',
-    'electroconductividad': 'conductividad', // IMPORTANTE: normalizar a conductividad
-    'conductivity': 'conductividad',
-    'ec': 'conductividad',
-    'ph': 'ph',
-    'luz': 'luz',
-    'light': 'luz',
-    'co2': 'co2',
-    'presion': 'presion',
-    'pressure': 'presion',
-  };
-  
-  return keyMap[normalized] || normalized;
-}
-
 // Función pura: convertir Metrica del backend a MetricConfig
 function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
-  const metricaName = (metrica.metrica || '').toLowerCase().trim();
   const normalizedDataKey = normalizeMetricDataKey(metrica.metrica);
   
   return {
@@ -187,74 +89,6 @@ function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
     description: `Medición de ${metrica.metrica}`,
     ranges: getMetricRanges(metrica.metrica),
   };
-}
-
-// Función pura: obtener metricId desde dataKey (extraída fuera del componente)
-function getMetricIdFromDataKey(dataKey: string): number {
-  const metricMap: { [key: string]: number } = {
-    'temperatura': 1,
-    'humedad': 2,
-    'conductividad': 3
-  }
-  return metricMap[dataKey] || 1
-}
-
-// Función pura: verificar si un nombre de métrica coincide con un ID de métrica
-function matchesMetricId(metricName: string, metricId: string): boolean {
-  const cleanedName = metricName
-    .replace(/\r\n/g, ' ')
-    .replace(/\n/g, ' ')
-    .replace(/\r/g, ' ')
-    .trim()
-    .toLowerCase()
-
-  if (metricId === 'temperatura' && (
-    cleanedName.includes('temperatura') ||
-    cleanedName.includes('temp')
-  )) {
-    return true
-  }
-
-  if (metricId === 'humedad' && (
-    cleanedName.includes('humedad') ||
-    cleanedName.includes('humidity')
-  )) {
-    return true
-  }
-
-  if (metricId === 'conductividad' && (
-    cleanedName.includes('conductividad') ||
-    cleanedName.includes('electroconductividad') ||
-    cleanedName.includes('conductivity')
-  )) {
-    return true
-  }
-
-  return false
-}
-
-// Función pura: obtener nombre y unidad de métrica desde metricaid
-function getMetricInfoFromId(metricaid: number): { nombre: string; unidad: string } {
-  const metricMap: { [key: number]: { nombre: string; unidad: string } } = {
-    1: { nombre: 'temperatura', unidad: '°C' },
-    2: { nombre: 'humedad', unidad: '%' },
-    3: { nombre: 'conductividad', unidad: 'uS/cm' }
-  }
-  return metricMap[metricaid] || { nombre: 'desconocida', unidad: '' }
-}
-
-interface MetricConfig {
-  id: string
-  title: string
-  color: string
-  unit: string
-  dataKey: string
-  description: string
-  ranges: {
-    min: number
-    max: number
-    optimal: [number, number]
-  }
 }
 
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
