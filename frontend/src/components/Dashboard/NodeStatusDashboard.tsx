@@ -414,11 +414,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const loadMediciones = async () => {
       try {
         setLoading(true);
-        // Si hay métrica seleccionada, cargar solo esa métrica
-        // Si no hay métrica seleccionada, cargar TODAS las mediciones (sin filtro)
+        // SIEMPRE cargar TODAS las mediciones sin filtro de métrica
+        // El selector de métrica solo es para referencia visual
         const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
-          metricaid: selectedMetricId || undefined,
+          // NO pasar metricaid - queremos TODAS las métricas
           startDate: dateRange.start,
           endDate: dateRange.end
         });
@@ -549,8 +549,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const availableMetrics = useMemo(() => {
     return Object.keys(statistics).map(id => ({
       id: parseInt(id),
-      name: metricNamesMap[parseInt(id)]
-    })).sort((a, b) => a.name.localeCompare(b.name));
+      name: metricNamesMap[parseInt(id)] || `Métrica ${id}`
+    })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [statistics, metricNamesMap]);
 
   // Preparar datos para los minigráficos de todas las métricas
@@ -614,20 +614,14 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     });
 
     return sparklines;
-  }, [mediciones, selectedNode, tipos, sensores, getSeriesLabel]);
+  }, [mediciones, selectedNode, dateRange]);
 
-  // Preparar datos para el gráfico de evolución (agrupado por sensor para la métrica seleccionada)
-  // Replicando la lógica robusta de ModernDashboard.processChartData
-  const sensorChartData = useMemo(() => {
+  // Datos para gráfico de evolución (todas las métricas, no solo la seleccionada)
+  const allMetricsChartData = useMemo(() => {
     if (!selectedNode || mediciones.length === 0) return [];
 
-    // 1. Filtrar mediciones por la métrica seleccionada (si existe)
-    // Si no hay métrica seleccionada, mostrar TODAS las mediciones
-    const filteredMediciones = selectedMetricId
-      ? mediciones.filter(m => 
-          (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId
-        )
-      : mediciones;
+    // Mostrar TODAS las mediciones
+    const filteredMediciones = mediciones;
 
     if (filteredMediciones.length === 0) {
       return [];
@@ -723,7 +717,113 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     }).filter((e: any) => e !== null);
 
     return finalData;
-  }, [mediciones, selectedNode, selectedMetricId, dateRange, tipos, sensores, getSeriesLabel]);
+  }, [mediciones, selectedNode, dateRange]);
+
+  // Datos para gráfico de evolución - filtra por métrica seleccionada si existe
+  const sensorChartData = useMemo(() => {
+    if (!selectedNode || mediciones.length === 0) return [];
+
+    // Si NO hay métrica seleccionada, mostrar TODAS las mediciones
+    // Si hay métrica seleccionada, mostrar solo esa métrica
+    const filteredMediciones = selectedMetricId
+      ? mediciones.filter(m => (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId)
+      : mediciones;
+
+    if (filteredMediciones.length === 0) {
+      return [];
+    }
+
+    // Determinar granularidad basada en el rango de fechas
+    const start = new Date(dateRange.start).getTime();
+    const end = new Date(dateRange.end).getTime();
+    const timeSpan = end - start;
+    const spanHours = timeSpan / (1000 * 60 * 60);
+    const spanDays = spanHours / 24;
+
+    let useDays = spanDays >= 2;
+    let useHours = !useDays && spanHours >= 48;
+
+    // Obtener TODAS las localizacionesID únicas en los datos filtrados
+    const localizacionesEnDatos = Array.from(
+      new Set(filteredMediciones.map((m: any) => m.localizacionid || m.localizacion?.localizacionid).filter((id: any) => id != null))
+    ) as (string | number)[];
+
+    // Agrupar datos por localizacionid y tiempo
+    const grouped: { [locid: string]: any[] } = {};
+    (localizacionesEnDatos as (string | number)[]).forEach((id: string | number) => { grouped[String(id)] = []; });
+
+    filteredMediciones.forEach((m: any) => {
+      const locid = String(m.localizacionid || m.localizacion?.localizacionid);
+      const date = new Date(m.fecha);
+      
+      let timeKey: string;
+      if (useDays) {
+        timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else if (useHours) {
+        timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
+      } else {
+        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
+        timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
+      }
+
+      const label = m.seriesLabel || getSeriesLabel(m);
+      const existing = (grouped[locid] || []).find((p: any) => p.time === timeKey);
+      
+      const valor = m.medicion || m.valor;
+      if (valor != null && !isNaN(valor)) {
+        if (existing) {
+          existing.value = (existing.value * existing.count + parseFloat(valor)) / (existing.count + 1);
+          existing.count += 1;
+        } else {
+          grouped[locid].push({ 
+            timestamp: date.getTime(), 
+            time: timeKey, 
+            value: parseFloat(valor), 
+            count: 1, 
+            label 
+          });
+        }
+      }
+    });
+
+    // Colectar todos los timestamps únicos
+    const allTimestamps = new Set<number>();
+    Object.values(grouped).forEach((list: any) => 
+      list.forEach((p: any) => {
+        const date = new Date(p.timestamp);
+        let ts: number;
+        if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
+        allTimestamps.add(ts);
+      })
+    );
+
+    // Formatear para Recharts
+    const sortedTimes = Array.from(allTimestamps).sort((a, b) => a - b).map((ts: number) => {
+      const date = new Date(ts);
+      if (useDays) return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (useHours) return `${String(date.getHours()).padStart(2, '0')}:00`;
+      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    });
+
+    const finalData = sortedTimes.map((time: string) => {
+      const entry: any = { fecha: time };
+      let hasValue = false;
+      
+      (localizacionesEnDatos as (string | number)[]).forEach((id: string | number) => {
+        const point = (grouped[String(id)] || []).find((p: any) => p.time === time);
+        if (point && point.value !== null) {
+          entry[point.label] = point.value;
+          hasValue = true;
+        }
+      });
+      
+      return hasValue ? entry : null;
+    }).filter((e: any) => e !== null);
+
+    return finalData;
+  }, [mediciones, selectedNode, selectedMetricId, dateRange]);
 
   // Datos para gráfico de alertas por criticidad
   const alertasByCriticidad = useMemo(() => {
