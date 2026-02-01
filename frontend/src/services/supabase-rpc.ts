@@ -654,12 +654,24 @@ export class SupabaseRPCService {
    */
   static async getMedicionesNodoDetallado(params: {
     nodoid: number;
+    metricaid?: number;
     startDate: string;
     endDate: string;
   }): Promise<any[]> {
     try {
       if (!params.nodoid || params.nodoid <= 0) {
         throw new Error('nodoid es requerido y debe ser > 0');
+      }
+
+      // Validar que el rango de fechas no exceda 90 días
+      if (params.startDate && params.endDate) {
+        const startDate = new Date(params.startDate);
+        const endDate = new Date(params.endDate);
+        const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+        
+        if (daysDiff > 90) {
+          throw new Error('El intervalo máximo permitido es 90 días');
+        }
       }
 
       if (this.DEBUG) {
@@ -671,7 +683,8 @@ export class SupabaseRPCService {
         .rpc('fn_get_mediciones_nodo_detallado', {
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
+          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null,
+          p_metricaid: params.metricaid || null
         });
 
       if (error) {
@@ -692,6 +705,59 @@ export class SupabaseRPCService {
       return data;
     } catch (err: any) {
       console.error('[SupabaseRPCService] Error en getMedicionesNodoDetallado:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene SOLO las métricas disponibles para un nodo en un rango de fechas
+   * Sin cargar las mediciones, solo la metadata de métricas
+   * @param params Parámetros de la consulta
+   * @returns Array de métricas disponibles con id y nombre
+   */
+  static async getMetricasDisponiblesPorNodo(params: {
+    nodoid: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ id: number; nombre: string }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid es requerido y debe ser > 0');
+      }
+
+      if (this.DEBUG) {
+        console.log('[SupabaseRPCService] getMetricasDisponiblesPorNodo:', params);
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_metricas_disponibles_nodo', {
+          p_nodoid: params.nodoid,
+          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
+          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
+        });
+
+      if (error) {
+        // Si la función aún no existe, retornar array vacío
+        if (error.message.includes('does not exist')) {
+          console.warn(
+            '[SupabaseRPCService] fn_get_metricas_disponibles_nodo no existe aún'
+          );
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        id: item.id,
+        nombre: item.nombre
+      }));
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getMetricasDisponiblesPorNodo:', err);
       throw err;
     }
   }
