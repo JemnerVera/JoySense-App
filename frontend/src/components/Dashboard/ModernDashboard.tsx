@@ -2046,6 +2046,72 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     return filtered
   }, [getTranslatedMetrics, mediciones, detailedMediciones, selectedNode])
 
+  // ========== OPTIMIZACIONES DE RENDERIZADO ==========
+  
+  // 1. Cachear datos de minigráficos para evitar recálculos innecesarios
+  const memoizedChartData = useMemo(() => {
+    const cache: { [key: string]: any[] } = {}
+    
+    if (!selectedNode || !mediciones.length) {
+      return cache
+    }
+    
+    // Obtener métricas con datos del nodo seleccionado
+    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
+    
+    // Obtener nombres únicos de métricas en los datos
+    const metricNamesInData = new Set<string>()
+    nodeMediciones.forEach(m => {
+      const rawName = m.localizacion?.metrica?.metrica || ''
+      const cleanName = rawName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
+      if (cleanName) metricNamesInData.add(cleanName)
+    })
+    
+    // Calcular datos para métricas que tienen datos
+    const dataKeysToCheck = ['temperatura', 'humedad', 'conductividad']
+    dataKeysToCheck.forEach(dataKey => {
+      // Verificar si hay datos para este dataKey
+      let hasData = false
+      for (const metricName of Array.from(metricNamesInData)) {
+        if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) {
+          hasData = true
+          break
+        }
+        if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) {
+          hasData = true
+          break
+        }
+        if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) {
+          hasData = true
+          break
+        }
+      }
+      
+      if (hasData) {
+        cache[dataKey] = processChartData(dataKey, false)
+      }
+    })
+    
+    return cache
+  }, [mediciones, selectedNode?.nodoid, filters?.startDate, filters?.endDate])
+
+  // 2. Cachear datos del gráfico detallado - evitar recálculos múltiples
+  const memoizedDetailedChartData = useMemo(() => {
+    const cache: { [key: string]: any[] } = {}
+    
+    if (!selectedNode || !detailedMediciones.length || !selectedDetailedMetric) {
+      return cache
+    }
+    
+    // Usar los mismos parámetros que se usarían en el JSX
+    cache[selectedDetailedMetric] = processChartData(selectedDetailedMetric, true)
+    
+    return cache
+  }, [detailedMediciones, selectedNode?.nodoid, selectedDetailedMetric, detailedStartDate, detailedEndDate])
+
+  // ========== FIN OPTIMIZACIONES ==========
+
+
   // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
   // Los datos se cargan en rangos de 1, 7, 14, 30 días, así que consideramos "recientes" los últimos 30 días
   const hasMetricData = useCallback((dataKey: string) => {
@@ -2205,14 +2271,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                   <div className="h-32 mb-4">
                     {hasData ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={processChartData(metric.dataKey)}>
+                        <LineChart data={memoizedChartData[metric.dataKey] || []}>
                           <XAxis
                             dataKey="time"
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 10, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
                             interval={(() => {
-                              const chartData = processChartData(metric.dataKey)
+                              const chartData = memoizedChartData[metric.dataKey] || []
                               // Mostrar máximo 4-5 etiquetas en gráficos pequeños
                               if (chartData.length <= 5) return 0
                               if (chartData.length <= 10) return 1
@@ -2221,7 +2287,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                           />
                           <YAxis hide domain={['auto', 'auto']} />
                           {(() => {
-                            const chartData = processChartData(metric.dataKey)
+                            const chartData = memoizedChartData[metric.dataKey] || []
                             if (chartData.length === 0) return null
                             
                             // Obtener TODAS las claves únicas de series (excluyendo 'time') de todo el set de datos
@@ -3200,7 +3266,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
                         );
                       }
                       
-                      const chartData = processChartData(selectedDetailedMetric, true, granularity);
+                      const chartData = memoizedDetailedChartData[selectedDetailedMetric] || [];
                       // Verificar que hay datos del nodo principal
                       if (chartData.length === 0) {
                         console.warn('⚠️ No hay datos del nodo principal para el rango seleccionado')
