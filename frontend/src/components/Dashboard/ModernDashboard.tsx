@@ -17,6 +17,13 @@ import {
   getMetricInfoFromId,
   matchesMetricId
 } from "./utils/metricUtils"
+import {
+  hasMetricData as hasMetricDataHelper,
+  getCurrentValue as getCurrentValueHelper,
+  getStatus as getStatusHelper,
+  hasRecentData as hasRecentDataHelper,
+  getSeriesLabel as getSeriesLabelHelper
+} from "./utils/dashboardHelpers"
 import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
 
 // Helper para transformar datos del backend al formato MedicionData con campos legacy
@@ -164,34 +171,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [metricas, t])
   
   // Helper para obtener etiqueta de serie de datos (agrupación inteligente)
-  const getSeriesLabel = useCallback((medicion: any) => {
-    // Para datos agregados (sin sensorid específico)
-    if (!medicion.sensorid || medicion.sensorid === 0) {
-      // Retornar solo el nombre de la métrica para datos agregados
-      const metricName = medicion.localizacion?.metrica?.metrica || 'Métrica'
-      return metricName.charAt(0).toUpperCase() + metricName.slice(1) // Capitalizar primera letra
-    }
-    
-    const locName = medicion.localizacion?.localizacion || `Punto ${medicion.localizacionid}`
-    
-    // Obtener información del sensor desde el estado global
-    const sensorId = medicion.localizacion?.sensorid || medicion.sensorid
-    const sensorInfo = sensores.find(s => s.sensorid === sensorId)
-    const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
-    
-    // Obtener información del tipo
-    const tipoId = sensorInfo?.tipoid || medicion.tipoid
-    const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
-    const tipoName = tipoInfo?.tipo || 'Sensor'
-    
-    // Construir etiqueta descriptiva: "Tipo - Sensor"
-    let sensorLabel = tipoName
-    if (sensorName && sensorName !== tipoName) {
-      sensorLabel = `${tipoName} - ${sensorName}`
-    }
-
-    // Si no hay punto seleccionado, mostrar Localización + Tipo/Sensor
-    return `${locName} (${sensorLabel})`
+  const getSeriesLabel = useCallback((medicion: MedicionData) => {
+    return getSeriesLabelHelper(medicion, sensores, tipos)
   }, [tipos, sensores])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
@@ -1912,72 +1893,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
 
   // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
-  // Los datos se cargan en rangos de 1, 7, 14, 30 días, así que consideramos "recientes" los últimos 30 días
   const hasMetricData = useCallback((dataKey: string) => {
-    if (!mediciones.length || !selectedNode) {
-      return false
-    }
-    
-    // Buscar métricas que coincidan con el dataKey
-    const nodeMediciones = mediciones.filter(m => {
-      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
-      // REMOVIDO: No filtrar por punto seleccionado
-      return matchNode;
-    })
-    
-    if (nodeMediciones.length === 0) {
-      // Log only once per metric to avoid console flood
-      if (Math.random() < 0.01) {
-        console.log(`[ModernDashboard] hasMetricData: No measurements for node ${selectedNode.nodoid} in ${mediciones.length} total measurements`);
-      }
-    }
-    
-    // Buscar por nombre de métrica en los datos expandidos
-    const matchingMediciones = nodeMediciones.filter(m => {
-      // Limpiar espacios, saltos de línea y caracteres especiales
-      const rawMetricName = m.localizacion?.metrica?.metrica || ''
-      const metricName = rawMetricName
-        .replace(/\r\n/g, ' ')
-        .replace(/\n/g, ' ')
-        .replace(/\r/g, ' ')
-        .trim()
-        .toLowerCase()
-      
-      if (dataKey === 'temperatura' && (
-        metricName.includes('temperatura') || metricName.includes('temp')
-      )) return true
-      
-      if (dataKey === 'humedad' && (
-        metricName.includes('humedad') || metricName.includes('humidity')
-      )) return true
-      
-      if (dataKey === 'conductividad' && (
-        metricName.includes('conductividad') || 
-        metricName.includes('electroconductividad') ||
-        metricName.includes('conductivity')
-      )) return true
-      
-      return false
-    })
-    
-    if (!matchingMediciones.length) {
-      return false
-    }
-    
-    // Verificar si hay datos recientes (últimos 30 días)
-    const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    
-    // Ordenar por fecha descendente (más recientes primero)
-    const sortedMediciones = [...matchingMediciones].sort((a, b) => 
-      new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-    )
-    
-    // Verificar si la medición más reciente está dentro de los últimos 30 días
-    const mostRecentDate = new Date(sortedMediciones[0].fecha)
-    const hasRecentData = mostRecentDate >= thirtyDaysAgo
-    
-    return hasRecentData
+    return hasMetricDataHelper(dataKey, mediciones, selectedNode)
   }, [mediciones, selectedNode])
 
   return (
