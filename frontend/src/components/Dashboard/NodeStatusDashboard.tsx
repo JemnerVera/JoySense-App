@@ -656,7 +656,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       } else if (useHours) {
         timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
       } else {
-        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
+        // Usar 30 minutos para intervalos pequeños
+        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
         timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
       }
 
@@ -688,7 +689,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         let ts: number;
         if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
         else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
-        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 30) * 30).getTime();
         allTimestamps.add(ts);
       })
     );
@@ -740,8 +741,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const spanHours = timeSpan / (1000 * 60 * 60);
     const spanDays = spanHours / 24;
 
+    // Lógica mejorada de granularidad:
+    // - 2+ días: usar días
+    // - 1-2 días: usar horas
+    // - < 1 día: usar 30 minutos (en lugar de 15)
     let useDays = spanDays >= 2;
-    let useHours = !useDays && spanHours >= 48;
+    let useHours = !useDays && spanHours >= 1;
+    let use30Min = !useDays && !useHours;
 
     // Obtener TODAS las localizacionesID únicas en los datos filtrados
     const localizacionesEnDatos = Array.from(
@@ -762,7 +768,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       } else if (useHours) {
         timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
       } else {
-        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
+        // Usar 30 minutos para intervalos pequeños
+        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
         timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
       }
 
@@ -794,7 +801,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         let ts: number;
         if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
         else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
-        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 30) * 30).getTime();
         allTimestamps.add(ts);
       })
     );
