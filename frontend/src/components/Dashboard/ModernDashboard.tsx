@@ -102,37 +102,6 @@ interface MetricConfig {
   }
 }
 
-// Configuración base de métricas (se filtrará dinámicamente)
-const baseMetrics: MetricConfig[] = [
-  {
-    id: "temperatura",
-    title: "Temperatura",
-    color: "#f59e0b",
-    unit: "°C",
-    dataKey: "temperatura",
-    description: "Temperatura del suelo/sustrato",
-    ranges: { min: 15, max: 35, optimal: [20, 28] }
-  },
-  {
-    id: "humedad",
-    title: "Humedad",
-    color: "#3b82f6",
-    unit: "%",
-    dataKey: "humedad",
-    description: "Humedad relativa del suelo",
-    ranges: { min: 40, max: 90, optimal: [60, 75] }
-  },
-  {
-    id: "conductividad",
-    title: "Electroconductividad",
-    color: "#10b981",
-    unit: "uS/cm",
-    dataKey: "conductividad",
-    description: "Conductividad eléctrica del sustrato",
-    ranges: { min: 0.5, max: 2.5, optimal: [1.0, 1.8] }
-  }
-]
-
 // Función pura: obtener metricId desde dataKey (extraída fuera del componente)
 function getMetricIdFromDataKey(dataKey: string): number {
   const metricMap: { [key: string]: number } = {
@@ -195,7 +164,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     {
       id: "conductividad",
       title: t('dashboard.metrics.electroconductivity'),
-      color: "#3b82f6",
+      color: "#10b981",
       unit: "uS/cm",
       dataKey: "conductividad",
       description: "Conductividad eléctrica del sustrato",
