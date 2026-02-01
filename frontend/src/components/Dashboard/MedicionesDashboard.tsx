@@ -20,6 +20,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [sensores, setSensores] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
 
   // Estados de filtro
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
@@ -56,31 +57,124 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadInitialData();
   }, [showError]);
 
-  // Cargar mediciones cuando cambia nodo o rango de fechas
+  // Validar rango máximo de 90 días
+  const validateDateRange = useCallback((start: string, end: string): { start: string; end: string } | null => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+    
+    if (daysDiff > 90) {
+      showError('Límite excedido', 'El intervalo máximo permitido es 90 días. Se ajustará automáticamente.');
+      // Ajustar automáticamente: mantener endDate, ajustar startDate
+      const newStartDate = new Date(endDate);
+      newStartDate.setDate(newStartDate.getDate() - 90);
+      return {
+        start: newStartDate.toISOString().split('T')[0],
+        end: end
+      };
+    }
+    return null;
+  }, [showError]);
+
+  // Cargar métricas disponibles cuando cambia nodo o rango de fechas
   useEffect(() => {
-    if (!selectedNode?.nodoid) return;
+    if (!selectedNode?.nodoid) {
+      setAvailableMetrics([]);
+      setSelectedMetricId(null);
+      setMediciones([]);
+      return;
+    }
+
+    // Validar rango de fechas
+    const adjustedRange = validateDateRange(dateRange.start, dateRange.end);
+    if (adjustedRange) {
+      setDateRange(adjustedRange);
+      return;
+    }
+
+    const loadMetricas = async () => {
+      try {
+        setLoading(true);
+        const metrics = await SupabaseRPCService.getMetricasDisponiblesPorNodo({
+          nodoid: selectedNode.nodoid,
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        });
+
+        // Transformar { id, nombre } a { id, name } para que coincida con el estado
+        const transformedMetrics = (metrics || []).map(m => ({
+          id: m.id,
+          name: m.nombre
+        }));
+        
+        setAvailableMetrics(transformedMetrics);
+        
+        // Seleccionar primera métrica por defecto si hay métricas disponibles
+        if (transformedMetrics && transformedMetrics.length > 0) {
+          if (!selectedMetricId || !transformedMetrics.find(m => m.id === selectedMetricId)) {
+            setSelectedMetricId(transformedMetrics[0].id);
+          }
+        } else {
+          setSelectedMetricId(null);
+          setMediciones([]);
+        }
+      } catch (err: any) {
+        console.error('Error cargando métricas:', err);
+        if (err.message && err.message.includes('90 días')) {
+          showError('Error', err.message);
+        } else {
+          showError('Error', 'Error al cargar métricas disponibles');
+        }
+        setAvailableMetrics([]);
+        setSelectedMetricId(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMetricas();
+  }, [selectedNode, dateRange.start, dateRange.end, showError, validateDateRange]);
+
+  // Cargar mediciones solo cuando cambia métrica seleccionada
+  useEffect(() => {
+    if (!selectedNode?.nodoid || !selectedMetricId) {
+      setMediciones([]);
+      return;
+    }
+
+    // Validar rango de fechas
+    const adjustedRange = validateDateRange(dateRange.start, dateRange.end);
+    if (adjustedRange) {
+      setDateRange(adjustedRange);
+      return;
+    }
 
     const loadMediciones = async () => {
       try {
         setLoading(true);
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
+          metricaid: selectedMetricId,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
 
         setMediciones(data || []);
-        setSelectedMetricId(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error cargando mediciones:', err);
-        showError('Error', 'Error al cargar mediciones');
+        if (err.message && err.message.includes('90 días')) {
+          showError('Error', err.message);
+        } else {
+          showError('Error', 'Error al cargar mediciones');
+        }
+        setMediciones([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadMediciones();
-  }, [selectedNode, dateRange, showError]);
+  }, [selectedNode, selectedMetricId, dateRange.start, dateRange.end, showError, validateDateRange]);
 
   // Filtrar nodos por término de búsqueda
   const filteredNodos = useMemo(() => {
@@ -120,26 +214,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
   }, []);
 
-  // Obtener métricas disponibles
-  const availableMetrics = useMemo(() => {
-    const metricsMap = new Map<number, string>();
-    mediciones.forEach((m: any) => {
-      const metricId = m.metricaid || m.localizacion?.metricaid;
-      const metricName = m.metrica_nombre || m.localizacion?.metrica?.metrica || `Métrica ${metricId}`;
-      if (metricId && !metricsMap.has(metricId)) {
-        metricsMap.set(metricId, metricName);
-      }
-    });
-    
-    return Array.from(metricsMap.entries()).map(([id, name]) => ({ id, name }));
-  }, [mediciones]);
-
-  // Establecer métrica por defecto
-  useEffect(() => {
-    if (availableMetrics.length > 0 && !selectedMetricId) {
-      setSelectedMetricId(availableMetrics[0].id);
-    }
-  }, [availableMetrics, selectedMetricId]);
 
   // Función para obtener etiqueta de serie (sensor)
   const getSeriesLabel = useCallback((medicion: any) => {
@@ -161,17 +235,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const chartData = useMemo(() => {
     if (!selectedMetricId || mediciones.length === 0) return [];
 
-    // Filtrar mediciones por métrica seleccionada
-    const filteredMediciones = mediciones.filter(
-      m => (m.metricaid || m.localizacion?.metricaid) === selectedMetricId
-    );
-
-    if (filteredMediciones.length === 0) return [];
+    // Los datos ya vienen filtrados por métrica desde el backend
 
     // Agrupar por fecha
     const dataMap = new Map<string, any>();
     
-    filteredMediciones.forEach((m: any) => {
+    mediciones.forEach((m: any) => {
       const fecha = new Date(m.fecha);
       const dateKey = `${fecha.getDate()}/${String(fecha.getMonth() + 1).padStart(2, '0')}`;
       
@@ -202,7 +271,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     });
 
     return result;
-  }, [selectedMetricId, mediciones, getSeriesLabel]);
+  }, [mediciones, getSeriesLabel]);
 
   // Obtener todas las series únicas para el gráfico
   const allSeries = useMemo(() => {
@@ -302,7 +371,27 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               <input
                 type="date"
                 value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  const endDate = new Date(dateRange.end);
+                  const startDate = new Date(newStart);
+                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                  
+                  if (daysDiff > 90) {
+                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                    const adjustedStart = new Date(endDate);
+                    adjustedStart.setDate(adjustedStart.getDate() - 90);
+                    setDateRange({ start: adjustedStart.toISOString().split('T')[0], end: dateRange.end });
+                  } else {
+                    setDateRange({ ...dateRange, start: newStart });
+                  }
+                }}
+                max={dateRange.end}
+                min={(() => {
+                  const endDate = new Date(dateRange.end);
+                  endDate.setDate(endDate.getDate() - 90);
+                  return endDate.toISOString().split('T')[0];
+                })()}
                 className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
                 style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
               />
@@ -312,7 +401,27 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               <input
                 type="date"
                 value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                onChange={(e) => {
+                  const newEnd = e.target.value;
+                  const startDate = new Date(dateRange.start);
+                  const endDate = new Date(newEnd);
+                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                  
+                  if (daysDiff > 90) {
+                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                    const adjustedEnd = new Date(startDate);
+                    adjustedEnd.setDate(adjustedEnd.getDate() + 90);
+                    setDateRange({ start: dateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
+                  } else {
+                    setDateRange({ ...dateRange, end: newEnd });
+                  }
+                }}
+                max={(() => {
+                  const startDate = new Date(dateRange.start);
+                  startDate.setDate(startDate.getDate() + 90);
+                  return startDate.toISOString().split('T')[0];
+                })()}
+                min={dateRange.start}
                 className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
                 style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
               />

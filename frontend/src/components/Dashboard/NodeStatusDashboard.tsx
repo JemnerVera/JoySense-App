@@ -263,70 +263,20 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar mediciones detalladas del nodo para garantizar todas las líneas de sensores
-        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
-          nodoid: selectedNode.nodoid,
-          startDate: dateRange.start,
-          endDate: dateRange.end
-        });
+        // Validar que el rango de fechas no exceda 90 días
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+        
+        if (daysDiff > 90) {
+          showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+          setLoading(false);
+          return;
+        }
 
-        // Transformar mediciones detalladas a formato para gráficos
-        // IMPORTANTE: Calcular label aquí para evitar problemas de recreación de funciones
-        const medicionesTransformadas = medicionesDetalladas.map((m: any) => {
-          // getMedicionesNodoDetallado ya viene con estructura anidada de localizacion
-          const sensorId = m.sensorid || m.localizacion?.sensorid;
-          const sensorInfo = sensores.find(s => s.sensorid === sensorId);
-          const sensorName = m.localizacion?.sensor?.sensor || 
-                            sensorInfo?.sensor || 
-                            sensorInfo?.nombre || 
-                            `Sensor ${sensorId}`;
-          
-          const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid;
-          const tipoInfo = tipos.find(t => t.tipoid === tipoId);
-          const tipoName = tipoInfo?.tipo || 'Sensor';
-
-          let label = '';
-          if (sensorName && sensorName !== tipoName) {
-            label = `${tipoName} - ${sensorName}`;
-          } else if (sensorId && sensorId !== tipoId) {
-            label = `${tipoName} (ID: ${sensorId})`;
-          } else {
-            label = tipoName;
-          }
-          
-          return {
-            medicionid: m.medicionid,
-            fecha: m.fecha,
-            medicion: parseFloat(m.medicion || m.valor || 0),
-            metricaid: m.metricaid || m.localizacion?.metricaid,
-            metrica_nombre: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
-            sensorid: sensorId,
-            tipoid: tipoId,
-            localizacionid: m.localizacionid || m.localizacion?.localizacionid,
-            seriesLabel: label,
-            localizacion: m.localizacion || {
-              localizacionid: m.localizacionid,
-              metricaid: m.metricaid,
-              sensorid: sensorId,
-              sensor: {
-                sensorid: sensorId,
-                sensor: sensorName,
-                tipoid: tipoId,
-                tipo: {
-                  tipoid: tipoId,
-                  tipo: tipoName
-                }
-              },
-              metrica: {
-                metricaid: m.metricaid,
-                metrica: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
-                unidad: m.unidad
-              }
-            }
-          };
-        });
-
-        setMediciones(medicionesTransformadas);
+        // Las mediciones se cargarán en un useEffect separado cuando cambie selectedMetricId
+        // Aquí solo cargamos KPIs, alertas, umbrales y localizaciones
+        setMediciones([]);
 
         // Cargar KPIs consolidados (incluye estadísticas y alertas por métrica)
         const kpisData = await SupabaseRPCService.getKPIsNodo({
@@ -443,6 +393,106 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
     loadNodeData();
   }, [selectedNode, dateRange, showError]);
+
+  // Cargar mediciones cuando cambia métrica seleccionada o rango de fechas
+  useEffect(() => {
+    if (!selectedNode?.nodoid || !selectedMetricId) {
+      setMediciones([]);
+      return;
+    }
+
+    // Validar que el rango de fechas no exceda 90 días
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+    
+    if (daysDiff > 90) {
+      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+      return;
+    }
+
+    const loadMediciones = async () => {
+      try {
+        setLoading(true);
+        const medicionesDetalladas = await SupabaseRPCService.getMedicionesNodoDetallado({
+          nodoid: selectedNode.nodoid,
+          metricaid: selectedMetricId,
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        });
+
+        // Transformar mediciones detalladas a formato para gráficos
+        // IMPORTANTE: Calcular label aquí para evitar problemas de recreación de funciones
+        const medicionesTransformadas = medicionesDetalladas.map((m: any) => {
+          // getMedicionesNodoDetallado ya viene con estructura anidada de localizacion
+          const sensorId = m.sensorid || m.localizacion?.sensorid;
+          const sensorInfo = sensores.find(s => s.sensorid === sensorId);
+          const sensorName = m.localizacion?.sensor?.sensor || 
+                            sensorInfo?.sensor || 
+                            sensorInfo?.nombre || 
+                            `Sensor ${sensorId}`;
+          
+          const tipoId = m.tipoid || sensorInfo?.tipoid || m.localizacion?.sensor?.tipoid;
+          const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+          const tipoName = tipoInfo?.tipo || 'Sensor';
+
+          let label = '';
+          if (sensorName && sensorName !== tipoName) {
+            label = `${tipoName} - ${sensorName}`;
+          } else if (sensorId && sensorId !== tipoId) {
+            label = `${tipoName} (ID: ${sensorId})`;
+          } else {
+            label = tipoName;
+          }
+          
+          return {
+            medicionid: m.medicionid,
+            fecha: m.fecha,
+            medicion: parseFloat(m.medicion || m.valor || 0),
+            metricaid: m.metricaid || m.localizacion?.metricaid,
+            metrica_nombre: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
+            sensorid: sensorId,
+            tipoid: tipoId,
+            localizacionid: m.localizacionid || m.localizacion?.localizacionid,
+            seriesLabel: label,
+            localizacion: m.localizacion || {
+              localizacionid: m.localizacionid,
+              metricaid: m.metricaid,
+              sensorid: sensorId,
+              sensor: {
+                sensorid: sensorId,
+                sensor: sensorName,
+                tipoid: tipoId,
+                tipo: {
+                  tipoid: tipoId,
+                  tipo: tipoName
+                }
+              },
+              metrica: {
+                metricaid: m.metricaid,
+                metrica: m.metrica_nombre || m.metrica || `Métrica ${m.metricaid}`,
+                unidad: m.unidad
+              }
+            }
+          };
+        });
+
+        setMediciones(medicionesTransformadas);
+      } catch (err: any) {
+        console.error('[NodeStatusDashboard] Error cargando mediciones:', err);
+        if (err.message && err.message.includes('90 días')) {
+          showError('Error', err.message);
+        } else {
+          showError('Error', 'Error al cargar mediciones');
+        }
+        setMediciones([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMediciones();
+  }, [selectedNode, selectedMetricId, dateRange, sensores, tipos, showError]);
 
   // Calcular KPIs
   const kpis = useMemo((): KPI[] => {
@@ -1021,7 +1071,28 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                   <input
                     type="date"
                     value={pendingDateRange.start}
-                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, start: e.target.value })}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const endDate = new Date(pendingDateRange.end);
+                      const startDate = new Date(newStart);
+                      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                      
+                      if (daysDiff > 90) {
+                        showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                        const adjustedStart = new Date(endDate);
+                        adjustedStart.setDate(adjustedStart.getDate() - 90);
+                        setPendingDateRange({ start: adjustedStart.toISOString().split('T')[0], end: pendingDateRange.end });
+                      } else {
+                        setPendingDateRange({ ...pendingDateRange, start: newStart });
+                      }
+                    }}
+                    max={pendingDateRange.end}
+                    min={(() => {
+                      if (!pendingDateRange.end) return undefined;
+                      const endDate = new Date(pendingDateRange.end);
+                      endDate.setDate(endDate.getDate() - 90);
+                      return endDate.toISOString().split('T')[0];
+                    })()}
                     disabled={!selectedNode}
                     className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -1035,8 +1106,28 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                   <input
                     type="date"
                     value={pendingDateRange.end}
-                    onChange={(e) => setPendingDateRange({ ...pendingDateRange, end: e.target.value })}
+                    onChange={(e) => {
+                      const newEnd = e.target.value;
+                      const startDate = new Date(pendingDateRange.start);
+                      const endDate = new Date(newEnd);
+                      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                      
+                      if (daysDiff > 90) {
+                        showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                        const adjustedEnd = new Date(startDate);
+                        adjustedEnd.setDate(adjustedEnd.getDate() + 90);
+                        setPendingDateRange({ start: pendingDateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
+                      } else {
+                        setPendingDateRange({ ...pendingDateRange, end: newEnd });
+                      }
+                    }}
                     min={pendingDateRange.start || undefined}
+                    max={(() => {
+                      if (!pendingDateRange.start) return undefined;
+                      const startDate = new Date(pendingDateRange.start);
+                      startDate.setDate(startDate.getDate() + 90);
+                      return startDate.toISOString().split('T')[0];
+                    })()}
                     disabled={!selectedNode}
                     className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -1061,6 +1152,16 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         'Fecha inválida',
                         'La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.'
                       );
+                      return;
+                    }
+
+                    // Validar rango máximo de 90 días
+                    const startDate = new Date(pendingDateRange.start);
+                    const endDate = new Date(pendingDateRange.end);
+                    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                    
+                    if (daysDiff > 90) {
+                      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
                       return;
                     }
 
