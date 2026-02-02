@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import SelectWithPlaceholder from './selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface PerfilGeografiaPermisoUpdateFormProps {

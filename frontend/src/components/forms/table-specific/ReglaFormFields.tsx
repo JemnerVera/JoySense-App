@@ -4,7 +4,7 @@
 // Componente específico para renderizar formulario combinado REGLA + REGLA_UMBRAL
 
 import React, { useState, useEffect } from 'react';
-import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from '../../selectors';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 

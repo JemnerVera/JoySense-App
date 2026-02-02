@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFilters } from '../../contexts/FilterContext';
 import { useCompleteFilterData } from '../../hooks/useCompleteFilterData';
 import { JoySenseService } from '../../services/backend-api';
-import OverlayDropdown from '../PushDropdown';
+import OverlayDropdown from '../shared/ui/buttons/PushDropdown';
 
 interface DashboardFiltersProps {
   onFiltersChange?: (filters: {

@@ -4,7 +4,7 @@
 // Componente específico para renderizar campos de geografía (país, empresa, fundo, ubicación)
 
 import React from 'react';
-import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from '../../selectors';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface GeografiaFormFieldsProps {
