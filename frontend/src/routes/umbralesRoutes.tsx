@@ -1,4 +1,4 @@
-import UmbralesMain from '../components/Umbrales/UmbralesMain';
+import { UmbralesMain } from '../features/reporting';
 
 // Configuración de rutas para el sistema de umbrales
 export const umbralesRoutes = [

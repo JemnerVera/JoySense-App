@@ -172,9 +172,9 @@ class PreloadService {
       'MassiveUmbralForm': () => import('../components/forms/MassiveUmbralForm'),
       'MultipleMetricaSensorForm': () => import('../components/forms/multiple/MultipleMetricaSensorForm'),
       'DashboardHierarchy': () => import('../components/DashboardHierarchy'),
-      'UmbralesMain': () => import('../components/Umbrales/UmbralesMain'),
-      'AlertasMain': () => import('../components/Reportes/AlertasMain'),
-      'MensajesMain': () => import('../components/Reportes/MensajesMain'),
+      'UmbralesMain': () => import('../features/reporting').then(m => ({ default: m.UmbralesMain })),
+      'AlertasMain': () => import('../features/reporting').then(m => ({ default: m.AlertasMain })),
+      'MensajesMain': () => import('../features/reporting').then(m => ({ default: m.MensajesMain })),
     };
 
     return importMap[componentName] || (() => Promise.resolve());

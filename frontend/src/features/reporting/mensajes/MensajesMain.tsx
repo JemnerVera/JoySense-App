@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import MensajesTable from './MensajesTable';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const MensajesMain: React.FC = () => {
   const { t } = useLanguage();

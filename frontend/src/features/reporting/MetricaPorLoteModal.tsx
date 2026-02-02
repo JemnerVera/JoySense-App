@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
-import { SupabaseRPCService } from '../../services/supabase-rpc';
+import SupabaseRPCService from '../../services/supabase-rpc';
 import { flushSync } from 'react-dom';
 
 interface MetricaPorLoteModalProps {

@@ -19,15 +19,15 @@ const SystemParametersLazy = lazy(() =>
 
 // Lazy load NotificacionesMain component
 const NotificacionesMainLazy = lazy(() =>
-  import('../MainComponents/NotificacionesMain').then(module => {
-    return { default: module.default };
+  import('../../features/reporting').then(module => {
+    return { default: module.NotificacionesMain };
   })
 );
 
 // Lazy load UmbralesMain component
 const UmbralesMainLazy = lazy(() => 
-  import('../Umbrales/UmbralesMain').then(module => ({
-    default: module.default
+  import('../../features/reporting').then(module => ({
+    default: module.UmbralesMain
   }))
 );
 
@@ -70,14 +70,14 @@ const DashboardHierarchyLazy = lazy(() =>
 );
 
 const MetricaPorLoteLazy = lazy(() => 
-  import('../Reportes/MetricaPorLote').then(module => {
-    return { default: module.default };
+  import('../../features/reporting').then(module => {
+    return { default: module.MetricaPorLote };
   })
 );
 
 const UmbralesPorLoteLazy = lazy(() => 
-  import('../Reportes/UmbralesPorLote').then(module => {
-    return { default: module.default };
+  import('../../features/reporting').then(module => {
+    return { default: module.UmbralesPorLote };
   })
 );
 

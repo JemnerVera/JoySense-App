@@ -1,6 +1,6 @@
 import React, { useState, useEffect, startTransition } from 'react';
-import { JoySenseService } from '../../services/backend-api';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { JoySenseService } from '../../../services/backend-api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface MensajeData {
   mensajeid: number;
