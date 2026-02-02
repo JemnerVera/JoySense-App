@@ -5,7 +5,7 @@
 
 import React, { useMemo } from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
-import ProtectedSubTabButton from '../ProtectedSubTabButton';
+import ProtectedSubTabButton from '../protected/ProtectedSubTabButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getTableConfig } from '../../config/tables.config';
 import { useUserPermissions } from '../../hooks/useUserPermissions';
