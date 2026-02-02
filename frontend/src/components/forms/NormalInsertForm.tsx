@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React, { memo, useEffect, useMemo, useRef, useCallback } from 'react';
-import SelectWithPlaceholder from '../selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from '../selectors';
 import { tableValidationSchemas } from '../../utils/validations';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';

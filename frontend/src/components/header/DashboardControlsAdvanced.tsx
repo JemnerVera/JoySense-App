@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDashboardControls } from '../../hooks/useDashboardControls';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import OverlayDropdown from '../PushDropdown';
+import OverlayDropdown from '../shared/ui/buttons/PushDropdown';
 
 interface DashboardControlsAdvancedProps {
   onFiltersChange?: (filters: {

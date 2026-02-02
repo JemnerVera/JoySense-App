@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React from 'react';
-import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from '../../selectors';
 import { MetricaData, SelectedTipo } from '../types';
 
 interface MassiveUmbralMetricsTableProps {

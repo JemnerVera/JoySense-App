@@ -7,7 +7,7 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { getPrimaryKey } from '../../../../config/tables.config';
-import SelectWithPlaceholder from '../../../../components/selectors/SelectWithPlaceholder';
+import { SelectWithPlaceholder } from '../../../../components/selectors';
 import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
 import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
 import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
