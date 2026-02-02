@@ -6,8 +6,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { JoySenseService } from '../../services/backend-api'
-import { LoadingSpinner } from '../SystemParameters/LoadingSpinner'
-import { SelectWithPlaceholder } from '../selectors'
+import { LoadingSpinner } from '../../components/SystemParameters/LoadingSpinner'
+import { SelectWithPlaceholder } from '../../components/shared/selectors'
 
 // ============================================================================
 // INTERFACES
