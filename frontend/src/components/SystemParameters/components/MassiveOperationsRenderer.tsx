@@ -3,9 +3,9 @@
 // ============================================================================
 
 import React from 'react';
-import { MassiveUmbralForm } from '../../forms/MassiveUmbralForm';
-// import { MassiveSensorForm } from '../../forms/MassiveSensorForm';
-// import { MassiveMetricaSensorForm } from '../../forms/MassiveMetricaSensorForm';
+import { MassiveUmbralForm } from '../../shared/forms';
+// import { MassiveSensorForm } from '../../shared/forms';
+// import { MassiveMetricaSensorForm } from '../../shared/forms';
 
 interface MassiveOperationsRendererProps {
   selectedTable: string;

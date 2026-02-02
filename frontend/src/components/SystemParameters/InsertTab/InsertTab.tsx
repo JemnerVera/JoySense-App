@@ -4,7 +4,7 @@
 
 import React, { useMemo, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import NormalInsertForm from '../../forms/NormalInsertForm';
+import { NormalInsertForm } from '../../shared/forms';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { logger } from '../../../utils/logger';
 import InsertionMessage from '../../shared/ui/messages/InsertionMessage';
