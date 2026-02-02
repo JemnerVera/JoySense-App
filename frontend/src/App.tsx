@@ -11,7 +11,7 @@ import { FilterProvider, useFilters } from './contexts/FilterContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SidebarConfirmModal } from './components/sidebar/SidebarConfirmModal';
 import ReportesAlertasWrapper from './components/ReportesAlertasWrapper';
-import LoginForm from './components/LoginForm';
+import LoginForm from './components/core/LoginForm';
 import SidebarContainer from './components/sidebar/SidebarContainer';
 import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, MedicionesDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
