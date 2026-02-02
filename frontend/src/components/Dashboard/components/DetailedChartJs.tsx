@@ -1,36 +1,11 @@
 /**
  * DetailedChartJs.tsx
  * 
- * Componente alternativo usando Chart.js en lugar de Recharts
- * Más robusto y predecible para renderizar gráficos complejos
+ * Componente usando Recharts para mantener consistencia visual con v2
  */
 
-import React, { useEffect, useRef, useMemo } from 'react'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartOptions,
-  Chart,
-  LineController,
-} from 'chart.js'
-
-// Registrar componentes de ChartJS
-ChartJS.register(
-  LineController,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-)
+import React, { useMemo } from 'react'
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, CartesianGrid } from 'recharts'
 
 export interface DetailedChartJsProps {
   data: any[]
@@ -39,11 +14,6 @@ export interface DetailedChartJsProps {
   loading?: boolean
   visibleTipos?: Set<string>
 }
-
-/**
- * Gráfico detallado usando Chart.js
- * Alternativa más robusta a Recharts
- */
 export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   data,
   visibleLines,
@@ -51,124 +21,22 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   loading = false,
   visibleTipos = new Set(),
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const chartRef = useRef<Chart<'line', any[], string> | null>(null)
-
   console.log('[DetailedChartJs] Rendering with data:', data.length, 'visibleLines:', visibleLines.length, 'loading:', loading)
 
+  // Función para limpiar el label (remover "Punto XX" prefix)
+  const cleanLabel = (label: string): string => {
+    // Remover patrones como "Punto 40 (Maceta - Sonda 10cm)" o "Punto XX - "
+    return label.replace(/^Punto\s+\d+\s*[\(-]?\s*/, '').replace(/[\)]/g, '').trim()
+  }
+
   // Generar los datos para el gráfico
-  // IMPORTANTE: Renderizar TODAS las líneas disponibles, sin filtrar por visibleTipos
-  // visibleTipos es para otro propósito (toggle de series en la UI)
   const chartData = useMemo(() => {
-    const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
-    
     console.log('[DetailedChartJs] chartData useMemo: creating datasets for', visibleLines.length, 'lines')
-    
-    // Renderizar TODAS las líneas sin filtrar
-    const datasets = visibleLines.map((line, idx) => ({
-      label: line,
-      data: data.map((point: any) => point[line] ?? null),
-      borderColor: colors[idx % colors.length],
-      backgroundColor: `${colors[idx % colors.length]}20`,
-      borderWidth: 2,
-      fill: false,
-      tension: 0.4,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      spanGaps: true,
-    }))
+    return data
+  }, [data])
 
-    console.log('[DetailedChartJs] Created', datasets.length, 'datasets')
-
-    return {
-      labels: data.map((point: any) => point.time || ''),
-      datasets,
-    }
-  }, [data, visibleLines])
-
-  // Crear el gráfico con Chart.js
-  useEffect(() => {
-    console.log('[DetailedChartJs] useEffect: canvasRef.current:', !!canvasRef.current, 'data.length:', data.length)
-    if (!canvasRef.current || !data || data.length === 0) {
-      console.log('[DetailedChartJs] useEffect: Returning early')
-      return
-    }
-
-    // Destruir gráfico anterior si existe
-    if (chartRef.current) {
-      chartRef.current.destroy()
-      chartRef.current = null
-    }
-
-    try {
-      const ctx = canvasRef.current.getContext('2d')
-      console.log('[DetailedChartJs] Got 2d context:', !!ctx)
-      if (!ctx) return
-
-      console.log('[DetailedChartJs] Creating chart with', chartData.datasets.length, 'datasets')
-      chartRef.current = new Chart(ctx, {
-        type: 'line',
-        data: chartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top' as const,
-            },
-            tooltip: {
-              enabled: true,
-              mode: 'index',
-              intersect: false,
-            },
-          },
-          scales: {
-            x: {
-              display: true,
-              grid: {
-                display: false,
-              },
-              ticks: {
-                maxRotation: 45,
-                minRotation: 0,
-                maxTicksLimit: 8,
-              },
-            },
-            y: {
-              display: true,
-              beginAtZero: false,
-              min: yAxisDomain.min ?? undefined,
-              max: yAxisDomain.max ?? undefined,
-              ticks: {
-                callback: function(value) {
-                  if (typeof value === 'number') {
-                    if (Math.abs(value) >= 1) {
-                      return Math.round(value).toString()
-                    } else {
-                      return value.toFixed(1)
-                    }
-                  }
-                  return value.toString()
-                },
-              },
-            },
-          },
-        } as ChartOptions<'line'>,
-      })
-      console.log('[DetailedChartJs] Chart created successfully')
-    } catch (error) {
-      console.error('[DetailedChartJs] Error creating chart:', error)
-    }
-
-    return () => {
-      console.log('[DetailedChartJs] Cleanup: destroying chart')
-      if (chartRef.current) {
-        chartRef.current.destroy()
-        chartRef.current = null
-      }
-    }
-  }, [chartData, yAxisDomain])
+  const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+  const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
 
   if (loading) {
     return (
@@ -196,9 +64,142 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
     )
   }
 
+  // Calcular el dominio del eje Y
+  const calculatedDomain = (() => {
+    if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+      return [yAxisDomain.min, yAxisDomain.max]
+    }
+    if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
+      const allValues: number[] = []
+      chartData.forEach(point => {
+        Object.keys(point).forEach(key => {
+          if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+            allValues.push(point[key])
+          }
+        })
+      })
+      const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10
+      return [yAxisDomain.min, dataMax]
+    }
+    if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+      const allValues: number[] = []
+      chartData.forEach(point => {
+        Object.keys(point).forEach(key => {
+          if (key !== 'time' && typeof point[key] === 'number' && !isNaN(point[key])) {
+            allValues.push(point[key])
+          }
+        })
+      })
+      const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10
+      return [dataMin, yAxisDomain.max]
+    }
+    return ['auto', 'auto']
+  })()
+
+  // Componente personalizado para el tooltip
+  const CustomTooltip = (props: any) => {
+    const { active, payload, label } = props
+    
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          border: '1px solid #4b5563',
+          borderRadius: '4px',
+          padding: '8px',
+          fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+          fontSize: '12px',
+        }}>
+          <p style={{ color: '#fff', margin: '0 0 4px 0', fontWeight: 'bold' }}>
+            {label}
+          </p>
+          {payload.map((entry: any, index: number) => (
+            <p key={`item-${index}`} style={{ color: entry.color, margin: '2px 0' }}>
+              {cleanLabel(entry.name)}: {
+                typeof entry.value === 'number' 
+                  ? Math.abs(entry.value) >= 1 
+                    ? Math.round(entry.value).toString()
+                    : entry.value.toFixed(2)
+                  : entry.value
+              }
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
-    <div style={{ height: '400px', position: 'relative', width: '100%' }}>
-      <canvas ref={canvasRef} />
+    <div className="h-96">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.2} />
+          <XAxis
+            dataKey="time"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+            interval={(() => {
+              if (chartData.length <= 8) return 0
+              if (chartData.length <= 20) return 1
+              return Math.floor(chartData.length / 6)
+            })()}
+          />
+          <YAxis 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+            domain={calculatedDomain as any}
+            allowDataOverflow={false}
+            allowDecimals={true}
+            type="number"
+            tickFormatter={(value) => {
+              if (Math.abs(value) >= 1) {
+                return Math.round(value).toString()
+              } else {
+                return value.toFixed(1)
+              }
+            }}
+          />
+          <Tooltip 
+            content={<CustomTooltip />}
+            cursor={{ stroke: '#9ca3af', strokeDasharray: '3 3' }}
+          />
+          <Legend 
+            wrapperStyle={{
+              paddingTop: '16px',
+              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+              fontSize: '12px',
+            }}
+            iconType="circle"
+            formatter={(value: string) => cleanLabel(value)}
+          />
+          {visibleLines.length > 0 ? (
+            visibleLines.map((lineKey, index) => {
+              const isComparison = lineKey.startsWith('comp_')
+              const strokeColor = isComparison 
+                ? comparisonColors[index % comparisonColors.length]
+                : colors[index % colors.length]
+              
+              return (
+                <Line
+                  key={lineKey}
+                  type="monotone"
+                  dataKey={lineKey}
+                  stroke={strokeColor}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                  isAnimationActive={false}
+                  name={cleanLabel(lineKey)}
+                  connectNulls={true}
+                />
+              )
+            })
+          ) : null}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   )
 }
