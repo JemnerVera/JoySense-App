@@ -3,6 +3,8 @@ import UmbralesPage from './UmbralesPage';
 import EstadoActualSensores from './EstadoActualSensores';
 import AlertasWithSidebar from './AlertasWithSidebar';
 import DashboardUmbrales from './DashboardUmbrales';
+// Importaciones desde shared/forms
+import { MassiveUmbralForm, MassivePerfilUmbralForm } from '../../../components/shared/forms';
 
 interface UmbralesMainProps {
   activeTab?: string;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useUmbrales } from '../../hooks/useUmbrales';
-import { useReferenceData } from '../../hooks/useReferenceData';
+import { useUmbrales } from '../../../hooks/useUmbrales';
+import { useReferenceData } from '../../../hooks/useReferenceData';
 import MessageDisplay from './MessageDisplay';
 import ConfirmationModal from './ConfirmationModal';
 

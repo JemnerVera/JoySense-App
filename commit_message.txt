@@ -1,0 +1,25 @@
+refactor: Mover Reportes y Umbrales a features/reporting/ (PASO 11)
+
+- Crear estructura features/reporting/ con subdirectorios (alertas/, mensajes/, umbrales/, notifications/)
+- Mover 17 archivos de Reportes y Umbrales a features/reporting/
+- Actualizar imports en AlertasMain, MensajesMain, UmbralesMain y subcomponentes (rutas +1 nivel)
+- Actualizar imports en App.tsx para usar features/reporting/
+- Actualizar imports en LazyComponents.tsx para componentes lazy loading
+- Actualizar umbralesRoutes.tsx para nuevas rutas
+- Actualizar preloadService.ts para nuevas ubicaciones
+- Crear re-exports legacy en components/Reportes/ y components/Umbrales/ para compatibilidad
+- Crear archivos index.ts para cada subcarpeta y raíz de features/reporting/
+- Compilación: ✅ SIN ERRORES - Solo warnings menores preexistentes
+
+Cambios:
+- 17 archivos movidos (7 de Reportes + 10 de Umbrales)
+- 5 archivos actualizados (App.tsx, LazyComponents.tsx, umbralesRoutes.tsx, preloadService.ts, NotificacionesMain.tsx)
+- 5 archivos index.ts creados para re-exports
+- 2 directorios legacy creados como stubs de compatibilidad
+
+Estructura final:
+- features/reporting/alertas/ (AlertasMain, AlertasTable)
+- features/reporting/mensajes/ (MensajesMain, MensajesTable)
+- features/reporting/umbrales/ (10 componentes)
+- features/reporting/notifications/ (NotificacionesMain)
+- features/reporting/ (MetricaPorLote, MetricaPorLoteModal, UmbralesPorLote)

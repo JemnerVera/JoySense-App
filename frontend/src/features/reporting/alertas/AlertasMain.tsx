@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import AlertasTable from './AlertasTable';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const AlertasMain: React.FC = () => {
   const { t } = useLanguage();

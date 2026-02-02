@@ -1,6 +1,6 @@
 import React from 'react';
 import EstadoActualSensores from './EstadoActualSensores';
-import { useAlertasFilter } from '../../contexts/AlertasFilterContext';
+import { useAlertasFilter } from '../../../contexts/AlertasFilterContext';
 
 const AlertasWithSidebar: React.FC = () => {
   // Hook que ahora retorna valores por defecto si no hay contexto

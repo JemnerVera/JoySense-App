@@ -1,8 +1,8 @@
 import React, { useState, useEffect, startTransition, useMemo, useRef } from 'react';
-import { JoySenseService } from '../../services/backend-api';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useAlertasFilter } from '../../contexts/AlertasFilterContext';
-import { ALERTAS_CONFIG } from '../../config/alertasConfig';
+import { JoySenseService } from '../../../services/backend-api';
+import { useLanguage } from '../../../contexts/LanguageContext';
+import { useAlertasFilter } from '../../../contexts/AlertasFilterContext';
+import { ALERTAS_CONFIG } from '../../../config/alertasConfig';
 
 interface AlertaData {
   alertaid: string; // UUID de alerta_regla

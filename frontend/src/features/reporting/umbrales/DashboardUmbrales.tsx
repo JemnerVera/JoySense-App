@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import SupabaseRPCService, { UmbralConEstadisticas } from '../../services/supabase-rpc';
-import { JoySenseService } from '../../services/backend-api';
+import SupabaseRPCService, { UmbralConEstadisticas } from '../../../services/supabase-rpc';
+import { JoySenseService } from '../../../services/backend-api';
 
 interface DatosHistoricos extends UmbralConEstadisticas {
   nodo_nombre: string;

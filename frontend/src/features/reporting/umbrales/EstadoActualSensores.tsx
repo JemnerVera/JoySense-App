@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { JoySenseService } from '../../services/backend-api';
+import { JoySenseService } from '../../../services/backend-api';
 
 // Tipos para el estado de los sensores
 interface SensorEstado {
