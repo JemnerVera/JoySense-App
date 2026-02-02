@@ -31,7 +31,7 @@ import ConfigurationPanel from './components/core/ConfigurationPanel';
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
 import { ModalProvider } from './contexts/ModalContext';
-import SimpleAlertModal from './components/modals/SimpleAlertModal';
+import SimpleAlertModal from './components/shared/ui/modals/SimpleAlertModal';
 
 // ============================================================================
 // COMPONENT WRAPPERS

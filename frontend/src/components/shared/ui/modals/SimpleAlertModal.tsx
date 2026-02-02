@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 
 // SimpleAlertModal - Componente básico para mostrar alertas del sistema
 const SimpleAlertModal: React.FC = () => {
