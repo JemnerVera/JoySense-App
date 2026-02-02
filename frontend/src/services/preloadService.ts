@@ -168,9 +168,9 @@ class PreloadService {
     const importMap: { [key: string]: () => Promise<any> } = {
       'SystemParameters': () => import('../features/system-parameters').then(m => ({default: m.SystemParameters})),
       'DashboardMain': () => import('../components/Dashboard/DashboardMain'),
-      'NormalInsertForm': () => import('../components/forms/NormalInsertForm'),
-      'MassiveUmbralForm': () => import('../components/forms/MassiveUmbralForm'),
-      'MultipleMetricaSensorForm': () => import('../components/forms/multiple/MultipleMetricaSensorForm'),
+      'NormalInsertForm': () => import('../components/shared/forms/NormalInsertForm'),
+      'MassiveUmbralForm': () => import('../components/shared/forms/MassiveUmbralForm'),
+      'MultipleMetricaSensorForm': () => import('../components/shared/forms/multiple/MultipleMetricaSensorForm'),
       'DashboardHierarchy': () => import('../components/DashboardHierarchy'),
       'UmbralesMain': () => import('../features/reporting').then(m => ({ default: m.UmbralesMain })),
       'AlertasMain': () => import('../features/reporting').then(m => ({ default: m.AlertasMain })),
