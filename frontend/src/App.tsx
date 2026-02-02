@@ -27,7 +27,7 @@ import { JoySenseService } from './services/backend-api';
 import { Pais, Empresa } from './types';
 import { UserHeader } from './components/UserHeader';
 import { UserControls } from './components/header/UserControls';
-import ConfigurationPanel from './components/ConfigurationPanel';
+import ConfigurationPanel from './components/core/ConfigurationPanel';
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
 import { ModalProvider } from './contexts/ModalContext';
