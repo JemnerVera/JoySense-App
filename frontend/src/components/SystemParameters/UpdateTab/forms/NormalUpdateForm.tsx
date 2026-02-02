@@ -8,10 +8,12 @@ import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { getPrimaryKey } from '../../../../config/tables.config';
 import { SelectWithPlaceholder } from '../../../../components/selectors';
-import { ContactoFormFields } from '../../../forms/table-specific/ContactoFormFields';
-import { UsuarioCanalFormFields } from '../../../forms/table-specific/UsuarioCanalFormFields';
-import { UsuarioFormFields } from '../../../forms/table-specific/UsuarioFormFields';
-import { UsuarioPerfilFormFields } from '../../../forms/table-specific/UsuarioPerfilFormFields';
+import {
+  ContactoFormFields,
+  UsuarioCanalFormFields,
+  UsuarioFormFields,
+  UsuarioPerfilFormFields,
+} from '../../../shared/forms';
 import PerfilGeografiaPermisoUpdateForm from '../../../PerfilGeografiaPermisoUpdateForm';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { ReglaFormFields } from '../forms/table-specific/ReglaFormFields';
+import { ReglaFormFields } from '../shared/forms';
 import { SelectWithPlaceholder } from '../selectors';
 import { MessageDisplay } from '../SystemParameters/MessageDisplay';
 import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
