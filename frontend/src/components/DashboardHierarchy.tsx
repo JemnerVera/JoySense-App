@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { JoySenseService } from '../services/backend-api';
 import { Pais, Empresa, Fundo, Ubicacion } from '../types';
-import SeparateCharts from './DashboardCharts';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -780,8 +779,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
               )}
             </div>
 
-            {/* Gráfico */}
-            <SeparateCharts mediciones={mediciones} loading={loading} />
+            {/* Gráfico - Removido DashboardCharts (legacy) */}
+            {/* <SeparateCharts mediciones={mediciones} loading={loading} /> */}
           </div>
         );
 
