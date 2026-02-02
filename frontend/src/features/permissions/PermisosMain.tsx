@@ -17,13 +17,13 @@ import { useTableDataManagement } from '../../hooks/useTableDataManagement';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
-import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
-import { MessageDisplay } from '../SystemParameters/MessageDisplay';
-import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from '../SystemParameters/UpdateTab/UpdateTab';
-import { AsignarPermisosTab } from '../Permisos/AsignarPermisosTab';
-import { PermisosSkillTree } from '../Permisos/PermisosSkillTree';
+import { LoadingSpinner } from '../../components/SystemParameters/LoadingSpinner';
+import { MessageDisplay } from '../../components/SystemParameters/MessageDisplay';
+import { StatusTab } from '../../components/SystemParameters/StatusTab/StatusTab';
+import { InsertTab } from '../../components/SystemParameters/InsertTab/InsertTab';
+import { UpdateTab } from '../../components/SystemParameters/UpdateTab/UpdateTab';
+import { AsignarPermisosTab } from './AsignarPermisosTab';
+import { PermisosSkillTree } from './PermisosSkillTree';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 import { TableName, PRIMARY_KEY_MAP } from '../../types';
 

@@ -17,7 +17,7 @@ import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, MedicionesDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
 import { AlertasMain, MensajesMain } from './features/reporting';
 import { default as ReglasMain } from './features/rules';
-import PermisosMain, { PermisosMainRef } from './components/MainComponents/PermisosMain';
+import PermisosMain, { PermisosMainRef } from './features/permissions';
 import AlertasTableMain from './components/MainComponents/AlertasTableMain';
 import ReportesAdminMain, { ReportesAdminMainRef } from './components/MainComponents/ReportesAdminMain';
 import AgrupacionMain, { AgrupacionMainRef } from './components/MainComponents/AgrupacionMain';
