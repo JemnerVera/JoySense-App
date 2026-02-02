@@ -134,7 +134,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`}>
+      <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`}>
         
         {/* Contenido con sidebar */}
         <div className="flex-1 flex overflow-hidden">
@@ -192,89 +192,179 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
           <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900">
             <div className="p-6">
             
-              {/* Barra de controles */}
-              <div className="mb-6 bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 flex items-center gap-4 overflow-x-auto">
-                
-                {/* Selector de fechas */}
-                <div className="flex flex-col flex-shrink-0">
-                  <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">
-                    Rango de Fechas:
-                  </label>
-                  <div className="flex items-center gap-2 h-8">
+              {/* Barra de controles - Layout horizontal compacto como en v2 */}
+              <div className="mb-6 bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 flex items-start gap-4 overflow-x-auto">
+                <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden">
+                  
+                  {/* Fecha Inicio */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Inicio:</label>
                     <input
                       type="date"
                       value={tempStartDate || detailedStartDate}
                       onChange={(e) => setTempStartDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs"
+                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs font-mono"
                     />
-                    <span className="text-gray-600 dark:text-neutral-400">-</span>
+                  </div>
+
+                  {/* Fecha Fin */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Fin:</label>
                     <input
                       type="date"
                       value={tempEndDate || detailedEndDate}
                       onChange={(e) => setTempEndDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs"
+                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs font-mono"
                     />
-                    {(tempStartDate || tempEndDate) && (
+                  </div>
+
+                  {/* Botón Aplicar */}
+                  {(tempStartDate || tempEndDate) && (
+                    <div className="flex flex-col flex-shrink-0">
+                      <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
                       <button
                         onClick={() => {
                           onDateRangeChange(tempStartDate || detailedStartDate, tempEndDate || detailedEndDate)
                           setTempStartDate('')
                           setTempEndDate('')
                         }}
-                        className="h-8 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono"
+                        className="h-8 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono transition-colors whitespace-nowrap"
                       >
                         Aplicar
                       </button>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Separador visual */}
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+                  {/* Ajuste Eje Y */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Ajuste Eje Y:</label>
+                    <div className="flex items-center gap-2 h-8">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="-999999"
+                        max="999999"
+                        value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                        onChange={(e) => {
+                          const inputValue = e.target.value
+                          if (inputValue === '') {
+                            onYAxisDomainChange({ ...yAxisDomain, min: null })
+                            return
+                          }
+                          const numValue = Number(inputValue)
+                          if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                            onYAxisDomainChange({ ...yAxisDomain, min: numValue })
+                          }
+                        }}
+                        placeholder="Min"
+                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                      />
+                      <span className="text-gray-600 dark:text-neutral-400">-</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="-999999"
+                        max="999999"
+                        value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                        onChange={(e) => {
+                          const inputValue = e.target.value
+                          if (inputValue === '') {
+                            onYAxisDomainChange({ ...yAxisDomain, max: null })
+                            return
+                          }
+                          const numValue = Number(inputValue)
+                          if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                            onYAxisDomainChange({ ...yAxisDomain, max: numValue })
+                          }
+                        }}
+                        placeholder="Max"
+                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                      />
+                      <button
+                        onClick={() => onYAxisDomainChange({ min: null, max: null })}
+                        className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                  {/* Separador visual */}
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                {/* Botón análisis */}
-                <button
-                  onClick={onAnalyzeFluctuation}
-                  disabled={loadingDetailedData}
-                  className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded font-mono text-sm flex-shrink-0"
-                >
-                  Umbrales
-                </button>
+                  {/* Analizar Fluctuación */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Analizar Fluctuación:</label>
+                    <div className="h-8 flex items-center">
+                      <button
+                        onClick={onAnalyzeFluctuation}
+                        disabled={loadingDetailedData}
+                        className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Umbrales
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                  {/* Separador visual */}
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                {/* Comparación */}
-                <div className="flex flex-col flex-shrink-0">
-                  <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">
-                    Comparar:
-                  </label>
-                  <select
-                    value={comparisonNode?.nodoid || ''}
-                    onChange={(e) => {
-                      const nodeId = parseInt(e.target.value)
-                      if (nodeId && nodeId !== selectedNode?.nodoid) {
-                        const node = availableNodes.find(n => n.nodoid === nodeId)
-                        if (node) {
-                          onComparisonNodeChange(node)
-                          onLoadComparisonData(node)
-                        }
-                      } else {
-                        onComparisonNodeChange(null)
-                      }
-                    }}
-                    disabled={loadingComparisonData}
-                    className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-900 dark:text-white font-mono text-xs"
-                  >
-                    <option value="" disabled hidden>Ninguno</option>
-                    {availableNodes
-                      .filter(n => n.nodoid !== selectedNode?.nodoid)
-                      .map(node => (
-                        <option key={node.nodoid} value={node.nodoid}>
-                          {node.nodo}
-                        </option>
-                      ))}
-                  </select>
+                  {/* Comparar con Nodo */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Comparar con Nodo:</label>
+                    <div className="flex items-center gap-2 h-8">
+                      <select
+                        value={comparisonNode?.nodoid || ''}
+                        onChange={(e) => {
+                          const nodeId = parseInt(e.target.value)
+                          if (nodeId && nodeId !== selectedNode?.nodoid) {
+                            const node = availableNodes.find(n => n.nodoid === nodeId)
+                            if (node) {
+                              onComparisonNodeChange(node)
+                              onLoadComparisonData(node)
+                            }
+                          } else {
+                            onComparisonNodeChange(null)
+                          }
+                        }}
+                        disabled={loadingComparisonData}
+                        className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white font-mono text-xs min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+                      >
+                        <option value="" disabled hidden>Ninguno</option>
+                        {availableNodes
+                          .filter(n => n.nodoid !== selectedNode?.nodoid)
+                          .map(node => (
+                            <option key={node.nodoid} value={node.nodoid} title={`${node.nodo}`}>
+                              {node.nodo}
+                            </option>
+                          ))}
+                      </select>
+                      {comparisonNode && (
+                        <button
+                          onClick={() => {
+                            onComparisonNodeChange(null)
+                          }}
+                          className="h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center"
+                          title="Cancelar comparación"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                      {loadingComparisonData && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -311,11 +401,12 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
           </div>
         </div>
 
-        {/* Botones de control */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        {/* Botones de control - Posicionados en la esquina superior derecha del modal */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
           <button
             onClick={onClose}
-            className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
+            className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
+            title="Cerrar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -323,11 +414,18 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
           </button>
           <button
             onClick={onToggleExpand}
-            className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
+            className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
+            title={isModalExpanded ? "Contraer" : "Expandir"}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
+            {isModalExpanded ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
