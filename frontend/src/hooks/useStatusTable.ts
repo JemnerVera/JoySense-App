@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTableColumns } from './useTableColumns';
 import { useSearchAndFilter } from './useSearchAndFilter';
 import { useGlobalFilterEffect } from './useGlobalFilterEffect';
+import { logger } from '../utils/logger';
 import type { ColumnInfo } from '../types/systemParameters';
 import type { RelatedData } from '../utils/systemParametersUtils';
 
@@ -55,11 +56,13 @@ export const useStatusTable = ({
     data: tableData
   });
 
-  console.log(`📊 [useStatusTable] Data for ${tableName}:`, {
-    inputCount: tableData.length,
-    filteredByGlobalCount: filteredTableData.length,
-    tableName
-  });
+  // Log solo cuando los datos cambian (no en cada render)
+  useEffect(() => {
+    logger.debug('useStatusTable', `Data loaded for ${tableName}`, {
+      inputCount: tableData.length,
+      filteredByGlobalCount: filteredTableData.length
+    });
+  }, [filteredTableData.length, tableName]);
 
   // Hook de búsqueda y filtrado
   const {
