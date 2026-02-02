@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React, { memo } from 'react';
-import ReplicateButton from '../../ReplicateButton';
+import ReplicateButton from '../../shared/ui/buttons/ReplicateButton';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 // ============================================================================

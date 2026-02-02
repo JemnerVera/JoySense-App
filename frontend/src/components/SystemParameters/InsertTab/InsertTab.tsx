@@ -7,7 +7,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import NormalInsertForm from '../../forms/NormalInsertForm';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { logger } from '../../../utils/logger';
-import InsertionMessage from '../../ui/InsertionMessage';
+import InsertionMessage from '../../shared/ui/messages/InsertionMessage';
 import { MessageDisplay } from '../MessageDisplay';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 
