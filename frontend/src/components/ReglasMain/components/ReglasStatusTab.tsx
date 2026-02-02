@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReglasSankeyDiagram } from '../../Reglas/ReglasSankeyDiagram';
+import { ReglasSankeyDiagram } from '../../../features/rules/ReglasSankeyDiagram';
 
 export function ReglasStatusTab() {
   return (
