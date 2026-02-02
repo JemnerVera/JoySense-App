@@ -8,6 +8,7 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
 import { useMedicionesLoader, useSystemData } from "./hooks"
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
+import { MetricMiniChart } from "./components/MetricMiniChart"
 import {
   DATA_LIMITS,
   getMetricColor,
@@ -22,9 +23,12 @@ import {
   getCurrentValue as getCurrentValueHelper,
   getStatus as getStatusHelper,
   hasRecentData as hasRecentDataHelper,
-  getSeriesLabel as getSeriesLabelHelper
+  getSeriesLabel as getSeriesLabelHelper,
+  createOptimizedMetricHelper
 } from "./utils/dashboardHelpers"
 import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
+import { useOptimizedChartData } from "./hooks/useOptimizedChartData"
+import { useMetricCache } from "./hooks/useMetricCache"
 
 // Helper para transformar datos del backend al formato MedicionData con campos legacy
 function transformMedicionData(data: any[]): MedicionData[] {
@@ -174,6 +178,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const getSeriesLabel = useCallback((medicion: MedicionData) => {
     return getSeriesLabelHelper(medicion, sensores, tipos)
   }, [tipos, sensores])
+  
+  // ========== OPTIMIZACIONES DE CACHÉ DE MÉTRICAS ==========
+  // Hook para crear un cache de métricas optimizado que evita recálculos repetidos
+  const { hasData: hasMetricDataOptimized, getCurrentValue: getCurrentValueOptimized } = useMetricCache(mediciones, selectedNode)
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
   
@@ -1474,9 +1482,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     let useDays = overrideGranularity ? overrideGranularity.useDays : (daysSpan >= 2)
     let useHours = overrideGranularity ? overrideGranularity.useHours : (!useDays && (hoursSpan >= 48 || pointCount > 1000))
     
+    const startProcess = performance.now()
     console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, useDays, useHours });
 
     const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter(id => id != null)))
+    
+    // Pre-calcular labels una sola vez para evitar búsquedas repetidas
+    const labelCache = new Map<number, string>()
+    const getOrCacheLabel = (m: MedicionData): string => {
+      const key = m.sensorid || 0
+      if (!labelCache.has(key)) {
+        labelCache.set(key, getSeriesLabel(m))
+      }
+      return labelCache.get(key)!
+    }
     
     const performGrouping = (data: any[], d: boolean, h: boolean) => {
       const grouped: { [locid: number]: any[] } = {}
@@ -1492,7 +1511,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`
         }
         
-        const label = getSeriesLabel(m)
+        const label = getOrCacheLabel(m)
         const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey)
         if (existing) {
           existing.value = (existing.value * existing.count + m.medicion) / (existing.count + 1)
@@ -1553,6 +1572,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return hasValue ? entry : null
     }).filter(e => e !== null)
 
+    const endProcess = performance.now()
+    console.log(`[ModernDashboard] processChartData tiempo total: ${(endProcess - startProcess).toFixed(2)}ms para ${dataKey}`)
+
     return finalData
   }
 
@@ -1563,47 +1585,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       3: "conductividad"
     }
     return metricMap[metricaid] || null
-  }
-
-  const getCurrentValue = (dataKey: string) => {
-    if (!mediciones.length || !selectedNode) return 0
-    
-    // Filtrar mediciones del nodo seleccionado
-    const nodeMediciones = mediciones.filter(m => {
-      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
-      // REMOVIDO: No filtrar por punto seleccionado
-      return matchNode;
-    })
-    
-    // Buscar mediciones que coincidan con el dataKey por nombre de métrica
-    const matchingMediciones = nodeMediciones.filter(m => {
-      const metricName = m.localizacion?.metrica?.metrica?.toLowerCase() || ''
-      
-      if (dataKey === 'temperatura' && (
-        metricName.includes('temperatura') || metricName.includes('temp')
-      )) return true
-      
-      if (dataKey === 'humedad' && (
-        metricName.includes('humedad') || metricName.includes('humidity')
-      )) return true
-      
-      if (dataKey === 'conductividad' && (
-        metricName.includes('conductividad') || 
-        metricName.includes('electroconductividad') ||
-        metricName.includes('conductivity')
-      )) return true
-      
-      return false
-    })
-    
-    if (!matchingMediciones.length) {
-      return 0
-    }
-    
-    // Obtener la medición más reciente
-    const latest = matchingMediciones.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
-    const value = latest ? latest.medicion || 0 : 0
-    return value
   }
 
   const getStatus = (value: number, metric: MetricConfig) => {
@@ -1764,16 +1745,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return []
     }
     
-    // Usar detailedMediciones si están disponibles (en el modal de análisis detallado)
-    const dataSource = detailedMediciones.length > 0 ? detailedMediciones : mediciones
+    // Solo usar mediciones normales (no detailedMediciones) para availableMetrics
+    // detailedMediciones es para el modal de análisis, no para los minigráficos
+    if (mediciones.length === 0) {
+      return getTranslatedMetrics
+    }
     
-    // Obtener métricas únicas del nodo desde la fuente de datos
-    const nodeMediciones = dataSource.filter(m => {
-      const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid);
-      // REMOVIDO: No filtrar por punto seleccionado para mostrar visión global del nodo
-      return matchNode;
-    })
+    // Obtener métricas únicas del nodo
+    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
     const uniqueMetricIds = new Set<number>()
+    
     nodeMediciones.forEach(m => {
       if (m.metricaid) {
         uniqueMetricIds.add(Number(m.metricaid))
@@ -1783,97 +1764,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     console.log('[ModernDashboard] Unique metric IDs found:', Array.from(uniqueMetricIds));
 
     if (uniqueMetricIds.size === 0) {
-      return getTranslatedMetrics;
+      return getTranslatedMetrics
     }
 
     // Filtrar las métricas traducidas para mostrar solo las que tienen datos
     const filtered = getTranslatedMetrics.filter(metric => {
       // Buscar si hay alguna medición con una métrica que coincida con el nombre
-      const hasData = Array.from(uniqueMetricIds).some(metricaId => {
-        // Buscar una medición con este metricaid y verificar si el nombre coincide
-        const medicion = nodeMediciones.find(m =>
-          Number(m.metricaid) === Number(metricaId)
-        )
-
-        if (!medicion) {
-          return false
-        }
-
-        // Obtener el nombre de la métrica desde los datos expandidos o inferirlo
-        // Limpiar espacios, saltos de línea y caracteres especiales
+      return Array.from(uniqueMetricIds).some(metricaId => {
+        const medicion = nodeMediciones.find(m => Number(m.metricaid) === Number(metricaId))
+        if (!medicion) return false
+        
         const rawMetricName = medicion.localizacion?.metrica?.metrica || ''
-
-        // Si no hay nombre expandido, intentar acceder directamente a la tabla metrica
-        let finalMetricName = rawMetricName;
-        if (!finalMetricName && medicion.metricaid) {
-          // Nota: Esto es async, pero estamos en un filter sync, así que por ahora usamos lo que tenemos
-        }
-
-        const metricName = finalMetricName
-          .replace(/\r\n/g, ' ')
-          .replace(/\n/g, ' ')
-          .replace(/\r/g, ' ')
-          .trim()
-          .toLowerCase()
-
-        // Usar la función pura para matching
         return matchesMetricId(rawMetricName, metric.id)
       })
-
-      return hasData
     })
     
     return filtered
-  }, [getTranslatedMetrics, mediciones, detailedMediciones, selectedNode])
+  }, [getTranslatedMetrics, mediciones.length, selectedNode?.nodoid])
 
   // ========== OPTIMIZACIONES DE RENDERIZADO ==========
   
-  // 1. Cachear datos de minigráficos para evitar recálculos innecesarios
-  const memoizedChartData = useMemo(() => {
-    const cache: { [key: string]: any[] } = {}
-    
-    if (!selectedNode || !mediciones.length) {
-      return cache
-    }
-    
-    // Obtener métricas con datos del nodo seleccionado
-    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
-    
-    // Obtener nombres únicos de métricas en los datos
-    const metricNamesInData = new Set<string>()
-    nodeMediciones.forEach(m => {
-      const rawName = m.localizacion?.metrica?.metrica || ''
-      const cleanName = rawName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
-      if (cleanName) metricNamesInData.add(cleanName)
-    })
-    
-    // Calcular datos para métricas que tienen datos
-    const dataKeysToCheck = ['temperatura', 'humedad', 'conductividad']
-    dataKeysToCheck.forEach(dataKey => {
-      // Verificar si hay datos para este dataKey
-      let hasData = false
-      for (const metricName of Array.from(metricNamesInData)) {
-        if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) {
-          hasData = true
-          break
-        }
-        if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) {
-          hasData = true
-          break
-        }
-        if (dataKey === 'conductividad' && (metricName.includes('conductividad') || metricName.includes('electroconductividad') || metricName.includes('conductivity'))) {
-          hasData = true
-          break
-        }
-      }
-      
-      if (hasData) {
-        cache[dataKey] = processChartData(dataKey, false)
-      }
-    })
-    
-    return cache
-  }, [mediciones, selectedNode?.nodoid, filters?.startDate, filters?.endDate])
+  // 1. Cachear datos de minigráficos usando hook optimizado
+  // El hook detecta cambios reales en mediciones/nodo para evitar recálculos innecesarios
+  const memoizedChartData = useOptimizedChartData(
+    mediciones,
+    selectedNode?.nodoid ?? null,
+    (dataKey: string) => processChartData(dataKey, false),
+    ['temperatura', 'humedad', 'conductividad']
+  )
 
   // 2. Cachear datos del gráfico detallado - evitar recálculos múltiples
   const memoizedDetailedChartData = useMemo(() => {
@@ -1891,11 +1809,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // ========== FIN OPTIMIZACIONES ==========
 
-
-  // Memoizar verificación de datos por métrica (verifica si hay datos recientes - últimos 30 días)
-  const hasMetricData = useCallback((dataKey: string) => {
-    return hasMetricDataHelper(dataKey, mediciones, selectedNode)
-  }, [mediciones, selectedNode])
+  // ========== USO DE CACHE OPTIMIZADO EN LUGAR DE FUNCIONES REPETIDAS ==========
+  // Ahora usamos las funciones con cache del hook useMetricCache en lugar de
+  // hasMetricDataHelper que recalculaba cada vez. Esto reduce significativamente las iteraciones.
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue">
@@ -1945,181 +1861,20 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {availableMetrics.map((metric) => {
-              const hasData = hasMetricData(metric.dataKey)
-              const currentValue = hasData ? getCurrentValue(metric.dataKey) : 0
-              const status = hasData ? getStatus(currentValue as number, metric) : "no-data"
-
+              const hasData = hasMetricDataOptimized(metric.dataKey)
+              const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
+              const chartData = memoizedChartData[metric.dataKey] || []
+              
               return (
-                <div
+                <MetricMiniChart
                   key={metric.id}
-                  className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500/20 p-6 group ${
-                    !hasData ? 'opacity-60' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="text-2xl text-gray-800 dark:text-white">
-                        {metric.id === 'temperatura' ? '🌡' : 
-                         metric.id === 'humedad' ? '💧' : '⚡'}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800 dark:text-white font-mono tracking-wider">{metric.title}</h3>
-                      </div>
-                    </div>
-                    {!hasData && (
-                      <span className="px-2 py-1 text-xs font-bold rounded-full border bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 font-mono tracking-wider">
-                        NODO OBSERVADO
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-baseline justify-end space-x-2 mb-4">
-                    <span className="text-3xl font-bold text-blue-500 font-mono">
-                      {hasData && typeof currentValue === "number" ? currentValue.toFixed(1) : "--"}
-                    </span>
-                    <span className="text-sm text-neutral-400 font-mono">{metric.unit}</span>
-                  </div>
-
-                  <div className="h-32 mb-4">
-                    {hasData ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={memoizedChartData[metric.dataKey] || []}>
-                          <XAxis
-                            dataKey="time"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 10, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                            interval={(() => {
-                              const chartData = memoizedChartData[metric.dataKey] || []
-                              // Mostrar máximo 4-5 etiquetas en gráficos pequeños
-                              if (chartData.length <= 5) return 0
-                              if (chartData.length <= 10) return 1
-                              return Math.floor(chartData.length / 4)
-                            })()}
-                          />
-                          <YAxis hide domain={['auto', 'auto']} />
-                          {(() => {
-                            const chartData = memoizedChartData[metric.dataKey] || []
-                            if (chartData.length === 0) return null
-                            
-                            // Obtener TODAS las claves únicas de series (excluyendo 'time') de todo el set de datos
-                            const allSeriesKeys = Array.from(
-                              new Set(
-                                chartData.flatMap(item => Object.keys(item).filter(key => key !== 'time'))
-                              )
-                            )
-                            
-                            const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899', '#10b981']
-                            
-                            return allSeriesKeys.map((seriesKey, index) => (
-                              <Line
-                                key={seriesKey}
-                                type="monotone"
-                                dataKey={seriesKey}
-                                stroke={colors[index % colors.length]}
-                                strokeWidth={2}
-                                dot={false}
-                                activeDot={{ r: 4, fill: colors[index % colors.length], stroke: colors[index % colors.length], strokeWidth: 2 }}
-                                strokeOpacity={0.8}
-                                connectNulls={true}
-                                isAnimationActive={false}
-                            />
-                          ))
-                        })()}
-                        <Legend
-                          verticalAlign="bottom"
-                          height={20}
-                          iconType="circle"
-                          iconSize={8}
-                          wrapperStyle={{
-                            fontSize: '9px',
-                            fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                            paddingTop: '10px'
-                          }}
-                        />
-                        <Tooltip
-                            labelFormatter={(label) => {
-                              // Detectar si el label es una fecha (contiene "/") o una hora
-                              const isDate = label && typeof label === 'string' && label.includes('/')
-                              return (
-                              <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                                  {isDate ? label : `${t('dashboard.tooltip.hour')} ${label}`}
-                              </span>
-                              )
-                            }}
-                            formatter={(value: number, name: string) => [
-                              <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                {name}: {value ? value.toFixed(1) : '--'} {metric.unit}
-                              </span>
-                            ]}
-                            contentStyle={{
-                              backgroundColor: "#1f2937",
-                              border: "1px solid #374151",
-                              borderRadius: "8px",
-                              color: "#ffffff",
-                              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                              padding: "8px 12px"
-                            }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800/30">
-                        <div className="text-center text-blue-700 dark:text-blue-400 mb-3">
-                          <div className="text-3xl mb-2">👁️</div>
-                          <div className="text-sm font-mono tracking-wider font-bold mb-1">NODO OBSERVADO</div>
-                          <div className="text-xs font-mono opacity-75">No disponible por el momento</div>
-                        </div>
-                        <button
-                          onClick={() => openDetailedAnalysis(metric)}
-                          className="px-3 py-1.5 text-xs font-mono tracking-wider bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
-                        >
-                          Ajustar Rango Manualmente
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Mostrar fecha y hora de la medida más actual */}
-                  {hasData && (() => {
-                    const metricId = getMetricIdFromDataKey(metric.dataKey)
-                    const metricMediciones = mediciones.filter(m => m.metricaid === metricId)
-                    if (metricMediciones.length > 0) {
-                      const latest = metricMediciones.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
-                      const latestDate = new Date(latest.fecha)
-                      return (
-                        <div className="text-xs text-neutral-400 text-center mb-3">
-                          {t('dashboard.last_measurement')} {latestDate.toLocaleString('es-ES', { 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            year: 'numeric',
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
-
-                  {/* Botón de lupa para análisis detallado - Siempre visible para permitir ajuste manual */}
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => openDetailedAnalysis(metric)}
-                      className={`p-2 rounded-lg transition-all duration-200 ${
-                        hasData 
-                          ? 'text-neutral-400 group-hover:text-blue-500 group-hover:bg-blue-500/10 group-hover:scale-110'
-                          : 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/20'
-                      }`}
-                      title={hasData ? "Ver análisis detallado" : "Ajustar rango de fechas para buscar datos antiguos"}
-                      >
-                        <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </button>
-                    </div>
-
-                </div>
+                  metric={metric}
+                  chartData={chartData}
+                  currentValue={currentValue}
+                  hasData={hasData}
+                  onOpenAnalysis={openDetailedAnalysis}
+                  t={t}
+                />
               )
             })}
           </div>

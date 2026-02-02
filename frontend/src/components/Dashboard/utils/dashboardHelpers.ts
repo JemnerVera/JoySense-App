@@ -1,5 +1,58 @@
 import type { MedicionData, MetricConfig } from '../types'
 
+// ============================================================================
+// HELPERS PARA MATCHING DE MÉTRICAS - Reutilizables y memoizables
+// ============================================================================
+
+/**
+ * Normaliza un nombre de métrica para búsqueda
+ */
+function normalizeMetricName(rawName: string): string {
+  return rawName
+    .replace(/\r\n/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+/**
+ * Verifica si un nombre de métrica coincide con un dataKey
+ */
+function matchesDataKey(metricName: string, dataKey: string): boolean {
+  if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
+  if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
+  if (dataKey === 'conductividad' && (
+    metricName.includes('conductividad') || 
+    metricName.includes('electroconductividad') ||
+    metricName.includes('conductivity')
+  )) return true
+  return false
+}
+
+/**
+ * Crea un cache de mediciones por nodo y métrica para evitar filtrado repetido
+ */
+function createMedicionCache(mediciones: MedicionData[], nodeId: number) {
+  const nodeCache = new Map<string, MedicionData[]>()
+  
+  mediciones.forEach(m => {
+    if (Number(m.nodoid) === Number(nodeId)) {
+      const metricName = normalizeMetricName(m.localizacion?.metrica?.metrica || '')
+      if (!nodeCache.has(metricName)) {
+        nodeCache.set(metricName, [])
+      }
+      nodeCache.get(metricName)!.push(m)
+    }
+  })
+  
+  return nodeCache
+}
+
+// ============================================================================
+// EXPORTED HELPERS
+// ============================================================================
+
 /**
  * Obtiene la etiqueta descriptiva para una serie de datos
  */
@@ -36,96 +89,92 @@ export function getSeriesLabel(
 }
 
 /**
- * Verifica si hay datos para una métrica específica
+ * Verifica si hay datos para una métrica específica (con cache optimizado)
  */
 export function hasMetricData(
   dataKey: string,
   mediciones: MedicionData[],
-  selectedNode?: any
+  selectedNode?: any,
+  cache?: Map<string, MedicionData[]>
 ): boolean {
   if (!mediciones || mediciones.length === 0 || !selectedNode) {
     return false
   }
 
-  // Filtrar mediciones del nodo seleccionado
-  const nodeMediciones = mediciones.filter(m => {
-    const matchNode = Number(m.nodoid) === Number(selectedNode.nodoid)
-    return matchNode
-  })
+  // Si hay cache, usarlo (precalculado)
+  if (cache) {
+    const entries = Array.from(cache.entries())
+    for (const [metricName, meds] of entries) {
+      if (matchesDataKey(metricName, dataKey) && meds.length > 0) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Fallback: búsqueda directa (sin cache)
+  const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
 
   if (nodeMediciones.length === 0) {
     return false
   }
 
-  // Buscar mediciones que coincidan con la métrica
   const matchingMediciones = nodeMediciones.filter(m => {
     const rawMetricName = m.localizacion?.metrica?.metrica || ''
-    const metricName = rawMetricName
-      .replace(/\r\n/g, ' ')
-      .replace(/\n/g, ' ')
-      .replace(/\r/g, ' ')
-      .trim()
-      .toLowerCase()
-    
-    if (dataKey === 'temperatura' && (
-      metricName.includes('temperatura') || metricName.includes('temp')
-    )) return true
-    
-    if (dataKey === 'humedad' && (
-      metricName.includes('humedad') || metricName.includes('humidity')
-    )) return true
-    
-    if (dataKey === 'conductividad' && (
-      metricName.includes('conductividad') || 
-      metricName.includes('electroconductividad') ||
-      metricName.includes('conductivity')
-    )) return true
-    
-    return false
+    const metricName = normalizeMetricName(rawMetricName)
+    return matchesDataKey(metricName, dataKey)
   })
   
   return matchingMediciones.length > 0
 }
 
 /**
- * Obtiene el valor actual para una métrica específica
+ * Obtiene el valor actual para una métrica específica (con cache optimizado)
  */
 export function getCurrentValue(
   dataKey: string,
-  mediciones: MedicionData[]
+  mediciones: MedicionData[],
+  cache?: Map<string, MedicionData[]>
 ): number {
   if (!mediciones || mediciones.length === 0) {
     return 0
   }
 
-  const matchingMediciones = mediciones.filter(m => {
-    const metricName = m.localizacion?.metrica?.metrica?.toLowerCase() || ''
-    
-    if (dataKey === 'temperatura' && (
-      metricName.includes('temperatura') || metricName.includes('temp')
-    )) return true
-    
-    if (dataKey === 'humedad' && (
-      metricName.includes('humedad') || metricName.includes('humidity')
-    )) return true
-    
-    if (dataKey === 'conductividad' && (
-      metricName.includes('conductividad') || 
-      metricName.includes('electroconductividad') ||
-      metricName.includes('conductivity')
-    )) return true
-    
-    return false
-  })
+  let matchingMediciones: MedicionData[] = []
+
+  // Si hay cache, usarlo
+  if (cache) {
+    const entries = Array.from(cache.entries())
+    for (const [metricName, meds] of entries) {
+      if (matchesDataKey(metricName, dataKey)) {
+        matchingMediciones = meds
+        break
+      }
+    }
+  } else {
+    // Fallback: búsqueda directa
+    matchingMediciones = mediciones.filter(m => {
+      const rawMetricName = m.localizacion?.metrica?.metrica || ''
+      const metricName = normalizeMetricName(rawMetricName)
+      return matchesDataKey(metricName, dataKey)
+    })
+  }
 
   if (matchingMediciones.length === 0) return 0
 
-  // Obtener el valor más reciente (ordenado por fecha descendente)
-  const sorted = [...matchingMediciones].sort((a, b) => 
-    new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-  )
+  // Obtener el valor más reciente (sin copia innecesaria)
+  let maxDate = new Date(matchingMediciones[0].fecha).getTime()
+  let latestMedicion = matchingMediciones[0]
 
-  const latestValue = sorted[0]?.medicion
+  for (let i = 1; i < matchingMediciones.length; i++) {
+    const time = new Date(matchingMediciones[i].fecha).getTime()
+    if (time > maxDate) {
+      maxDate = time
+      latestMedicion = matchingMediciones[i]
+    }
+  }
+
+  const latestValue = latestMedicion?.medicion
   return latestValue ? Number(latestValue) : 0
 }
 
@@ -301,5 +350,75 @@ export function getDateRange(
   return {
     start: formatDateForBackend(startDate),
     end: formatDateForBackend(endDate)
+  }
+}
+
+// ============================================================================
+// HELPERS PARA OPTIMIZACIÓN DE RENDERIZADO
+// ============================================================================
+
+/**
+ * Crea un cache de mediciones por métrica normalizada para una sola pasada de datos
+ * Esto evita filtrar repetidamente las mediciones para cada métrica
+ */
+export function createMetricCache(mediciones: MedicionData[], nodeId: number): Map<string, MedicionData[]> {
+  return createMedicionCache(mediciones, nodeId)
+}
+
+/**
+ * Estructura de datos para pasar a componentes que necesitan info de métricas
+ */
+export interface MetricCacheData {
+  cache: Map<string, MedicionData[]>
+  hasData: (dataKey: string) => boolean
+  getCurrentValue: (dataKey: string) => number
+  nodeId: number
+}
+
+/**
+ * Factory function para crear un helper optimizado de métricas
+ * Realiza una sola pasada sobre los datos en lugar de múltiples
+ */
+export function createOptimizedMetricHelper(
+  mediciones: MedicionData[],
+  nodeId: number
+): MetricCacheData {
+  const cache = createMedicionCache(mediciones, nodeId)
+  
+  const entries = Array.from(cache.entries())
+  
+  return {
+    cache,
+    hasData: (dataKey: string) => {
+      for (const [metricName, meds] of entries) {
+        if (matchesDataKey(metricName, dataKey) && meds.length > 0) {
+          return true
+        }
+      }
+      return false
+    },
+    getCurrentValue: (dataKey: string) => {
+      for (const [metricName, meds] of entries) {
+        if (matchesDataKey(metricName, dataKey)) {
+          if (meds.length === 0) return 0
+          
+          let maxDate = new Date(meds[0].fecha).getTime()
+          let latestMedicion = meds[0]
+          
+          for (let i = 1; i < meds.length; i++) {
+            const time = new Date(meds[i].fecha).getTime()
+            if (time > maxDate) {
+              maxDate = time
+              latestMedicion = meds[i]
+            }
+          }
+          
+          const latestValue = latestMedicion?.medicion
+          return latestValue ? Number(latestValue) : 0
+        }
+      }
+      return 0
+    },
+    nodeId
   }
 }
