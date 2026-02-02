@@ -1,62 +1,62 @@
 /**
- * NotificacionesMain - Componente principal para administración de tablas de notificaciones
+ * SystemParameters - Componente principal para administración de parámetros del sistema
  * Versión simplificada usando configuración centralizada
  */
 
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 
 // Contexts
-import { useAuth } from '../../../contexts/AuthContext';
-import { useLanguage } from '../../../contexts/LanguageContext';
-import { useFilters } from '../../../contexts/FilterContext';
-import { useSidebar } from '../../../contexts/SidebarContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useFilters } from '../../contexts/FilterContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 // Config & Types
-import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../../../config/tables.config';
-import { TableName, PRIMARY_KEY_MAP } from '../../../types';
-import type { ColumnInfo } from '../../../types/systemParameters';
+import { TABLES_CONFIG, getTableConfig, getTablesByCategory, TABLE_CATEGORIES, TableConfig } from '../../config/tables.config';
+import { TableName, PRIMARY_KEY_MAP } from '../../types';
+import type { ColumnInfo } from '../../types/systemParameters';
 
 // Hooks
-import { useTableCRUD } from '../../../hooks/useTableCRUD';
-import { useTableDataManagement } from '../../../hooks/useTableDataManagement';
-import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
-import { useInsertForm } from '../../../hooks/useInsertForm';
+import { useTableCRUD } from '../../hooks/useTableCRUD';
+import { useTableDataManagement } from '../../hooks/useTableDataManagement';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useInsertForm } from '../../hooks/useInsertForm';
 
 // Components
-import { LoadingSpinner } from '../../system-parameters/LoadingSpinner';
-import { MessageDisplay } from '../../system-parameters/MessageDisplay';
-import { PaginationControlsCompat } from '../../../components/shared/ui/pagination/PaginationControlsCompat';
-import { SearchBarWithCounter } from '../../system-parameters/SearchBarWithCounter';
-import { StatusTab } from '../../system-parameters/StatusTab/StatusTab';
-import { InsertTab } from '../../system-parameters/InsertTab/InsertTab';
-import { UpdateTab } from '../../system-parameters/UpdateTab/UpdateTab';
-import { TableSelector } from '../../system-parameters/components/TableSelector';
-import { MassiveOperationsRenderer } from '../../system-parameters/components/MassiveOperationsRenderer';
-import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
-import { logger } from '../../../utils/logger';
+import { LoadingSpinner } from './LoadingSpinner';
+import { MessageDisplay } from './MessageDisplay';
+import { PaginationControlsCompat } from '../../components/shared/ui/pagination/PaginationControlsCompat';
+import { SearchBarWithCounter } from './SearchBarWithCounter';
+import { StatusTab } from './StatusTab/StatusTab';
+import { InsertTab } from './InsertTab/InsertTab';
+import { UpdateTab } from './UpdateTab/UpdateTab';
+import { TableSelector } from './components/TableSelector';
+import { MassiveOperationsRenderer } from './components/MassiveOperationsRenderer';
+import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { logger } from '../../utils/logger';
 
 // Hooks
-import { useSystemParametersUtils } from '../../system-parameters/hooks/useSystemParametersUtils';
-import { useSystemParametersCRUD } from '../../system-parameters/hooks/useSystemParametersCRUD';
-import { useMassiveOperations } from '../../system-parameters/hooks/useMassiveOperations';
-import { useSystemParametersSync } from '../../system-parameters/hooks/useSystemParametersSync';
-import { getUniqueOptionsForField } from '../../system-parameters/utils/getUniqueOptionsForField';
+import { useSystemParametersUtils } from './hooks/useSystemParametersUtils';
+import { useSystemParametersCRUD } from './hooks/useSystemParametersCRUD';
+import { useMassiveOperations } from './hooks/useMassiveOperations';
+import { useSystemParametersSync } from './hooks/useSystemParametersSync';
+import { getUniqueOptionsForField } from './utils/getUniqueOptionsForField';
 
 // ============================================================================
 // INTERFACES
 // ============================================================================
 
-interface NotificacionesMainProps {
+interface SystemParametersProps {
   selectedTable?: string;
   onTableSelect?: (table: string) => void;
   activeSubTab?: 'status' | 'insert' | 'update' | 'massive';
   onSubTabChange?: (subTab: 'status' | 'insert' | 'update' | 'massive') => void;
   onFormDataChange?: (formData: Record<string, any>, multipleData: any[]) => void;
   onMassiveFormDataChange?: (massiveFormData: Record<string, any>) => void;
-  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
+  themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple';
 }
 
-export interface NotificacionesMainRef {
+export interface SystemParametersRef {
   hasUnsavedChanges: () => boolean;
   handleTabChange: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   handleTableChange: (table: string) => void;
@@ -71,14 +71,14 @@ interface Message {
 // COMPONENT
 // ============================================================================
 
-const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainProps>(({
+const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(({
   selectedTable: propSelectedTable,
   onTableSelect,
   activeSubTab: propActiveSubTab = 'status',
   onSubTabChange: propOnSubTabChange, // Renombrar para evitar conflicto
   onFormDataChange,
   onMassiveFormDataChange,
-  themeColor = 'cyan'
+  themeColor = 'orange'
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -169,6 +169,33 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     setLoading // Para establecer loading inmediatamente
   } = useTableDataManagement();
 
+  // Cargar datos relacionados al montar el componente
+  useEffect(() => {
+    loadRelatedTablesData();
+  }, [loadRelatedTablesData]);
+
+  // Recargar datos relacionados cuando se selecciona una tabla que los necesita
+  // Esto asegura que los datos estén disponibles incluso si el componente ya estaba montado
+  useEffect(() => {
+    if (selectedTable && ['sensor', 'tipo', 'metrica', 'nodo'].includes(selectedTable)) {
+      // Verificar si tiposData está vacío y recargar si es necesario
+      if (selectedTable === 'sensor' && (!tiposData || tiposData.length === 0)) {
+        loadRelatedTablesData().catch(err => {
+          console.error('❌ [SystemParameters] Error al recargar datos relacionados:', err);
+        });
+      }
+    }
+  }, [selectedTable, tiposData, loadRelatedTablesData]);
+
+  // También recargar cuando se cambia a la pestaña 'insert' si tiposData está vacío
+  useEffect(() => {
+    if (activeSubTab === 'insert' && selectedTable === 'sensor' && (!tiposData || tiposData.length === 0)) {
+      loadRelatedTablesData().catch(err => {
+        console.error('❌ [SystemParameters] Error al recargar datos relacionados en insert:', err);
+      });
+    }
+  }, [activeSubTab, selectedTable, tiposData, loadRelatedTablesData]);
+
   // Hook para formulario de inserción (estado completamente aislado de UPDATE)
   // IMPORTANTE: Debe ir después de useTableDataManagement para tener acceso a codigotelefonosData
   const insertForm = useInsertForm({
@@ -200,19 +227,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   // Filtrar columnas duplicadas (basándose en columnName)
   // También filtrar campos ocultos y de solo lectura que no deberían aparecer en formularios
   const uniqueColumns = useMemo(() => {
-    console.log('[SystemParameters] Calculando uniqueColumns', {
-      selectedTable,
-      columnsCount: columns.length,
-      columnsNames: columns.map(c => c.columnName),
-      hasColumns: !!columns && columns.length > 0,
-      timestamp: Date.now()
-    });
-    
     if (!columns || columns.length === 0) {
-      console.log('[SystemParameters] uniqueColumns retornando vacío - no hay columnas', {
-        selectedTable,
-        timestamp: Date.now()
-      });
       return [];
     }
     
@@ -241,16 +256,16 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
       }
       
       // También excluir la clave primaria de la tabla SOLO si es auto-incremental
-      // (es decir, si NO es una foreign key requerida)
+      // (es decir, si NO es una foreign key requerida Y está marcada como hidden)
       const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
       if (primaryKey) {
         const primaryKeyFields = Array.isArray(primaryKey) ? primaryKey : [primaryKey];
         if (primaryKeyFields.includes(col.columnName)) {
           // Verificar si el campo de clave primaria es una foreign key
           const fieldConfig = config?.fields.find(f => f.name === col.columnName);
-          // Si NO es foreign key, entonces es auto-incremental y debe excluirse
-          // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
-          if (!fieldConfig?.foreignKey) {
+          // Si NO es foreign key Y está marcado como hidden, entonces es auto-incremental y debe excluirse
+          // Si ES foreign key O NO está hidden, NO debe excluirse porque el usuario debe ingresarlo/seleccionarlo
+          if (!fieldConfig?.foreignKey && fieldConfig?.hidden) {
             continue;
           }
         }
@@ -263,71 +278,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     if (selectedTable === 'perfil') {
     }
     
-    console.log('[SystemParameters] uniqueColumns calculado', {
-      selectedTable,
-      filteredCount: filtered.length,
-      filteredNames: filtered.map(c => c.columnName),
-      timestamp: Date.now()
-    });
-    
     return filtered;
   }, [columns, selectedTable]);
-
-  // Cargar datos relacionados al montar el componente (una sola vez)
-  useEffect(() => {
-    loadRelatedTablesData();
-  }, [loadRelatedTablesData]);
-
-  // ============================================================================
-  // INTEGRACIÓN CON SIDEBAR - Detectar y marcar cambios sin guardar
-  // ============================================================================
-  
-  // Detectar cambios sin guardar y marcarlos en el sidebar
-  // SOLO marcar dirty en CREAR, MASIVO o ACTUALIZAR (no en STATUS)
-  useEffect(() => {
-    if (!selectedTable) {
-      sidebar.markDirty(`notificaciones-${selectedTable}`, false);
-      return;
-    }
-
-    const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
-    
-    // En STATUS no hay cambios sin guardar
-    if (activeSubTab === 'status') {
-      sidebar.markDirty(panelId, false);
-      return;
-    }
-    
-    let hasChanges = false;
-
-    if (activeSubTab === 'insert') {
-      // Verificar cambios en formulario de inserción
-      hasChanges = hasUnsavedChanges({
-        formData: insertForm?.formData || {},
-        selectedTable,
-        activeSubTab
-      });
-    } else if (activeSubTab === 'update') {
-      // Verificar cambios en formulario de actualización
-      if (updateFormData && Object.keys(updateFormData).length > 0) {
-        const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
-        hasChanges = hasRealChanges;
-      }
-    } else if (activeSubTab === 'massive') {
-      // Verificar cambios en formulario masivo
-      if (massiveFormData && Object.keys(massiveFormData).length > 0) {
-        hasChanges = hasUnsavedChanges({
-          formData: massiveFormData,
-          selectedTable,
-          activeSubTab
-        });
-      }
-    }
-
-    // Marcar en el sidebar (sin incluir sidebar/hasUnsavedChanges en dependencias para evitar loops)
-    sidebar.markDirty(panelId, hasChanges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, massiveFormData]);
 
   // Adaptar relatedData para StatusTab
   const relatedDataForStatus = useMemo(() => {
@@ -352,10 +304,10 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
       reglasData: safeReglasData,
       origenesData: safeOrigenesData,
       fuentesData: safeFuentesData,
-      canalesData: Array.isArray(canalesData) ? canalesData : [],
       userData: Array.isArray(userData) ? userData : [],
       sensorsData: Array.isArray(sensorsData) ? sensorsData : [],
       codigotelefonosData: Array.isArray(codigotelefonosData) ? codigotelefonosData : [],
+      canalesData: Array.isArray(canalesData) ? canalesData : [],
       contactosData: Array.isArray(contactosData) ? contactosData : [],
       correosData: Array.isArray(correosData) ? correosData : []
     };
@@ -377,10 +329,10 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     reglasData,
     origenesData,
     fuentesData,
-    canalesData,
     userData,
     sensorsData,
     codigotelefonosData,
+    canalesData,
     contactosData,
     correosData,
     selectedTable // Agregado para que el useMemo se recalcule cuando cambia selectedTable
@@ -398,15 +350,61 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   // Ref para rastrear si el cambio viene de ProtectedSubTabButton (ya validado)
   const changeFromProtectedButtonRef = useRef<boolean>(false);
   
-  // Efecto para resetear isProcessingTabChangeRef cuando se cancela el modal
-  useEffect(() => {
-    // Si el modal se cierra y no hay pendingTransition, significa que se canceló
-    // Resetear el ref para permitir futuros cambios
-    if (!sidebar.showModal && !sidebar.pendingTransition && isProcessingTabChangeRef.current) {
-      isProcessingTabChangeRef.current = false;
-    }
-  }, [sidebar.showModal, sidebar.pendingTransition]);
+  // Ref para rastrear cuando el cambio de tabla viene de ProtectedParameterButton
+  // Esto evita que se valide el cambio de activeSubTab cuando viene de un cambio de tabla
+  const isTableChangeFromProtectedButtonRef = useRef<boolean>(false);
   
+  // Monitorear cambios sin guardar y notificar al sidebar
+  // SOLO marcar dirty en CREAR, ASIGNAR, MASIVO o ACTUALIZAR (no en STATUS)
+  useEffect(() => {
+    if (!selectedTable) return;
+    
+    // Solo verificar cambios en pestañas que tienen formularios editables
+    if (activeSubTab === 'status') {
+      // En STATUS no hay cambios sin guardar
+      const panelId = `system-parameters-${selectedTable}`;
+      sidebar.markDirty(panelId, false);
+      return;
+    }
+    
+    let hasChanges = false;
+    if (activeSubTab === 'insert') {
+      // Verificar con hasUnsavedChanges para detectar cambios reales
+      hasChanges = hasUnsavedChanges({
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab
+      });
+    } else if (activeSubTab === 'update') {
+      // Verificar cambios en formulario de actualización
+      if (updateFormData && Object.keys(updateFormData).length > 0) {
+        const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
+        hasChanges = hasRealChanges;
+      }
+    } else if (activeSubTab === 'massive') {
+      // Verificar cambios en formulario masivo
+      if (massiveFormData && Object.keys(massiveFormData).length > 0) {
+        hasChanges = hasUnsavedChanges({
+          formData: massiveFormData,
+          selectedTable,
+          activeSubTab
+        });
+      }
+    } else if (activeSubTab === 'asignar') {
+      // Verificar cambios en formulario de asignar (similar a insert)
+      hasChanges = hasUnsavedChanges({
+        formData: insertForm?.formData || {},
+        selectedTable,
+        activeSubTab: 'insert' // Usar 'insert' para la detección ya que 'asignar' es similar
+      });
+    }
+
+    // Marcar en el sidebar (sin incluir sidebar en dependencias para evitar loops)
+    const panelId = `system-parameters-${selectedTable}`;
+    sidebar.markDirty(panelId, hasChanges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTable, activeSubTab, insertForm?.formData, updateFormData, massiveFormData]);
+
   // Hook de sincronización (se define antes de handleSubTabChangeInternal para evitar dependencia circular)
   useSystemParametersSync({
     propSelectedTable,
@@ -416,6 +414,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     formState,
     setSelectedTable,
     setActiveSubTab: (tab) => {
+      // Si el cambio viene de un cambio de tabla (ProtectedParameterButton), NO validar
+      if (isTableChangeFromProtectedButtonRef.current) {
+        setActiveSubTabState(tab);
+        return;
+      }
       // Interceptar para pasar por validación - se usará el ref cuando esté disponible
       handleSubTabChangeInternalRef.current?.(tab);
     },
@@ -573,92 +576,56 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
 
   // Helper para getUniqueOptionsForField (para InsertTab y UpdateTab)
   const getUniqueOptionsForFieldHelper = useCallback((columnName: string) => {
-    const result = getUniqueOptionsForField({
+    return getUniqueOptionsForField({
       columnName,
       selectedTable,
       relatedDataForStatus
     });
-    
-    return result;
   }, [selectedTable, relatedDataForStatus]);
 
   // Handlers de navegación
+  // IMPORTANTE: Este handler NO debe validar cambios si viene de ProtectedParameterButton
+  // ProtectedParameterButton ya valida y muestra el modal antes de llamar a onTableSelect
+  // Este handler solo se usa internamente o desde TableSelector (que no usa ProtectedParameterButton)
   const handleTableSelect = useCallback((table: string) => {
-    // Verificar si hay cambios sin guardar antes de cambiar de tabla
-    if (selectedTable) {
-      if (activeSubTab === 'insert') {
-        // Verificar con hasUnsavedChanges para detectar cambios reales
-        const hasChanges = hasUnsavedChanges({
-          formData: insertForm?.formData || {},
-          selectedTable,
-          activeSubTab
-        });
-        
-        // Si hay cambios, mostrar confirmación
-        if (hasChanges) {
-          if (!window.confirm('¿Está seguro? Los datos ingresados se perderán.')) {
-            return; // Cancelar cambio de tabla
-          }
-        }
-      } else if (activeSubTab === 'update') {
-        // Para update: verificar si hay cambios o si el formulario está abierto
-        // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
-        if (updateFormData && Object.keys(updateFormData).length > 0) {
-          // Verificar si realmente hay cambios (no es solo el marcador de formulario abierto)
-          const hasRealChanges = !updateFormData.__formOpen || updateFormData.__hasChanges !== false;
-          
-          if (hasRealChanges) {
-            // Obtener nombre de la tabla actual y destino
-            const getTableName = (table: string) => {
-              const config = getTableConfig(table as TableName);
-              return config?.displayName || table;
-            };
-            
-            // Usar el sistema del sidebar para mostrar el modal de cambio de tabla
-            // El cambio de tabla dentro de la misma sección también debe verificar cambios
-            const currentPanelId = `notificaciones-${selectedTable}-${activeSubTab}`;
-            const hasChanges = sidebar.hasUnsavedChanges[currentPanelId] === true;
-            
-            if (hasChanges) {
-              // Guardar la acción de cambio de tabla para ejecutarla después de confirmar
-              const executeTableChange = () => {
-                sidebar.markDirty(currentPanelId, false);
-                setSelectedTable(table);
-                onTableSelect?.(table);
-                setActiveSubTabState('status');
-                propOnSubTabChange?.('status');
-                setMessage(null);
-                resetForm();
-                setUpdateFormData({});
-              };
-              
-              // Usar requestSubTabChange para mostrar el modal (aunque técnicamente es cambio de tabla)
-              // Esto unifica el sistema de modales
-              sidebar.requestSubTabChange?.('status', executeTableChange);
-            } else {
-              // No hay cambios, proceder directamente
-              setSelectedTable(table);
-              onTableSelect?.(table);
-              setActiveSubTabState('status');
-              propOnSubTabChange?.('status');
-              setMessage(null);
-              resetForm();
-              setUpdateFormData({});
-            }
-            return; // Cancelar cambio de tabla (el modal manejará la confirmación)
-          }
-        }
-      }
+    // Si la tabla es la misma, no hacer nada
+    if (table === selectedTable) {
+      return;
     }
     
+    // Marcar que el cambio viene de ProtectedParameterButton (ya validado)
+    // Esto evitará que useSystemParametersSync valide el cambio de activeSubTab
+    isTableChangeFromProtectedButtonRef.current = true;
+    skipNextSyncRef.current = true;
+    
+    // NO validar cambios aquí - ProtectedParameterButton ya lo hace
+    // Limpiar formulario ANTES de actualizar estados para evitar que se detecten cambios
+    resetForm();
+    setUpdateFormData({});
+    setInsertedRecords([]);
+    
+    // Actualizar el estado y llamar al callback del padre
     setSelectedTable(table);
     onTableSelect?.(table);
     setActiveSubTabState('status');
     propOnSubTabChange?.('status');
     setMessage(null);
-    resetForm();
-    setUpdateFormData({}); // Limpiar datos de actualización
-  }, [selectedTable, formState.data, activeSubTab, hasUnsavedChanges, onTableSelect, propOnSubTabChange, resetForm, updateFormData]);
+    
+    // Resetear el ref después de un delay para permitir futuros cambios
+    setTimeout(() => {
+      isTableChangeFromProtectedButtonRef.current = false;
+      skipNextSyncRef.current = false;
+    }, 500);
+  }, [selectedTable, onTableSelect, propOnSubTabChange, resetForm, updateFormData, setInsertedRecords, skipNextSyncRef]);
+
+  // Efecto para resetear isProcessingTabChangeRef cuando se cancela el modal
+  useEffect(() => {
+    // Si el modal se cierra y no hay pendingTransition, significa que se canceló
+    // Resetear el ref para permitir futuros cambios
+    if (!sidebar.showModal && !sidebar.pendingTransition && isProcessingTabChangeRef.current) {
+      isProcessingTabChangeRef.current = false;
+    }
+  }, [sidebar.showModal, sidebar.pendingTransition]);
 
   // handleSubTabChange interno que verifica cambios sin guardar
   const handleSubTabChangeInternal = useCallback((tab: 'status' | 'insert' | 'update' | 'massive') => {
@@ -700,15 +667,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     }
     
     // Verificar si hay cambios sin guardar antes de cambiar de pestaña
-    // IMPORTANTE: Si el cambio viene de ProtectedSubTabButton, ya se validó y mostró el modal allí
-    // No mostrar el modal de nuevo aquí para evitar duplicación
-    if (activeSubTab === 'insert' && !changeFromProtectedButtonRef.current) {
-      console.log('[NotificacionesMain] Verificando cambios en INSERT', {
-        formData: insertForm?.formData || {},
-        selectedTable,
-        activeSubTab
-      });
-      
+    if (activeSubTab === 'insert') {
       // Verificar con hasUnsavedChanges para detectar cambios reales
       const hasChanges = hasUnsavedChanges({
         formData: insertForm?.formData || {},
@@ -735,15 +694,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         const currentTabName = getSubTabName(activeSubTab);
         const targetTabName = getSubTabName(tab);
         
-        console.log('[SystemParameters] Llamando a showModal', {
-          currentTabName,
-          targetTabName,
-          activeSubTab,
-          tab
-        });
-        
         // Usar el sistema del sidebar para mostrar el modal
-        const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+        const panelId = `system-parameters-${selectedTable}`;
         
         // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
         // Esto previene que el cambio se ejecute antes de que el usuario confirme
@@ -756,7 +708,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         });
         return; // IMPORTANTE: Salir aquí para NO proceder con el cambio de pestaña
       }
-    } else if (activeSubTab === 'update' && !changeFromProtectedButtonRef.current) {
+    } else if (activeSubTab === 'update') {
       // Para update: verificar si hay cambios o si el formulario está abierto
       // updateFormData puede tener datos reales o un objeto especial { __formOpen: true, __hasChanges: false }
       if (updateFormData && Object.keys(updateFormData).length > 0) {
@@ -767,8 +719,19 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
           // Activar guard para prevenir múltiples llamadas
           isProcessingTabChangeRef.current = true;
           
+          // Obtener nombres de las pestañas
+          const getSubTabName = (subTab: string) => {
+            const names: { [key: string]: string } = {
+              'status': 'Estado',
+              'insert': 'Crear',
+              'update': 'Actualizar',
+              'massive': 'Masivo'
+            };
+            return names[subTab] || subTab;
+          };
+          
           // Usar el sistema del sidebar para mostrar el modal
-          const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
+          const panelId = `system-parameters-${selectedTable}`;
           
           // CRÍTICO: Revertir propActiveSubTab inmediatamente para evitar que useSystemParametersSync procese el cambio
           // Esto previene que el cambio se ejecute antes de que el usuario confirme
@@ -815,17 +778,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   }, [handleSubTabChangeInternal]);
 
   const handleRowSelect = useCallback((row: any) => {
-    console.log('[NotificacionesMain] handleRowSelect llamado:', {
-      tableName: selectedTable,
-      row: row,
-      hasRow: !!row,
-      rowKeys: row ? Object.keys(row) : []
-    });
     setSelectedRow(row);
     // NO llamar setFormData aquí - useUpdateForm maneja su propio estado interno
     // setFormData(row); // <-- ESTO CONTAMINABA EL ESTADO COMPARTIDO
     handleSubTabChangeInternal('update');
-  }, [handleSubTabChangeInternal, selectedTable]); // Usar handleSubTabChangeInternal en lugar de llamar directamente
+  }, [handleSubTabChangeInternal]); // Usar handleSubTabChangeInternal en lugar de llamar directamente
 
 
   // ============================================================================
@@ -1056,18 +1013,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
               />
             )}
             {(() => {
-              if (activeSubTab === 'insert') {
-                console.log('[SystemParameters] Condición para InsertTab', {
-                  activeSubTab,
-                  hasInsertForm: !!insertForm,
-                  selectedTable,
-                  resetKey: getResetKey(),
-                  insertTabKey,
-                  columnsCount: columns.length,
-                  hasConfig: !!config,
-                  timestamp: Date.now()
-                });
-              }
               return null;
             })()}
             {activeSubTab === 'insert' && insertForm && (
@@ -1092,21 +1037,12 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 empresaSeleccionada={empresaSeleccionada}
                 fundoSeleccionado={fundoSeleccionado}
                 visibleColumns={(() => {
-                  console.log('[SystemParameters] Calculando visibleColumns para InsertTab', {
-                    selectedTable,
-                    uniqueColumnsCount: uniqueColumns.length,
-                    uniqueColumnsNames: uniqueColumns.map(c => c.columnName),
-                    columnsCount: columns.length,
-                    columnsNames: columns.map(c => c.columnName),
-                    timestamp: Date.now()
-                  });
-                  
                   const filtered = uniqueColumns.filter(col => {
                     // Filtrar campos automáticos que no deben aparecer en formularios
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
                     
                     // Excluir la clave primaria de la tabla SOLO si es auto-incremental
-                    // (es decir, si NO es una foreign key requerida)
+                    // (es decir, si NO es una foreign key requerida Y está marcada como hidden)
                     const primaryKey = PRIMARY_KEY_MAP[selectedTable as TableName];
                     if (primaryKey) {
                       const config = getTableConfig(selectedTable as TableName);
@@ -1115,23 +1051,15 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                       primaryKeyFields.forEach(pk => {
                         // Verificar si el campo de clave primaria es una foreign key
                         const fieldConfig = config?.fields.find(f => f.name === pk);
-                        // Si NO es foreign key, entonces es auto-incremental y debe excluirse
-                        // Si ES foreign key, NO debe excluirse porque el usuario debe seleccionarlo
-                        if (!fieldConfig?.foreignKey) {
+                        // Si NO es foreign key Y está marcado como hidden, entonces es auto-incremental y debe excluirse
+                        // Si ES foreign key O NO está hidden, NO debe excluirse porque el usuario debe ingresarlo/seleccionarlo
+                        if (!fieldConfig?.foreignKey && fieldConfig?.hidden) {
                           excludedFields.push(pk);
                         }
                       });
                     }
                     
                     return !excludedFields.includes(col.columnName);
-                  });
-                  
-                  console.log('[SystemParameters] visibleColumns calculado', {
-                    selectedTable,
-                    filteredCount: filtered.length,
-                    filteredNames: filtered.map(c => c.columnName),
-                    excludedFields: ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'],
-                    timestamp: Date.now()
                   });
                   
                   return filtered;
@@ -1146,31 +1074,19 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 themeColor={themeColor}
               />
             )}
-            {activeSubTab === 'update' && (() => {
-              console.log('[NotificacionesMain] Renderizando UpdateTab:', {
-                activeSubTab,
-                selectedTable,
-                hasConfig: !!config,
-                configAllowUpdate: config?.allowUpdate,
-                hasSelectedRow: !!selectedRow,
-                selectedRowKeys: selectedRow ? Object.keys(selectedRow) : [],
-                tableDataCount: tableState.data?.length || 0,
-                columnsCount: uniqueColumns.length
-              });
-              return (
-                <UpdateTab
-                  tableName={selectedTable}
-                  tableData={tableState.data}
-                  columns={uniqueColumns}
-                  relatedData={relatedDataForStatus}
-                  config={config}
-                  updateRow={updateRow}
-                  getPrimaryKeyValue={getPrimaryKeyValue}
-                  user={user}
-                  loading={tableState.loading}
-                  themeColor={themeColor}
-                  initialSelectedRow={selectedRow}
-                  visibleColumns={uniqueColumns.filter(col => {
+            {activeSubTab === 'update' && (
+              <UpdateTab
+                tableName={selectedTable}
+                tableData={tableState.data}
+                columns={uniqueColumns}
+                relatedData={relatedDataForStatus}
+                config={config}
+                updateRow={updateRow}
+                getPrimaryKeyValue={getPrimaryKeyValue}
+                user={user}
+                loading={tableState.loading}
+                themeColor={themeColor}
+                visibleColumns={uniqueColumns.filter(col => {
                   // Filtrar campos automáticos que no deben aparecer en formularios
                   const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
                   
@@ -1207,8 +1123,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                   }
                 }}
               />
-              );
-            })()}
+            )}
             {activeSubTab === 'massive' && (
               <MassiveOperationsRenderer
                 selectedTable={selectedTable}
@@ -1233,6 +1148,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                   }
                 }}
                 localizacionesData={localizacionesData || []}
+                entidadesData={relatedDataForStatus.entidadesData || []}
               />
             )}
           </div>
@@ -1250,7 +1166,7 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   );
 });
 
-NotificacionesMain.displayName = 'NotificacionesMain';
+SystemParameters.displayName = 'SystemParameters';
 
-export default NotificacionesMain;
+export default SystemParameters;
 

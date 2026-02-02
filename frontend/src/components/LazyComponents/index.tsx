@@ -11,8 +11,8 @@ const LoadingSpinner: React.FC = () => (
 
 // Lazy load SystemParameters component con preload
 const SystemParametersLazy = lazy(() => 
-  import('../SystemParameters').then(module => {
-    return { default: module.default };
+  import('../../features/system-parameters').then(module => {
+    return { default: module.SystemParameters };
   })
 );
 
