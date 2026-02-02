@@ -1,15 +1,20 @@
+/**
+ * ReglasMain - Legacy compatibility re-exports
+ * All components and exports from features/rules/
+ */
+
 // Main component
-export { default } from './ReglasMain';
+export { default } from '../../features/rules';
 
 // Hooks
-export { useReglasData } from './hooks/useReglasData';
-export { useReglasOperations } from './hooks/useReglasOperations';
-export { useReglasValidation } from './hooks/useReglasValidation';
+export { useReglasData } from '../../features/rules';
+export { useReglasOperations } from '../../features/rules';
+export { useReglasValidation } from '../../features/rules';
 
 // Components
-export { ReglasStatusTab } from './components/ReglasStatusTab';
-export { ReglasInsertTab } from './components/ReglasInsertTab';
-export { ReglasUpdateTab } from './components/ReglasUpdateTab';
+export { ReglasStatusTab } from '../../features/rules';
+export { ReglasInsertTab } from '../../features/rules';
+export { ReglasUpdateTab } from '../../features/rules';
 
 // Types
 export type {
@@ -21,7 +26,7 @@ export type {
   RelatedData,
   OperationResult,
   UmbralData
-} from './types';
+} from '../../features/rules';
 
 // Utils
-export { getSubTabName, isFieldVisibleInForm, EXCLUDED_FORM_FIELDS } from './utils';
+export { getSubTabName, isFieldVisibleInForm, EXCLUDED_FORM_FIELDS } from '../../features/rules';
