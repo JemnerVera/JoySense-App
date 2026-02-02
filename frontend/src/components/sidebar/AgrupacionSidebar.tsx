@@ -5,7 +5,7 @@
 
 import React from 'react';
 import BaseAuxiliarySidebar from './BaseAuxiliarySidebar';
-import ProtectedParameterButton from '../ProtectedParameterButton';
+import ProtectedParameterButton from '../protected/ProtectedParameterButton';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AgrupacionSidebarProps {
