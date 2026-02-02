@@ -8,7 +8,7 @@ import { useStatusTable } from '../../../hooks/useStatusTable';
 import { TableStatsDisplay } from '../TableStatsDisplay';
 import { SearchBarWithCounter } from '../SearchBarWithCounter';
 import { LoadingSpinner } from '../LoadingSpinner';
-import { PaginationControls } from '../../shared/ui/pagination/PaginationControls';
+import { PaginationControlsCompat } from '../../shared/ui/pagination/PaginationControlsCompat';
 import { StatusTableMemo as StatusTable } from './StatusTable';
 import type { ColumnInfo } from '../../../types/systemParameters';
 import type { RelatedData } from '../../../utils/systemParametersUtils';
@@ -92,7 +92,7 @@ const StatusTabComponent: React.FC<StatusTabProps> = ({
 
           {/* Paginación */}
           {visibleColumns.length > 0 && (
-            <PaginationControls
+            <PaginationControlsCompat
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}

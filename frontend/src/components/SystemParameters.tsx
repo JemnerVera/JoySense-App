@@ -25,7 +25,7 @@ import { useInsertForm } from '../hooks/useInsertForm';
 // Components
 import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
 import { MessageDisplay } from './SystemParameters/MessageDisplay';
-import { PaginationControls } from './shared/ui/pagination/PaginationControls';
+import { PaginationControlsCompat } from './shared/ui/pagination/PaginationControlsCompat';
 import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
 import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
@@ -867,7 +867,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
               </tbody>
             </table>
 
-            <PaginationControls
+            <PaginationControlsCompat
               currentPage={tableState.currentPage}
               totalPages={tableState.totalPages}
               onPageChange={setPage}

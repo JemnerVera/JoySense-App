@@ -8,7 +8,7 @@ import { useUpdateTable } from '../../../hooks/useUpdateTable';
 import { useUpdateForm } from '../../../hooks/useUpdateForm';
 import { SearchBarWithCounter } from '../SearchBarWithCounter';
 import { LoadingSpinner } from '../LoadingSpinner';
-import { PaginationControls } from '../../shared/ui/pagination/PaginationControls';
+import { PaginationControlsCompat } from '../../shared/ui/pagination/PaginationControlsCompat';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
 import { MessageDisplay } from '../MessageDisplay';
@@ -500,7 +500,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               />
 
               {/* Paginación */}
-              <PaginationControls
+              <PaginationControlsCompat
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
