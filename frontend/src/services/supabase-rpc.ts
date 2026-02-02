@@ -5,6 +5,7 @@
  */
 
 import { supabaseAuth } from './supabase-auth';
+import { logger } from '../utils/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // ============================================================================
@@ -210,11 +211,8 @@ export class SupabaseRPCService {
       }
 
       if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMedicionesAgregadas:', {
+        logger.debug('SupabaseRPCService', 'getMedicionesAgregadas', {
           nodoid: params.nodoid,
-          metricaid: params.metricaid,
-          startDate: params.startDate,
-          endDate: params.endDate,
           intervalMinutes: interval
         });
       }
@@ -239,7 +237,7 @@ export class SupabaseRPCService {
 
       return data;
     } catch (err: any) {
-      console.error('[SupabaseRPCService] Error en getMedicionesAgregadas:', err);
+      logger.error('SupabaseRPCService', 'Error in getMedicionesAgregadas', { error: err?.message });
       throw err;
     }
   }
@@ -263,7 +261,7 @@ export class SupabaseRPCService {
       }
 
       if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getEstadisticasMediciones:', params);
+        logger.debug('SupabaseRPCService', 'getEstadisticasMediciones', { nodoid: params.nodoid });
       }
 
       const { data, error } = await supabaseAuth
@@ -285,10 +283,7 @@ export class SupabaseRPCService {
 
       return data;
     } catch (err: any) {
-      console.error(
-        '[SupabaseRPCService] Error en getEstadisticasMediciones:',
-        err
-      );
+      logger.error('SupabaseRPCService', 'Error in getEstadisticasMediciones', { error: err?.message });
       throw err;
     }
   }

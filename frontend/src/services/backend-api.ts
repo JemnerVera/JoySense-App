@@ -3,6 +3,7 @@ import {
   Nodo, Sensor, Tipo, Umbral, AlertaRegla, AlertaConsolidado, Usuario,
   Contacto, Correo, Criticidad, CodigoTelefono, TableName, PaginatedResponse
 } from '../types';
+import { logger } from '../utils/logger';
 
 // Declaración para TypeScript
 declare const process: any;
@@ -26,13 +27,13 @@ function getBackendUrl(): string {
   
   // En producción con URL vacía o no configurada: usar rutas relativas
   if (process.env.NODE_ENV === 'production' && (!url || url === '')) {
-    console.log('✅ [Backend API] Usando rutas relativas (mismo origen)');
+    logger.info('Backend', 'Using relative URLs (same origin)');
     return API_PREFIX;
   }
   
   // En desarrollo, permitir fallback a localhost
   if (process.env.NODE_ENV === 'development' && !url) {
-    console.warn('⚠️ REACT_APP_BACKEND_URL no configurada, usando localhost por defecto');
+    logger.warn('Backend', 'REACT_APP_BACKEND_URL not configured, using localhost');
     return `http://localhost:3001${API_PREFIX}`;
   }
   
@@ -464,7 +465,7 @@ export class JoySenseService {
         endpoint = `/mediciones/mediciones?${params.toString()}`;
       }
       
-      console.log('[JoySenseService] getMediciones calling:', endpoint);
+      logger.debug('JoySenseService', 'getMediciones calling');
       const data = await backendAPI.get(endpoint, token || undefined);
 
       if (filters.countOnly) return data || { count: 0 };
@@ -923,13 +924,13 @@ export class JoySenseService {
         .rpc('fn_get_usuarioid_current_user');
 
       if (error) {
-        console.error('❌ Error calling fn_get_usuarioid_current_user:', error);
+        logger.error('JoySenseService', 'Error calling fn_get_usuarioid_current_user', { error: error.message });
         return null;
       }
 
       return data || null;
-    } catch (error) {
-      console.error('❌ Error in getCurrentUsuarioid:', error);
+    } catch (error: any) {
+      logger.error('JoySenseService', 'Error in getCurrentUsuarioid', { error: error?.message });
       return null;
     }
   }
@@ -948,13 +949,13 @@ export class JoySenseService {
         .rpc('fn_get_perfilid_current_user');
 
       if (error) {
-        console.error('❌ Error calling fn_get_perfilid_current_user:', error);
+        logger.error('JoySenseService', 'Error calling fn_get_perfilid_current_user', { error: error.message });
         return null;
       }
 
       return data || null;
-    } catch (error) {
-      console.error('❌ Error in getCurrentPerfilid:', error);
+    } catch (error: any) {
+      logger.error('JoySenseService', 'Error in getCurrentPerfilid', { error: error?.message });
       return null;
     }
   }
@@ -973,7 +974,7 @@ export class JoySenseService {
       const perfilid = await this.getCurrentPerfilid();
       
       if (!perfilid) {
-        console.error('[JoySenseService] ❌ No se pudo obtener perfilid');
+        logger.error('JoySenseService', 'Failed to get perfilid');
         return null;
       }
 
@@ -984,13 +985,13 @@ export class JoySenseService {
         .rpc('fn_get_user_menu_access', { perfilid_param: perfilid });
 
       if (error) {
-        console.error('[JoySenseService] ❌ Error en getUserMenuAccess:', error);
+        logger.error('JoySenseService', 'Error in getUserMenuAccess', { error: error.message });
         return null;
       }
 
       return data || [];
-    } catch (error) {
-      console.error('[JoySenseService] ❌ Error en getUserMenuAccess:', error);
+    } catch (error: any) {
+      logger.error('JoySenseService', 'Error in getUserMenuAccess', { error: error?.message });
       return null;
     }
   }
@@ -1121,7 +1122,7 @@ export class JoySenseService {
       const queryString = params.toString();
       const endpoint = `/generic/${tableName}${queryString ? '?' + queryString : ''}`;
       
-      console.log(`📡 [JoySenseService] getTableDataPaginated calling: ${endpoint}`);
+      logger.api('JoySenseService', 'getTableDataPaginated', { table: tableName });
       
       // Obtener token de sesión de Supabase para enviarlo al backend
       const { supabaseAuth } = await import('./supabase-auth');
@@ -1130,14 +1131,14 @@ export class JoySenseService {
       
       const response = await backendAPI.get(endpoint, token || undefined);
       
-      console.log(`📥 [JoySenseService] getTableDataPaginated response for ${tableName}:`, response);
+      logger.debug('JoySenseService', `Response for ${tableName}`, { dataCount: response?.data?.length || 0 });
       
       if (response && response.pagination) return response;
       
       const data = Array.isArray(response) ? response : (response?.data || []);
       return { data };
-    } catch (error) {
-      console.error(`❌ [backend-api] Error in getTableDataPaginated for ${tableName}:`, error);
+    } catch (error: any) {
+      logger.error('JoySenseService', `Error in getTableDataPaginated for ${tableName}`, { error: error?.message });
       throw error;
     }
   }
@@ -1160,8 +1161,8 @@ export class JoySenseService {
       
       return mappedColumns;
     } catch (error) {
-      console.error(`[JoySenseService] Error in getTableColumns for ${tableName}:`, error);
-      console.error(`[JoySenseService] Error details:`, {
+      logger.error('JoySenseService', `Error in getTableColumns for ${tableName}`, { error: error });
+      logger.debug('JoySenseService', 'Error details', {
         tableName,
         errorMessage: error instanceof Error ? error.message : String(error),
         errorStack: error instanceof Error ? error.stack : undefined,

@@ -8,6 +8,7 @@ import { JoySenseService } from '../services/backend-api';
 import { getTableConfig, getPrimaryKey, hasCompositeKey, TableConfig, TableFieldConfig } from '../config/tables.config';
 import { TableName } from '../types';
 import { handleInsertError, handleUpdateError, BackendError } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // TYPES
@@ -143,14 +144,12 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
         ...loadOptions?.filters
       };
       
-      console.log(`🔍 [useTableCRUD] Loading ${tableName} with params:`, requestParams);
+      logger.debug('useTableCRUD', `Loading ${tableName}`, { page: requestParams.page });
       
       const result = await JoySenseService.getTableDataPaginated(tableName, requestParams);
 
-      console.log(`✅ [useTableCRUD] Response for ${tableName}:`, {
-        dataCount: result.data?.length || 0,
-        pagination: result.pagination,
-        fullResult: result
+      logger.debug('useTableCRUD', `Response for ${tableName}`, {
+        dataCount: result.data?.length || 0
       });
 
       const data = result.data || [];
@@ -276,11 +275,9 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
 
   const setFormData = useCallback((data: Record<string, any>) => {
     if (data.paisid) {
-      console.log('[useTableCRUD] setFormData llamado con paisid:', {
+      logger.debug('useTableCRUD', 'setFormData called with paisid', {
         paisid: data.paisid,
-        previousPaisid: formState.data.paisid,
-        tableName,
-        stackTrace: new Error().stack
+        previousPaisid: formState.data.paisid
       });
     }
     setFormState(prev => ({
@@ -294,7 +291,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
   const updateFormField = useCallback((field: string, value: any) => {
     // Bloquear actualizaciones durante reset
     if (isResettingRef.current) {
-      console.log('[useTableCRUD] updateFormField bloqueado - reset en progreso', { field, value, tableName });
+      logger.debug('useTableCRUD', 'updateFormField blocked - reset in progress', { field });
       return;
     }
     
@@ -307,12 +304,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       if (currentValue === newValue || 
           (currentValue !== null && currentValue !== undefined && currentValue !== '' && 
            String(currentValue) === String(newValue))) {
-        console.log('[useTableCRUD] updateFormField ignorado - valor no cambió', {
-          field,
-          currentValue,
-          newValue,
-          tableName
-        });
+        logger.debug('useTableCRUD', 'updateFormField ignored - value unchanged', { field });
         return;
       }
       
@@ -335,59 +327,23 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
         
         if (shouldBlock) {
           const timeSinceReset = resetTimestampRef.current ? Date.now() - resetTimestampRef.current : 0;
-          console.warn('[useTableCRUD] ⚠️ updateFormField bloqueado - muy pronto después de reset (BLOQUEO ACTIVO)', {
+          logger.debug('useTableCRUD', 'updateFormField blocked - too soon after reset', {
             field,
-            currentValue,
-            newValue,
-            tableName,
-            timeSinceReset,
-            timeSinceResetMs: `${timeSinceReset}ms`,
-            isResetting: isResettingRef.current,
-            resetTimestamp: resetTimestampRef.current,
-            currentTimestamp: Date.now(),
-            isSettingNonEmptyValue,
-            wasRecentlyReset,
-            isUserClick,
-            message: 'El formulario fue reseteado recientemente, bloqueando actualizaciones automáticas de paisid para prevenir restauración incorrecta'
+            timeSinceReset
           });
           return;
         } else if (!isUserClick && isSettingNonEmptyValue && wasRecentlyReset && !resetTimestampRef.current && !isResettingRef.current) {
-          // Si no hay timestamp de reset pero estamos intentando establecer un valor después de estar vacío,
-          // Y NO es una interacción del usuario, podría ser una restauración después de un re-mount. Bloquear de todas formas.
-          console.warn('[useTableCRUD] ⚠️ updateFormField bloqueado - posible restauración sin timestamp de reset', {
-            field,
-            currentValue,
-            newValue,
-            tableName,
-            isSettingNonEmptyValue,
-            wasRecentlyReset,
-            isResetting: isResettingRef.current,
-            isUserClick,
-            message: 'Intentando establecer paisid después de estar vacío sin timestamp de reset - bloqueando por seguridad'
-          });
+          logger.debug('useTableCRUD', 'updateFormField blocked - possible restoration without reset', { field });
           return;
         } else if (isUserClick) {
-          // Es una interacción del usuario - permitir y limpiar el timestamp de reset para permitir futuras interacciones
-          console.log('[useTableCRUD] updateFormField permitido - interacción del usuario detectada', {
-            field,
-            currentValue,
-            newValue,
-            tableName,
-            isUserClick
-          });
-          // Limpiar el timestamp de reset cuando el usuario interactúa manualmente
+          logger.debug('useTableCRUD', 'updateFormField allowed - user interaction detected', { field });
           if (resetTimestampRef.current) {
             resetTimestampRef.current = null;
           }
         }
       }
       
-      console.log('[useTableCRUD] updateFormField llamado para paisid:', {
-        value,
-        previousValue: formState.data.paisid,
-        tableName,
-        stackTrace: new Error().stack
-      });
+      logger.debug('useTableCRUD', 'updateFormField called for paisid', { value });
     }
     
     setFormState(prev => ({
@@ -401,10 +357,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
   const resetForm = useCallback(() => {
     // Si ya hay un reset en curso, no hacer nada (evitar múltiples resets)
     if (isResettingRef.current) {
-      console.log('[useTableCRUD] resetForm ignorado - ya hay un reset en curso', {
-        tableName,
-        resetCounter: resetCounterRef.current
-      });
+      logger.debug('useTableCRUD', 'resetForm ignored - reset already in progress');
       return;
     }
 
