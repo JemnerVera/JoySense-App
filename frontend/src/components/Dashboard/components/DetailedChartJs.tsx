@@ -33,7 +33,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   // Función para limpiar el label (remover "Punto XX" prefix) - DEBE estar antes de useState
   const cleanLabel = (label: string): string => {
     // Remover patrones como "Punto 40 (Maceta - Sonda 10cm)" o "Punto XX - "
-    return label.replace(/^Punto\s+\d+\s*[\(-]?\s*/, '').replace(/[\)]/g, '').trim()
+    return label.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
   }
 
   // Estado local para leyenda interactiva - inicializar con TODAS las líneas visibles

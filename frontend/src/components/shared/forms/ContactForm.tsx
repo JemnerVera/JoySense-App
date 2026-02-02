@@ -48,7 +48,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
   const validatePhoneNumber = (phone: string): boolean => {
     // Validar que sea un número válido (solo dígitos, espacios, guiones y paréntesis)
-    const phoneRegex = /^[\d\s\-\(\)]+$/
+    const phoneRegex = /^[\d\s\-()]+$/
     return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 7
   }
 
