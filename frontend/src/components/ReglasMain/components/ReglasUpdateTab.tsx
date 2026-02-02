@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReglaUpdateForm } from '../../Reglas/ReglaUpdateForm';
+import { ReglaUpdateForm } from '../../../features/rules/ReglaUpdateForm';
 import { RelatedData, Message } from '../types';
 
 interface ReglasUpdateTabProps {
