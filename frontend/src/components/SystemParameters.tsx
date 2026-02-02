@@ -23,24 +23,24 @@ import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useInsertForm } from '../hooks/useInsertForm';
 
 // Components
-import { LoadingSpinner } from './SystemParameters/LoadingSpinner';
-import { MessageDisplay } from './SystemParameters/MessageDisplay';
+import { LoadingSpinner } from '../features/system-parameters/LoadingSpinner';
+import { MessageDisplay } from '../features/system-parameters/MessageDisplay';
 import { PaginationControlsCompat } from './shared/ui/pagination/PaginationControlsCompat';
-import { SearchBarWithCounter } from './SystemParameters/SearchBarWithCounter';
-import { StatusTab } from './SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from './SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from './SystemParameters/UpdateTab/UpdateTab';
-import { TableSelector } from './SystemParameters/components/TableSelector';
-import { MassiveOperationsRenderer } from './SystemParameters/components/MassiveOperationsRenderer';
+import { SearchBarWithCounter } from '../features/system-parameters/SearchBarWithCounter';
+import { StatusTab } from '../features/system-parameters/StatusTab/StatusTab';
+import { InsertTab } from '../features/system-parameters/InsertTab/InsertTab';
+import { UpdateTab } from '../features/system-parameters/UpdateTab/UpdateTab';
+import { TableSelector } from '../features/system-parameters/components/TableSelector';
+import { MassiveOperationsRenderer } from '../features/system-parameters/components/MassiveOperationsRenderer';
 import { getColumnDisplayNameTranslated } from '../utils/systemParametersUtils';
 import { logger } from '../utils/logger';
 
 // Hooks
-import { useSystemParametersUtils } from './SystemParameters/hooks/useSystemParametersUtils';
-import { useSystemParametersCRUD } from './SystemParameters/hooks/useSystemParametersCRUD';
-import { useMassiveOperations } from './SystemParameters/hooks/useMassiveOperations';
-import { useSystemParametersSync } from './SystemParameters/hooks/useSystemParametersSync';
-import { getUniqueOptionsForField } from './SystemParameters/utils/getUniqueOptionsForField';
+import { useSystemParametersUtils } from '../features/system-parameters/hooks/useSystemParametersUtils';
+import { useSystemParametersCRUD } from '../features/system-parameters/hooks/useSystemParametersCRUD';
+import { useMassiveOperations } from '../features/system-parameters/hooks/useMassiveOperations';
+import { useSystemParametersSync } from '../features/system-parameters/hooks/useSystemParametersSync';
+import { getUniqueOptionsForField } from '../features/system-parameters/utils/getUniqueOptionsForField';
 
 // ============================================================================
 // INTERFACES
@@ -413,7 +413,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     activeSubTab,
     formState,
     setSelectedTable,
-    setActiveSubTab: (tab) => {
+    setActiveSubTab: (tab: 'status' | 'insert' | 'update' | 'massive') => {
       // Si el cambio viene de un cambio de tabla (ProtectedParameterButton), NO validar
       if (isTableChangeFromProtectedButtonRef.current) {
         setActiveSubTabState(tab);
@@ -552,7 +552,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     loadRelatedTablesData,
     setMessage,
     setSelectedRow,
-    setActiveSubTab: (tab) => {
+    setActiveSubTab: (tab: 'status' | 'insert' | 'update' | 'massive') => {
       // Cuando se actualiza exitosamente un registro, no necesitamos validar cambios
       // porque ya se guardó correctamente - actualizar directamente
       setActiveSubTabState(tab);
@@ -1113,7 +1113,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   loadData();
                 }}
                 setMessage={setMessage}
-                onFormDataChange={(formData) => {
+                onFormDataChange={(formData: Record<string, any>) => {
                   // Guardar datos del formulario de actualización para detección de cambios sin guardar
                   setUpdateFormData(formData);
                   
@@ -1140,7 +1140,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                 getPaisName={getPaisName}
                 getEmpresaName={getEmpresaName}
                 getFundoName={getFundoName}
-                onFormDataChange={(massiveFormData) => {
+                onFormDataChange={(massiveFormData: Record<string, any>) => {
                   // Guardar datos del formulario masivo para detección de cambios sin guardar
                   setMassiveFormData(massiveFormData);
                   if (onMassiveFormDataChange) {

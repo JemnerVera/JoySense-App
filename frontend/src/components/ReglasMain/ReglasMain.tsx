@@ -16,7 +16,7 @@ import { useTableDataManagement } from '../../hooks/useTableDataManagement';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
-import { MessageDisplay } from '../SystemParameters/MessageDisplay';
+import { MessageDisplay } from '../../features/system-parameters/MessageDisplay';
 
 // Local hooks and components
 import { useReglasData } from './hooks/useReglasData';

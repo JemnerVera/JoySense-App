@@ -1,5 +1,5 @@
 import React from 'react';
-import { InsertTab } from '../../SystemParameters/InsertTab/InsertTab';
+import { InsertTab } from '../../../features/system-parameters/InsertTab/InsertTab';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { RelatedData, Message } from '../types';
