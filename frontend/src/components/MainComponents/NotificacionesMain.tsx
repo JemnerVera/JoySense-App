@@ -25,7 +25,7 @@ import { useInsertForm } from '../../hooks/useInsertForm';
 // Components
 import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
 import { MessageDisplay } from '../SystemParameters/MessageDisplay';
-import { PaginationControls } from '../SystemParameters/PaginationControls';
+import { PaginationControls } from '../shared/ui/pagination/PaginationControls';
 import { SearchBarWithCounter } from '../SystemParameters/SearchBarWithCounter';
 import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
 import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';

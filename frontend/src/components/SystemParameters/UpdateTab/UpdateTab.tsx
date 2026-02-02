@@ -8,7 +8,7 @@ import { useUpdateTable } from '../../../hooks/useUpdateTable';
 import { useUpdateForm } from '../../../hooks/useUpdateForm';
 import { SearchBarWithCounter } from '../SearchBarWithCounter';
 import { LoadingSpinner } from '../LoadingSpinner';
-import { PaginationControls } from '../PaginationControls';
+import { PaginationControls } from '../../shared/ui/pagination/PaginationControls';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
 import { MessageDisplay } from '../MessageDisplay';
