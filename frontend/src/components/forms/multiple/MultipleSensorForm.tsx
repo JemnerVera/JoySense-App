@@ -1,6 +1,6 @@
 import React from 'react';
 import SelectWithPlaceholder from '../../selectors/SelectWithPlaceholder';
-import ReplicateButton from '../../ReplicateButton';
+import ReplicateButton from '../../shared/ui/buttons/ReplicateButton';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface MultipleSensorFormProps {
