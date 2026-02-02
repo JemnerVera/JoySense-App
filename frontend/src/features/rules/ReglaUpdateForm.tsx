@@ -9,8 +9,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { ReglaFormFields } from '../../components/shared/forms';
 import { SelectWithPlaceholder } from '../../components/selectors';
-import { MessageDisplay } from '../../components/SystemParameters/MessageDisplay';
-import { LoadingSpinner } from '../../components/SystemParameters/LoadingSpinner';
+import { MessageDisplay } from '../system-parameters/MessageDisplay';
+import { LoadingSpinner } from '../system-parameters/LoadingSpinner';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 
 interface ReglaUpdateFormProps {

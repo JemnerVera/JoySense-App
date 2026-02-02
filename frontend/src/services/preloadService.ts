@@ -166,7 +166,7 @@ class PreloadService {
    */
   private getImportFunction(componentName: string): () => Promise<any> {
     const importMap: { [key: string]: () => Promise<any> } = {
-      'SystemParameters': () => import('../components/SystemParameters'),
+      'SystemParameters': () => import('../features/system-parameters').then(m => ({default: m.SystemParameters})),
       'DashboardMain': () => import('../components/Dashboard/DashboardMain'),
       'NormalInsertForm': () => import('../components/forms/NormalInsertForm'),
       'MassiveUmbralForm': () => import('../components/forms/MassiveUmbralForm'),

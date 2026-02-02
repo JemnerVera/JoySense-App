@@ -8,7 +8,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
-import { MessageDisplay } from '../../components/SystemParameters/MessageDisplay';
+import { MessageDisplay } from '../system-parameters/MessageDisplay';
 import { MultiSelectWithPlaceholder } from '../../components/shared/selectors';
 import { SelectWithPlaceholder } from '../../components/shared/selectors';
 import { 

@@ -8,9 +8,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTableDataManagement } from '../../hooks/useTableDataManagement';
 import { getTableConfig } from '../../config/tables.config';
 import { TableName } from '../../types';
-import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
-import { MessageDisplay } from '../SystemParameters/MessageDisplay';
-import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
+import { LoadingSpinner } from '../../features/system-parameters/LoadingSpinner';
+import { MessageDisplay } from '../../features/system-parameters/MessageDisplay';
+import { StatusTab } from '../../features/system-parameters/StatusTab/StatusTab';
 import { logger } from '../../utils/logger';
 
 interface ReportesAdminMainProps {

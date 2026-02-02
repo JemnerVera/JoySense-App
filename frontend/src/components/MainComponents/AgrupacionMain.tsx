@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import SystemParameters, { SystemParametersRef } from '../SystemParameters';
+import { SystemParameters, SystemParametersRef } from '../../features/system-parameters';
 
 interface AgrupacionMainProps {
   selectedTable?: string;

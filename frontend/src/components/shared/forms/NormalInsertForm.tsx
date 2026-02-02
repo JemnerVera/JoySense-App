@@ -24,7 +24,7 @@ import PerfilGeografiaPermisoForm from '../../PerfilGeografiaPermisoForm';
 import { FormFieldRenderer } from './FormFieldRenderer';
 import { ContextualRow } from './ContextualRow';
 import { useProgressiveEnablement } from '../../../hooks/useProgressiveEnablement';
-import { LoadingSpinner } from '../../SystemParameters/LoadingSpinner';
+import { LoadingSpinner } from '../../../features/system-parameters/LoadingSpinner';
 import { logger } from '../../../utils/logger';
 
 // ============================================================================

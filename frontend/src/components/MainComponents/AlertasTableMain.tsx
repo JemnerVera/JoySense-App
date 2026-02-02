@@ -17,11 +17,11 @@ import { useTableDataManagement } from '../../hooks/useTableDataManagement';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
-import { LoadingSpinner } from '../SystemParameters/LoadingSpinner';
-import { MessageDisplay } from '../SystemParameters/MessageDisplay';
-import { StatusTab } from '../SystemParameters/StatusTab/StatusTab';
-import { InsertTab } from '../SystemParameters/InsertTab/InsertTab';
-import { UpdateTab } from '../SystemParameters/UpdateTab/UpdateTab';
+import { LoadingSpinner } from '../../features/system-parameters/LoadingSpinner';
+import { MessageDisplay } from '../../features/system-parameters/MessageDisplay';
+import { StatusTab } from '../../features/system-parameters/StatusTab/StatusTab';
+import { InsertTab } from '../../features/system-parameters/InsertTab/InsertTab';
+import { UpdateTab } from '../../features/system-parameters/UpdateTab/UpdateTab';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 
 // ============================================================================
