@@ -1,36 +1,76 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
+// Organized imports by category for better maintainability
 
+// 1. React & Core
 import React, { useState, useEffect, startTransition, Suspense, forwardRef, useRef, useCallback } from 'react';
+
+// 2. Contexts (Providers & State Management)
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { FilterProvider, useFilters } from './contexts/FilterContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
-import { SidebarConfirmModal } from './components/sidebar/SidebarConfirmModal';
-import ReportesAlertasWrapper from './components/ReportesAlertasWrapper';
+import { ModalProvider } from './contexts/ModalContext';
+
+// 3. Features (Main business logic modules)
+import { 
+  // Reporting: Alertas, Mensajes, Umbrales
+  AlertasMain, MensajesMain,
+  // Rules: Gestión de reglas
+  ReglasMain,
+  // Permissions: Gestión de permisos
+  PermisosMain, PermisosMainRef
+} from './features';
+
+// 4. Core Components (Essential UI)
 import LoginForm from './components/core/LoginForm';
+import ConfigurationPanel from './components/core/ConfigurationPanel';
+
+// 5. Shared Components (Reusable UI)
+import SimpleAlertModal from './components/shared/ui/modals/SimpleAlertModal';
+
+// 6. Layout Components (Navigation & Structure)
 import SidebarContainer from './components/sidebar/SidebarContainer';
-import { useMainContentLayout } from './hooks/useMainContentLayout';
-import { DashboardLazy, SystemParametersLazyWithBoundary, NotificacionesMainLazyWithBoundary, MetricaPorLoteLazy, UmbralesPorLoteLazy, NodeStatusDashboardLazy, AlertStatusDashboardLazy, MedicionesDashboardLazy, usePreloadCriticalComponents } from './components/LazyComponents';
-import { AlertasMain, MensajesMain } from './features/reporting';
-import { default as ReglasMain } from './features/rules';
-import PermisosMain, { PermisosMainRef } from './features/permissions';
+import { SidebarConfirmModal } from './components/sidebar/SidebarConfirmModal';
+import { UserHeader } from './components/UserHeader';
+import { UserControls } from './components/header/UserControls';
+
+// 7. Main Components (Page-level components)
 import AlertasTableMain from './components/MainComponents/AlertasTableMain';
 import ReportesAdminMain, { ReportesAdminMainRef } from './components/MainComponents/ReportesAdminMain';
 import AgrupacionMain, { AgrupacionMainRef } from './components/MainComponents/AgrupacionMain';
 import AjustesMain, { AjustesMainRef } from './components/MainComponents/AjustesMain';
-import { JoySenseService } from './services/backend-api';
-import { Pais, Empresa } from './types';
-import { UserHeader } from './components/UserHeader';
-import { UserControls } from './components/header/UserControls';
-import ConfigurationPanel from './components/core/ConfigurationPanel';
+import ReportesAlertasWrapper from './components/ReportesAlertasWrapper';
+
+// 8. Lazy Loading & Utilities (from LazyComponents)
+import { 
+  // Lazy-loaded components with error boundaries
+  SystemParametersLazyWithBoundary,
+  NotificacionesMainLazyWithBoundary,
+  UmbralesMainLazyWithBoundary,
+  // Dashboards
+  DashboardLazy,
+  NodeStatusDashboardLazy, 
+  AlertStatusDashboardLazy, 
+  MedicionesDashboardLazy,
+  // Lazy reporting utilities
+  MetricaPorLoteLazy,
+  UmbralesPorLoteLazy,
+  // Utility hook for preloading
+  usePreloadCriticalComponents 
+} from './components/LazyComponents';
+
+// 9. Hooks
+import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
-import { ModalProvider } from './contexts/ModalContext';
-import SimpleAlertModal from './components/shared/ui/modals/SimpleAlertModal';
+
+// 10. Services & Types
+import { JoySenseService } from './services/backend-api';
+import { Pais, Empresa } from './types';
 
 // ============================================================================
 // COMPONENT WRAPPERS
