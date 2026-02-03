@@ -397,6 +397,15 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
               {/* Área del gráfico */}
               <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
+                {/* Título de comparación si existe */}
+                {comparisonNode && (
+                  <div className="text-center mb-4">
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
+                      {selectedNode?.nodo} vs. {comparisonNode.nodo}
+                    </h2>
+                  </div>
+                )}
+                
                 {loadingDetailedData ? (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
                     <div className="text-center">
@@ -412,6 +421,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     visibleLines={visibleLines}
                     yAxisDomain={yAxisDomain}
                     visibleTipos={visibleTipos}
+                    metricUnit={selectedMetricForAnalysis?.unit || ''}
                   />
                 ) : (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">

@@ -1418,7 +1418,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     
     if (!sourceMediciones.length || !tipos.length || !selectedNode) return []
 
-    // 1. Filtrar por Nodo y Métrica
+    // 1. Filtrar por Nodo y Métrica (nodo principal)
     const metricMediciones = sourceMediciones.filter(m => {
       if (Number(m.nodoid) !== Number(selectedNode.nodoid)) return false
       const rawMetricName = m.localizacion?.metrica?.metrica || ''
@@ -1426,12 +1426,26 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return matchesMetricId(rawMetricName, dataKey)
     })
     
+    // Si hay nodo de comparación, incluir también sus mediciones
+    let comparisonMetricMediciones: MedicionData[] = []
+    if (comparisonNode && comparisonMediciones.length > 0) {
+      comparisonMetricMediciones = comparisonMediciones.filter(m => {
+        if (Number(m.nodoid) !== Number(comparisonNode.nodoid)) return false
+        const rawMetricName = m.localizacion?.metrica?.metrica || ''
+        const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
+        return matchesMetricId(rawMetricName, dataKey)
+      })
+    }
+    
 
-    if (!metricMediciones.length) return []
+    if (!metricMediciones.length && !comparisonMetricMediciones.length) return []
 
     // 2. Ordenar y Filtrar por Rango (si es fallback)
     const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+    const sortedComparisonMediciones = [...comparisonMetricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+    
     let filteredMediciones = sortedMediciones
+    let filteredComparisonMediciones = sortedComparisonMediciones
     let timeSpan = 3 * 60 * 60 * 1000
     
     if (useCustomRange && detailedStartDate && detailedEndDate) {
@@ -1443,6 +1457,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Aplicar filtro de fecha siempre que sea un rango personalizado
       filteredMediciones = sortedMediciones.filter(m => {
+        const d = new Date(m.fecha).getTime();
+        return d >= startDate.getTime() && d <= endDate.getTime();
+      })
+      filteredComparisonMediciones = sortedComparisonMediciones.filter(m => {
         const d = new Date(m.fecha).getTime();
         return d >= startDate.getTime() && d <= endDate.getTime();
       })
@@ -1469,12 +1487,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
     }
 
-    if (filteredMediciones.length === 0) return []
+    if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) return []
 
     // 3. Determinar Granularidad y Agrupar
     const hoursSpan = timeSpan / (1000 * 60 * 60)
     const daysSpan = hoursSpan / 24
-    const pointCount = filteredMediciones.length
+    const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
     
     // Decidir granularidad: 
     // - Si hay más de 2 días: días
@@ -1486,7 +1504,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const startProcess = performance.now()
     console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, useDays, useHours });
 
-    const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter(id => id != null)))
+    // Obtener localizaciones de ambos nodos
+    const allMediciones = [...filteredMediciones, ...filteredComparisonMediciones]
+    const locsEnMediciones = Array.from(new Set(allMediciones.map(m => m.localizacionid).filter(id => id != null)))
     
     // Pre-calcular labels una sola vez para evitar búsquedas repetidas
     // En minigráficos: usar getSensorLabel (sin localización)
@@ -1503,7 +1523,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return labelCache.get(key)!
     }
     
-    const performGrouping = (data: any[], d: boolean, h: boolean) => {
+    const performGrouping = (data: any[], d: boolean, h: boolean, isComparison: boolean = false) => {
       const grouped: { [locid: number]: any[] } = {}
       locsEnMediciones.forEach(id => { grouped[id] = [] })
       
@@ -1517,7 +1537,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`
         }
         
-        const label = getOrCacheLabel(m)
+        let label = getOrCacheLabel(m)
+        // Prefixar con "comp_" si es comparación para distinguir líneas
+        if (isComparison) {
+          label = `comp_${label}`
+        }
         const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey)
         if (existing) {
           existing.value = (existing.value * existing.count + m.medicion) / (existing.count + 1)
@@ -1529,23 +1553,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return grouped
     }
 
-    let groupedData = performGrouping(filteredMediciones, useDays, useHours)
+    let groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
+    let groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
     
     // Fallback de resolución si hay muy pocos puntos (solo si no hay override)
     if (!overrideGranularity) {
-      if (useDays && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+      if (useDays && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
         useDays = false; useHours = true;
-        groupedData = performGrouping(filteredMediciones, useDays, useHours)
+        groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
+        groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
       }
-      if (useHours && locsEnMediciones.every(id => (groupedData[id] || []).length <= 2) && filteredMediciones.length >= 3) {
+      if (useHours && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
         useHours = false;
-        groupedData = performGrouping(filteredMediciones, useDays, useHours)
+        groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
+        groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
       }
     }
 
-    // 4. Formatear para Recharts
+    // 4. Formatear para Recharts - Combinar datos de ambos nodos
     const allTimestamps = new Set<number>()
     Object.values(groupedData).forEach(list => list.forEach(p => {
+      const date = new Date(p.timestamp)
+      let ts: number
+      if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+      else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime()
+      allTimestamps.add(ts)
+    }))
+    Object.values(groupedComparisonData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
       if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
@@ -1565,6 +1600,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const entry: any = { time }
       let hasValue = false
       locsEnMediciones.forEach(id => {
+        // Incluir datos del nodo principal
         const point = (groupedData[id] || []).find(p => p.time === time)
         if (point) {
           let val = point.value
@@ -1573,6 +1609,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             if ((min !== null && val < min) || (max !== null && val > max)) val = null
           }
           if (val !== null) { entry[point.label] = val; hasValue = true }
+        }
+        // Incluir datos de comparación
+        const compPoint = (groupedComparisonData[id] || []).find(p => p.time === time)
+        if (compPoint) {
+          let val = compPoint.value
+          if (useCustomRange) {
+            const { min, max } = yAxisDomain
+            if ((min !== null && val < min) || (max !== null && val > max)) val = null
+          }
+          if (val !== null) { entry[compPoint.label] = val; hasValue = true }
         }
       })
       return hasValue ? entry : null
@@ -1811,7 +1857,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     cache[selectedDetailedMetric] = processChartData(selectedDetailedMetric, true)
     
     return cache
-  }, [detailedMediciones, selectedNode?.nodoid, selectedDetailedMetric, detailedStartDate, detailedEndDate, tipos, mediciones, filters, getSeriesLabel])
+  }, [detailedMediciones, selectedNode?.nodoid, selectedDetailedMetric, detailedStartDate, detailedEndDate, tipos, mediciones, filters, getSeriesLabel, comparisonNode?.nodoid, comparisonMediciones])
 
   // ========== FIN OPTIMIZACIONES ==========
 
