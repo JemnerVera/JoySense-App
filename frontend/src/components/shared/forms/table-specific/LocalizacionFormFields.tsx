@@ -61,6 +61,7 @@ export const LocalizacionFormFields: React.FC<LocalizacionFormFieldsProps> = ({
             }}
             options={options}
             placeholder={`${displayName.toUpperCase()}`}
+            themeColor="orange"
           />
         </div>
       );

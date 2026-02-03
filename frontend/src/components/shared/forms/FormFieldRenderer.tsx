@@ -119,7 +119,26 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
 
   // Campos de relación para nodo
   if (col.columnName === 'ubicacionid' && selectedTable === 'nodo') {
-    return renderSelectField(t('create.select_location'));
+    const options = getUniqueOptionsForField(col.columnName);
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={value}
+          onChange={(newValue) => {
+            setFormData({
+              ...formData,
+              [col.columnName]: newValue ? Number(newValue) : null
+            });
+          }}
+          options={options}
+          placeholder={displayName.toUpperCase()}
+          themeColor="orange"
+        />
+      </div>
+    );
   }
 
   // Campos de relación para localizacion (según schema actual: nodoid, sensorid, metricaid)
@@ -128,7 +147,26 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   }
 
   if (col.columnName === 'sensorid' && selectedTable === 'localizacion') {
-    return renderSelectField(`${t('buttons.select')} ${t('fields.sensor') || 'SENSOR'}`);
+    const options = getUniqueOptionsForField(col.columnName);
+    return (
+      <div key={col.columnName} className="mb-4">
+        <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+          {displayName.toUpperCase()}{isRequired ? '*' : ''}
+        </label>
+        <SelectWithPlaceholder
+          value={value}
+          onChange={(newValue) => {
+            setFormData({
+              ...formData,
+              [col.columnName]: newValue ? Number(newValue) : null
+            });
+          }}
+          options={options}
+          placeholder={`${t('buttons.select')} ${t('fields.sensor') || 'SENSOR'}`}
+          themeColor="orange"
+        />
+      </div>
+    );
   }
 
   if (col.columnName === 'metricaid' && selectedTable === 'localizacion') {

@@ -75,6 +75,28 @@ export const getUniqueOptionsForField = ({
       .sort((a: any, b: any) => a.label.localeCompare(b.label));
   }
 
+  // Caso especial para sensorid en tabla localizacion: mostrar "sensor - tipo"
+  if (columnName === 'sensorid' && selectedTable === 'localizacion') {
+    const sensors = relatedDataForStatus.sensorsData || [];
+    const tipos = relatedDataForStatus.tiposData || [];
+    
+    // Crear un mapa de tipos por tipoid para búsqueda rápida
+    const tiposMap = new Map(tipos.map((t: any) => [t.tipoid, t.tipo]));
+    
+    return sensors
+      .filter((s: any) => s.statusid === 1) // Solo sensores activos
+      .map((item: any) => {
+        const sensorName = item.sensor || '';
+        const tipoName = tiposMap.get(item.tipoid) || '';
+        const label = tipoName ? `${sensorName} - ${tipoName}` : sensorName || `ID: ${item.sensorid}`;
+        return {
+          value: item.sensorid,
+          label: label
+        };
+      })
+      .sort((a: any, b: any) => a.label.localeCompare(b.label));
+  }
+
   // Caso especial para usuarioid en tabla contacto: solo mostrar usuarios que NO tienen contacto
   if (columnName === 'usuarioid' && selectedTable === 'contacto') {
     const usuarios = relatedDataForStatus.userData || [];

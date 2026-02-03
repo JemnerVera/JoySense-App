@@ -238,7 +238,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowInsert: true,
     allowUpdate: true,
     allowDelete: true,
-    allowMassive: true,
+    allowMassive: false,
     fields: [
       { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensor' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
