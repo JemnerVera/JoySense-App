@@ -481,11 +481,19 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     propOnSubTabChange?.(tab);
     
     // Resetear después de un delay suficiente para que el estado se propague
+    // Usar un try-finally para asegurar que los flags se resetean incluso si hay error
     setTimeout(() => {
-      changeFromProtectedButtonRef.current = false;
-      isProcessingTabChangeRef.current = false;
-      skipNextSyncRef.current = false;
-    }, 500);
+      try {
+        changeFromProtectedButtonRef.current = false;
+        isProcessingTabChangeRef.current = false;
+        skipNextSyncRef.current = false;
+      } catch (e) {
+        // Si hay error, asegurar que los flags se resetean
+        changeFromProtectedButtonRef.current = false;
+        isProcessingTabChangeRef.current = false;
+        skipNextSyncRef.current = false;
+      }
+    }, 150); // Aumentar delay ligeramente para más seguridad
   }, [propOnSubTabChange, activeSubTab, insertForm, setInsertedRecords]);
   
   // Exponer métodos al padre
@@ -641,28 +649,8 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     
     // Si el cambio viene de ProtectedSubTabButton (ya validado), proceder sin validar de nuevo
     if (changeFromProtectedButtonRef.current) {
-      changeFromProtectedButtonRef.current = false;
-      // Marcar para saltar la próxima sincronización y evitar que useSystemParametersSync procese el cambio
-      skipNextSyncRef.current = true;
-      // Mantener isProcessingTabChangeRef en true para evitar que useSystemParametersSync procese
-      isProcessingTabChangeRef.current = true;
-      setActiveSubTabState(tab);
-      propOnSubTabChange?.(tab);
-      setMessage(null);
-      // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
-      if (tab === 'insert') {
-        insertForm?.resetForm();
-        setInsertedRecords([]);
-      } else if (activeSubTab === 'insert') {
-        insertForm?.resetForm();
-        setInsertedRecords([]);
-      }
-      if (tab !== 'update') setUpdateFormData({});
-      // Resetear después de un delay suficiente
-      setTimeout(() => {
-        isProcessingTabChangeRef.current = false;
-        skipNextSyncRef.current = false;
-      }, 300);
+      // NO resetear changeFromProtectedButtonRef aquí - déjalo que handleSubTabChangeFromProtectedButton se encargue
+      // Esto evita conflictos con el delay en handleSubTabChangeFromProtectedButton
       return;
     }
     

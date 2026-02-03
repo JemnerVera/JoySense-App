@@ -204,7 +204,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     updateFormField,
     handleUpdate,
     handleCancel,
-    validateForm
+    validateForm,
+    revertChanges
   } = useUpdateForm({
     selectedRow,
     tableName,
@@ -288,36 +289,26 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     });
   }, [showForm, formData, originalFormData]);
 
-  // Cuando se cancela, limpiar selección
+  // Cuando se cancela, revertir cambios y cerrar formulario
   const handleCancelSelection = () => {
-    // Verificar si hay cambios antes de cancelar (solo si estamos en el formulario)
-    if (showForm) {
-      if (hasRealChanges()) {
-        // Mostrar modal de confirmación
-        showModal(
-          'subtab',
-          'Actualizar',
-          'Estado',
-          () => {
-            // Confirmar: limpiar y cancelar
-            setSelectedRow(null);
-            setShowForm(false);
-            setOriginalFormData({});
-            handleCancel();
-          },
-          () => {
-            // Cancelar: no hacer nada
-          }
-        );
-        return;
-      }
+    // SIEMPRE revertir cambios, ya sea que se haya editado algo o no
+    // Esto es más robusto y consistente
+    
+    // Revertir los cambios al estado original
+    revertChanges();
+    
+    // Notificar que no hay cambios a SystemParameters
+    if (onFormDataChange) {
+      onFormDataChange({});
     }
     
-    // No hay cambios, proceder normalmente
-    setSelectedRow(null);
-    setShowForm(false);
-    setOriginalFormData({});
-    handleCancel();
+    // Limpiar el estado local
+    setTimeout(() => {
+      handleCancel(); // Esto limpia formData, formErrors, originalData
+      setSelectedRow(null);
+      setShowForm(false);
+      setOriginalFormData({});
+    }, 50);
   };
 
   // Notificar cambios en formData al componente padre (para protección de datos)

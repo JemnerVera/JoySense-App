@@ -219,7 +219,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowInsert: true,
     allowUpdate: true,
     allowDelete: false,
-    allowMassive: true,
+    allowMassive: false,
     fields: [
       { name: 'sensorid', label: 'ID del Sensor', type: 'number', hidden: true, readonly: true },
       { name: 'sensor', label: 'Sensor', type: 'text', required: true },

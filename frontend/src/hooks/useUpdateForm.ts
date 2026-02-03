@@ -29,6 +29,7 @@ interface UseUpdateFormReturn {
   handleUpdate: () => Promise<void>;
   handleCancel: () => void;
   validateForm: () => boolean;
+  revertChanges: () => void;
 }
 
 /**
@@ -368,6 +369,14 @@ export const useUpdateForm = ({
     onCancel?.();
   }, [onCancel]);
 
+  // Revertir cambios a los datos originales
+  const revertChanges = useCallback(() => {
+    if (Object.keys(originalData).length > 0) {
+      setFormData({ ...originalData });
+      setFormErrors({});
+    }
+  }, [originalData]);
+
   return {
     formData,
     formErrors,
@@ -375,6 +384,7 @@ export const useUpdateForm = ({
     updateFormField,
     handleUpdate,
     handleCancel,
-    validateForm: validateFormFields
+    validateForm: validateFormFields,
+    revertChanges
   };
 };
