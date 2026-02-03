@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React from 'react';
-import { MassiveUmbralForm } from '../../../components/shared/forms';
+import { MassiveUmbralForm, MassiveLocalizacionForm } from '../../../components/shared/forms';
 // import { MassiveSensorForm } from '../../../components/shared/forms';
 // import { MassiveMetricaSensorForm } from '../../../components/shared/forms';
 
@@ -78,6 +78,25 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
     //   />
     // );
     return <div>Formulario sensor masivo no disponible temporalmente</div>;
+  }
+
+  // Si es la tabla localizacion, renderizar el formulario masivo de localizaciones
+  if (selectedTable === 'localizacion') {
+    return (
+      <MassiveLocalizacionForm
+        getUniqueOptionsForField={getUniqueOptionsForField}
+        onApply={onApply}
+        onCancel={onCancel}
+        loading={formState.isSubmitting}
+        paisSeleccionado={paisSeleccionado}
+        empresaSeleccionada={empresaSeleccionada}
+        fundoSeleccionado={fundoSeleccionado}
+        getPaisName={getPaisName}
+        getEmpresaName={getEmpresaName}
+        getFundoName={getFundoName}
+        onFormDataChange={onFormDataChange}
+      />
+    );
   }
 
   // Si es la tabla metricasensor, renderizar el formulario masivo de metricasensor

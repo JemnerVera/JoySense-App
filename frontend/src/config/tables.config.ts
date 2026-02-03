@@ -278,6 +278,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowInsert: true,
     allowUpdate: true,
     allowDelete: false,
+    allowMassive: true,
     sortField: 'localizacion',
     fields: [
       { name: 'localizacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
