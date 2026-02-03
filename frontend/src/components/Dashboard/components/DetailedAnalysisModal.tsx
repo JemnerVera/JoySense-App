@@ -224,26 +224,34 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden">
                   
                   {/* Fecha Inicio */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Inicio:</label>
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Inicio:</label>
                     <input
                       type="date"
                       value={tempStartDate || detailedStartDate}
                       onChange={(e) => setTempStartDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs font-mono"
+                      className="h-8 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        colorScheme: 'dark',
+                        WebkitAppearance: 'none'
+                      }}
                     />
                   </div>
 
                   {/* Fecha Fin */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Fin:</label>
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Fin:</label>
                     <input
                       type="date"
                       value={tempEndDate || detailedEndDate}
                       onChange={(e) => setTempEndDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-xs font-mono"
+                      className="h-8 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        colorScheme: 'dark',
+                        WebkitAppearance: 'none'
+                      }}
                     />
                   </div>
 
@@ -438,17 +446,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
           </div>
         </div>
 
-        {/* Botones de control - Posicionados en la esquina superior derecha del modal */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-          <button
-            onClick={onClose}
-            className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
-            title="Cerrar"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        {/* Botones de control - Posicionados más a la derecha fuera del header */}
+        <div className="absolute top-2 right-2 flex flex-row gap-2 z-10">
           <button
             onClick={onToggleExpand}
             className="text-gray-600 dark:text-neutral-400 hover:text-gray-800 dark:hover:text-white transition-colors p-2 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg"
@@ -463,6 +462,15 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             )}
+          </button>
+          <button
+            onClick={onClose}
+            className="text-white bg-red-500 hover:bg-red-600 transition-colors p-2 rounded-lg"
+            title="Cerrar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>
