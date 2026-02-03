@@ -497,6 +497,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 onPageChange={handlePageChange}
                 showPagination={totalPages > 1}
                 themeColor={themeColor}
+                pageSize={10}
+                totalRecords={filteredData.length}
+                onPageSizeChange={() => {}}
               />
             </>
           ) : (

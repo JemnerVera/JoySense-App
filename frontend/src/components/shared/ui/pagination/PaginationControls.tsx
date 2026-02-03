@@ -40,7 +40,7 @@ export function PaginationControls({
       </div>
 
       {/* Controles de paginación */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Botón Anterior */}
         <button
           onClick={onPrevPage}
@@ -54,21 +54,23 @@ export function PaginationControls({
           Anterior
         </button>
 
-        {/* Selector de página */}
+        {/* Input de página */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600 dark:text-gray-400">Página</span>
-          <select
+          <input
+            type="number"
             value={currentPage}
-            onChange={(e) => onPageChange(Number(e.target.value))}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              if (value >= 1 && value <= totalPages) {
+                onPageChange(value);
+              }
+            }}
             disabled={loading}
-            className="px-2 py-1 text-sm border border-gray-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <option key={page} value={page}>
-                {page}
-              </option>
-            ))}
-          </select>
+            min="1"
+            max={totalPages}
+            className="w-14 px-2 py-1 text-sm text-center border border-gray-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
           <span className="text-sm text-gray-600 dark:text-gray-400">de {totalPages}</span>
         </div>
 
@@ -84,24 +86,6 @@ export function PaginationControls({
         >
           Siguiente
         </button>
-      </div>
-
-      {/* Selector de tamaño de página */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600 dark:text-gray-400">Mostrar</span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          disabled={loading}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        >
-          <option value={25}>25</option>
-          <option value={50}>50</option>
-          <option value={100}>100</option>
-          <option value={200}>200</option>
-          <option value={500}>500</option>
-        </select>
-        <span className="text-sm text-gray-600 dark:text-gray-400">por página</span>
       </div>
     </div>
   );

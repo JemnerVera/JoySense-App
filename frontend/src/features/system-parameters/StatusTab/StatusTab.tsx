@@ -98,6 +98,9 @@ const StatusTabComponent: React.FC<StatusTabProps> = ({
               onPageChange={handlePageChange}
               showPagination={totalPages > 1}
               themeColor={themeColor}
+              pageSize={10}
+              totalRecords={filteredData.length}
+              onPageSizeChange={() => {}}
             />
           )}
         </>
