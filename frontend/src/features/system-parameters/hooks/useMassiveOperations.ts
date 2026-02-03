@@ -40,7 +40,8 @@ export const useMassiveOperations = ({
       const tableNames: Record<string, string> = {
         'umbral': 'umbral(es)',
         'sensor': 'sensor(es)',
-        'metricasensor': 'asociación(es) de métrica-sensor'
+        'metricasensor': 'asociación(es) de métrica-sensor',
+        'localizacion': 'localización(es)'
       };
       const tableName = tableNames[selectedTable] || 'registro(s)';
 

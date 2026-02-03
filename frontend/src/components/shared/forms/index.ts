@@ -12,6 +12,7 @@ export { UsuarioEmpresaSelector } from './UsuarioEmpresaSelector';
 export { ContextualRow } from './ContextualRow';
 export { MassiveUmbralForm } from './MassiveUmbralForm';
 export { MassivePerfilUmbralForm } from './MassivePerfilUmbralForm';
+export { MassiveLocalizacionForm } from './MassiveLocalizacionForm';
 
 // Advanced forms
 export {

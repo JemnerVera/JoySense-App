@@ -152,6 +152,86 @@ router.post('/:table', async (req, res) => {
     // Si es un array, es una inserción masiva. Si es un objeto, es una inserción simple.
     let dataToInsert = Array.isArray(req.body) ? req.body : { ...req.body };
     
+    // ========================================================================
+    // LIMPIAR PKs CON VALORES 0 O NULL (dejar que identity las genere)
+    // ========================================================================
+    const pk = PK_MAPPING[table.toLowerCase()];
+    if (pk && pk !== null) {
+      if (Array.isArray(dataToInsert)) {
+        dataToInsert = dataToInsert.map(record => {
+          const cleaned = { ...record };
+          if (cleaned[pk] === 0 || cleaned[pk] === null) {
+            delete cleaned[pk];
+            logger.info(`🧹 [POST /${table}] PK ${pk} eliminado (valor: ${record[pk]})`);
+          }
+          return cleaned;
+        });
+      } else {
+        if (dataToInsert[pk] === 0 || dataToInsert[pk] === null) {
+          delete dataToInsert[pk];
+          logger.info(`🧹 [POST /${table}] PK ${pk} eliminado (valor: ${dataToInsert[pk]})`);
+        }
+      }
+    }
+    
+    // ========================================================================
+    // AGREGAR CAMPOS DE AUDITORÍA (usercreatedid, usermodifiedid) AUTOMÁTICAMENTE
+    // ========================================================================
+    if (req.user) {
+      try {
+        let usuarioid = null;
+        
+        // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
+        if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
+          usuarioid = req.user.user_metadata.joysense_usuarioid;
+          logger.info(`✅ [POST /${table}] usuarioid obtenido del user_metadata: ${usuarioid}`);
+        }
+        
+        // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
+        if (!usuarioid) {
+          const userAuthId = req.user.id || req.user.sub;
+          if (userAuthId) {
+            // Usar baseSupabase (sin RLS) para buscar el usuario
+            const { data: usuarioData, error: usuarioError } = await baseSupabase
+              .schema(dbSchema)
+              .from('usuario')
+              .select('usuarioid')
+              .eq('useruuid', userAuthId)
+              .single();
+            
+            if (!usuarioError && usuarioData && usuarioData.usuarioid) {
+              usuarioid = usuarioData.usuarioid;
+              logger.info(`✅ [POST /${table}] usuarioid obtenido de la BD: ${usuarioid}`);
+            } else {
+              logger.warn(`⚠️ [POST /${table}] No se encontró usuario por useruuid. Error: ${usuarioError?.message || 'No data'}`);
+            }
+          }
+        }
+        
+        // 3. Si encontramos el usuarioid, agregarlo a los datos
+        if (usuarioid) {
+          // Si es un array (inserción masiva)
+          if (Array.isArray(dataToInsert)) {
+            dataToInsert = dataToInsert.map(record => ({
+              ...record,
+              usercreatedid: usuarioid,
+              usermodifiedid: usuarioid
+            }));
+          } else {
+            // Si es un objeto (inserción simple)
+            dataToInsert.usercreatedid = usuarioid;
+            dataToInsert.usermodifiedid = usuarioid;
+          }
+          
+          logger.info(`✅ [POST /${table}] Campos de auditoría agregados (usuarioid: ${usuarioid})`);
+        } else {
+          logger.warn(`⚠️ [POST /${table}] No se pudo determinar usuarioid para el usuario autenticado`);
+        }
+      } catch (auditError) {
+        logger.error(`❌ [POST /${table}] Error agregando campos de auditoría:`, auditError.message);
+      }
+    }
+    
     // Lógica especial para tabla 'usuario' (solo para inserciones individuales)
     if (!Array.isArray(dataToInsert) && table === 'usuario') {
       // Validar que login sea un email válido
@@ -350,6 +430,52 @@ router.put('/:table/:id', async (req, res) => {
   try {
     // Preparar datos para actualización
     let dataToUpdate = { ...req.body };
+    
+    // ========================================================================
+    // AGREGAR CAMPO DE AUDITORÍA usermodifiedid AUTOMÁTICAMENTE
+    // ========================================================================
+    if (req.user) {
+      try {
+        let usuarioid = null;
+        
+        // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
+        if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
+          usuarioid = req.user.user_metadata.joysense_usuarioid;
+          logger.info(`✅ [PUT /${table}/${id}] usuarioid obtenido del user_metadata: ${usuarioid}`);
+        }
+        
+        // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
+        if (!usuarioid) {
+          const userAuthId = req.user.id || req.user.sub;
+          if (userAuthId) {
+            // Usar baseSupabase (sin RLS) para buscar el usuario
+            const { data: usuarioData, error: usuarioError } = await baseSupabase
+              .schema(dbSchema)
+              .from('usuario')
+              .select('usuarioid')
+              .eq('useruuid', userAuthId)
+              .single();
+            
+            if (!usuarioError && usuarioData && usuarioData.usuarioid) {
+              usuarioid = usuarioData.usuarioid;
+              logger.info(`✅ [PUT /${table}/${id}] usuarioid obtenido de la BD: ${usuarioid}`);
+            } else {
+              logger.warn(`⚠️ [PUT /${table}/${id}] No se encontró usuario por useruuid. Error: ${usuarioError?.message || 'No data'}`);
+            }
+          }
+        }
+        
+        // 3. Si encontramos el usuarioid, agregarlo a los datos
+        if (usuarioid) {
+          dataToUpdate.usermodifiedid = usuarioid;
+          logger.info(`✅ [PUT /${table}/${id}] Campo usermodifiedid agregado (usuarioid: ${usuarioid})`);
+        } else {
+          logger.warn(`⚠️ [PUT /${table}/${id}] No se pudo determinar usuarioid para el usuario autenticado`);
+        }
+      } catch (auditError) {
+        logger.error(`❌ [PUT /${table}/${id}] Error agregando campo usermodifiedid:`, auditError.message);
+      }
+    }
     
     if (table === 'usuario') {
       // Si viene 'password' en lugar de 'password_hash', hashearlo
