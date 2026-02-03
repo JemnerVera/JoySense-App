@@ -1495,11 +1495,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
     
     // Decidir granularidad: 
-    // - Si hay más de 2 días: días
-    // - Si hay más de 1000 puntos: horas
-    // - Si no, 15 minutos
-    let useDays = overrideGranularity ? overrideGranularity.useDays : (daysSpan >= 2)
-    let useHours = overrideGranularity ? overrideGranularity.useHours : (!useDays && (hoursSpan >= 48 || pointCount > 1000))
+    // - Si hay 1 día o menos: agrupar por HORA
+    // - Si hay más de 1 día: agrupar por DÍA
+    let useDays = overrideGranularity ? overrideGranularity.useDays : (daysSpan > 1)
+    let useHours = overrideGranularity ? overrideGranularity.useHours : (daysSpan <= 1)
     
     const startProcess = performance.now()
     console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, useDays, useHours });
@@ -1523,19 +1522,23 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return labelCache.get(key)!
     }
     
-    const performGrouping = (data: any[], d: boolean, h: boolean, isComparison: boolean = false) => {
+    // Función auxiliar para generar timeKey consistentemente (DEBE estar antes de performGrouping)
+    // Agrupar por hora si es <= 1 día, por día si es > 1 día
+    const getTimeKey = (date: Date): string => {
+      if (useHours) {
+        return `${String(date.getHours()).padStart(2, '0')}:00`
+      }
+      // Por defecto, agrupar por día
+      return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+    }
+    
+    const performGrouping = (data: any[], isComparison: boolean = false) => {
       const grouped: { [locid: number]: any[] } = {}
       locsEnMediciones.forEach(id => { grouped[id] = [] })
       
       data.forEach(m => {
         const date = new Date(m.fecha)
-        let timeKey: string
-        if (d) timeKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
-        else if (h) timeKey = `${String(date.getHours()).padStart(2, '0')}:00`
-        else {
-          const roundedMin = Math.floor(date.getMinutes() / 15) * 15
-          timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`
-        }
+        const timeKey = getTimeKey(date)
         
         let label = getOrCacheLabel(m)
         // Prefixar con "comp_" si es comparación para distinguir líneas
@@ -1553,52 +1556,65 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return grouped
     }
 
-    let groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
-    let groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
+    let groupedData = performGrouping(filteredMediciones, false)
+    let groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
     
     // Fallback de resolución si hay muy pocos puntos (solo si no hay override)
     if (!overrideGranularity) {
       if (useDays && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
         useDays = false; useHours = true;
-        groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
-        groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
+        groupedData = performGrouping(filteredMediciones, false)
+        groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
       }
       if (useHours && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
         useHours = false;
-        groupedData = performGrouping(filteredMediciones, useDays, useHours, false)
-        groupedComparisonData = performGrouping(filteredComparisonMediciones, useDays, useHours, true)
+        groupedData = performGrouping(filteredMediciones, false)
+        groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
       }
     }
 
     // 4. Formatear para Recharts - Combinar datos de ambos nodos
+    // Agrupar por hora si es <= 1 día, por día si es > 1 día
     const allTimestamps = new Set<number>()
     Object.values(groupedData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-      else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
-      else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime()
+      if (useHours) {
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      } else {
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+      }
       allTimestamps.add(ts)
     }))
     Object.values(groupedComparisonData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-      else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
-      else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime()
+      if (useHours) {
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      } else {
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+      }
       allTimestamps.add(ts)
     }))
 
     const sortedTimes = Array.from(allTimestamps).sort((a, b) => a - b).map(ts => {
       const date = new Date(ts)
-      if (useDays) return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
-      if (useHours) return `${String(date.getHours()).padStart(2, '0')}:00`
-      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+      return getTimeKey(date)
     })
 
+    // Recolectar todas las líneas únicas (labels) que existen en los datos
+    const allLabels = new Set<string>()
+    Object.values(groupedData).forEach(list => list.forEach(p => allLabels.add(p.label)))
+    Object.values(groupedComparisonData).forEach(list => list.forEach(p => allLabels.add(p.label)))
+    const allLabelsArray = Array.from(allLabels).sort()
+    
     const finalData = sortedTimes.map(time => {
       const entry: any = { time }
-      let hasValue = false
+      // Inicializar todos los labels con undefined (Recharts lo trata como "sin dato")
+      allLabelsArray.forEach(label => {
+        entry[label] = undefined
+      })
+      
       locsEnMediciones.forEach(id => {
         // Incluir datos del nodo principal
         const point = (groupedData[id] || []).find(p => p.time === time)
@@ -1606,9 +1622,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           let val = point.value
           if (useCustomRange) {
             const { min, max } = yAxisDomain
-            if ((min !== null && val < min) || (max !== null && val > max)) val = null
+            if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
           }
-          if (val !== null) { entry[point.label] = val; hasValue = true }
+          if (val !== undefined && val !== null) { entry[point.label] = val }
         }
         // Incluir datos de comparación
         const compPoint = (groupedComparisonData[id] || []).find(p => p.time === time)
@@ -1616,16 +1632,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           let val = compPoint.value
           if (useCustomRange) {
             const { min, max } = yAxisDomain
-            if ((min !== null && val < min) || (max !== null && val > max)) val = null
+            if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
           }
-          if (val !== null) { entry[compPoint.label] = val; hasValue = true }
+          if (val !== undefined && val !== null) { entry[compPoint.label] = val }
         }
       })
-      return hasValue ? entry : null
-    }).filter(e => e !== null)
+      return entry
+    })
 
     const endProcess = performance.now()
     console.log(`[ModernDashboard] processChartData tiempo total: ${(endProcess - startProcess).toFixed(2)}ms para ${dataKey}`)
+    console.log(`[ModernDashboard] processChartData allLabels: ${Array.from(allLabelsArray).join(', ')}`)
+    console.log(`[ModernDashboard] processChartData sortedTimes.length: ${sortedTimes.length}, finalData.length: ${finalData.length}`)
+    if (finalData.length > 0) {
+      console.log(`[ModernDashboard] processChartData sample: ${JSON.stringify(finalData[0])}`)
+    }
 
     return finalData
   }
