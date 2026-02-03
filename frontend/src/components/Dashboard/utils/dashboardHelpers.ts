@@ -54,7 +54,8 @@ function createMedicionCache(mediciones: MedicionData[], nodeId: number) {
 // ============================================================================
 
 /**
- * Obtiene la etiqueta descriptiva para una serie de datos
+ * Obtiene la etiqueta descriptiva para una serie de datos (incluye localización)
+ * Usado en análisis detallado donde necesitamos identificar cada punto de medición
  */
 export function getSeriesLabel(
   medicion: MedicionData,
@@ -86,6 +87,40 @@ export function getSeriesLabel(
   }
 
   return `${locName} (${sensorLabel})`
+}
+
+/**
+ * Obtiene solo la etiqueta del sensor sin la localización
+ * Usado en minigráficos para mantener las leyendas limpias y legibles
+ */
+export function getSensorLabel(
+  medicion: MedicionData,
+  sensores: any[],
+  tipos: any[]
+): string {
+  // Para datos agregados (sin sensorid específico)
+  if (!medicion.sensorid || medicion.sensorid === 0) {
+    const metricName = medicion.localizacion?.metrica?.metrica || 'Métrica'
+    return metricName.charAt(0).toUpperCase() + metricName.slice(1)
+  }
+  
+  // Obtener información del sensor
+  const sensorId = medicion.localizacion?.sensorid || medicion.sensorid
+  const sensorInfo = sensores.find(s => s.sensorid === sensorId)
+  const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
+  
+  // Obtener información del tipo
+  const tipoId = sensorInfo?.tipoid || medicion.tipoid
+  const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
+  const tipoName = tipoInfo?.tipo || 'Sensor'
+  
+  // Construir etiqueta descriptiva (solo el sensor, sin localización)
+  let sensorLabel = tipoName
+  if (sensorName && sensorName !== tipoName) {
+    sensorLabel = `${tipoName} - ${sensorName}`
+  }
+
+  return sensorLabel
 }
 
 /**
