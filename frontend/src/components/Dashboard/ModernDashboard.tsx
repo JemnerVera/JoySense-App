@@ -6,6 +6,8 @@ import SupabaseRPCService from "../../services/supabase-rpc"
 import { NodeSelector } from "./NodeSelector"
 import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
+import { useFilters } from "../../contexts/FilterContext"
+import { filterNodesByGlobalFilters } from "../../utils/filterNodesUtils"
 import { useMedicionesLoader, useSystemData } from "./hooks"
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
@@ -107,6 +109,7 @@ function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters()
   
   // Estados para datos del sistema
   const [metricas, setMetricas] = useState<any[]>([])
@@ -753,9 +756,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           // Obtener todos los nodos con localizaciones
           const nodes = await JoySenseService.getNodosConLocalizacion()
           
+          // ✅ Aplicar filtros globales (país, empresa, fundo)
+          let filteredNodes = filterNodesByGlobalFilters(
+            nodes || [],
+            paisSeleccionado,
+            empresaSeleccionada,
+            fundoSeleccionado
+          );
+          
           // Filtrar nodos: excluir solo el nodo actual
           // Mostrar todos los demás nodos (la verificación de mediciones se hace cuando se selecciona)
-          const filteredNodes = (nodes || []).filter((node: any) => {
+          filteredNodes = (filteredNodes || []).filter((node: any) => {
             // Excluir el nodo actual
             return node.nodoid !== selectedNode.nodoid
           })
@@ -770,7 +781,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     } else {
       setAvailableNodes([])
     }
-  }, [showDetailedAnalysis, selectedNode?.nodoid])
+  }, [showDetailedAnalysis, selectedNode?.nodoid, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
   // Función para cargar mediciones del nodo de comparación
   const loadComparisonMediciones = useCallback(async (comparisonNode: any) => {

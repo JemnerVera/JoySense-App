@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../../services/backend-api';
+import { useFilters } from '../../../contexts/FilterContext';
 
 // Tipos para el estado de los sensores
 interface SensorEstado {
@@ -342,6 +343,7 @@ const EstadoActualSensores: React.FC<EstadoActualSensoresProps> = ({
   onDataLoaded
 }) => {
   const { data, loading, error, loadData } = useSensorData();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [estadosSensores, setEstadosSensores] = useState<EstadoPorCriticidad>({});
   const [internalFiltroCriticidad, setInternalFiltroCriticidad] = useState<string>('todas');
   const [internalFiltroUbicacion, setInternalFiltroUbicacion] = useState<string>('todas');
@@ -392,6 +394,11 @@ const EstadoActualSensores: React.FC<EstadoActualSensoresProps> = ({
         data.ubicaciones,
         data.criticidades
       );
+      
+      // ✅ NOTA: Los filtros globales (país, empresa, fundo) se aplican principalmente en
+      // dashboards que tienen estructura de localización completa (NodeData)
+      // En este dashboard (EstadoActualSensores) trabajamos con tablas simples sin esa estructura
+      // Por lo tanto, solo aplicamos el filtrado aquí si hay capacidad de hacerlo
       setEstadosSensores(estados);
     } else {
     }

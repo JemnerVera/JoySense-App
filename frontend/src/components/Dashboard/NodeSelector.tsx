@@ -4,6 +4,7 @@ import { InteractiveMap } from './InteractiveMap'
 import { NodeData } from '../../types/NodeData'
 import { useFilters } from '../../contexts/FilterContext'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils'
 
 interface NodeSelectorProps {
   selectedEntidadId: number | null
@@ -45,6 +46,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Hook para acceder a los filtros globales del sidebar y header
   const { 
+    paisSeleccionado,
+    empresaSeleccionada,
+    fundoSeleccionado,
     setPaisSeleccionado, 
     setEmpresaSeleccionada, 
     setFundoSeleccionado,
@@ -97,6 +101,15 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       if (selectedUbicacionId) {
         filtered = filtered.filter(node => node.ubicacionid === selectedUbicacionId)
       }
+      
+      // ✅ APLICAR FILTROS GLOBALES DEL SIDEBAR (país, empresa, fundo)
+      // Estos filtros se aplican DESPUÉS de que el backend retorna los nodos autorizados por RLS
+      filtered = filterNodesByGlobalFilters(
+        filtered,
+        paisSeleccionado,
+        empresaSeleccionada,
+        fundoSeleccionado
+      )
     }
 
     // Aplicar filtro de búsqueda si hay término de búsqueda
@@ -114,7 +127,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
     setFilteredNodes(filtered)
     console.log('[NodeSelector] Nodos filtrados:', filtered.length, 'de', nodes.length, 'total');
-  }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm])
+  }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
   // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
   useEffect(() => {

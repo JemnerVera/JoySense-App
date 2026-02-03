@@ -22,6 +22,7 @@ import { MessageDisplay } from '../../features/system-parameters/MessageDisplay'
 import { StatusTab } from '../../features/system-parameters/StatusTab/StatusTab';
 import { InsertTab } from '../../features/system-parameters/InsertTab/InsertTab';
 import { UpdateTab } from '../../features/system-parameters/UpdateTab/UpdateTab';
+import { ReglaPerfilUpdateTab } from '../../features/rules/components/ReglaPerfilUpdateTab';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 
 // ============================================================================
@@ -476,11 +477,27 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
         );
       
       case 'update':
+        // Para regla_perfil, usar el componente especializado
+        if (selectedTable === 'regla_perfil') {
+          return (
+            <ReglaPerfilUpdateTab
+              reglasData={reglasData}
+              perfilesData={perfilesData}
+              relatedData={relatedData}
+              onUpdateSuccess={() => {
+                loadTableData(selectedTable);
+                onSubTabChange?.('status');
+              }}
+            />
+          );
+        }
+
         const filteredColumnsForUpdate = columns.filter(col => {
           // Filtrar primary keys de las tablas de reglas
           if (selectedTable === 'regla_objeto' && col.columnName === 'regla_objetoid') return false;
           if (selectedTable === 'regla_umbral' && col.columnName === 'regla_umbralid') return false;
-          if (selectedTable === 'regla_perfil' && col.columnName === 'regla_perfilid') return false;
+          // regla_perfil se maneja arriba con ReglaPerfilUpdateTab, pero incluimos por seguridad
+          if ((selectedTable as string) === 'regla_perfil' && col.columnName === 'regla_perfilid') return false;
           return true;
         });
         return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useFilters } from '../../contexts/FilterContext';
 import MetricaPorLoteModal from './MetricaPorLoteModal';
 
 interface MetricaPorLoteProps {}
@@ -16,6 +17,7 @@ interface LoteMetricaData {
 
 const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const { t } = useLanguage();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [metricas, setMetricas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
@@ -74,6 +76,17 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
     loadInitialData();
   }, []);
+
+  // Aplicar filtros globales a fundos disponibles
+  useEffect(() => {
+    if (fundoSeleccionado && fundos.length > 0) {
+      // Si hay un fundo seleccionado globalmente, preseleccionarlo
+      const fundoId = parseInt(fundoSeleccionado);
+      if (!selectedFundos.includes(fundoId)) {
+        setSelectedFundos([fundoId]);
+      }
+    }
+  }, [fundoSeleccionado, fundos]);
 
   // Cargar ubicaciones cuando se seleccionan fundos (solo las que tienen localizaciones)
   useEffect(() => {
