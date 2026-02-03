@@ -4,6 +4,8 @@ import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useFilters } from '../../contexts/FilterContext';
+import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 
 interface MedicionesDashboardProps {}
 
@@ -12,6 +14,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
   // Estados principales
   const [nodos, setNodos] = useState<any[]>([]);
@@ -40,7 +43,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const loadInitialData = async () => {
       try {
         const [nodosData, sensoresData, tiposData] = await Promise.all([
-          JoySenseService.getNodos(),
+          JoySenseService.getNodosConLocalizacion(),
           JoySenseService.getSensores(),
           JoySenseService.getTipos()
         ]);
@@ -176,15 +179,24 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadMediciones();
   }, [selectedNode, selectedMetricId, dateRange.start, dateRange.end, showError, validateDateRange]);
 
-  // Filtrar nodos por término de búsqueda
+  // Filtrar nodos por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
+    // Primero aplicar filtros globales (país, empresa, fundo)
+    let filtered = filterNodesByGlobalFilters(
+      nodos,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado
+    );
+    
+    // Luego filtrar por término de búsqueda
     if (!nodoSearchTerm.trim()) {
-      return nodos;
+      return filtered;
     }
-    return nodos.filter((nodo: any) =>
+    return filtered.filter((nodo: any) =>
       nodo.nodo?.toLowerCase().includes(nodoSearchTerm.toLowerCase())
     );
-  }, [nodos, nodoSearchTerm]);
+  }, [nodos, nodoSearchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Calcular posición del dropdown de nodo cuando se abre
   useEffect(() => {

@@ -500,7 +500,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     icon: '👤',
     category: 'alertas',
     primaryKey: 'regla_perfilid',
-    allowInsert: true,
+    allowInsert: false,
     allowUpdate: true,
     allowDelete: true,
     allowMassive: false,

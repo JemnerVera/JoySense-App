@@ -11,6 +11,8 @@ import SupabaseRPCService from '../../services/supabase-rpc';
 import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useFilters } from '../../contexts/FilterContext';
+import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
 
 interface NodeStatusDashboardProps {}
@@ -59,6 +61,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -162,13 +165,22 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     loadNodes();
   }, [showError]);
 
-  // Filtrar nodos por ubicación seleccionada (filtro cascade)
+  // Filtrar nodos por filtros globales y ubicación seleccionada
   const filteredNodes = useMemo(() => {
+    // Primero aplicar filtros globales (país, empresa, fundo)
+    let filtered = filterNodesByGlobalFilters(
+      nodes,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado
+    );
+    
+    // Luego filtrar por ubicación seleccionada (filtro cascade)
     if (!selectedUbicacion) {
-      return nodes;
+      return filtered;
     }
-    return nodes.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
-  }, [nodes, selectedUbicacion]);
+    return filtered.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
+  }, [nodes, selectedUbicacion, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Filtrar ubicaciones por término de búsqueda
   const filteredUbicaciones = useMemo(() => {

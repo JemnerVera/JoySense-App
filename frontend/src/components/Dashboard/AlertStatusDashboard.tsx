@@ -10,6 +10,8 @@ import SupabaseRPCService from '../../services/supabase-rpc';
 import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useFilters } from '../../contexts/FilterContext';
+import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
 
 interface AlertStatusDashboardProps {}
@@ -57,6 +59,7 @@ interface MedicionConAlerta {
 export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   
   const [nodesWithAlerts, setNodesWithAlerts] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -83,9 +86,17 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
         const nodoIdsConAlertas = new Set(
           nodesConAlertasData.map((n: any) => n.nodoid)
         );
-        const nodesWithAlertsData = (allNodes || []).filter((node: NodeData) =>
+        let nodesWithAlertsData = (allNodes || []).filter((node: NodeData) =>
           nodoIdsConAlertas.has(node.nodoid)
         );
+        
+        // ✅ Aplicar filtros globales (país, empresa, fundo)
+        nodesWithAlertsData = filterNodesByGlobalFilters(
+          nodesWithAlertsData,
+          paisSeleccionado,
+          empresaSeleccionada,
+          fundoSeleccionado
+        ) as NodeData[];
 
         setNodesWithAlerts(nodesWithAlertsData);
       } catch (err: any) {
@@ -97,7 +108,7 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
     };
 
     loadNodesWithAlerts();
-  }, [showError]);
+  }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Cargar datos cuando se selecciona un nodo
   useEffect(() => {
