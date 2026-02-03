@@ -27,7 +27,7 @@ export function useReglasData(activeSubTab: 'status' | 'insert' | 'update') {
     }
   }, [activeSubTab, reglasData.length]);
 
-  // Cargar umbralesData cuando cambia a 'update'
+  // Cargar umbralesData cuando cambia a 'insert' o 'update'
   useEffect(() => {
     const loadUmbrales = async () => {
       try {
@@ -40,7 +40,7 @@ export function useReglasData(activeSubTab: 'status' | 'insert' | 'update') {
       }
     };
 
-    if (activeSubTab === 'update') {
+    if (activeSubTab === 'insert' || activeSubTab === 'update') {
       loadUmbrales();
     }
   }, [activeSubTab]);
@@ -55,11 +55,22 @@ export function useReglasData(activeSubTab: 'status' | 'insert' | 'update') {
     }
   };
 
+  // Función para recargar umbrales después de crear uno nuevo
+  const reloadUmbrales = async () => {
+    try {
+      const umbrales = await JoySenseService.getTableData('umbral', 1000);
+      setUmbralesData(Array.isArray(umbrales) ? umbrales : []);
+    } catch (error) {
+      console.error('Error recargando umbrales:', error);
+    }
+  };
+
   return {
     reglasData,
     setReglasData,
     umbralesData,
     setUmbralesData,
-    reloadReglas
+    reloadReglas,
+    reloadUmbrales
   };
 }

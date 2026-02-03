@@ -231,6 +231,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         getThemeColor={getThemeColor}
         getUniqueOptionsForField={getUniqueOptionsForField}
         isFieldRequired={isFieldRequired}
+        perfilesData={perfilesData}
       />];
     } else if (selectedTable === 'umbral') {
       return [<AlertasFormFields

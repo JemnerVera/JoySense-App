@@ -52,7 +52,7 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   const [updateFormData, setUpdateFormData] = useState<Record<string, any>>({});
 
   // Hook para datos de reglas
-  const { reglasData, reloadReglas } = useReglasData(activeSubTab);
+  const { reglasData, reloadReglas, umbralesData, reloadUmbrales } = useReglasData(activeSubTab);
 
   // Hook CRUD
   const {
@@ -134,14 +134,15 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
     onSubTabChange,
     setSelectedRow,
     setUpdateFormData,
-    reloadReglas
+    reloadReglas,
+    reloadUmbrales
   });
 
   // Hook para validaciones
   const { getUniqueOptionsForField } = useReglasValidation({
     crudRelatedData,
     criticidadesData,
-    umbralesData: [] // Este hook no necesita umbralesData, pero se pasa vacío
+    umbralesData: umbralesData || []
   });
 
   // Monitorear cambios sin guardar y notificar al sidebar
