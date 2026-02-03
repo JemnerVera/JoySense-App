@@ -567,14 +567,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
         ) : null}
       </div>
 
-      {/* Sección de Perfiles - REQUERIDO para activar la regla */}
+      {/* Sección de Perfiles */}
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">PERFILES (REQUERIDO PARA ACTIVAR)</h3>
+          <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">PERFILES</h3>
         </div>
-        <p className="text-sm text-gray-400 dark:text-neutral-500 mb-4 font-mono">
-          Selecciona al menos un perfil. La regla se activará una vez que asignes un perfil.
-        </p>
         
         {perfilesData && perfilesData.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

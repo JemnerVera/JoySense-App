@@ -10,6 +10,8 @@ interface ReglasUpdateTabProps {
   onCancel: () => void;
   setMessage: (message: Message | null) => void;
   onFormDataChange: (formData: Record<string, any>) => void;
+  perfilesData?: any[];
+  umbralesData?: any[];
 }
 
 export function ReglasUpdateTab({
@@ -19,7 +21,9 @@ export function ReglasUpdateTab({
   onUpdate,
   onCancel,
   setMessage,
-  onFormDataChange
+  onFormDataChange,
+  perfilesData,
+  umbralesData
 }: ReglasUpdateTabProps) {
   return (
     <ReglaUpdateForm
@@ -31,6 +35,8 @@ export function ReglasUpdateTab({
       setMessage={setMessage}
       themeColor="orange"
       onFormDataChange={onFormDataChange}
+      perfilesData={perfilesData}
+      umbralesData={umbralesData}
     />
   );
 }

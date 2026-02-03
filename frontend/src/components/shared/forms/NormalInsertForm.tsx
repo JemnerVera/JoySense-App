@@ -114,6 +114,22 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
 }) => {
   const { t } = useLanguage();
   
+  // Validar si el botón de guardar debe estar habilitado
+  const isGuardarButtonDisabled = (): boolean => {
+    // Para regla: requiere nombre, al menos 1 umbral y al menos 1 perfil
+    if (selectedTable === 'regla') {
+      const hasNombre = !!(formData.nombre && formData.nombre.trim() !== '');
+      const hasUmbrales = !!(formData._reglaUmbralRows && formData._reglaUmbralRows.length > 0 && 
+                            formData._reglaUmbralRows.some((row: any) => row.umbralid));
+      const hasPerfiles = !!(formData._perfilesSeleccionados && 
+                            Object.values(formData._perfilesSeleccionados).some((v: any) => v === 1));
+      
+      return !hasNombre || !hasUmbrales || !hasPerfiles;
+    }
+    
+    return false;
+  };
+  
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
     const colors = {
@@ -911,7 +927,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
               onInsert();
             }
           }}
-          disabled={loading}
+          disabled={loading || isGuardarButtonDisabled()}
           className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider`}
         >
           <span>➕</span>

@@ -22,6 +22,8 @@ interface ReglaUpdateFormProps {
   setMessage?: (message: { type: 'success' | 'error' | 'warning' | 'info'; text: string } | null) => void;
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
   onFormDataChange?: (formData: Record<string, any>) => void;
+  perfilesData?: any[];
+  umbralesData?: any[];
 }
 
 export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
@@ -32,7 +34,9 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
   onCancel,
   setMessage,
   themeColor = 'orange',
-  onFormDataChange
+  onFormDataChange,
+  perfilesData = [],
+  umbralesData = []
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -40,6 +44,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
   const [selectedReglaid, setSelectedReglaid] = useState<number | null>(null);
   const [reglaData, setReglaData] = useState<any>(null);
   const [reglaUmbralData, setReglaUmbralData] = useState<any[]>([]);
+  const [reglaPerfilData, setReglaPerfilData] = useState<any[]>([]);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [loadingRegla, setLoadingRegla] = useState(false);
@@ -117,7 +122,13 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         ru.reglaid === reglaid && ru.statusid === 1
       );
 
-      // Ordenar por orden
+      // Cargar perfiles relacionados (regla_perfil) - solo activos (statusid: 1)
+      const reglaPerfiles = await JoySenseService.getTableData('regla_perfil', 1000);
+      const perfilesFiltrados = (reglaPerfiles || []).filter((rp: any) => 
+        rp.reglaid === reglaid && rp.statusid === 1
+      );
+
+      // Ordenar umbrales por orden
       umbralesFiltrados.sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
 
       // Preparar datos para ReglaFormFields
@@ -131,17 +142,25 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         tempId: ru.regla_umbralid ? `temp-regla_umbralid-${ru.regla_umbralid}-${index}` : `temp-${Date.now()}-${index}`
       }));
 
+      // Preparar datos de perfiles seleccionados
+      const perfilesSeleccionados: Record<number, number> = {};
+      perfilesFiltrados.forEach((rp: any) => {
+        perfilesSeleccionados[rp.perfilid] = 1; // statusid activo
+      });
+
       // No crear fila vacía automáticamente - solo si realmente no hay umbrales
       // La fila vacía se creará cuando el usuario haga clic en "AGREGAR UMBRAL"
 
-      // Preparar formData con los datos de la regla y los umbrales
+      // Preparar formData con los datos de la regla, umbrales y perfiles
       const initialFormData: Record<string, any> = {
         ...regla,
-        _reglaUmbralRows: reglaUmbralRows
+        _reglaUmbralRows: reglaUmbralRows,
+        _perfilesSeleccionados: perfilesSeleccionados
       };
 
       setReglaData(regla);
       setReglaUmbralData(umbralesFiltrados);
+      setReglaPerfilData(perfilesFiltrados);
       
       // Actualizar formData directamente - React debería detectar el cambio
       setFormData(initialFormData);
@@ -328,6 +347,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
             getUniqueOptionsForField={getUniqueOptionsForField}
             isFieldRequired={isFieldRequired}
             disabled={!selectedReglaid}
+            perfilesData={perfilesData}
           />
 
           {/* Botones de acción */}

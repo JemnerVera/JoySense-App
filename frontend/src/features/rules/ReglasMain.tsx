@@ -33,7 +33,7 @@ import { ReglasMainProps, ReglasMainRef, Message, RelatedData } from './types';
 import { getSubTabName, isFieldVisibleInForm } from './utils';
 
 const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
-  activeSubTab: propActiveSubTab = 'status',
+  activeSubTab: propActiveSubTab = 'insert',
   onSubTabChange,
   onFormDataChange
 }, ref) => {
@@ -146,14 +146,8 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   });
 
   // Monitorear cambios sin guardar y notificar al sidebar
-  // SOLO marcar dirty en CREAR o ACTUALIZAR (no en STATUS)
+  // Marcar dirty en CREAR o ACTUALIZAR
   useEffect(() => {
-    // En STATUS no hay cambios sin guardar
-    if (activeSubTab === 'status') {
-      sidebar.markDirty('reglas-main', false);
-      return;
-    }
-
     const isDirty = hasUnsavedChanges();
     sidebar.markDirty('reglas-main', isDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -249,7 +243,7 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
   const renderContent = () => {
     switch (activeSubTab) {
       case 'status':
-        return <ReglasStatusTab />;
+        return <ReglasStatusTab reglasData={reglasData} />;
 
       case 'insert':
         return (
@@ -279,12 +273,14 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
             getUniqueOptionsForField={getUniqueOptionsForField}
             onUpdate={handleReglaUpdate}
             onCancel={() => {
-              onSubTabChange?.('status');
+              onSubTabChange?.('insert');
             }}
             setMessage={setMessage}
             onFormDataChange={(formData) => {
               setUpdateFormData(formData);
             }}
+            perfilesData={perfilesData}
+            umbralesData={umbralesData}
           />
         );
 
