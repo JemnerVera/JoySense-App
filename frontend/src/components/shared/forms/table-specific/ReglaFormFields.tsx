@@ -27,6 +27,7 @@ interface ReglaFormFieldsProps {
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   isFieldRequired: (columnName: string) => boolean;
   disabled?: boolean; // Nueva prop para deshabilitar campos
+  perfilesData?: any[]; // Datos de perfiles para asignación
 }
 
 export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
@@ -38,7 +39,8 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
   getThemeColor,
   getUniqueOptionsForField,
   isFieldRequired,
-  disabled = false
+  disabled = false,
+  perfilesData = []
 }) => {
   const { t } = useLanguage();
   
@@ -112,19 +114,21 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
       orden: newOrden,
       tempId: `temp-${Date.now()}`
     };
-    setFormData((prev: Record<string, any>) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       _reglaUmbralRows: [...reglaUmbralRows, newRow]
-    }));
+    };
+    setFormData(newFormData);
   };
 
   // Función para eliminar una fila de umbral
   const handleRemoveUmbralRow = (tempId: string) => {
     const newRows = reglaUmbralRows.filter(row => row.tempId !== tempId);
-    setFormData((prev: Record<string, any>) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       _reglaUmbralRows: newRows
-    }));
+    };
+    setFormData(newFormData);
   };
 
   // Función para actualizar un campo de una fila de umbral
@@ -132,10 +136,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
     const newRows = reglaUmbralRows.map(row => 
       row.tempId === tempId ? { ...row, [field]: value } : row
     );
-    setFormData((prev: Record<string, any>) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       _reglaUmbralRows: newRows
-    }));
+    };
+    setFormData(newFormData);
   };
 
   // Función para actualizar múltiples campos de una fila de umbral
@@ -143,10 +148,11 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
     const newRows = reglaUmbralRows.map(row => 
       row.tempId === tempId ? { ...row, ...updates } : row
     );
-    setFormData((prev: Record<string, any>) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       _reglaUmbralRows: newRows
-    }));
+    };
+    setFormData(newFormData);
   };
 
   // Obtener opciones de umbrales
@@ -559,6 +565,57 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
             </table>
             </div>
         ) : null}
+      </div>
+
+      {/* Sección de Perfiles - REQUERIDO para activar la regla */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">PERFILES (REQUERIDO PARA ACTIVAR)</h3>
+        </div>
+        <p className="text-sm text-gray-400 dark:text-neutral-500 mb-4 font-mono">
+          Selecciona al menos un perfil. La regla se activará una vez que asignes un perfil.
+        </p>
+        
+        {perfilesData && perfilesData.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {perfilesData.map((perfil: any) => {
+              const perfilId = perfil.perfilid;
+              const perfilNombre = perfil.perfil || `Perfil ${perfilId}`;
+              const perfilesSeleccionados = formData._perfilesSeleccionados || {};
+              const isSelected = perfilesSeleccionados[perfilId] === 1;
+
+              return (
+                <button
+                  key={perfilId}
+                  type="button"
+                  onClick={() => {
+                    if (!isFieldsDisabled) {
+                      const newPerfiles = { ...perfilesSeleccionados };
+                      newPerfiles[perfilId] = isSelected ? 0 : 1;
+                      const newFormData = {
+                        ...formData,
+                        _perfilesSeleccionados: newPerfiles
+                      };
+                      setFormData(newFormData);
+                    }
+                  }}
+                  disabled={isFieldsDisabled}
+                  className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
+                    isSelected
+                      ? 'bg-orange-500 text-white border-2 border-orange-600'
+                      : 'bg-neutral-700 text-neutral-300 border-2 border-neutral-600 hover:bg-neutral-600'
+                  } ${isFieldsDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {perfilNombre}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400 dark:text-neutral-500 font-mono">
+            No hay perfiles disponibles
+          </div>
+        )}
       </div>
     </div>
   );
