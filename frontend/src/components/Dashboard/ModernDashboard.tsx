@@ -24,6 +24,7 @@ import {
   getStatus as getStatusHelper,
   hasRecentData as hasRecentDataHelper,
   getSeriesLabel as getSeriesLabelHelper,
+  getSensorLabel as getSensorLabelHelper,
   createOptimizedMetricHelper
 } from "./utils/dashboardHelpers"
 import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
@@ -1488,11 +1489,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const locsEnMediciones = Array.from(new Set(filteredMediciones.map(m => m.localizacionid).filter(id => id != null)))
     
     // Pre-calcular labels una sola vez para evitar búsquedas repetidas
+    // En minigráficos: usar getSensorLabel (sin localización)
+    // En gráfico detallado: usar getSeriesLabel (con localización)
     const labelCache = new Map<number, string>()
     const getOrCacheLabel = (m: MedicionData): string => {
       const key = m.sensorid || 0
       if (!labelCache.has(key)) {
-        labelCache.set(key, getSeriesLabel(m))
+        const label = useCustomRange 
+          ? getSeriesLabel(m)  // Análisis detallado: incluir localización
+          : getSensorLabelHelper(m, sensores, tipos)  // Minigráficos: solo sensor
+        labelCache.set(key, label)
       }
       return labelCache.get(key)!
     }

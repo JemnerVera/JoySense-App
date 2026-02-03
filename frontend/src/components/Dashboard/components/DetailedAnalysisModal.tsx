@@ -22,15 +22,15 @@ import DetailedChartJs from "./DetailedChartJs"
 
 export interface DetailedAnalysisModalProps {
   isOpen: boolean
-  selectedNode: Nodo | null
+  selectedNode: any | null  // Puede ser Nodo o NodeData (NodeData tiene latitud/longitud)
   selectedMetricForAnalysis: MetricConfig | null
   selectedDetailedMetric: string
   detailedMediciones: MedicionData[]
-  comparisonNode: Nodo | null
+  comparisonNode: any | null  // Puede ser Nodo o NodeData
   comparisonMediciones: MedicionData[]
   mediciones: MedicionData[]
   availableMetrics: MetricConfig[]
-  availableNodes: Nodo[]
+  availableNodes: any[]  // Puede ser Nodo[] o NodeData[]
   tipos: Tipo[]
   sensores: any[]
   loadingDetailedData: boolean
@@ -47,7 +47,7 @@ export interface DetailedAnalysisModalProps {
   // Callbacks
   onClose: () => void
   onMetricChange: (metric: string) => void
-  onComparisonNodeChange: (node: Nodo | null) => void
+  onComparisonNodeChange: (node: any | null) => void
   onDateRangeChange: (startDate: string, endDate: string) => void
   onYAxisDomainChange: (domain: { min: number | null; max: number | null }) => void
   onVisibleTiposChange: (tipos: Set<string>) => void
@@ -179,8 +179,35 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     <span className="text-gray-500 dark:text-neutral-500">Nodo:</span> {selectedNode.nodo}
                   </div>
                   {selectedNode.ubicacion && (
-                    <div className="truncate pl-2">
-                      <span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}
+                    <>
+                      <div className="truncate pl-2">
+                        <span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}
+                      </div>
+                      {selectedNode.ubicacion.fundo && (
+                        <>
+                          <div className="truncate pl-2">
+                            <span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.fundo.fundo}
+                          </div>
+                          {selectedNode.ubicacion.fundo.empresa && (
+                            <>
+                              <div className="truncate pl-2">
+                                <span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.fundo.empresa.empresa}
+                              </div>
+                              {selectedNode.ubicacion.fundo.empresa.pais && (
+                                <div className="truncate pl-2">
+                                  <span className="text-gray-500 dark:text-neutral-500">País:</span> {selectedNode.ubicacion.fundo.empresa.pais.pais}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                  {(selectedNode.latitud !== null && selectedNode.latitud !== undefined && selectedNode.longitud !== null && selectedNode.longitud !== undefined) && (
+                    <div className="truncate pl-2 text-gray-600 dark:text-neutral-400">
+                      <span className="text-gray-500 dark:text-neutral-500">Coordenadas:</span>
+                      <div className="pl-2">{selectedNode.latitud}, {selectedNode.longitud}</div>
                     </div>
                   )}
                 </div>
