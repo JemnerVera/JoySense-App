@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -19,6 +19,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const { t } = useLanguage();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
   const [metricas, setMetricas] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [localizaciones, setLocalizaciones] = useState<any[]>([]);
@@ -45,8 +46,9 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [metricasData, fundosData, localizacionesData, tiposData, sensoresData] = await Promise.all([
+        const [metricasData, empresasData, fundosData, localizacionesData, tiposData, sensoresData] = await Promise.all([
           JoySenseService.getMetricas(),
+          JoySenseService.getEmpresas(),
           JoySenseService.getFundos(),
           JoySenseService.getLocalizaciones(), // Usar getLocalizaciones() que incluye join con nodo.ubicacionid
           JoySenseService.getTipos(),
@@ -54,6 +56,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         ]);
         
         setMetricas(metricasData || []);
+        setEmpresas(empresasData || []);
         setFundos(fundosData || []);
         setLocalizaciones(localizacionesData || []);
         setTipos(tiposData || []);
@@ -77,16 +80,45 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     loadInitialData();
   }, []);
 
-  // Aplicar filtros globales a fundos disponibles
-  useEffect(() => {
-    if (fundoSeleccionado && fundos.length > 0) {
-      // Si hay un fundo seleccionado globalmente, preseleccionarlo
-      const fundoId = parseInt(fundoSeleccionado);
-      if (!selectedFundos.includes(fundoId)) {
-        setSelectedFundos([fundoId]);
+  // Normalizar ID (backend puede devolver number o string)
+  const toId = (v: any): number => (v === '' || v === null || v === undefined ? NaN : Number(v));
+
+  // Fundos disponibles según filtros globales en cascada (PAÍS → EMPRESA → FUNDO)
+  const availableFundos = useMemo(() => {
+    const paisId = toId(paisSeleccionado);
+    const empresaId = toId(empresaSeleccionada);
+    const fundoId = toId(fundoSeleccionado);
+
+    return fundos.filter((f: any) => {
+      const fFundoid = toId(f.fundoid);
+      const fEmpresaid = toId(f.empresaid);
+
+      if (fundoSeleccionado !== '' && fundoSeleccionado != null && !isNaN(fundoId)) {
+        return fFundoid === fundoId;
       }
-    }
-  }, [fundoSeleccionado, fundos]);
+      if (empresaSeleccionada !== '' && empresaSeleccionada != null && !isNaN(empresaId)) {
+        return fEmpresaid === empresaId;
+      }
+      if (paisSeleccionado !== '' && paisSeleccionado != null && !isNaN(paisId)) {
+        const emp = empresas.find((e: any) => toId(e.empresaid) === fEmpresaid);
+        const empPaisId = emp != null ? (toId(emp.paisid) || (emp.pais && toId((emp.pais as any).paisid))) : NaN;
+        return !isNaN(empPaisId) && empPaisId === paisId;
+      }
+      return true;
+    });
+  }, [fundos, empresas, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
+
+  // Sincronizar selectedFundos con filtros globales: preseleccionar fundo global o quitar los que ya no están disponibles
+  useEffect(() => {
+    setSelectedFundos((prev) => {
+      if (fundoSeleccionado !== '' && fundoSeleccionado != null && availableFundos.length > 0) {
+        const fundoId = toId(fundoSeleccionado);
+        if (!isNaN(fundoId) && availableFundos.some((f: any) => toId(f.fundoid) === fundoId)) return [fundoId];
+      }
+      const valid = prev.filter((id) => availableFundos.some((f: any) => toId(f.fundoid) === id));
+      return valid.length === prev.length ? prev : valid;
+    });
+  }, [fundoSeleccionado, availableFundos]);
 
   // Cargar ubicaciones cuando se seleccionan fundos (solo las que tienen localizaciones)
   useEffect(() => {
@@ -241,12 +273,12 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     });
   };
 
-  // Manejar "Seleccionar todos"
+  // Manejar "Seleccionar todos" (solo entre los fundos disponibles según filtros globales)
   const handleSelectAllFundos = () => {
-    if (selectedFundos.length === fundos.length) {
+    if (selectedFundos.length === availableFundos.length) {
       setSelectedFundos([]);
     } else {
-      setSelectedFundos(fundos.map(f => f.fundoid));
+      setSelectedFundos(availableFundos.map((f: any) => f.fundoid));
     }
   };
 
@@ -293,7 +325,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                 {selectedFundos.length === 0
                   ? 'Seleccionar fundo'
                   : selectedFundos.length === 1
-                  ? fundos.find(f => f.fundoid === selectedFundos[0])?.fundo || 'Seleccionar fundo'
+                  ? availableFundos.find((f: any) => f.fundoid === selectedFundos[0])?.fundo || fundos.find(f => f.fundoid === selectedFundos[0])?.fundo || 'Seleccionar fundo'
                   : `${selectedFundos.length} fundos seleccionados`}
               </span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,14 +338,14 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
                 <button
                   onClick={handleSelectAllFundos}
                   className={`w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors font-mono border-b border-gray-200 dark:border-neutral-600 ${
-                    selectedFundos.length === fundos.length
+                    availableFundos.length > 0 && selectedFundos.length === availableFundos.length
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-900 dark:text-white'
                   }`}
                 >
-                  {selectedFundos.length === fundos.length ? '✓ Seleccionar todos' : 'Seleccionar todos'}
+                  {availableFundos.length > 0 && selectedFundos.length === availableFundos.length ? '✓ Seleccionar todos' : 'Seleccionar todos'}
                 </button>
-                {fundos.map((fundo) => (
+                {availableFundos.map((fundo: any) => (
                   <button
                     key={fundo.fundoid}
                     onClick={() => handleFundoToggle(fundo.fundoid)}

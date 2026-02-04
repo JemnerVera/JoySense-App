@@ -78,7 +78,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         ),
         color: 'green',
         requiresPermission: true,
-        requiredMenu: 'entidad'
+        requiredMenu: 'AGRUPACIÓN'
       },
       {
         id: 'configuracion',
@@ -118,9 +118,15 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         return true;
       }
 
-      // Si requiere permiso para 'entidad', verificar que tenga acceso
+      // Si requiere permiso para AGRUPACIÓN: acceso al padre o a cualquier hijo (nombres exactos como en joysense.menu)
       if (tab.id === 'agrupacion') {
-        return hasAccess('entidad');
+        return (
+          hasAccessToMenu('AGRUPACIÓN') ||
+          hasAccess('CARPETA') ||
+          hasAccess('LOCALIZACIÓN POR CARPETA') ||
+          hasAccess('ENTIDAD') ||
+          hasAccess('ENTIDAD LOCALIZACION')
+        );
       }
 
       // Si requiere permiso para 'CONFIGURACIÓN', verificar acceso
