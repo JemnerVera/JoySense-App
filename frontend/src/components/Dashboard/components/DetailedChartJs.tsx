@@ -59,6 +59,20 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
     return label.startsWith('comp_')
   }
 
+  // Función para ordenar líneas por número de sonda (10cm, 20cm, 30cm, etc.)
+  const sortBySondaNumber = (lines: string[]): string[] => {
+    return [...lines].sort((a, b) => {
+      const aMatch = cleanLabel(a).match(/Sonda\s+(\d+)cm/)
+      const bMatch = cleanLabel(b).match(/Sonda\s+(\d+)cm/)
+      
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[1]) - parseInt(bMatch[1])
+      }
+      
+      return 0
+    })
+  }
+
   // Estado local para leyenda interactiva - inicializar con TODAS las líneas visibles
   const [localVisibleTipos, setLocalVisibleTipos] = React.useState<Set<string>>(() => {
     // Inicializar con todas las líneas visibles
@@ -327,20 +341,19 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                       NODO COMPARACIÓN {comparisonNode?.nodo ? `(${comparisonNode.nodo})` : ''}
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
-                      {comparisonNodeLines.map((lineKey) => {
+                      {sortBySondaNumber(comparisonNodeLines).map((lineKey) => {
                         // Obtener el índice original de visibleLines para mantener colores consistentes
                         const originalIndex = visibleLines.indexOf(lineKey)
                         const strokeColor = comparisonColors[originalIndex % comparisonColors.length]
                         const cleanedLabel = cleanLabel(lineKey)
-                        const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
                         
                         return (
                           <div key={lineKey} className="flex items-center gap-2">
                             <input
                               type="checkbox"
-                              checked={isVisible}
-                              onChange={() => handleToggleLine(lineKey)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              checked={true}
+                              disabled={true}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-not-allowed"
                             />
                             <svg className="w-4 h-1" viewBox="0 0 16 2" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <line x1="0" y1="1" x2="16" y2="1" stroke={strokeColor} strokeWidth="2" strokeDasharray="5 3" />
