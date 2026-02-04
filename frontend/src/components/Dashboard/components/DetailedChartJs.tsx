@@ -232,11 +232,13 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
               cursor={{ stroke: '#9ca3af', strokeDasharray: '3 3' }}
             />
             {filteredVisibleLines.length > 0 ? (
-              filteredVisibleLines.map((lineKey, index) => {
+              filteredVisibleLines.map((lineKey) => {
+                // Obtener el índice original de visibleLines para mantener colores consistentes
+                const originalIndex = visibleLines.indexOf(lineKey)
                 const isComparison = isComparisonLine(lineKey)
                 const strokeColor = isComparison 
-                  ? comparisonColors[index % comparisonColors.length]
-                  : colors[index % colors.length]
+                  ? comparisonColors[originalIndex % comparisonColors.length]
+                  : colors[originalIndex % colors.length]
                 
                 return (
                   <Line
@@ -276,8 +278,10 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                       NODO PRINCIPAL
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
-                      {mainNodeLines.map((lineKey, index) => {
-                        const strokeColor = colors[index % colors.length]
+                      {mainNodeLines.map((lineKey) => {
+                        // Obtener el índice original de visibleLines para mantener colores consistentes
+                        const originalIndex = visibleLines.indexOf(lineKey)
+                        const strokeColor = colors[originalIndex % colors.length]
                         const cleanedLabel = cleanLabel(lineKey)
                         const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
                         
@@ -310,8 +314,10 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                       NODO COMPARACIÓN
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
-                      {comparisonNodeLines.map((lineKey, index) => {
-                        const strokeColor = comparisonColors[index % comparisonColors.length]
+                      {comparisonNodeLines.map((lineKey) => {
+                        // Obtener el índice original de visibleLines para mantener colores consistentes
+                        const originalIndex = visibleLines.indexOf(lineKey)
+                        const strokeColor = comparisonColors[originalIndex % comparisonColors.length]
                         const cleanedLabel = cleanLabel(lineKey)
                         const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
                         
