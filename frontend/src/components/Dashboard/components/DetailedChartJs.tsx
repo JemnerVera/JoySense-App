@@ -15,6 +15,8 @@ export interface DetailedChartJsProps {
   visibleTipos?: Set<string>
   onVisibleTiposChange?: (tipos: Set<string>) => void
   metricUnit?: string  // Unidad de la métrica para mostrar en tooltip
+  selectedNode?: any | null  // Nodo principal
+  comparisonNode?: any | null  // Nodo de comparación
 }
 
 /**
@@ -29,8 +31,11 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   visibleTipos = new Set(),
   onVisibleTiposChange,
   metricUnit = '',
+  selectedNode = null,
+  comparisonNode = null,
 }) => {
   console.log('[DetailedChartJs] Rendering with data:', data.length, 'visibleLines:', visibleLines.length, 'loading:', loading)
+  console.log('[DetailedChartJs] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
 
   // Función para limpiar el label (remover "Punto XX" prefix y "comp_") - DEBE estar antes de useState
   const cleanLabel = (label: string): string => {
@@ -38,6 +43,14 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
     let cleaned = label.replace(/^comp_/, '')
     // Remover patrones como "Punto 40 (Maceta - Sonda 10cm)" o "Punto XX - "
     cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+    
+    // Extraer solo la parte "Maceta - Sonda XXcm" si existe
+    // Buscar el patrón "Maceta - Sonda \d+cm" y extraerlo
+    const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+    if (macetaMatch) {
+      return macetaMatch[0]
+    }
+    
     return cleaned
   }
   
@@ -275,7 +288,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                 {mainNodeLines.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      NODO PRINCIPAL
+                      NODO PRINCIPAL {selectedNode?.nodo ? `(${selectedNode.nodo})` : ''}
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
                       {mainNodeLines.map((lineKey) => {
@@ -311,7 +324,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                 {comparisonNodeLines.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      NODO COMPARACIÓN
+                      NODO COMPARACIÓN {comparisonNode?.nodo ? `(${comparisonNode.nodo})` : ''}
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
                       {comparisonNodeLines.map((lineKey) => {
