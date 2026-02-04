@@ -24,6 +24,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [tipos, setTipos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
+  const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
 
   // Estados de filtro
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
@@ -187,6 +188,88 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     console.log('[MedicionesDashboard] mediciones actualizado:', mediciones.length);
   }, [mediciones]);
 
+  // Actualizar métricas disponibles basado en los datos REALES cargados
+  // Esto es crítico para rangos largos donde el backend puede no devolver todas las métricas
+  useEffect(() => {
+    if (mediciones.length === 0) {
+      setAvailableMetrics([]);
+      setSelectedMetricId(null);
+      return;
+    }
+
+    // Obtener los metricaid únicos que realmente existen en los datos
+    const uniqueMetricIds = new Set<number>();
+    mediciones.forEach(m => {
+      const metricaId = m.metricaid || m.localizacion?.metricaid;
+      if (metricaId) {
+        uniqueMetricIds.add(Number(metricaId));
+      }
+    });
+
+    console.log('[MedicionesDashboard] metricaid únicos en datos reales:', Array.from(uniqueMetricIds));
+
+    // Crear mapeo de nombre a ID basado en los datos
+    // Buscar en múltiples ubicaciones posibles del campo de nombre
+    const metricMap = new Map<number, string>();
+    mediciones.forEach(m => {
+      const metricaId = m.metricaid || m.localizacion?.metricaid;
+      
+      // Intentar obtener el nombre de varias posibles ubicaciones
+      let metricaNombre = 
+        m.localizacion?.metrica?.metrica ||  // Estructura expandida
+        m.metrica_nombre ||                   // Campo directo en medicion
+        m.metrica ||                          // Campo directo alternativo
+        m.localizacion?.metrica ||            // Métrica como objeto
+        null;
+
+      // Si metricaNombre es un objeto, intentar extraer el campo 'metrica'
+      if (metricaNombre && typeof metricaNombre === 'object' && 'metrica' in metricaNombre) {
+        metricaNombre = metricaNombre.metrica;
+      }
+
+      // Limpieza de espacios en blanco y saltos de línea
+      if (typeof metricaNombre === 'string') {
+        metricaNombre = metricaNombre.replace(/[\r\n]/g, ' ').trim();
+      }
+
+      if (metricaId && !metricMap.has(Number(metricaId))) {
+        if (metricaNombre) {
+          metricMap.set(Number(metricaId), metricaNombre);
+        }
+      }
+    });
+
+    // Mapeo manual de IDs a nombres si no se encontró en los datos
+    const fallbackNames: { [key: number]: string } = {
+      1: 'Temperatura',
+      2: 'Humedad',
+      3: 'Electroconductividad'
+    };
+
+    // Construir lista de métricas disponibles basado en datos reales
+    const availableFromData = Array.from(uniqueMetricIds)
+      .sort()
+      .map(id => ({
+        id,
+        name: metricMap.get(id) || fallbackNames[id] || `Métrica ${id}`
+      }));
+
+    console.log('[MedicionesDashboard] Métricas disponibles:', availableFromData);
+
+    setAvailableMetrics(availableFromData);
+
+    // Si el selectedMetricId actual no existe en los datos, seleccionar el primero disponible
+    if (availableFromData.length > 0) {
+      const selectedExists = availableFromData.find(m => m.id === selectedMetricId);
+      if (!selectedExists) {
+        console.log('[MedicionesDashboard] selectedMetricId no existe en datos, cambiando a:', availableFromData[0].id);
+        setSelectedMetricId(availableFromData[0].id);
+      }
+    } else {
+      setSelectedMetricId(null);
+    }
+  }, [mediciones]);
+
   // Filtrar nodos por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
     // Primero aplicar filtros globales (país, empresa, fundo)
@@ -262,6 +345,28 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return Number(metricaId) === Number(selectedMetricId);
     });
     
+    // Actualizar la unidad de la métrica seleccionada
+    if (filtered.length > 0) {
+      // Buscar la unidad en el primer registro que tenga esa métrica
+      const unitFromData = 
+        filtered[0]?.localizacion?.metrica?.unidad ||
+        filtered[0]?.unidad ||
+        filtered[0]?.localizacion?.unidad ||
+        '';
+      
+      setSelectedMetricUnit(unitFromData || '');
+    } else {
+      setSelectedMetricUnit('');
+    }
+    
+    // Debugging: si no hay resultados pero hay mediciones, mostrar estructura de los datos
+    if (filtered.length === 0 && mediciones.length > 0) {
+      console.log('[MedicionesDashboard] DEBUG - Sin filtros coincidentes');
+      console.log('[MedicionesDashboard] DEBUG - Primer medicion:', mediciones[0]);
+      console.log('[MedicionesDashboard] DEBUG - metricaIds únicos en datos:', new Set(mediciones.map(m => m.metricaid || m.localizacion?.metricaid).filter(id => id != null)));
+      console.log('[MedicionesDashboard] DEBUG - buscando metricaid:', selectedMetricId);
+    }
+    
     console.log('[MedicionesDashboard] Mediciones filtradas por metricaid:', selectedMetricId, 'items:', filtered.length);
     return filtered;
   }, [mediciones, selectedMetricId]);
@@ -270,64 +375,134 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const chartData = useMemo(() => {
     if (medicionesFiltradasPorMetrica.length === 0) return [];
 
-    // Los datos ya están filtrados por métrica desde medicionesFiltradasPorMetrica
-    
-    // Calcular granularidad según rango de fechas
-    const daysSpan = (new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 3600 * 24);
-    
-    let getTimeKey: (date: Date) => string;
-    
-    if (daysSpan <= 3) {
-      // 30 minutos para 1-3 días
-      getTimeKey = (date: Date) => {
-        const minutes = Math.floor(date.getMinutes() / 30) * 30;
-        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-      };
-    } else if (daysSpan <= 7) {
-      // 3 horas para 3 días a 1 semana
-      getTimeKey = (date: Date) => {
-        const hours = Math.floor(date.getHours() / 3) * 3;
-        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
-      };
-    } else {
-      // 1 día para más de 1 semana
-      getTimeKey = (date: Date) => {
+    // Calcular timeSpan
+    const timeSpan = new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime();
+    const daysSpan = timeSpan / (1000 * 60 * 60 * 24);
+    const hoursSpan = daysSpan * 24;
+
+    // Función auxiliar para hacer grouping con una granularidad específica
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days') => {
+      const getTimeKey = (date: Date): string => {
+        if (granularityType === 'minutes') {
+          const minutes = Math.floor(date.getMinutes() / 30) * 30;
+          return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+        if (granularityType === 'hours') {
+          const hours = Math.floor(date.getHours() / 3) * 3;
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
+        }
+        // días
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
+
+      // Pre-calcular labels
+      const labelCache = new Map<number, string>();
+      const getOrCacheLabel = (m: any): string => {
+        const key = m.sensorid || 0;
+        if (!labelCache.has(key)) {
+          labelCache.set(key, getSeriesLabel(m));
+        }
+        return labelCache.get(key)!;
+      };
+
+      // Agrupar por tiempo y sensor
+      const groupedByTime = new Map<string, Map<string, { values: number[], timestamp: number }>>();
+
+      medicionesFiltradasPorMetrica.forEach((m: any) => {
+        if (m.medicion === null || m.medicion === undefined) return;
+
+        const date = new Date(m.fecha);
+        const timeKey = getTimeKey(date);
+        const label = getOrCacheLabel(m);
+
+        if (!groupedByTime.has(timeKey)) {
+          groupedByTime.set(timeKey, new Map());
+        }
+
+        const timeEntry = groupedByTime.get(timeKey)!;
+        if (!timeEntry.has(label)) {
+          // Guardar también el timestamp para ordenar después
+          timeEntry.set(label, { values: [], timestamp: date.getTime() });
+        }
+
+        timeEntry.get(label)!.values.push(parseFloat(m.medicion));
+      });
+
+      // Recolectar todos los labels únicos
+      const allLabels = new Set<string>();
+      groupedByTime.forEach(timeEntry => {
+        timeEntry.forEach((_, label) => allLabels.add(label));
+      });
+      const allLabelsArray = Array.from(allLabels).sort();
+
+      // Obtener tiempos ordenados por timestamp
+      const sortedTimes = Array.from(groupedByTime.entries())
+        .sort((a, b) => {
+          // Obtener el primer timestamp disponible de cada grupo
+          const aTimestamp = Math.min(...Array.from(a[1].values()).map(v => v.timestamp || 0));
+          const bTimestamp = Math.min(...Array.from(b[1].values()).map(v => v.timestamp || 0));
+          return aTimestamp - bTimestamp;
+        })
+        .map(([timeKey]) => timeKey);
+
+      // Construir resultado final
+      const result = sortedTimes.map(timeKey => {
+        const entry: any = { fecha: timeKey };
+
+        // Inicializar todos los labels con undefined
+        allLabelsArray.forEach(label => {
+          entry[label] = undefined;
+        });
+
+        // Rellenar valores para este tiempo
+        const timeEntry = groupedByTime.get(timeKey)!;
+        timeEntry.forEach(({ values }, label) => {
+          if (values.length > 0) {
+            entry[label] = values.reduce((a, b) => a + b, 0) / values.length;
+          }
+        });
+
+        return entry;
+      });
+
+      return { result, allLabelsArray, pointCount: result.length };
+    };
+
+    // Determinar granularidad inicial
+    let granularityType: 'minutes' | 'hours' | 'days' = 'days';
+    if (daysSpan <= 1) {
+      granularityType = 'minutes';
+    } else if (daysSpan <= 7) {
+      granularityType = 'hours';
+    } else {
+      granularityType = 'days';
     }
 
-    // Agrupar por fecha/tiempo con granularidad dinámica
-    const dataMap = new Map<string, any>();
-    
-    medicionesFiltradasPorMetrica.forEach((m: any) => {
-      const fecha = new Date(m.fecha);
-      const dateKey = getTimeKey(fecha);
-      
-      if (!dataMap.has(dateKey)) {
-        dataMap.set(dateKey, { fecha: dateKey });
-      }
+    console.log('[MedicionesDashboard] chartData granularidad inicial:', { daysSpan, hoursSpan, granularityType });
 
-      if (m.medicion !== null && m.medicion !== undefined) {
-        const label = getSeriesLabel(m);
-        const entry = dataMap.get(dateKey)!;
-        
-        if (!entry[label]) {
-          entry[label] = [];
-        }
-        entry[label].push(parseFloat(m.medicion));
-      }
-    });
+    // Hacer grouping con granularidad inicial
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType);
 
-    // Calcular promedios por serie
-    const result = Array.from(dataMap.values()).map(entry => {
-      const processed: any = { fecha: entry.fecha };
-      Object.entries(entry).forEach(([key, values]: [string, any]) => {
-        if (key !== 'fecha' && Array.isArray(values) && values.length > 0) {
-          processed[key] = values.reduce((a: number, b: number) => a + b, 0) / values.length;
-        }
-      });
-      return processed;
-    });
+    // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
+    const totalMediciones = medicionesFiltradasPorMetrica.length;
+    if (pointCount <= 2 && totalMediciones >= 3 && granularityType !== 'minutes') {
+      console.log('[MedicionesDashboard] Fallback de granularidad: pocos puntos, cambiando...');
+      if (granularityType === 'days') {
+        // Cambiar de días a horas
+        ({ result, allLabelsArray, pointCount } = performGrouping('hours'));
+      }
+      if (pointCount <= 2 && granularityType === 'hours') {
+        // Cambiar de horas a minutos
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes'));
+      }
+    }
+
+    console.log('[MedicionesDashboard] chartData - granularidad final:', granularityType);
+    console.log('[MedicionesDashboard] chartData - allLabels:', allLabelsArray);
+    console.log('[MedicionesDashboard] chartData - result length:', result.length);
+    if (result.length > 0) {
+      console.log('[MedicionesDashboard] chartData - sample:', result[0]);
+    }
 
     return result;
   }, [medicionesFiltradasPorMetrica, getSeriesLabel, dateRange.start, dateRange.end]);
@@ -567,12 +742,15 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   backgroundColor: '#1f2937', 
                   border: '1px solid #4b5563',
                   fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                  fontSize: '11px'
+                  fontSize: '11px',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  color: '#e5e7eb'
                 }}
-                labelStyle={{ color: '#e5e7eb' }}
+                labelStyle={{ color: '#e5e7eb', marginBottom: '4px' }}
                 formatter={(value: any) => {
                   if (typeof value === 'number') {
-                    return value.toFixed(2);
+                    return `${value.toFixed(2)} ${selectedMetricUnit}`;
                   }
                   return value;
                 }}
