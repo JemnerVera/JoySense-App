@@ -248,13 +248,37 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     if (!selectedMetricId || mediciones.length === 0) return [];
 
     // Los datos ya vienen filtrados por métrica desde el backend
+    
+    // Calcular granularidad según rango de fechas
+    const daysSpan = (new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 3600 * 24);
+    
+    let getTimeKey: (date: Date) => string;
+    
+    if (daysSpan <= 3) {
+      // 30 minutos para 1-3 días
+      getTimeKey = (date: Date) => {
+        const minutes = Math.floor(date.getMinutes() / 30) * 30;
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      };
+    } else if (daysSpan <= 7) {
+      // 3 horas para 3 días a 1 semana
+      getTimeKey = (date: Date) => {
+        const hours = Math.floor(date.getHours() / 3) * 3;
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
+      };
+    } else {
+      // 1 día para más de 1 semana
+      getTimeKey = (date: Date) => {
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+      };
+    }
 
-    // Agrupar por fecha
+    // Agrupar por fecha/tiempo con granularidad dinámica
     const dataMap = new Map<string, any>();
     
     mediciones.forEach((m: any) => {
       const fecha = new Date(m.fecha);
-      const dateKey = `${fecha.getDate()}/${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+      const dateKey = getTimeKey(fecha);
       
       if (!dataMap.has(dateKey)) {
         dataMap.set(dateKey, { fecha: dateKey });
@@ -283,7 +307,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     });
 
     return result;
-  }, [mediciones, getSeriesLabel]);
+  }, [mediciones, getSeriesLabel, dateRange.start, dateRange.end]);
 
   // Obtener todas las series únicas para el gráfico
   const allSeries = useMemo(() => {
