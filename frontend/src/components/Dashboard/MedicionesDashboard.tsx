@@ -138,9 +138,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadMetricas();
   }, [selectedNode, dateRange.start, dateRange.end, showError, validateDateRange]);
 
-  // Cargar mediciones solo cuando cambia métrica seleccionada
+  // Cargar mediciones cuando cambia nodo o rango de fechas (NO por métrica)
   useEffect(() => {
-    if (!selectedNode?.nodoid || !selectedMetricId) {
+    if (!selectedNode?.nodoid) {
       setMediciones([]);
       return;
     }
@@ -155,14 +155,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const loadMediciones = async () => {
       try {
         setLoading(true);
+        // Cargar datos de TODAS las métricas (sin filtro metricaid)
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedNode.nodoid,
-          metricaid: selectedMetricId,
           startDate: dateRange.start,
           endDate: dateRange.end
+          // NO pasar metricaid - cargar todo y filtrar en frontend
         });
 
-        setMediciones(data || []);
+        const medicionesData = data || [];
+        console.log('[MedicionesDashboard] Mediciones cargadas (todas las métricas):', medicionesData.length);
+        setMediciones(medicionesData);
       } catch (err: any) {
         console.error('Error cargando mediciones:', err);
         if (err.message && err.message.includes('90 días')) {
@@ -177,7 +180,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadMediciones();
-  }, [selectedNode, selectedMetricId, dateRange.start, dateRange.end, showError, validateDateRange]);
+  }, [selectedNode, dateRange.start, dateRange.end, showError, validateDateRange]);
+
+  // Debugging: Mostrar cambios en mediciones
+  useEffect(() => {
+    console.log('[MedicionesDashboard] mediciones actualizado:', mediciones.length);
+  }, [mediciones]);
 
   // Filtrar nodos por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
@@ -243,11 +251,26 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return tipoName;
   }, [sensores, tipos]);
 
-  // Preparar datos para el gráfico
-  const chartData = useMemo(() => {
-    if (!selectedMetricId || mediciones.length === 0) return [];
+  // Filtrar mediciones por métrica seleccionada (filtrado en frontend)
+  const medicionesFiltradasPorMetrica = useMemo(() => {
+    if (!selectedMetricId || mediciones.length === 0) {
+      return [];
+    }
+    
+    const filtered = mediciones.filter(m => {
+      const metricaId = m.metricaid || m.localizacion?.metricaid;
+      return Number(metricaId) === Number(selectedMetricId);
+    });
+    
+    console.log('[MedicionesDashboard] Mediciones filtradas por metricaid:', selectedMetricId, 'items:', filtered.length);
+    return filtered;
+  }, [mediciones, selectedMetricId]);
 
-    // Los datos ya vienen filtrados por métrica desde el backend
+  // Preparar datos para el gráfico (usando mediciones ya filtradas por métrica)
+  const chartData = useMemo(() => {
+    if (medicionesFiltradasPorMetrica.length === 0) return [];
+
+    // Los datos ya están filtrados por métrica desde medicionesFiltradasPorMetrica
     
     // Calcular granularidad según rango de fechas
     const daysSpan = (new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 3600 * 24);
@@ -276,7 +299,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     // Agrupar por fecha/tiempo con granularidad dinámica
     const dataMap = new Map<string, any>();
     
-    mediciones.forEach((m: any) => {
+    medicionesFiltradasPorMetrica.forEach((m: any) => {
       const fecha = new Date(m.fecha);
       const dateKey = getTimeKey(fecha);
       
@@ -307,7 +330,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     });
 
     return result;
-  }, [mediciones, getSeriesLabel, dateRange.start, dateRange.end]);
+  }, [medicionesFiltradasPorMetrica, getSeriesLabel, dateRange.start, dateRange.end]);
 
   // Obtener todas las series únicas para el gráfico
   const allSeries = useMemo(() => {
@@ -323,6 +346,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     });
     
     return Array.from(seriesSet).sort();
+  }, [chartData]);
+
+  // Debugging: Mostrar cambios en chartData
+  useEffect(() => {
+    console.log('[MedicionesDashboard] chartData actualizado:', chartData.length);
   }, [chartData]);
 
   return (
@@ -523,7 +551,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             }
           `}</style>
           <ResponsiveContainer width="100%" height={400} className="mediciones-chart">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+            <LineChart key={`${selectedNode?.nodoid}-${selectedMetricId}`} data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis 
                 dataKey="fecha" 
