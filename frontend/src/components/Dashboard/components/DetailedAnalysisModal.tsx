@@ -128,6 +128,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   console.log('[DetailedAnalysisModal] isOpen:', isOpen, 'selectedMetricForAnalysis:', selectedMetricForAnalysis?.title)
   console.log('[DetailedAnalysisModal] chartData:', chartData.length, 'selectedDetailedMetric:', selectedDetailedMetric)
   console.log('[DetailedAnalysisModal] visibleLines:', visibleLines.length, visibleLines.slice(0, 2))
+  console.log('[DetailedAnalysisModal] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
   if (chartData.length > 0) {
     console.log('[DetailedAnalysisModal] Sample chartData point:', chartData[0])
   }
@@ -430,6 +431,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     yAxisDomain={yAxisDomain}
                     visibleTipos={visibleTipos}
                     metricUnit={selectedMetricForAnalysis?.unit || ''}
+                    selectedNode={selectedNode}
+                    comparisonNode={comparisonNode}
                   />
                 ) : (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
