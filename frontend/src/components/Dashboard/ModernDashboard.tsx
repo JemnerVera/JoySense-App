@@ -667,19 +667,19 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           sensorid: rpcData.sensorid || 0,
           metrica: {
             metricaid: rpcData.metricaid,
-            metrica: rpcData.metrica_nombre || '',
+            metrica: rpcData.metrica || '',
             unidad: rpcData.unidad || ''
           },
           sensor: rpcData.sensorid ? {
             sensorid: rpcData.sensorid,
-            sensor: rpcData.sensor_nombre || '',
-            nombre: rpcData.sensor_nombre || '',
+            sensor: rpcData.sensor || '',
+            nombre: rpcData.sensor || '',
             modelo: '',
             deveui: '',
             tipoid: rpcData.tipoid || 0,
             tipo: {
               tipoid: rpcData.tipoid || 0,
-              tipo: rpcData.tipo_nombre || 'Sensor'
+              tipo: rpcData.tipo || 'Sensor'
             }
           } : undefined
         },
@@ -1498,6 +1498,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
     }
 
+    console.log('[ModernDashboard] processChartData DEBUG - Before grouping: filteredMediciones.length:', filteredMediciones.length, 'unique sensorids in filtered:', new Set(filteredMediciones.map(m => m.sensorid)).size);
+    
     if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) return []
 
     // 3. Determinar Granularidad y Agrupar
@@ -1506,17 +1508,36 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
     
     // Decidir granularidad: 
-    // - Si hay 1 día o menos: agrupar por HORA
-    // - Si hay más de 1 día: agrupar por DÍA
-    let useDays = overrideGranularity ? overrideGranularity.useDays : (daysSpan > 1)
-    let useHours = overrideGranularity ? overrideGranularity.useHours : (daysSpan <= 1)
+    // - Si hay 1 día o menos: agrupar por 30 MINUTOS
+    // - Si hay 1 a 7 días: agrupar por 3 HORAS
+    // - Si hay más de 7 días: agrupar por DÍA
+    let use30Minutes = false
+    let use3Hours = false
+    let useDays = false
+    
+    if (overrideGranularity) {
+      useDays = overrideGranularity.useDays
+    } else {
+      if (daysSpan <= 1) {
+        use30Minutes = true
+      } else if (daysSpan <= 7) {
+        use3Hours = true
+      } else {
+        useDays = true
+      }
+    }
+    
+    const useHours = false // No usaremos la granularidad de 1 hora completa anymore
     
     const startProcess = performance.now()
-    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, useDays, useHours });
+    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, use30Minutes, use3Hours, useDays });
 
     // Obtener localizaciones de ambos nodos
     const allMediciones = [...filteredMediciones, ...filteredComparisonMediciones]
     const locsEnMediciones = Array.from(new Set(allMediciones.map(m => m.localizacionid).filter(id => id != null)))
+    
+    console.log('[ModernDashboard] processChartData DEBUG - locsEnMediciones:', locsEnMediciones);
+    console.log('[ModernDashboard] processChartData DEBUG - Unique sensorids:', new Set(allMediciones.map(m => m.sensorid)).size, Array.from(new Set(allMediciones.map(m => m.sensorid))));
     
     // Pre-calcular labels una sola vez para evitar búsquedas repetidas
     // En minigráficos: usar getSensorLabel (sin localización)
@@ -1534,10 +1555,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Función auxiliar para generar timeKey consistentemente (DEBE estar antes de performGrouping)
-    // Agrupar por hora si es <= 1 día, por día si es > 1 día
+    // Granularidad: 30 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
     const getTimeKey = (date: Date): string => {
-      if (useHours) {
-        return `${String(date.getHours()).padStart(2, '0')}:00`
+      if (use30Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 30) * 30
+        return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      }
+      if (use3Hours) {
+        const hours = Math.floor(date.getHours() / 3) * 3
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`
       }
       // Por defecto, agrupar por día
       return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -1556,11 +1582,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         if (isComparison) {
           label = `comp_${label}`
         }
-        const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey)
+        
+        // CRÍTICO: Buscar NO SOLO por timeKey, sino también por LABEL (sensor)
+        // Esto asegura que diferentes sensores en la misma localización no se sobrescriban
+        const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey && p.label === label)
         if (existing) {
+          // Si ya existe un punto para este SENSOR específico en este TIEMPO, promediar
           existing.value = (existing.value * existing.count + m.medicion) / (existing.count + 1)
           existing.count += 1
         } else {
+          // Crear nuevo punto para este SENSOR+TIEMPO
           grouped[m.localizacionid].push({ timestamp: date.getTime(), time: timeKey, value: m.medicion, count: 1, label })
         }
       })
@@ -1571,27 +1602,48 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     let groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
     
     // Fallback de resolución si hay muy pocos puntos (solo si no hay override)
+    // Esta lógica se mantiene igual: si hay muy pocos datos, se recalcula con la granularidad anterior
     if (!overrideGranularity) {
-      if (useDays && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
-        useDays = false; useHours = true;
-        groupedData = performGrouping(filteredMediciones, false)
-        groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
+      const countTotalPoints = (grouped: any) => {
+        let total = 0
+        locsEnMediciones.forEach(id => {
+          total += (grouped[id] || []).length
+        })
+        return total
       }
-      if (useHours && locsEnMediciones.every(id => ((groupedData[id] || []).length + (groupedComparisonData[id] || []).length) <= 2) && (filteredMediciones.length + filteredComparisonMediciones.length) >= 3) {
-        useHours = false;
-        groupedData = performGrouping(filteredMediciones, false)
-        groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
+      
+      const totalPoints = countTotalPoints(groupedData) + countTotalPoints(groupedComparisonData)
+      const totalMediciones = filteredMediciones.length + filteredComparisonMediciones.length
+      
+      // Si hay muy pocos datos agrupados pero muchas mediciones raw, cambiar granularidad
+      if (totalPoints <= 2 && totalMediciones >= 3) {
+        // Pasar de granularidad gruesa a más fina
+        if (useDays) {
+          use3Hours = true
+          useDays = false
+          groupedData = performGrouping(filteredMediciones, false)
+          groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
+        } else if (use3Hours) {
+          use30Minutes = true
+          use3Hours = false
+          groupedData = performGrouping(filteredMediciones, false)
+          groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
+        }
       }
     }
 
     // 4. Formatear para Recharts - Combinar datos de ambos nodos
-    // Agrupar por hora si es <= 1 día, por día si es > 1 día
+    // Granularidad: 30 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
     const allTimestamps = new Set<number>()
     Object.values(groupedData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (useHours) {
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      if (use30Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 30) * 30
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
+      } else if (use3Hours) {
+        const hours = Math.floor(date.getHours() / 3) * 3
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours).getTime()
       } else {
         ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
       }
@@ -1600,8 +1652,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     Object.values(groupedComparisonData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (useHours) {
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime()
+      if (use30Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 30) * 30
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
+      } else if (use3Hours) {
+        const hours = Math.floor(date.getHours() / 3) * 3
+        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours).getTime()
       } else {
         ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
       }
@@ -1627,26 +1683,29 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       })
       
       locsEnMediciones.forEach(id => {
-        // Incluir datos del nodo principal
-        const point = (groupedData[id] || []).find(p => p.time === time)
-        if (point) {
+        // CRÍTICO: Usar .filter() en lugar de .find() para obtener TODOS los puntos
+        // Esto asegura que si hay múltiples sensores en la misma localización,
+        // todos se muestren en el gráfico, no solo el primero
+        const points = (groupedData[id] || []).filter(p => p.time === time)
+        points.forEach(point => {
           let val = point.value
           if (useCustomRange) {
             const { min, max } = yAxisDomain
             if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
           }
           if (val !== undefined && val !== null) { entry[point.label] = val }
-        }
+        })
+        
         // Incluir datos de comparación
-        const compPoint = (groupedComparisonData[id] || []).find(p => p.time === time)
-        if (compPoint) {
+        const compPoints = (groupedComparisonData[id] || []).filter(p => p.time === time)
+        compPoints.forEach(compPoint => {
           let val = compPoint.value
           if (useCustomRange) {
             const { min, max } = yAxisDomain
             if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
           }
           if (val !== undefined && val !== null) { entry[compPoint.label] = val }
-        }
+        })
       })
       return entry
     })
