@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
@@ -31,7 +32,15 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+  const [pendingDateRange, setPendingDateRange] = useState<{ start: string; end: string }>({
+    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
   const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null);
+  const [yAxisDomain, setYAxisDomain] = useState<{ min: number | null; max: number | null }>({
+    min: null,
+    max: null
+  });
 
   // Estados para combobox de nodo con searchbar
   const [isNodoDropdownOpen, setIsNodoDropdownOpen] = useState(false);
@@ -60,6 +69,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     
     loadInitialData();
   }, [showError]);
+
+  // Sincronizar pendingDateRange con dateRange cuando cambia selectedNode
+  useEffect(() => {
+    setPendingDateRange(dateRange);
+    setYAxisDomain({ min: null, max: null });
+  }, [selectedNode]);
 
   // Validar rango máximo de 90 días
   const validateDateRange = useCallback((start: string, end: string): { start: string; end: string } | null => {
@@ -531,169 +546,274 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   return (
     <div className="w-full p-6">
       {/* Header similar a NodeStatusDashboard */}
-      <div className="flex items-center justify-center gap-4 mb-8 bg-gray-50 dark:bg-neutral-900 p-6 rounded-lg border border-gray-200 dark:border-neutral-800 flex-wrap">
-        {/* Selector de Nodo con searchbar */}
-        <div className="flex flex-col items-center" ref={nodoDropdownRef}>
-          <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">
-            Nodo:
-          </label>
-          <div className="relative">
-            <button
-              onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
-              className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
-            >
-              <span className={selectedNode ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                {selectedNode?.nodo || 'Selecciona'}
-              </span>
-              <svg className={`w-4 h-4 transition-transform ${isNodoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {isNodoDropdownOpen && nodoDropdownPosition && (
-              <div 
-                className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
-                style={{
-                  top: `${nodoDropdownPosition.top}px`,
-                  left: `${nodoDropdownPosition.left}px`,
-                  width: `${nodoDropdownPosition.width}px`
-                }}
+      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-8">
+        <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
+          {/* Selector de Nodo con searchbar */}
+          <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Nodo:
+            </label>
+            <div className="relative">
+              <button
+                onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
+                className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
               >
-                <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
-                  <input
-                    type="text"
-                    value={nodoSearchTerm}
-                    onChange={(e) => setNodoSearchTerm(e.target.value)}
-                    placeholder="Buscar..."
-                    className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-                    autoFocus
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
-                  {filteredNodos.length > 0 ? (
-                    filteredNodos.map((nodo: any) => (
-                      <button
-                        key={nodo.nodoid}
-                        onClick={() => {
-                          setSelectedNode(nodo);
-                          setIsNodoDropdownOpen(false);
-                          setNodoSearchTerm('');
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
-                          selectedNode?.nodoid === nodo.nodoid
-                            ? 'bg-blue-500 text-white'
-                            : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
-                        }`}
-                      >
-                        {nodo.nodo}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
-                      No se encontraron resultados
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Rango de fechas */}
-        <div className="flex flex-col items-center">
-          <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">
-            Intervalo de Fechas:
-          </label>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => {
-                  const newStart = e.target.value;
-                  const endDate = new Date(dateRange.end);
-                  const startDate = new Date(newStart);
-                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-                  
-                  if (daysDiff > 90) {
-                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
-                    const adjustedStart = new Date(endDate);
-                    adjustedStart.setDate(adjustedStart.getDate() - 90);
-                    setDateRange({ start: adjustedStart.toISOString().split('T')[0], end: dateRange.end });
-                  } else {
-                    setDateRange({ ...dateRange, start: newStart });
-                  }
-                }}
-                max={dateRange.end}
-                min={(() => {
-                  const endDate = new Date(dateRange.end);
-                  endDate.setDate(endDate.getDate() - 90);
-                  return endDate.toISOString().split('T')[0];
-                })()}
-                className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-                style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
-              />
-              <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Inicio</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => {
-                  const newEnd = e.target.value;
-                  const startDate = new Date(dateRange.start);
-                  const endDate = new Date(newEnd);
-                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-                  
-                  if (daysDiff > 90) {
-                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
-                    const adjustedEnd = new Date(startDate);
-                    adjustedEnd.setDate(adjustedEnd.getDate() + 90);
-                    setDateRange({ start: dateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
-                  } else {
-                    setDateRange({ ...dateRange, end: newEnd });
-                  }
-                }}
-                max={(() => {
-                  const startDate = new Date(dateRange.start);
-                  startDate.setDate(startDate.getDate() + 90);
-                  return startDate.toISOString().split('T')[0];
-                })()}
-                min={dateRange.start}
-                className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-                style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
-              />
-              <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Fin</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Métricas como botones */}
-        <div className="flex flex-col items-center">
-          <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">
-            Métrica:
-          </label>
-          <div className="flex items-center gap-2">
-            {availableMetrics.length === 0 ? (
-              <span className="text-gray-500 dark:text-gray-400 font-mono text-xs">
-                Sin métricas
-              </span>
-            ) : (
-              availableMetrics.map(metric => (
-                <button
-                  key={metric.id}
-                  onClick={() => setSelectedMetricId(metric.id)}
-                  className={`h-8 px-3 rounded font-mono text-xs transition-colors whitespace-nowrap ${
-                    selectedMetricId === metric.id
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700'
-                  }`}
+                <span className={selectedNode ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                  {selectedNode?.nodo || 'Selecciona'}
+                </span>
+                <svg className={`w-4 h-4 transition-transform ${isNodoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isNodoDropdownOpen && nodoDropdownPosition && (
+                <div 
+                  className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
+                  style={{
+                    top: `${nodoDropdownPosition.top}px`,
+                    left: `${nodoDropdownPosition.left}px`,
+                    width: `${nodoDropdownPosition.width}px`
+                  }}
                 >
-                  {metric.name}
-                </button>
-              ))
-            )}
+                  <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
+                    <input
+                      type="text"
+                      value={nodoSearchTerm}
+                      onChange={(e) => setNodoSearchTerm(e.target.value)}
+                      placeholder="Buscar..."
+                      className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
+                    {filteredNodos.length > 0 ? (
+                      filteredNodos.map((nodo: any) => (
+                        <button
+                          key={nodo.nodoid}
+                          onClick={() => {
+                            setSelectedNode(nodo);
+                            setIsNodoDropdownOpen(false);
+                            setNodoSearchTerm('');
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                            selectedNode?.nodoid === nodo.nodoid
+                              ? 'bg-blue-500 text-white'
+                              : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                          }`}
+                        >
+                          {nodo.nodo}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+                        No se encontraron resultados
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Separador visual */}
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+          {/* Rango de fechas */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Intervalo de Fechas:
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center">
+                <input
+                  type="date"
+                  value={pendingDateRange.start}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    const endDate = new Date(pendingDateRange.end);
+                    const startDate = new Date(newStart);
+                    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                    
+                    if (daysDiff > 90) {
+                      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                      const adjustedStart = new Date(endDate);
+                      adjustedStart.setDate(adjustedStart.getDate() - 90);
+                      setPendingDateRange({ start: adjustedStart.toISOString().split('T')[0], end: pendingDateRange.end });
+                    } else {
+                      setPendingDateRange({ ...pendingDateRange, start: newStart });
+                    }
+                  }}
+                  max={pendingDateRange.end}
+                  min={(() => {
+                    const endDate = new Date(pendingDateRange.end);
+                    endDate.setDate(endDate.getDate() - 90);
+                    return endDate.toISOString().split('T')[0];
+                  })()}
+                  className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                  style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
+                />
+                <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Inicio</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <input
+                  type="date"
+                  value={pendingDateRange.end}
+                  onChange={(e) => {
+                    const newEnd = e.target.value;
+                    const startDate = new Date(pendingDateRange.start);
+                    const endDate = new Date(newEnd);
+                    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                    
+                    if (daysDiff > 90) {
+                      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                      const adjustedEnd = new Date(startDate);
+                      adjustedEnd.setDate(adjustedEnd.getDate() + 90);
+                      setPendingDateRange({ start: pendingDateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
+                    } else {
+                      setPendingDateRange({ ...pendingDateRange, end: newEnd });
+                    }
+                  }}
+                  max={(() => {
+                    const startDate = new Date(pendingDateRange.start);
+                    startDate.setDate(startDate.getDate() + 90);
+                    return startDate.toISOString().split('T')[0];
+                  })()}
+                  min={pendingDateRange.start}
+                  className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                  style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
+                />
+                <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Fin</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
+          {selectedNode && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+              <button
+                onClick={() => {
+                  // Validar fechas antes de aplicar
+                  if (pendingDateRange.start && pendingDateRange.end && new Date(pendingDateRange.start) > new Date(pendingDateRange.end)) {
+                    showError(
+                      'Fecha inválida',
+                      'La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.'
+                    );
+                    return;
+                  }
+
+                  // Validar rango máximo de 90 días
+                  const startDate = new Date(pendingDateRange.start);
+                  const endDate = new Date(pendingDateRange.end);
+                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                  
+                  if (daysDiff > 90) {
+                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                    return;
+                  }
+
+                  // Aplicar cambios
+                  flushSync(() => {
+                    setDateRange(pendingDateRange);
+                  });
+                }}
+                disabled={loading}
+                className="h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+              >
+                Aplicar
+              </button>
+            </div>
+          )}
+
+          {/* Separador visual */}
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+          {/* Ajuste Eje Y */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Ajuste Eje Y:
+            </label>
+            <div className="flex items-center gap-2 h-8">
+              <input
+                type="number"
+                step="0.1"
+                min="-999999"
+                max="999999"
+                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                onChange={(e) => {
+                  const inputValue = e.target.value
+                  if (inputValue === '') {
+                    setYAxisDomain({ ...yAxisDomain, min: null })
+                    return
+                  }
+                  const numValue = Number(inputValue)
+                  if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                    setYAxisDomain({ ...yAxisDomain, min: numValue })
+                  }
+                }}
+                placeholder="Min"
+                className="h-8 w-14 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+              />
+              <span className="text-gray-600 dark:text-neutral-400 text-xs">-</span>
+              <input
+                type="number"
+                step="0.1"
+                min="-999999"
+                max="999999"
+                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                onChange={(e) => {
+                  const inputValue = e.target.value
+                  if (inputValue === '') {
+                    setYAxisDomain({ ...yAxisDomain, max: null })
+                    return
+                  }
+                  const numValue = Number(inputValue)
+                  if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
+                    setYAxisDomain({ ...yAxisDomain, max: numValue })
+                  }
+                }}
+                placeholder="Max"
+                className="h-8 w-14 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+              />
+              <button
+                onClick={() => setYAxisDomain({ min: null, max: null })}
+                className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          {/* Separador visual */}
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+          {/* Métricas como botones */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Métrica:
+            </label>
+            <div className="flex items-center gap-2">
+              {availableMetrics.length === 0 ? (
+                <span className="text-gray-500 dark:text-gray-400 font-mono text-xs">
+                  Sin métricas
+                </span>
+              ) : (
+                availableMetrics.map(metric => (
+                  <button
+                    key={metric.id}
+                    onClick={() => setSelectedMetricId(metric.id)}
+                    className={`h-8 px-3 rounded font-mono text-xs transition-colors whitespace-nowrap ${
+                      selectedMetricId === metric.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    {metric.name}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -736,6 +856,36 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               <YAxis 
                 stroke="#6b7280"
                 tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
+                domain={(() => {
+                  if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                    return [yAxisDomain.min, yAxisDomain.max];
+                  }
+                  if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
+                    const allValues: number[] = [];
+                    chartData.forEach(point => {
+                      Object.keys(point).forEach(key => {
+                        if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                          allValues.push(point[key]);
+                        }
+                      });
+                    });
+                    const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10;
+                    return [yAxisDomain.min, dataMax];
+                  }
+                  if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
+                    const allValues: number[] = [];
+                    chartData.forEach(point => {
+                      Object.keys(point).forEach(key => {
+                        if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
+                          allValues.push(point[key]);
+                        }
+                      });
+                    });
+                    const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10;
+                    return [dataMin, yAxisDomain.max];
+                  }
+                  return ['auto', 'auto'];
+                })() as any}
               />
               <Tooltip 
                 contentStyle={{ 
