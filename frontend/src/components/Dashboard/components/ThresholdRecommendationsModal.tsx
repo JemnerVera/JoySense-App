@@ -43,6 +43,22 @@ export const ThresholdRecommendationsModal: React.FC<ThresholdRecommendationsMod
     return metricsConfig.find(m => m.dataKey === selectedDetailedMetric)?.unit || ''
   }
 
+  // Función para limpiar el label (remover "Punto XX" prefix, "comp_" y "LOTE XX HILERA XX")
+  const cleanLabel = (label: string): string => {
+    // Remover prefijo "comp_" si existe
+    let cleaned = label.replace(/^comp_/, '')
+    // Remover patrones como "Punto 40 (Maceta - Sonda 10cm)" o "LOTE T2 HILERA 40 (Maceta - Sonda 10cm)"
+    cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/^[A-Z\d\s]+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+    
+    // Extraer solo la parte "Maceta - Sonda XXcm" si existe
+    const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+    if (macetaMatch) {
+      return macetaMatch[0]
+    }
+    
+    return cleaned
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -99,7 +115,7 @@ export const ThresholdRecommendationsModal: React.FC<ThresholdRecommendationsMod
                         className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 border border-gray-300 dark:border-neutral-700"
                       >
                         <h4 className="text-lg font-semibold text-gray-800 dark:text-white font-mono mb-3">
-                          {label}
+                          {cleanLabel(label)}
                         </h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
