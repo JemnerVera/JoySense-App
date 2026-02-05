@@ -216,6 +216,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Ref para rastrear el nodo actual de la petición en curso
   const currentRequestNodeIdRef = useRef<number | null>(null)
   const currentRequestKeyRef = useRef<string | null>(null)
+  
+  // OPTIMIZACIÓN: Caché de mediciones por nodoid + rango de fechas
+  const medicionesCacheRef = useRef<Map<string, { data: MedicionData[]; timestamp: number }>>(new Map())
+  const CACHE_TTL_MEDICIONES = 60000 // 60 segundos
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
@@ -227,6 +231,21 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     if (!hasRequiredFilters) {
       setMediciones([])
+      setLoading(false)
+      return
+    }
+    
+    // OPTIMIZACIÓN: Crear clave de caché basada en nodoid + rango de fechas
+    const cacheKey = selectedNode 
+      ? `node_${selectedNode.nodoid}_${filters.startDate || 'no-date'}_${filters.endDate || 'no-date'}`
+      : `ent_${filters.entidadId}_ubic_${filters.ubicacionId || 'none'}`
+    
+    // Verificar caché antes de hacer la petición
+    const cached = medicionesCacheRef.current.get(cacheKey)
+    const now = Date.now()
+    if (cached && (now - cached.timestamp) < CACHE_TTL_MEDICIONES) {
+      console.log('[ModernDashboard] loadMediciones: Usando datos del caché para', cacheKey)
+      setMediciones(cached.data)
       setLoading(false)
       return
     }
@@ -476,6 +495,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const transformed = transformMedicionData(sortedData)
       
       setMediciones(transformed)
+      
+      // OPTIMIZACIÓN: Guardar en caché
+      medicionesCacheRef.current.set(cacheKey, {
+        data: transformed,
+        timestamp: now
+      })
+      
+      // Limpiar caché antiguo (mantener solo los últimos 10)
+      if (medicionesCacheRef.current.size > 10) {
+        const entries = Array.from(medicionesCacheRef.current.entries())
+        entries.sort((a, b) => b[1].timestamp - a[1].timestamp) // Ordenar por timestamp descendente
+        medicionesCacheRef.current.clear()
+        entries.slice(0, 10).forEach(([key, value]) => {
+          medicionesCacheRef.current.set(key, value)
+        })
+      }
       setError(null) // Limpiar cualquier error previo
     } catch (err: any) {
       // Verificar si esta petición sigue siendo válida antes de manejar el error
@@ -753,10 +788,17 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (showDetailedAnalysis && selectedNode) {
       const loadAvailableNodes = async () => {
         try {
-          // Obtener todos los nodos con localizaciones
-          const nodes = await JoySenseService.getNodosConLocalizacion()
-          
-          // ✅ Aplicar filtros globales (país, empresa, fundo)
+          // Obtener nodos (con filtro global para que el mapa tenga todos los del fundo/empresa/país)
+          const filters = fundoSeleccionado
+            ? { fundoId: fundoSeleccionado }
+            : empresaSeleccionada
+            ? { empresaId: empresaSeleccionada }
+            : paisSeleccionado
+            ? { paisId: paisSeleccionado }
+            : undefined;
+          const nodes = await JoySenseService.getNodosConLocalizacion(1000, filters);
+
+          // Aplicar filtros globales por si acaso (redundante si ya se pasaron al API)
           let filteredNodes = filterNodesByGlobalFilters(
             nodes || [],
             paisSeleccionado,

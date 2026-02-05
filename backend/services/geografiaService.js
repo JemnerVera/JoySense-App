@@ -426,74 +426,256 @@ const updateLocalizacion = async (supabase, id, data) => {
 };
 
 /**
- * [METODO FALLBACK] Reconstruye manualmente la estructura compleja esperada por el dashboard.
+ * Resuelve los nodoid que pertenecen al fundo/empresa/país indicado (para filtrar antes del limit).
+ * Así al elegir fundo CALIFORNIA se devuelven todos los nodos de ese fundo, no solo los primeros N globales.
  */
-const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit }) => {
-  logger.info(`[geografiaService] Ejecutando Fallback para getNodosConLocalizacionDashboard (limit: ${limit})`);
-  
-  // 1. Obtener localizaciones con jerarquía geográfica completa (joins seguros)
-  const { data: localizaciones, error: locError } = await supabase
+const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId }) => {
+  const fid = fundoId != null && fundoId !== '' ? parseInt(fundoId, 10) : null;
+  const eid = empresaId != null && empresaId !== '' ? parseInt(empresaId, 10) : null;
+  const pid = paisId != null && paisId !== '' ? parseInt(paisId, 10) : null;
+  logger.info(`[_resolveNodoidsByGeografia] fundoId=${fundoId} (parsed: ${fid}), empresaId=${empresaId} (parsed: ${eid}), paisId=${paisId} (parsed: ${pid})`);
+  if (!Number.isFinite(fid) && !Number.isFinite(eid) && !Number.isFinite(pid)) {
+    logger.info(`[_resolveNodoidsByGeografia] No hay filtro de geografía, retornando null`);
+    return null;
+  }
+
+  let ubicacionIds = [];
+  if (Number.isFinite(fid)) {
+    logger.info(`[_resolveNodoidsByGeografia] Buscando ubicaciones para fundoId=${fid}`);
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').eq('fundoid', fid);
+    if (error) throw error;
+    ubicacionIds = (u || []).map((x) => x.ubicacionid);
+    logger.info(`[_resolveNodoidsByGeografia] Encontradas ${ubicacionIds.length} ubicaciones para fundoId=${fid}`);
+  } else if (Number.isFinite(eid)) {
+    const { data: fundos, error: fe } = await supabase.schema(dbSchema).from('fundo').select('fundoid').eq('empresaid', eid);
+    if (fe) throw fe;
+    const fundoids = (fundos || []).map((x) => x.fundoid);
+    if (fundoids.length === 0) return [];
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('fundoid', fundoids);
+    if (error) throw error;
+    ubicacionIds = (u || []).map((x) => x.ubicacionid);
+  } else if (Number.isFinite(pid)) {
+    const { data: empresas, error: pe } = await supabase.schema(dbSchema).from('empresa').select('empresaid').eq('paisid', pid);
+    if (pe) throw pe;
+    const empresaidList = (empresas || []).map((x) => x.empresaid);
+    if (empresaidList.length === 0) return [];
+    const { data: fundos, error: fe } = await supabase.schema(dbSchema).from('fundo').select('fundoid').in('empresaid', empresaidList);
+    if (fe) throw fe;
+    const fundoids = (fundos || []).map((x) => x.fundoid);
+    if (fundoids.length === 0) return [];
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('fundoid', fundoids);
+    if (error) throw error;
+    ubicacionIds = (u || []).map((x) => x.ubicacionid);
+  }
+
+  if (ubicacionIds.length === 0) {
+    logger.info(`[_resolveNodoidsByGeografia] No hay ubicaciones, retornando array vacío`);
+    return [];
+  }
+  const { data: nodos, error } = await supabase.schema(dbSchema).from('nodo').select('nodoid').in('ubicacionid', ubicacionIds);
+  if (error) throw error;
+  const nodoidList = (nodos || []).map((n) => n.nodoid);
+  logger.info(`[_resolveNodoidsByGeografia] Encontrados ${nodoidList.length} nodos para geografía: ${nodoidList.slice(0, 10).join(',')}`);
+  return nodoidList;
+};
+
+/**
+ * [METODO FALLBACK MEJORADO] Consulta NODO directamente en lugar de localizacion.
+ * Esto garantiza que el limit se aplique sobre nodos (no localizaciones).
+ * Si se envían fundoId/empresaId/paisId, primero se resuelven los nodoids y se filtra por ellos.
+ */
+const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fundoId, empresaId, paisId }) => {
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Iniciando con limit=${limit}, fundoId=${fundoId}, empresaId=${empresaId}, paisId=${paisId}`);
+  const nodoids = await _resolveNodoidsByGeografia(supabase, { fundoId, empresaId, paisId });
+  const hasFilter = Array.isArray(nodoids);
+  if (hasFilter && nodoids.length === 0) {
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Filtro aplicado pero sin nodoids, retornando []`);
+    return [];
+  }
+
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Ejecutando Fallback (limit: ${limit}, filtro geografía: ${hasFilter ? 'sí (nodoids: ' + nodoids?.length + ')' : 'no'})`);
+
+  // CAMBIO CRÍTICO: Consultar NODO directamente en lugar de LOCALIZACION
+  // Así el limit se aplica a nodos (no a localizaciones), y obtenemos todos los nodos
+  let query = supabase
     .schema(dbSchema)
-    .from('localizacion')
+    .from('nodo')
     .select(`
-      localizacionid,
-      localizacion,
-      metricaid,
       nodoid,
-      nodo:nodoid(
-        nodoid,
-        nodo,
-        latitud,
-        longitud,
-        referencia,
+      nodo,
+      latitud,
+      longitud,
+      referencia,
+      ubicacionid,
+      statusid,
+      ubicacion:ubicacionid(
         ubicacionid,
-        ubicacion:ubicacionid(
-          ubicacionid,
-          ubicacion,
-          fundoid,
-          fundo:fundoid(
-            fundoid, 
-            fundo, 
-            fundoabrev, 
-            empresaid,
-            empresa:empresaid(
-              empresaid, 
-              empresa, 
-              empresabrev, 
-              paisid,
-              pais:paisid(paisid, pais, paisabrev)
-            )
+        ubicacion,
+        fundoid,
+        fundo:fundoid(
+          fundoid, 
+          fundo, 
+          fundoabrev, 
+          empresaid,
+          empresa:empresaid(
+            empresaid, 
+            empresa, 
+            empresabrev, 
+            paisid,
+            pais:paisid(paisid, pais, paisabrev)
           )
         )
       )
     `)
     .eq('statusid', 1)
-    .order('localizacionid', { ascending: true })
-    .limit(limit);
+    .order('nodoid', { ascending: true })
+    .limit(parseInt(limit, 10) || 1000);
 
-  if (locError) throw locError;
+  if (hasFilter) {
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Aplicando filtro .in('nodoid', ${nodoids?.length} nodos)`);
+    query = query.in('nodoid', nodoids);
+  }
 
-  // 2. Obtener métricas y entidades por separado
-  const metricaIds = [...new Set(localizaciones.map(l => l.metricaid).filter(id => id != null))];
-  const locIds = localizaciones.map(l => l.localizacionid);
+  const { data: nodos, error: nodError } = await query;
 
-  const [metricasRes, entidadesRes] = await Promise.all([
-    metricaIds.length > 0 ? supabase.schema(dbSchema).from('metrica').select('metricaid, metrica, unidad').in('metricaid', metricaIds) : { data: [] },
-    locIds.length > 0 ? supabase.schema(dbSchema).from('entidad_localizacion').select('localizacionid, entidad:entidadid(entidadid, entidad)').eq('statusid', 1).in('localizacionid', locIds) : { data: [] }
-  ]);
+  if (nodError) {
+    logger.error(`[getNodosConLocalizacionDashboardFallback] Error en query de nodos:`, nodError);
+    throw nodError;
+  }
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Query devolvió ${(nodos || []).length} nodos (statusid=1)`);
+  
+  // Log detallado de los primeros nodos
+  if (nodos && nodos.length > 0) {
+    const nodosIds = nodos.map(n => n.nodoid).sort((a,b)=>a-b);
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Primeros 5 nodos: ${nodos.slice(0, 5).map(n => `nodoid=${n.nodoid}, statusid=${n.statusid}`).join('; ')}`);
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Todos los nodoid del query: ${nodosIds.slice(0, 30).join(',')}`);
+  }
 
-  const metricasMap = new Map((metricasRes.data || []).map(m => [m.metricaid, m]));
+  if (!nodos || nodos.length === 0) {
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Sin nodos, retornando []`);
+    return [];
+  }
+
+  // OPTIMIZACIÓN: Obtener localizaciones con paginación más eficiente
+  // Usar pageSize mayor (5000) para reducir número de queries cuando hay muchos datos
+  const nodoidList = nodos.map(n => n.nodoid);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Obteniendo localizaciones para ${nodoidList.length} nodos`);
+  
+  // Si hay pocos nodos, intentar obtener todas las localizaciones en una sola query
+  let localizacionesData = [];
+  const pageSize = nodoidList.length <= 50 ? 10000 : 5000; // PageSize más grande para menos queries
+  let page = 0;
+  let hasMore = true;
+  const maxPages = 10; // Límite de seguridad para evitar loops infinitos
+  
+  while (hasMore && page < maxPages) {
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+    
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Paginación: página ${page}, rango [${start}-${end}], pageSize=${pageSize}`);
+    
+    const localizacionesRes = await supabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, localizacion, metricaid, nodoid')
+      .eq('statusid', 1)
+      .in('nodoid', nodoidList)
+      .range(start, end);
+    
+    if (localizacionesRes.error) {
+      logger.error(`[getNodosConLocalizacionDashboardFallback] Error en paginación página ${page}:`, localizacionesRes.error);
+      throw localizacionesRes.error;
+    }
+    
+    const pageData = localizacionesRes.data || [];
+    logger.info(`[getNodosConLocalizacionDashboardFallback] Página ${page} obtuvo ${pageData.length} localizaciones`);
+    
+    if (pageData.length === 0) {
+      hasMore = false;
+    } else {
+      localizacionesData = localizacionesData.concat(pageData);
+      page++;
+      // Si obtuvimos menos de pageSize, no hay más datos
+      if (pageData.length < pageSize) {
+        hasMore = false;
+      }
+    }
+  }
+  
+  if (page >= maxPages) {
+    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar.`);
+  }
+  
+  // Log de nodoid únicos en las localizaciones
+  const nodoidEnLocalizaciones = [...new Set(localizacionesData.map(l => l.nodoid))].sort((a,b)=>a-b);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Obtenidas ${localizacionesData.length} localizaciones para los nodos (en ${page + 1} páginas, nodoidList.length=${nodoidList.length})`);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Nodoid únicos en localizaciones: ${nodoidEnLocalizaciones.slice(0, 30).join(',')}`);
+
+  // Obtener entidades_localizacion
+  const locIds = localizacionesData.map(l => l.localizacionid);
+  let entidadesRes = { data: [] };
+  if (locIds.length > 0) {
+    entidadesRes = await supabase
+      .schema(dbSchema)
+      .from('entidad_localizacion')
+      .select('localizacionid, entidad:entidadid(entidadid, entidad)')
+      .eq('statusid', 1)
+      .in('localizacionid', locIds);
+  }
+
+  if (entidadesRes.error) throw entidadesRes.error;
+
+  // Construir mapas
+  const localizacionesMap = new Map(localizacionesData.map(l => [l.localizacionid, l]));
   const entidadesMap = new Map((entidadesRes.data || []).map(e => [e.localizacionid, e.entidad ? (Array.isArray(e.entidad) ? e.entidad[0] : e.entidad) : null]));
 
-  // 3. Formatear al estilo esperado por el frontend (idéntico al RPC)
-  return localizaciones.map(l => {
-    const nodoRaw = l.nodo ? (Array.isArray(l.nodo) ? l.nodo[0] : l.nodo) : null;
+  // Obtener métricas
+  const metricaIds = [...new Set(localizacionesData.map(l => l.metricaid).filter(id => id != null))];
+  let metricasMap = new Map();
+  if (metricaIds.length > 0) {
+    const metricasRes = await supabase.schema(dbSchema).from('metrica').select('metricaid, metrica, unidad').in('metricaid', metricaIds);
+    if (metricasRes.error) throw metricasRes.error;
+    metricasMap = new Map((metricasRes.data || []).map(m => [m.metricaid, m]));
+  }
+
+  // OPTIMIZACIÓN: Filtrar localizaciones para asegurar que solo procesemos las que pertenecen a nodos válidos
+  // Esto evita el problema de localizaciones con nodoids que no están en la lista de nodos obtenidos
+  const nodoidSet = new Set(nodoidList);
+  const localizacionesValidas = localizacionesData.filter(loc => {
+    if (!nodoidSet.has(loc.nodoid)) {
+      logger.warn(`[getNodosConLocalizacionDashboardFallback] Filtrando localización ${loc.localizacionid} con nodoid=${loc.nodoid} que no está en la lista de nodos`);
+      return false;
+    }
+    return true;
+  });
+  
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Filtrando localizaciones: ${localizacionesData.length} totales, ${localizacionesValidas.length} válidas después del filtro`);
+
+  // Formatear respuesta: retornar como si vinieran de localizaciones (compatibilidad con frontend)
+  // Crear Map de nodoid→nodo para búsqueda O(1) en lugar de O(n)
+  const nodosMap = new Map(nodos.map(n => [n.nodoid, n]));
+  const resultado = [];
+  const nodosSinLocalizaciones = new Set(nodoidList); // Trackear nodos que no tienen localizaciones
+  
+  localizacionesValidas.forEach(loc => {
+    const nodoRaw = nodosMap.get(loc.nodoid);
+    
+    // VALIDACIÓN CRÍTICA: Asegurar que el nodo existe
+    if (!nodoRaw) {
+      logger.error(`[getNodosConLocalizacionDashboardFallback] ERROR CRÍTICO: Localización ${loc.localizacionid} tiene nodoid=${loc.nodoid} pero el nodo no está en nodosMap`);
+      return;
+    }
+    
+    // Marcar que este nodo tiene al menos una localización
+    nodosSinLocalizaciones.delete(loc.nodoid);
+
     const ubicacionRaw = nodoRaw?.ubicacion ? (Array.isArray(nodoRaw.ubicacion) ? nodoRaw.ubicacion[0] : nodoRaw.ubicacion) : null;
     const fundoRaw = ubicacionRaw?.fundo ? (Array.isArray(ubicacionRaw.fundo) ? ubicacionRaw.fundo[0] : ubicacionRaw.fundo) : null;
     const empresaRaw = fundoRaw?.empresa ? (Array.isArray(fundoRaw.empresa) ? fundoRaw.empresa[0] : fundoRaw.empresa) : null;
     const paisRaw = empresaRaw?.pais ? (Array.isArray(empresaRaw.pais) ? empresaRaw.pais[0] : empresaRaw.pais) : null;
 
-    const formattedNodo = nodoRaw ? {
+    // VALIDACIÓN: Asegurar que formattedNodo nunca sea null
+    const formattedNodo = {
       ...nodoRaw,
       ubicacion: ubicacionRaw ? {
         ...ubicacionRaw,
@@ -505,29 +687,60 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit }) =>
           } : null
         } : null
       } : null,
-      entidad: entidadesMap.get(l.localizacionid) || null
-    } : null;
+      entidad: entidadesMap.get(loc.localizacionid) || null
+    };
 
-    return {
-      localizacionid: l.localizacionid,
-      localizacion: l.localizacion,
+    // VALIDACIÓN FINAL: Solo agregar si formattedNodo es válido
+    if (!formattedNodo || !formattedNodo.nodoid) {
+      logger.error(`[getNodosConLocalizacionDashboardFallback] ERROR: formattedNodo inválido para localización ${loc.localizacionid}`);
+      return;
+    }
+
+    resultado.push({
+      localizacionid: loc.localizacionid,
+      localizacion: loc.localizacion,
       latitud: nodoRaw?.latitud,
       longitud: nodoRaw?.longitud,
       referencia: nodoRaw?.referencia,
-      nodo: formattedNodo,
-      metrica: l.metricaid ? metricasMap.get(l.metricaid) : null
-    };
+      nodo: formattedNodo, // SIEMPRE tiene objeto nodo válido
+      metrica: loc.metricaid ? metricasMap.get(loc.metricaid) : null
+    });
   });
+
+  // Log de nodos sin localizaciones (información útil para debugging)
+  if (nodosSinLocalizaciones.size > 0) {
+    logger.warn(`[getNodosConLocalizacionDashboardFallback] ${nodosSinLocalizaciones.size} nodos no tienen localizaciones: ${Array.from(nodosSinLocalizaciones).sort((a,b)=>a-b).slice(0, 10).join(',')}`);
+  }
+  
+  // Validación final: asegurar que todas las localizaciones en resultado tienen nodo válido
+  const localizacionesSinNodo = resultado.filter(r => !r.nodo || !r.nodo.nodoid);
+  if (localizacionesSinNodo.length > 0) {
+    logger.error(`[getNodosConLocalizacionDashboardFallback] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones en resultado NO tienen objeto nodo válido`);
+  } else {
+    logger.info(`[getNodosConLocalizacionDashboardFallback] ✅ Validación exitosa: Todas las ${resultado.length} localizaciones tienen objeto nodo válido`);
+  }
+  
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos únicos, ${localizacionesValidas.length} localizaciones válidas procesadas)`);
+  return resultado;
 };
 
 /**
  * Obtener nodos con localización para el dashboard.
  * Método directo usando RLS para control de permisos.
+ * Acepta filtros opcionales fundoId, empresaId, paisId para devolver solo nodos de esa geografía
+ * (evita que el limit recorte por orden global y falten puntos en el mapa).
  */
-const getNodosConLocalizacionDashboard = async (supabase, { limit = 1000 }) => {
-  // [METODO DIRECTO] - RLS maneja los permisos correctamente
-  // Eliminado RPC fn_get_nodos_con_localizacion_dashboard ya que RLS funciona mejor
-  return await _getNodosConLocalizacionDashboardFallback(supabase, { limit: parseInt(limit) });
+const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
+  const limit = query.limit != null ? parseInt(query.limit, 10) : 1000;
+  const fundoId = query.fundoId ?? query.fundoid ?? null;
+  const empresaId = query.empresaId ?? query.empresaid ?? null;
+  const paisId = query.paisId ?? query.paisid ?? null;
+  return await _getNodosConLocalizacionDashboardFallback(supabase, {
+    limit: Number.isFinite(limit) ? limit : 1000,
+    fundoId: fundoId != null ? String(fundoId) : null,
+    empresaId: empresaId != null ? String(empresaId) : null,
+    paisId: paisId != null ? String(paisId) : null
+  });
 };
 
 /**

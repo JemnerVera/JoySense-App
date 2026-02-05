@@ -62,7 +62,16 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setError(null)
     console.log('[NodeSelector] loadNodes: Iniciando carga de nodos con localización...');
     try {
-      const data = await JoySenseService.getNodosConLocalizacion()
+      // Construir filtros: si fundoId está definido, usarlo; sino empresaId; sino paisId
+      // Esto asegura que el backend filtre correctamente en la jerarquía
+      const filters = fundoSeleccionado
+        ? { fundoId: fundoSeleccionado }
+        : empresaSeleccionada
+        ? { empresaId: empresaSeleccionada }
+        : paisSeleccionado
+        ? { paisId: paisSeleccionado }
+        : undefined;
+      const data = await JoySenseService.getNodosConLocalizacion(1000, filters)
       console.log('[NodeSelector] loadNodes: Respuesta recibida:', {
         count: data?.length || 0,
         sample: data?.length > 0 ? data[0] : 'null',
@@ -78,10 +87,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
   }
 
-  // Cargar nodos con localizaciones
+  // Cargar nodos con localizaciones (re-cargar cuando cambian los filtros globales)
   useEffect(() => {
     loadNodes()
-  }, [])
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
 
   // Filtrar nodos basado en filtros seleccionados y nodo seleccionado
@@ -102,14 +111,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         filtered = filtered.filter(node => node.ubicacionid === selectedUbicacionId)
       }
       
-      // ✅ APLICAR FILTROS GLOBALES DEL SIDEBAR (país, empresa, fundo)
-      // Estos filtros se aplican DESPUÉS de que el backend retorna los nodos autorizados por RLS
-      filtered = filterNodesByGlobalFilters(
-        filtered,
-        paisSeleccionado,
-        empresaSeleccionada,
-        fundoSeleccionado
-      )
+      // ⚠️ NOTA: NO aplicar filterNodesByGlobalFilters aquí porque el backend ya filtró los nodos
+      // Si se pasaron fundoId/empresaId/paisId al backend, los nodos ya vienen filtrados.
+      // Aplicar el filtro de nuevo aquí causaría pérdida de nodos si hay inconsistencias de datos.
+      // Solo se aplica si NO se pasaron filtros al backend (legacy compatibility)
+      // En este caso, como siempre pasamos filtros, NO es necesario.
     }
 
     // Aplicar filtro de búsqueda si hay término de búsqueda
