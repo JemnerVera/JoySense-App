@@ -48,16 +48,23 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const nodoDropdownRef = useRef<HTMLDivElement>(null);
   const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Cargar nodos, sensores y tipos al iniciar
+  // Cargar nodos, sensores y tipos al iniciar (con filtros globales para mapa y listas)
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        const filters = fundoSeleccionado
+          ? { fundoId: fundoSeleccionado }
+          : empresaSeleccionada
+          ? { empresaId: empresaSeleccionada }
+          : paisSeleccionado
+          ? { paisId: paisSeleccionado }
+          : undefined;
         const [nodosData, sensoresData, tiposData] = await Promise.all([
-          JoySenseService.getNodosConLocalizacion(),
+          JoySenseService.getNodosConLocalizacion(1000, filters),
           JoySenseService.getSensores(),
           JoySenseService.getTipos()
         ]);
-        
+
         setNodos(nodosData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
@@ -66,9 +73,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         showError('Error', 'No se pudieron cargar los datos');
       }
     };
-    
+
     loadInitialData();
-  }, [showError]);
+  }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Sincronizar pendingDateRange con dateRange cuando cambia selectedNode
   useEffect(() => {

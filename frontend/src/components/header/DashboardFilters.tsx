@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFilters } from '../../contexts/FilterContext';
 import { useCompleteFilterData } from '../../hooks/useCompleteFilterData';
 import { JoySenseService } from '../../services/backend-api';
@@ -40,6 +40,12 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [loadingEntidades, setLoadingEntidades] = useState(false);
   const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
+  
+  // OPTIMIZACIÓN: Caché de nodos con GPS para evitar llamadas múltiples
+  const nodosConGPSCache = useRef<Map<string, { ubicacionesConGPS: number[]; timestamp: number }>>(new Map());
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadingNodosRef = useRef<boolean>(false);
+  const CACHE_TTL = 60000; // 60 segundos
 
   // Usar directamente el contexto global como fuente de verdad (eliminar estados locales)
   const selectedEntidad = entidadSeleccionada;
@@ -148,9 +154,76 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     cargarEntidades();
   }, [fundoSeleccionado, selectedEntidad]); // Agregar selectedEntidad para forzar recarga cuando cambia
 
+  // OPTIMIZACIÓN: Función memoizada para obtener nodos con GPS con caché y debouncing
+  const obtenerNodosConGPS = useCallback(async (filters: { fundoId?: string; empresaId?: string; paisId?: string } | undefined): Promise<number[]> => {
+    // Crear clave de caché basada en los filtros
+    const cacheKey = filters 
+      ? `fundo:${filters.fundoId || ''}_empresa:${filters.empresaId || ''}_pais:${filters.paisId || ''}`
+      : 'sin_filtros';
+    
+    // Verificar caché
+    const cached = nodosConGPSCache.current.get(cacheKey);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      return cached.ubicacionesConGPS;
+    }
+    
+    // Evitar llamadas concurrentes
+    if (isLoadingNodosRef.current) {
+      // Si hay una carga en curso, esperar un poco y retornar caché si existe
+      if (cached) {
+        return cached.ubicacionesConGPS;
+      }
+      return [];
+    }
+    
+    try {
+      isLoadingNodosRef.current = true;
+      
+      // Verificar que el token esté disponible antes de llamar
+      const { supabaseAuth } = await import('../../services/supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      if (!session?.access_token) {
+        return [];
+      }
+      
+      const nodosConGPS = await JoySenseService.getNodosConLocalizacion(1000, filters);
+      
+      // Extraer ubicaciones únicas que tienen nodos con GPS
+      const ubicacionesConGPS = Array.from(new Set(
+        nodosConGPS
+          .filter((nodo: any) => nodo.latitud && nodo.longitud) // Solo nodos con coordenadas
+          .map((nodo: any) => nodo.ubicacionid)
+      ));
+      
+      // Guardar en caché
+      nodosConGPSCache.current.set(cacheKey, {
+        ubicacionesConGPS,
+        timestamp: now
+      });
+      
+      return ubicacionesConGPS;
+    } catch (error) {
+      console.error('Error obteniendo nodos con GPS para filtrar ubicaciones:', error);
+      // En caso de error, retornar caché si existe
+      if (cached) {
+        return cached.ubicacionesConGPS;
+      }
+      return [];
+    } finally {
+      isLoadingNodosRef.current = false;
+    }
+  }, []);
+
   // Cargar ubicaciones basadas en el fundo seleccionado y entidad seleccionada
   useEffect(() => {
-    const cargarUbicaciones = async () => {
+    // Limpiar timeout anterior si existe
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Debouncing: esperar 300ms antes de ejecutar
+    debounceTimeoutRef.current = setTimeout(async () => {
       if (!fundoSeleccionado) {
         setUbicaciones([]);
         return;
@@ -166,31 +239,21 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           ubicacion.fundoid === parseInt(fundoSeleccionado)
         );
 
-        // Obtener nodos con GPS para filtrar solo ubicaciones que tienen nodos con coordenadas
-        try {
-          // Verificar que el token esté disponible antes de llamar
-          const { supabaseAuth } = await import('../../services/supabase-auth');
-          const { data: { session } } = await supabaseAuth.auth.getSession();
-          if (!session?.access_token) {
-            // console.warn('DashboardFilters: No hay token de sesión, saltando filtro de nodos con GPS');
-          }
-          const nodosConGPS = await JoySenseService.getNodosConLocalizacion();
+        // Obtener nodos con GPS usando función optimizada con caché
+        const filters = fundoSeleccionado
+          ? { fundoId: fundoSeleccionado }
+          : empresaSeleccionada
+          ? { empresaId: empresaSeleccionada }
+          : paisSeleccionado
+          ? { paisId: paisSeleccionado }
+          : undefined;
+        
+        const ubicacionesConGPS = await obtenerNodosConGPS(filters);
 
-          // Extraer ubicaciones únicas que tienen nodos con GPS
-          const ubicacionesConGPS = Array.from(new Set(
-            nodosConGPS
-              .filter((nodo: any) => nodo.latitud && nodo.longitud) // Solo nodos con coordenadas
-              .map((nodo: any) => nodo.ubicacionid)
-          ));
-
-          // Filtrar ubicaciones para mostrar solo las que tienen nodos con GPS
-          ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) =>
-            ubicacionesConGPS.includes(ubicacion.ubicacionid)
-          );
-        } catch (error) {
-          console.error('Error obteniendo nodos con GPS para filtrar ubicaciones:', error);
-          // En caso de error, continuar con todas las ubicaciones del fundo
-        }
+        // Filtrar ubicaciones para mostrar solo las que tienen nodos con GPS
+        ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) =>
+          ubicacionesConGPS.includes(ubicacion.ubicacionid)
+        );
         
         // Si hay una entidad seleccionada, filtrar también por entidad
         if (selectedEntidad) {
@@ -201,12 +264,10 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             .filter((loc: any) => loc.entidadid === selectedEntidad.entidadid)
             .map((loc: any) => loc.ubicacionid);
           
-          
           // Filtrar ubicaciones que están en el fundo Y en la entidad
           ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) => 
             ubicacionIds.includes(ubicacion.ubicacionid)
           );
-          
         }
         
         setUbicaciones(ubicacionesFiltradas);
@@ -216,10 +277,15 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
       } finally {
         setLoadingUbicaciones(false);
       }
-    };
+    }, 300); // 300ms de debounce
 
-    cargarUbicaciones();
-  }, [fundoSeleccionado, selectedEntidad]);
+    // Cleanup
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [fundoSeleccionado, selectedEntidad, empresaSeleccionada, paisSeleccionado, obtenerNodosConGPS]);
 
   // Forzar recarga de entidades cuando se limpia la selección y hay fundo seleccionado
   // Esto asegura que las listas se actualicen después de cancelar la selección del nodo

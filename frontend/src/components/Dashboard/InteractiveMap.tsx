@@ -183,44 +183,21 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
   const markerRefs = useRef<Map<number, L.Marker>>(new Map())
-  const [localizacionesPorNodo, setLocalizacionesPorNodo] = useState<Map<number, string[]>>(new Map())
 
-  // Cargar localizaciones para todos los nodos
-  useEffect(() => {
-    const loadLocalizaciones = async () => {
-      try {
-        const nodoIds = nodes.map(n => n.nodoid);
-        if (nodoIds.length === 0) {
-          setLocalizacionesPorNodo(new Map());
-          return;
-        }
-
-        // Cargar localizaciones para todos los nodos en paralelo
-        const localizacionesPromises = nodoIds.map(nodoid => 
-          JoySenseService.getLocalizacionesByNodo(nodoid).catch(() => [])
-        );
-        const localizacionesArrays = await Promise.all(localizacionesPromises);
-
-        // Crear mapa de nodoid -> nombres de localizaciones
-        const map = new Map<number, string[]>();
-        nodoIds.forEach((nodoid, index) => {
-          const localizaciones = localizacionesArrays[index] || [];
-          // Usar Set para evitar duplicados de nombres de localización en el mismo nodo
-          const nombres = Array.from(new Set(localizaciones.map((loc: any) => loc.localizacion || '').filter((n: string) => n)));
-          if (nombres.length > 0) {
-            map.set(nodoid, nombres);
-          }
-        });
-
-        setLocalizacionesPorNodo(map);
-      } catch (error) {
-        // No loguear error silencioso
-        setLocalizacionesPorNodo(new Map());
+  // OPTIMIZACIÓN: Extraer localizaciones de los nodos ya cargados usando useMemo
+  // Eliminamos las 258+ llamadas API individuales que bloqueaban el navegador
+  // Los nodos ya vienen con información de ubicación desde getNodosConLocalizacion
+  const localizacionesPorNodo = useMemo(() => {
+    const map = new Map<number, string[]>();
+    nodes.forEach((node) => {
+      // Extraer nombre de localización de la ubicación del nodo si está disponible
+      if (node.ubicacion?.ubicacion) {
+        const nombres = [node.ubicacion.ubicacion];
+        map.set(node.nodoid, nombres);
       }
-    };
-
-    loadLocalizaciones();
-  }, [nodes.length, nodes.map(n => n.nodoid).join(',')])
+    });
+    return map;
+  }, [nodes])
 
   // Usar useMemo para evitar recalcular en cada render
   const nodesWithGPS = useMemo(() => {

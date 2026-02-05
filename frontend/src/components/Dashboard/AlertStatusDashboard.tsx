@@ -79,8 +79,15 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
         // Obtener nodos que tienen alertas usando RPC
         const nodesConAlertasData = await SupabaseRPCService.getNodosConAlertas();
 
-        // Obtener todos los nodos
-        const allNodes = await JoySenseService.getNodosConLocalizacion(1000);
+        // Obtener nodos (con filtro global para que el mapa tenga todos los del fundo/empresa/país)
+        const filters = fundoSeleccionado
+          ? { fundoId: fundoSeleccionado }
+          : empresaSeleccionada
+          ? { empresaId: empresaSeleccionada }
+          : paisSeleccionado
+          ? { paisId: paisSeleccionado }
+          : undefined;
+        const allNodes = await JoySenseService.getNodosConLocalizacion(1000, filters);
 
         // Filtrar solo los nodos que tienen alertas
         const nodoIdsConAlertas = new Set(

@@ -148,12 +148,19 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     loadInitialData();
   }, []);
 
-  // Cargar nodos disponibles
+  // Cargar nodos disponibles (con filtros globales para que el mapa muestre todos los del fundo/empresa/país)
   useEffect(() => {
     const loadNodes = async () => {
       try {
         setLoading(true);
-        const nodesData = await JoySenseService.getNodosConLocalizacion(1000);
+        const filters = fundoSeleccionado
+          ? { fundoId: fundoSeleccionado }
+          : empresaSeleccionada
+          ? { empresaId: empresaSeleccionada }
+          : paisSeleccionado
+          ? { paisId: paisSeleccionado }
+          : undefined;
+        const nodesData = await JoySenseService.getNodosConLocalizacion(1000, filters);
         setNodes(nodesData || []);
       } catch (err: any) {
         console.error('[NodeStatusDashboard] Error cargando nodos:', err);
@@ -163,7 +170,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       }
     };
     loadNodes();
-  }, [showError]);
+  }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Filtrar nodos por filtros globales y ubicación seleccionada
   const filteredNodes = useMemo(() => {

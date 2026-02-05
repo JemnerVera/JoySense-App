@@ -347,14 +347,23 @@ export class JoySenseService {
     }
   }
 
-  static async getNodosConLocalizacion(limit: number = 1000): Promise<any[]> {
+  static async getNodosConLocalizacion(
+    limit: number = 1000,
+    filters?: { fundoId?: string | number; empresaId?: string | number; paisId?: string | number }
+  ): Promise<any[]> {
     try {
       // Obtener token de sesión de Supabase para enviarlo al backend
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
-      
-      const data = await backendAPI.get(`/geografia/nodos-con-localizacion?limit=${limit}`, token || undefined);
+
+      const params = new URLSearchParams();
+      params.set('limit', String(limit));
+      if (filters?.fundoId != null && filters.fundoId !== '') params.set('fundoId', String(filters.fundoId));
+      if (filters?.empresaId != null && filters.empresaId !== '') params.set('empresaId', String(filters.empresaId));
+      if (filters?.paisId != null && filters.paisId !== '') params.set('paisId', String(filters.paisId));
+      const query = params.toString();
+      const data = await backendAPI.get(`/geografia/nodos-con-localizacion?${query}`, token || undefined);
       
       // Transformar datos de localizacion a formato NodeData
       // El backend retorna localizacion con nodo dentro, necesitamos transformarlo
@@ -362,19 +371,66 @@ export class JoySenseService {
         return [];
       }
       
-      // Agrupar por nodoid para evitar duplicados
+      // OPTIMIZACIÓN: Agrupar por nodoid con validación mejorada y logging detallado
       const nodesMap = new Map<number, any>();
+      const localizacionesSinNodo: any[] = [];
+      const nodoidsUnicos = new Set<number>();
       
+      console.log('[getNodosConLocalizacion] Agrupando localizaciones:', {
+        totalLocalizaciones: data.length,
+        primerasLocalizaciones: data.slice(0, 5).map((l: any) => ({ 
+          nodoid: l.nodo?.nodoid, 
+          localizacionid: l.localizacionid,
+          tieneNodo: !!l.nodo,
+          nodoValido: !!(l.nodo && l.nodo.nodoid)
+        }))
+      });
+      
+      // Primera pasada: validar y contar
+      data.forEach((localizacion: any, index: number) => {
+        // VALIDACIÓN CRÍTICA: Verificar que la localización tenga objeto nodo válido
+        if (!localizacion.nodo) {
+          localizacionesSinNodo.push({ index, localizacionid: localizacion.localizacionid, nodoid: localizacion.nodoid });
+          return;
+        }
+        
+        const nodoid = localizacion.nodo.nodoid;
+        if (!nodoid || typeof nodoid !== 'number') {
+          localizacionesSinNodo.push({ index, localizacionid: localizacion.localizacionid, nodoid, problema: 'nodoid inválido' });
+          return;
+        }
+        
+        nodoidsUnicos.add(nodoid);
+      });
+      
+      // Log de validación
+      if (localizacionesSinNodo.length > 0) {
+        console.warn(`[getNodosConLocalizacion] ⚠️ ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido de ${data.length} totales:`, {
+          primeros: localizacionesSinNodo.slice(0, 10),
+          porcentaje: ((localizacionesSinNodo.length / data.length) * 100).toFixed(2) + '%'
+        });
+      }
+      
+      // Segunda pasada: agrupar nodos válidos
       data.forEach((localizacion: any) => {
-        if (!localizacion.nodo) return;
+        // Solo procesar localizaciones con nodo válido
+        if (!localizacion.nodo || !localizacion.nodo.nodoid) {
+          return;
+        }
         
         const nodoid = localizacion.nodo.nodoid;
         
-        // Si ya existe el nodo, solo agregar si tiene mejores coordenadas o más información
+        // Si ya existe el nodo, mantener el primero (ya tiene toda la información necesaria)
         if (!nodesMap.has(nodoid)) {
           const nodo = localizacion.nodo;
           const ubicacion = nodo.ubicacion || {};
           const fundo = ubicacion.fundo || {};
+          
+          // VALIDACIÓN: Asegurar que tenemos datos mínimos requeridos
+          if (!nodo.nodoid) {
+            console.error(`[getNodosConLocalizacion] ERROR: Nodo sin nodoid en localización ${localizacion.localizacionid}`);
+            return;
+          }
           
           nodesMap.set(nodoid, {
             nodoid: nodoid,
@@ -412,6 +468,23 @@ export class JoySenseService {
       });
       
       const result = Array.from(nodesMap.values());
+      
+      // Log detallado del resultado
+      console.log('[getNodosConLocalizacion] Resultado final:', {
+        nodosUnicos: result.length,
+        nodoidsUnicosEnDatos: nodoidsUnicos.size,
+        localizacionesProcesadas: data.length - localizacionesSinNodo.length,
+        localizacionesSinNodo: localizacionesSinNodo.length,
+        primerosNodos: result.slice(0, 5).map((n: any) => ({ nodoid: n.nodoid, nodo: n.nodo })),
+        validacion: result.length === nodoidsUnicos.size ? '✅ Coincide' : `⚠️ Diferencia: ${Math.abs(result.length - nodoidsUnicos.size)}`
+      });
+      
+      // Validación final: asegurar que todos los nodos tienen datos válidos
+      const nodosInvalidos = result.filter(n => !n.nodoid || !n.nodo);
+      if (nodosInvalidos.length > 0) {
+        console.error(`[getNodosConLocalizacion] ERROR CRÍTICO: ${nodosInvalidos.length} nodos en resultado tienen datos inválidos`);
+      }
+      
       return result;
     } catch (error) {
       console.error('Error in getNodosConLocalizacion:', error);
