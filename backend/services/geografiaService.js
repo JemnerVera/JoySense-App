@@ -556,17 +556,17 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     return [];
   }
 
-  // OPTIMIZACIÓN: Obtener localizaciones con paginación más eficiente
-  // Usar pageSize mayor (5000) para reducir número de queries cuando hay muchos datos
+  // OPTIMIZACIÓN: Obtener localizaciones con paginación correcta
+  // CRÍTICO: Supabase tiene un límite máximo de 1000 filas por query con .range()
+  // Por lo tanto, debemos usar pageSize=1000 y paginar hasta obtener TODAS las localizaciones
   const nodoidList = nodos.map(n => n.nodoid);
   logger.info(`[getNodosConLocalizacionDashboardFallback] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   
-  // Si hay pocos nodos, intentar obtener todas las localizaciones en una sola query
   let localizacionesData = [];
-  const pageSize = nodoidList.length <= 50 ? 10000 : 5000; // PageSize más grande para menos queries
+  const pageSize = 1000; // Límite máximo de Supabase para .range() - NO cambiar a valores mayores
   let page = 0;
   let hasMore = true;
-  const maxPages = 10; // Límite de seguridad para evitar loops infinitos
+  const maxPages = 50; // Aumentado para permitir hasta 50,000 localizaciones (50 páginas * 1000)
   
   while (hasMore && page < maxPages) {
     const start = page * pageSize;
@@ -592,24 +592,48 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     
     if (pageData.length === 0) {
       hasMore = false;
+      logger.info(`[getNodosConLocalizacionDashboardFallback] Página ${page} vacía, deteniendo paginación`);
     } else {
       localizacionesData = localizacionesData.concat(pageData);
+      logger.info(`[getNodosConLocalizacionDashboardFallback] Progreso: ${localizacionesData.length} localizaciones obtenidas hasta ahora (de página ${page})`);
       page++;
-      // Si obtuvimos menos de pageSize, no hay más datos
+      // Si obtuvimos menos de pageSize, no hay más datos (última página)
       if (pageData.length < pageSize) {
         hasMore = false;
+        logger.info(`[getNodosConLocalizacionDashboardFallback] Última página detectada (${pageData.length} < ${pageSize}), deteniendo paginación`);
       }
     }
   }
   
   if (page >= maxPages) {
-    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar.`);
+    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar. Total obtenido: ${localizacionesData.length}`);
+  }
+  
+  // VALIDACIÓN FINAL: Verificar que se obtuvieron todas las localizaciones esperadas
+  // Obtener el total esperado de localizaciones para estos nodos
+  const { count: totalLocalizacionesEsperadas, error: countError } = await supabase
+    .schema(dbSchema)
+    .from('localizacion')
+    .select('*', { count: 'exact', head: true })
+    .eq('statusid', 1)
+    .in('nodoid', nodoidList);
+  
+  if (!countError && totalLocalizacionesEsperadas !== null) {
+    if (localizacionesData.length < totalLocalizacionesEsperadas) {
+      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ ADVERTENCIA: Se obtuvieron ${localizacionesData.length} localizaciones pero se esperaban ${totalLocalizacionesEsperadas}. Puede haber un problema con la paginación.`);
+    } else if (localizacionesData.length === totalLocalizacionesEsperadas) {
+      logger.info(`[getNodosConLocalizacionDashboardFallback] ✅ Validación exitosa: Se obtuvieron todas las ${localizacionesData.length} localizaciones esperadas`);
+    } else {
+      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ ADVERTENCIA: Se obtuvieron ${localizacionesData.length} localizaciones pero se esperaban ${totalLocalizacionesEsperadas}. Puede haber duplicados o un problema con el conteo.`);
+    }
+  } else if (countError) {
+    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ No se pudo validar el total esperado de localizaciones:`, countError);
   }
   
   // Log de nodoid únicos en las localizaciones
   const nodoidEnLocalizaciones = [...new Set(localizacionesData.map(l => l.nodoid))].sort((a,b)=>a-b);
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Obtenidas ${localizacionesData.length} localizaciones para los nodos (en ${page + 1} páginas, nodoidList.length=${nodoidList.length})`);
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Nodoid únicos en localizaciones: ${nodoidEnLocalizaciones.slice(0, 30).join(',')}`);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Obtenidas ${localizacionesData.length} localizaciones para los nodos (en ${page} páginas, nodoidList.length=${nodoidList.length})`);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Nodoid únicos en localizaciones: ${nodoidEnLocalizaciones.length} nodos únicos (${nodoidEnLocalizaciones.slice(0, 30).join(',')}${nodoidEnLocalizaciones.length > 30 ? '...' : ''})`);
 
   // Obtener entidades_localizacion
   const locIds = localizacionesData.map(l => l.localizacionid);
