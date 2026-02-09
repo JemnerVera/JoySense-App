@@ -950,6 +950,23 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   };
 
   // Efecto para mantener abierto el sub-menú del activeTab (todos los niveles)
+  // Limpiar menús de nivel 4+ cuando el sidebar se colapsa
+  useEffect(() => {
+    if (!isExpanded) {
+      // Limpiar solo los elementos de nivel 4 y 5 (que tienen 4+ partes)
+      setOpenSubMenusLevel3(prev => {
+        const newSet = new Set(prev);
+        Array.from(prev).forEach(key => {
+          const parts = key.split('-');
+          if (parts.length >= 4) {
+            newSet.delete(key);
+          }
+        });
+        return newSet;
+      });
+    }
+  }, [isExpanded]);
+
   useEffect(() => {
     if (!activeTab || !isExpanded) return;
 
@@ -1260,7 +1277,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderBottomColor: TEMPLATE_COLORS.secondaryTextColor }}></div>
             </div>
           ) : (
-            <nav className="menu open-current-submenu">
+            <nav className="menu open-current-submenu" style={{ marginLeft: isExpanded ? '-20px' : '0px', marginRight: isExpanded ? '-20px' : '0px' }}>
               <ul className="list-none p-0 m-0">
                 {mainTabs.map((tab) => {
                   const isActive = activeTab === tab.id || activeTab.startsWith(tab.id + '-');
@@ -1276,23 +1293,32 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                         onClick={() => {
                           handleMenuClick(tab.id, hasSubMenus || false);
                         }}
-                        className="flex items-center h-12 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent relative"
-                        style={{ color: isActive ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                        className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0 relative"
+                        style={{ 
+                          color: isActive ? '#ffffff' : TEMPLATE_COLORS.textColor,
+                          backgroundColor: isActive ? 'rgba(222, 226, 236, 0.15)' : 'transparent',
+                          paddingLeft: isExpanded ? '20px' : '0px',
+                          paddingRight: isExpanded ? '20px' : '0px',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
+                          e.currentTarget.style.color = '#ffffff';
+                          if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.08)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.color = isActive ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor;
+                          e.currentTarget.style.color = isActive ? '#ffffff' : TEMPLATE_COLORS.textColor;
+                          e.currentTarget.style.backgroundColor = isActive ? 'rgba(222, 226, 236, 0.15)' : 'transparent';
                         }}
                       >
                         <span 
                           className="menu-icon flex-shrink-0 flex items-center justify-center"
                           style={{
-                            fontSize: '1.2rem',
-                            width: '35px',
-                            minWidth: '35px',
-                            height: '35px',
-                            marginRight: '10px',
+                            fontSize: '1.1rem',
+                            width: '32px',
+                            minWidth: '32px',
+                            height: '32px',
+                            marginRight: isExpanded ? '12px' : '0px',
                             borderRadius: '2px',
                             transition: 'color 0.3s',
                           }}
@@ -1333,17 +1359,22 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                           className="sub-menu-list"
                           style={{
                             display: isSubMenuOpen ? 'block' : 'none',
-                            paddingLeft: '20px',
+                            paddingLeft: isExpanded ? '20px' : '0px',
                             backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
                           }}
                         >
-                          <ul className="list-none p-0 m-0">
+                          <ul className="list-none p-0 m-0" style={{ marginLeft: isExpanded ? '-20px' : '0px', marginRight: isExpanded ? '-20px' : '0px' }}>
                             {tab.subMenus!.map((subMenu) => {
                               const subMenuActiveTab = `${tab.id}-${subMenu.id}`;
                               const isSubActive = activeTab === subMenuActiveTab || activeTab.startsWith(subMenuActiveTab + '-');
                               const hasLevel3Menus = subMenu.subMenus && subMenu.subMenus.length > 0;
                               const subMenuKey = `${tab.id}-${subMenu.id}`;
                               const isLevel3Open = openSubMenusLevel3.has(subMenuKey);
+                              
+                              // Solo renderizar nivel 2 seleccionado cuando no está expandido
+                              if (!isExpanded && !isSubActive) {
+                                return null;
+                              }
                               
                               return (
                                 <li 
@@ -1352,23 +1383,32 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                 >
                                   <button
                                     onClick={() => handleLevel2MenuClick(tab.id, subMenu.id, hasLevel3Menus || false)}
-                                    className="flex items-center h-12 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
-                                    style={{ color: isSubActive ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                                    className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0"
+                                    style={{ 
+                                      color: isSubActive ? '#ffffff' : TEMPLATE_COLORS.textColor,
+                                      backgroundColor: isSubActive ? 'rgba(222, 226, 236, 0.12)' : 'transparent',
+                                      paddingLeft: isExpanded ? '20px' : '0px',
+                                      paddingRight: isExpanded ? '20px' : '0px',
+                                      width: '100%',
+                                      textAlign: 'left',
+                                    }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
+                                      e.currentTarget.style.color = '#ffffff';
+                                      if (!isSubActive) e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.06)';
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.color = isSubActive ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor;
+                                      e.currentTarget.style.color = isSubActive ? '#ffffff' : TEMPLATE_COLORS.textColor;
+                                      e.currentTarget.style.backgroundColor = isSubActive ? 'rgba(222, 226, 236, 0.12)' : 'transparent';
                                     }}
                                   >
                                     <span 
                                       className="menu-icon flex-shrink-0 flex items-center justify-center"
                                       style={{
                                         fontSize: '1rem',
-                                        width: '30px',
-                                        minWidth: '30px',
-                                        height: '30px',
-                                        marginRight: '10px',
+                                        width: '32px',
+                                        minWidth: '32px',
+                                        height: '32px',
+                                        marginRight: isExpanded ? '12px' : '0px',
                                         borderRadius: '2px',
                                         transition: 'color 0.3s',
                                       }}
@@ -1409,11 +1449,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                       className="sub-menu-list"
                                       style={{
                                         display: isLevel3Open ? 'block' : 'none',
-                                        paddingLeft: '20px',
+                                        paddingLeft: isExpanded ? '20px' : '0px',
                                         backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
                                       }}
                                     >
-                                      <ul className="list-none p-0 m-0">
+                                      <ul className="list-none p-0 m-0" style={{ marginLeft: isExpanded ? '-20px' : '0px', marginRight: isExpanded ? '-20px' : '0px' }}>
                                         {(subMenu.subMenus as SubMenuLevel3[])!.map((level3Menu: SubMenuLevel3) => {
                                           const level3ActiveTab = `${tab.id}-${subMenu.id}-${level3Menu.id}`;
                                           const isLevel3Active = activeTab === level3ActiveTab || activeTab.startsWith(level3ActiveTab + '-');
@@ -1421,10 +1461,15 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                           const level3MenuKey = `${tab.id}-${subMenu.id}-${level3Menu.id}`;
                                           const isLevel4Open = openSubMenusLevel3.has(level3MenuKey);
                                           
+                                          // No renderizar items de nivel 3 que tienen nivel 4 cuando no está expandido
+                                          if (hasLevel4Menus && !isExpanded) {
+                                            return null;
+                                          }
+                                          
                                           return (
                                             <li 
                                               key={level3Menu.id}
-                                              className={`menu-item ${isLevel3Active ? 'active' : ''} ${isExpanded && hasLevel4Menus ? 'sub-menu' : ''} ${isLevel4Open ? 'open' : ''}`}
+                                              className={`menu-item ${isLevel3Active ? 'active' : ''} ${isExpanded && hasLevel4Menus ? 'sub-menu' : ''} ${isExpanded && isLevel4Open ? 'open' : ''}`}
                                             >
                                               <button
                                                 onClick={() => {
@@ -1434,23 +1479,32 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                     handleSubMenuLevel3Click(tab.id, subMenu.id, level3Menu.id, false);
                                                   }
                                                 }}
-                                                className="flex items-center h-10 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
-                                                style={{ color: isLevel3Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                                                className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0"
+                                                style={{ 
+                                                  color: isLevel3Active ? '#ffffff' : TEMPLATE_COLORS.textColor,
+                                                  backgroundColor: isLevel3Active ? 'rgba(222, 226, 236, 0.1)' : 'transparent',
+                                                  paddingLeft: isExpanded ? '20px' : '0px',
+                                                  paddingRight: isExpanded ? '20px' : '0px',
+                                                  width: '100%',
+                                                  textAlign: 'left',
+                                                }}
                                                 onMouseEnter={(e) => {
-                                                  e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
+                                                  e.currentTarget.style.color = '#ffffff';
+                                                  if (!isLevel3Active) e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.05)';
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                  e.currentTarget.style.color = isLevel3Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor;
+                                                  e.currentTarget.style.color = isLevel3Active ? '#ffffff' : TEMPLATE_COLORS.textColor;
+                                                  e.currentTarget.style.backgroundColor = isLevel3Active ? 'rgba(222, 226, 236, 0.1)' : 'transparent';
                                                 }}
                                               >
                                                 <span 
                                                   className="menu-icon flex-shrink-0 flex items-center justify-center"
                                                   style={{
-                                                    fontSize: '0.9rem',
-                                                    width: '25px',
-                                                    minWidth: '25px',
-                                                    height: '25px',
-                                                    marginRight: '10px',
+                                                    fontSize: '0.95rem',
+                                                    width: '32px',
+                                                    minWidth: '32px',
+                                                    height: '32px',
+                                                    marginRight: isExpanded ? '12px' : '0px',
                                                     borderRadius: '2px',
                                                     transition: 'color 0.3s',
                                                   }}
@@ -1483,7 +1537,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                   </>
                                                 )}
                                               </button>
-                                              {hasLevel4Menus && (
+                                              {hasLevel4Menus && isExpanded && (
                                                 <div 
                                                   ref={(el) => {
                                                     subMenuRefsLevel3.current[level3MenuKey] = el;
@@ -1495,7 +1549,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                     backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
                                                   }}
                                                 >
-                                                  <ul className="list-none p-0 m-0">
+                                                  <ul className="list-none p-0 m-0" style={{ marginLeft: '-20px', marginRight: '-20px' }}>
                                                     {level3Menu.subMenus!.map((level4Menu: SubMenuLevel4) => {
                                                       const level4ActiveTab = `${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}`;
                                                       const isLevel4Active = activeTab === level4ActiveTab || activeTab.startsWith(level4ActiveTab + '-');
@@ -1506,7 +1560,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                       return (
                                                         <li 
                                                           key={level4Menu.id}
-                                                          className={`menu-item ${isLevel4Active ? 'active' : ''} ${isExpanded && hasLevel5Menus ? 'sub-menu' : ''} ${isLevel5Open ? 'open' : ''}`}
+                                                          className={`menu-item ${isLevel4Active ? 'active' : ''} ${isExpanded && hasLevel5Menus ? 'sub-menu' : ''} ${isExpanded && isLevel5Open ? 'open' : ''}`}
                                                         >
                                                           <button
                                                             onClick={() => {
@@ -1565,7 +1619,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                               </>
                                                             )}
                                                           </button>
-                                                          {hasLevel5Menus && (
+                                                          {hasLevel5Menus && isExpanded && (
                                                             <div 
                                                               ref={(el) => {
                                                                 subMenuRefsLevel3.current[level4MenuKey] = el;
@@ -1577,7 +1631,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                                 backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
                                                               }}
                                                             >
-                                                              <ul className="list-none p-0 m-0">
+                                                              <ul className="list-none p-0 m-0" style={{ marginLeft: '-20px', marginRight: '-20px' }}>
                                                                 {level4Menu.subMenus!.map((level5Menu: SubMenuLevel4) => {
                                                                   const level5ActiveTab = `${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}-${level5Menu.id}`;
                                                                   const isLevel5Active = activeTab === level5ActiveTab || activeTab.startsWith(level5ActiveTab + '-');
