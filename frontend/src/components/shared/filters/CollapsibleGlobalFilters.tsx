@@ -29,6 +29,15 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   const hasActiveFilters = paisSeleccionado || empresaSeleccionada || fundoSeleccionado;
   const hasAllFilters = paisSeleccionado && empresaSeleccionada && fundoSeleccionado;
   
+  // Colores de la plantilla
+  const TEMPLATE_COLORS = {
+    textColor: '#b3b8d4',
+    secondaryTextColor: '#dee2ec',
+    bgColor: '#0c1e35',
+    secondaryBgColor: '#0b1a2c',
+    borderColor: 'rgba(83, 93, 125, 0.3)',
+  };
+  
   // Obtener nombres de las opciones seleccionadas
   const selectedPaisName = paisesOptions.find(p => p.id.toString() === paisSeleccionado)?.name || '';
   const selectedEmpresaName = empresasOptions.find(e => e.id.toString() === empresaSeleccionada)?.name || '';
@@ -57,35 +66,33 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   // Si no hay todos los filtros activos, mostrar siempre expandido
   if (!hasAllFilters) {
     return (
-      <div className="p-4">
-        <div className="space-y-3">
-          <DynamicFilterSelector
-            value={paisSeleccionado}
-            onChange={onPaisChange}
-            options={paisesOptions}
-            placeholder="País"
-            icon={iconos.pais}
-            className="w-full"
-          />
-          <DynamicFilterSelector
-            value={empresaSeleccionada}
-            onChange={onEmpresaChange}
-            options={empresasOptions}
-            disabled={!paisSeleccionado}
-            placeholder="Empresa"
-            icon={iconos.empresa}
-            className="w-full"
-          />
-          <DynamicFilterSelector
-            value={fundoSeleccionado}
-            onChange={onFundoChange}
-            options={fundosOptions}
-            disabled={!empresaSeleccionada}
-            placeholder="Fundo"
-            icon={iconos.fundo}
-            className="w-full"
-          />
-        </div>
+      <div className="space-y-3">
+        <DynamicFilterSelector
+          value={paisSeleccionado}
+          onChange={onPaisChange}
+          options={paisesOptions}
+          placeholder="País"
+          icon={iconos.pais}
+          className="w-full"
+        />
+        <DynamicFilterSelector
+          value={empresaSeleccionada}
+          onChange={onEmpresaChange}
+          options={empresasOptions}
+          disabled={!paisSeleccionado}
+          placeholder="Empresa"
+          icon={iconos.empresa}
+          className="w-full"
+        />
+        <DynamicFilterSelector
+          value={fundoSeleccionado}
+          onChange={onFundoChange}
+          options={fundosOptions}
+          disabled={!empresaSeleccionada}
+          placeholder="Fundo"
+          icon={iconos.fundo}
+          className="w-full"
+        />
       </div>
     );
   }
@@ -96,38 +103,68 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
       {/* Header colapsable */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+        className="w-full px-5 py-3 flex items-center justify-between transition-colors"
+        style={{
+          color: TEMPLATE_COLORS.textColor,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+          e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = TEMPLATE_COLORS.textColor;
+        }}
       >
         <div className="flex items-center space-x-3">
           {/* Icono embudo */}
-          <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           
           {/* Chips de filtros activos */}
           <div className="flex items-center space-x-2">
             {selectedPaisName && (
-              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span 
+                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
+                style={{
+                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
+                  color: TEMPLATE_COLORS.secondaryTextColor,
+                }}
+              >
                 {selectedPaisName.toUpperCase()}
               </span>
             )}
             {selectedEmpresaName && (
-              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span 
+                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
+                style={{
+                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
+                  color: TEMPLATE_COLORS.secondaryTextColor,
+                }}
+              >
                 {selectedEmpresaName.toUpperCase()}
               </span>
             )}
             {selectedFundoName && (
-              <span className="bg-gray-300 dark:bg-neutral-600 text-gray-800 dark:text-white px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider">
+              <span 
+                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
+                style={{
+                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
+                  color: TEMPLATE_COLORS.secondaryTextColor,
+                }}
+              >
                 {selectedFundoName.toUpperCase()}
               </span>
             )}
           </div>
         </div>
         <svg 
-          className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+          className="w-4 h-4 transition-transform" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
+          style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -135,7 +172,7 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
       {/* Contenido expandible */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-3">
+        <div className="px-5 pb-4 space-y-3">
           <DynamicFilterSelector
             value={paisSeleccionado}
             onChange={onPaisChange}

@@ -282,9 +282,22 @@ const AppContentInternal: React.FC<{
         setSelectedTable(table);
       }
     } else if (activeTab.startsWith('configuracion-dispositivos-')) {
-      const table = activeTab.replace('configuracion-dispositivos-', '');
-      if (table && table !== selectedTable) {
-        setSelectedTable(table);
+      // Dividir en partes: ['configuracion', 'dispositivos', 'tipo', 'status']
+      const parts = activeTab.split('-');
+      // Operaciones válidas: status, insert, update, massive
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      // Si hay más de 3 partes y la última es una operación válida, excluirla
+      if (parts.length > 3 && validOperations.includes(parts[parts.length - 1])) {
+        const table = parts.slice(2, -1).join('-'); // 'tipo' (puede ser multi-palabra)
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
+      } else {
+        // Sin operación, solo tabla
+        const table = activeTab.replace('configuracion-dispositivos-', '');
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
       }
     } else if (activeTab === 'configuracion-dispositivos') {
       // Si solo es 'configuracion-dispositivos' sin tabla, limpiar selectedTable
@@ -292,9 +305,22 @@ const AppContentInternal: React.FC<{
         setSelectedTable('');
       }
     } else if (activeTab.startsWith('configuracion-usuarios-')) {
-      const table = activeTab.replace('configuracion-usuarios-', '');
-      if (table && table !== selectedTable) {
-        setSelectedTable(table);
+      // Dividir en partes: ['configuracion', 'usuarios', 'usuario', 'status']
+      const parts = activeTab.split('-');
+      // Operaciones válidas: status, insert, update, massive
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      // Si hay más de 3 partes y la última es una operación válida, excluirla
+      if (parts.length > 3 && validOperations.includes(parts[parts.length - 1])) {
+        const table = parts.slice(2, -1).join('-'); // 'usuario' (puede ser multi-palabra)
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
+      } else {
+        // Sin operación, solo tabla
+        const table = activeTab.replace('configuracion-usuarios-', '');
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
       }
     } else if (activeTab === 'configuracion-usuarios') {
       // Si solo es 'configuracion-usuarios' sin tabla, limpiar selectedTable
@@ -302,9 +328,22 @@ const AppContentInternal: React.FC<{
         setSelectedTable('');
       }
     } else if (activeTab.startsWith('configuracion-parametros-geo-')) {
-      const table = activeTab.replace('configuracion-parametros-geo-', '');
-      if (table && table !== selectedTable) {
-        setSelectedTable(table);
+      // Dividir en partes: ['configuracion', 'parametros', 'geo', 'pais', 'status']
+      const parts = activeTab.split('-');
+      // Operaciones válidas: status, insert, update, massive
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      // Si hay más de 4 partes (parametros-geo tiene 3 palabras) y la última es una operación válida, excluirla
+      if (parts.length > 4 && validOperations.includes(parts[parts.length - 1])) {
+        const table = parts.slice(3, -1).join('-'); // 'pais' (puede ser multi-palabra)
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
+      } else {
+        // Sin operación, solo tabla
+        const table = activeTab.replace('configuracion-parametros-geo-', '');
+        if (table && table !== selectedTable) {
+          setSelectedTable(table);
+        }
       }
     } else if (activeTab === 'configuracion-parametros-geo') {
       // Si solo es 'configuracion-parametros-geo' sin tabla, limpiar selectedTable
@@ -414,6 +453,40 @@ const AppContentInternal: React.FC<{
             return currentSubTab;
           });
         }
+      }
+    }
+    
+    // Manejar operaciones de DISPOSITIVOS, USUARIOS, PARAMETROS GEO
+    // Rutas: configuracion-dispositivos-[tabla]-[operacion], configuracion-usuarios-[tabla]-[operacion], configuracion-parametros-geo-[tabla]-[operacion]
+    if (activeTab.startsWith('configuracion-dispositivos-') || 
+        activeTab.startsWith('configuracion-usuarios-') || 
+        activeTab.startsWith('configuracion-parametros-geo-')) {
+      const parts = activeTab.split('-');
+      // Operaciones válidas: status, insert, update, massive
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      
+      // Para dispositivos y usuarios: ['configuracion', 'dispositivos', 'tipo', 'status'] -> 4 partes, última es operación
+      // Para parametros-geo: ['configuracion', 'parametros', 'geo', 'pais', 'status'] -> 5 partes, última es operación
+      const minPartsForOperation = activeTab.startsWith('configuracion-parametros-geo-') ? 5 : 4;
+      
+      if (parts.length >= minPartsForOperation && validOperations.includes(parts[parts.length - 1])) {
+        const operation = parts[parts.length - 1] as 'status' | 'insert' | 'update' | 'massive';
+        setActiveSubTab((currentSubTab) => {
+          if (currentSubTab !== operation) {
+            return operation;
+          }
+          return currentSubTab;
+        });
+      } else {
+        // Sin operación en la ruta, resetear a 'status' solo si no hay una operación válida ya establecida
+        setActiveSubTab((currentSubTab) => {
+          // Si ya hay una operación válida establecida y no hay operación en la ruta, mantenerla
+          // Esto permite que cuando se selecciona solo la tabla, se mantenga la operación anterior
+          if (validOperations.includes(currentSubTab)) {
+            return currentSubTab;
+          }
+          return 'status';
+        });
       }
     }
     
@@ -937,8 +1010,13 @@ const AppContentInternal: React.FC<{
 
     // Manejar sub-rutas de CONFIGURACIÓN - DISPOSITIVOS
     if (activeTab.startsWith('configuracion-dispositivos')) {
-      // Extraer el nombre de la tabla (ej: 'configuracion-dispositivos-tipo' -> 'tipo')
-      const dispositivosTab = activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '');
+      // Extraer el nombre de la tabla (ej: 'configuracion-dispositivos-tipo-status' -> 'tipo')
+      // Excluir la operación si está presente
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      const dispositivosTab = parts.length > 3 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(2, -1).join('-') // Excluir la operación
+        : activeTab.replace('configuracion-dispositivos', '').replace(/^-/, '');
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!dispositivosTab || dispositivosTab === '') {
@@ -993,8 +1071,13 @@ const AppContentInternal: React.FC<{
 
     // Manejar sub-rutas de CONFIGURACIÓN - USUARIOS
     if (activeTab.startsWith('configuracion-usuarios')) {
-      // Extraer el nombre de la tabla (ej: 'configuracion-usuarios-usuario' -> 'usuario')
-      const usuariosTab = activeTab.replace('configuracion-usuarios', '').replace(/^-/, '');
+      // Extraer el nombre de la tabla (ej: 'configuracion-usuarios-usuario-status' -> 'usuario')
+      // Excluir la operación si está presente
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      const usuariosTab = parts.length > 3 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(2, -1).join('-') // Excluir la operación
+        : activeTab.replace('configuracion-usuarios', '').replace(/^-/, '');
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!usuariosTab || usuariosTab === '') {
@@ -1029,8 +1112,13 @@ const AppContentInternal: React.FC<{
 
     // Manejar sub-rutas de CONFIGURACIÓN - PARAMETROS GEO
     if (activeTab.startsWith('configuracion-parametros-geo')) {
-      // Extraer el nombre de la tabla (ej: 'configuracion-parametros-geo-pais' -> 'pais')
-      const parametrosGeoTab = activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '');
+      // Extraer el nombre de la tabla (ej: 'configuracion-parametros-geo-pais-status' -> 'pais')
+      // Excluir la operación si está presente
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      const parametrosGeoTab = parts.length > 4 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(3, -1).join('-') // Excluir la operación (parametros-geo tiene 3 palabras)
+        : activeTab.replace('configuracion-parametros-geo', '').replace(/^-/, '');
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!parametrosGeoTab || parametrosGeoTab === '') {
