@@ -83,14 +83,24 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
           onTabChange={onTabChange}
           activeTab={activeTab}
           authToken={authToken}
+          selectedTable={selectedTable}
+          activeSubTab={activeSubTab}
+          dashboardSubTab={dashboardSubTab}
         />
       </div>
 
-      {/* Sidebar auxiliar (excluir permisos, configuracion, agrupacion y ajustes - se manejan después) */}
-      {hasAuxiliarySidebar(activeTab) && activeTab !== 'permisos' && !activeTab.startsWith('permisos-') && 
+      {/* TODOS LOS SIDEBARS AUXILIARES DESHABILITADOS - Ahora todo se maneja dentro del MainSidebar */}
+
+      {/* TODOS LOS SIDEBARS AUXILIARES DESHABILITADOS - Comentados para referencia */}
+      {/* 
+      {/* Sidebar auxiliar - DESHABILITADO: Ahora los sub-menús se manejan dentro del MainSidebar */}
+      {/* Solo renderizar para casos especiales que realmente necesiten sidebars auxiliares adicionales */}
+      {false && hasAuxiliarySidebar(activeTab) && 
+       activeTab !== 'permisos' && !activeTab.startsWith('permisos-') && 
        activeTab !== 'configuracion' && !activeTab.startsWith('configuracion-') &&
        activeTab !== 'agrupacion' && !activeTab.startsWith('agrupacion-') &&
-       activeTab !== 'ajustes' && !activeTab.startsWith('ajustes-') && (
+       activeTab !== 'ajustes' && !activeTab.startsWith('ajustes-') &&
+       activeTab !== 'reportes' && !activeTab.startsWith('reportes-') && (
         <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
           <AuxiliarySidebar
             isExpanded={aux2Expanded}
@@ -113,68 +123,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             formData={formData}
             multipleData={multipleData}
             massiveFormData={massiveFormData}
-          />
-        </div>
-      )}
-
-      {/* Sidebar Aux 1: CONFIGURACIÓN (SIEMPRE visible cuando está en configuracion o sus subsecciones) */}
-      {(() => {
-        const isConfiguracion = activeTab === 'configuracion' || activeTab.startsWith('configuracion-')
-        // Mostrar siempre cuando estamos en configuracion (para seleccionar subsección) o en sus subsecciones
-        const shouldShow = isConfiguracion && hasAuxiliarySidebar(activeTab)
-        return shouldShow
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
-          <ConfiguracionSidebar
-            selectedSection={(() => {
-              if (!activeTab.startsWith('configuracion-')) return ''
-
-              const rest = activeTab.replace('configuracion-', '')
-              const parts = rest.split('-')
-
-              // Manejar secciones compuestas como 'parametros-geo' y 'reportes-administrador'
-              if (parts[0] === 'parametros' && parts[1] === 'geo') return 'parametros-geo'
-              if (parts[0] === 'reportes' && parts[1] === 'administrador') return 'reportes-administrador'
-
-              // Para secciones simples como 'dispositivos', 'usuarios', 'notificaciones', 'permisos'
-              return parts[0] || ''
-            })()}
-            onSectionSelect={(section) => {
-              if (onTabChange) {
-                onTabChange(`configuracion-${section}`);
-              }
-            }}
-            isExpanded={aux1Expanded}
-            onMouseEnter={handleAux1MouseEnter}
-            onMouseLeave={handleAux1MouseLeave}
-          />
-        </div>
-      )}
-
-      {/* Sidebar Aux 1: AJUSTES (SIEMPRE visible cuando está en ajustes o sus subsecciones) */}
-      {(() => {
-        const isAjustes = activeTab === 'ajustes' || activeTab.startsWith('ajustes-')
-        const shouldShow = isAjustes && hasAuxiliarySidebar(activeTab)
-        return shouldShow
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-10`}>
-          <AjustesSidebar
-            selectedSection={(() => {
-              // Solo marcar como seleccionada si activeTab es 'ajustes-basicas' o empieza con 'ajustes-basicas-'
-              // Si activeTab es exactamente 'ajustes', no marcar ninguna sección como seleccionada
-              if (activeTab === 'ajustes-basicas' || activeTab.startsWith('ajustes-basicas-')) {
-                return 'basicas';
-              }
-              return '' as any; // Retornar vacío para que no se marque ninguna pestaña como activa
-            })()}
-            onSectionSelect={(section) => {
-              if (onTabChange) {
-                onTabChange('ajustes-basicas');
-              }
-            }}
-            isExpanded={aux1Expanded}
-            onMouseEnter={handleAux1MouseEnter}
-            onMouseLeave={handleAux1MouseLeave}
           />
         </div>
       )}
@@ -210,9 +158,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para DISPOSITIVOS, USUARIOS, PARAMETROS GEO - Sidebar 2 (Tablas) */}
-      {/* Mostrar siempre cuando estamos en esas secciones */}
-      {(() => {
+      {/* DESHABILITADO: Sidebar auxiliar para DISPOSITIVOS, USUARIOS, PARAMETROS GEO */}
+      {false && (() => {
         const isDispositivos = activeTab.startsWith('configuracion-dispositivos');
         const isUsuarios = activeTab.startsWith('configuracion-usuarios');
         const isParametrosGeo = activeTab.startsWith('configuracion-parametros-geo');
@@ -310,8 +257,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         );
       })()}
 
-      {/* Tercer sidebar para NOTIFICACIONES, DISPOSITIVOS, USUARIOS, PARAMETROS GEO - Operaciones (ESTADO, CREAR, ACTUALIZAR) */}
-      {(() => {
+      {/* DESHABILITADO: Tercer sidebar para operaciones */}
+      {false && (() => {
         const isDispositivos = activeTab.startsWith('configuracion-dispositivos');
         const isUsuarios = activeTab.startsWith('configuracion-usuarios');
         const isParametrosGeo = activeTab.startsWith('configuracion-parametros-geo');
@@ -457,9 +404,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para PERMISOS - Sidebar 3 (Operaciones: ESTADO, CREAR, ASIGNAR) */}
-      {/* Solo mostrar cuando hay un tipo seleccionado (permisos-geo o permisos-conf) */}
-      {(() => {
+      {/* DESHABILITADO: Sidebar auxiliar para PERMISOS - Sidebar 3 */}
+      {false && (() => {
         const isPermisos = activeTab.startsWith('configuracion-permisos');
         const isPermisosTipoSelected = activeTab.startsWith('configuracion-permisos-permisos-');
         // Solo mostrar Sidebar 3 (operaciones) cuando hay un tipo seleccionado
@@ -491,50 +437,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para AGRUPACIÓN - Sidebar 2 (Tablas) */}
-      {/* Mostrar cuando estamos en agrupacion (para seleccionar tabla) o cuando hay una tabla seleccionada */}
-      {(() => {
-        const isAgrupacion = activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-');
-        // Extraer la tabla del activeTab
-        const agrupacionTable = activeTab === 'agrupacion' 
-          ? '' 
-          : (activeTab.replace('agrupacion-', '') || selectedTable || '');
-        // Mostrar Sidebar 2 (tablas) siempre cuando estamos en agrupacion
-        const shouldShow = isAgrupacion && hasAuxiliarySidebar(activeTab);
-        return shouldShow;
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-20`}>
-          <AuxiliarySidebar
-            isExpanded={aux2Expanded}
-            onMouseEnter={handleAux2MouseEnter}
-            onMouseLeave={handleAux2MouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            selectedTable={(() => {
-              // Si activeTab es exactamente 'agrupacion', no hay tabla seleccionada (vacío)
-              const agrupacionTable = activeTab === 'agrupacion' 
-                ? '' 
-                : (activeTab.replace('agrupacion-', '') || selectedTable || '');
-              return agrupacionTable;
-            })()}
-            onTableSelect={onTableSelect}
-            activeSubTab={activeSubTab}
-            onSubTabChange={onSubTabChange}
-            onSubTabChangeFromProtectedButton={onSubTabChangeFromProtectedButton}
-            dashboardSubTab={dashboardSubTab}
-            onDashboardSubTabChange={onDashboardSubTabChange}
-            formData={formData}
-            multipleData={multipleData}
-            massiveFormData={massiveFormData}
-            showThirdLevel={true}
-            forceConfiguracionSidebar={false}
-          />
-        </div>
-      )}
-
-      {/* Sidebar auxiliar para AGRUPACIÓN - Sidebar 3 (Operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {/* Solo mostrar cuando hay una tabla seleccionada */}
-      {(() => {
+      {/* DESHABILITADO: Sidebar auxiliar para AGRUPACIÓN */}
+      {false && (() => {
         const isAgrupacion = activeTab === 'agrupacion' || activeTab.startsWith('agrupacion-');
         // Extraer la tabla del activeTab
         const agrupacionTable = activeTab === 'agrupacion' 
@@ -615,8 +519,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Segundo sidebar para permisos (PERMISO, ORIGEN, FUENTE) */}
-      {(() => {
+      {/* DESHABILITADO: Segundo sidebar para permisos */}
+      {false && (() => {
         const shouldShow = (activeTab === 'permisos' || activeTab.startsWith('permisos-')) && hasAuxiliarySidebar(activeTab);
         return shouldShow;
       })() && (
@@ -676,8 +580,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
 
-      {/* Tercer sidebar para ALERTAS (operaciones: ESTADO, CREAR, ACTUALIZAR) */}
-      {hasAuxiliarySidebar(activeTab) && (
+      {/* DESHABILITADO: Tercer sidebar para ALERTAS */}
+      {false && hasAuxiliarySidebar(activeTab) && (
         (activeTab === 'alertas-regla' || activeTab.startsWith('alertas-regla-')) ||
         (activeTab === 'alertas-regla_objeto' || activeTab.startsWith('alertas-regla_objeto-')) ||
         (activeTab === 'alertas-regla_perfil' || activeTab.startsWith('alertas-regla_perfil-'))
@@ -706,8 +610,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Tercer sidebar para dashboards (solo cuando está en reportes-dashboard) */}
-      {hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
+      {/* DESHABILITADO: Tercer sidebar para dashboards - Ahora todo se maneja dentro del MainSidebar */}
+      {false && hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-dashboard' || activeTab.startsWith('reportes-dashboard-')) && (
         <div className="flex-shrink-0 z-30">
           <AuxiliarySidebar
             isExpanded={aux3Expanded}
@@ -730,8 +634,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar Aux 2 para HISTORIAL (solo cuando está en reportes-historial) - Similar a dashboard */}
-      {hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-historial' || activeTab.startsWith('reportes-historial-')) && (
+      {/* DESHABILITADO: Sidebar Aux 2 para HISTORIAL */}
+      {false && hasAuxiliarySidebar(activeTab) && (activeTab === 'reportes-historial' || activeTab.startsWith('reportes-historial-')) && (
         <div className="flex-shrink-0 z-20">
           <AuxiliarySidebar
             isExpanded={aux2Expanded}
