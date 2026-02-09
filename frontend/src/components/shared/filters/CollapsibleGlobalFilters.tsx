@@ -1,34 +1,36 @@
 import React, { useState } from 'react';
-import DynamicFilterSelector from './DynamicFilterSelector';
 
 interface CollapsibleGlobalFiltersProps {
   paisSeleccionado: string;
   empresaSeleccionada: string;
   fundoSeleccionado: string;
+  ubicacionSeleccionada: string;
   onPaisChange: (value: string) => void;
   onEmpresaChange: (value: string) => void;
   onFundoChange: (value: string) => void;
+  onUbicacionChange: (value: string) => void;
   paisesOptions: Array<{ id: string | number; name: string }>;
   empresasOptions: Array<{ id: string | number; name: string }>;
   fundosOptions: Array<{ id: string | number; name: string }>;
+  ubicacionesOptions: Array<{ id: string | number; name: string }>;
 }
 
 const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   paisSeleccionado,
   empresaSeleccionada,
   fundoSeleccionado,
+  ubicacionSeleccionada,
   onPaisChange,
   onEmpresaChange,
   onFundoChange,
+  onUbicacionChange,
   paisesOptions,
   empresasOptions,
-  fundosOptions
+  fundosOptions,
+  ubicacionesOptions
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [openLevel, setOpenLevel] = useState<string | null>(null);
 
-  const hasActiveFilters = paisSeleccionado || empresaSeleccionada || fundoSeleccionado;
-  const hasAllFilters = paisSeleccionado && empresaSeleccionada && fundoSeleccionado;
-  
   // Colores de la plantilla
   const TEMPLATE_COLORS = {
     textColor: '#b3b8d4',
@@ -37,168 +39,269 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
     secondaryBgColor: '#0b1a2c',
     borderColor: 'rgba(83, 93, 125, 0.3)',
   };
-  
-  // Obtener nombres de las opciones seleccionadas
+
+  // Obtener nombres seleccionados
   const selectedPaisName = paisesOptions.find(p => p.id.toString() === paisSeleccionado)?.name || '';
   const selectedEmpresaName = empresasOptions.find(e => e.id.toString() === empresaSeleccionada)?.name || '';
   const selectedFundoName = fundosOptions.find(f => f.id.toString() === fundoSeleccionado)?.name || '';
+  const selectedUbicacionName = ubicacionesOptions.find(u => u.id.toString() === ubicacionSeleccionada)?.name || '';
 
-  // Iconos minimalistas (SVG con líneas blancas)
-  const iconos = {
-    pais: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    empresa: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
-    fundo: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
-      </svg>
-    )
+  const handlePaisClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenLevel(openLevel === 'pais' ? null : 'pais');
   };
 
-  // Si no hay todos los filtros activos, mostrar siempre expandido
-  if (!hasAllFilters) {
-    return (
-      <div className="space-y-3">
-        <DynamicFilterSelector
-          value={paisSeleccionado}
-          onChange={onPaisChange}
-          options={paisesOptions}
-          placeholder="País"
-          icon={iconos.pais}
-          className="w-full"
-        />
-        <DynamicFilterSelector
-          value={empresaSeleccionada}
-          onChange={onEmpresaChange}
-          options={empresasOptions}
-          disabled={!paisSeleccionado}
-          placeholder="Empresa"
-          icon={iconos.empresa}
-          className="w-full"
-        />
-        <DynamicFilterSelector
-          value={fundoSeleccionado}
-          onChange={onFundoChange}
-          options={fundosOptions}
-          disabled={!empresaSeleccionada}
-          placeholder="Fundo"
-          icon={iconos.fundo}
-          className="w-full"
-        />
-      </div>
-    );
-  }
+  const handleEmpresaClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenLevel(openLevel === 'empresa' ? null : 'empresa');
+  };
 
-  // Si hay todos los filtros activos, mostrar versión colapsable
+  const handleFundoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenLevel(openLevel === 'fundo' ? null : 'fundo');
+  };
+
+  const handleUbicacionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenLevel(openLevel === 'ubicacion' ? null : 'ubicacion');
+  };
+
+  const handleSelectPais = (paisId: string) => {
+    onPaisChange(paisId);
+    setOpenLevel(null);
+  };
+
+  const handleSelectEmpresa = (empresaId: string) => {
+    onEmpresaChange(empresaId);
+    setOpenLevel(null);
+  };
+
+  const handleSelectFundo = (fundoId: string) => {
+    onFundoChange(fundoId);
+    setOpenLevel(null);
+  };
+
+  const handleSelectUbicacion = (ubicacionId: string) => {
+    onUbicacionChange(ubicacionId);
+    setOpenLevel(null);
+  };
+
   return (
-    <div>
-      {/* Header colapsable */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-5 py-3 flex items-center justify-between transition-colors"
-        style={{
-          color: TEMPLATE_COLORS.textColor,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
-          e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = TEMPLATE_COLORS.textColor;
-        }}
-      >
-        <div className="flex items-center space-x-3">
-          {/* Icono embudo */}
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          
-          {/* Chips de filtros activos */}
-          <div className="flex items-center space-x-2">
-            {selectedPaisName && (
-              <span 
-                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
-                style={{
-                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
-                  color: TEMPLATE_COLORS.secondaryTextColor,
-                }}
-              >
-                {selectedPaisName.toUpperCase()}
-              </span>
-            )}
-            {selectedEmpresaName && (
-              <span 
-                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
-                style={{
-                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
-                  color: TEMPLATE_COLORS.secondaryTextColor,
-                }}
-              >
-                {selectedEmpresaName.toUpperCase()}
-              </span>
-            )}
-            {selectedFundoName && (
-              <span 
-                className="px-1.5 py-0.5 rounded text-xs whitespace-nowrap overflow-hidden max-w-[60px] truncate font-mono tracking-wider"
-                style={{
-                  backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
-                  color: TEMPLATE_COLORS.secondaryTextColor,
-                }}
-              >
-                {selectedFundoName.toUpperCase()}
-              </span>
-            )}
-          </div>
-        </div>
-        <svg 
-          className="w-4 h-4 transition-transform" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-          style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+    <div className="space-y-1">
+      {/* PAÍS */}
+      <div className="space-y-1">
+        <button
+          onClick={handlePaisClick}
+          className="flex items-center w-full h-12 px-5 transition-all duration-200"
+          style={{
+            color: paisSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+            backgroundColor: openLevel === 'pais' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (openLevel !== 'pais') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+          }}
+          onMouseLeave={(e) => {
+            if (openLevel !== 'pais') e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+          <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
+            {selectedPaisName ? '▼' : '▶'}
+          </span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+            {selectedPaisName || 'PAÍS'}
+          </span>
+        </button>
 
-      {/* Contenido expandible */}
-      {isExpanded && (
-        <div className="px-5 pb-4 space-y-3">
-          <DynamicFilterSelector
-            value={paisSeleccionado}
-            onChange={onPaisChange}
-            options={paisesOptions}
-            placeholder="País"
-            icon={iconos.pais}
-            className="w-full"
-          />
-          <DynamicFilterSelector
-            value={empresaSeleccionada}
-            onChange={onEmpresaChange}
-            options={empresasOptions}
-            disabled={!paisSeleccionado}
-            placeholder="Empresa"
-            icon={iconos.empresa}
-            className="w-full"
-          />
-          <DynamicFilterSelector
-            value={fundoSeleccionado}
-            onChange={onFundoChange}
-            options={fundosOptions}
-            disabled={!empresaSeleccionada}
-            placeholder="Fundo"
-            icon={iconos.fundo}
-            className="w-full"
-          />
+        {openLevel === 'pais' && (
+          <div className="ml-4 space-y-1">
+            {paisesOptions.map((pais) => (
+              <button
+                key={pais.id}
+                onClick={() => handleSelectPais(pais.id.toString())}
+                className="flex items-center w-full h-10 px-4 transition-all duration-200"
+                style={{
+                  color: paisSeleccionado === pais.id.toString() ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                  backgroundColor: paisSeleccionado === pais.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent',
+                  borderLeft: paisSeleccionado === pais.id.toString() ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = paisSeleccionado === pais.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent';
+                }}
+              >
+                <span style={{ fontSize: '0.8rem' }}>
+                  {pais.name.toUpperCase()}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* EMPRESA */}
+      {paisSeleccionado && (
+        <div className="ml-4 space-y-1">
+          <button
+            onClick={handleEmpresaClick}
+            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            style={{
+              color: empresaSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+              backgroundColor: openLevel === 'empresa' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+            }}
+            onMouseEnter={(e) => {
+              if (openLevel !== 'empresa') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+            }}
+            onMouseLeave={(e) => {
+              if (openLevel !== 'empresa') e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
+              {selectedEmpresaName ? '▼' : '▶'}
+            </span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+              {selectedEmpresaName || 'EMPRESA'}
+            </span>
+          </button>
+
+          {openLevel === 'empresa' && (
+            <div className="ml-4 space-y-1">
+              {empresasOptions.map((empresa) => (
+                <button
+                  key={empresa.id}
+                  onClick={() => handleSelectEmpresa(empresa.id.toString())}
+                  className="flex items-center w-full h-10 px-4 transition-all duration-200"
+                  style={{
+                    color: empresaSeleccionada === empresa.id.toString() ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                    backgroundColor: empresaSeleccionada === empresa.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent',
+                    borderLeft: empresaSeleccionada === empresa.id.toString() ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = empresaSeleccionada === empresa.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent';
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem' }}>
+                    {empresa.name.toUpperCase()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* FUNDO */}
+      {empresaSeleccionada && (
+        <div className="ml-8 space-y-1">
+          <button
+            onClick={handleFundoClick}
+            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            style={{
+              color: fundoSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+              backgroundColor: openLevel === 'fundo' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+            }}
+            onMouseEnter={(e) => {
+              if (openLevel !== 'fundo') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+            }}
+            onMouseLeave={(e) => {
+              if (openLevel !== 'fundo') e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
+              {selectedFundoName ? '▼' : '▶'}
+            </span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+              {selectedFundoName || 'FUNDO'}
+            </span>
+          </button>
+
+          {openLevel === 'fundo' && (
+            <div className="ml-4 space-y-1">
+              {fundosOptions.map((fundo) => (
+                <button
+                  key={fundo.id}
+                  onClick={() => handleSelectFundo(fundo.id.toString())}
+                  className="flex items-center w-full h-10 px-4 transition-all duration-200"
+                  style={{
+                    color: fundoSeleccionado === fundo.id.toString() ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                    backgroundColor: fundoSeleccionado === fundo.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent',
+                    borderLeft: fundoSeleccionado === fundo.id.toString() ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = fundoSeleccionado === fundo.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent';
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem' }}>
+                    {fundo.name.toUpperCase()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* UBICACIÓN */}
+      {fundoSeleccionado && (
+        <div className="ml-12 space-y-1">
+          <button
+            onClick={handleUbicacionClick}
+            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            style={{
+              color: ubicacionSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+              backgroundColor: openLevel === 'ubicacion' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+            }}
+            onMouseEnter={(e) => {
+              if (openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+            }}
+            onMouseLeave={(e) => {
+              if (openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
+              {selectedUbicacionName ? '▼' : '▶'}
+            </span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+              {selectedUbicacionName || 'UBICACIÓN'}
+            </span>
+          </button>
+
+          {openLevel === 'ubicacion' && (
+            <div className="ml-4 space-y-1">
+              {ubicacionesOptions.map((ubicacion) => (
+                <button
+                  key={ubicacion.id}
+                  onClick={() => handleSelectUbicacion(ubicacion.id.toString())}
+                  className="flex items-center w-full h-10 px-4 transition-all duration-200"
+                  style={{
+                    color: ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                    backgroundColor: ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent',
+                    borderLeft: ubicacionSeleccionada === ubicacion.id.toString() ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent';
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem' }}>
+                    {ubicacion.name.toUpperCase()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

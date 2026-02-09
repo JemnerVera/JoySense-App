@@ -5,6 +5,7 @@ interface FilterData {
   paises: any[];
   empresas: any[];
   fundos: any[];
+  ubicaciones: any[];
   loading: boolean;
   error: string | null;
 }
@@ -13,6 +14,7 @@ export const useFilterData = (authToken: string): FilterData => {
   const [paises, setPaises] = useState<any[]>([]);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,16 +27,18 @@ export const useFilterData = (authToken: string): FilterData => {
         
         // Cargar datos en paralelo para mejor rendimiento
         // Usar los métodos específicos que ya existen en el backend
-        const [paisesData, empresasData, fundosData] = await Promise.all([
+        const [paisesData, empresasData, fundosData, ubicacionesData] = await Promise.all([
           JoySenseService.getPaises(), // Usar método específico
           JoySenseService.getEmpresas(), // Usar método específico
-          JoySenseService.getFundos() // Usar método específico
+          JoySenseService.getFundos(), // Usar método específico
+          JoySenseService.getUbicaciones?.() || Promise.resolve([]) // Usar método específico si existe
         ]);
 
 
         setPaises(paisesData || []);
         setEmpresas(empresasData || []);
         setFundos(fundosData || []);
+        setUbicaciones(ubicacionesData || []);
 
       } catch (err: any) {
         console.error('❌ Error cargando datos de filtros:', err);
@@ -53,6 +57,7 @@ export const useFilterData = (authToken: string): FilterData => {
     paises,
     empresas,
     fundos,
+    ubicaciones,
     loading,
     error
   };
