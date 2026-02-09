@@ -135,27 +135,37 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         const isCriticidadNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-criticidad-(status|insert|update|massive)$/);
         const isUmbralNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-umbral-(status|insert|update|massive)$/);
         // Sidebar Aux 2 SOLO debe mostrarse cuando:
-        // 1. Estamos en 'configuracion-notificaciones-regla' sin tabla específica (para mostrar ReglaSidebar)
-        // 2. Estamos en una tabla específica de regla (regla, regla_perfil, etc) para mostrar operaciones
-        // 3. Estamos en CRITICIDAD o UMBRAL CON una operación específica (para mostrar NotificacionesOperationsSidebar)
-        // NO mostrar cuando solo estamos en 'configuracion-notificaciones-criticidad' sin operación
-        const shouldShow = (isReglaNotificacionesSolo || isReglaNotificacionesConTabla || isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion) && hasAuxiliarySidebar(activeTab);
-        
-        console.log('[SidebarContainer NOTIFICACIONES AUX2]', {
+        // 1. Estamos en CRITICIDAD o UMBRAL CON una operación específica (para mostrar NotificacionesOperationsSidebar)
+        // NO mostrar para:
+        // - REGLA (nada, todo debe estar en contenido principal)
+        // - CRITICIDAD o UMBRAL sin operación específica
+        const shouldShow = (isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion) && hasAuxiliarySidebar(activeTab);
+        console.log('[SidebarContainer NOTIFICACIONES shouldShow]', {
           activeTab,
           shouldShow,
-          isReglaNotificacionesSolo,
-          isReglaNotificacionesConTabla,
-          isCriticidadNotificacionesConOperacion: !!isCriticidadNotificacionesConOperacion,
-          isUmbralNotificacionesConOperacion: !!isUmbralNotificacionesConOperacion,
-          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
+          isCriticidadOp: !!isCriticidadNotificacionesConOperacion,
+          isUmbralOp: !!isUmbralNotificacionesConOperacion,
+          hasAux: hasAuxiliarySidebar(activeTab),
+          condition1: isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion
         });
         
-        // showThirdLevel=true cuando estamos en REGLA (para mostrar ReglaSidebar)
-        // showThirdLevel=false cuando estamos en CRITICIDAD o UMBRAL (para mostrar operaciones)
-        const showThirdLevel = isReglaNotificacionesSolo;
+        if (isNotificaciones) {
+          console.log('[SidebarContainer NOTIFICACIONES]', {
+            activeTab,
+            isReglaNotificacionesSolo,
+            isReglaNotificacionesConTabla,
+            isCriticidadOp: !!isCriticidadNotificacionesConOperacion,
+            isUmbralOp: !!isUmbralNotificacionesConOperacion,
+            shouldShow,
+            willRenderAux: shouldShow ? 'YES' : 'NO'
+          });
+        }
+        
+        // showThirdLevel no se usa más para REGLA porque no renderizamos AuxiliarySidebar para REGLA
+        // Solo se usa para CRITICIDAD/UMBRAL (donde es siempre false)
+        const showThirdLevel = false;
         // isSidebarAux3=true cuando estamos en CRITICIDAD o UMBRAL con operación (mostrar operaciones)
-        const isSidebarAux3 = isReglaNotificacionesConTabla || !!isCriticidadNotificacionesConOperacion || !!isUmbralNotificacionesConOperacion;
+        const isSidebarAux3 = !!isCriticidadNotificacionesConOperacion || !!isUmbralNotificacionesConOperacion;
         // Calcular selectedTable siempre desde activeTab para evitar desfases con el prop
         const extractedTableFromActiveTab = activeTab.replace('configuracion-notificaciones-', '') || '';
         const finalNotificacionesTable = selectedTable || extractedTableFromActiveTab || '';
@@ -533,44 +543,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar auxiliar para REGLA OPERATIONS (Sidebar Auxiliar 4) - cuando se selecciona una tabla de regla específica */}
-      {(() => {
-        const isReglaNotificaciones = activeTab.startsWith('configuracion-notificaciones-regla');
-        // Verificar si se ha seleccionado una tabla de regla específica
-        // IMPORTANTE: No confundir 'regla' en selectedTable (que viene del Sidebar 2) con una tabla específica seleccionada
-        // Solo considerar que hay una tabla seleccionada si activeTab incluye el nombre de la tabla específica
-        const check1 = activeTab.includes('-regla-') && !activeTab.endsWith('-regla') && activeTab !== 'configuracion-notificaciones-regla';
-        const check2 = activeTab.includes('-regla_perfil-');
-        const check4 = activeTab.includes('-regla_objeto-');
-        const check5 = activeTab === 'configuracion-notificaciones-regla-regla';
-        const check6 = activeTab === 'configuracion-notificaciones-regla-regla_perfil';
-        const check8 = activeTab === 'configuracion-notificaciones-regla-regla_objeto';
-        const check9 = (selectedTable === 'regla_perfil' || selectedTable === 'regla_objeto');
-        const check10 = (selectedTable === 'regla' && activeTab !== 'configuracion-notificaciones-regla');
-        const isReglaTableSelected = isReglaNotificaciones && (
-          check1 || check2 || check4 || check5 || check6 || check8 || check9 || check10
-        );
-        const hasAux = hasAuxiliarySidebar(activeTab);
-        const shouldShow = isReglaTableSelected && hasAux;
-        return shouldShow;
-      })() && (
-        <div className={`${getAuxiliarySidebarClasses()} flex-shrink-0 z-40`}>
-          <ReglaOperationsSidebar
-            selectedTable={selectedTable || ''}
-            activeSubTab={((activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update') ? activeSubTab : 'status') as 'status' | 'insert' | 'update'}
-            onSubTabChange={(onSubTabChange ? ((subTab: 'status' | 'insert' | 'update' | 'massive') => {
-              if (subTab === 'status' || subTab === 'insert' || subTab === 'update') {
-                onSubTabChange(subTab);
-              }
-            }) : (() => {})) as ((subTab: 'status' | 'insert' | 'update') => void)}
-            isExpanded={aux4Expanded}
-            onMouseEnter={handleAux4MouseEnter}
-            onMouseLeave={handleAux4MouseLeave}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-          />
-        </div>
-      )}
+      {/* DESHABILITADO: Sidebar auxiliar para REGLA OPERATIONS - NO se renderiza nada para NOTIFICACIONES REGLA */}
+      {/* Todo debe estar en el contenido principal para NOTIFICACIONES REGLA */}
+      {false && null}
 
       {/* DESHABILITADO: Segundo sidebar para permisos */}
       {false && (() => {
