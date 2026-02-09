@@ -683,6 +683,69 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     onTabChange(fullTabId);
   };
 
+  // Función para manejar nivel 2 con colapsado
+  const handleLevel2MenuClick = async (parentId: string, subMenuId: string, hasLevel3Menus: boolean) => {
+    console.log('🖱️ handleLevel2MenuClick:', { parentId, subMenuId, hasLevel3Menus });
+    
+    const subMenuKey = `${parentId}-${subMenuId}`;
+    
+    if (!hasLevel3Menus) {
+      // Si no tiene nivel 3, solo navegar
+      console.log('  → Sin nivel 3, navegando a:', subMenuKey);
+      onTabChange(subMenuKey);
+      return;
+    }
+
+    // Si tiene nivel 3, expandir/colapsar
+    const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
+    if (!subMenuElement) {
+      console.log('  ⚠️ No se encontró elemento para:', subMenuKey);
+      onTabChange(subMenuKey);
+      return;
+    }
+
+    const isOpen = openSubMenusLevel3.has(subMenuKey);
+    
+    console.log('  → Estado actual: isOpen =', isOpen);
+    console.log('  → Navegando a:', subMenuKey);
+    
+    // Cambiar la pestaña activa
+    onTabChange(subMenuKey);
+    
+    // Cerrar otros sub-menús nivel 3 del MISMO PADRE (otros hermanos)
+    if (!isOpen) {
+      console.log('  → Abriendo este menú por primera vez, cerrando los otros');
+      // Filtrar todos los menús abiertos que pertenecen al mismo padre
+      const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key =>
+        key.startsWith(`${parentId}-`)
+      );
+      
+      for (const otherMenuKey of otherOpenMenus) {
+        const otherElement = subMenuRefsLevel3.current[otherMenuKey];
+        if (otherElement) {
+          console.log('    ❌ Cerrando otro menú:', otherMenuKey);
+          await slideToggle(otherElement);
+        }
+      }
+      
+      console.log('  → Abriendo el menú actual');
+      await slideToggle(subMenuElement);
+      
+      const newOpenMenus = new Set(openSubMenusLevel3);
+      otherOpenMenus.forEach(key => newOpenMenus.delete(key));
+      newOpenMenus.add(subMenuKey);
+      setOpenSubMenusLevel3(newOpenMenus);
+      console.log('  → Estado actualizado:', { openSubMenusLevel3: Array.from(newOpenMenus) });
+    } else {
+      console.log('  → Menú ya estaba abierto, cerrándolo');
+      await slideToggle(subMenuElement);
+      const newOpenMenus = new Set(openSubMenusLevel3);
+      newOpenMenus.delete(subMenuKey);
+      setOpenSubMenusLevel3(newOpenMenus);
+      console.log('  → Menú cerrado');
+    }
+  };
+
   // Función para manejar el click en nivel 3 (tablas)
   const handleSubMenuLevel3Click = async (parentId: string, level2Id: string, level3Id: string, hasSubMenus: boolean) => {
     const fullTabId = `${parentId}-${level2Id}-${level3Id}`;
@@ -1075,48 +1138,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                   className={`menu-item ${isSubActive ? 'active' : ''} ${isExpanded && hasLevel3Menus ? 'sub-menu' : ''} ${isLevel3Open ? 'open' : ''}`}
                                 >
                                   <button
-                                    onClick={async () => {
-                                      if (hasLevel3Menus) {
-                                        // Si tiene niveles 3, expandir/colapsar
-                                        const subMenuKey = `${tab.id}-${subMenu.id}`;
-                                        const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
-                                        if (!subMenuElement) return;
-
-                                        const isOpen = openSubMenusLevel3.has(subMenuKey);
-                                        
-                                        // Cerrar otros sub-menús nivel 3 abiertos del mismo nivel 2
-                                        if (!isOpen) {
-                                          const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key => 
-                                            key.startsWith(`${tab.id}-${subMenu.id}-`) && key !== subMenuKey
-                                          );
-                                          for (const otherMenuKey of otherOpenMenus) {
-                                            const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-                                            if (otherElement) {
-                                              await slideToggle(otherElement);
-                                            }
-                                          }
-                                          setOpenSubMenusLevel3(prev => {
-                                            const newSet = new Set(prev);
-                                            otherOpenMenus.forEach(key => newSet.delete(key));
-                                            return newSet;
-                                          });
-                                        }
-
-                                        // Toggle el sub-menú actual
-                                        await slideToggle(subMenuElement);
-                                        
-                                        // Actualizar estado
-                                        const newOpenMenus = new Set(openSubMenusLevel3);
-                                        if (isOpen) {
-                                          newOpenMenus.delete(subMenuKey);
-                                        } else {
-                                          newOpenMenus.add(subMenuKey);
-                                        }
-                                        setOpenSubMenusLevel3(newOpenMenus);
-                                      } else {
-                                        handleSubMenuClick(tab.id, subMenu.id);
-                                      }
-                                    }}
+                                    onClick={() => handleLevel2MenuClick(tab.id, subMenu.id, hasLevel3Menus || false)}
                                     className="flex items-center h-12 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
                                     style={{ color: isSubActive ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
                                     onMouseEnter={(e) => {
