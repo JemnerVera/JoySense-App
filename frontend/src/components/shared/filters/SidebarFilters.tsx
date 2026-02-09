@@ -8,15 +8,17 @@ interface SidebarFiltersProps {
 }
 
 const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
-  const { paises, empresas, fundos, loading, error } = useFilterData(authToken);
+  const { paises, empresas, fundos, ubicaciones, loading, error } = useFilterData(authToken);
   const {
     paisSeleccionado,
     empresaSeleccionada,
     fundoSeleccionado,
+    ubicacionSeleccionada,
     hasActiveFilters,
     handlePaisChange,
     handleEmpresaChange,
     handleFundoChange,
+    handleUbicacionChange,
   } = useCascadingFilters();
 
   // Preparar datos para los selectores
@@ -39,11 +41,19 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       name: fundo.fundo
     }));
 
+  const ubicacionesOptions = ubicaciones
+    .filter(ubicacion => !fundoSeleccionado || ubicacion.fundoid === parseInt(fundoSeleccionado))
+    .map(ubicacion => ({
+      id: ubicacion.ubicacionid,
+      name: ubicacion.ubicacion
+    }));
+
   if (loading) {
     return (
       <div className="p-4 border-b border-gray-300 dark:border-gray-700">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Filtros Globales</h3>
         <div className="space-y-3">
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
           <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
           <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
           <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
@@ -68,12 +78,15 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       paisSeleccionado={paisSeleccionado}
       empresaSeleccionada={empresaSeleccionada}
       fundoSeleccionado={fundoSeleccionado}
+      ubicacionSeleccionada={ubicacionSeleccionada?.toString() || ''}
       onPaisChange={handlePaisChange}
       onEmpresaChange={handleEmpresaChange}
       onFundoChange={handleFundoChange}
+      onUbicacionChange={handleUbicacionChange}
       paisesOptions={paisesOptions}
       empresasOptions={empresasOptions}
       fundosOptions={fundosOptions}
+      ubicacionesOptions={ubicacionesOptions}
     />
   );
 };

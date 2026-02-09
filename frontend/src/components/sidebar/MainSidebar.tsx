@@ -887,17 +887,30 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
         {/* Sidebar Content - Filters and Menu */}
         <div 
-          className="sidebar-content flex-grow overflow-y-auto py-2.5 transition-all duration-300"
+          className="sidebar-content flex-grow overflow-y-auto transition-all duration-300"
           style={{ padding: '10px 0' }}
         >
-          {/* Global Filters - Solo mostrar si tiene permisos y no está colapsado */}
-          {isExpanded && !isLoadingPermissions && hasAccess('FILTROS_GLOBALES') && (
-            <div 
-              className="filters-section border-b px-5 py-4 transition-all duration-300"
-              style={{ borderBottomColor: TEMPLATE_COLORS.borderColor }}
-            >
-              <SidebarFilters authToken={authToken} />
-            </div>
+          {/* Global Filters - Mostrar siempre arriba del menú */}
+          {isExpanded && !isLoadingPermissions && (
+            <>
+              <div 
+                className="filters-section px-5 py-4 transition-all duration-300"
+                style={{ 
+                  borderBottom: `1px solid ${TEMPLATE_COLORS.borderColor}`,
+                }}
+              >
+                <SidebarFilters authToken={authToken} />
+              </div>
+              {/* División visual entre filtros y menú */}
+              <div 
+                style={{ 
+                  height: '1px',
+                  backgroundColor: TEMPLATE_COLORS.borderColor,
+                  margin: '8px 0',
+                  opacity: 0.5
+                }}
+              />
+            </>
           )}
 
           {/* Main Menu */}
