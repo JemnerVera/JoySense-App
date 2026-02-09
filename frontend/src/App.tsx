@@ -372,7 +372,18 @@ const AppContentInternal: React.FC<{
         }
       } else {
         // Para otras tablas de notificaciones, establecer selectedTable normalmente
-        const table = activeTab.replace('configuracion-notificaciones-', '');
+        // Remover la operación si está incluida (status, insert, update, massive)
+        const validOperations = ['status', 'insert', 'update', 'massive'];
+        let table = activeTab.replace('configuracion-notificaciones-', '');
+        
+        // Si termina con una operación válida, removerla
+        for (const op of validOperations) {
+          if (table.endsWith(`-${op}`)) {
+            table = table.replace(`-${op}`, '');
+            break;
+          }
+        }
+        
         if (table && table !== selectedTable) {
           setSelectedTable(table);
         }

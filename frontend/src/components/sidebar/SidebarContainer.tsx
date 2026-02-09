@@ -127,11 +127,27 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         </div>
       )}
 
-      {/* Sidebar Aux 2: NOTIFICACIONES (NotificacionesSidebar) - SIEMPRE visible cuando estamos en NOTIFICACIONES */}
+      {/* Sidebar Aux 2: ReglaSidebar o NotificacionesOperationsSidebar - NO mostrar cuando solo estamos en configuracion-notificaciones */}
       {(() => {
         const isNotificaciones = activeTab.startsWith('configuracion-notificaciones');
-        // Sidebar Aux 2 debe SIEMPRE mostrarse cuando estamos en NOTIFICACIONES (los sidebars se acumulan)
-        const shouldShow = isNotificaciones && hasAuxiliarySidebar(activeTab);
+        const isReglaNotificacionesSolo = activeTab === 'configuracion-notificaciones-regla';
+        const isReglaNotificacionesConTabla = activeTab.startsWith('configuracion-notificaciones-regla-');
+        const isCriticidadNotificaciones = activeTab.startsWith('configuracion-notificaciones-criticidad');
+        const isUmbralNotificaciones = activeTab.startsWith('configuracion-notificaciones-umbral');
+        // Sidebar Aux 2 SOLO debe mostrarse cuando:
+        // 1. Estamos en 'configuracion-notificaciones-regla' sin tabla específica (para mostrar ReglaSidebar)
+        // 2. Estamos en una tabla específica de regla (regla, regla_perfil, etc) para mostrar operaciones
+        // 3. Estamos en CRITICIDAD o UMBRAL (para mostrar NotificacionesOperationsSidebar)
+        // NO mostrar cuando solo estamos en 'configuracion-notificaciones' sin tabla específica
+        const shouldShow = (isReglaNotificacionesSolo || isReglaNotificacionesConTabla || isCriticidadNotificaciones || isUmbralNotificaciones) && hasAuxiliarySidebar(activeTab);
+        // showThirdLevel=true cuando estamos en REGLA (para mostrar ReglaSidebar)
+        // showThirdLevel=false cuando estamos en CRITICIDAD o UMBRAL (para mostrar operaciones)
+        const showThirdLevel = isReglaNotificacionesSolo;
+        // isSidebarAux3=true cuando estamos en CRITICIDAD o UMBRAL (mostrar operaciones)
+        const isSidebarAux3 = isCriticidadNotificaciones || isUmbralNotificaciones;
+        // Calcular selectedTable siempre desde activeTab para evitar desfases con el prop
+        const extractedTableFromActiveTab = activeTab.replace('configuracion-notificaciones-', '') || '';
+        const finalNotificacionesTable = selectedTable || extractedTableFromActiveTab || '';
         return shouldShow;
       })() && (
         <div className="flex-shrink-0 z-20">
@@ -141,7 +157,23 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             onMouseLeave={handleAux2MouseLeave}
             activeTab={activeTab}
             onTabChange={onTabChange}
-            selectedTable={selectedTable || (activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '')}
+            selectedTable={(() => {
+              // Extraer tabla de configuracion-notificaciones-{tabla}-{operacion}
+              // Operaciones válidas: status, insert, update, massive
+              const validOperations = ['status', 'insert', 'update', 'massive'];
+              const afterNotificaciones = activeTab.replace('configuracion-notificaciones-', '') || '';
+              
+              // Si termina con una operación válida, removerla
+              let tableOnly = afterNotificaciones;
+              for (const op of validOperations) {
+                if (afterNotificaciones.endsWith(`-${op}`)) {
+                  tableOnly = afterNotificaciones.replace(`-${op}`, '');
+                  break;
+                }
+              }
+              
+              return selectedTable || tableOnly || '';
+            })()}
             onTableSelect={onTableSelect}
             activeSubTab={activeSubTab}
             onSubTabChange={onSubTabChange}
@@ -151,9 +183,19 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             formData={formData}
             multipleData={multipleData}
             massiveFormData={massiveFormData}
-            showThirdLevel={false}
+            showThirdLevel={(() => {
+              // showThirdLevel=true SOLO cuando estamos en 'configuracion-notificaciones-regla' sin tabla específica
+              // showThirdLevel=false cuando hay una tabla específica de regla seleccionada (para mostrar operaciones)
+              const isReglaNotificaciones = activeTab === 'configuracion-notificaciones-regla';
+              return isReglaNotificaciones;
+            })()}
             forceConfiguracionSidebar={false}
-            isSidebarAux3={false}
+            isSidebarAux3={(() => {
+              const isReglaNotificacionesConTabla = activeTab.startsWith('configuracion-notificaciones-regla-');
+              const isCriticidadNotificaciones = activeTab.startsWith('configuracion-notificaciones-criticidad');
+              const isUmbralNotificaciones = activeTab.startsWith('configuracion-notificaciones-umbral');
+              return isReglaNotificacionesConTabla || isCriticidadNotificaciones || isUmbralNotificaciones;
+            })()}
           />
         </div>
       )}

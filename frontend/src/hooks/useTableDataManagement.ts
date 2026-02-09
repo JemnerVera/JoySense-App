@@ -245,6 +245,22 @@ export const useTableDataManagement = () => {
       return;
     }
     
+    // Limpiar nombre de tabla si contiene operaciones (status, insert, update, massive)
+    // Esto ocurre cuando activeTab incluye la operación pero selectedTable aún no se ha actualizado
+    const validOperations = ['status', 'insert', 'update', 'massive'];
+    let cleanTableName = selectedTable;
+    for (const op of validOperations) {
+      if (selectedTable.endsWith(`-${op}`)) {
+        cleanTableName = selectedTable.replace(`-${op}`, '');
+        break;
+      }
+    }
+    
+    // Si se limpió el nombre, usar el nombre limpio
+    if (cleanTableName !== selectedTable) {
+      selectedTable = cleanTableName;
+    }
+    
     
     // Limpiar datos inmediatamente si cambió la tabla para evitar mostrar datos incorrectos
     const isTableChange = loadingTableRef.current && loadingTableRef.current !== selectedTable;
@@ -285,7 +301,33 @@ export const useTableDataManagement = () => {
         return;
       }
       
-      const cols = await JoySenseService.getTableColumns(selectedTable);
+      // Obtener columnas del backend, con fallback a configuración local si falla
+      let cols;
+      try {
+        cols = await JoySenseService.getTableColumns(selectedTable);
+      } catch (colError) {
+        // Si falla obtener columnas, intentar desde la configuración local
+        console.warn(`Error getting columns for table ${selectedTable}, using local config:`, colError);
+        try {
+          const { getTableConfig } = await import('../config/tables.config');
+          const config = getTableConfig(selectedTable);
+          if (config?.fields) {
+            cols = config.fields.map(field => ({
+              columnName: field.name,
+              dataType: field.type || 'text',
+              isNullable: !field.required,
+              defaultValue: field.defaultValue || null,
+              isIdentity: false,
+              isPrimaryKey: false
+            }));
+          } else {
+            cols = [];
+          }
+        } catch (configError) {
+          console.error(`Error getting columns from config for ${selectedTable}:`, configError);
+          cols = [];
+        }
+      }
       
       // Verificar si la llamada fue cancelada después de recibir las columnas
       if (abortController.signal.aborted) {
@@ -370,9 +412,16 @@ export const useTableDataManagement = () => {
       }
       
       // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
-      const dataResponse = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
-        ? await JoySenseService.getTableData(selectedTable)
-        : await JoySenseService.getTableData(selectedTable, 1000);
+      let dataResponse;
+      try {
+        dataResponse = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
+          ? await JoySenseService.getTableData(selectedTable)
+          : await JoySenseService.getTableData(selectedTable, 1000);
+      } catch (dataError) {
+        // Si falla obtener datos, usar array vacío (tabla no accesible vía API)
+        console.warn(`Error getting data for table ${selectedTable}, using empty array:`, dataError);
+        dataResponse = [];
+      }
       
       // Verificar si la llamada fue cancelada después de recibir los datos
       if (abortController.signal.aborted) {
