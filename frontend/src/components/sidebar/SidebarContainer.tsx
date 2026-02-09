@@ -132,19 +132,30 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         const isNotificaciones = activeTab.startsWith('configuracion-notificaciones');
         const isReglaNotificacionesSolo = activeTab === 'configuracion-notificaciones-regla';
         const isReglaNotificacionesConTabla = activeTab.startsWith('configuracion-notificaciones-regla-');
-        const isCriticidadNotificaciones = activeTab.startsWith('configuracion-notificaciones-criticidad');
-        const isUmbralNotificaciones = activeTab.startsWith('configuracion-notificaciones-umbral');
+        const isCriticidadNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-criticidad-(status|insert|update|massive)$/);
+        const isUmbralNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-umbral-(status|insert|update|massive)$/);
         // Sidebar Aux 2 SOLO debe mostrarse cuando:
         // 1. Estamos en 'configuracion-notificaciones-regla' sin tabla específica (para mostrar ReglaSidebar)
         // 2. Estamos en una tabla específica de regla (regla, regla_perfil, etc) para mostrar operaciones
-        // 3. Estamos en CRITICIDAD o UMBRAL (para mostrar NotificacionesOperationsSidebar)
-        // NO mostrar cuando solo estamos en 'configuracion-notificaciones' sin tabla específica
-        const shouldShow = (isReglaNotificacionesSolo || isReglaNotificacionesConTabla || isCriticidadNotificaciones || isUmbralNotificaciones) && hasAuxiliarySidebar(activeTab);
+        // 3. Estamos en CRITICIDAD o UMBRAL CON una operación específica (para mostrar NotificacionesOperationsSidebar)
+        // NO mostrar cuando solo estamos en 'configuracion-notificaciones-criticidad' sin operación
+        const shouldShow = (isReglaNotificacionesSolo || isReglaNotificacionesConTabla || isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion) && hasAuxiliarySidebar(activeTab);
+        
+        console.log('[SidebarContainer NOTIFICACIONES AUX2]', {
+          activeTab,
+          shouldShow,
+          isReglaNotificacionesSolo,
+          isReglaNotificacionesConTabla,
+          isCriticidadNotificacionesConOperacion: !!isCriticidadNotificacionesConOperacion,
+          isUmbralNotificacionesConOperacion: !!isUmbralNotificacionesConOperacion,
+          hasAuxiliarySidebar: hasAuxiliarySidebar(activeTab)
+        });
+        
         // showThirdLevel=true cuando estamos en REGLA (para mostrar ReglaSidebar)
         // showThirdLevel=false cuando estamos en CRITICIDAD o UMBRAL (para mostrar operaciones)
         const showThirdLevel = isReglaNotificacionesSolo;
-        // isSidebarAux3=true cuando estamos en CRITICIDAD o UMBRAL (mostrar operaciones)
-        const isSidebarAux3 = isCriticidadNotificaciones || isUmbralNotificaciones;
+        // isSidebarAux3=true cuando estamos en CRITICIDAD o UMBRAL con operación (mostrar operaciones)
+        const isSidebarAux3 = isReglaNotificacionesConTabla || !!isCriticidadNotificacionesConOperacion || !!isUmbralNotificacionesConOperacion;
         // Calcular selectedTable siempre desde activeTab para evitar desfases con el prop
         const extractedTableFromActiveTab = activeTab.replace('configuracion-notificaciones-', '') || '';
         const finalNotificacionesTable = selectedTable || extractedTableFromActiveTab || '';
@@ -192,9 +203,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
             forceConfiguracionSidebar={false}
             isSidebarAux3={(() => {
               const isReglaNotificacionesConTabla = activeTab.startsWith('configuracion-notificaciones-regla-');
-              const isCriticidadNotificaciones = activeTab.startsWith('configuracion-notificaciones-criticidad');
-              const isUmbralNotificaciones = activeTab.startsWith('configuracion-notificaciones-umbral');
-              return isReglaNotificacionesConTabla || isCriticidadNotificaciones || isUmbralNotificaciones;
+              const isCriticidadNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-criticidad-(status|insert|update|massive)$/);
+              const isUmbralNotificacionesConOperacion = activeTab.match(/configuracion-notificaciones-umbral-(status|insert|update|massive)$/);
+              return isReglaNotificacionesConTabla || !!isCriticidadNotificacionesConOperacion || !!isUmbralNotificacionesConOperacion;
             })()}
           />
         </div>
