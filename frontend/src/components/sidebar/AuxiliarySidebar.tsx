@@ -655,6 +655,16 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
     
+    console.log('[AuxiliarySidebar NOTIFICACIONES]', {
+      activeTab,
+      showThirdLevel,
+      isSidebarAux3,
+      finalSelectedTable,
+      isReglaNotificaciones,
+      isNotificacionesConfig,
+      forceConfiguracionSidebar
+    });
+    
     // CORRECCIÓN: Verificar si estamos en REGLA
     const isInReglaSection = activeTab === 'configuracion-notificaciones-regla' || 
                              activeTab.startsWith('configuracion-notificaciones-regla-');
@@ -666,11 +676,33 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     
     // LÓGICA PARA NOTIFICACIONES (IGUAL A DISPOSITIVOS):
     // Sidebar Aux 2 (isSidebarAux3=false): SIEMPRE mostrar TABLAS (NotificacionesSidebar)
-    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=false): OPERACIONES (NotificacionesOperationsSidebar)
+    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=false): OPERACIONES (NotificacionesOperationsSidebar) - SOLO PARA REGLA
     // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=true): REGLA (ReglaSidebar)
     if (!showThirdLevel) {
-      // Sidebar Aux 3: Mostrar OPERACIONES cuando hay tabla seleccionada (igual que DISPOSITIVOS)
+      // Determinar si estamos en CRITICIDAD o UMBRAL (con o sin operación)
+      const isCriticidad = activeTab.startsWith('configuracion-notificaciones-criticidad');
+      const isUmbral = activeTab.startsWith('configuracion-notificaciones-umbral');
+      
+      console.log('[AuxiliarySidebar !showThirdLevel]', {
+        showThirdLevel,
+        isCriticidad,
+        isUmbral,
+        activeTab,
+        isSidebarAux3,
+        isInReglaSection
+      });
+      
+      // IMPORTANTE: Para CRITICIDAD y UMBRAL, NO mostrar sidebar de operaciones
+      // Las operaciones deben estar en el contenido principal, no en un sidebar
+      // Solo mostrar NotificacionesOperationsSidebar si estamos en REGLA
       if (isSidebarAux3 && finalSelectedTable && finalSelectedTable !== '' && finalSelectedTable !== 'regla' && !isInReglaSection) {
+        // NO mostrar operaciones para CRITICIDAD o UMBRAL
+        if (isCriticidad || isUmbral) {
+          console.log('[AuxiliarySidebar] CRITICIDAD/UMBRAL - no renderizar sidebar de operaciones');
+          return null;
+        }
+        
+        // Solo para REGLA, mostrar NotificacionesOperationsSidebar
         return (
           <NotificacionesOperationsSidebar
             selectedTable={finalSelectedTable}
@@ -687,7 +719,23 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         );
       }
       
-      // Sidebar Aux 2: SIEMPRE mostrar TABLAS (NotificacionesSidebar)
+      // Sidebar Aux 2: SOLO mostrar TABLAS (NotificacionesSidebar) cuando estamos en REGLA (sin operación específica)
+      // No mostrar NotificacionesSidebar para CRITICIDAD o UMBRAL sin operación
+      const isCriticidadSinOperacion = activeTab === 'configuracion-notificaciones-criticidad';
+      const isUmbralSinOperacion = activeTab === 'configuracion-notificaciones-umbral';
+      
+      console.log('[AuxiliarySidebar] NotificacionesSidebar check', {
+        isCriticidadSinOperacion,
+        isUmbralSinOperacion,
+        activeTab
+      });
+      
+      // Si estamos en CRITICIDAD o UMBRAL sin operación, no mostrar sidebar
+      if (isCriticidadSinOperacion || isUmbralSinOperacion) {
+        console.log('[AuxiliarySidebar] Retornando null para CRITICIDAD/UMBRAL sin operación');
+        return null;
+      }
+      
       const tableToSelect = isInReglaSection ? 'regla' : finalSelectedTable;
       return (
         <NotificacionesSidebar
@@ -707,6 +755,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
 
     // Si showThirdLevel es true, renderizar Sidebar Aux 3 (ReglaSidebar con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO)
     // Solo cuando estamos en REGLA
+    console.log('[AuxiliarySidebar showThirdLevel?]', { showThirdLevel, isReglaNotificaciones });
     if (showThirdLevel) {
       
       // Si estamos en REGLA, mostrar ReglaSidebar (Sidebar Aux 3)
