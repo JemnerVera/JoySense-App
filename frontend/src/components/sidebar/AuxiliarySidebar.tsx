@@ -655,14 +655,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
     
-    console.log('[AuxiliarySidebar NOTIFICACIONES]', {
+    console.log('[AuxiliarySidebar NOTIFICACIONES] RENDERIZADO', {
       activeTab,
-      showThirdLevel,
-      isSidebarAux3,
       finalSelectedTable,
-      isReglaNotificaciones,
-      isNotificacionesConfig,
-      forceConfiguracionSidebar
+      willReturn: 'continues below'
     });
     
     // CORRECCIÓN: Verificar si estamos en REGLA
@@ -674,35 +670,35 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Sidebar Aux 3 (showThirdLevel=true) = Tablas de regla (REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO) = ReglaSidebar (solo cuando estamos en REGLA)
     // Sidebar Aux 4 = Operaciones (ESTADO, CREAR) = ReglaOperationsSidebar (solo cuando se selecciona una tabla de regla)
     
-    // LÓGICA PARA NOTIFICACIONES (IGUAL A DISPOSITIVOS):
-    // Sidebar Aux 2 (isSidebarAux3=false): SIEMPRE mostrar TABLAS (NotificacionesSidebar)
-    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=false): OPERACIONES (NotificacionesOperationsSidebar) - SOLO PARA REGLA
-    // Sidebar Aux 3 (isSidebarAux3=true Y showThirdLevel=true): REGLA (ReglaSidebar)
+    // LÓGICA PARA NOTIFICACIONES:
+    // Ahora AuxiliarySidebar SOLO se renderiza para CRITICIDAD o UMBRAL CON operación específica
+    // Para REGLA: NO se renderiza AuxiliarySidebar en absoluto (todo estará en contenido principal)
+    // IMPORTANTE: showThirdLevel siempre será false aquí (solo para CRITICIDAD/UMBRAL)
     if (!showThirdLevel) {
-      // Determinar si estamos en CRITICIDAD o UMBRAL (con o sin operación)
+      // Determinar si estamos en CRITICIDAD, UMBRAL, o REGLA
       const isCriticidad = activeTab.startsWith('configuracion-notificaciones-criticidad');
       const isUmbral = activeTab.startsWith('configuracion-notificaciones-umbral');
+      const isRegla = activeTab.startsWith('configuracion-notificaciones-regla');
       
-      console.log('[AuxiliarySidebar !showThirdLevel]', {
-        showThirdLevel,
+      console.log('[AuxiliarySidebar !showThirdLevel] CHECK', {
+        activeTab,
         isCriticidad,
         isUmbral,
-        activeTab,
-        isSidebarAux3,
-        isInReglaSection
+        isRegla,
+        isSidebarAux3
       });
       
-      // IMPORTANTE: Para CRITICIDAD y UMBRAL, NO mostrar sidebar de operaciones
-      // Las operaciones deben estar en el contenido principal, no en un sidebar
-      // Solo mostrar NotificacionesOperationsSidebar si estamos en REGLA
-      if (isSidebarAux3 && finalSelectedTable && finalSelectedTable !== '' && finalSelectedTable !== 'regla' && !isInReglaSection) {
-        // NO mostrar operaciones para CRITICIDAD o UMBRAL
-        if (isCriticidad || isUmbral) {
-          console.log('[AuxiliarySidebar] CRITICIDAD/UMBRAL - no renderizar sidebar de operaciones');
-          return null;
-        }
-        
-        // Solo para REGLA, mostrar NotificacionesOperationsSidebar
+      // IMPORTANTE: Para REGLA, NUNCA renderizar sidebar
+      // Todas las tablas de REGLA (regla, regla_perfil, regla_umbral, regla_objeto) con sus operaciones
+      // deben estar en el contenido principal, NO en un sidebar
+      if (isRegla) {
+        console.log('[AuxiliarySidebar] ❌ REGLA - RETURN NULL (no sidebar para REGLA)');
+        return null;
+      }
+      
+      // Para CRITICIDAD o UMBRAL CON operación, mostrar NotificacionesOperationsSidebar
+      if (isSidebarAux3 && (isCriticidad || isUmbral)) {
+        console.log('[AuxiliarySidebar] ✅ CRITICIDAD/UMBRAL + Operación - Renderizar NotificacionesOperationsSidebar');
         return (
           <NotificacionesOperationsSidebar
             selectedTable={finalSelectedTable}
@@ -719,103 +715,14 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
         );
       }
       
-      // Sidebar Aux 2: SOLO mostrar TABLAS (NotificacionesSidebar) cuando estamos en REGLA (sin operación específica)
-      // No mostrar NotificacionesSidebar para CRITICIDAD o UMBRAL sin operación
-      const isCriticidadSinOperacion = activeTab === 'configuracion-notificaciones-criticidad';
-      const isUmbralSinOperacion = activeTab === 'configuracion-notificaciones-umbral';
-      
-      console.log('[AuxiliarySidebar] NotificacionesSidebar check', {
-        isCriticidadSinOperacion,
-        isUmbralSinOperacion,
-        activeTab
-      });
-      
-      // Si estamos en CRITICIDAD o UMBRAL sin operación, no mostrar sidebar
-      if (isCriticidadSinOperacion || isUmbralSinOperacion) {
-        console.log('[AuxiliarySidebar] Retornando null para CRITICIDAD/UMBRAL sin operación');
-        return null;
-      }
-      
-      const tableToSelect = isInReglaSection ? 'regla' : finalSelectedTable;
-      return (
-        <NotificacionesSidebar
-          selectedTable={tableToSelect}
-          onTableSelect={onTableSelect || (() => {})}
-          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-          onSubTabChange={onSubTabChange || (() => {})}
-          isExpanded={isExpanded}
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-          formData={formData}
-          multipleData={multipleData}
-          massiveFormData={massiveFormData}
-        />
-      );
+      // Si no entra en el caso anterior, no renderizar nada
+      console.log('[AuxiliarySidebar] ❌ Condición no cumplida - RETURN NULL');
+      return null;
     }
 
-    // Si showThirdLevel es true, renderizar Sidebar Aux 3 (ReglaSidebar con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO)
-    // Solo cuando estamos en REGLA
-    console.log('[AuxiliarySidebar showThirdLevel?]', { showThirdLevel, isReglaNotificaciones });
-    if (showThirdLevel) {
-      
-      // Si estamos en REGLA, mostrar ReglaSidebar (Sidebar Aux 3)
-      // IMPORTANTE: Siempre mostrar ReglaSidebar cuando estamos en REGLA, incluso si hay una tabla seleccionada
-      // Esto permite que el usuario pueda cambiar de tabla y ver todas las opciones disponibles
-      if (isReglaNotificaciones) {
-        // CRÍTICO: Para REGLA, selectedTable del prop es la fuente de verdad
-        // handleTableSelect en App.tsx actualiza selectedTable directamente
-        // NO extraer de activeTab porque puede estar desincronizado
-        const isReglaTable = (table: string) => {
-          return table === 'regla' || table === 'regla_perfil' || table === 'regla_objeto';
-        };
-        
-        // PRIORIDAD 1: Usar selectedTable si es una tabla de regla válida (fuente de verdad)
-        let finalSelectedTable = '';
-        if (selectedTable && isReglaTable(selectedTable)) {
-          finalSelectedTable = selectedTable;
-        } else if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-          // PRIORIDAD 2: Solo extraer de activeTab si selectedTable no está disponible
-          const reglaTable = activeTab.replace('configuracion-notificaciones-regla-', '').split('-')[0];
-          if (reglaTable && isReglaTable(reglaTable)) {
-            finalSelectedTable = reglaTable;
-          }
-        }
-
-        // Mostrar ReglaSidebar (Sidebar Aux 3) con REGLA, REGLA_PERFIL, REGLA_UMBRAL, REGLA_OBJETO
-        // Si hay una tabla seleccionada, pasarla como selectedTable para que se muestre activa
-    return (
-      <ReglaSidebar
-            selectedTable={finalSelectedTable}
-        onTableSelect={onTableSelect || (() => {})}
-        activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-        onSubTabChange={onSubTabChange || (() => {})}
-        isExpanded={isExpanded}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        formData={formData}
-        multipleData={multipleData}
-        massiveFormData={massiveFormData}
-      />
-    );
-  }
-
-      // Para otras tablas de notificaciones, no debería llegar aquí con showThirdLevel=true
-      // Pero por si acaso, mostrar NotificacionesSidebar
-      return (
-        <NotificacionesSidebar
-          selectedTable={finalSelectedTable}
-          onTableSelect={onTableSelect || (() => {})}
-          activeSubTab={(activeSubTab as 'status' | 'insert' | 'update' | 'massive') || 'status'}
-          onSubTabChange={onSubTabChange || (() => {})}
-          isExpanded={isExpanded}
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-          formData={formData}
-          multipleData={multipleData}
-          massiveFormData={massiveFormData}
-        />
-      );
-    }
+    // showThirdLevel=true nunca debería ocurrir para NOTIFICACIONES ahora
+    console.log('[AuxiliarySidebar showThirdLevel=true]', { activeTab, showThirdLevel });
+    return null;
     
     // Si hay tabla seleccionada pero showThirdLevel es false, no renderizar nada aquí
     // El Sidebar 3 se renderizará en SidebarContainer

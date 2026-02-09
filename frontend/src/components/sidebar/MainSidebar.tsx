@@ -22,9 +22,11 @@ interface MainSidebarProps {
 
 // Interfaces para niveles anidados
 interface SubMenuLevel4 {
-  id: 'status' | 'insert' | 'update' | 'massive' | 'asignar';
+  id: 'status' | 'insert' | 'update' | 'massive' | 'asignar' | string;
   label: string;
   icon: React.ReactNode;
+  subMenus?: SubMenuLevel4[]; // Nivel 5: Para submenús anidados (ej: operaciones bajo variantes de REGLA)
+  hasOperations?: boolean; // Indica si este nivel tiene operaciones
 }
 
 interface SubMenuLevel3 {
@@ -441,16 +443,16 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               </svg>
             ),
             subMenus: notificacionesTables.map(table => {
-              // Para REGLA, necesita un nivel 3 adicional (regla_perfil, regla_umbral, regla_objeto)
+              // Para REGLA, mostrar un grupo con las variantes
               if (table.name === 'regla') {
                 return {
-                  id: table.name,
-                  label: table.displayName.toUpperCase(),
+                  id: 'regla',
+                  label: 'REGLAS',
                   icon: getTableIcon(table.name),
                   subMenus: [
                     {
                       id: 'regla',
-                      label: 'REGLA',
+                      label: 'REGLA (REGLA & UMBRAL)',
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOperations('configuracion-notificaciones-regla-regla')
@@ -461,13 +463,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOperations('configuracion-notificaciones-regla-regla_perfil')
-                    },
-                    {
-                      id: 'regla_umbral',
-                      label: 'REGLA UMBRAL',
-                      icon: getTableIcon('umbral'),
-                      hasOperations: true,
-                      subMenus: createOperations('configuracion-notificaciones-regla-regla_umbral')
                     },
                     {
                       id: 'regla_objeto',
@@ -903,6 +898,16 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
             const level4Key = `${mainTabId}-${level2Id}-${level3Id}`;
             const level3Menu = (subMenu.subMenus as SubMenuLevel3[] | undefined)?.find((sm) => sm.id === level3Id);
             
+            console.log('[MainSidebar Level4] CHECK', { 
+              activeTab, 
+              parts: parts.join('-'), 
+              level3Id, 
+              level4Key, 
+              hasLevel3Menu: !!level3Menu, 
+              subMenusLength: level3Menu?.subMenus?.length,
+              willOpen: level3Menu && level3Menu.subMenus && level3Menu.subMenus.length > 0
+            });
+            
             if (level3Menu && level3Menu.subMenus && level3Menu.subMenus.length > 0) {
               if (!openSubMenusLevel3.has(level4Key)) {
                 const level4Element = subMenuRefsLevel3.current[level4Key];
@@ -1300,15 +1305,22 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                     {level3Menu.subMenus!.map((level4Menu: SubMenuLevel4) => {
                                                       const level4ActiveTab = `${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}`;
                                                       const isLevel4Active = activeTab === level4ActiveTab || activeTab.startsWith(level4ActiveTab + '-');
+                                                      const hasLevel5Menus = level4Menu.subMenus && level4Menu.subMenus.length > 0;
+                                                      const level4MenuKey = `${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}`;
+                                                      const isLevel5Open = openSubMenusLevel3.has(level4MenuKey);
                                                       
                                                       return (
                                                         <li 
                                                           key={level4Menu.id}
-                                                          className={`menu-item ${isLevel4Active ? 'active' : ''}`}
+                                                          className={`menu-item ${isLevel4Active ? 'active' : ''} ${isExpanded && hasLevel5Menus ? 'sub-menu' : ''} ${isLevel5Open ? 'open' : ''}`}
                                                         >
                                                           <button
                                                             onClick={() => {
-                                                              handleSubMenuLevel4Click(tab.id, subMenu.id, level3Menu.id, level4Menu.id);
+                                                              if (hasLevel5Menus) {
+                                                                handleSubMenuLevel3Click(tab.id, subMenu.id, level3Menu.id + '-' + level4Menu.id, true);
+                                                              } else {
+                                                                handleSubMenuLevel4Click(tab.id, subMenu.id, level3Menu.id, level4Menu.id);
+                                                              }
                                                             }}
                                                             className="flex items-center h-10 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
                                                             style={{ color: isLevel4Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
@@ -1334,14 +1346,95 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                               {level4Menu.icon}
                                                             </span>
                                                             {isExpanded && (
-                                                              <span 
-                                                                className="menu-title flex-grow overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300"
-                                                                style={{ fontSize: '0.75rem' }}
-                                                              >
-                                                                {level4Menu.label.toUpperCase()}
-                                                              </span>
+                                                              <>
+                                                                <span 
+                                                                  className="menu-title flex-grow overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300"
+                                                                  style={{ fontSize: '0.75rem' }}
+                                                                >
+                                                                  {level4Menu.label.toUpperCase()}
+                                                                </span>
+                                                                {hasLevel5Menus && (
+                                                                  <span 
+                                                                    className="sub-menu-indicator"
+                                                                    style={{
+                                                                      width: '5px',
+                                                                      height: '5px',
+                                                                      borderRight: '2px solid currentcolor',
+                                                                      borderBottom: '2px solid currentcolor',
+                                                                      transform: isLevel5Open ? 'rotate(45deg)' : 'rotate(-45deg)',
+                                                                      transition: 'transform 0.3s',
+                                                                      marginLeft: 'auto',
+                                                                      flexShrink: 0,
+                                                                    }}
+                                                                  />
+                                                                )}
+                                                              </>
                                                             )}
                                                           </button>
+                                                          {hasLevel5Menus && (
+                                                            <div 
+                                                              ref={(el) => {
+                                                                subMenuRefsLevel3.current[level4MenuKey] = el;
+                                                              }}
+                                                              className="sub-menu-list"
+                                                              style={{
+                                                                display: isLevel5Open ? 'block' : 'none',
+                                                                paddingLeft: '20px',
+                                                                backgroundColor: TEMPLATE_COLORS.secondaryBgColor,
+                                                              }}
+                                                            >
+                                                              <ul className="list-none p-0 m-0">
+                                                                {level4Menu.subMenus!.map((level5Menu: SubMenuLevel4) => {
+                                                                  const level5ActiveTab = `${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}-${level5Menu.id}`;
+                                                                  const isLevel5Active = activeTab === level5ActiveTab || activeTab.startsWith(level5ActiveTab + '-');
+                                                                  
+                                                                  return (
+                                                                    <li 
+                                                                      key={level5Menu.id}
+                                                                      className={`menu-item ${isLevel5Active ? 'active' : ''}`}
+                                                                    >
+                                                                      <button
+                                                                        onClick={() => {
+                                                                          onTabChange(`${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}-${level5Menu.id}`);
+                                                                        }}
+                                                                        className="flex items-center h-10 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
+                                                                        style={{ color: isLevel5Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                                                                        onMouseEnter={(e) => {
+                                                                          e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
+                                                                        }}
+                                                                        onMouseLeave={(e) => {
+                                                                          e.currentTarget.style.color = isLevel5Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor;
+                                                                        }}
+                                                                      >
+                                                                        <span 
+                                                                          className="menu-icon flex-shrink-0 flex items-center justify-center"
+                                                                          style={{
+                                                                            fontSize: '0.8rem',
+                                                                            width: '18px',
+                                                                            minWidth: '18px',
+                                                                            height: '18px',
+                                                                            marginRight: '10px',
+                                                                            borderRadius: '2px',
+                                                                            transition: 'color 0.3s',
+                                                                          }}
+                                                                        >
+                                                                          {level5Menu.icon}
+                                                                        </span>
+                                                                        {isExpanded && (
+                                                                          <span 
+                                                                            className="menu-title flex-grow overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300"
+                                                                            style={{ fontSize: '0.7rem' }}
+                                                                          >
+                                                                            {level5Menu.label.toUpperCase()}
+                                                                          </span>
+                                                                        )}
+                                                                      </button>
+                                                                    </li>
+                                                                  );
+                                                                })}
+                                                              </ul>
+                                                            </div>
+                                                          )}
                                                         </li>
                                                       );
                                                     })}
