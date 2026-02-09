@@ -317,6 +317,11 @@
   opacity: 0;
 }
 
+/* Ocultar flechitas en botones cuando está colapsado */
+.sidebar.collapsed .menu > ul > .menu-item.sub-menu > button::after {
+  display: none !important;
+}
+
 .sidebar.collapsed .menu > ul > .menu-item.sub-menu > a::after {
   content: "";
   width: 5px;

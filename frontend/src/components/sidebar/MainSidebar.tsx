@@ -59,6 +59,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   const [openSubMenusLevel3, setOpenSubMenusLevel3] = useState<Set<string>>(new Set());
   const subMenuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const subMenuRefsLevel3 = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const prevMainTabRef = useRef<string | null>(null);
   
   // Cargar permisos del nuevo sistema de menú
   const { menuAccess, loading: menuLoading, hasAccess } = useMenuPermissions();
@@ -587,43 +588,93 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     return filteredTabs;
   }, [t, hasAccess, hasAccessToMenu, isLoadingPermissions, menuAccess]);
 
+  // Función para cerrar todos los menús abiertos
+  const closeAllMenus = async () => {
+    console.log('🔴 closeAllMenus - menús abiertos antes de cerrar:', {
+      openSubMenus: Array.from(openSubMenus),
+      openSubMenusLevel3: Array.from(openSubMenusLevel3)
+    });
+    
+    const otherOpenMenus = Array.from(openSubMenus);
+    for (const otherMenuId of otherOpenMenus) {
+      const otherElement = subMenuRefs.current[otherMenuId];
+      if (otherElement) {
+        console.log('  ❌ Cerrando menú nivel 2:', otherMenuId);
+        await slideToggle(otherElement);
+      }
+    }
+    
+    const otherLevel3Menus = Array.from(openSubMenusLevel3);
+    for (const otherMenuId of otherLevel3Menus) {
+      const otherElement = subMenuRefsLevel3.current[otherMenuId];
+      if (otherElement) {
+        console.log('  ❌ Cerrando menú nivel 3:', otherMenuId);
+        await slideToggle(otherElement);
+      }
+    }
+    
+    setOpenSubMenus(new Set());
+    setOpenSubMenusLevel3(new Set());
+    console.log('🟢 closeAllMenus completado');
+  };
+
   // Función para manejar el click en un elemento del menú con sub-menús
   const handleMenuClick = async (tabId: string, hasSubMenus: boolean) => {
+    console.log('🖱️ handleMenuClick:', { tabId, hasSubMenus });
+    
     if (!hasSubMenus) {
       // Si no tiene sub-menús, navegar directamente
+      // Cerrar todos los sub-menús abiertos
+      console.log('  → Cerrando todos los menús porque es pestaña principal sin submenús');
+      await closeAllMenus();
+      console.log('  → Cambiando tab a:', tabId);
       onTabChange(tabId);
       return;
     }
 
     // Si tiene sub-menús, expandir/colapsar
+    console.log('  → Pestaña con submenús, cerrando los demás y abriendo este');
     const subMenuElement = subMenuRefs.current[tabId];
-    if (!subMenuElement) return;
+    if (!subMenuElement) {
+      console.log('  ⚠️ No se encontró elemento de submenú para:', tabId);
+      onTabChange(tabId);
+      return;
+    }
 
     const isOpen = openSubMenus.has(tabId);
     
+    console.log('  → Estado actual: isOpen =', isOpen);
+    console.log('  → Cambiando tab a:', tabId);
+    
+    // Cambiar la pestaña activa
+    onTabChange(tabId);
+    
     // Cerrar otros sub-menús abiertos (comportamiento "open-current-submenu")
     if (!isOpen) {
+      console.log('  → Abriendo este menú por primera vez, cerrando los otros');
       const otherOpenMenus = Array.from(openSubMenus);
       for (const otherMenuId of otherOpenMenus) {
         const otherElement = subMenuRefs.current[otherMenuId];
         if (otherElement) {
+          console.log('    ❌ Cerrando otro menú:', otherMenuId);
           await slideToggle(otherElement);
         }
       }
-      setOpenSubMenus(new Set());
-    }
-
-    // Toggle el sub-menú actual
-    await slideToggle(subMenuElement);
-    
-    // Actualizar estado
-    const newOpenMenus = new Set(openSubMenus);
-    if (isOpen) {
-      newOpenMenus.delete(tabId);
+      
+      console.log('  → Abriendo el menú actual');
+      await slideToggle(subMenuElement);
+      
+      const newOpenMenus = new Set([tabId]);
+      setOpenSubMenus(newOpenMenus);
+      setOpenSubMenusLevel3(new Set());
+      console.log('  → Estado actualizado:', { openSubMenus: Array.from(newOpenMenus) });
     } else {
-      newOpenMenus.add(tabId);
+      console.log('  → Menú ya estaba abierto, cerrándolo');
+      await slideToggle(subMenuElement);
+      setOpenSubMenus(new Set());
+      setOpenSubMenusLevel3(new Set());
+      console.log('  → Menú cerrado');
     }
-    setOpenSubMenus(newOpenMenus);
   };
 
   // Función para manejar el click en un sub-elemento (nivel 2)
@@ -699,8 +750,22 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     const mainTabId = parts[0];
     const tab = mainTabs.find(t => t.id === mainTabId);
     
-    if (tab && tab.subMenus && tab.subMenus.length > 0) {
+    console.log('📂 Efecto de apertura:', {
+      activeTab,
+      mainTabId,
+      partsLength: parts.length,
+      tieneSubMenus: tab?.subMenus?.length || 0,
+      openSubMenus: Array.from(openSubMenus)
+    });
+    
+    // Actualizar la referencia de la pestaña anterior (para el próximo cambio)
+    prevMainTabRef.current = mainTabId;
+    
+    // Solo hacer algo si la tab actual tiene submenús que abrir
+    if (tab && tab.subMenus && tab.subMenus.length > 0 && parts.length > 1) {
       const shouldBeOpen = activeTab.startsWith(`${mainTabId}-`);
+      
+      console.log('  → Debería abrir submenús:', { shouldBeOpen, yaEstaAbierto: openSubMenus.has(mainTabId) });
       
       // Nivel 2: Abrir si hay al menos nivel 2
       if (shouldBeOpen && !openSubMenus.has(mainTabId)) {
@@ -929,7 +994,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                   return (
                     <li 
                       key={tab.id}
-                      className={`menu-item transition-colors ${isActive ? 'active' : ''} ${hasSubMenus ? 'sub-menu' : ''} ${isSubMenuOpen ? 'open' : ''}`}
+                      className={`menu-item transition-colors ${isActive ? 'active' : ''} ${isExpanded && hasSubMenus ? 'sub-menu' : ''} ${isSubMenuOpen ? 'open' : ''}`}
                     >
                       <button
                         onClick={() => {
@@ -1007,7 +1072,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                               return (
                                 <li 
                                   key={subMenu.id}
-                                  className={`menu-item ${isSubActive ? 'active' : ''} ${hasLevel3Menus ? 'sub-menu' : ''} ${isLevel3Open ? 'open' : ''}`}
+                                  className={`menu-item ${isSubActive ? 'active' : ''} ${isExpanded && hasLevel3Menus ? 'sub-menu' : ''} ${isLevel3Open ? 'open' : ''}`}
                                 >
                                   <button
                                     onClick={async () => {
@@ -1124,7 +1189,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                           return (
                                             <li 
                                               key={level3Menu.id}
-                                              className={`menu-item ${isLevel3Active ? 'active' : ''} ${hasLevel4Menus ? 'sub-menu' : ''} ${isLevel4Open ? 'open' : ''}`}
+                                              className={`menu-item ${isLevel3Active ? 'active' : ''} ${isExpanded && hasLevel4Menus ? 'sub-menu' : ''} ${isLevel4Open ? 'open' : ''}`}
                                             >
                                               <button
                                                 onClick={() => {
@@ -1267,31 +1332,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           )}
         </div>
 
-        {/* Sidebar Footer - System Status */}
-        {isExpanded && !isLoadingPermissions && (
-          <div 
-            className="sidebar-footer flex items-center px-5 flex-shrink-0 border-t"
-            style={{
-              height: '64px',
-              minHeight: '64px',
-              borderTopColor: TEMPLATE_COLORS.borderColor,
-            }}
-          >
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span className="text-xs font-mono" style={{ color: TEMPLATE_COLORS.secondaryTextColor }}>
-                  {t('system.online')}
-                </span>
-              </div>
-              <div className="text-xs font-mono" style={{ color: 'rgba(179, 184, 212, 0.7)' }}>
-                <div>{t('system.active_time')} 72:14:33</div>
-                <div>{t('system.sensors')} 847 {t('system.active')}</div>
-                <div>{t('system.alerts')} 23 {t('system.in_progress')}</div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </aside>
   );
