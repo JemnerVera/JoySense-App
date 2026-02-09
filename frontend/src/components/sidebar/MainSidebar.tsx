@@ -721,18 +721,20 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     // Cambiar la pestaña activa
     onTabChange(subMenuKey);
     
-    // Cerrar otros sub-menús nivel 3 del MISMO PADRE (otros hermanos)
+    // Cerrar otros sub-menús nivel 2 del MISMO PADRE (otros hermanos)
     if (!isOpen) {
       console.log('  → Abriendo este menú por primera vez, cerrando los otros');
-      // Filtrar todos los menús abiertos que pertenecen al mismo padre
-      const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key =>
-        key.startsWith(`${parentId}-`)
-      );
+      // Filtrar todos los menús de nivel 2 abiertos que pertenecen al mismo padre
+      const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key => {
+        // Solo incluir elementos de nivel 2 (parentId-subMenuId, sin un tercer componente)
+        const parts = key.split('-');
+        return parts.length === 2 && key.startsWith(`${parentId}-`) && key !== subMenuKey;
+      });
       
       for (const otherMenuKey of otherOpenMenus) {
         const otherElement = subMenuRefsLevel3.current[otherMenuKey];
         if (otherElement) {
-          console.log('    ❌ Cerrando otro menú:', otherMenuKey);
+          console.log('    ❌ Cerrando otro menú nivel 2:', otherMenuKey);
           await slideToggle(otherElement);
         }
       }
@@ -759,6 +761,10 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
   const handleSubMenuLevel3Click = async (parentId: string, level2Id: string, level3Id: string, hasSubMenus: boolean) => {
     const fullTabId = `${parentId}-${level2Id}-${level3Id}`;
     
+    console.log(`[LEVEL3-CLICK] Clicked: parentId=${parentId}, level2Id=${level2Id}, level3Id=${level3Id}, hasSubMenus=${hasSubMenus}`);
+    console.log(`[LEVEL3-CLICK] fullTabId=${fullTabId}`);
+    console.log(`[LEVEL3-CLICK] Current openSubMenusLevel3:`, Array.from(openSubMenusLevel3));
+    
     if (!hasSubMenus) {
       // Si no tiene operaciones (nivel 4), navegar directamente
       onTabChange(fullTabId);
@@ -768,43 +774,84 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
     // Si tiene operaciones (nivel 4), expandir/colapsar
     const subMenuKey = `${parentId}-${level2Id}-${level3Id}`;
     const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
+    console.log(`[LEVEL3-CLICK] subMenuKey=${subMenuKey}, element found=${!!subMenuElement}`);
+    
     if (!subMenuElement) {
       // Si no existe el elemento pero tiene sub-menús, intentar navegar de todas formas
+      console.log(`[LEVEL3-CLICK] ⚠️ Element not found, navigating instead`);
       onTabChange(fullTabId);
       return;
     }
 
     const isOpen = openSubMenusLevel3.has(subMenuKey);
+    console.log(`[LEVEL3-CLICK] Current state: isOpen=${isOpen}`);
     
     // Cerrar otros sub-menús nivel 3 abiertos del mismo nivel 2
     if (!isOpen) {
-      const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key => 
-        key.startsWith(`${parentId}-${level2Id}-`) && key !== subMenuKey
-      );
+      // CORRECCIÓN: Buscar hermanos de nivel 3 (otros items que tengan el mismo parentId-level2Id)
+      // pero excluir los elementos de nivel 2 (que son parentId-level2Id sin más guiones después)
+      const level3OnlyId = level3Id.split('-')[0]; // Tomar solo la primera parte antes de cualquier guión
+      const level2Prefix = `${parentId}-${level2Id}`; // Este es el prefijo para nivel 2
+      const level3Prefix = `${parentId}-${level2Id}-${level3OnlyId}`; // Este es el prefijo para nivel 3
+      
+      const otherOpenMenus = Array.from(openSubMenusLevel3).filter(key => {
+        // Excluir si es un elemento de nivel 2 (parentId-level2Id exactamente)
+        if (key === level2Prefix) {
+          console.log(`[LEVEL3-CLICK] Ignorando elemento de nivel 2: ${key}`);
+          return false;
+        }
+        
+        // Buscar hermanos: elementos que comienzan con parentId-level2Id-XX (nivel 3 o 4)
+        // pero que NO sean el actual (subMenuKey)
+        const isBrother = key.startsWith(`${level2Prefix}-`) && key !== subMenuKey;
+        
+        if (isBrother) {
+          const keyParts = key.split('-');
+          const keyLevel3 = keyParts[2]; // La tercera parte es el nivel 3 ID
+          console.log(`[LEVEL3-CLICK] Candidato hermano: ${key}, nivel3=${keyLevel3}, currentLevel3=${level3OnlyId}`);
+        }
+        
+        return isBrother;
+      });
+      
+      console.log(`[LEVEL3-CLICK] level2Prefix=${level2Prefix}, level3OnlyId=${level3OnlyId}`);
+      console.log(`[LEVEL3-CLICK] Hermanos a cerrar:`, otherOpenMenus);
+      
+      // Luego animar después de actualizar el estado
       for (const otherMenuKey of otherOpenMenus) {
         const otherElement = subMenuRefsLevel3.current[otherMenuKey];
         if (otherElement) {
+          console.log(`[LEVEL3-CLICK] ✓ Cerrando hermano: ${otherMenuKey}`);
           await slideToggle(otherElement);
         }
       }
+      
+      // Actualizar estado: cerrar hermanos y abrir el actual ATOMICAMENTE
       setOpenSubMenusLevel3(prev => {
         const newSet = new Set(prev);
         otherOpenMenus.forEach(key => newSet.delete(key));
+        newSet.add(subMenuKey);
+        console.log(`[LEVEL3-CLICK] Estado actualizado (con hermanos cerrados):`, Array.from(newSet));
+        return newSet;
+      });
+    } else {
+      // Si ya estaba abierto, solo cerrarlo
+      console.log(`[LEVEL3-CLICK] Toggle actual: ${subMenuKey} (ya estaba abierto)`);
+      await slideToggle(subMenuElement);
+      
+      setOpenSubMenusLevel3(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subMenuKey);
+        console.log(`[LEVEL3-CLICK] ✓ Cerrado: ${subMenuKey}`);
         return newSet;
       });
     }
-
-    // Toggle el sub-menú actual
-    await slideToggle(subMenuElement);
     
-    // Actualizar estado
-    const newOpenMenus = new Set(openSubMenusLevel3);
-    if (isOpen) {
-      newOpenMenus.delete(subMenuKey);
-    } else {
-      newOpenMenus.add(subMenuKey);
+    // Si no estaba abierto, mostrar animación de apertura
+    if (!isOpen) {
+      console.log(`[LEVEL3-CLICK] Toggle actual: ${subMenuKey} (abriendo)`);
+      // La animación ya se hizo arriba, solo actualizamos el estado
     }
-    setOpenSubMenusLevel3(newOpenMenus);
   };
 
   // Función para manejar el click en nivel 4 (operaciones)
@@ -870,6 +917,31 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
         const subMenu = subMenus?.find((sm: SubMenuLevel2) => sm.id === level2Id);
         
         if (subMenu && subMenu.subMenus && subMenu.subMenus.length > 0) {
+          // Cerrar otros hermanos de nivel 3 del mismo nivel 2
+          const otherLevel3Menus = Array.from(openSubMenusLevel3).filter(key => 
+            key.startsWith(`${mainTabId}-${level2Id}-`) && key !== level3Key
+          );
+          
+          console.log(`[EFFECT Level3] Preparando: level3Key=${level3Key}, otherMenus=${otherLevel3Menus.join(',')}`);
+          
+          // Cerrar hermanos
+          for (const otherMenuKey of otherLevel3Menus) {
+            const otherElement = subMenuRefsLevel3.current[otherMenuKey];
+            if (otherElement && window.getComputedStyle(otherElement).display !== 'none') {
+              console.log(`[EFFECT Level3] ✓ Cerrando: ${otherMenuKey}`);
+              slideToggle(otherElement);
+            }
+          }
+          
+          // Actualizar estado para cerrar hermanos
+          if (otherLevel3Menus.length > 0) {
+            setOpenSubMenusLevel3(prev => {
+              const newSet = new Set(prev);
+              otherLevel3Menus.forEach(key => newSet.delete(key));
+              return newSet;
+            });
+          }
+          
           if (!openSubMenusLevel3.has(level3Key)) {
             const level3Element = subMenuRefsLevel3.current[level3Key];
             if (level3Element) {
