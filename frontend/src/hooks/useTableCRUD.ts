@@ -79,7 +79,17 @@ export interface UseTableCRUDReturn {
 // ============================================================================
 
 export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
-  const { tableName, pageSize = 25, autoLoad = false } = options;
+  let { tableName, pageSize = 25, autoLoad = false } = options;
+
+  // Limpiar nombre de tabla si contiene operaciones (status, insert, update, massive)
+  // Esto ocurre cuando activeTab incluye la operación pero tableName aún no se ha actualizado
+  const validOperations = ['status', 'insert', 'update', 'massive'];
+  for (const op of validOperations) {
+    if (tableName.endsWith(`-${op}`)) {
+      tableName = tableName.replace(`-${op}`, '');
+      break;
+    }
+  }
 
   // Configuración de la tabla
   const config = useMemo(() => getTableConfig(tableName), [tableName]);

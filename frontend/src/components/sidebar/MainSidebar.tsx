@@ -441,7 +441,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               </svg>
             ),
             subMenus: notificacionesTables.map(table => {
-              // Para REGLA, necesita un nivel 3 adicional (regla_perfil, regla_objeto)
+              // Para REGLA, necesita un nivel 3 adicional (regla_perfil, regla_umbral, regla_objeto)
               if (table.name === 'regla') {
                 return {
                   id: table.name,
@@ -449,11 +449,25 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                   icon: getTableIcon(table.name),
                   subMenus: [
                     {
+                      id: 'regla',
+                      label: 'REGLA',
+                      icon: getTableIcon('regla'),
+                      hasOperations: true,
+                      subMenus: createOperations('configuracion-notificaciones-regla-regla')
+                    },
+                    {
                       id: 'regla_perfil',
                       label: 'REGLA PERFIL',
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOperations('configuracion-notificaciones-regla-regla_perfil')
+                    },
+                    {
+                      id: 'regla_umbral',
+                      label: 'REGLA UMBRAL',
+                      icon: getTableIcon('umbral'),
+                      hasOperations: true,
+                      subMenus: createOperations('configuracion-notificaciones-regla-regla_umbral')
                     },
                     {
                       id: 'regla_objeto',

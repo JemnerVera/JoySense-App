@@ -91,15 +91,11 @@ const NotificacionesOperationsSidebar: React.FC<NotificacionesOperationsSidebarP
   const config = getTableConfig(selectedTable);
 
   // Filtrar operaciones según permisos de la tabla y permisos del usuario
-  // IMPORTANTE: NO mostrar operaciones hasta que los permisos se hayan verificado
+  // Para CRITICIDAD y UMBRAL, si no se pueden determinar permisos del usuario,
+  // usar solo los permisos de configuración de tabla
   const availableOperations = useMemo(() => {
-    // Si aún se están cargando permisos, NO mostrar ninguna operación (previene mostrar elementos sin permiso)
-    if (permissionsLoading) {
-      return [];
-    }
-    
     const filtered = allOperations.filter(op => {
-      // Verificar permisos de configuración de la tabla
+      // Verificar permisos de configuración de la tabla (siempre requerido)
       if (op.id === 'insert' && !config?.allowInsert) {
         return false;
       }
@@ -110,16 +106,21 @@ const NotificacionesOperationsSidebar: React.FC<NotificacionesOperationsSidebarP
         return false;
       }
       
-      // Verificar permisos del usuario (solo cuando ya se cargaron)
-      if (op.requiredPermission === 'ver' && !permissions.puede_ver) {
-        return false;
+      // Solo verificar permisos del usuario si se han cargado
+      // Si aún se están cargando y no hay permisos, permitir basándose en config
+      if (!permissionsLoading) {
+        // Verificar permisos del usuario (solo cuando ya se cargaron)
+        if (op.requiredPermission === 'ver' && !permissions.puede_ver) {
+          return false;
+        }
+        if (op.requiredPermission === 'insertar' && !permissions.puede_insertar) {
+          return false;
+        }
+        if (op.requiredPermission === 'actualizar' && !permissions.puede_actualizar) {
+          return false;
+        }
       }
-      if (op.requiredPermission === 'insertar' && !permissions.puede_insertar) {
-        return false;
-      }
-      if (op.requiredPermission === 'actualizar' && !permissions.puede_actualizar) {
-        return false;
-      }
+      // Si aún se están cargando permisos, permitir la operación basándose en config de tabla
       
       return true;
     });
