@@ -705,21 +705,17 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
       return;
     }
 
-    // Si tiene nivel 3, expandir/colapsar
+    // Si tiene nivel 3, solo expandir/colapsar SIN navegar
     const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
     if (!subMenuElement) {
       console.log('  ⚠️ No se encontró elemento para:', subMenuKey);
-      onTabChange(subMenuKey);
       return;
     }
 
     const isOpen = openSubMenusLevel3.has(subMenuKey);
     
     console.log('  → Estado actual: isOpen =', isOpen);
-    console.log('  → Navegando a:', subMenuKey);
-    
-    // Cambiar la pestaña activa
-    onTabChange(subMenuKey);
+    console.log('  → Solo expandiendo/colapsando, SIN navegar');
     
     // Cerrar otros sub-menús nivel 2 del MISMO PADRE (otros hermanos)
     if (!isOpen) {
