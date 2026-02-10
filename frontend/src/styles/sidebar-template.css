@@ -2,11 +2,11 @@
 
 /* Color Variables */
 :root {
-  --sidebar-text-color: #b3b8d4;
-  --sidebar-secondary-text-color: #dee2ec;
-  --sidebar-bg-color: #0c1e35;
-  --sidebar-secondary-bg-color: #0b1a2c;
-  --sidebar-border-color: rgba(83, 93, 125, 0.3);
+  --sidebar-text-color: #a0a0a0;
+  --sidebar-secondary-text-color: #ffffff;
+  --sidebar-bg-color: #1a1a1a;
+  --sidebar-secondary-bg-color: #0f0f0f;
+  --sidebar-border-color: rgba(255, 255, 255, 0.1);
   --sidebar-header-height: 64px;
   --sidebar-footer-height: 64px;
 }
@@ -356,11 +356,11 @@
 .sidebar.has-bg-image .menu.icon-shape-circle .menu-item a .menu-icon,
 .sidebar.has-bg-image .menu.icon-shape-rounded .menu-item a .menu-icon,
 .sidebar.has-bg-image .menu.icon-shape-square .menu-item a .menu-icon {
-  background-color: rgba(11, 26, 44, 0.6);
+  background-color: rgba(15, 15, 15, 0.8);
 }
 
 .sidebar.has-bg-image:not(.collapsed) .menu > ul > .sub-menu > .sub-menu-list {
-  background-color: rgba(11, 26, 44, 0.6);
+  background-color: rgba(15, 15, 15, 0.8);
 }
 
 /* RTL Support */
@@ -424,5 +424,5 @@
 }
 
 .sidebar .filters-section:hover {
-  background-color: rgba(11, 26, 44, 0.5);
+  background-color: rgba(255, 255, 255, 0.05);
 }

@@ -1179,11 +1179,11 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
 
   // Colores de la plantilla en Tailwind
   const TEMPLATE_COLORS = {
-    textColor: '#b3b8d4',
-    secondaryTextColor: '#dee2ec',
-    bgColor: '#0c1e35',
-    secondaryBgColor: '#0b1a2c',
-    borderColor: 'rgba(83, 93, 125, 0.3)',
+    textColor: '#a0a0a0',
+    secondaryTextColor: '#ffffff',
+    bgColor: '#1a1a1a',
+    secondaryBgColor: '#0f0f0f',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   };
 
   return (
