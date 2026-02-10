@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { slideToggle } from '../../../../utils/sidebarAnimations';
 import type { MainTab } from '../../types';
 
@@ -28,6 +28,10 @@ export function useMenuEffects(
     prevMainTabRef,
   } = state;
 
+  // Rastrear el activeTab anterior para detectar cambios reales
+  const prevActiveTabRef = useRef<string>('');
+  const lastStateUpdateRef = useRef<string>('');
+
   // Cuando se contrae, eliminar todos los niveles 4+
   useEffect(() => {
     if (!isExpanded) {
@@ -46,12 +50,27 @@ export function useMenuEffects(
   useEffect(() => {
     if (!activeTab || !isExpanded) return;
 
+    // ✅ IMPORTANTE: Solo ejecutar si activeTab REALMENTE cambió
+    if (prevActiveTabRef.current === activeTab) {
+      console.log('[useMenuEffects SKIP - activeTab unchanged]', { activeTab });
+      return;
+    }
+    prevActiveTabRef.current = activeTab;
+
     const parts = activeTab.split('-');
     const mainTabId = parts[0];
     const tab = mainTabs.find((t) => t.id === mainTabId);
     prevMainTabRef.current = mainTabId;
 
+    console.log('[useMenuEffects SYNC - activeTab CHANGED]', {
+      activeTab,
+      parts,
+      mainTabId,
+      isExpanded,
+    });
+
     if (!tab || !tab.subMenus || tab.subMenus.length === 0 || parts.length <= 1) {
+      console.log('[useMenuEffects EARLY EXIT]', { reason: 'no tab/submenus or parts <= 1' });
       return;
     }
 
@@ -106,13 +125,9 @@ export function useMenuEffects(
       // Construir la clave del menú
       const menuKey = parts.slice(0, level + 1).join('-');
       menuPathToOpen.push(menuKey);
-      
-      // Si encontramos el menú actual y tiene submenús, agrégate a la ruta
-      // (esto permite que se abra incluso si no hay sub-elementos seleccionados)
-      if (currentMenu.subMenus && currentMenu.subMenus.length > 0 && level === parts.length - 1) {
-        // Ya está en menuPathToOpen, no hacer nada adicional
-      }
     }
+
+    console.log('[useMenuEffects PATH BUILT]', { menuPathToOpen });
 
     // ============================================================
     // ACTUALIZAR ESTADO Y DOM
@@ -138,17 +153,33 @@ export function useMenuEffects(
 
     // Si no hay cambios, no hacer nada
     if (menusToClose.length === 0 && menusToOpen.length === 0) {
+      console.log('[useMenuEffects NO CHANGES]');
       return;
     }
 
+    console.log('[useMenuEffects WILL UPDATE]', {
+      menusToClose,
+      menusToOpen,
+    });
+
+    // ✅ Construir el nuevo estado como string para comparación
+    const newOpenSubMenusLevel3 = new Set(openSubMenusLevel3);
+    menusToClose.forEach((key) => newOpenSubMenusLevel3.delete(key));
+    menusToOpen.forEach((key) => newOpenSubMenusLevel3.add(key));
+    
+    const newStateStr = Array.from(newOpenSubMenusLevel3).sort().join('|');
+    
+    // ✅ Verificar si realmente cambió antes de actualizar estado
+    if (newStateStr === lastStateUpdateRef.current) {
+      console.log('[useMenuEffects SKIP STATE UPDATE - same as last]');
+      return;
+    }
+
+    lastStateUpdateRef.current = newStateStr;
+
     // Actualizar estado INMEDIATAMENTE: los componentes usan openSubMenusLevel3
     // para display. Sin esto, nivel 4 (ESTADO, CREAR, ACTUALIZAR) no se renderiza.
-    setOpenSubMenusLevel3((prev) => {
-      const newSet = new Set(prev);
-      menusToClose.forEach((key) => newSet.delete(key));
-      menusToOpen.forEach((key) => newSet.add(key));
-      return newSet;
-    });
+    setOpenSubMenusLevel3(newOpenSubMenusLevel3);
 
     // Animar cierre de menús (antes del state update ya estaban visibles)
     // Ejecutar después para no bloquear; los elementos pueden estar ocultos por React
@@ -184,6 +215,7 @@ export function useMenuEffects(
     isExpanded,
     mainTabs,
     openSubMenus,
+    openSubMenusLevel3,
     subMenuRefs,
     setOpenSubMenus,
     setOpenSubMenusLevel3,
