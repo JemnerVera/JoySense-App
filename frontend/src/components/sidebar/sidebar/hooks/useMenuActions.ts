@@ -91,103 +91,41 @@ export function useMenuActions(
     [onTabChange]
   );
 
+  /**
+   * Maneja clics en nivel 2 (2 partes: PARENT-LEVEL2)
+   * Solo navega; useMenuEffects sincroniza apertura/cierre de menús según activeTab
+   */
   const handleLevel2MenuClick = useCallback(
-    async (parentId: string, subMenuId: string, hasLevel3Menus: boolean) => {
+    (parentId: string, subMenuId: string, hasLevel3Menus: boolean) => {
       const subMenuKey = `${parentId}-${subMenuId}`;
-      if (!hasLevel3Menus) {
-        onTabChange(subMenuKey);
-        return;
-      }
-      const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
-      if (!subMenuElement) return;
-      const isOpen = openSubMenusLevel3.has(subMenuKey);
-      if (!isOpen) {
-        const otherOpenMenus = Array.from(openSubMenusLevel3).filter(
-          (key) =>
-            key.split('-').length === 2 &&
-            key.startsWith(`${parentId}-`) &&
-            key !== subMenuKey
-        );
-        for (const otherMenuKey of otherOpenMenus) {
-          const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-          if (otherElement) await slideToggle(otherElement);
-        }
-        await slideToggle(subMenuElement);
-        const newOpenMenus = new Set(openSubMenusLevel3);
-        otherOpenMenus.forEach((key) => newOpenMenus.delete(key));
-        newOpenMenus.add(subMenuKey);
-        setOpenSubMenusLevel3(newOpenMenus);
-      } else {
-        await slideToggle(subMenuElement);
-        const newOpenMenus = new Set(openSubMenusLevel3);
-        newOpenMenus.delete(subMenuKey);
-        setOpenSubMenusLevel3(newOpenMenus);
-      }
+      onTabChange(subMenuKey);
     },
-    [
-      openSubMenusLevel3,
-      onTabChange,
-      subMenuRefsLevel3,
-      setOpenSubMenusLevel3,
-    ]
+    [onTabChange]
   );
 
+  /**
+   * Maneja clics en nivel 3 (3 partes: PARENT-LEVEL2-LEVEL3)
+   * Solo navega; useMenuEffects sincroniza apertura/cierre de menús según activeTab
+   */
   const handleSubMenuLevel3Click = useCallback(
-    async (
+    (
       parentId: string,
       level2Id: string,
       level3Id: string,
       hasSubMenus: boolean
     ) => {
       const fullTabId = `${parentId}-${level2Id}-${level3Id}`;
-      if (!hasSubMenus) {
-        onTabChange(fullTabId);
-        return;
-      }
-      const subMenuKey = `${parentId}-${level2Id}-${level3Id}`;
-      const subMenuElement = subMenuRefsLevel3.current[subMenuKey];
-      if (!subMenuElement) {
-        onTabChange(fullTabId);
-        return;
-      }
-      const isOpen = openSubMenusLevel3.has(subMenuKey);
-      const level2Prefix = `${parentId}-${level2Id}`;
-      if (!isOpen) {
-        const otherOpenMenus = Array.from(openSubMenusLevel3).filter(
-          (key) =>
-            key !== level2Prefix &&
-            key.startsWith(`${level2Prefix}-`) &&
-            key !== subMenuKey
-        );
-        for (const otherMenuKey of otherOpenMenus) {
-          const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-          if (otherElement) await slideToggle(otherElement);
-        }
-        setOpenSubMenusLevel3((prev) => {
-          const newSet = new Set(prev);
-          otherOpenMenus.forEach((key) => newSet.delete(key));
-          newSet.add(subMenuKey);
-          return newSet;
-        });
-      } else {
-        await slideToggle(subMenuElement);
-        setOpenSubMenusLevel3((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(subMenuKey);
-          return newSet;
-        });
-      }
+      onTabChange(fullTabId);
     },
-    [
-      openSubMenusLevel3,
-      onTabChange,
-      subMenuRefsLevel3,
-      setOpenSubMenusLevel3,
-    ]
+    [onTabChange]
   );
 
+  /**
+   * Maneja clics en nivel 4 (4 partes: PARENT-LEVEL2-LEVEL3-LEVEL4) con submenús
+   * Solo navega; useMenuEffects sincroniza apertura/cierre de menús según activeTab
+   */
   const handleSubMenuLevel4ClickWithSubMenus = useCallback(
-    async (
+    (
       parentId: string,
       level2Id: string,
       level3Id: string,
@@ -195,48 +133,9 @@ export function useMenuActions(
       hasLevel5Menus: boolean
     ) => {
       const level4MenuKey = `${parentId}-${level2Id}-${level3Id}-${level4Id}`;
-      if (!hasLevel5Menus) {
-        onTabChange(level4MenuKey);
-        return;
-      }
-      const subMenuElement = subMenuRefsLevel3.current[level4MenuKey];
-      if (!subMenuElement) {
-        onTabChange(level4MenuKey);
-        return;
-      }
-      const isOpen = openSubMenusLevel3.has(level4MenuKey);
-      const level3Prefix = `${parentId}-${level2Id}-${level3Id}`;
-      if (!isOpen) {
-        const otherOpenMenus = Array.from(openSubMenusLevel3).filter(
-          (key) =>
-            key.startsWith(`${level3Prefix}-`) && key !== level4MenuKey
-        );
-        for (const otherMenuKey of otherOpenMenus) {
-          const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-          if (otherElement) await slideToggle(otherElement);
-        }
-        setOpenSubMenusLevel3((prev) => {
-          const newSet = new Set(prev);
-          otherOpenMenus.forEach((key) => newSet.delete(key));
-          newSet.add(level4MenuKey);
-          return newSet;
-        });
-        await slideToggle(subMenuElement);
-      } else {
-        await slideToggle(subMenuElement);
-        setOpenSubMenusLevel3((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(level4MenuKey);
-          return newSet;
-        });
-      }
+      onTabChange(level4MenuKey);
     },
-    [
-      openSubMenusLevel3,
-      onTabChange,
-      subMenuRefsLevel3,
-      setOpenSubMenusLevel3,
-    ]
+    [onTabChange]
   );
 
   const handleSubMenuLevel4Click = useCallback(
@@ -246,7 +145,8 @@ export function useMenuActions(
       level3Id: string,
       level4Id: string
     ) => {
-      onTabChange(`${parentId}-${level2Id}-${level3Id}-${level4Id}`);
+      const fullKey = `${parentId}-${level2Id}-${level3Id}-${level4Id}`;
+      onTabChange(fullKey);
     },
     [onTabChange]
   );

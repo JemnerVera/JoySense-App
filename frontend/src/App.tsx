@@ -1042,6 +1042,21 @@ const AppContentInternal: React.FC<{
           </div>
         );
       }
+
+      // Si tabla está seleccionada pero no hay operación (status/insert/update/massive), mostrar placeholder
+      if (parts.length === 3 || (parts.length > 3 && !validOperations.includes(parts[parts.length - 1]))) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Usar SystemParameters para las tablas de dispositivos (tipo, metrica, sensor, metricasensor)
       return (
         <SystemParametersWithSuspense 
@@ -1103,6 +1118,21 @@ const AppContentInternal: React.FC<{
           </div>
         );
       }
+
+      // Si tabla está seleccionada pero no hay operación, mostrar placeholder
+      if (parts.length === 3 || (parts.length > 3 && !validOperations.includes(parts[parts.length - 1]))) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Usar SystemParameters para las tablas de usuarios
       return (
         <SystemParametersWithSuspense 
@@ -1144,6 +1174,21 @@ const AppContentInternal: React.FC<{
           </div>
         );
       }
+
+      // Si tabla está seleccionada pero no hay operación, mostrar placeholder
+      if (parts.length === 4 || (parts.length > 4 && !validOperations.includes(parts[parts.length - 1]))) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Usar SystemParameters para las tablas de parámetros geo
       return (
         <SystemParametersWithSuspense 
@@ -1215,6 +1260,20 @@ const AppContentInternal: React.FC<{
         
         // Caso especial: Si la tabla es 'regla', usar ReglasMain en lugar de SystemParameters
         if (reglaTableName === 'regla') {
+          // Si no hay operación seleccionada, mostrar placeholder
+          if (!reglaOperation) {
+            return (
+              <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+                <div className="text-center">
+                  <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                    <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                    <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <ReglasMain
               activeSubTab={reglaOperation as 'status' | 'insert' | 'update' || 'status'}
@@ -1225,6 +1284,20 @@ const AppContentInternal: React.FC<{
               }}
               onFormDataChange={handleFormDataChange}
             />
+          );
+        }
+        
+        // Para otras tablas de regla (regla_perfil, regla_umbral, regla_objeto), mostrar placeholder si no hay operación
+        if (!reglaOperation) {
+          return (
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="text-center">
+                <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                  <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+                </div>
+              </div>
+            </div>
           );
         }
         
@@ -1247,9 +1320,14 @@ const AppContentInternal: React.FC<{
         );
       }
       
-      // Otras tablas de notificaciones (criticidad, umbral, regla_objeto)
+      // Otras tablas de notificaciones (criticidad, umbral)
       // Extraer el nombre de la tabla (ej: 'configuracion-notificaciones-criticidad' -> 'criticidad')
-      const notificacionesTab = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '');
+      // Excluir la operación si está presente
+      const parts = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '').split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      const notificacionesTab = parts.length > 1 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(0, -1).join('-') // Excluir la operación
+        : activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '');
       
       // Si no hay tabla seleccionada, mostrar mensaje
       if (!notificacionesTab || notificacionesTab === '') {
@@ -1264,6 +1342,21 @@ const AppContentInternal: React.FC<{
           </div>
         );
       }
+
+      // Si tabla está seleccionada pero no hay operación, mostrar placeholder
+      if (parts.length === 1 || (parts.length > 1 && !validOperations.includes(parts[parts.length - 1]))) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Usar SystemParameters para las tablas de notificaciones
       return (
         <SystemParametersWithSuspense 
