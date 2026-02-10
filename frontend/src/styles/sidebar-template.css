@@ -208,7 +208,6 @@
   position: relative;
 }
 
-.sidebar .menu .menu-item.sub-menu > button::after,
 .sidebar .menu .menu-item.sub-menu > a::after {
   content: "";
   transition: transform 0.3s;
@@ -231,7 +230,6 @@
   background-color: var(--sidebar-secondary-bg-color);
 }
 
-.sidebar .menu .menu-item.sub-menu.open > button::after,
 .sidebar .menu .menu-item.sub-menu.open > a::after {
   transform: rotate(45deg);
 }
@@ -275,7 +273,6 @@
   color: var(--sidebar-secondary-text-color);
 }
 
-.sidebar .menu .menu-item.active > button::after,
 .sidebar .menu .menu-item.active > a::after {
   border-color: var(--sidebar-secondary-text-color);
 }

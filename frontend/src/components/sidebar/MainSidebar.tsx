@@ -1297,8 +1297,8 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                         style={{ 
                           color: isActive ? '#ffffff' : TEMPLATE_COLORS.textColor,
                           backgroundColor: isActive ? 'rgba(222, 226, 236, 0.15)' : 'transparent',
-                          paddingLeft: isExpanded ? '20px' : '0px',
-                          paddingRight: isExpanded ? '20px' : '0px',
+                          paddingLeft: isExpanded ? '30px' : '0px',
+                          paddingRight: isExpanded ? '10px' : '0px',
                           width: '100%',
                           textAlign: 'left',
                         }}
@@ -1344,6 +1344,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                   transform: isSubMenuOpen ? 'rotate(45deg)' : 'rotate(-45deg)',
                                   transition: 'transform 0.3s',
                                   marginLeft: 'auto',
+                                  marginRight: '20px',
                                   flexShrink: 0,
                                 }}
                               />
