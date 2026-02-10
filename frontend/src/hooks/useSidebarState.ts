@@ -582,7 +582,7 @@ export function useSidebarState({ showWelcome = false, activeTab }: UseSidebarSt
   const getMainSidebarClasses = useCallback(() => {
     const isExpanded = sidebar.isPanelExpanded('main')
     return `fixed left-0 top-0 h-full z-50 transition-all duration-300 ease-in-out ${
-      isExpanded ? 'w-64' : 'w-16'
+      isExpanded ? 'w-72' : 'w-16'
     }`
   }, [sidebar])
   
