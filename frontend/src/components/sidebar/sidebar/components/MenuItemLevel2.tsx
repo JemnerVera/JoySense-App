@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { SubMenuLevel2, SubMenuLevel3, SubMenuLevel4 } from '../../types';
 import { MenuItemLevel3 } from './MenuItemLevel3';
 
@@ -47,7 +47,7 @@ export interface MenuItemLevel2Props {
   colors: { textColor: string; secondaryTextColor: string };
 }
 
-export const MenuItemLevel2: React.FC<MenuItemLevel2Props> = ({
+const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
   subMenu,
   parentId,
   isExpanded,
@@ -66,7 +66,11 @@ export const MenuItemLevel2: React.FC<MenuItemLevel2Props> = ({
     activeTab === subMenuActiveTab || activeTab.startsWith(subMenuActiveTab + '-');
   const hasLevel3Menus = subMenu.subMenus && subMenu.subMenus.length > 0;
   const subMenuKey = subMenuActiveTab;
-  const isLevel3Open = openSubMenusLevel3.has(subMenuKey);
+  
+  // Para nivel 2: El menú está abierto si:
+  // 1. Está en openSubMenusLevel3, O
+  // 2. El activeTab corresponde a este elemento
+  const isLevel3Open = openSubMenusLevel3.has(subMenuKey) || isSubActive;
 
   if (!isExpanded && !isSubActive) return null;
 
@@ -153,6 +157,26 @@ export const MenuItemLevel2: React.FC<MenuItemLevel2Props> = ({
             backgroundColor: '#0f0f0f',
           }}
         >
+          {/* Mostrar mensaje si el menú está abierto pero no hay selección */}
+          {isLevel3Open && !activeTab.startsWith(subMenuKey + '-') && (
+            <div
+              style={{
+                padding: '12px 20px',
+                fontSize: '0.8rem',
+                color: '#888',
+                textAlign: 'center',
+                fontStyle: 'italic',
+                marginLeft: isExpanded ? '-20px' : '0px',
+                marginRight: isExpanded ? '-20px' : '0px',
+                paddingLeft: isExpanded ? '40px' : '20px',
+                paddingRight: isExpanded ? '20px' : '0px',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              }}
+            >
+              SELECCIONA UNA OPCIÓN
+            </div>
+          )}
           <ul
             className="list-none p-0 m-0"
             style={{
@@ -188,3 +212,45 @@ export const MenuItemLevel2: React.FC<MenuItemLevel2Props> = ({
     </li>
   );
 };
+
+// Comparación custom para memo que maneja Sets correctamente
+const arePropsEqual = (prevProps: MenuItemLevel2Props, nextProps: MenuItemLevel2Props) => {
+  // Comparar propiedades simples
+  if (
+    prevProps.subMenu.id !== nextProps.subMenu.id ||
+    prevProps.parentId !== nextProps.parentId ||
+    prevProps.isExpanded !== nextProps.isExpanded ||
+    prevProps.activeTab !== nextProps.activeTab ||
+    prevProps.colors.textColor !== nextProps.colors.textColor ||
+    prevProps.colors.secondaryTextColor !== nextProps.colors.secondaryTextColor
+  ) {
+    return false;
+  }
+
+  // Comparar Sets - PERO solo si afecta a ESTE elemento específico
+  // openSubMenusLevel3: verifica si ALGUNO de los submenus DE ESTE ELEMENTO cambió
+  const subMenuKey = `${prevProps.parentId}-${prevProps.subMenu.id}`;
+  
+  const prevSubMenuOpen = prevProps.openSubMenusLevel3.has(subMenuKey);
+  const nextSubMenuOpen = nextProps.openSubMenusLevel3.has(subMenuKey);
+  if (prevSubMenuOpen !== nextSubMenuOpen) {
+    return false;
+  }
+
+  // Verificar si hay cambios en nivel 3+ de ESTE subMenu
+  const prevLevel3Keys = Array.from(prevProps.openSubMenusLevel3).filter(key => key.startsWith(`${subMenuKey}-`));
+  const nextLevel3Keys = Array.from(nextProps.openSubMenusLevel3).filter(key => key.startsWith(`${subMenuKey}-`));
+  
+  if (prevLevel3Keys.length !== nextLevel3Keys.length) {
+    return false;
+  }
+  for (const key of prevLevel3Keys) {
+    if (!nextProps.openSubMenusLevel3.has(key)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+export const MenuItemLevel2 = memo(MenuItemLevel2Component, arePropsEqual);

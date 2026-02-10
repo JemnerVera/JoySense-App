@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { slideToggle } from '../../../../utils/sidebarAnimations';
 import type { MainTab } from '../../types';
 
@@ -106,6 +106,12 @@ export function useMenuEffects(
       // Construir la clave del menú
       const menuKey = parts.slice(0, level + 1).join('-');
       menuPathToOpen.push(menuKey);
+      
+      // Si encontramos el menú actual y tiene submenús, agrégate a la ruta
+      // (esto permite que se abra incluso si no hay sub-elementos seleccionados)
+      if (currentMenu.subMenus && currentMenu.subMenus.length > 0 && level === parts.length - 1) {
+        // Ya está en menuPathToOpen, no hacer nada adicional
+      }
     }
 
     // ============================================================
@@ -147,18 +153,30 @@ export function useMenuEffects(
     // Animar cierre de menús (antes del state update ya estaban visibles)
     // Ejecutar después para no bloquear; los elementos pueden estar ocultos por React
     // pero slideToggle en display:none hace slideDown - solo animar los que aún existan
-    if (menusToClose.length > 0) {
-      (async () => {
-        for (const key of menusToClose) {
-          const element = subMenuRefsLevel3.current[key];
-          if (element) {
-            const style = window.getComputedStyle(element);
-            if (style.display !== 'none') {
-              await slideToggle(element);
+    if (menusToClose.length > 0 || menusToOpen.length > 0) {
+      // Usar requestAnimationFrame para asegurarse de que los elementos estén disponibles
+      requestAnimationFrame(() => {
+        (async () => {
+          for (const key of menusToClose) {
+            const element = subMenuRefsLevel3.current[key];
+            if (element) {
+              const style = window.getComputedStyle(element);
+              if (style.display !== 'none') {
+                await slideToggle(element);
+              }
             }
           }
-        }
-      })();
+          for (const key of menusToOpen) {
+            const element = subMenuRefsLevel3.current[key];
+            if (element) {
+              const style = window.getComputedStyle(element);
+              if (style.display === 'none' || style.height === '0px') {
+                await slideToggle(element);
+              }
+            }
+          }
+        })();
+      });
     }
 
   }, [

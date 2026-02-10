@@ -246,10 +246,9 @@ const AppContentInternal: React.FC<{
       if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
-    } else if (activeTab === 'reportes-dashboard') {
-      // Si solo es 'reportes-dashboard' sin subTab, establecer 'mediciones' por defecto
-      setDashboardSubTab('mediciones');
     }
+    // No setear automáticamente 'mediciones' cuando solo es 'reportes-dashboard'
+    // Permitir que el usuario seleccione una opción
   }, [activeTab]);
 
   // Sincronizar selectedTable con activeTab para diferentes secciones
@@ -1698,11 +1697,10 @@ const AppContentInternal: React.FC<{
               </Suspense>
             );
           default:
-            // Si solo es 'dashboard' sin subTab, redirigir a 'mediciones' por defecto
+            // NO redirigir automáticamente - permitir que el usuario seleccione una opción
+            // Si solo es 'dashboard' sin subTab, mostrar el mensaje de selección
             if (reporteTab === 'dashboard') {
-              startTransition(() => {
-                setActiveTab('reportes-dashboard-mediciones');
-              });
+              // Retornar null para no renderizar nada aún (esperar selección del usuario)
               return null;
             }
         }
@@ -1710,16 +1708,10 @@ const AppContentInternal: React.FC<{
       
       switch (reporteTab) {
         case 'dashboard':
-          // Redirigir a mediciones por defecto
-          startTransition(() => {
-            setActiveTab('reportes-dashboard-mediciones');
-          });
+          // NO redirigir automáticamente - mostrar selección
           return null;
         case 'historial':
-          // Redirigir a alertas por defecto
-          startTransition(() => {
-            setActiveTab('reportes-historial-alertas');
-          });
+          // NO redirigir automáticamente - mostrar selección
           return null;
         case 'historial-alertas':
           return <AlertasMain />;
