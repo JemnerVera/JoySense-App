@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { MainTab } from '../../types';
 import { MenuItemLevel2 } from './MenuItemLevel2';
 
@@ -51,7 +51,7 @@ export interface MenuItemLevel1Props {
   colors: { textColor: string; secondaryTextColor: string; secondaryBgColor: string };
 }
 
-export const MenuItemLevel1: React.FC<MenuItemLevel1Props> = ({
+const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
   tab,
   isExpanded,
   activeTab,
@@ -182,3 +182,44 @@ export const MenuItemLevel1: React.FC<MenuItemLevel1Props> = ({
     </li>
   );
 };
+
+// Comparación custom para memo que maneja Sets correctamente
+const arePropsEqual = (prevProps: MenuItemLevel1Props, nextProps: MenuItemLevel1Props) => {
+  // Comparar propiedades simples
+  if (
+    prevProps.tab.id !== nextProps.tab.id ||
+    prevProps.isExpanded !== nextProps.isExpanded ||
+    prevProps.activeTab !== nextProps.activeTab ||
+    prevProps.colors.textColor !== nextProps.colors.textColor ||
+    prevProps.colors.secondaryTextColor !== nextProps.colors.secondaryTextColor ||
+    prevProps.colors.secondaryBgColor !== nextProps.colors.secondaryBgColor
+  ) {
+    return false;
+  }
+
+  // Comparar Sets - PERO solo si afecta a ESTE elemento específico
+  // openSubMenus: verifica si este tab está abierto o cerrado
+  const prevSubMenuOpen = prevProps.openSubMenus.has(prevProps.tab.id);
+  const nextSubMenuOpen = nextProps.openSubMenus.has(nextProps.tab.id);
+  if (prevSubMenuOpen !== nextSubMenuOpen) {
+    return false;
+  }
+
+  // openSubMenusLevel3: verifica si ALGUNO de los submenus DE ESTE ELEMENTO cambió
+  // Esto es importante para detectar si se abrió/cerró algo dentro
+  const prevLevel3Keys = Array.from(prevProps.openSubMenusLevel3).filter(key => key.startsWith(`${prevProps.tab.id}-`));
+  const nextLevel3Keys = Array.from(nextProps.openSubMenusLevel3).filter(key => key.startsWith(`${nextProps.tab.id}-`));
+  
+  if (prevLevel3Keys.length !== nextLevel3Keys.length) {
+    return false;
+  }
+  for (const key of prevLevel3Keys) {
+    if (!nextProps.openSubMenusLevel3.has(key)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+export const MenuItemLevel1 = memo(MenuItemLevel1Component, arePropsEqual);

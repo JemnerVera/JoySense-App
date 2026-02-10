@@ -140,26 +140,6 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
         // - REGLA (nada, todo debe estar en contenido principal)
         // - CRITICIDAD o UMBRAL sin operación específica
         const shouldShow = (isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion) && hasAuxiliarySidebar(activeTab);
-        console.log('[SidebarContainer NOTIFICACIONES shouldShow]', {
-          activeTab,
-          shouldShow,
-          isCriticidadOp: !!isCriticidadNotificacionesConOperacion,
-          isUmbralOp: !!isUmbralNotificacionesConOperacion,
-          hasAux: hasAuxiliarySidebar(activeTab),
-          condition1: isCriticidadNotificacionesConOperacion || isUmbralNotificacionesConOperacion
-        });
-        
-        if (isNotificaciones) {
-          console.log('[SidebarContainer NOTIFICACIONES]', {
-            activeTab,
-            isReglaNotificacionesSolo,
-            isReglaNotificacionesConTabla,
-            isCriticidadOp: !!isCriticidadNotificacionesConOperacion,
-            isUmbralOp: !!isUmbralNotificacionesConOperacion,
-            shouldShow,
-            willRenderAux: shouldShow ? 'YES' : 'NO'
-          });
-        }
         
         // showThirdLevel no se usa más para REGLA porque no renderizamos AuxiliarySidebar para REGLA
         // Solo se usa para CRITICIDAD/UMBRAL (donde es siempre false)

@@ -93,11 +93,12 @@ export function useMenuActions(
 
   /**
    * Maneja clics en nivel 2 (2 partes: PARENT-LEVEL2)
-   * Solo navega; useMenuEffects sincroniza apertura/cierre de menús según activeTab
+   * Navega siempre; useMenuEffects sincroniza apertura/cierre de menús según activeTab
    */
   const handleLevel2MenuClick = useCallback(
     (parentId: string, subMenuId: string, hasLevel3Menus: boolean) => {
       const subMenuKey = `${parentId}-${subMenuId}`;
+      // Navegar siempre al hacer clic
       onTabChange(subMenuKey);
     },
     [onTabChange]

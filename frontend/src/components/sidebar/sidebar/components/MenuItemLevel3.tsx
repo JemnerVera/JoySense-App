@@ -65,7 +65,11 @@ export const MenuItemLevel3: React.FC<MenuItemLevel3Props> = ({
   const hasLevel4Menus =
     level3Menu.subMenus && level3Menu.subMenus.length > 0;
   const level3MenuKey = level3ActiveTab;
-  const isLevel4Open = openSubMenusLevel3.has(level3MenuKey);
+  
+  // Para nivel 3: El menú está abierto si:
+  // 1. Está en openSubMenusLevel3, O
+  // 2. El activeTab corresponde a este elemento
+  const isLevel4Open = openSubMenusLevel3.has(level3MenuKey) || isLevel3Active;
 
   const handleClick = () => {
     onLevel3Click(parentId, level2Id, level3Menu.id, hasLevel4Menus || false);
