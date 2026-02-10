@@ -467,6 +467,28 @@ const AppContentInternal: React.FC<{
       }
     }
     
+    // Manejar operaciones de AGRUPACIÓN
+    // Ruta: agrupacion-[tabla]-[operacion] (ej: agrupacion-entidad-status)
+    if (activeTab.startsWith('agrupacion-')) {
+      const afterAgrupacion = activeTab.replace('agrupacion-', '');
+      const parts = afterAgrupacion.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      
+      // Si hay más de una parte y la última es una operación válida, extraer operación
+      if (parts.length > 1 && validOperations.includes(parts[parts.length - 1])) {
+        const operation = parts[parts.length - 1] as 'status' | 'insert' | 'update' | 'massive';
+        setActiveSubTab((currentSubTab) => {
+          if (currentSubTab !== operation) {
+            return operation;
+          }
+          return currentSubTab;
+        });
+      } else if (parts.length === 1) {
+        // Si solo hay tabla, resetear a 'status'
+        setActiveSubTab('status');
+      }
+    }
+    
     // Manejar operaciones de DISPOSITIVOS, USUARIOS, PARAMETROS GEO
     // Rutas: configuracion-dispositivos-[tabla]-[operacion], configuracion-usuarios-[tabla]-[operacion], configuracion-parametros-geo-[tabla]-[operacion]
     if (activeTab.startsWith('configuracion-dispositivos-') || 
@@ -1499,7 +1521,40 @@ const AppContentInternal: React.FC<{
       }
 
       // Extraer el nombre de la tabla (ej: 'agrupacion-entidad' -> 'entidad')
-      const agrupacionTable = activeTab.replace('agrupacion-', '') || 'entidad';
+      // Excluir la operación si está presente (ej: 'agrupacion-entidad-status' -> 'entidad')
+      const parts = activeTab.replace('agrupacion-', '').split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      const agrupacionTable = parts.length > 1 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(0, -1).join('-')
+        : parts.join('-');
+
+      // Si tabla está seleccionada pero no hay operación, mostrar placeholder
+      if (!agrupacionTable || agrupacionTable === '') {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">AGRUPACIÓN</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Si tabla está seleccionada pero no hay operación, mostrar placeholder
+      if (parts.length === 1 || (parts.length > 1 && !validOperations.includes(parts[parts.length - 1]))) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       // Mostrar AgrupacionMain con la tabla seleccionada
       return (
