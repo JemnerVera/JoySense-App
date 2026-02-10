@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { slideToggle } from '../../../../utils/sidebarAnimations';
-import type { MainTab, SubMenuLevel2, SubMenuLevel3 } from '../../types';
+import type { MainTab } from '../../types';
 
 type MenuState = {
   openSubMenus: Set<string>;
@@ -28,6 +28,7 @@ export function useMenuEffects(
     prevMainTabRef,
   } = state;
 
+  // Cuando se contrae, eliminar todos los niveles 4+
   useEffect(() => {
     if (!isExpanded) {
       setOpenSubMenusLevel3((prev) => {
@@ -41,6 +42,7 @@ export function useMenuEffects(
     }
   }, [isExpanded, setOpenSubMenusLevel3]);
 
+  // Sincronizar apertura/cierre de menús cuando cambia activeTab
   useEffect(() => {
     if (!activeTab || !isExpanded) return;
 
@@ -49,150 +51,116 @@ export function useMenuEffects(
     const tab = mainTabs.find((t) => t.id === mainTabId);
     prevMainTabRef.current = mainTabId;
 
-    if (tab && tab.subMenus && tab.subMenus.length > 0 && parts.length > 1) {
-      const shouldBeOpen = activeTab.startsWith(`${mainTabId}-`);
+    if (!tab || !tab.subMenus || tab.subMenus.length === 0 || parts.length <= 1) {
+      return;
+    }
 
-      if (shouldBeOpen && !openSubMenus.has(mainTabId)) {
-        const subMenuElement = subMenuRefs.current[mainTabId];
-        if (subMenuElement) {
-          const computedStyle = window.getComputedStyle(subMenuElement);
-          if (computedStyle.display === 'none' || computedStyle.height === '0px') {
-            slideToggle(subMenuElement).then(() => {
-              setOpenSubMenus((prev) => {
-                const newSet = new Set(prev);
-                newSet.add(mainTabId);
-                return newSet;
-              });
-            });
-          } else {
+    // ============================================================
+    // NIVEL 1: Abrir menú principal si es necesario
+    // ============================================================
+    const shouldBeOpen = activeTab.startsWith(`${mainTabId}-`);
+    if (shouldBeOpen && !openSubMenus.has(mainTabId)) {
+      const subMenuElement = subMenuRefs.current[mainTabId];
+      if (subMenuElement) {
+        const computedStyle = window.getComputedStyle(subMenuElement);
+        if (computedStyle.display === 'none' || computedStyle.height === '0px') {
+          slideToggle(subMenuElement).then(() => {
             setOpenSubMenus((prev) => {
               const newSet = new Set(prev);
               newSet.add(mainTabId);
               return newSet;
             });
-          }
-        }
-      }
-
-      if (parts.length >= 3) {
-        const level2Id = parts[1];
-        const level3Id = parts[2];
-        const level3Key = `${mainTabId}-${level2Id}-${level3Id}`;
-        const subMenus = tab.subMenus as SubMenuLevel2[] | undefined;
-        const subMenu = subMenus?.find((sm: SubMenuLevel2) => sm.id === level2Id);
-
-        if (subMenu && subMenu.subMenus && subMenu.subMenus.length > 0) {
-          const otherLevel3Menus = Array.from(openSubMenusLevel3).filter(
-            (key) =>
-              key.split('-').length === 3 &&
-              key.startsWith(`${mainTabId}-${level2Id}-`) &&
-              key !== level3Key
-          );
-
-          for (const otherMenuKey of otherLevel3Menus) {
-            const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-            if (otherElement && window.getComputedStyle(otherElement).display !== 'none') {
-              slideToggle(otherElement);
-            }
-          }
-
-          if (otherLevel3Menus.length > 0) {
-            setOpenSubMenusLevel3((prev) => {
-              const newSet = new Set(prev);
-              otherLevel3Menus.forEach((key) => newSet.delete(key));
-              return newSet;
-            });
-          }
-
-          if (!openSubMenusLevel3.has(level3Key)) {
-            const level3Element = subMenuRefsLevel3.current[level3Key];
-            if (level3Element) {
-              const computedStyle = window.getComputedStyle(level3Element);
-              if (computedStyle.display === 'none' || computedStyle.height === '0px') {
-                slideToggle(level3Element).then(() => {
-                  setOpenSubMenusLevel3((prev) => {
-                    const newSet = new Set(prev);
-                    newSet.add(level3Key);
-                    return newSet;
-                  });
-                });
-              } else {
-                setOpenSubMenusLevel3((prev) => {
-                  const newSet = new Set(prev);
-                  newSet.add(level3Key);
-                  return newSet;
-                });
-              }
-            }
-          }
-
-          if (parts.length >= 4) {
-            const level3Id = parts[2];
-            const level4Id = parts[3];
-            const level4Key = `${mainTabId}-${level2Id}-${level3Id}-${level4Id}`;
-            const level3Menu = (subMenu.subMenus as SubMenuLevel3[] | undefined)?.find(
-              (sm) => sm.id === level3Id
-            );
-
-            if (
-              level3Menu &&
-              level3Menu.subMenus &&
-              level3Menu.subMenus.length > 0
-            ) {
-              const otherLevel4Menus = Array.from(openSubMenusLevel3).filter(
-                (key) =>
-                  key.split('-').length === 4 &&
-                  key.startsWith(`${mainTabId}-${level2Id}-${level3Id}-`) &&
-                  key !== level4Key
-              );
-
-              for (const otherMenuKey of otherLevel4Menus) {
-                const otherElement = subMenuRefsLevel3.current[otherMenuKey];
-                if (
-                  otherElement &&
-                  window.getComputedStyle(otherElement).display !== 'none'
-                ) {
-                  slideToggle(otherElement);
-                }
-              }
-
-              if (otherLevel4Menus.length > 0) {
-                setOpenSubMenusLevel3((prev) => {
-                  const newSet = new Set(prev);
-                  otherLevel4Menus.forEach((key) => newSet.delete(key));
-                  return newSet;
-                });
-              }
-
-              if (!openSubMenusLevel3.has(level4Key)) {
-                const level4Element = subMenuRefsLevel3.current[level4Key];
-                if (level4Element) {
-                  const computedStyle = window.getComputedStyle(level4Element);
-                  if (
-                    computedStyle.display === 'none' ||
-                    computedStyle.height === '0px'
-                  ) {
-                    slideToggle(level4Element).then(() => {
-                      setOpenSubMenusLevel3((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.add(level4Key);
-                        return newSet;
-                      });
-                    });
-                  } else {
-                    setOpenSubMenusLevel3((prev) => {
-                      const newSet = new Set(prev);
-                      newSet.add(level4Key);
-                      return newSet;
-                    });
-                  }
-                }
-              }
-            }
-          }
+          });
+        } else {
+          setOpenSubMenus((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(mainTabId);
+            return newSet;
+          });
         }
       }
     }
+
+    // ============================================================
+    // CONSTRUIR LA RUTA DE MENÚS QUE DEBEN ESTAR ABIERTOS
+    // ============================================================
+    
+    const menuPathToOpen: string[] = [];
+    let currentMenu: any = tab;
+
+    // Recorrer cada nivel y construir la ruta
+    for (let level = 1; level < parts.length; level++) {
+      const currentId = parts[level];
+      
+      if (!currentMenu || !currentMenu.subMenus || currentMenu.subMenus.length === 0) {
+        break;
+      }
+
+      // Encontrar el submenu actual
+      currentMenu = currentMenu.subMenus.find((sm: any) => sm.id === currentId);
+
+      if (!currentMenu) {
+        break;
+      }
+
+      // Construir la clave del menú
+      const menuKey = parts.slice(0, level + 1).join('-');
+      menuPathToOpen.push(menuKey);
+    }
+
+    // ============================================================
+    // ACTUALIZAR ESTADO Y DOM
+    // ============================================================
+
+    // Identificar qué debe cerrarse y qué debe abrirse
+    const menusToClose: string[] = [];
+    const menusToOpen: string[] = [];
+
+    // Menús que están abiertos pero no están en la ruta actual
+    openSubMenusLevel3.forEach((key) => {
+      if (!menuPathToOpen.includes(key)) {
+        menusToClose.push(key);
+      }
+    });
+
+    // Menús que están en la ruta pero no están abiertos
+    menuPathToOpen.forEach((key) => {
+      if (!openSubMenusLevel3.has(key)) {
+        menusToOpen.push(key);
+      }
+    });
+
+    // Si no hay cambios, no hacer nada
+    if (menusToClose.length === 0 && menusToOpen.length === 0) {
+      return;
+    }
+
+    // Actualizar estado INMEDIATAMENTE: los componentes usan openSubMenusLevel3
+    // para display. Sin esto, nivel 4 (ESTADO, CREAR, ACTUALIZAR) no se renderiza.
+    setOpenSubMenusLevel3((prev) => {
+      const newSet = new Set(prev);
+      menusToClose.forEach((key) => newSet.delete(key));
+      menusToOpen.forEach((key) => newSet.add(key));
+      return newSet;
+    });
+
+    // Animar cierre de menús (antes del state update ya estaban visibles)
+    // Ejecutar después para no bloquear; los elementos pueden estar ocultos por React
+    // pero slideToggle en display:none hace slideDown - solo animar los que aún existan
+    if (menusToClose.length > 0) {
+      (async () => {
+        for (const key of menusToClose) {
+          const element = subMenuRefsLevel3.current[key];
+          if (element) {
+            const style = window.getComputedStyle(element);
+            if (style.display !== 'none') {
+              await slideToggle(element);
+            }
+          }
+        }
+      })();
+    }
+
   }, [
     activeTab,
     isExpanded,
