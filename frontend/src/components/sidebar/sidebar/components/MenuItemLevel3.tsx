@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { SubMenuLevel3, SubMenuLevel4 } from '../../types';
 import { MenuItemLevel4 } from './MenuItemLevel4';
 
@@ -45,7 +45,7 @@ export interface MenuItemLevel3Props {
   colors: { textColor: string; secondaryTextColor: string };
 }
 
-export const MenuItemLevel3: React.FC<MenuItemLevel3Props> = ({
+const MenuItemLevel3Component: React.FC<MenuItemLevel3Props> = ({
   level3Menu,
   parentId,
   level2Id,
@@ -71,7 +71,21 @@ export const MenuItemLevel3: React.FC<MenuItemLevel3Props> = ({
   // 2. El activeTab corresponde a este elemento
   const isLevel4Open = openSubMenusLevel3.has(level3MenuKey) || isLevel3Active;
 
+  console.log('[MenuItemLevel3 RENDER]', {
+    label: level3Menu.label,
+    level3MenuKey,
+    isLevel3Active,
+    hasLevel4Menus,
+    isLevel4Open,
+    openSubMenusLevel3Size: openSubMenusLevel3.size,
+  });
+
   const handleClick = () => {
+    console.log('[MenuItemLevel3 CLICK]', {
+      label: level3Menu.label,
+      level3MenuKey,
+      hasLevel4Menus,
+    });
     onLevel3Click(parentId, level2Id, level3Menu.id, hasLevel4Menus || false);
   };
 
@@ -180,3 +194,45 @@ export const MenuItemLevel3: React.FC<MenuItemLevel3Props> = ({
     </li>
   );
 };
+
+// Comparación custom para memo que maneja Sets correctamente
+const arePropsEqual = (prevProps: MenuItemLevel3Props, nextProps: MenuItemLevel3Props) => {
+  // Comparar propiedades simples
+  if (
+    prevProps.level3Menu.id !== nextProps.level3Menu.id ||
+    prevProps.parentId !== nextProps.parentId ||
+    prevProps.level2Id !== nextProps.level2Id ||
+    prevProps.isExpanded !== nextProps.isExpanded ||
+    prevProps.activeTab !== nextProps.activeTab ||
+    prevProps.colors.textColor !== nextProps.colors.textColor ||
+    prevProps.colors.secondaryTextColor !== nextProps.colors.secondaryTextColor
+  ) {
+    return false;
+  }
+
+  // Comparar Sets - PERO solo si afecta a ESTE elemento específico
+  const level3MenuKey = `${prevProps.parentId}-${prevProps.level2Id}-${prevProps.level3Menu.id}`;
+  
+  const prevIsOpen = prevProps.openSubMenusLevel3.has(level3MenuKey);
+  const nextIsOpen = nextProps.openSubMenusLevel3.has(level3MenuKey);
+  if (prevIsOpen !== nextIsOpen) {
+    return false;
+  }
+
+  // Verificar si hay cambios en nivel 4+ de ESTE menú
+  const prevLevel4Keys = Array.from(prevProps.openSubMenusLevel3).filter(key => key.startsWith(`${level3MenuKey}-`));
+  const nextLevel4Keys = Array.from(nextProps.openSubMenusLevel3).filter(key => key.startsWith(`${level3MenuKey}-`));
+  
+  if (prevLevel4Keys.length !== nextLevel4Keys.length) {
+    return false;
+  }
+  for (const key of prevLevel4Keys) {
+    if (!nextProps.openSubMenusLevel3.has(key)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+export const MenuItemLevel3 = memo(MenuItemLevel3Component, arePropsEqual);
