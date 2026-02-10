@@ -75,19 +75,27 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
     >
       <button
         onClick={handleClick}
-        className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
+        className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0"
         style={{
           color: isLevel4Active ? colors.secondaryTextColor : colors.textColor,
+          backgroundColor: isLevel4Active
+            ? 'rgba(222, 226, 236, 0.05)'
+            : 'transparent',
           paddingLeft: isExpanded ? '80px' : '20px',
           paddingRight: '20px',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = colors.secondaryTextColor;
+          if (!isLevel4Active)
+            e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.02)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isLevel4Active
             ? colors.secondaryTextColor
             : colors.textColor;
+          e.currentTarget.style.backgroundColor = isLevel4Active
+            ? 'rgba(222, 226, 236, 0.05)'
+            : 'transparent';
         }}
       >
         <span
@@ -154,21 +162,29 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
                         `${parentId}-${level2Id}-${level3Id}-${level4Menu.id}-${level5Menu.id}`
                       )
                     }
-                    className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
+                    className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0"
                     style={{
                       color: isLevel5Active
                         ? colors.secondaryTextColor
                         : colors.textColor,
+                      backgroundColor: isLevel5Active
+                        ? 'rgba(222, 226, 236, 0.03)'
+                        : 'transparent',
                       paddingLeft: isExpanded ? '100px' : '20px',
                       paddingRight: '20px',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = colors.secondaryTextColor;
+                      if (!isLevel5Active)
+                        e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.01)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = isLevel5Active
                         ? colors.secondaryTextColor
                         : colors.textColor;
+                      e.currentTarget.style.backgroundColor = isLevel5Active
+                        ? 'rgba(222, 226, 236, 0.03)'
+                        : 'transparent';
                     }}
                   >
                     <span

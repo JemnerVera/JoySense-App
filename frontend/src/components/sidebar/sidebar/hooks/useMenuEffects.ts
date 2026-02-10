@@ -76,7 +76,8 @@ export function useMenuEffects(
 
       if (parts.length >= 3) {
         const level2Id = parts[1];
-        const level3Key = `${mainTabId}-${level2Id}`;
+        const level3Id = parts[2];
+        const level3Key = `${mainTabId}-${level2Id}-${level3Id}`;
         const subMenus = tab.subMenus as SubMenuLevel2[] | undefined;
         const subMenu = subMenus?.find((sm: SubMenuLevel2) => sm.id === level2Id);
 
@@ -127,7 +128,8 @@ export function useMenuEffects(
 
           if (parts.length >= 4) {
             const level3Id = parts[2];
-            const level4Key = `${mainTabId}-${level2Id}-${level3Id}`;
+            const level4Id = parts[3];
+            const level4Key = `${mainTabId}-${level2Id}-${level3Id}-${level4Id}`;
             const level3Menu = (subMenu.subMenus as SubMenuLevel3[] | undefined)?.find(
               (sm) => sm.id === level3Id
             );
@@ -196,9 +198,7 @@ export function useMenuEffects(
     isExpanded,
     mainTabs,
     openSubMenus,
-    openSubMenusLevel3,
     subMenuRefs,
-    subMenuRefsLevel3,
     setOpenSubMenus,
     setOpenSubMenusLevel3,
   ]);
