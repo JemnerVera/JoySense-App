@@ -675,18 +675,33 @@ const AppContentInternal: React.FC<{
     const currentTab = activeTabRef.current;
     
     // Usar el sistema del sidebar para verificar cambios sin guardar
-    // IMPORTANTE: requestLeave solo muestra el modal si hay cambios, no ejecuta el cambio inmediatamente
-    // Pasar activeTab actual y callback para revertir si hay cambios
-    sidebar.requestLeave(tab, currentTab, () => {
-      // Revertir activeTab al valor que tenía antes del click
-      // Esto previene que el cambio se ejecute antes de que el usuario confirme
-      setActiveTab(currentTab);
-      // Actualizar el ref también
-      activeTabRef.current = currentTab;
-      if (activeTabRefShared) {
-        activeTabRefShared.current = currentTab;
+    // requestLeave muestra modal si hay cambios. Pasamos:
+    // - tab: destino de la navegación
+    // - currentTab: tab actual para comparar
+    // - onRevert: callback si hay cambios (mantener en tab actual)
+    // - onConfirm: callback cuando usuario confirma (ejecutar cambio real)
+    sidebar.requestLeave(
+      tab,
+      currentTab,
+      // onRevert: Si hay cambios, revertir activeTab al valor actual (no hacer nada, ya está en currentTab)
+      () => {
+        setActiveTab(currentTab);
+        activeTabRef.current = currentTab;
+        if (activeTabRefShared) {
+          activeTabRefShared.current = currentTab;
+        }
+      },
+      // onConfirm: Callback que se ejecuta cuando usuario confirma el cambio en el modal
+      // o cuando no hay cambios. Ejecuta la navegación real.
+      () => {
+        setActiveTab(tab);
+        activeTabRef.current = tab;
+        if (activeTabRefShared) {
+          activeTabRefShared.current = tab;
+        }
+        setShowWelcomeIntegrated(false);
       }
-    });
+    );
   };
 
   // Mostrar loading mientras se verifica la autenticación
