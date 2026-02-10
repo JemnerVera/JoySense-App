@@ -1387,7 +1387,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                     style={{ 
                                       color: isSubActive ? '#ffffff' : TEMPLATE_COLORS.textColor,
                                       backgroundColor: isSubActive ? 'rgba(222, 226, 236, 0.12)' : 'transparent',
-                                      paddingLeft: isExpanded ? '20px' : '0px',
+                                      paddingLeft: isExpanded ? '40px' : '0px',
                                       paddingRight: isExpanded ? '20px' : '0px',
                                       width: '100%',
                                       textAlign: 'left',
@@ -1483,7 +1483,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                 style={{ 
                                                   color: isLevel3Active ? '#ffffff' : TEMPLATE_COLORS.textColor,
                                                   backgroundColor: isLevel3Active ? 'rgba(222, 226, 236, 0.1)' : 'transparent',
-                                                  paddingLeft: isExpanded ? '20px' : '0px',
+                                                  paddingLeft: isExpanded ? '60px' : '0px',
                                                   paddingRight: isExpanded ? '20px' : '0px',
                                                   width: '100%',
                                                   textAlign: 'left',
@@ -1570,8 +1570,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                                 handleSubMenuLevel4Click(tab.id, subMenu.id, level3Menu.id, level4Menu.id);
                                                               }
                                                             }}
-                                                            className="flex items-center h-10 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
-                                                            style={{ color: isLevel4Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                                                            className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
+                                                            style={{ 
+                                                              color: isLevel4Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                                                              paddingLeft: isExpanded ? '80px' : '20px',
+                                                              paddingRight: '20px',
+                                                            }}
                                                             onMouseEnter={(e) => {
                                                               e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
                                                             }}
@@ -1641,12 +1645,16 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                                                                       key={level5Menu.id}
                                                                       className={`menu-item ${isLevel5Active ? 'active' : ''}`}
                                                                     >
-                                                                      <button
-                                                                        onClick={() => {
-                                                                          onTabChange(`${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}-${level5Menu.id}`);
-                                                                        }}
-                                                                        className="flex items-center h-10 px-5 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
-                                                                        style={{ color: isLevel5Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor }}
+                                                      <button
+                                                        onClick={() => {
+                                                          onTabChange(`${tab.id}-${subMenu.id}-${level3Menu.id}-${level4Menu.id}-${level5Menu.id}`);
+                                                        }}
+                                                        className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0 bg-transparent"
+                                                        style={{ 
+                                                          color: isLevel5Active ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                                                          paddingLeft: isExpanded ? '100px' : '20px',
+                                                          paddingRight: '20px',
+                                                        }}
                                                                         onMouseEnter={(e) => {
                                                                           e.currentTarget.style.color = TEMPLATE_COLORS.secondaryTextColor;
                                                                         }}
