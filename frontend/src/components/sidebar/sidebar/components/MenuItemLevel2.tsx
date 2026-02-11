@@ -12,9 +12,93 @@ const SUB_INDICATOR_STYLE = {
   flexShrink: 0,
 };
 
+// Función para obtener los colores según el tipo de sección (versión más tenue para nivel 2)
+const getColorBySection = (color?: string, level: 'level2' | 'level3' = 'level2') => {
+  if (level === 'level2') {
+    // Nivel 2: Intermediario - menos oscuro que nivel 1
+    switch (color) {
+      case 'blue': // REPORTES
+        return {
+          active: '#3b82f6', // blue-500
+          activeBg: 'rgba(59, 130, 246, 0.15)',
+          hover: '#60a5fa', // blue-400
+          hoverBg: 'rgba(59, 130, 246, 0.08)',
+        };
+      case 'green': // AGRUPACION
+        return {
+          active: '#22c55e', // green-500
+          activeBg: 'rgba(34, 197, 94, 0.15)',
+          hover: '#4ade80', // green-400
+          hoverBg: 'rgba(34, 197, 94, 0.08)',
+        };
+      case 'orange': // CONFIGURACION
+        return {
+          active: '#f97316', // orange-500
+          activeBg: 'rgba(249, 115, 22, 0.15)',
+          hover: '#fb923c', // orange-400
+          hoverBg: 'rgba(249, 115, 22, 0.08)',
+        };
+      case 'gray': // AJUSTES
+        return {
+          active: '#6b7280', // gray-500
+          activeBg: 'rgba(107, 114, 128, 0.15)',
+          hover: '#9ca3af', // gray-400
+          hoverBg: 'rgba(107, 114, 128, 0.08)',
+        };
+      default:
+        return {
+          active: '#ffffff',
+          activeBg: 'rgba(222, 226, 236, 0.12)',
+          hover: '#ffffff',
+          hoverBg: 'rgba(222, 226, 236, 0.06)',
+        };
+    }
+  } else {
+    // Nivel 3: Más claro aún
+    switch (color) {
+      case 'blue': // REPORTES
+        return {
+          active: `rgba(59, 130, 246, 0.8)`, // blue-500 más tenue
+          activeBg: `rgba(59, 130, 246, 0.1)`,
+          hover: `rgba(96, 165, 250, 0.8)`, // blue-400 más tenue
+          hoverBg: `rgba(59, 130, 246, 0.05)`,
+        };
+      case 'green': // AGRUPACION
+        return {
+          active: `rgba(34, 197, 94, 0.8)`, // green-500 más tenue
+          activeBg: `rgba(34, 197, 94, 0.1)`,
+          hover: `rgba(74, 222, 128, 0.8)`, // green-400 más tenue
+          hoverBg: `rgba(34, 197, 94, 0.05)`,
+        };
+      case 'orange': // CONFIGURACION
+        return {
+          active: `rgba(249, 115, 22, 0.8)`, // orange-500 más tenue
+          activeBg: `rgba(249, 115, 22, 0.1)`,
+          hover: `rgba(251, 146, 60, 0.8)`, // orange-400 más tenue
+          hoverBg: `rgba(249, 115, 22, 0.05)`,
+        };
+      case 'gray': // AJUSTES
+        return {
+          active: `rgba(107, 114, 128, 0.8)`, // gray-500 más tenue
+          activeBg: `rgba(107, 114, 128, 0.1)`,
+          hover: `rgba(156, 163, 175, 0.8)`, // gray-400 más tenue
+          hoverBg: `rgba(107, 114, 128, 0.05)`,
+        };
+      default:
+        return {
+          active: '#ffffff',
+          activeBg: 'rgba(222, 226, 236, 0.1)',
+          hover: '#ffffff',
+          hoverBg: 'rgba(222, 226, 236, 0.05)',
+        };
+    }
+  }
+};
+
 export interface MenuItemLevel2Props {
   subMenu: SubMenuLevel2;
   parentId: string;
+  parentColor?: string;
   isExpanded: boolean;
   activeTab: string;
   openSubMenusLevel3: Set<string>;
@@ -50,6 +134,7 @@ export interface MenuItemLevel2Props {
 const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
   subMenu,
   parentId,
+  parentColor,
   isExpanded,
   activeTab,
   openSubMenusLevel3,
@@ -90,9 +175,9 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
         onClick={handleClick}
         className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0"
         style={{
-          color: isSubActive ? '#ffffff' : colors.textColor,
+          color: isSubActive ? getColorBySection(parentColor, 'level2').active : colors.textColor,
           backgroundColor: isSubActive
-            ? 'rgba(222, 226, 236, 0.12)'
+            ? getColorBySection(parentColor, 'level2').activeBg
             : 'transparent',
           paddingLeft: isExpanded ? '40px' : '0px',
           paddingRight: isExpanded ? '20px' : '0px',
@@ -100,16 +185,16 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
           textAlign: 'left',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#ffffff';
+          e.currentTarget.style.color = getColorBySection(parentColor, 'level2').hover;
           if (!isSubActive)
-            e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.06)';
+            e.currentTarget.style.backgroundColor = getColorBySection(parentColor, 'level2').hoverBg;
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isSubActive
-            ? '#ffffff'
+            ? getColorBySection(parentColor, 'level2').active
             : colors.textColor;
           e.currentTarget.style.backgroundColor = isSubActive
-            ? 'rgba(222, 226, 236, 0.12)'
+            ? getColorBySection(parentColor, 'level2').activeBg
             : 'transparent';
         }}
       >
@@ -173,6 +258,7 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
                   key={level3Menu.id}
                   level3Menu={level3Menu}
                   parentId={parentId}
+                  parentColor={parentColor}
                   level2Id={subMenu.id}
                   isExpanded={isExpanded}
                   activeTab={activeTab}
@@ -199,6 +285,7 @@ const arePropsEqual = (prevProps: MenuItemLevel2Props, nextProps: MenuItemLevel2
   if (
     prevProps.subMenu.id !== nextProps.subMenu.id ||
     prevProps.parentId !== nextProps.parentId ||
+    prevProps.parentColor !== nextProps.parentColor ||
     prevProps.isExpanded !== nextProps.isExpanded ||
     prevProps.activeTab !== nextProps.activeTab ||
     prevProps.colors.textColor !== nextProps.colors.textColor ||

@@ -11,9 +11,93 @@ const SUB_INDICATOR_STYLE = {
   flexShrink: 0,
 };
 
+// Función para obtener los colores según el tipo de sección (versión más tenue para nivel 4)
+const getColorBySection = (color?: string, level: 'level4' | 'level5' = 'level4') => {
+  if (level === 'level4') {
+    // Nivel 4: Mucho más claro
+    switch (color) {
+      case 'blue': // REPORTES
+        return {
+          active: `rgba(59, 130, 246, 0.5)`, // blue-500 muy tenue
+          activeBg: `rgba(59, 130, 246, 0.05)`,
+          hover: `rgba(96, 165, 250, 0.5)`, // blue-400 muy tenue
+          hoverBg: `rgba(59, 130, 246, 0.02)`,
+        };
+      case 'green': // AGRUPACION
+        return {
+          active: `rgba(34, 197, 94, 0.5)`, // green-500 muy tenue
+          activeBg: `rgba(34, 197, 94, 0.05)`,
+          hover: `rgba(74, 222, 128, 0.5)`, // green-400 muy tenue
+          hoverBg: `rgba(34, 197, 94, 0.02)`,
+        };
+      case 'orange': // CONFIGURACION
+        return {
+          active: `rgba(249, 115, 22, 0.5)`, // orange-500 muy tenue
+          activeBg: `rgba(249, 115, 22, 0.05)`,
+          hover: `rgba(251, 146, 60, 0.5)`, // orange-400 muy tenue
+          hoverBg: `rgba(249, 115, 22, 0.02)`,
+        };
+      case 'gray': // AJUSTES
+        return {
+          active: `rgba(107, 114, 128, 0.5)`, // gray-500 muy tenue
+          activeBg: `rgba(107, 114, 128, 0.05)`,
+          hover: `rgba(156, 163, 175, 0.5)`, // gray-400 muy tenue
+          hoverBg: `rgba(107, 114, 128, 0.02)`,
+        };
+      default:
+        return {
+          active: '#ffffff',
+          activeBg: 'rgba(222, 226, 236, 0.05)',
+          hover: '#ffffff',
+          hoverBg: 'rgba(222, 226, 236, 0.02)',
+        };
+    }
+  } else {
+    // Nivel 5: Casi imperceptible
+    switch (color) {
+      case 'blue': // REPORTES
+        return {
+          active: `rgba(59, 130, 246, 0.3)`, // blue-500 casi imperceptible
+          activeBg: `rgba(59, 130, 246, 0.03)`,
+          hover: `rgba(96, 165, 250, 0.3)`, // blue-400 casi imperceptible
+          hoverBg: `rgba(59, 130, 246, 0.01)`,
+        };
+      case 'green': // AGRUPACION
+        return {
+          active: `rgba(34, 197, 94, 0.3)`, // green-500 casi imperceptible
+          activeBg: `rgba(34, 197, 94, 0.03)`,
+          hover: `rgba(74, 222, 128, 0.3)`, // green-400 casi imperceptible
+          hoverBg: `rgba(34, 197, 94, 0.01)`,
+        };
+      case 'orange': // CONFIGURACION
+        return {
+          active: `rgba(249, 115, 22, 0.3)`, // orange-500 casi imperceptible
+          activeBg: `rgba(249, 115, 22, 0.03)`,
+          hover: `rgba(251, 146, 60, 0.3)`, // orange-400 casi imperceptible
+          hoverBg: `rgba(249, 115, 22, 0.01)`,
+        };
+      case 'gray': // AJUSTES
+        return {
+          active: `rgba(107, 114, 128, 0.3)`, // gray-500 casi imperceptible
+          activeBg: `rgba(107, 114, 128, 0.03)`,
+          hover: `rgba(156, 163, 175, 0.3)`, // gray-400 casi imperceptible
+          hoverBg: `rgba(107, 114, 128, 0.01)`,
+        };
+      default:
+        return {
+          active: '#ffffff',
+          activeBg: 'rgba(222, 226, 236, 0.03)',
+          hover: '#ffffff',
+          hoverBg: 'rgba(222, 226, 236, 0.01)',
+        };
+    }
+  }
+};
+
 export interface MenuItemLevel4Props {
   level4Menu: SubMenuLevel4;
   parentId: string;
+  parentColor?: string;
   level2Id: string;
   level3Id: string;
   isExpanded: boolean;
@@ -40,6 +124,7 @@ export interface MenuItemLevel4Props {
 export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
   level4Menu,
   parentId,
+  parentColor,
   level2Id,
   level3Id,
   isExpanded,
@@ -77,24 +162,24 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
         onClick={handleClick}
         className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0"
         style={{
-          color: isLevel4Active ? colors.secondaryTextColor : colors.textColor,
+          color: isLevel4Active ? getColorBySection(parentColor, 'level4').active : colors.textColor,
           backgroundColor: isLevel4Active
-            ? 'rgba(222, 226, 236, 0.05)'
+            ? getColorBySection(parentColor, 'level4').activeBg
             : 'transparent',
           paddingLeft: isExpanded ? '80px' : '20px',
           paddingRight: '20px',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = colors.secondaryTextColor;
+          e.currentTarget.style.color = getColorBySection(parentColor, 'level4').hover;
           if (!isLevel4Active)
-            e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.02)';
+            e.currentTarget.style.backgroundColor = getColorBySection(parentColor, 'level4').hoverBg;
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isLevel4Active
-            ? colors.secondaryTextColor
+            ? getColorBySection(parentColor, 'level4').active
             : colors.textColor;
           e.currentTarget.style.backgroundColor = isLevel4Active
-            ? 'rgba(222, 226, 236, 0.05)'
+            ? getColorBySection(parentColor, 'level4').activeBg
             : 'transparent';
         }}
       >
@@ -165,25 +250,25 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
                     className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0"
                     style={{
                       color: isLevel5Active
-                        ? colors.secondaryTextColor
+                        ? getColorBySection(parentColor, 'level5').active
                         : colors.textColor,
                       backgroundColor: isLevel5Active
-                        ? 'rgba(222, 226, 236, 0.03)'
+                        ? getColorBySection(parentColor, 'level5').activeBg
                         : 'transparent',
                       paddingLeft: isExpanded ? '100px' : '20px',
                       paddingRight: '20px',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = colors.secondaryTextColor;
+                      e.currentTarget.style.color = getColorBySection(parentColor, 'level5').hover;
                       if (!isLevel5Active)
-                        e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.01)';
+                        e.currentTarget.style.backgroundColor = getColorBySection(parentColor, 'level5').hoverBg;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = isLevel5Active
-                        ? colors.secondaryTextColor
+                        ? getColorBySection(parentColor, 'level5').active
                         : colors.textColor;
                       e.currentTarget.style.backgroundColor = isLevel5Active
-                        ? 'rgba(222, 226, 236, 0.03)'
+                        ? getColorBySection(parentColor, 'level5').activeBg
                         : 'transparent';
                     }}
                   >

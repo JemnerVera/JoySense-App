@@ -14,6 +14,47 @@ const SUB_INDICATOR_STYLE = {
   flexShrink: 0,
 };
 
+// Función para obtener los colores según el tipo de sección
+const getColorBySection = (color?: string) => {
+  switch (color) {
+    case 'blue': // REPORTES
+      return {
+        active: '#2563eb', // blue-600 más oscuro
+        activeBg: 'rgba(37, 99, 235, 0.25)',
+        hover: '#3b82f6', // blue-500
+        hoverBg: 'rgba(59, 130, 246, 0.15)',
+      };
+    case 'green': // AGRUPACION
+      return {
+        active: '#16a34a', // green-600 más oscuro
+        activeBg: 'rgba(22, 163, 74, 0.25)',
+        hover: '#22c55e', // green-500
+        hoverBg: 'rgba(34, 197, 94, 0.15)',
+      };
+    case 'orange': // CONFIGURACION
+      return {
+        active: '#ea580c', // orange-600 más oscuro
+        activeBg: 'rgba(234, 88, 12, 0.25)',
+        hover: '#f97316', // orange-500
+        hoverBg: 'rgba(249, 115, 22, 0.15)',
+      };
+    case 'gray': // AJUSTES
+      return {
+        active: '#4b5563', // gray-600 más oscuro
+        activeBg: 'rgba(75, 85, 99, 0.25)',
+        hover: '#6b7280', // gray-500
+        hoverBg: 'rgba(107, 114, 128, 0.15)',
+      };
+    default:
+      return {
+        active: '#ffffff',
+        activeBg: 'rgba(222, 226, 236, 0.15)',
+        hover: '#ffffff',
+        hoverBg: 'rgba(222, 226, 236, 0.08)',
+      };
+  }
+};
+
 export interface MenuItemLevel1Props {
   tab: MainTab;
   isExpanded: boolean;
@@ -85,9 +126,9 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
         onClick={() => onMenuClick(tab.id, hasSubMenus || false)}
         className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0 relative"
         style={{
-          color: isActive ? '#ffffff' : colors.textColor,
+          color: isActive ? getColorBySection(tab.color).active : colors.textColor,
           backgroundColor: isActive
-            ? 'rgba(222, 226, 236, 0.15)'
+            ? getColorBySection(tab.color).activeBg
             : 'transparent',
           paddingLeft: isExpanded ? '30px' : '0px',
           paddingRight: isExpanded ? '10px' : '0px',
@@ -95,16 +136,16 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
           textAlign: 'left',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#ffffff';
+          e.currentTarget.style.color = getColorBySection(tab.color).hover;
           if (!isActive)
-            e.currentTarget.style.backgroundColor = 'rgba(222, 226, 236, 0.08)';
+            e.currentTarget.style.backgroundColor = getColorBySection(tab.color).hoverBg;
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isActive
-            ? '#ffffff'
+            ? getColorBySection(tab.color).active
             : colors.textColor;
           e.currentTarget.style.backgroundColor = isActive
-            ? 'rgba(222, 226, 236, 0.15)'
+            ? getColorBySection(tab.color).activeBg
             : 'transparent';
         }}
       >
@@ -136,6 +177,8 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
                 style={{
                   ...SUB_INDICATOR_STYLE,
                   transform: isSubMenuOpen ? 'rotate(45deg)' : 'rotate(-45deg)',
+                  color: '#ffffff',
+                  borderColor: '#ffffff',
                 }}
               />
             )}
@@ -164,6 +207,7 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
                 key={subMenu.id}
                 subMenu={subMenu}
                 parentId={tab.id}
+                parentColor={tab.color}
                 isExpanded={isExpanded}
                 activeTab={activeTab}
                 openSubMenusLevel3={openSubMenusLevel3}
