@@ -69,7 +69,6 @@ export { useDashboardData } from './useDashboardData';
 // ============================================================================
 
 export { useSidebar } from './useSidebar';
-export { useSidebarLayout } from './useSidebarLayout';
 export { useAppSidebar } from './useAppSidebar';
 export { useMainContentLayout } from './useMainContentLayout';
 

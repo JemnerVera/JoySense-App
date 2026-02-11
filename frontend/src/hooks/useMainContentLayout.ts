@@ -1,4 +1,4 @@
-import { useSidebarLayout } from './useSidebarLayout';
+import { useSidebar } from '../contexts/SidebarContext';
 
 interface UseMainContentLayoutProps {
   showWelcome: boolean;
@@ -6,14 +6,7 @@ interface UseMainContentLayoutProps {
 }
 
 export const useMainContentLayout = ({ showWelcome, activeTab }: UseMainContentLayoutProps) => {
-  const {
-    mainSidebarExpanded,
-    auxiliarySidebarExpanded,
-    hasAuxiliarySidebar,
-    handleContentMouseEnter,
-    handleContentMouseLeave,
-    getMainContentMargin
-  } = useSidebarLayout({ showWelcome, activeTab });
+  const { handleContentMouseEnter, handleContentMouseLeave } = useSidebar();
 
   return {
     getMainContentClasses: () => `flex flex-col min-w-0 overflow-hidden w-full`,
