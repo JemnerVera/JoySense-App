@@ -2529,9 +2529,9 @@ const AppContentInternal: React.FC<{
                           if (activeTab.startsWith('ajustes-')) {
                             const ajustesSection = activeTab.replace('ajustes-', '');
                             if (ajustesSection === 'basicas') {
-                              breadcrumb += ' / CONF. BÁSICAS';
+                              breadcrumb += ' / AJUSTES GENERALES';
                             } else if (ajustesSection === 'avanzadas') {
-                              breadcrumb += ' / CONF. AVANZADAS';
+                              breadcrumb += ' / AJUSTES AVANZADOS';
                             }
                           }
                           return breadcrumb;
