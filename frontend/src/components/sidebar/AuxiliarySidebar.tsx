@@ -654,13 +654,7 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
     // Extraer la tabla del activeTab si no está en selectedTable
     const extractedTable = activeTab.replace('configuracion-notificaciones', '').replace(/^-/, '') || '';
     const finalSelectedTable = selectedTable || extractedTable;
-    
-    console.log('[AuxiliarySidebar NOTIFICACIONES] RENDERIZADO', {
-      activeTab,
-      finalSelectedTable,
-      willReturn: 'continues below'
-    });
-    
+
     // CORRECCIÓN: Verificar si estamos en REGLA
     const isInReglaSection = activeTab === 'configuracion-notificaciones-regla' || 
                              activeTab.startsWith('configuracion-notificaciones-regla-');
@@ -680,25 +674,15 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       const isUmbral = activeTab.startsWith('configuracion-notificaciones-umbral');
       const isRegla = activeTab.startsWith('configuracion-notificaciones-regla');
       
-      console.log('[AuxiliarySidebar !showThirdLevel] CHECK', {
-        activeTab,
-        isCriticidad,
-        isUmbral,
-        isRegla,
-        isSidebarAux3
-      });
-      
       // IMPORTANTE: Para REGLA, NUNCA renderizar sidebar
       // Todas las tablas de REGLA (regla, regla_perfil, regla_umbral, regla_objeto) con sus operaciones
       // deben estar en el contenido principal, NO en un sidebar
       if (isRegla) {
-        console.log('[AuxiliarySidebar] ❌ REGLA - RETURN NULL (no sidebar para REGLA)');
         return null;
       }
       
       // Para CRITICIDAD o UMBRAL CON operación, mostrar NotificacionesOperationsSidebar
       if (isSidebarAux3 && (isCriticidad || isUmbral)) {
-        console.log('[AuxiliarySidebar] ✅ CRITICIDAD/UMBRAL + Operación - Renderizar NotificacionesOperationsSidebar');
         return (
           <NotificacionesOperationsSidebar
             selectedTable={finalSelectedTable}
@@ -716,12 +700,10 @@ const AuxiliarySidebar: React.FC<AuxiliarySidebarProps> = ({
       }
       
       // Si no entra en el caso anterior, no renderizar nada
-      console.log('[AuxiliarySidebar] ❌ Condición no cumplida - RETURN NULL');
       return null;
     }
 
     // showThirdLevel=true nunca debería ocurrir para NOTIFICACIONES ahora
-    console.log('[AuxiliarySidebar showThirdLevel=true]', { activeTab, showThirdLevel });
     return null;
     
     // Si hay tabla seleccionada pero showThirdLevel es false, no renderizar nada aquí

@@ -71,21 +71,7 @@ const MenuItemLevel3Component: React.FC<MenuItemLevel3Props> = ({
   // 2. El activeTab corresponde a este elemento
   const isLevel4Open = openSubMenusLevel3.has(level3MenuKey) || isLevel3Active;
 
-  console.log('[MenuItemLevel3 RENDER]', {
-    label: level3Menu.label,
-    level3MenuKey,
-    isLevel3Active,
-    hasLevel4Menus,
-    isLevel4Open,
-    openSubMenusLevel3Size: openSubMenusLevel3.size,
-  });
-
   const handleClick = () => {
-    console.log('[MenuItemLevel3 CLICK]', {
-      label: level3Menu.label,
-      level3MenuKey,
-      hasLevel4Menus,
-    });
     onLevel3Click(parentId, level2Id, level3Menu.id, hasLevel4Menus || false);
   };
 
