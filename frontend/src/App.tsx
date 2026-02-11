@@ -918,6 +918,24 @@ const AppContentInternal: React.FC<{
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => {
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
     
+    // Si estamos en AGRUPACIÓN, actualizar el activeTab para incluir la operación
+    if (activeTab.startsWith('agrupacion-')) {
+      // El formato es: 'agrupacion-entidad' o 'agrupacion-entidad-status'
+      // Necesitamos actualizar a: 'agrupacion-entidad-[subTab]'
+      const parts = activeTab.replace('agrupacion-', '').split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      
+      // Extraer el nombre de la tabla (sin la operación si existe)
+      const agrupacionTable = parts.length > 1 && validOperations.includes(parts[parts.length - 1])
+        ? parts.slice(0, -1).join('-')
+        : parts.join('-');
+      
+      if (agrupacionTable && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
+        const newActiveTab = `agrupacion-${agrupacionTable}-${subTab}`;
+        setActiveTab(newActiveTab);
+      }
+    }
+    
     // Si estamos en una tabla de regla, actualizar el activeTab para incluir la operación
     // IMPORTANTE: Usar selectedTableRef.current para obtener el valor más reciente
     // porque selectedTable puede tener el valor del closure anterior cuando se cambia de tabla
@@ -2270,20 +2288,31 @@ const AppContentInternal: React.FC<{
                       ? (() => {
                           let breadcrumb = 'AGRUPACIÓN';
                           if (activeTab.startsWith('agrupacion-')) {
-                            const agrupacionTable = activeTab.replace('agrupacion-', '');
+                            // Extraer la tabla sin la operación
+                            // El formato es: 'agrupacion-entidad' o 'agrupacion-entidad-status'
+                            const parts = activeTab.replace('agrupacion-', '').split('-');
+                            const validOperations = ['status', 'insert', 'update', 'massive'];
+                            const agrupacionTable = parts.length > 1 && validOperations.includes(parts[parts.length - 1])
+                              ? parts.slice(0, -1).join('-')
+                              : parts.join('-');
+                            
                             const tableNames: Record<string, string> = {
                               'entidad': 'GRUPO',
                               'carpeta': 'CARPETA'
                             };
                             breadcrumb += ` / ${tableNames[agrupacionTable]?.toUpperCase() || agrupacionTable.toUpperCase()}`;
-                            if (activeSubTab) {
+                            
+                            // Solo mostrar el subTab si está incluido en el activeTab (no solo en activeSubTab)
+                            // Esto evita mostrar el subTab cuando solo se ha seleccionado la tabla
+                            if (parts.length > 1 && validOperations.includes(parts[parts.length - 1])) {
+                              const operation = parts[parts.length - 1];
                               const subTabNames: { [key: string]: string } = {
                                 'status': t('subtabs.status'),
                                 'insert': t('subtabs.insert'),
                                 'update': t('subtabs.update'),
                                 'massive': t('subtabs.massive')
                               };
-                              breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                              breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
                             }
                           }
                           return breadcrumb;
