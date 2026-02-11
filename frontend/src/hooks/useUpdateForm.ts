@@ -229,6 +229,173 @@ export const useUpdateForm = ({
         }
       }
 
+      // Caso especial para carpeta: actualizar carpeta + ubicaciones + usuarios
+      if (tableName === 'carpeta') {
+        const carpetaid = selectedRow?.carpetaid;
+        if (!carpetaid) {
+          throw new Error('No hay ID de carpeta');
+        }
+
+        const currentUserId = user?.user_metadata?.usuarioid || 1;
+        const now = new Date().toISOString();
+
+        // Actualizar carpeta (solo el nombre)
+        const carpetaUpdateData = {
+          carpeta: formData.carpeta,
+          usermodifiedid: currentUserId,
+          datemodified: now
+        };
+
+        // Sincronizar ubicaciones
+        const ubicacionidsToAdd = (formData.ubicacionids || []).filter((id: number) => 
+          !Array.isArray(formData._existingUbicacionids) || !formData._existingUbicacionids.includes(id)
+        );
+        const ubicacionidsToRemove = (formData._existingUbicacionids || []).filter((id: number) =>
+          !(formData.ubicacionids || []).includes(id)
+        );
+
+        // Sincronizar usuarios
+        const usuarioidesToAdd = (formData.usuarioids || []).filter((id: number) =>
+          !Array.isArray(formData._existingUsuarioids) || !formData._existingUsuarioids.includes(id)
+        );
+        const usuarioidesToRemove = (formData._existingUsuarioids || []).filter((id: number) =>
+          !(formData.usuarioids || []).includes(id)
+        );
+
+        // Actualizar carpeta
+        const carpetaPk = { carpetaid };
+        const carpetaResult = await updateRow(carpetaPk, carpetaUpdateData);
+        if (!carpetaResult.success) {
+          throw new Error(`Error actualizando carpeta: ${carpetaResult.error}`);
+        }
+
+        // Eliminar ubicaciones no seleccionadas
+        for (const ubicacionid of ubicacionidsToRemove) {
+          try {
+            const pk = { carpetaid, ubicacionid };
+            await updateRow(pk, { statusid: 0, usermodifiedid: currentUserId, datemodified: now });
+          } catch (error) {
+            console.warn(`Error al desactivar ubicación ${ubicacionid}:`, error);
+          }
+        }
+
+        // Agregar nuevas ubicaciones
+        for (const ubicacionid of ubicacionidsToAdd) {
+          try {
+            const { JoySenseService } = await import('../services/backend-api');
+            await JoySenseService.insertTableRow('carpeta_ubicacion', {
+              carpetaid,
+              ubicacionid,
+              statusid: 1,
+              usercreatedid: currentUserId,
+              datecreated: now,
+              usermodifiedid: currentUserId,
+              datemodified: now
+            });
+          } catch (error) {
+            console.warn(`Error al agregar ubicación ${ubicacionid}:`, error);
+          }
+        }
+
+        // Eliminar usuarios no seleccionados
+        for (const usuarioid of usuarioidesToRemove) {
+          try {
+            const pk = { carpetaid, usuarioid };
+            await updateRow(pk, { statusid: 0, usermodifiedid: currentUserId, datemodified: now });
+          } catch (error) {
+            console.warn(`Error al desactivar usuario ${usuarioid}:`, error);
+          }
+        }
+
+        // Agregar nuevos usuarios
+        for (const usuarioid of usuarioidesToAdd) {
+          try {
+            const { JoySenseService } = await import('../services/backend-api');
+            await JoySenseService.insertTableRow('carpeta_usuario', {
+              carpetaid,
+              usuarioid,
+              statusid: 1,
+              usercreatedid: currentUserId,
+              datecreated: now,
+              usermodifiedid: currentUserId,
+              datemodified: now
+            });
+          } catch (error) {
+            console.warn(`Error al agregar usuario ${usuarioid}:`, error);
+          }
+        }
+
+        onSuccess?.();
+        return;
+      }
+
+      // Caso especial para entidad (grupo): actualizar entidad + localizaciones
+      if (tableName === 'entidad') {
+        const entidadid = selectedRow?.entidadid;
+        if (!entidadid) {
+          throw new Error('No hay ID de grupo');
+        }
+
+        const currentUserId = user?.user_metadata?.usuarioid || 1;
+        const now = new Date().toISOString();
+
+        // Actualizar entidad (solo el nombre)
+        const entidadUpdateData = {
+          entidad: formData.entidad,
+          usermodifiedid: currentUserId,
+          datemodified: now
+        };
+
+        // Sincronizar localizaciones
+        const localizacionidsToAdd = (formData.localizacionids || []).filter((id: number) =>
+          !Array.isArray(formData._existingLocalizacionids) || !formData._existingLocalizacionids.includes(id)
+        );
+        const localizacionidsToRemove = (formData._existingLocalizacionids || []).filter((id: number) =>
+          !(formData.localizacionids || []).includes(id)
+        );
+
+        // Actualizar entidad
+        const entidadPk = { entidadid };
+        const entidadResult = await updateRow(entidadPk, entidadUpdateData);
+        if (!entidadResult.success) {
+          throw new Error(`Error actualizando grupo: ${entidadResult.error}`);
+        }
+
+        // Eliminar localizaciones no seleccionadas (statusid=0 en entidad_localizacion)
+        const { JoySenseService } = await import('../services/backend-api');
+        for (const localizacionid of localizacionidsToRemove) {
+          try {
+            await JoySenseService.updateTableRowByCompositeKey(
+              'entidad_localizacion',
+              { entidadid, localizacionid },
+              { statusid: 0, usermodifiedid: currentUserId, datemodified: now }
+            );
+          } catch (error) {
+            console.warn(`Error al desactivar localización ${localizacionid}:`, error);
+          }
+        }
+
+        // Agregar nuevas localizaciones
+        for (const localizacionid of localizacionidsToAdd) {
+          try {
+            await JoySenseService.insertTableRow('entidad_localizacion', {
+              entidadid,
+              localizacionid,
+              statusid: 1,
+              usercreatedid: currentUserId,
+              datecreated: now,
+              usermodifiedid: currentUserId,
+              datemodified: now
+            });
+          } catch (error) {
+            console.warn(`Error al agregar localización ${localizacionid}:`, error);
+          }
+        }
+
+        onSuccess?.();
+        return;
+      }
+
       // Caso especial para usuarioperfil: actualizar múltiples registros
       if (tableName === 'usuarioperfil' && formData._perfilesStatus && formData._allRows) {
         const perfilesStatus = formData._perfilesStatus as Record<number, number>;
