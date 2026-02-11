@@ -936,37 +936,77 @@ const AppContentInternal: React.FC<{
       }
     }
     
-    // Si estamos en una tabla de regla, actualizar el activeTab para incluir la operación
-    // IMPORTANTE: Usar selectedTableRef.current para obtener el valor más reciente
-    // porque selectedTable puede tener el valor del closure anterior cuando se cambia de tabla
-    if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-      // Determinar la tabla de regla: usar selectedTableRef.current si está disponible y es una tabla de regla válida,
-      // de lo contrario extraer de activeTab
-      let reglaTable: string | null = null;
+    // Si estamos en CONFIGURACIÓN (dispositivos, usuarios, parametros-geo), actualizar el activeTab para incluir la operación
+    if (activeTab.startsWith('configuracion-dispositivos-') ||
+        activeTab.startsWith('configuracion-usuarios-') ||
+        activeTab.startsWith('configuracion-parametros-geo-')) {
+      // El formato es: 'configuracion-dispositivos-tipo' o 'configuracion-dispositivos-tipo-status'
+      // Necesitamos extraer la ruta base sin la operación
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
       
-      // Priorizar selectedTableRef.current (valor más reciente) si es una tabla de regla válida
-      const currentSelectedTable = selectedTableRef.current;
-      if (currentSelectedTable && (currentSelectedTable === 'regla' || currentSelectedTable === 'regla_perfil' || currentSelectedTable === 'regla_umbral' || currentSelectedTable === 'regla_objeto')) {
-        reglaTable = currentSelectedTable;
+      // Para dispositivos y usuarios: ['configuracion', 'dispositivos', 'tipo', 'status'] o ['configuracion', 'dispositivos', 'tipo']
+      // Para parametros-geo: ['configuracion', 'parametros', 'geo', 'pais', 'status'] o ['configuracion', 'parametros', 'geo', 'pais']
+      const minPartsForOperation = activeTab.startsWith('configuracion-parametros-geo-') ? 5 : 4;
+      
+      // Extraer la ruta base (sin la operación si existe)
+      let basePath: string;
+      if (parts.length >= minPartsForOperation && validOperations.includes(parts[parts.length - 1])) {
+        // Ya tiene operación, removerla
+        basePath = parts.slice(0, -1).join('-');
       } else {
-        // Fallback: extraer de activeTab
-        // El formato es: 'configuracion-notificaciones-regla-regla_perfil-insert'
-        // Necesitamos extraer todo hasta el primer guion después de 'regla'
-        const reglaPrefix = 'configuracion-notificaciones-regla-';
-        if (activeTab.startsWith(reglaPrefix)) {
-          const afterPrefix = activeTab.substring(reglaPrefix.length);
-          // Dividir por '-' y tomar la primera parte (que es la tabla)
-          const parts = afterPrefix.split('-');
-          const extractedTable = parts[0];
-          // Validar que sea una tabla de regla válida
-          if (extractedTable === 'regla' || extractedTable === 'regla_perfil' || extractedTable === 'regla_umbral' || extractedTable === 'regla_objeto') {
-            reglaTable = extractedTable;
-          }
+        // No tiene operación aún, usar la ruta completa
+        basePath = activeTab;
+      }
+      
+      if (basePath && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
+        const newActiveTab = `${basePath}-${subTab}`;
+        setActiveTab(newActiveTab);
+      }
+    }
+    
+    // Si estamos en NOTIFICACIONES (regla o tablas de notificaciones), actualizar el activeTab para incluir la operación
+    if (activeTab.startsWith('configuracion-notificaciones-')) {
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      
+      // Para regla: ['configuracion', 'notificaciones', 'regla', 'regla', 'status'] o ['configuracion', 'notificaciones', 'regla', 'regla']
+      // Para otras: ['configuracion', 'notificaciones', 'criticidad', 'status'] o ['configuracion', 'notificaciones', 'criticidad']
+      let basePath: string;
+      
+      if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+        // Extraer hasta la tabla de regla (regla, regla_perfil, regla_objeto, etc.)
+        // Formato: 'configuracion-notificaciones-regla-regla' o 'configuracion-notificaciones-regla-regla-status'
+        const afterReglaPrefix = activeTab.replace('configuracion-notificaciones-regla-', '');
+        const reglaParts = afterReglaPrefix.split('-');
+        const reglaTable = reglaParts[0];
+        
+        // Verificar si ya tiene operación
+        if (reglaParts.length > 1 && validOperations.includes(reglaParts[reglaParts.length - 1])) {
+          // Ya tiene operación, removerla
+          basePath = `configuracion-notificaciones-regla-${reglaTable}`;
+        } else {
+          // No tiene operación aún
+          basePath = activeTab;
+        }
+      } else {
+        // Para otras tablas de notificaciones (criticidad, umbral, etc.)
+        const afterNotifPrefix = activeTab.replace('configuracion-notificaciones-', '');
+        const notifParts = afterNotifPrefix.split('-');
+        const table = notifParts[0];
+        
+        // Verificar si ya tiene operación
+        if (notifParts.length > 1 && validOperations.includes(notifParts[notifParts.length - 1])) {
+          // Ya tiene operación, removerla
+          basePath = `configuracion-notificaciones-${table}`;
+        } else {
+          // No tiene operación aún
+          basePath = activeTab;
         }
       }
       
-      if (reglaTable && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
-        const newActiveTab = `configuracion-notificaciones-regla-${reglaTable}-${subTab}`;
+      if (basePath && (subTab === 'status' || subTab === 'insert' || subTab === 'update' || subTab === 'massive')) {
+        const newActiveTab = `${basePath}-${subTab}`;
         setActiveTab(newActiveTab);
       }
     }
@@ -2321,59 +2361,93 @@ const AppContentInternal: React.FC<{
                       ? (() => {
                           let breadcrumb = 'CONFIGURACIÓN';
                           if (activeTab.startsWith('configuracion-')) {
-                            const configPart = activeTab.replace('configuracion-', '');
-                            // Determinar la sección de configuración
-                            if (configPart.startsWith('dispositivos-')) {
+                            const validOperations = ['status', 'insert', 'update', 'massive', 'asignar'];
+                            const parts = activeTab.split('-');
+                            
+                            // Determinar la sección y extraer tabla si existe, sin la operación
+                            if (activeTab.startsWith('configuracion-dispositivos-')) {
                               breadcrumb += ' / DISPOSITIVOS';
-                              const table = configPart.replace('dispositivos-', '').split('-')[0];
+                              const afterPrefix = activeTab.replace('configuracion-dispositivos-', '');
+                              const tableParts = afterPrefix.split('-');
+                              
+                              // Extraer tabla (sin operación si existe)
+                              const table = tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])
+                                ? tableParts.slice(0, -1).join('-')
+                                : tableParts.join('-');
+                              
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                  const subTabNames: { [key: string]: string } = {
-                                    'status': 'ESTADO',
-                                    'insert': 'CREAR',
-                                    'update': 'ACTUALIZAR'
-                                  };
-                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
-                                }
-                              }
-                            } else if (configPart.startsWith('usuarios-')) {
-                              breadcrumb += ' / USUARIOS';
-                              const table = configPart.replace('usuarios-', '').split('-')[0];
-                              if (table) {
-                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                  const subTabNames: { [key: string]: string } = {
-                                    'status': 'ESTADO',
-                                    'insert': 'CREAR',
-                                    'update': 'ACTUALIZAR'
-                                  };
-                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
-                                }
-                              }
-                            } else if (configPart.startsWith('parametros-geo-')) {
-                              breadcrumb += ' / PARÁMETROS GEO';
-                              const table = configPart.replace('parametros-geo-', '').split('-')[0];
-                              if (table) {
-                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
+                                
+                                // Solo mostrar operación si está incluida en el activeTab
+                                if (tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])) {
+                                  const operation = tableParts[tableParts.length - 1];
                                   const subTabNames: { [key: string]: string } = {
                                     'status': 'ESTADO',
                                     'insert': 'CREAR',
                                     'update': 'ACTUALIZAR',
                                     'massive': 'MASIVO'
                                   };
-                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                                  breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
                                 }
                               }
-                            } else if (configPart.startsWith('notificaciones-')) {
+                            } else if (activeTab.startsWith('configuracion-usuarios-')) {
+                              breadcrumb += ' / USUARIOS';
+                              const afterPrefix = activeTab.replace('configuracion-usuarios-', '');
+                              const tableParts = afterPrefix.split('-');
+                              
+                              // Extraer tabla (sin operación si existe)
+                              const table = tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])
+                                ? tableParts.slice(0, -1).join('-')
+                                : tableParts.join('-');
+                              
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                
+                                // Solo mostrar operación si está incluida en el activeTab
+                                if (tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])) {
+                                  const operation = tableParts[tableParts.length - 1];
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR',
+                                    'massive': 'MASIVO'
+                                  };
+                                  breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
+                                }
+                              }
+                            } else if (activeTab.startsWith('configuracion-parametros-geo-')) {
+                              breadcrumb += ' / PARÁMETROS GEO';
+                              const afterPrefix = activeTab.replace('configuracion-parametros-geo-', '');
+                              const tableParts = afterPrefix.split('-');
+                              
+                              // Extraer tabla (sin operación si existe)
+                              const table = tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])
+                                ? tableParts.slice(0, -1).join('-')
+                                : tableParts.join('-');
+                              
+                              if (table) {
+                                breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                
+                                // Solo mostrar operación si está incluida en el activeTab
+                                if (tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])) {
+                                  const operation = tableParts[tableParts.length - 1];
+                                  const subTabNames: { [key: string]: string } = {
+                                    'status': 'ESTADO',
+                                    'insert': 'CREAR',
+                                    'update': 'ACTUALIZAR',
+                                    'massive': 'MASIVO'
+                                  };
+                                  breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
+                                }
+                              }
+                            } else if (activeTab.startsWith('configuracion-notificaciones-')) {
                               breadcrumb += ' / NOTIFICACIONES';
-                              if (configPart.startsWith('notificaciones-regla-')) {
-                                const reglaPart = configPart.replace('notificaciones-regla-', '');
-                                const reglaTable = reglaPart.split('-')[0];
+                              if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
+                                breadcrumb += ' / REGLAS';
+                                const afterPrefix = activeTab.replace('configuracion-notificaciones-regla-', '');
+                                const reglaParts = afterPrefix.split('-');
+                                const reglaTable = reglaParts[0];
+                                
                                 if (reglaTable) {
                                   const reglaTableNames: Record<string, string> = {
                                     'regla': 'REGLA & UMBRAL',
@@ -2381,52 +2455,67 @@ const AppContentInternal: React.FC<{
                                     'regla_objeto': 'REGLA DE OBJETO'
                                   };
                                   breadcrumb += ` / ${reglaTableNames[reglaTable]?.toUpperCase() || reglaTable.toUpperCase()}`;
-                                  // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                  if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update')) {
-                                    const subTabNames: { [key: string]: string } = {
-                                      'status': 'ESTADO',
-                                      'insert': 'CREAR',
-                                      'update': 'ACTUALIZAR'
-                                    };
-                                    breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
-                                  }
-                                }
-                              } else {
-                                // Para otras tablas de notificaciones (criticidad, umbral)
-                                const table = configPart.replace('notificaciones-', '').split('-')[0];
-                                if (table && table !== 'regla') {
-                                  breadcrumb += ` / ${getTableNameInSpanish(table)}`;
-                                  // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                  if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'massive')) {
+                                  
+                                  // Solo mostrar operación si está incluida en el activeTab
+                                  if (reglaParts.length > 1 && validOperations.includes(reglaParts[reglaParts.length - 1])) {
+                                    const operation = reglaParts[reglaParts.length - 1];
                                     const subTabNames: { [key: string]: string } = {
                                       'status': 'ESTADO',
                                       'insert': 'CREAR',
                                       'update': 'ACTUALIZAR',
                                       'massive': 'MASIVO'
                                     };
-                                    breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                                    breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
+                                  }
+                                }
+                              } else {
+                                // Para otras tablas de notificaciones (criticidad, umbral)
+                                const afterPrefix = activeTab.replace('configuracion-notificaciones-', '');
+                                const tableParts = afterPrefix.split('-');
+                                const table = tableParts[0];
+                                
+                                if (table && table !== 'regla') {
+                                  breadcrumb += ` / ${getTableNameInSpanish(table)}`;
+                                  
+                                  // Solo mostrar operación si está incluida en el activeTab
+                                  if (tableParts.length > 1 && validOperations.includes(tableParts[tableParts.length - 1])) {
+                                    const operation = tableParts[tableParts.length - 1];
+                                    const subTabNames: { [key: string]: string } = {
+                                      'status': 'ESTADO',
+                                      'insert': 'CREAR',
+                                      'update': 'ACTUALIZAR',
+                                      'massive': 'MASIVO'
+                                    };
+                                    breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
                                   }
                                 }
                               }
-                            } else if (configPart.startsWith('permisos-')) {
+                            } else if (activeTab.startsWith('configuracion-permisos-')) {
                               breadcrumb += ' / PERMISOS';
-                              if (configPart.startsWith('permisos-permisos-')) {
-                                const permisosTipo = configPart.replace('permisos-permisos-', '').split('-')[0];
-                                breadcrumb += ` / ${permisosTipo.toUpperCase()}`;
-                                // Usar activeSubTab directamente - no agregar "OPERACIONES" ya que es un header de sidebar
-                                if (activeSubTab && (activeSubTab === 'status' || activeSubTab === 'insert' || activeSubTab === 'update' || activeSubTab === 'asignar')) {
-                                  const subTabNames: { [key: string]: string } = {
-                                    'status': 'ESTADO',
-                                    'insert': 'CREAR',
-                                    'update': 'ACTUALIZAR',
-                                    'asignar': 'ASIGNAR'
-                                  };
-                                  breadcrumb += ` / ${subTabNames[activeSubTab]?.toUpperCase() || activeSubTab.toUpperCase()}`;
+                              if (activeTab.startsWith('configuracion-permisos-permisos-')) {
+                                const afterPrefix = activeTab.replace('configuracion-permisos-permisos-', '');
+                                const permisosParts = afterPrefix.split('-');
+                                const permisosTipo = permisosParts[0];
+                                
+                                if (permisosTipo) {
+                                  breadcrumb += ` / ${permisosTipo.toUpperCase()}`;
+                                  
+                                  // Solo mostrar operación si está incluida en el activeTab
+                                  if (permisosParts.length > 1 && validOperations.includes(permisosParts[permisosParts.length - 1])) {
+                                    const operation = permisosParts[permisosParts.length - 1];
+                                    const subTabNames: { [key: string]: string } = {
+                                      'status': 'ESTADO',
+                                      'insert': 'CREAR',
+                                      'update': 'ACTUALIZAR',
+                                      'asignar': 'ASIGNAR'
+                                    };
+                                    breadcrumb += ` / ${subTabNames[operation]?.toUpperCase() || operation.toUpperCase()}`;
+                                  }
                                 }
                               }
-                            } else if (configPart.startsWith('reportes-administrador-')) {
+                            } else if (activeTab.startsWith('configuracion-reportes-administrador-')) {
                               breadcrumb += ' / REPORTES ADMINISTRADOR';
-                              const table = configPart.replace('reportes-administrador-', '');
+                              const table = activeTab.replace('configuracion-reportes-administrador-', '');
                               if (table) {
                                 breadcrumb += ` / ${getTableNameInSpanish(table)}`;
                               }
