@@ -146,31 +146,46 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   return (
     <div className={isFullscreenView ? 'w-full' : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4'}>
       <div className={contentWrapperClass}>
-        {/* Barra "Volver al mapa" - solo en vista fullscreen */}
+        {/* Barra "Volver al mapa" + botones de métrica - solo en vista fullscreen */}
         {isFullscreenView && (
-          <div className="flex items-center justify-between px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
+          <div className="flex items-center justify-between gap-4 px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
             <button
               onClick={onClose}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               {t('dashboard.back_to_map')}
             </button>
-            <span className="text-white font-mono text-sm opacity-90">
-              {selectedMetricForAnalysis?.title} - {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
-            </span>
+            {/* Botones de métrica en el header */}
+            <div className="flex flex-wrap items-center gap-2">
+              {availableMetrics.length > 0 ? (
+                availableMetrics.map((metric) => (
+                  <button
+                    key={metric.id}
+                    onClick={() => onMetricChange(metric.dataKey)}
+                    disabled={loadingDetailedData}
+                    className={`relative px-3 py-1.5 font-mono tracking-wider transition-all duration-200 text-xs ${
+                      selectedDetailedMetric === metric.dataKey
+                        ? 'bg-white text-blue-600 dark:bg-neutral-800 dark:text-blue-400 shadow-md'
+                        : 'bg-blue-500/50 text-white hover:bg-blue-500/70'
+                    } rounded ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <span className="truncate block max-w-[120px]">{metric.title}</span>
+                  </button>
+                ))
+              ) : null}
+            </div>
           </div>
         )}
         
-        {/* Contenido con sidebar */}
+        {/* Contenido - con sidebar solo en modo modal */}
         <div className="flex-1 flex overflow-hidden">
           
-          {/* Sidebar izquierdo */}
+          {/* Sidebar izquierdo - solo en modo modal (no fullscreen) */}
+          {!isFullscreenView && (
           <div className="w-48 border-r border-gray-300 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 flex flex-col py-4 overflow-y-auto">
-            
-            {/* Pestañas de métricas */}
             <div className="flex flex-col space-y-2 px-2">
               {availableMetrics.length > 0 ? (
                 availableMetrics.map((metric) => (
@@ -198,60 +213,35 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Información de localización */}
             {selectedNode && (
               <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
                 <div className="text-xs font-mono space-y-1.5 text-gray-700 dark:text-neutral-300">
-                  {(selectedNode.localizacion || localizacionesPorNodo?.get(selectedNode.nodoid)?.[0]) && (
-                    <div className="truncate pl-2 font-bold">
-                      <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {selectedNode.localizacion || localizacionesPorNodo?.get(selectedNode.nodoid)?.[0]}
-                    </div>
-                  )}
                   {selectedNode.ubicacion && (
                     <>
-                      <div className="truncate pl-2">
-                        <span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}
-                      </div>
+                      <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}</div>
                       {selectedNode.ubicacion.fundo && (
                         <>
-                          <div className="truncate pl-2">
-                            <span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.fundo.fundo}
-                          </div>
+                          <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.fundo.fundo}</div>
                           {selectedNode.ubicacion.fundo.empresa && (
-                            <>
-                              <div className="truncate pl-2">
-                                <span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.fundo.empresa.empresa}
-                              </div>
-                              {selectedNode.ubicacion.fundo.empresa.pais && (
-                                <div className="truncate pl-2">
-                                  <span className="text-gray-500 dark:text-neutral-500">País:</span> {selectedNode.ubicacion.fundo.empresa.pais.pais}
-                                </div>
-                              )}
-                            </>
+                            <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.fundo.empresa.empresa}</div>
                           )}
                         </>
                       )}
                     </>
                   )}
-                  {(selectedNode.latitud !== null && selectedNode.latitud !== undefined && selectedNode.longitud !== null && selectedNode.longitud !== undefined) && (
-                    <div className="truncate pl-2 text-gray-600 dark:text-neutral-400">
-                      <span className="text-gray-500 dark:text-neutral-500">Coordenadas:</span>
-                      <div className="pl-2">{selectedNode.latitud}, {selectedNode.longitud}</div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
           </div>
+          )}
 
           {/* Contenido principal */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900">
-            <div className={isFullscreenView ? 'p-3' : 'p-6'}>
+          <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-900 min-w-0">
+            <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg flex items-start gap-4 overflow-x-auto ${isFullscreenView ? 'mb-3 p-3' : 'mb-6 p-4'}`}>
-                <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden">
+              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-2 p-2' : 'mb-6 p-4'}`}>
+                <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden flex-1 min-w-0">
                   
                   {/* Fecha Inicio */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -433,13 +423,27 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     </div>
                   </div>
                 </div>
+                {/* Info compacta: Ubicación, Fundo, Empresa - al extremo derecho (solo fullscreen) */}
+                {isFullscreenView && selectedNode?.ubicacion && (
+                  <div className="flex-shrink-0 text-right text-xs font-mono text-gray-700 dark:text-neutral-300 border-l border-gray-400 dark:border-neutral-600 pl-4">
+                    <div>Ubicación: {selectedNode.ubicacion.ubicacion}</div>
+                    {selectedNode.ubicacion.fundo && (
+                      <>
+                        <div>Fundo: {selectedNode.ubicacion.fundo.fundo}</div>
+                        {selectedNode.ubicacion.fundo.empresa && (
+                          <div>Empresa: {selectedNode.ubicacion.fundo.empresa.empresa}</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Área del gráfico */}
-              <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg ${isFullscreenView ? 'p-3' : 'p-6'}`}>
+              {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
+              <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
                 {/* Título de comparación si existe */}
                 {comparisonNode && (
-                  <div className="text-center mb-4">
+                  <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-4'}`}>
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
                       {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo} vs. {comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}
                     </h2>
@@ -466,6 +470,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     comparisonNode={comparisonNode}
                     mainLocalizacionLabel={selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion}
                     comparisonLocalizacionLabel={comparisonNode?.localizacion || localizacionesPorNodo?.get(comparisonNode?.nodoid)?.[0] || comparisonNode?.ubicacion?.ubicacion}
+                    fillHeight={isFullscreenView}
                   />
                 ) : (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">

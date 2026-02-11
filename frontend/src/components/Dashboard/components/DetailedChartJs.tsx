@@ -19,6 +19,7 @@ export interface DetailedChartJsProps {
   comparisonNode?: any | null  // Nodo de comparación
   mainLocalizacionLabel?: string  // Etiqueta para leyenda (ej. "LOTE T1 HILERA 6")
   comparisonLocalizacionLabel?: string  // Etiqueta para comparación
+  fillHeight?: boolean  // Cuando true, el gráfico ocupa todo el espacio disponible
 }
 
 /**
@@ -37,6 +38,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   comparisonNode = null,
   mainLocalizacionLabel,
   comparisonLocalizacionLabel,
+  fillHeight = false,
 }) => {
   console.log('[DetailedChartJs] Rendering with data:', data.length, 'visibleLines:', visibleLines.length, 'loading:', loading)
   console.log('[DetailedChartJs] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
@@ -217,8 +219,8 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   }
 
   return (
-    <div>
-      <div className="h-96">
+    <div className={fillHeight ? 'flex flex-col min-h-0 flex-1' : ''}>
+      <div className={fillHeight ? 'min-h-[300px] flex-1' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.2} />
@@ -294,14 +296,14 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
       
       {/* Leyenda con checkboxes - Separada en dos grupos */}
       {visibleLines.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
+        <div className={`border-t border-gray-300 dark:border-neutral-600 flex-shrink-0 ${fillHeight ? 'mt-2 pt-2' : 'mt-4 pt-4'}`}>
           {/* Obtener líneas del nodo principal y de comparación */}
           {(() => {
             const mainNodeLines = visibleLines.filter(line => !isComparisonLine(line))
             const comparisonNodeLines = visibleLines.filter(line => isComparisonLine(line))
             
             return (
-              <div className="flex flex-col gap-6">
+              <div className={`flex flex-col ${fillHeight ? 'gap-3' : 'gap-6'}`}>
                 {/* Grupo Localización Principal */}
                 {mainNodeLines.length > 0 && (
                   <div>
