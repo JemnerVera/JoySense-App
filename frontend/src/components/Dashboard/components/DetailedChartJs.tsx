@@ -17,6 +17,8 @@ export interface DetailedChartJsProps {
   metricUnit?: string  // Unidad de la métrica para mostrar en tooltip
   selectedNode?: any | null  // Nodo principal
   comparisonNode?: any | null  // Nodo de comparación
+  mainLocalizacionLabel?: string  // Etiqueta para leyenda (ej. "LOTE T1 HILERA 6")
+  comparisonLocalizacionLabel?: string  // Etiqueta para comparación
 }
 
 /**
@@ -33,6 +35,8 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   metricUnit = '',
   selectedNode = null,
   comparisonNode = null,
+  mainLocalizacionLabel,
+  comparisonLocalizacionLabel,
 }) => {
   console.log('[DetailedChartJs] Rendering with data:', data.length, 'visibleLines:', visibleLines.length, 'loading:', loading)
   console.log('[DetailedChartJs] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
@@ -298,11 +302,11 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
             
             return (
               <div className="flex flex-col gap-6">
-                {/* Grupo Nodo Principal */}
+                {/* Grupo Localización Principal */}
                 {mainNodeLines.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      NODO PRINCIPAL {selectedNode?.nodo ? `(${selectedNode.nodo})` : ''}
+                      LOCALIZACIÓN PRINCIPAL {mainLocalizacionLabel ? `(${mainLocalizacionLabel})` : ''}
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
                       {mainNodeLines.map((lineKey) => {
@@ -334,11 +338,11 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                   </div>
                 )}
                 
-                {/* Grupo Nodo Comparación */}
+                {/* Grupo Localización Comparación */}
                 {comparisonNodeLines.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      NODO COMPARACIÓN {comparisonNode?.nodo ? `(${comparisonNode.nodo})` : ''}
+                      LOCALIZACIÓN COMPARACIÓN {comparisonLocalizacionLabel ? `(${comparisonLocalizacionLabel})` : ''}
                     </div>
                     <div className="flex flex-wrap items-center gap-6 justify-center">
                       {sortBySondaNumber(comparisonNodeLines).map((lineKey) => {
