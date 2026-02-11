@@ -169,6 +169,62 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
+  // AGRUPACIÓN - Nuevas tablas carpeta (schema joysense)
+  carpeta: {
+    name: 'carpeta',
+    displayName: 'Carpeta',
+    description: 'Carpetas de agrupación',
+    icon: '📁',
+    category: 'geografia',
+    primaryKey: 'carpetaid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: false,
+    allowMassive: false,
+    sortField: 'carpeta',
+    fields: [
+      { name: 'carpetaid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'carpeta', label: 'Carpeta', type: 'text', required: true },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  carpeta_ubicacion: {
+    name: 'carpeta_ubicacion',
+    displayName: 'Ubicación por Carpeta',
+    description: 'Relación entre carpetas y ubicaciones',
+    icon: '📍',
+    category: 'geografia',
+    primaryKey: ['carpetaid', 'ubicacionid'],
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    allowMassive: false,
+    fields: [
+      { name: 'carpetaid', label: 'Carpeta', type: 'select', required: true, foreignKey: { table: 'carpeta', valueField: 'carpetaid', labelField: 'carpeta' } },
+      { name: 'ubicacionid', label: 'Ubicación', type: 'select', required: true, foreignKey: { table: 'ubicacion', valueField: 'ubicacionid', labelField: 'ubicacion' } },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
+  carpeta_usuario: {
+    name: 'carpeta_usuario',
+    displayName: 'Usuario por Carpeta',
+    description: 'Relación entre carpetas y usuarios',
+    icon: '👤',
+    category: 'geografia',
+    primaryKey: ['carpetaid', 'usuarioid'],
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: true,
+    allowMassive: false,
+    fields: [
+      { name: 'carpetaid', label: 'Carpeta', type: 'select', required: true, foreignKey: { table: 'carpeta', valueField: 'carpetaid', labelField: 'carpeta' } },
+      { name: 'usuarioid', label: 'Usuario', type: 'select', required: true, foreignKey: { table: 'usuario', valueField: 'usuarioid', labelField: 'login' } },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
+    ]
+  },
+
   // --------------------------------------------------------------------------
   // DISPOSITIVOS
   // --------------------------------------------------------------------------
@@ -926,8 +982,9 @@ export const TABLE_CATEGORIES = {
 
 /**
  * Obtener tablas de GEOGRAFÍA
- * Incluye: pais, empresa, fundo, ubicacion, entidad, entidad_localizacion
+ * Incluye: pais, empresa, fundo, ubicacion, carpeta, carpeta_ubicacion, carpeta_usuario
  * NOTA: localizacion y nodo son dispositivos, no geografía
+ * NOTA: entidad, entidad_localizacion se mantienen para Dashboard (legacy)
  */
 export function getGeografiaTables(): TableConfig[] {
   const geografiaTableNames: TableName[] = [
@@ -936,7 +993,10 @@ export function getGeografiaTables(): TableConfig[] {
     'fundo',
     'ubicacion',
     'entidad',
-    'entidad_localizacion'
+    'entidad_localizacion',
+    'carpeta',
+    'carpeta_ubicacion',
+    'carpeta_usuario'
   ];
   return geografiaTableNames.map(name => TABLES_CONFIG[name]).filter(Boolean);
 }
@@ -1051,7 +1111,7 @@ export function getParametrosGeoTables(): TableConfig[] {
  * Excluye: mediciones, alertas, permisos, usuarios, tipo_mensaje, codigotelefono (auxiliar)
  */
 export function getTablaTables(): TableConfig[] {
-  const geografiaTableNames: TableName[] = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
+  const geografiaTableNames: TableName[] = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
   const parametrosTableNames: TableName[] = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
   const permisosTableNames: TableName[] = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
   

@@ -676,10 +676,10 @@ export class SupabaseRPCService {
       const { data, error } = await supabaseAuth
         .schema('joysense')
         .rpc('fn_get_mediciones_nodo_detallado', {
+          p_end_date: params.endDate ? `${params.endDate}` : null,
+          p_metricaid: params.metricaid || null,
           p_nodoid: params.nodoid,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null,
-          p_metricaid: params.metricaid || null
+          p_start_date: params.startDate ? `${params.startDate}` : null
         });
 
       if (error) {

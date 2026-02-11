@@ -36,15 +36,15 @@ const AgrupacionMain = forwardRef<AgrupacionMainRef, AgrupacionMainProps>(({
   const systemParametersRef = useRef<SystemParametersRef | null>(null);
 
   // Estado local para la tabla seleccionada
-  const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || 'entidad');
+  const [selectedTable, setSelectedTable] = useState<string>(propSelectedTable || 'carpeta');
 
   // Sincronizar con prop
   useEffect(() => {
     if (propSelectedTable) {
       setSelectedTable(propSelectedTable);
     } else {
-      // Si no hay tabla seleccionada, usar 'entidad' por defecto
-      setSelectedTable('entidad');
+      // Si no hay tabla seleccionada, usar 'carpeta' por defecto
+      setSelectedTable('carpeta');
     }
   }, [propSelectedTable]);
 
