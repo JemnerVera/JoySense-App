@@ -5,6 +5,8 @@
 import React, { useMemo, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { NormalInsertForm } from '../../../components/shared/forms';
+import CarpetaForm from '../../../components/shared/forms/table-specific/CarpetaForm';
+import GrupoForm from '../../../components/shared/forms/table-specific/GrupoForm';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { logger } from '../../../utils/logger';
 import InsertionMessage from '../../../components/shared/ui/messages/InsertionMessage';
@@ -132,6 +134,68 @@ export const InsertTab: React.FC<InsertTabProps> = ({
 
   // Determinar qué formulario renderizar según la tabla
   const renderForm = () => {
+    // Formulario unificado para grupo (nombre + localizaciones)
+    if (tableName === 'entidad') {
+      const localizacionesOptions = getUniqueOptionsForFieldHelper('localizacionid');
+      const grupoFormData = {
+        entidad: formData.entidad || '',
+        localizacionids: formData.localizacionids || []
+      };
+      return (
+        <GrupoForm
+          key={`grupo-insert-${resetKey || '0'}`}
+          formData={grupoFormData}
+          setFormData={(dataOrFn) => {
+            if (typeof dataOrFn === 'function') {
+              const prev = { entidad: formData.entidad || '', localizacionids: formData.localizacionids || [] };
+              const next = dataOrFn(prev);
+              setFormData({ ...formData, ...next });
+            } else {
+              setFormData({ ...formData, ...dataOrFn });
+            }
+          }}
+          localizacionesOptions={localizacionesOptions}
+          loading={loading}
+          onSave={onInsert}
+          onCancel={onCancel}
+          isUpdate={false}
+          themeColor={themeColor === 'green' ? 'green' : 'green'}
+        />
+      );
+    }
+
+    // Formulario unificado para carpeta (nombre + ubicaciones + usuarios)
+    if (tableName === 'carpeta') {
+      const ubicacionesOptions = getUniqueOptionsForFieldHelper('ubicacionid');
+      const usuariosOptions = getUniqueOptionsForFieldHelper('usuarioid');
+      const carpetaFormData = {
+        carpeta: formData.carpeta || '',
+        ubicacionids: formData.ubicacionids || [],
+        usuarioids: formData.usuarioids || []
+      };
+      return (
+        <CarpetaForm
+          key={`carpeta-insert-${resetKey || '0'}`}
+          formData={carpetaFormData}
+          setFormData={(dataOrFn) => {
+            if (typeof dataOrFn === 'function') {
+              const prev = { carpeta: formData.carpeta || '', ubicacionids: formData.ubicacionids || [], usuarioids: formData.usuarioids || [] };
+              const next = dataOrFn(prev);
+              setFormData({ ...formData, ...next });
+            } else {
+              setFormData({ ...formData, ...dataOrFn });
+            }
+          }}
+          ubicacionesOptions={ubicacionesOptions}
+          usuariosOptions={usuariosOptions}
+          loading={loading}
+          onSave={onInsert}
+          onCancel={onCancel}
+          isUpdate={false}
+          themeColor={themeColor === 'green' ? 'green' : 'green'}
+        />
+      );
+    }
 
     // Formulario normal para todas las tablas
     // Usar una key que incluya tableName y resetKey para forzar re-mount cuando se resetea

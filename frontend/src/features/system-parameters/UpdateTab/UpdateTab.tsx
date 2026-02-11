@@ -11,9 +11,12 @@ import { LoadingSpinner } from '../LoadingSpinner';
 import { PaginationControlsCompat } from '../../../components/shared/ui/pagination/PaginationControlsCompat';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
+import CarpetaForm from '../../../components/shared/forms/table-specific/CarpetaForm';
+import GrupoForm from '../../../components/shared/forms/table-specific/GrupoForm';
 import { MessageDisplay } from '../MessageDisplay';
 import { useModal } from '../../../contexts/ModalContext';
 import { consolidateErrorMessages } from '../../../utils/messageConsolidation';
+import { JoySenseService } from '../../../services/backend-api';
 import type { ColumnInfo } from '../../../types/systemParameters';
 import type { RelatedData } from '../../../utils/systemParametersUtils';
 import type { TableConfig } from '../../../config/tables.config';
@@ -62,6 +65,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   const [selectedRow, setSelectedRow] = useState<any | null>(initialSelectedRow);
   const [showForm, setShowForm] = useState(!!initialSelectedRow); // Mostrar formulario si hay fila inicial
   const [originalFormData, setOriginalFormData] = useState<Record<string, any>>({});
+  const [carpetaRelatedData, setCarpetaRelatedData] = useState<{ ubicacionids: number[]; usuarioids: number[] }>({ ubicacionids: [], usuarioids: [] });
+  const [entidadRelatedData, setEntidadRelatedData] = useState<{ localizacionids: number[] }>({ localizacionids: [] });
+  const [loadingRelated, setLoadingRelated] = useState(false);
   const { showModal } = useModal();
   
   // Sincronizar selectedRow cuando cambia initialSelectedRow
@@ -69,11 +75,68 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     if (initialSelectedRow) {
       setSelectedRow(initialSelectedRow);
       setShowForm(true);
+      // Si es carpeta, cargar ubicaciones y usuarios relacionados
+      if (tableName === 'carpeta') {
+        loadCarpetaRelatedData(initialSelectedRow.carpetaid);
+      }
+      // Si es entidad (grupo), cargar localizaciones relacionadas
+      if (tableName === 'entidad') {
+        loadEntidadRelatedData(initialSelectedRow.entidadid);
+      }
     } else {
       setSelectedRow(null);
       setShowForm(false);
     }
   }, [initialSelectedRow, tableName]);
+
+  // Función para cargar carpeta_ubicacion y carpeta_usuario
+  const loadCarpetaRelatedData = useCallback(async (carpetaid: number) => {
+    setLoadingRelated(true);
+    try {
+      // Cargar carpeta_ubicacion
+      const ubicacionesRes = await JoySenseService.getTableData('carpeta_ubicacion', 1000);
+      const ubicacionesData = Array.isArray(ubicacionesRes) ? ubicacionesRes : (ubicacionesRes as any)?.data || [];
+      const ubicacionidsForCarpeta = ubicacionesData
+        .filter((u: any) => u.carpetaid === carpetaid && u.statusid === 1)
+        .map((u: any) => u.ubicacionid);
+
+      // Cargar carpeta_usuario
+      const usuariosRes = await JoySenseService.getTableData('carpeta_usuario', 1000);
+      const usuariosData = Array.isArray(usuariosRes) ? usuariosRes : (usuariosRes as any)?.data || [];
+      const usuarioidesForCarpeta = usuariosData
+        .filter((u: any) => u.carpetaid === carpetaid && u.statusid === 1)
+        .map((u: any) => u.usuarioid);
+
+      setCarpetaRelatedData({
+        ubicacionids: ubicacionidsForCarpeta,
+        usuarioids: usuarioidesForCarpeta
+      });
+    } catch (error) {
+      console.error('Error loading carpeta related data:', error);
+      setCarpetaRelatedData({ ubicacionids: [], usuarioids: [] });
+    } finally {
+      setLoadingRelated(false);
+    }
+  }, []);
+
+  // Función para cargar entidad_localizacion
+  const loadEntidadRelatedData = useCallback(async (entidadid: number) => {
+    setLoadingRelated(true);
+    try {
+      const localizacionesRes = await JoySenseService.getTableData('entidad_localizacion', 1000);
+      const localizacionesData = Array.isArray(localizacionesRes) ? localizacionesRes : (localizacionesRes as any)?.data || [];
+      const localizacionidsForEntidad = localizacionesData
+        .filter((l: any) => l.entidadid === entidadid && l.statusid === 1)
+        .map((l: any) => l.localizacionid);
+
+      setEntidadRelatedData({ localizacionids: localizacionidsForEntidad });
+    } catch (error) {
+      console.error('Error loading entidad related data:', error);
+      setEntidadRelatedData({ localizacionids: [] });
+    } finally {
+      setLoadingRelated(false);
+    }
+  }, []);
 
   // Para usuarioperfil: agrupar datos por usuarioid y agregar columna "Perfil"
   const processedTableData = useMemo(() => {
@@ -231,6 +294,14 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     }
   });
 
+  // Sincronizar entidadRelatedData a formData cuando se carga (para que handleUpdate tenga localizacionids)
+  useEffect(() => {
+    if (tableName === 'entidad' && selectedRow && !loadingRelated) {
+      updateFormField('localizacionids', entidadRelatedData.localizacionids);
+      updateFormField('_existingLocalizacionids', entidadRelatedData.localizacionids);
+    }
+  }, [tableName, selectedRow?.entidadid, entidadRelatedData.localizacionids, loadingRelated, updateFormField]);
+
   // Cuando se selecciona una fila, mostrar botones pero no el formulario aún
   const handleRowSelect = (row: any) => {
     setSelectedRow(row);
@@ -308,6 +379,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       setSelectedRow(null);
       setShowForm(false);
       setOriginalFormData({});
+      setCarpetaRelatedData({ ubicacionids: [], usuarioids: [] });
+      setEntidadRelatedData({ localizacionids: [] });
     }, 50);
   };
 
@@ -360,6 +433,39 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
       {loading ? (
         <LoadingSpinner message="Cargando datos..." />
+      ) : (tableName === 'carpeta' || tableName === 'entidad') && !selectedRow ? (
+        // Para CARPETA o GRUPO: mostrar selector en lugar de tabla
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-200 dark:border-neutral-700">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              {tableName === 'carpeta' ? 'Seleccionar Carpeta para Actualizar' : 'Seleccionar Grupo para Actualizar'}
+            </label>
+            <select
+              value={selectedRow?.carpetaid ?? selectedRow?.entidadid ?? ''}
+              onChange={(e) => {
+                const id = parseInt(e.target.value);
+                const row = tableData.find((r: any) => (tableName === 'carpeta' ? r.carpetaid : r.entidadid) === id);
+                if (row) {
+                  setSelectedRow(row);
+                  setShowForm(true);
+                  if (tableName === 'carpeta') {
+                    loadCarpetaRelatedData(row.carpetaid);
+                  } else {
+                    loadEntidadRelatedData(row.entidadid);
+                  }
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">-- Seleccionar --</option>
+              {tableData.map((row: any) => (
+                <option key={tableName === 'carpeta' ? row.carpetaid : row.entidadid} value={tableName === 'carpeta' ? row.carpetaid : row.entidadid}>
+                  {tableName === 'carpeta' ? row.carpeta : row.entidad}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       ) : showForm && selectedRow ? (
         // Mostrar formulario inline (no modal)
         <div className="space-y-4">
@@ -392,22 +498,106 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             />
           )}
 
-          {/* Formulario */}
-          <NormalUpdateForm
-              config={config}
-              formData={formData}
-              formErrors={formErrors}
-              updateFormField={updateFormField}
-              relatedData={relatedData}
-              visibleColumns={visibleColumns}
-              getColumnDisplayName={getColumnDisplayName}
-              getUniqueOptionsForField={getUniqueOptionsForField}
-              tableName={tableName}
-              nodosData={relatedData.nodosData}
-              localizacionesData={relatedData.localizacionesData}
-              ubicacionesData={relatedData.ubicacionesData}
-              themeColor={themeColor}
-            />
+          {/* Formulario especializado para GRUPO o CARPETA */}
+          {tableName === 'entidad' ? (
+            loadingRelated ? (
+              <LoadingSpinner message="Cargando datos relacionados..." />
+            ) : (
+              <div>
+                <GrupoForm
+                  formData={{
+                    entidad: formData.entidad || selectedRow?.entidad || '',
+                    localizacionids: entidadRelatedData.localizacionids,
+                    entidadid: selectedRow?.entidadid
+                  }}
+                  setFormData={(dataOrFn) => {
+                    if (typeof dataOrFn === 'function') {
+                      const prev = {
+                        entidad: formData.entidad || selectedRow?.entidad || '',
+                        localizacionids: entidadRelatedData.localizacionids,
+                        entidadid: selectedRow?.entidadid
+                      };
+                      const next = dataOrFn(prev);
+                      updateFormField('entidad', next.entidad);
+                      updateFormField('localizacionids', next.localizacionids);
+                      setEntidadRelatedData({ localizacionids: next.localizacionids });
+                    } else {
+                      if (dataOrFn.entidad !== undefined) updateFormField('entidad', dataOrFn.entidad);
+                      if (dataOrFn.localizacionids) {
+                        updateFormField('localizacionids', dataOrFn.localizacionids);
+                        setEntidadRelatedData(prev => ({ ...prev, localizacionids: dataOrFn.localizacionids }));
+                      }
+                    }
+                  }}
+                  localizacionesOptions={getUniqueOptionsForField?.('localizacionid') || []}
+                  loading={isSubmitting}
+                  onSave={() => {}}
+                  onCancel={() => {}}
+                  isUpdate={true}
+                  themeColor={themeColor === 'green' ? 'green' : 'green'}
+                />
+              </div>
+            )
+          ) : tableName === 'carpeta' ? (
+            loadingRelated ? (
+              <LoadingSpinner message="Cargando datos relacionados..." />
+            ) : (
+              <div>
+                <CarpetaForm
+                  formData={{
+                    carpeta: formData.carpeta || selectedRow?.carpeta || '',
+                    ubicacionids: carpetaRelatedData.ubicacionids,
+                    usuarioids: carpetaRelatedData.usuarioids,
+                    carpetaid: selectedRow?.carpetaid
+                  }}
+                  setFormData={(dataOrFn) => {
+                    if (typeof dataOrFn === 'function') {
+                      const prev = { 
+                        carpeta: formData.carpeta || selectedRow?.carpeta || '', 
+                        ubicacionids: carpetaRelatedData.ubicacionids, 
+                        usuarioids: carpetaRelatedData.usuarioids,
+                        carpetaid: selectedRow?.carpetaid
+                      };
+                      const next = dataOrFn(prev);
+                      updateFormField('carpeta', next.carpeta);
+                      setCarpetaRelatedData({ 
+                        ubicacionids: next.ubicacionids, 
+                        usuarioids: next.usuarioids 
+                      });
+                    } else {
+                      if (dataOrFn.carpeta !== undefined) updateFormField('carpeta', dataOrFn.carpeta);
+                      if (dataOrFn.ubicacionids) setCarpetaRelatedData(prev => ({ ...prev, ubicacionids: dataOrFn.ubicacionids }));
+                      if (dataOrFn.usuarioids) setCarpetaRelatedData(prev => ({ ...prev, usuarioids: dataOrFn.usuarioids }));
+                    }
+                  }}
+                  ubicacionesOptions={getUniqueOptionsForField?.('ubicacionid') || []}
+                  usuariosOptions={getUniqueOptionsForField?.('usuarioid') || []}
+                  loading={isSubmitting}
+                  onSave={() => {}} // Vacío, los botones los controla UpdateTab
+                  onCancel={() => {}} // Vacío, los botones los controla UpdateTab
+                  isUpdate={true}
+                  themeColor={themeColor === 'green' ? 'green' : 'green'}
+                />
+              </div>
+            )
+          ) : (
+            /* Formulario normal para otras tablas */
+            <NormalUpdateForm
+                config={config}
+                formData={formData}
+                formErrors={formErrors}
+                updateFormField={updateFormField}
+                relatedData={relatedData}
+                visibleColumns={visibleColumns}
+                getColumnDisplayName={getColumnDisplayName}
+                getUniqueOptionsForField={getUniqueOptionsForField}
+                tableName={tableName}
+                nodosData={relatedData.nodosData}
+                localizacionesData={relatedData.localizacionesData}
+                ubicacionesData={relatedData.ubicacionesData}
+                themeColor={themeColor}
+              />
+          )}
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">
@@ -437,6 +627,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             </button>
           </div>
         </div>
+      
       ) : (
         <>
           {!loading && columns.length > 0 && tableVisibleColumns.length > 0 ? (

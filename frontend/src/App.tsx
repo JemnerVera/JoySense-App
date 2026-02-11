@@ -2343,11 +2343,8 @@ const AppContentInternal: React.FC<{
                           if (activeTab.startsWith('agrupacion-')) {
                             const agrupacionTable = activeTab.replace('agrupacion-', '');
                             const tableNames: Record<string, string> = {
-                              'entidad': 'GRUPO (LEGACY)',
-                              'entidad_localizacion': 'LOCALIZACIÓN POR GRUPO (LEGACY)',
-                              'carpeta': 'CARPETA',
-                              'carpeta_ubicacion': 'UBICACIÓN POR CARPETA',
-                              'carpeta_usuario': 'USUARIO POR CARPETA'
+                              'entidad': 'GRUPO',
+                              'carpeta': 'CARPETA'
                             };
                             breadcrumb += ` / ${tableNames[agrupacionTable]?.toUpperCase() || agrupacionTable.toUpperCase()}`;
                             if (activeSubTab) {

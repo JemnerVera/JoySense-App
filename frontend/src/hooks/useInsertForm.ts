@@ -151,9 +151,20 @@ export const useInsertForm = ({
     if (!cleanData.hasOwnProperty('statusid')) {
       cleanData.statusid = 1
     }
-    
+
+    // Carpeta: agregar campos para formulario unificado (ubicaciones y usuarios)
+    if (tableName === 'carpeta') {
+      cleanData.ubicacionids = cleanData.ubicacionids ?? []
+      cleanData.usuarioids = cleanData.usuarioids ?? []
+    }
+
+    // Entidad (grupo): agregar campos para formulario unificado (localizaciones)
+    if (tableName === 'entidad') {
+      cleanData.localizacionids = cleanData.localizacionids ?? []
+    }
+
     return cleanData
-  }, [config])
+  }, [config, tableName])
   
   // Estado del formulario
   const [formData, setFormDataState] = useState<Record<string, any>>(initializeFormData)
@@ -391,6 +402,24 @@ export const useInsertForm = ({
       return Object.keys(errors).length === 0
     }
 
+    // Caso especial para carpeta: validar nombre (ubicacionids y usuarioids son opcionales)
+    if (tableName === 'carpeta') {
+      if (!formData.carpeta || !String(formData.carpeta).trim()) {
+        errors.carpeta = 'Nombre de carpeta es requerido'
+      }
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
+    // Caso especial para entidad (grupo): validar nombre (localizacionids son opcionales)
+    if (tableName === 'entidad') {
+      if (!formData.entidad || !String(formData.entidad).trim()) {
+        errors.entidad = 'Nombre de grupo es requerido'
+      }
+      setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
     // Caso especial para regla_objeto: validar reglaid, fuenteid y _objetosSeleccionados
     if (tableName === 'regla_objeto') {
       if (!formData.reglaid) {
@@ -554,6 +583,125 @@ export const useInsertForm = ({
         filteredData.password = formData.password
       }
       
+      // Caso especial para carpeta: crear carpeta + carpeta_ubicacion + carpeta_usuario
+      if (tableName === 'carpeta') {
+        const currentUserId = await getUsuarioidFromUser(user)
+        const userId = currentUserId || 1
+        const now = new Date().toISOString()
+
+        const carpetaData = {
+          carpeta: (formData.carpeta || '').trim(),
+          statusid: 1,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }
+
+        const carpetaResult = await insertRow(carpetaData)
+        if (!carpetaResult.success) {
+          throw new Error(carpetaResult.error || 'Error al crear carpeta')
+        }
+
+        let carpetaid: number
+        const insertedData = Array.isArray(carpetaResult.data) ? carpetaResult.data[0] : carpetaResult.data
+        carpetaid = insertedData?.carpetaid ?? (carpetaResult.data as any)?.carpetaid
+        if (!carpetaid && Array.isArray(carpetaResult.data) && carpetaResult.data.length > 0) {
+          carpetaid = carpetaResult.data[0].carpetaid
+        }
+        if (!carpetaid) {
+          throw new Error('No se pudo obtener el ID de la carpeta creada')
+        }
+
+        const ubicacionids = Array.isArray(formData.ubicacionids) ? formData.ubicacionids : []
+        const usuarioids = Array.isArray(formData.usuarioids) ? formData.usuarioids : []
+
+        for (const ubicacionid of ubicacionids) {
+          await JoySenseService.insertTableRow('carpeta_ubicacion', {
+            carpetaid,
+            ubicacionid: Number(ubicacionid),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          })
+        }
+
+        for (const usuarioid of usuarioids) {
+          await JoySenseService.insertTableRow('carpeta_usuario', {
+            carpetaid,
+            usuarioid: Number(usuarioid),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          })
+        }
+
+        setIsSubmitting(false)
+        setMessage?.({ type: 'success', text: 'Carpeta creada correctamente con ubicaciones y usuarios asignados' })
+        const cleanData = initializeFormData()
+        setFormDataState(cleanData)
+        setFormErrors({})
+        onSuccess?.()
+        return
+      }
+
+      // Caso especial para entidad (grupo): crear entidad + entidad_localizacion
+      if (tableName === 'entidad') {
+        const currentUserId = await getUsuarioidFromUser(user)
+        const userId = currentUserId || 1
+        const now = new Date().toISOString()
+
+        const entidadData = {
+          entidad: (formData.entidad || '').trim(),
+          statusid: 1,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }
+
+        const entidadResult = await insertRow(entidadData)
+        if (!entidadResult.success) {
+          throw new Error(entidadResult.error || 'Error al crear grupo')
+        }
+
+        let entidadid: number
+        const insertedData = Array.isArray(entidadResult.data) ? entidadResult.data[0] : entidadResult.data
+        entidadid = insertedData?.entidadid ?? (entidadResult.data as any)?.entidadid
+        if (!entidadid && Array.isArray(entidadResult.data) && entidadResult.data.length > 0) {
+          entidadid = entidadResult.data[0].entidadid
+        }
+        if (!entidadid) {
+          throw new Error('No se pudo obtener el ID del grupo creado')
+        }
+
+        const localizacionids = Array.isArray(formData.localizacionids) ? formData.localizacionids : []
+
+        for (const localizacionid of localizacionids) {
+          await JoySenseService.insertTableRow('entidad_localizacion', {
+            entidadid,
+            localizacionid: Number(localizacionid),
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          })
+        }
+
+        setIsSubmitting(false)
+        setMessage?.({ type: 'success', text: 'Grupo creado correctamente con localizaciones asignadas' })
+        const cleanData = initializeFormData()
+        setFormDataState(cleanData)
+        setFormErrors({})
+        onSuccess?.()
+        return
+      }
+
       // Caso especial para tabla 'usuarioperfil': crear múltiples registros (uno por cada perfil seleccionado)
       if (tableName === 'usuarioperfil' && formData._perfilesStatus) {
         const perfilesStatus = formData._perfilesStatus as Record<number, number>;

@@ -136,8 +136,8 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
 
   entidad: {
     name: 'entidad',
-    displayName: 'Carpeta',
-    description: 'Carpetas o cultivos',
+    displayName: 'Grupo',
+    description: 'Grupos con localizaciones asociadas',
     icon: '🌱',
     category: 'geografia',
     primaryKey: 'entidadid',
@@ -147,7 +147,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     sortField: 'entidad',
     fields: [
       { name: 'entidadid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'entidad', label: 'Carpeta', type: 'text', required: true },
+      { name: 'entidad', label: 'Grupo', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
