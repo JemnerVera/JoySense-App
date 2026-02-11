@@ -447,10 +447,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <Popup>
               <div className="text-sm">
                 <div className="space-y-1">
+                  {node.localizacion ? (
+                    <div className="font-bold"><strong>{t('dashboard.tooltip.localizacion')}</strong> {node.localizacion}</div>
+                  ) : null}
                   <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
-                  {node.localizacion && (
-                    <div><strong>{t('dashboard.tooltip.localizacion')}</strong> {node.localizacion}</div>
-                  )}
                   <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
                   <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
                   <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>

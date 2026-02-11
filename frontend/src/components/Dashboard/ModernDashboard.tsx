@@ -2000,8 +2000,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue">
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      {/* Main Content - menos padding cuando está en vista de análisis detallado */}
+      <main className={`container mx-auto px-4 ${showDetailedAnalysis && selectedMetricForAnalysis ? 'py-2' : 'py-8'}`}>
 
         {/* Error State */}
         {error && (

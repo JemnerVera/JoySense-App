@@ -140,7 +140,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   }
 
   const contentWrapperClass = isFullscreenView
-    ? 'bg-gray-50 dark:bg-neutral-900 w-full min-h-[calc(100vh-8rem)] overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
+    ? 'bg-gray-50 dark:bg-neutral-900 w-full min-h-[calc(100vh-5rem)] overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
     : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`
 
   return (
@@ -148,7 +148,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       <div className={contentWrapperClass}>
         {/* Barra "Volver al mapa" - solo en vista fullscreen */}
         {isFullscreenView && (
-          <div className="flex items-center justify-between px-6 py-4 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
+          <div className="flex items-center justify-between px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
             <button
               onClick={onClose}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors"
@@ -159,7 +159,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
               {t('dashboard.back_to_map')}
             </button>
             <span className="text-white font-mono text-sm opacity-90">
-              {selectedMetricForAnalysis?.title} - {selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
+              {selectedMetricForAnalysis?.title} - {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
             </span>
           </div>
         )}
@@ -199,13 +199,15 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
               )}
             </div>
 
-            {/* Información del nodo */}
+            {/* Información de localización */}
             {selectedNode && (
               <div className="mt-4 px-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
                 <div className="text-xs font-mono space-y-1.5 text-gray-700 dark:text-neutral-300">
-                  <div className="truncate pl-2">
-                    <span className="text-gray-500 dark:text-neutral-500">Nodo:</span> {selectedNode.nodo}
-                  </div>
+                  {(selectedNode.localizacion || localizacionesPorNodo?.get(selectedNode.nodoid)?.[0]) && (
+                    <div className="truncate pl-2 font-bold">
+                      <span className="text-gray-500 dark:text-neutral-500">Localización:</span> {selectedNode.localizacion || localizacionesPorNodo?.get(selectedNode.nodoid)?.[0]}
+                    </div>
+                  )}
                   {selectedNode.ubicacion && (
                     <>
                       <div className="truncate pl-2">
@@ -245,10 +247,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
           {/* Contenido principal */}
           <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900">
-            <div className="p-6">
+            <div className={isFullscreenView ? 'p-3' : 'p-6'}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className="mb-6 bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 flex items-start gap-4 overflow-x-auto">
+              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg flex items-start gap-4 overflow-x-auto ${isFullscreenView ? 'mb-3 p-3' : 'mb-6 p-4'}`}>
                 <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden">
                   
                   {/* Fecha Inicio */}
@@ -380,9 +382,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Separador visual */}
                   <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                  {/* Comparar con Nodo */}
+                  {/* Comparar con Localización */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Comparar con Nodo:</label>
+                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Comparar con Localización:</label>
                     <div className="flex items-center gap-2 h-8">
                       <select
                         value={comparisonNode?.nodoid || ''}
@@ -404,11 +406,13 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         <option value="" disabled hidden>Ninguno</option>
                         {availableNodes
                           .filter(n => n.nodoid !== selectedNode?.nodoid)
-                          .map(node => (
-                            <option key={node.nodoid} value={node.nodoid} title={`${node.nodo}`}>
-                              {node.nodo}
+                          .map(node => {
+                            const locLabel = node.localizacion || localizacionesPorNodo?.get(node.nodoid)?.[0] || node.ubicacion?.ubicacion || node.nodo
+                            return (
+                            <option key={node.nodoid} value={node.nodoid} title={locLabel}>
+                              {locLabel}
                             </option>
-                          ))}
+                          )})}
                       </select>
                       {comparisonNode && (
                         <button
@@ -432,12 +436,12 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
               </div>
 
               {/* Área del gráfico */}
-              <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
+              <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg ${isFullscreenView ? 'p-3' : 'p-6'}`}>
                 {/* Título de comparación si existe */}
                 {comparisonNode && (
                   <div className="text-center mb-4">
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
-                      {selectedNode?.nodo} vs. {comparisonNode.nodo}
+                      {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo} vs. {comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}
                     </h2>
                   </div>
                 )}
@@ -460,6 +464,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     metricUnit={selectedMetricForAnalysis?.unit || ''}
                     selectedNode={selectedNode}
                     comparisonNode={comparisonNode}
+                    mainLocalizacionLabel={selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion}
+                    comparisonLocalizacionLabel={comparisonNode?.localizacion || localizacionesPorNodo?.get(comparisonNode?.nodoid)?.[0] || comparisonNode?.ubicacion?.ubicacion}
                   />
                 ) : (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">
