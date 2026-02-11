@@ -116,9 +116,6 @@ async function optionalAuth(req, res, next) {
       return next();
     }
     
-    // IMPORTANTE: Para que RLS funcione, el token debe estar en cada request
-    // El cliente ya está configurado con global.headers, así que debería funcionar
-    
     // Crear cliente de Supabase con el contexto del usuario para este request
     req.supabase = userSupabase;
     req.user = {

@@ -257,10 +257,8 @@ const metadataCache = new Map();
 function clearMetadataCache(tableName = null) {
   if (tableName) {
     metadataCache.delete(tableName);
-    logger.info(`🗑️ [clearMetadataCache] Cache limpiado para tabla: ${tableName}`);
   } else {
     metadataCache.clear();
-    logger.info(`🗑️ [clearMetadataCache] Cache limpiado completamente`);
   }
 }
 
