@@ -123,6 +123,40 @@ export const getUniqueOptionsForField = ({
       };
     });
   }
+
+  // Caso especial para localizacionid en tabla entidad: agrupar por nombre de localización
+  // Mostrar solo UNA opción por localización única con todos los IDs de esa localización
+  if (columnName === 'localizacionid' && selectedTable === 'entidad') {
+    const localizaciones = relatedDataForStatus.localizacionesData || [];
+    
+    // Crear un mapa de nombres a IDs
+    const localizacionesPorNombre = new Map<string, number[]>();
+    
+    localizaciones
+      .filter((l: any) => l.statusid === 1) // Solo activas
+      .forEach((item: any) => {
+        const locName = item.localizacion || '';
+        if (!localizacionesPorNombre.has(locName)) {
+          localizacionesPorNombre.set(locName, []);
+        }
+        localizacionesPorNombre.get(locName)?.push(item.localizacionid);
+      });
+    
+    // Convertir a opciones con un identificador único para cada nombre
+    const options: Array<{ value: any; label: string; _allIds?: number[] }> = [];
+    let optionIndex = 0;
+    
+    localizacionesPorNombre.forEach((ids, nombre) => {
+      options.push({
+        value: optionIndex, // Usar índice como identificador único
+        label: nombre || 'Sin nombre',
+        _allIds: ids // Adjuntar los IDs de todos los localizacionid para este nombre
+      });
+      optionIndex++;
+    });
+    
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }
   
   // Mapeo de campos a tablas relacionadas
   const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {

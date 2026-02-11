@@ -436,9 +436,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       ) : (tableName === 'carpeta' || tableName === 'entidad') && !selectedRow ? (
         // Para CARPETA o GRUPO: mostrar selector en lugar de tabla
         <div className="space-y-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-200 dark:border-neutral-700">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              {tableName === 'carpeta' ? 'Seleccionar Carpeta para Actualizar' : 'Seleccionar Grupo para Actualizar'}
+          <div>
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider text-green-500`}>
+              {tableName === 'carpeta' ? 'SELECCIONAR CARPETA' : 'SELECCIONAR GRUPO'}
             </label>
             <select
               value={selectedRow?.carpetaid ?? selectedRow?.entidadid ?? ''}
@@ -455,9 +455,9 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                   }
                 }
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white text-base font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              <option value="">-- Seleccionar --</option>
+              <option value="" disabled hidden>{tableName === 'carpeta' ? 'CARPETA*' : 'GRUPO*'}</option>
               {tableData.map((row: any) => (
                 <option key={tableName === 'carpeta' ? row.carpetaid : row.entidadid} value={tableName === 'carpeta' ? row.carpetaid : row.entidadid}>
                   {tableName === 'carpeta' ? row.carpeta : row.entidad}
@@ -531,8 +531,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                   }}
                   localizacionesOptions={getUniqueOptionsForField?.('localizacionid') || []}
                   loading={isSubmitting}
-                  onSave={() => {}}
-                  onCancel={() => {}}
+                  onSave={handleUpdate}
+                  onCancel={handleCancelSelection}
                   isUpdate={true}
                   themeColor={themeColor === 'green' ? 'green' : 'green'}
                 />
@@ -573,8 +573,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                   ubicacionesOptions={getUniqueOptionsForField?.('ubicacionid') || []}
                   usuariosOptions={getUniqueOptionsForField?.('usuarioid') || []}
                   loading={isSubmitting}
-                  onSave={() => {}} // Vacío, los botones los controla UpdateTab
-                  onCancel={() => {}} // Vacío, los botones los controla UpdateTab
+                  onSave={handleUpdate}
+                  onCancel={handleCancelSelection}
                   isUpdate={true}
                   themeColor={themeColor === 'green' ? 'green' : 'green'}
                 />
@@ -599,33 +599,6 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               />
           )}
 
-          {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">
-            <button
-              onClick={handleUpdate}
-              disabled={isSubmitting}
-              className={`px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider ${
-                themeColor === 'red' 
-                  ? 'bg-red-500 hover:bg-red-600'
-                  : themeColor === 'blue'
-                  ? 'bg-blue-500 hover:bg-blue-600'
-                  : themeColor === 'green'
-                  ? 'bg-green-500 hover:bg-green-600'
-                  : themeColor === 'purple'
-                  ? 'bg-purple-500 hover:bg-purple-600'
-                  : 'bg-orange-500 hover:bg-orange-600'
-              }`}
-            >
-              {isSubmitting ? 'Guardando...' : '🔧 Actualizar'}
-            </button>
-            <button
-              onClick={handleCancelSelection}
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-mono tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              🗑️ Cancelar
-            </button>
-          </div>
         </div>
       
       ) : (
