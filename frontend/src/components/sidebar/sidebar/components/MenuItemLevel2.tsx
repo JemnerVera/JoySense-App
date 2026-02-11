@@ -157,26 +157,6 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
             backgroundColor: '#0f0f0f',
           }}
         >
-          {/* Mostrar mensaje si el menú está abierto pero no hay selección */}
-          {isLevel3Open && !activeTab.startsWith(subMenuKey + '-') && (
-            <div
-              style={{
-                padding: '12px 20px',
-                fontSize: '0.8rem',
-                color: '#888',
-                textAlign: 'center',
-                fontStyle: 'italic',
-                marginLeft: isExpanded ? '-20px' : '0px',
-                marginRight: isExpanded ? '-20px' : '0px',
-                paddingLeft: isExpanded ? '40px' : '20px',
-                paddingRight: isExpanded ? '20px' : '0px',
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-              }}
-            >
-              SELECCIONA UNA OPCIÓN
-            </div>
-          )}
           <ul
             className="list-none p-0 m-0"
             style={{
