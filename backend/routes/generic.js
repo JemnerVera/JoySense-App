@@ -98,9 +98,6 @@ router.get('/:table', async (req, res) => {
   try {
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
     const userSupabase = req.supabase || baseSupabase;
-    
-    // Authentication logging removed for reduced verbosity
-
     const result = await paginateAndFilter(table, req.query, userSupabase);
     res.json(result);
   } catch (error) {
@@ -166,14 +163,12 @@ router.post('/:table', async (req, res) => {
           const cleaned = { ...record };
           if (cleaned[pk] === 0 || cleaned[pk] === null) {
             delete cleaned[pk];
-            logger.info(`🧹 [POST /${table}] PK ${pk} eliminado (valor: ${record[pk]})`);
           }
           return cleaned;
         });
       } else {
         if (dataToInsert[pk] === 0 || dataToInsert[pk] === null) {
           delete dataToInsert[pk];
-          logger.info(`🧹 [POST /${table}] PK ${pk} eliminado (valor: ${dataToInsert[pk]})`);
         }
       }
     }
@@ -188,7 +183,6 @@ router.post('/:table', async (req, res) => {
         // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
         if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
           usuarioid = req.user.user_metadata.joysense_usuarioid;
-          logger.info(`✅ [POST /${table}] usuarioid obtenido del user_metadata: ${usuarioid}`);
         }
         
         // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
@@ -205,7 +199,6 @@ router.post('/:table', async (req, res) => {
             
             if (!usuarioError && usuarioData && usuarioData.usuarioid) {
               usuarioid = usuarioData.usuarioid;
-              logger.info(`✅ [POST /${table}] usuarioid obtenido de la BD: ${usuarioid}`);
             } else {
               logger.warn(`⚠️ [POST /${table}] No se encontró usuario por useruuid. Error: ${usuarioError?.message || 'No data'}`);
             }
@@ -226,8 +219,6 @@ router.post('/:table', async (req, res) => {
             dataToInsert.usercreatedid = usuarioid;
             dataToInsert.usermodifiedid = usuarioid;
           }
-          
-          logger.info(`✅ [POST /${table}] Campos de auditoría agregados (usuarioid: ${usuarioid})`);
         } else {
           logger.warn(`⚠️ [POST /${table}] No se pudo determinar usuarioid para el usuario autenticado`);
         }
@@ -279,45 +270,14 @@ router.post('/:table', async (req, res) => {
     // El middleware ya configura correctamente el cliente con el token para RLS
     const userSupabase = req.supabase || baseSupabase;
     
-    // Para usuario_canal, verificar auth.uid() antes de insertar
-    if (table === 'usuario_canal' && req.user) {
-      try {
-        // Verificar qué devuelve auth.uid() en una query simple
-        const { data: authUidCheck, error: authUidError } = await userSupabase
-          .schema('joysense')
-          .rpc('fn_obtener_auth_uid')
-          .single();
-        
-        if (authUidError) {
-          // Si la función no existe, intentar con una query directa
-          const { data: directCheck } = await userSupabase
-            .from('usuario')
-            .select('usuarioid')
-            .limit(1);
-          
-        } else {
-          // No log
-        }
-      } catch (checkError) {
-        logger.warn(`[POST /:table] Error verificando auth.uid() (continuando):`, checkError.message);
-      }
-    }
-    
     // IMPORTANTE: Para RLS, el token debe estar presente. Verificar que el cliente tenga el token
     const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(dataToInsert).select();
     
     if (error) {
-      logger.error(`❌ ❌ Error en INSERT ${table}:`, error.message);
-      if (error.code) logger.error(`❌    Código: ${error.code}`);
-      if (error.detail) logger.error(`❌    Detalle: ${error.detail}`);
-      if (error.hint) logger.error(`❌    Hint: ${error.hint}`);
-      logger.error(`❌ [POST /:table] Contexto del error:`, {
-        table,
-        hasReqSupabase: !!req.supabase,
-        hasUser: !!req.user,
-        userId: req.user?.id,
-        usingUserSupabase: req.supabase ? 'req.supabase' : 'baseSupabase'
-      });
+      logger.error(`❌ Error en INSERT ${table}:`, error.message);
+      if (error.code) logger.error(`   Código: ${error.code}`);
+      if (error.detail) logger.error(`   Detalle: ${error.detail}`);
+      if (error.hint) logger.error(`   Hint: ${error.hint}`);
       throw error;
     }
     
@@ -445,7 +405,6 @@ router.put('/:table/:id', async (req, res) => {
         // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
         if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
           usuarioid = req.user.user_metadata.joysense_usuarioid;
-          logger.info(`✅ [PUT /${table}/${id}] usuarioid obtenido del user_metadata: ${usuarioid}`);
         }
         
         // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
@@ -462,7 +421,6 @@ router.put('/:table/:id', async (req, res) => {
             
             if (!usuarioError && usuarioData && usuarioData.usuarioid) {
               usuarioid = usuarioData.usuarioid;
-              logger.info(`✅ [PUT /${table}/${id}] usuarioid obtenido de la BD: ${usuarioid}`);
             } else {
               logger.warn(`⚠️ [PUT /${table}/${id}] No se encontró usuario por useruuid. Error: ${usuarioError?.message || 'No data'}`);
             }
@@ -472,7 +430,6 @@ router.put('/:table/:id', async (req, res) => {
         // 3. Si encontramos el usuarioid, agregarlo a los datos
         if (usuarioid) {
           dataToUpdate.usermodifiedid = usuarioid;
-          logger.info(`✅ [PUT /${table}/${id}] Campo usermodifiedid agregado (usuarioid: ${usuarioid})`);
         } else {
           logger.warn(`⚠️ [PUT /${table}/${id}] No se pudo determinar usuarioid para el usuario autenticado`);
         }
