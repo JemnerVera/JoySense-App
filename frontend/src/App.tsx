@@ -64,7 +64,6 @@ import {
 } from './components/LazyComponents';
 
 // 9. Hooks
-import { useMainContentLayout } from './hooks/useMainContentLayout';
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
 
@@ -525,32 +524,12 @@ const AppContentInternal: React.FC<{
     // Si es permisos-permiso, NO resetear el activeSubTab aquí - dejarlo que se maneje por el callback onSubTabChange
   }, [activeTab]);
 
-  // Hook para el layout del sidebar
   const {
     sidebarVisible,
-    auxiliarySidebarVisible,
-    isHovering,
-    hoverLocation,
-    handleMainSidebarMouseEnter,
-    handleMainSidebarMouseLeave,
-    handleAuxiliarySidebarMouseEnter,
-    handleAuxiliarySidebarMouseLeave,
-    handleContentMouseEnter,
-    handleContentMouseLeave,
-    getMainContentClasses,
-    getIndicatorClasses,
-    hasAuxiliarySidebar
+    getMainContentClasses
   } = useAppSidebar({ showWelcome: showWelcomeIntegrated, activeTab });
 
-  // Hook para el layout del contenido principal (obtiene handleContentMouseEnter de useSidebarLayout)
-  // NOTA: Este hook se mantiene para compatibilidad, pero el nuevo sistema usa useSidebar directamente
-  const { handleContentMouseEnter: handleContentMouseEnterFromLayout, handleContentMouseLeave: handleContentMouseLeaveFromLayout } = useMainContentLayout({ 
-    showWelcome: showWelcomeIntegrated, 
-    activeTab 
-  });
-  
-  // Obtener el handler del nuevo sistema de sidebars
-  const sidebar = useSidebar()
+  const sidebar = useSidebar();
 
   // Cargar todos los datos iniciales en un solo useEffect
   useEffect(() => {
@@ -2010,76 +1989,26 @@ const AppContentInternal: React.FC<{
           onTabChange={handleTabChange}
           authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
           selectedTable={selectedTable}
-          onTableSelect={handleTableSelect}
           activeSubTab={(
             activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-')
               ? activeSubTab
               : (activeSubTab === 'asignar' ? 'status' : activeSubTab)
           )}
-          onSubTabChange={(tab) => {
-            if (activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-')) {
-              // Para todas las vistas de permisos (dashboard y configuración), permitir todos los tabs incluyendo 'asignar'
-              setActiveSubTab(tab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
-            } else if (tab !== 'asignar') {
-              handleSubTabChange(tab);
-            }
-          }}
           dashboardSubTab={dashboardSubTab}
-          onDashboardSubTabChange={handleDashboardSubTabChange}
-          formData={currentFormData}
-          multipleData={currentMultipleData}
-          massiveFormData={currentMassiveFormData}
-          onPermisosSubTabChangeFromProtectedButton={
-            // Pasar la función según el tab activo (permisos dashboard o configuración)
-            (activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-'))
-              ? permisosMainRef.current?.handleSubTabChangeFromProtectedButton
-                ? (tab: 'status' | 'insert' | 'update' | 'asignar' | 'massive') => {
-                    // Filtrar 'massive' ya que PermisosMain no lo soporta
-                    if (tab !== 'massive') {
-                      permisosMainRef.current?.handleSubTabChangeFromProtectedButton?.(tab as 'status' | 'insert' | 'update' | 'asignar');
-                    }
-                  }
-                : undefined
-              : undefined
-          }
-          onSubTabChangeFromProtectedButton={
-            // Pasar la función según el tab activo
-            activeTab.startsWith('configuracion-dispositivos') || activeTab.startsWith('configuracion-usuarios') || activeTab.startsWith('configuracion-parametros-geo')
-              ? systemParametersRef.current?.handleSubTabChangeFromProtectedButton
-              : activeTab.startsWith('notificaciones-') || activeTab.startsWith('configuracion-notificaciones')
-              ? notificacionesMainRef.current?.handleSubTabChangeFromProtectedButton
-              : undefined
-          }
         />
 
         {/* Área principal con header fijo y contenido scrolleable */}
         <div 
           className={`${getMainContentClasses(sidebarVisible)} bg-gray-50 dark:bg-black flex-1`}
-          onMouseEnter={(e) => {
-            // Usar el nuevo sistema de sidebars para colapsar cuando el cursor entra al contenido
-            // Verificar que la función exista antes de llamarla
-            if (sidebar && typeof sidebar.handleContentMouseEnter === 'function') {
-              sidebar.handleContentMouseEnter()
-            } else {
-              console.error('[SIDEBAR ERROR] handleContentMouseEnter no está disponible en sidebar:', {
-                sidebar: sidebar,
-                hasHandleContentMouseEnter: sidebar && 'handleContentMouseEnter' in sidebar,
-                type: sidebar && typeof sidebar.handleContentMouseEnter
-              })
+          onMouseEnter={() => {
+            if (sidebar?.handleContentMouseEnter) {
+              sidebar.handleContentMouseEnter();
             }
-            
-            // También llamar los handlers antiguos para compatibilidad
-            if (handleContentMouseEnterFromLayout) {
-              handleContentMouseEnterFromLayout();
-            }
-            handleContentMouseEnter();
           }}
-          onMouseLeave={(e) => {
-            // Usar el handleContentMouseLeave de useSidebarLayout
-            if (handleContentMouseLeaveFromLayout) {
-              handleContentMouseLeaveFromLayout();
+          onMouseLeave={() => {
+            if (sidebar?.handleContentMouseLeave) {
+              sidebar.handleContentMouseLeave();
             }
-            handleContentMouseLeave();
           }}
         >
         {/* Header fijo (freeze pane) - Solo mostrar si no es ventana de bienvenida */}

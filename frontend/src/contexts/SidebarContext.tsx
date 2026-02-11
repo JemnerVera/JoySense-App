@@ -4,7 +4,7 @@ import React, { createContext, useContext, useCallback, useRef, useState, useMem
 // TYPES
 // ============================================================================
 
-export type SidebarLevel = 'main' | 'aux1' | 'aux2' | 'aux3' | 'aux4' | 'aux5'
+export type SidebarLevel = 'main'
 
 export type SidebarState = 'closed' | 'opening' | 'open' | 'closing'
 
@@ -76,17 +76,14 @@ export function SidebarProvider({
   onNavigate,
   activeTab = ''
 }: SidebarProviderProps) {
-  // Estados
+  // Estados - solo panel main (sidebar único)
   const [panels, setPanels] = useState<Map<SidebarLevel, SidebarPanel>>(() => {
     const initialPanels = new Map<SidebarLevel, SidebarPanel>()
-    const levels: SidebarLevel[] = ['main', 'aux1', 'aux2', 'aux3', 'aux4', 'aux5']
-    levels.forEach(level => {
-      initialPanels.set(level, {
-        id: '',
-        level,
-        isExpanded: false,
-        isHovered: false
-      })
+    initialPanels.set('main', {
+      id: '',
+      level: 'main',
+      isExpanded: false,
+      isHovered: false
     })
     return initialPanels
   })
@@ -116,9 +113,9 @@ export function SidebarProvider({
     return hasUnsavedChanges[panelId] === true
   }, [hasUnsavedChanges])
   
-  // Obtener orden completo de sidebars
+  // Solo el sidebar principal
   const getAllLevels = useCallback((): SidebarLevel[] => {
-    return ['main', 'aux1', 'aux2', 'aux3', 'aux4', 'aux5']
+    return ['main']
   }, [])
   
   // Obtener solo los sidebars que están activos (expandidos)
