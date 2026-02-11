@@ -160,7 +160,9 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
     >
       <button
         onClick={handleClick}
-        className="flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0"
+        className={`flex items-center h-10 cursor-pointer transition-all duration-300 w-full text-left border-0 ${
+          isExpanded ? 'justify-start' : 'justify-center'
+        }`}
         style={{
           color: isLevel4Active ? getColorBySection(parentColor, 'level4').active : colors.textColor,
           backgroundColor: isLevel4Active

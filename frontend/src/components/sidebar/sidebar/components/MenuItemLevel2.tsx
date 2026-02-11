@@ -173,7 +173,9 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
     >
       <button
         onClick={handleClick}
-        className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0"
+        className={`flex items-center h-14 cursor-pointer transition-all duration-300 border-0 ${
+          isExpanded ? 'justify-start' : 'justify-center'
+        }`}
         style={{
           color: isSubActive ? getColorBySection(parentColor, 'level2').active : colors.textColor,
           backgroundColor: isSubActive
@@ -208,6 +210,9 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
             marginRight: isExpanded ? '12px' : '0px',
             borderRadius: '2px',
             transition: 'color 0.3s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           {subMenu.icon}

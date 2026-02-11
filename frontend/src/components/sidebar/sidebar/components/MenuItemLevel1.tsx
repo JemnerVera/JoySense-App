@@ -124,7 +124,9 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
     >
       <button
         onClick={() => onMenuClick(tab.id, hasSubMenus || false)}
-        className="flex items-center justify-center h-14 cursor-pointer transition-all duration-300 border-0 relative"
+        className={`flex items-center h-14 cursor-pointer transition-all duration-300 border-0 relative ${
+          isExpanded ? 'justify-start' : 'justify-center'
+        }`}
         style={{
           color: isActive ? getColorBySection(tab.color).active : colors.textColor,
           backgroundColor: isActive
@@ -159,6 +161,9 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
             marginRight: isExpanded ? '12px' : '0px',
             borderRadius: '2px',
             transition: 'color 0.3s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           {tab.icon}

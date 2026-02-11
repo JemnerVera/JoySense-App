@@ -18,6 +18,7 @@ import PermisosTipoOperationsSidebar from './PermisosTipoOperationsSidebar';
 import ReportesAdminSidebar from './ReportesAdminSidebar';
 import AgrupacionSidebar from './AgrupacionSidebar';
 import AgrupacionOperationsSidebar from './AgrupacionOperationsSidebar';
+import ConfiguracionOperationsSidebar from './ConfiguracionOperationsSidebar';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AuxiliarySidebarProps {
