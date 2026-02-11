@@ -21,6 +21,7 @@ export const useTableDataManagement = () => {
   const [ubicacionesData, setUbicacionesData] = useState<any[]>([]);
   const [localizacionesData, setLocalizacionesData] = useState<any[]>([]);
   const [entidadesData, setEntidadesData] = useState<any[]>([]);
+  const [carpetasData, setCarpetasData] = useState<any[]>([]);
   const [nodosData, setNodosData] = useState<any[]>([]);
   const [tiposData, setTiposData] = useState<any[]>([]);
   const [metricasData, setMetricasData] = useState<any[]>([]);
@@ -85,6 +86,7 @@ export const useTableDataManagement = () => {
         empresasResponse,
         fundosResponse,
         entidadesResponse,
+        carpetasResponse,
         tiposResponse,
         metricasResponse,
         criticidadesResponse,
@@ -105,6 +107,7 @@ export const useTableDataManagement = () => {
         safeLoad('empresa', 500),
         safeLoad('fundo', 500),
         safeLoad('entidad', 500),
+        safeLoad('carpeta', 500),
         safeLoad('tipo', 500), // CRÍTICO: tipos debe cargarse
         safeLoad('metrica', 500),
         safeLoad('criticidad', 500),
@@ -146,6 +149,7 @@ export const useTableDataManagement = () => {
 
       // ubicaciones, localizaciones y nodos ya fueron procesados arriba con Promise.allSettled
       const entidades = Array.isArray(entidadesResponse) ? entidadesResponse : ((entidadesResponse as any)?.data || []);
+      const carpetas = Array.isArray(carpetasResponse) ? carpetasResponse : ((carpetasResponse as any)?.data || []);
       
       // Procesar tipos con manejo especial de errores
       let tipos: any[] = [];
@@ -189,6 +193,7 @@ export const useTableDataManagement = () => {
       setUbicacionesData(ubicaciones);
       setLocalizacionesData(localizaciones);
       setEntidadesData(entidades);
+      setCarpetasData(carpetas);
       setNodosData(nodos);
       setTiposData(tipos);
       setMetricasData(metricas);
@@ -216,6 +221,7 @@ export const useTableDataManagement = () => {
       setUbicacionesData([]);
       setLocalizacionesData([]);
       setEntidadesData([]);
+      setCarpetasData([]);
       setNodosData([]);
       setTiposData([]);
       setMetricasData([]);
@@ -519,6 +525,7 @@ export const useTableDataManagement = () => {
     ubicacionesData,
     localizacionesData,
     entidadesData,
+    carpetasData,
     nodosData,
     tiposData,
     metricasData,

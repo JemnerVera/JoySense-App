@@ -39,6 +39,7 @@ const tableToRelatedDataKey: Record<string, string> = {
   ubicacion: 'ubicacionesData',
   localizacion: 'localizacionesData',
   entidad: 'entidadesData',
+  carpeta: 'carpetasData',
   nodo: 'nodosData',
   tipo: 'tiposData',
   metrica: 'metricasData',

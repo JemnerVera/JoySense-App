@@ -22,6 +22,9 @@ import {
   IconAgrupacion,
   IconEntidad,
   IconEntidadLocalizacion,
+  IconCarpeta,
+  IconCarpetaUbicacion,
+  IconCarpetaUsuario,
   IconConfiguracion,
   IconDispositivos,
   IconUsuarios,
@@ -103,17 +106,38 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'entidad',
-            label: 'CARPETA',
+            label: 'GRUPO (LEGACY)',
             icon: <IconEntidad />,
             hasOperations: true,
             subMenus: createOps('agrupacion-entidad'),
           },
           {
             id: 'entidad_localizacion',
-            label: 'LOCALIZACIÓN POR CARPETA',
+            label: 'LOCALIZACIÓN POR GRUPO (LEGACY)',
             icon: <IconEntidadLocalizacion />,
             hasOperations: true,
             subMenus: createOps('agrupacion-entidad_localizacion'),
+          },
+          {
+            id: 'carpeta',
+            label: 'CARPETA',
+            icon: <IconCarpeta />,
+            hasOperations: true,
+            subMenus: createOps('agrupacion-carpeta'),
+          },
+          {
+            id: 'carpeta_ubicacion',
+            label: 'UBICACIÓN POR CARPETA',
+            icon: <IconCarpetaUbicacion />,
+            hasOperations: true,
+            subMenus: createOps('agrupacion-carpeta_ubicacion'),
+          },
+          {
+            id: 'carpeta_usuario',
+            label: 'USUARIO POR CARPETA',
+            icon: <IconCarpetaUsuario />,
+            hasOperations: true,
+            subMenus: createOps('agrupacion-carpeta_usuario'),
           },
         ],
       },
@@ -254,7 +278,11 @@ export function useMenuStructure() {
       if (tab.id === 'agrupacion') {
         return (
           hasAccessToMenu('AGRUPACIÓN') ||
+          hasAccess('GRUPO (LEGACY)') ||
+          hasAccess('LOCALIZACIÓN POR GRUPO (LEGACY)') ||
           hasAccess('CARPETA') ||
+          hasAccess('UBICACIÓN POR CARPETA') ||
+          hasAccess('USUARIO POR CARPETA') ||
           hasAccess('LOCALIZACIÓN POR CARPETA') ||
           hasAccess('ENTIDAD') ||
           hasAccess('ENTIDAD LOCALIZACION')

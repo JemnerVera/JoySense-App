@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { flushSync } from 'react-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useFilters } from '../../contexts/FilterContext';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
+import { MedicionesAreaChart } from './components/MedicionesAreaChart';
 
 interface MedicionesDashboardProps {}
 
@@ -363,7 +363,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     }
     
     const filtered = mediciones.filter(m => {
-      const metricaId = m.metricaid || m.localizacion?.metricaid;
+      const metricaId = m.metricaid || m.metrica_nombre;
       return Number(metricaId) === Number(selectedMetricId);
     });
     
@@ -371,22 +371,13 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     if (filtered.length > 0) {
       // Buscar la unidad en el primer registro que tenga esa métrica
       const unitFromData = 
-        filtered[0]?.localizacion?.metrica?.unidad ||
         filtered[0]?.unidad ||
-        filtered[0]?.localizacion?.unidad ||
+        filtered[0]?.metrica_nombre?.unidad ||
         '';
       
       setSelectedMetricUnit(unitFromData || '');
     } else {
       setSelectedMetricUnit('');
-    }
-    
-    // Debugging: si no hay resultados pero hay mediciones, mostrar estructura de los datos
-    if (filtered.length === 0 && mediciones.length > 0) {
-      console.log('[MedicionesDashboard] DEBUG - Sin filtros coincidentes');
-      console.log('[MedicionesDashboard] DEBUG - Primer medicion:', mediciones[0]);
-      console.log('[MedicionesDashboard] DEBUG - metricaIds únicos en datos:', new Set(mediciones.map(m => m.metricaid || m.localizacion?.metricaid).filter(id => id != null)));
-      console.log('[MedicionesDashboard] DEBUG - buscando metricaid:', selectedMetricId);
     }
     
     console.log('[MedicionesDashboard] Mediciones filtradas por metricaid:', selectedMetricId, 'items:', filtered.length);
@@ -417,7 +408,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
 
-      // Pre-calcular labels
+      // Pre-calcular labels - usa el nombre del sensor
       const labelCache = new Map<number, string>();
       const getOrCacheLabel = (m: any): string => {
         const key = m.sensorid || 0;
@@ -552,7 +543,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   return (
     <div className="w-full p-6">
-      {/* Header similar a NodeStatusDashboard */}
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-8">
         <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
           {/* Selector de Nodo con searchbar */}
@@ -835,7 +825,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           <p className="text-gray-600 dark:text-gray-400">Selecciona un nodo y una métrica</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700">
+        <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700 mediciones-chart">
           <style>{`
             .mediciones-chart ::-webkit-scrollbar {
               width: 8px;
@@ -852,82 +842,14 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               background: #2563eb;
             }
           `}</style>
-          <ResponsiveContainer width="100%" height={400} className="mediciones-chart">
-            <LineChart key={`${selectedNode?.nodoid}-${selectedMetricId}`} data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="fecha" 
-                stroke="#6b7280"
-                tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-              />
-              <YAxis 
-                stroke="#6b7280"
-                tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                domain={(() => {
-                  if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min) && yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
-                    return [yAxisDomain.min, yAxisDomain.max];
-                  }
-                  if (yAxisDomain.min !== null && !isNaN(yAxisDomain.min)) {
-                    const allValues: number[] = [];
-                    chartData.forEach(point => {
-                      Object.keys(point).forEach(key => {
-                        if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
-                          allValues.push(point[key]);
-                        }
-                      });
-                    });
-                    const dataMax = allValues.length > 0 ? Math.max(...allValues) : yAxisDomain.min + 10;
-                    return [yAxisDomain.min, dataMax];
-                  }
-                  if (yAxisDomain.max !== null && !isNaN(yAxisDomain.max)) {
-                    const allValues: number[] = [];
-                    chartData.forEach(point => {
-                      Object.keys(point).forEach(key => {
-                        if (key !== 'fecha' && typeof point[key] === 'number' && !isNaN(point[key])) {
-                          allValues.push(point[key]);
-                        }
-                      });
-                    });
-                    const dataMin = allValues.length > 0 ? Math.min(...allValues) : yAxisDomain.max - 10;
-                    return [dataMin, yAxisDomain.max];
-                  }
-                  return ['auto', 'auto'];
-                })() as any}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1f2937', 
-                  border: '1px solid #4b5563',
-                  fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                  fontSize: '11px',
-                  borderRadius: '4px',
-                  padding: '8px',
-                  color: '#e5e7eb'
-                }}
-                labelStyle={{ color: '#e5e7eb', marginBottom: '4px' }}
-                formatter={(value: any) => {
-                  if (typeof value === 'number') {
-                    return `${value.toFixed(2)} ${selectedMetricUnit}`;
-                  }
-                  return value;
-                }}
-              />
-              <Legend 
-                wrapperStyle={{ fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-              />
-              {allSeries.map((series, idx) => (
-                <Line
-                  key={series}
-                  type="monotone"
-                  dataKey={series}
-                  stroke={COLORS[idx % COLORS.length]}
-                  dot={false}
-                  isAnimationActive={false}
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          <MedicionesAreaChart
+            key={`${selectedNode?.nodoid}-${selectedMetricId}`}
+            chartData={chartData}
+            allSeries={allSeries}
+            selectedMetricUnit={selectedMetricUnit}
+            yAxisDomain={yAxisDomain}
+            colors={COLORS}
+          />
         </div>
       )}
 

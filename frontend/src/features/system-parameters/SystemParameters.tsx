@@ -162,6 +162,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     canalesData,
     contactosData,
     correosData,
+    carpetasData,
     loadRelatedTablesData,
     loadTableData,
     setTableData, // Para limpiar datos inmediatamente
@@ -209,7 +210,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
         loadTableData(selectedTable)
       }
       // Recargar datos relacionados si se insertó en una tabla que afecta a otras
-      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'metrica', 'umbral'].includes(selectedTable)) {
+      if (selectedTable && ['perfil', 'usuario', 'pais', 'empresa', 'fundo', 'ubicacion', 'tipo', 'entidad', 'carpeta', 'metrica', 'umbral'].includes(selectedTable)) {
         loadRelatedTablesData()
       }
     },
@@ -295,6 +296,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
       ubicacionesData: Array.isArray(ubicacionesData) ? ubicacionesData : [],
       localizacionesData: Array.isArray(localizacionesData) ? localizacionesData : [],
       entidadesData: Array.isArray(entidadesData) ? entidadesData : [],
+      carpetasData: Array.isArray(carpetasData) ? carpetasData : [],
       nodosData: Array.isArray(nodosData) ? nodosData : [],
       tiposData: Array.isArray(tiposData) ? tiposData : [],
       metricasData: Array.isArray(metricasData) ? metricasData : [],

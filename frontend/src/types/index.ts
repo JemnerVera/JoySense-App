@@ -661,6 +661,7 @@ export interface BaseEntity extends AuditFields {
 // Tipos de tablas disponibles
 export type TableName = 
   | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
+  | 'carpeta' | 'carpeta_ubicacion' | 'carpeta_usuario'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
   | 'criticidad' | 'umbral' | 'alerta_regla' | 'alerta_regla_consolidado' | 'audit_log_umbral'
@@ -678,6 +679,9 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   ubicacion: 'ubicacionid',
   entidad: 'entidadid',
   entidad_localizacion: ['entidadid', 'localizacionid'],
+  carpeta: 'carpetaid',
+  carpeta_ubicacion: ['carpetaid', 'ubicacionid'],
+  carpeta_usuario: ['carpetaid', 'usuarioid'],
   tipo: 'tipoid',
   metrica: 'metricaid',
   sensor: 'sensorid',

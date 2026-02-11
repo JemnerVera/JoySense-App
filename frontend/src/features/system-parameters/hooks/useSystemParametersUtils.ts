@@ -11,6 +11,7 @@ interface RelatedData {
   ubicacionesData?: any[];
   localizacionesData?: any[];
   entidadesData?: any[];
+  carpetasData?: any[];
   nodosData?: any[];
   tiposData?: any[];
   metricasData?: any[];
@@ -31,6 +32,7 @@ export const useSystemParametersUtils = ({
     const fieldToTableMap: Record<string, { table: string; key: string; label: string | string[] }> = {
       'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
       'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
+      'carpetaid': { table: 'carpetasData', key: 'carpetaid', label: 'carpeta' },
       'nodoid': { table: 'nodosData', key: 'nodoid', label: 'nodo' },
       'tipoid': { table: 'tiposData', key: 'tipoid', label: 'tipo' },
       'metricaid': { table: 'metricasData', key: 'metricaid', label: 'metrica' },

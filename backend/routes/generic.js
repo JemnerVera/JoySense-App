@@ -19,6 +19,7 @@ router.use(optionalAuth);
 const ALLOWED_TABLES = [
   'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion', 
   'entidad', 'entidad_localizacion',
+  'carpeta', 'carpeta_ubicacion', 'carpeta_usuario',
   'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
   'umbral', 'alerta_regla', 'alerta_regla_consolidado', 'criticidad',
   'audit_log_umbral', 'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
@@ -39,6 +40,9 @@ const PK_MAPPING = {
   ubicacion: 'ubicacionid',
   localizacion: 'localizacionid',
   entidad: 'entidadid',
+  carpeta: 'carpetaid',
+  carpeta_ubicacion: null, // PK compuesta
+  carpeta_usuario: null, // PK compuesta
   nodo: 'nodoid',
   sensor: 'sensorid',
   tipo: 'tipoid',
@@ -58,7 +62,7 @@ const PK_MAPPING = {
   origen: 'origenid',
   tipo_mensaje: 'tipo_mensajeid',
   audit_log_umbral: 'auditid',
-  entidad_localizacion: null, // PK compuesta
+  entidad_localizacion: null, // PK compuesta (entidadid, localizacionid)
   metricasensor: null, // PK compuesta
   usuarioperfil: null, // PK compuesta
   regla: 'reglaid',

@@ -747,7 +747,7 @@ const AppContentInternal: React.FC<{
     const currentTab = activeTabRef.current;
     
     // Calcular el nuevo activeTab que se generaría
-    const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion'];
+    const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
     const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
     const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
     const dispositivosTables = ['tipo', 'metrica', 'sensor', 'metricasensor'];
@@ -770,7 +770,7 @@ const AppContentInternal: React.FC<{
       } else {
         newActiveTab = `configuracion-notificaciones-${table}`;
       }
-    } else if (table === 'entidad' || table === 'entidad_localizacion') {
+    } else if (['carpeta', 'carpeta_ubicacion', 'carpeta_usuario', 'entidad', 'entidad_localizacion'].includes(table)) {
       newActiveTab = `agrupacion-${table}`;
     } else if (geografiaTables.includes(table)) {
       newActiveTab = `geografia-${table}`;
@@ -839,7 +839,7 @@ const AppContentInternal: React.FC<{
           setActiveTab(`configuracion-notificaciones-${table}`);
           setActiveSubTab('status');
         }
-      } else if (table === 'entidad' || table === 'entidad_localizacion') {
+      } else if (['carpeta', 'carpeta_ubicacion', 'carpeta_usuario', 'entidad', 'entidad_localizacion'].includes(table)) {
         // Tablas de agrupación
         setSelectedTable(table);
         setActiveTab(`agrupacion-${table}`);
@@ -2343,8 +2343,11 @@ const AppContentInternal: React.FC<{
                           if (activeTab.startsWith('agrupacion-')) {
                             const agrupacionTable = activeTab.replace('agrupacion-', '');
                             const tableNames: Record<string, string> = {
-                              'entidad': 'CARPETA',
-                              'entidad_localizacion': 'LOCALIZACIÓN POR CARPETA'
+                              'entidad': 'GRUPO (LEGACY)',
+                              'entidad_localizacion': 'LOCALIZACIÓN POR GRUPO (LEGACY)',
+                              'carpeta': 'CARPETA',
+                              'carpeta_ubicacion': 'UBICACIÓN POR CARPETA',
+                              'carpeta_usuario': 'USUARIO POR CARPETA'
                             };
                             breadcrumb += ` / ${tableNames[agrupacionTable]?.toUpperCase() || agrupacionTable.toUpperCase()}`;
                             if (activeSubTab) {
