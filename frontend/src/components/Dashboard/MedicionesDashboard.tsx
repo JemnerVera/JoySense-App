@@ -6,6 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useFilters } from '../../contexts/FilterContext';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
+import { Localizacion } from '../../types';
 import { MedicionesAreaChart } from './components/MedicionesAreaChart';
 
 interface MedicionesDashboardProps {}
@@ -18,8 +19,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
 
   // Estados principales
-  const [nodos, setNodos] = useState<any[]>([]);
-  const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
+  const [uniqueLocalizaciones, setUniqueLocalizaciones] = useState<any[]>([]);
+  const [selectedLocalizacion, setSelectedLocalizacion] = useState<any | null>(null);
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [sensores, setSensores] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
@@ -42,30 +44,25 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     max: null
   });
 
-  // Estados para combobox de nodo con searchbar
-  const [isNodoDropdownOpen, setIsNodoDropdownOpen] = useState(false);
-  const [nodoSearchTerm, setNodoSearchTerm] = useState('');
-  const nodoDropdownRef = useRef<HTMLDivElement>(null);
-  const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  // Estados para combobox de localización con searchbar
+  const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
+  const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
+  const localizacionDropdownRef = useRef<HTMLDivElement>(null);
+  const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Cargar nodos, sensores y tipos al iniciar (con filtros globales para mapa y listas)
+  // Cargar localizaciones, sensores y tipos al iniciar
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const filters = fundoSeleccionado
-          ? { fundoId: fundoSeleccionado }
-          : empresaSeleccionada
-          ? { empresaId: empresaSeleccionada }
-          : paisSeleccionado
-          ? { paisId: paisSeleccionado }
-          : undefined;
-        const [nodosData, sensoresData, tiposData] = await Promise.all([
-          JoySenseService.getNodosConLocalizacion(1000, filters),
+        // Obtener localizaciones
+        const localizacionesData = await JoySenseService.getLocalizaciones();
+        
+        const [sensoresData, tiposData] = await Promise.all([
           JoySenseService.getSensores(),
           JoySenseService.getTipos()
         ]);
 
-        setNodos(nodosData || []);
+        setLocalizaciones(localizacionesData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
       } catch (err) {
@@ -77,11 +74,36 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadInitialData();
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
-  // Sincronizar pendingDateRange con dateRange cuando cambia selectedNode
+  // Agrupar localizaciones por nombre único (sin repetir)
+  useEffect(() => {
+    const localizacionesMap = new Map<string, any>();
+    
+    localizaciones.forEach((loc: Localizacion) => {
+      if (loc.localizacion && loc.nodoid && loc.nodo) {
+        // Usar el nombre de localización como clave
+        if (!localizacionesMap.has(loc.localizacion)) {
+          localizacionesMap.set(loc.localizacion, {
+            localizacionid: loc.localizacionid,
+            localizacion: loc.localizacion,
+            nodoid: loc.nodoid,
+            nodo: loc.nodo.nodo,
+            referencia: loc.nodo.nodo,  // Usar nodo.nodo como referencia
+            ubicacionid: loc.nodo.ubicacionid,
+            latitud: loc.latitud,         // Latitud viene de Localizacion, no de Nodo
+            longitud: loc.longitud        // Longitud viene de Localizacion, no de Nodo
+          });
+        }
+      }
+    });
+    
+    setUniqueLocalizaciones(Array.from(localizacionesMap.values()));
+  }, [localizaciones]);
+
+  // Sincronizar pendingDateRange con dateRange cuando cambia localización seleccionada
   useEffect(() => {
     setPendingDateRange(dateRange);
     setYAxisDomain({ min: null, max: null });
-  }, [selectedNode]);
+  }, [selectedLocalizacion]);
 
   // Validar rango máximo de 90 días
   const validateDateRange = useCallback((start: string, end: string): { start: string; end: string } | null => {
@@ -102,9 +124,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return null;
   }, [showError]);
 
-  // Cargar métricas disponibles cuando cambia nodo o rango de fechas
+  // Cargar métricas disponibles cuando cambia localización o rango de fechas
   useEffect(() => {
-    if (!selectedNode?.nodoid) {
+    if (!selectedLocalizacion?.nodoid) {
       setAvailableMetrics([]);
       setSelectedMetricId(null);
       setMediciones([]);
@@ -122,7 +144,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       try {
         setLoading(true);
         const metrics = await SupabaseRPCService.getMetricasDisponiblesPorNodo({
-          nodoid: selectedNode.nodoid,
+          nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
@@ -159,11 +181,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadMetricas();
-  }, [selectedNode, dateRange.start, dateRange.end, showError, validateDateRange]);
+  }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
 
-  // Cargar mediciones cuando cambia nodo o rango de fechas (NO por métrica)
+  // Cargar mediciones cuando cambia localización o rango de fechas (NO por métrica)
   useEffect(() => {
-    if (!selectedNode?.nodoid) {
+    if (!selectedLocalizacion?.nodoid) {
       setMediciones([]);
       return;
     }
@@ -180,7 +202,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         setLoading(true);
         // Cargar datos de TODAS las métricas (sin filtro metricaid)
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
-          nodoid: selectedNode.nodoid,
+          nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
           // NO pasar metricaid - cargar todo y filtrar en frontend
@@ -203,7 +225,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadMediciones();
-  }, [selectedNode, dateRange.start, dateRange.end, showError, validateDateRange]);
+  }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
 
   // Debugging: Mostrar cambios en mediciones
   useEffect(() => {
@@ -292,44 +314,36 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     }
   }, [mediciones]);
 
-  // Filtrar nodos por filtros globales y término de búsqueda
+  // Filtrar localizaciones por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
-    // Primero aplicar filtros globales (país, empresa, fundo)
-    let filtered = filterNodesByGlobalFilters(
-      nodos,
-      paisSeleccionado,
-      empresaSeleccionada,
-      fundoSeleccionado
-    );
-    
-    // Luego filtrar por término de búsqueda
-    if (!nodoSearchTerm.trim()) {
-      return filtered;
+    // Filtrar por término de búsqueda
+    if (!localizacionSearchTerm.trim()) {
+      return uniqueLocalizaciones;
     }
-    return filtered.filter((nodo: any) =>
-      nodo.nodo?.toLowerCase().includes(nodoSearchTerm.toLowerCase())
+    return uniqueLocalizaciones.filter((loc: any) =>
+      loc.localizacion?.toLowerCase().includes(localizacionSearchTerm.toLowerCase())
     );
-  }, [nodos, nodoSearchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
+  }, [uniqueLocalizaciones, localizacionSearchTerm]);
 
-  // Calcular posición del dropdown de nodo cuando se abre
+  // Calcular posición del dropdown de localización cuando se abre
   useEffect(() => {
-    if (isNodoDropdownOpen && nodoDropdownRef.current) {
-      const rect = nodoDropdownRef.current.getBoundingClientRect();
-      setNodoDropdownPosition({
+    if (isLocalizacionDropdownOpen && localizacionDropdownRef.current) {
+      const rect = localizacionDropdownRef.current.getBoundingClientRect();
+      setLocalizacionDropdownPosition({
         top: rect.bottom + window.scrollY + 4,
         left: rect.left + window.scrollX,
         width: rect.width
       });
     } else {
-      setNodoDropdownPosition(null);
+      setLocalizacionDropdownPosition(null);
     }
-  }, [isNodoDropdownOpen]);
+  }, [isLocalizacionDropdownOpen]);
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (nodoDropdownRef.current && !nodoDropdownRef.current.contains(event.target as Node)) {
-        setIsNodoDropdownOpen(false);
+      if (localizacionDropdownRef.current && !localizacionDropdownRef.current.contains(event.target as Node)) {
+        setIsLocalizacionDropdownOpen(false);
       }
     };
 
@@ -545,38 +559,38 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     <div className="w-full p-6">
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-8">
         <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
-          {/* Selector de Nodo con searchbar */}
-          <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
+          {/* Selector de Localización (agrupada por Nodo) con searchbar */}
+          <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
             <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
-              Nodo:
+              Localización:
             </label>
             <div className="relative">
               <button
-                onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
+                onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
                 className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
               >
-                <span className={selectedNode ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                  {selectedNode?.nodo || 'Selecciona'}
+                <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                  {selectedLocalizacion?.localizacion || 'Selecciona'}
                 </span>
-                <svg className={`w-4 h-4 transition-transform ${isNodoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               
-              {isNodoDropdownOpen && nodoDropdownPosition && (
+              {isLocalizacionDropdownOpen && localizacionDropdownPosition && (
                 <div 
                   className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
                   style={{
-                    top: `${nodoDropdownPosition.top}px`,
-                    left: `${nodoDropdownPosition.left}px`,
-                    width: `${nodoDropdownPosition.width}px`
+                    top: `${localizacionDropdownPosition.top}px`,
+                    left: `${localizacionDropdownPosition.left}px`,
+                    width: `${localizacionDropdownPosition.width}px`
                   }}
                 >
                   <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
                     <input
                       type="text"
-                      value={nodoSearchTerm}
-                      onChange={(e) => setNodoSearchTerm(e.target.value)}
+                      value={localizacionSearchTerm}
+                      onChange={(e) => setLocalizacionSearchTerm(e.target.value)}
                       placeholder="Buscar..."
                       className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                       autoFocus
@@ -587,19 +601,19 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                     {filteredNodos.length > 0 ? (
                       filteredNodos.map((nodo: any) => (
                         <button
-                          key={nodo.nodoid}
+                          key={nodo.localizacionid}
                           onClick={() => {
-                            setSelectedNode(nodo);
-                            setIsNodoDropdownOpen(false);
-                            setNodoSearchTerm('');
+                            setSelectedLocalizacion(nodo);
+                            setIsLocalizacionDropdownOpen(false);
+                            setLocalizacionSearchTerm('');
                           }}
                           className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
-                            selectedNode?.nodoid === nodo.nodoid
+                            selectedLocalizacion?.localizacionid === nodo.localizacionid
                               ? 'bg-blue-500 text-white'
                               : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                           }`}
                         >
-                          {nodo.nodo}
+                          {nodo.localizacion}
                         </button>
                       ))
                     ) : (
@@ -686,7 +700,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
-          {selectedNode && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
+          {selectedLocalizacion && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
             <div className="flex flex-col items-center flex-shrink-0">
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
               <button
@@ -822,7 +836,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         </div>
       ) : chartData.length === 0 ? (
         <div className="flex items-center justify-center h-96 bg-white dark:bg-neutral-800 rounded-lg p-6">
-          <p className="text-gray-600 dark:text-gray-400">Selecciona un nodo y una métrica</p>
+          <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700 mediciones-chart">
@@ -843,7 +857,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             }
           `}</style>
           <MedicionesAreaChart
-            key={`${selectedNode?.nodoid}-${selectedMetricId}`}
+            key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}`}
             chartData={chartData}
             allSeries={allSeries}
             selectedMetricUnit={selectedMetricUnit}

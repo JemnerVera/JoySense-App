@@ -147,12 +147,15 @@ export interface MetricaSensor {
 /**
  * Nodo - NUEVO MODELO
  * Ahora tiene ubicacionid directamente
+ * Incluye coordenadas y referencia descriptiva
  */
 export interface Nodo {
   nodoid: number;
   ubicacionid: number;
   nodo: string;
-  descripcion?: string;
+  latitud?: number | string;
+  longitud?: number | string;
+  referencia?: string;
   statusid: number;
   usercreatedid: number;
   datecreated: string;
