@@ -52,7 +52,6 @@ export function useMenuEffects(
 
     // ✅ IMPORTANTE: Solo ejecutar si activeTab REALMENTE cambió
     if (prevActiveTabRef.current === activeTab) {
-      console.log('[useMenuEffects SKIP - activeTab unchanged]', { activeTab });
       return;
     }
     prevActiveTabRef.current = activeTab;
@@ -62,15 +61,7 @@ export function useMenuEffects(
     const tab = mainTabs.find((t) => t.id === mainTabId);
     prevMainTabRef.current = mainTabId;
 
-    console.log('[useMenuEffects SYNC - activeTab CHANGED]', {
-      activeTab,
-      parts,
-      mainTabId,
-      isExpanded,
-    });
-
     if (!tab || !tab.subMenus || tab.subMenus.length === 0 || parts.length <= 1) {
-      console.log('[useMenuEffects EARLY EXIT]', { reason: 'no tab/submenus or parts <= 1' });
       return;
     }
 
@@ -127,8 +118,6 @@ export function useMenuEffects(
       menuPathToOpen.push(menuKey);
     }
 
-    console.log('[useMenuEffects PATH BUILT]', { menuPathToOpen });
-
     // ============================================================
     // ACTUALIZAR ESTADO Y DOM
     // ============================================================
@@ -153,14 +142,8 @@ export function useMenuEffects(
 
     // Si no hay cambios, no hacer nada
     if (menusToClose.length === 0 && menusToOpen.length === 0) {
-      console.log('[useMenuEffects NO CHANGES]');
       return;
     }
-
-    console.log('[useMenuEffects WILL UPDATE]', {
-      menusToClose,
-      menusToOpen,
-    });
 
     // ✅ Construir el nuevo estado como string para comparación
     const newOpenSubMenusLevel3 = new Set(openSubMenusLevel3);
@@ -171,7 +154,6 @@ export function useMenuEffects(
     
     // ✅ Verificar si realmente cambió antes de actualizar estado
     if (newStateStr === lastStateUpdateRef.current) {
-      console.log('[useMenuEffects SKIP STATE UPDATE - same as last]');
       return;
     }
 
