@@ -118,13 +118,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       // En este caso, como siempre pasamos filtros, NO es necesario.
     }
 
-    // Aplicar filtro de búsqueda si hay término de búsqueda
+    // Aplicar filtro de búsqueda si hay término de búsqueda (incluye localización y referencia como en MEDICIÓN)
     const term = searchTerm.toLowerCase().trim()
-    console.log('[NodeSelector] handleMapNodeClick clearing search term');
     if (term) {
       filtered = filtered.filter(node =>
         node.nodo.toLowerCase().includes(term) ||
         node.ubicacion.ubicacion.toLowerCase().includes(term) ||
+        (node.localizacion?.toLowerCase().includes(term)) ||
+        (node.referencia?.toLowerCase().includes(term)) ||
         node.ubicacion.fundo.fundo.toLowerCase().includes(term) ||
         node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term)
       )
@@ -341,7 +342,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
           <div className="relative">
             <input
               type="text"
-              value={selectedNode ? `${selectedNode.nodo} - ${selectedNode.ubicacion.ubicacion}` : searchTerm}
+              value={selectedNode ? `${selectedNode.ubicacion.ubicacion}${selectedNode.localizacion ? ` - ${selectedNode.localizacion}` : ''}` : searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
                 setIsSearchDropdownOpen(true)

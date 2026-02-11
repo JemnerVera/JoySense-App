@@ -688,7 +688,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
 
       // Transformar datos de la RPC al formato MedicionData
-      // Los datos de la RPC vienen con información completa expandida
+      // fn_get_mediciones_nodo_detallado retorna metrica_nombre, sensor_nombre, tipo_nombre
       const transformedData: MedicionData[] = detailedData.map((rpcData: any) => ({
         medicionid: rpcData.medicionid || 0,
         localizacionid: rpcData.localizacionid || 0,
@@ -696,25 +696,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         medicion: Number(rpcData.medicion),
         localizacion: {
           localizacionid: rpcData.localizacionid || 0,
-          localizacion: '',
+          localizacion: rpcData.localizacion_nombre || '',
           nodoid: selectedNode.nodoid,
           metricaid: rpcData.metricaid,
           sensorid: rpcData.sensorid || 0,
           metrica: {
             metricaid: rpcData.metricaid,
-            metrica: rpcData.metrica || '',
+            metrica: rpcData.metrica_nombre || rpcData.metrica || '',
             unidad: rpcData.unidad || ''
           },
           sensor: rpcData.sensorid ? {
             sensorid: rpcData.sensorid,
-            sensor: rpcData.sensor || '',
-            nombre: rpcData.sensor || '',
+            sensor: rpcData.sensor_nombre || rpcData.sensor || '',
+            nombre: rpcData.sensor_nombre || rpcData.sensor || '',
             modelo: '',
             deveui: '',
             tipoid: rpcData.tipoid || 0,
             tipo: {
               tipoid: rpcData.tipoid || 0,
-              tipo: rpcData.tipo || 'Sensor'
+              tipo: rpcData.tipo_nombre || rpcData.tipo || 'Sensor'
             }
           } : undefined
         },
@@ -2011,6 +2011,57 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           />
         )}
 
+        {/* View Switch: Análisis detallado fullscreen o Mapa + minigráficos */}
+        {showDetailedAnalysis && selectedMetricForAnalysis ? (
+          <DetailedAnalysisModal
+            isOpen={true}
+            isFullscreenView={true}
+            selectedNode={selectedNode}
+            selectedMetricForAnalysis={selectedMetricForAnalysis}
+            selectedDetailedMetric={selectedDetailedMetric}
+            detailedMediciones={detailedMediciones}
+            comparisonNode={comparisonNode}
+            comparisonMediciones={comparisonMediciones}
+            mediciones={mediciones}
+            availableMetrics={availableMetrics}
+            availableNodes={availableNodes}
+            tipos={tipos}
+            sensores={sensores}
+            loadingDetailedData={loadingDetailedData}
+            loadingComparisonData={loadingComparisonData}
+            detailedStartDate={detailedStartDate}
+            detailedEndDate={detailedEndDate}
+            isModalExpanded={true}
+            visibleTipos={visibleTipos}
+            memoizedDetailedChartData={memoizedDetailedChartData}
+            umbralesDisponibles={umbralesDisponibles}
+            localizacionesPorNodo={localizacionesPorNodo}
+            yAxisDomain={yAxisDomain}
+            onClose={() => {
+              setShowDetailedAnalysis(false)
+              setSelectedMetricForAnalysis(null)
+              setComparisonNode(null)
+              setComparisonMediciones([])
+              setLoadingComparisonData(false)
+              setIsModalExpanded(false)
+              setYAxisDomain({ min: null, max: null })
+              setVisibleTipos(new Set())
+            }}
+            onMetricChange={(metric) => setSelectedDetailedMetric(metric)}
+            onComparisonNodeChange={(node) => setComparisonNode(node)}
+            onDateRangeChange={(start, end) => {
+              setDetailedStartDate(start)
+              setDetailedEndDate(end)
+            }}
+            onYAxisDomainChange={(domain) => setYAxisDomain(domain)}
+            onVisibleTiposChange={(tipos) => setVisibleTipos(tipos)}
+            onToggleExpand={() => setIsModalExpanded(!isModalExpanded)}
+            onAnalyzeFluctuation={analyzeFluctuationAndRecommendThresholds}
+            onLoadComparisonData={loadComparisonMediciones}
+            getSeriesLabel={getSeriesLabel}
+          />
+        ) : (
+          <>
         {/* Node Selector Console */}
         <NodeSelector
           selectedEntidadId={filters.entidadId}
@@ -2064,54 +2115,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             })}
           </div>
         )}
-
-        {/* Modal de Análisis Detallado */}
-        <DetailedAnalysisModal
-          isOpen={showDetailedAnalysis}
-          selectedNode={selectedNode}
-          selectedMetricForAnalysis={selectedMetricForAnalysis}
-          selectedDetailedMetric={selectedDetailedMetric}
-          detailedMediciones={detailedMediciones}
-          comparisonNode={comparisonNode}
-          comparisonMediciones={comparisonMediciones}
-          mediciones={mediciones}
-          availableMetrics={availableMetrics}
-          availableNodes={availableNodes}
-          tipos={tipos}
-          sensores={sensores}
-          loadingDetailedData={loadingDetailedData}
-          loadingComparisonData={loadingComparisonData}
-          detailedStartDate={detailedStartDate}
-          detailedEndDate={detailedEndDate}
-          isModalExpanded={isModalExpanded}
-          visibleTipos={visibleTipos}
-          memoizedDetailedChartData={memoizedDetailedChartData}
-          umbralesDisponibles={umbralesDisponibles}
-          localizacionesPorNodo={localizacionesPorNodo}
-          yAxisDomain={yAxisDomain}
-          onClose={() => {
-            setShowDetailedAnalysis(false)
-            setSelectedMetricForAnalysis(null)
-            setComparisonNode(null)
-            setComparisonMediciones([])
-            setLoadingComparisonData(false)
-            setIsModalExpanded(false)
-            setYAxisDomain({ min: null, max: null })
-            setVisibleTipos(new Set())
-          }}
-          onMetricChange={(metric) => setSelectedDetailedMetric(metric)}
-          onComparisonNodeChange={(node) => setComparisonNode(node)}
-          onDateRangeChange={(start, end) => {
-            setDetailedStartDate(start)
-            setDetailedEndDate(end)
-          }}
-          onYAxisDomainChange={(domain) => setYAxisDomain(domain)}
-          onVisibleTiposChange={(tipos) => setVisibleTipos(tipos)}
-          onToggleExpand={() => setIsModalExpanded(!isModalExpanded)}
-          onAnalyzeFluctuation={analyzeFluctuationAndRecommendThresholds}
-          onLoadComparisonData={loadComparisonMediciones}
-          getSeriesLabel={getSeriesLabel}
-        />
+          </>
+        )}
 
         {/* Modal de Recomendaciones de Umbrales */}
         <ThresholdRecommendationsModal

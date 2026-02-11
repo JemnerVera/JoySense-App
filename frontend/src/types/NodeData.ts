@@ -6,6 +6,7 @@ export interface NodeData {
   latitud: number
   longitud: number
   referencia: string
+  localizacion?: string  // "LOTE T1 HILERA 6" (tabla localizacion)
   ubicacion: {
     ubicacion: string
     ubicacionabrev: string
