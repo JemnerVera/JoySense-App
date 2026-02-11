@@ -70,15 +70,15 @@ export function getSeriesLabel(
   
   const locName = medicion.localizacion?.localizacion || `Punto ${medicion.localizacionid}`
   
-  // Obtener información del sensor
+  // Obtener información del sensor (fallback a localizacion.sensor para datos RPC fn_get_mediciones_nodo_detallado)
   const sensorId = medicion.localizacion?.sensorid || medicion.sensorid
   const sensorInfo = sensores.find(s => s.sensorid === sensorId)
-  const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
+  const sensorName = medicion.localizacion?.sensor?.sensor || medicion.localizacion?.sensor?.nombre || sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
   
-  // Obtener información del tipo
+  // Obtener información del tipo (fallback a localizacion.sensor.tipo para datos RPC)
   const tipoId = sensorInfo?.tipoid || medicion.tipoid
   const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
-  const tipoName = tipoInfo?.tipo || 'Sensor'
+  const tipoName = medicion.localizacion?.sensor?.tipo?.tipo || tipoInfo?.tipo || 'Sensor'
   
   // Construir etiqueta descriptiva
   let sensorLabel = tipoName
@@ -104,15 +104,15 @@ export function getSensorLabel(
     return metricName.charAt(0).toUpperCase() + metricName.slice(1)
   }
   
-  // Obtener información del sensor
+  // Obtener información del sensor (fallback a localizacion.sensor para datos RPC fn_get_mediciones_nodo_detallado)
   const sensorId = medicion.localizacion?.sensorid || medicion.sensorid
   const sensorInfo = sensores.find(s => s.sensorid === sensorId)
-  const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
+  const sensorName = medicion.localizacion?.sensor?.sensor || medicion.localizacion?.sensor?.nombre || sensorInfo?.sensor || sensorInfo?.nombre || sensorInfo?.modelo || sensorInfo?.deveui
   
-  // Obtener información del tipo
+  // Obtener información del tipo (fallback a localizacion.sensor.tipo para datos RPC)
   const tipoId = sensorInfo?.tipoid || medicion.tipoid
   const tipoInfo = tipos.find((t: any) => t.tipoid === tipoId)
-  const tipoName = tipoInfo?.tipo || 'Sensor'
+  const tipoName = medicion.localizacion?.sensor?.tipo?.tipo || tipoInfo?.tipo || 'Sensor'
   
   // Construir etiqueta descriptiva (solo el sensor, sin localización)
   let sensorLabel = tipoName

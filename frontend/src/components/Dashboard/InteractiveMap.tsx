@@ -184,21 +184,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
   const markerRefs = useRef<Map<number, L.Marker>>(new Map())
 
-  // OPTIMIZACIÓN: Extraer localizaciones de los nodos ya cargados usando useMemo
-  // Eliminamos las 258+ llamadas API individuales que bloqueaban el navegador
-  // Los nodos ya vienen con información de ubicación desde getNodosConLocalizacion
-  const localizacionesPorNodo = useMemo(() => {
-    const map = new Map<number, string[]>();
-    nodes.forEach((node) => {
-      // Extraer nombre de localización de la ubicación del nodo si está disponible
-      if (node.ubicacion?.ubicacion) {
-        const nombres = [node.ubicacion.ubicacion];
-        map.set(node.nodoid, nombres);
-      }
-    });
-    return map;
-  }, [nodes])
-
   // Usar useMemo para evitar recalcular en cada render
   const nodesWithGPS = useMemo(() => {
     return nodes.filter(n => {
@@ -461,15 +446,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           >
             <Popup>
               <div className="text-sm">
-                <div className="font-bold text-blue-400 mb-2">{node.nodo}</div>
                 <div className="space-y-1">
-                  {(() => {
-                    const localizaciones = localizacionesPorNodo.get(node.nodoid);
-                    return localizaciones && localizaciones.length > 0 ? (
-                      <div><strong>Localización:</strong> {localizaciones.join(', ')}</div>
-                    ) : null;
-                  })()}
                   <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
+                  {node.localizacion && (
+                    <div><strong>{t('dashboard.tooltip.localizacion')}</strong> {node.localizacion}</div>
+                  )}
                   <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
                   <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
                   <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>

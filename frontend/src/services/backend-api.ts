@@ -439,7 +439,8 @@ export class JoySenseService {
             ubicacionid: ubicacion.ubicacionid || 0,
             latitud: typeof localizacion.latitud === 'string' ? parseFloat(localizacion.latitud) : (localizacion.latitud || 0),
             longitud: typeof localizacion.longitud === 'string' ? parseFloat(localizacion.longitud) : (localizacion.longitud || 0),
-            referencia: localizacion.referencia || '',
+            referencia: localizacion.referencia || nodo.referencia || '',
+            localizacion: localizacion.localizacion || '', // "LOTE T1 HILERA 6" (tabla localizacion)
             ubicacion: {
               ubicacion: ubicacion.ubicacion || '',
               ubicacionabrev: '', // No existe en schema actual

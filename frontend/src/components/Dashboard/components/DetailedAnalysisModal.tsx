@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, Legend } from "recharts"
+import { useLanguage } from "../../../contexts/LanguageContext"
 import type { MedicionData, MetricConfig } from "../types"
 import type { Nodo, Tipo } from "../../../types"
 import { getMetricIdFromDataKey } from "../utils/metricUtils"
@@ -43,6 +44,9 @@ export interface DetailedAnalysisModalProps {
   umbralesDisponibles: { [key: number]: { minimo: number; maximo: number } }
   localizacionesPorNodo: Map<number, string[]>
   yAxisDomain: { min: number | null; max: number | null }
+
+  /** Cuando true, se renderiza como vista fullscreen en lugar de modal overlay (para view switch) */
+  isFullscreenView?: boolean
 
   // Callbacks
   onClose: () => void
@@ -93,8 +97,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   onToggleExpand,
   onAnalyzeFluctuation,
   onLoadComparisonData,
-  getSeriesLabel
+  getSeriesLabel,
+  isFullscreenView = false
 }) => {
+  const { t } = useLanguage()
   const [tempStartDate, setTempStartDate] = useState('')
   const [tempEndDate, setTempEndDate] = useState('')
 
@@ -133,9 +139,30 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
     console.log('[DetailedAnalysisModal] Sample chartData point:', chartData[0])
   }
 
+  const contentWrapperClass = isFullscreenView
+    ? 'bg-gray-50 dark:bg-neutral-900 w-full min-h-[calc(100vh-8rem)] overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
+    : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`}>
+    <div className={isFullscreenView ? 'w-full' : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4'}>
+      <div className={contentWrapperClass}>
+        {/* Barra "Volver al mapa" - solo en vista fullscreen */}
+        {isFullscreenView && (
+          <div className="flex items-center justify-between px-6 py-4 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              {t('dashboard.back_to_map')}
+            </button>
+            <span className="text-white font-mono text-sm opacity-90">
+              {selectedMetricForAnalysis?.title} - {selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
+            </span>
+          </div>
+        )}
         
         {/* Contenido con sidebar */}
         <div className="flex-1 flex overflow-hidden">
@@ -449,7 +476,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
           </div>
         </div>
 
-        {/* Botones de control - Posicionados más a la derecha fuera del header */}
+        {/* Botones de control - Solo en modo modal (en fullscreen usamos la barra Volver al mapa) */}
+        {!isFullscreenView && (
         <div className="absolute top-2 right-2 flex flex-row gap-2 z-10">
           <button
             onClick={onToggleExpand}
@@ -476,6 +504,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
             </svg>
           </button>
         </div>
+        )}
       </div>
     </div>
   )
