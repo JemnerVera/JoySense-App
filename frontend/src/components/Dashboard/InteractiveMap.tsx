@@ -35,12 +35,6 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    console.log('🎮 MapController: useEffect disparado', {
-      selectedNodeId: selectedNode?.nodoid,
-      selectedNodeName: selectedNode?.nodo,
-      previousNodeId: previousNodeId.current
-    });
-    
     // Limpiar cualquier animación en curso
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current)
@@ -49,7 +43,6 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
 
     // Si no hay nodo seleccionado, resetear el ref para que la próxima selección sea tratada como primera carga
     if (!selectedNode) {
-      console.log('🎮 MapController: No hay selectedNode, reseteando previousNodeId');
       previousNodeId.current = null
       return
     }
@@ -64,20 +57,9 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
         
         // Si cambió el nodo (no es la primera carga)
         if (previousNodeId.current !== null && previousNodeId.current !== currentNodeId) {
-          console.log('🎮 MapController: Cambio de nodo detectado', {
-            anterior: previousNodeId.current,
-            actual: currentNodeId,
-            tipo: 'cambio_nodo'
-          });
-          
           // Obtener posición actual del mapa
           const currentCenter = map.getCenter()
           const currentZoom = map.getZoom()
-          
-          console.log('🎮 MapController: Estado actual del mapa', {
-            centro: `${currentCenter.lat}, ${currentCenter.lng}`,
-            zoom: currentZoom
-          });
           
           // Solo hacer animación de 3 pasos si el zoom actual es alto (más cercano)
           // Si el zoom ya está alejado, solo centrar y acercar
@@ -106,7 +88,7 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
                  animationTimeoutRef.current = setTimeout(() => {
                    if (onAnimationComplete) {
                      onAnimationComplete()
-    }
+                   }
                    animationTimeoutRef.current = null
                  }, 1400) // 1200ms de duración + 200ms de margen adicional
               }, 1300) // 1200ms de duración + 100ms de margen
@@ -140,18 +122,12 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
           }
         } else {
           // Primera carga o mismo nodo: ir directamente
-          console.log('🎮 MapController: Primera carga o mismo nodo', {
-            currentNodeId,
-            tipo: previousNodeId.current === null ? 'primera_carga' : 'mismo_nodo'
-          });
-          
           map.flyTo([lat, lng], 14, {
             duration: 1.2,
             easeLinearity: 0.3
           })
           
           animationTimeoutRef.current = setTimeout(() => {
-            console.log('🎮 MapController: Animación completada, llamando a onAnimationComplete');
             if (onAnimationComplete) {
               onAnimationComplete()
             }
@@ -210,54 +186,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Usar useMemo para evitar recalcular en cada render
   const nodesWithGPS = useMemo(() => {
-    const filtered = nodes.filter(n => {
+    return nodes.filter(n => {
       const lat = typeof n.latitud === 'string' ? parseFloat(n.latitud) : n.latitud;
       const lng = typeof n.longitud === 'string' ? parseFloat(n.longitud) : n.longitud;
       const isValid = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
       return isValid;
     });
-    
-    console.log('📍 InteractiveMap: nodesWithGPS actualizado', {
-      totalNodesRecibidos: nodes.length,
-      nodesConGPS: filtered.length,
-      nodos: filtered.map(n => ({ id: n.nodoid, nombre: n.nodo, ubicacion: n.ubicacion?.ubicacion })),
-      selectedNodeId: selectedNode?.nodoid
-    });
-    
-    return filtered;
-  }, [nodes, selectedNode?.nodoid])
+  }, [nodes])
   
   // Función para abrir el popup del nodo seleccionado con retry para asegurar que el marker exista
   const openSelectedNodePopup = (retryCount = 0) => {
-    console.log('🔔 InteractiveMap: openSelectedNodePopup llamado', {
-      selectedNodeId: selectedNode?.nodoid,
-      selectedNodeName: selectedNode?.nodo,
-      totalMarkers: markerRefs.current.size,
-      retryCount
-    });
-    
     if (selectedNode) {
       const marker = markerRefs.current.get(selectedNode.nodoid)
-      console.log('🎯 InteractiveMap: Buscando marker para popup', {
-        nodoid: selectedNode.nodoid,
-        markerEncontrado: !!marker,
-        availableMarkers: Array.from(markerRefs.current.keys())
-      });
       
       if (marker) {
-        console.log('✅ InteractiveMap: Abriendo popup para nodo', selectedNode.nodoid);
         marker.openPopup()
       } else if (retryCount < 5) {
         // Reintentar después de un pequeño delay si el marker aún no existe
-        console.log('⏰ InteractiveMap: Reintentando abrir popup en 100ms', {
-          retryCount: retryCount + 1
-        });
         setTimeout(() => openSelectedNodePopup(retryCount + 1), 100)
-      } else {
-        console.log('❌ InteractiveMap: No se encontró marker después de reintentos', selectedNode.nodoid);
       }
-    } else {
-      console.log('⚠️ InteractiveMap: No hay selectedNode para abrir popup');
     }
   }
 
@@ -283,12 +230,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Abrir popup automáticamente cuando filteredNodes se reduce a 1 (nodo seleccionado)
   useEffect(() => {
-    console.log('🎯 InteractiveMap: Verificando auto-apertura de popup', {
-      totalFilteredNodes: nodesWithGPS.length,
-      selectedNodeId: selectedNode?.nodoid,
-      totalMarkers: markerRefs.current.size
-    });
-    
     if (nodesWithGPS.length === 1 && selectedNode) {
       // Esperar un ciclo de render para asegurar que los markers estén listos
       setTimeout(() => {
@@ -494,12 +435,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         {nodesWithGPS.map((node) => {
           const lat = typeof node.latitud === 'string' ? parseFloat(node.latitud) : (node.latitud || 0);
           const lng = typeof node.longitud === 'string' ? parseFloat(node.longitud) : (node.longitud || 0);
-          
-          console.log('🎨 InteractiveMap: Renderizando marker', {
-            nodoid: node.nodoid,
-            isSelected: selectedNode?.nodoid === node.nodoid,
-            hasAlert: nodesWithAlerts.includes(node.nodoid)
-          });
+
           
           return (
           <Marker
@@ -516,17 +452,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             eventHandlers={{
               click: (e: any) => {
                 e.originalEvent.stopPropagation();
-                console.log('🗺️ InteractiveMap: Click en nodo', {
-                  nodoid: node.nodoid,
-                  nodo: node.nodo,
-                  localizacion: node.localizacion,
-                  coordenadas: `${node.latitud}, ${node.longitud}`
-                });
                 try {
                   onNodeSelect(node);
-                  console.log('✅ InteractiveMap: onNodeSelect ejecutado correctamente');
                 } catch (error) {
-                  console.error('❌ InteractiveMap: Error al llamar onNodeSelect:', error);
+                  console.error('InteractiveMap: Error al llamar onNodeSelect:', error);
                 }
               }
             }}

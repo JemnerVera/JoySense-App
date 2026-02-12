@@ -1030,27 +1030,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Callbacks estables para NodeSelector (fuera del JSX para cumplir reglas de hooks)
   const handleNodeSelect = useCallback((nodeData: NodeData) => {
-    console.log('🎯 ModernDashboard: handleNodeSelect llamado', {
-      nodeDataId: nodeData?.nodoid,
-      nodeDataName: nodeData?.nodo,
-      timestamp: new Date().toISOString()
-    });
-    
     try {
-      console.log('✓ ModernDashboard: Seteando selectedNode en ModernDashboard');
       setSelectedNode(nodeData)
-      
-      // Verificar que se estableció correctamente
-      setTimeout(() => {
-        console.log('🔍 ModernDashboard: Verificando selectedNode después de establecer', {
-          selectedNodeId: selectedNode?.nodoid,
-          timestamp: new Date().toISOString()
-        });
-      }, 50);
     } catch (error) {
-      console.error('❌ ModernDashboard: Error al actualizar selectedNode:', error);
+      console.error('Error al actualizar selectedNode:', error);
     }
-  }, [selectedNode])
+  }, [])
 
   const handleNodeClear = useCallback(() => {
     setSelectedNode(null);
@@ -2083,46 +2068,25 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
         {/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
-          (() => {
-            console.log('🎯 ModernDashboard: Renderizando grid de minigráficos', {
-              selectedNodeId: selectedNode.nodoid,
-              totalMetrics: availableMetrics.length,
-              loading,
-              error: !!error,
-              metrics: availableMetrics.map(m => ({ id: m.id, title: m.title, dataKey: m.dataKey }))
-            });
-            
-            return (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                {availableMetrics.map((metric) => {
-                  const hasData = hasMetricDataOptimized(metric.dataKey)
-                  const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
-                  const chartData = memoizedChartData[metric.dataKey] || []
-                  
-                  console.log('📈 ModernDashboard: Preparando MetricMiniChart', {
-                    metricId: metric.id,
-                    metricName: metric.title,
-                    dataKey: metric.dataKey,
-                    hasData,
-                    currentValue,
-                    chartDataPoints: chartData.length
-                  });
-                  
-                  return (
-                    <MetricMiniChart
-                      key={metric.id}
-                      metric={metric}
-                      chartData={chartData}
-                      currentValue={currentValue}
-                      hasData={hasData}
-                      onOpenAnalysis={openDetailedAnalysis}
-                      t={t}
-                    />
-                  )
-                })}
-              </div>
-            );
-          })()
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {availableMetrics.map((metric) => {
+              const hasData = hasMetricDataOptimized(metric.dataKey)
+              const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
+              const chartData = memoizedChartData[metric.dataKey] || []
+              
+              return (
+                <MetricMiniChart
+                  key={metric.id}
+                  metric={metric}
+                  chartData={chartData}
+                  currentValue={currentValue}
+                  hasData={hasData}
+                  onOpenAnalysis={openDetailedAnalysis}
+                  t={t}
+                />
+              )
+            })}
+          </div>
         )}
         </>
         )}

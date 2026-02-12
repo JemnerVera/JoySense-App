@@ -23,14 +23,6 @@ function MetricMiniChartComponent({
   onOpenAnalysis,
   t
 }: MetricMiniChartProps) {
-  console.log('📊 MetricMiniChart: Renderizando componente', {
-    metricId: metric.id,
-    metricName: metric.title,
-    hasData,
-    dataPoints: chartData?.length || 0,
-    currentValue
-  });
-  
   // Memoizar el cálculo de series keys para evitar recálculos
   const seriesKeys = useMemo(() => {
     if (!chartData || chartData.length === 0) return []
@@ -43,14 +35,8 @@ function MetricMiniChartComponent({
     )
     
     // Ordenar alfabéticamente para consistencia
-    const sortedKeys = uniqueKeys.sort()
-    console.log('🔑 MetricMiniChart: Series keys calculadas', {
-      metricId: metric.id,
-      keys: sortedKeys
-    });
-    
-    return sortedKeys
-  }, [chartData, metric.id])
+    return uniqueKeys.sort()
+  }, [chartData])
 
   const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899', '#10b981']
 
