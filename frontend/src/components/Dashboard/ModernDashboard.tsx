@@ -30,6 +30,7 @@ import {
   createOptimizedMetricHelper
 } from "./utils/dashboardHelpers"
 import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
+import { NodeData } from "../../types/NodeData"
 import { useOptimizedChartData } from "./hooks/useOptimizedChartData"
 import { useMetricCache } from "./hooks/useMetricCache"
 
@@ -1046,6 +1047,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setShowThresholdModal(true)
   }, [mediciones, detailedMediciones, comparisonMediciones, tipos, detailedStartDate, detailedEndDate, selectedDetailedMetric, selectedNode, comparisonNode, showWarning])
 
+  // Callbacks estables para NodeSelector (fuera del JSX para cumplir reglas de hooks)
+  const handleNodeSelect = useCallback((nodeData: NodeData) => {
+    try {
+      setSelectedNode(nodeData)
+    } catch (error) {
+      console.error('Error al actualizar selectedNode:', error);
+    }
+  }, [])
+
+  const handleNodeClear = useCallback(() => {
+    console.log('[ModernDashboard] NodeSelector solicitó limpiar el nodo seleccionado');
+    setSelectedNode(null);
+  }, [])
+
+  const handleFiltersUpdate = useCallback((newFilters: {
+    entidadId: number | null;
+    ubicacionId: number | null;
+    fundoId?: number | null;
+    empresaId?: number | null;
+    paisId?: number | null;
+  }) => {
+    onFiltersChange({
+      entidadId: newFilters.entidadId,
+      ubicacionId: newFilters.ubicacionId,
+      startDate: filters.startDate,
+      endDate: filters.endDate
+    })
+  }, [onFiltersChange, filters.startDate, filters.endDate])
 
   // Recargar datos cuando cambien las fechas del análisis detallado (con debouncing)
   useEffect(() => {
@@ -2066,21 +2095,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         <NodeSelector
           selectedEntidadId={filters.entidadId}
           selectedUbicacionId={filters.ubicacionId}
-          onNodeSelect={(nodeData) => {
-            try {
-              setSelectedNode(nodeData)
-            } catch (error) {
-              console.error('Error al actualizar selectedNode:', error);
-            }
-          }}
-          onFiltersUpdate={(newFilters) => {
-            onFiltersChange({
-              entidadId: newFilters.entidadId,
-              ubicacionId: newFilters.ubicacionId,
-              startDate: filters.startDate,
-              endDate: filters.endDate
-            })
-          }}
+          onNodeSelect={handleNodeSelect}
+          onNodeClear={handleNodeClear}
+          onFiltersUpdate={handleFiltersUpdate}
           onEntidadChange={onEntidadChange}
           onUbicacionChange={onUbicacionChange}
         />

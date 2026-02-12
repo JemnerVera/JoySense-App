@@ -10,6 +10,7 @@ interface NodeSelectorProps {
   selectedEntidadId: number | null
   selectedUbicacionId: number | null
   onNodeSelect: (nodeData: NodeData) => void
+  onNodeClear?: () => void  // ← Nuevo callback
   onFiltersUpdate: (filters: {
     entidadId: number | null;
     ubicacionId: number | null;
@@ -26,6 +27,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   selectedEntidadId,
   selectedUbicacionId,
   onNodeSelect,
+  onNodeClear,
   onFiltersUpdate,
   onEntidadChange,
   onUbicacionChange
@@ -86,6 +88,23 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       setLoading(false)
     }
   }
+
+  // Limpiar filtros de entidad y ubicación cuando cambian los filtros globales
+  // Esto asegura que el mapa siempre muestre los nodos correctos del filtro global
+  useEffect(() => {
+    console.log('[NodeSelector] Detectado cambio de filtros globales - reseteando entidad, ubicación y nodo seleccionado');
+    // Limpiar la selección de nodo
+    setSelectedNode(null);
+    // Resetear términos de búsqueda
+    setSearchTerm('');
+    // Notificar al padre que se han reseteado los filtros
+    onFiltersUpdate({
+      entidadId: null,
+      ubicacionId: null
+    });
+    // Notificar al padre que se ha limpiado el nodo
+    onNodeClear?.();
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Cargar nodos con localizaciones (re-cargar cuando cambian los filtros globales)
   useEffect(() => {
