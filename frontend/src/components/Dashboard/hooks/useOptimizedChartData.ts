@@ -32,16 +32,8 @@ export function useOptimizedChartData(
       lastNodeIdRef.current === selectedNodeId &&
       lastMedicionLengthRef.current === mediciones.length
     ) {
-      console.log('[useOptimizedChartData] Cache hit - evitando recálculo')
       return cacheRef.current
     }
-    
-    console.log('[useOptimizedChartData] Cache miss - recalculando', { 
-      selectedNodeId, 
-      lastNodeId: lastNodeIdRef.current,
-      medicionCount: mediciones.length, 
-      lastMedicionCount: lastMedicionLengthRef.current 
-    })
 
     // Los datos cambiaron, actualizar referencias
     lastNodeIdRef.current = selectedNodeId

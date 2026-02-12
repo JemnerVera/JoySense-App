@@ -6,11 +6,13 @@ interface FilterContextType {
   fundoSeleccionado: string;
   entidadSeleccionada: any | null;
   ubicacionSeleccionada: any | null;
+  showDetailedAnalysis: boolean;
   setPaisSeleccionado: (pais: string) => void;
   setEmpresaSeleccionada: (empresa: string) => void;
   setFundoSeleccionado: (fundo: string) => void;
   setEntidadSeleccionada: (entidad: any | null) => void;
   setUbicacionSeleccionada: (ubicacion: any | null) => void;
+  setShowDetailedAnalysis: (show: boolean) => void;
   resetFilters: () => void;
 }
 
@@ -34,6 +36,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [fundoSeleccionado, setFundoSeleccionado] = useState<string>('');
   const [entidadSeleccionada, setEntidadSeleccionada] = useState<any | null>(null);
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<any | null>(null);
+  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState<boolean>(false);
 
   const resetFilters = () => {
     setPaisSeleccionado('');
@@ -49,11 +52,13 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     fundoSeleccionado,
     entidadSeleccionada,
     ubicacionSeleccionada,
+    showDetailedAnalysis,
     setPaisSeleccionado,
     setEmpresaSeleccionada,
     setFundoSeleccionado,
     setEntidadSeleccionada,
     setUbicacionSeleccionada,
+    setShowDetailedAnalysis,
     resetFilters,
   };
 

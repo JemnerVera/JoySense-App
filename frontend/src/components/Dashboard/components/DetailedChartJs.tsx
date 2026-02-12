@@ -40,9 +40,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   comparisonLocalizacionLabel,
   fillHeight = false,
 }) => {
-  console.log('[DetailedChartJs] Rendering with data:', data.length, 'visibleLines:', visibleLines.length, 'loading:', loading)
-  console.log('[DetailedChartJs] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
-
   // Función para limpiar el label (remover "Punto XX" prefix y "comp_") - DEBE estar antes de useState
   const cleanLabel = (label: string): string => {
     // Remover prefijo "comp_" si existe
@@ -87,7 +84,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
 
   // Generar los datos para el gráfico
   const chartData = useMemo(() => {
-    console.log('[DetailedChartJs] chartData useMemo: creating datasets for', visibleLines.length, 'lines')
     return data
   }, [data])
 

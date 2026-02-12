@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface CollapsibleGlobalFiltersProps {
   paisSeleccionado: string;
@@ -13,6 +13,7 @@ interface CollapsibleGlobalFiltersProps {
   empresasOptions: Array<{ id: string | number; name: string }>;
   fundosOptions: Array<{ id: string | number; name: string }>;
   ubicacionesOptions: Array<{ id: string | number; name: string }>;
+  isDisabled?: boolean;
 }
 
 const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
@@ -27,9 +28,17 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   paisesOptions,
   empresasOptions,
   fundosOptions,
-  ubicacionesOptions
+  ubicacionesOptions,
+  isDisabled = false
 }) => {
   const [openLevel, setOpenLevel] = useState<string | null>(null);
+
+  // Cerrar menús si se deshabilita
+  useEffect(() => {
+    if (isDisabled && openLevel) {
+      setOpenLevel(null);
+    }
+  }, [isDisabled, openLevel]);
 
   // Colores de la plantilla
   const TEMPLATE_COLORS = {
@@ -47,41 +56,61 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   const selectedUbicacionName = ubicacionesOptions.find(u => u.id.toString() === ubicacionSeleccionada)?.name || '';
 
   const handlePaisClick = (e: React.MouseEvent) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     setOpenLevel(openLevel === 'pais' ? null : 'pais');
   };
 
   const handleEmpresaClick = (e: React.MouseEvent) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     setOpenLevel(openLevel === 'empresa' ? null : 'empresa');
   };
 
   const handleFundoClick = (e: React.MouseEvent) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     setOpenLevel(openLevel === 'fundo' ? null : 'fundo');
   };
 
   const handleUbicacionClick = (e: React.MouseEvent) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     setOpenLevel(openLevel === 'ubicacion' ? null : 'ubicacion');
   };
 
   const handleSelectPais = (paisId: string) => {
+    if (isDisabled) return;
     onPaisChange(paisId);
     setOpenLevel(null);
   };
 
   const handleSelectEmpresa = (empresaId: string) => {
+    if (isDisabled) return;
     onEmpresaChange(empresaId);
     setOpenLevel(null);
   };
 
   const handleSelectFundo = (fundoId: string) => {
+    if (isDisabled) return;
     onFundoChange(fundoId);
     setOpenLevel(null);
   };
 
   const handleSelectUbicacion = (ubicacionId: string) => {
+    if (isDisabled) return;
     onUbicacionChange(ubicacionId);
     setOpenLevel(null);
   };
@@ -89,19 +118,23 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   return (
     <div className="space-y-1">
       {/* PAÍS */}
-      <div className="space-y-1">
+      <div className="space-y-1 relative group">
         <button
           onClick={handlePaisClick}
-          className="flex items-center w-full h-12 px-5 transition-all duration-200"
+          disabled={isDisabled}
+          className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
+            isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          }`}
           style={{
             color: paisSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-            backgroundColor: openLevel === 'pais' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent'
+            backgroundColor: !isDisabled && openLevel === 'pais' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+            pointerEvents: isDisabled ? 'none' : 'auto'
           }}
           onMouseEnter={(e) => {
-            if (openLevel !== 'pais') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+            if (!isDisabled && openLevel !== 'pais') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
           }}
           onMouseLeave={(e) => {
-            if (openLevel !== 'pais') e.currentTarget.style.backgroundColor = 'transparent';
+            if (!isDisabled && openLevel !== 'pais') e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
@@ -111,6 +144,13 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
             {selectedPaisName || 'PAÍS'}
           </span>
         </button>
+        
+        {/* Tooltip cuando está deshabilitado */}
+        {isDisabled && (
+          <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+            Volver al Mapa primero.
+          </div>
+        )}
 
         {openLevel === 'pais' && (
           <div className="ml-4 space-y-1">
@@ -142,20 +182,24 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
       {/* EMPRESA */}
       {paisSeleccionado && (
-        <div className="ml-4 space-y-1">
+        <div className="ml-4 space-y-1 relative group">
           <button
             onClick={handleEmpresaClick}
-            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            disabled={isDisabled}
+            className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
+              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
             style={{
               color: empresaSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: openLevel === 'empresa' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+              backgroundColor: !isDisabled && openLevel === 'empresa' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
-              if (openLevel !== 'empresa') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+              if (!isDisabled && openLevel !== 'empresa') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
             }}
             onMouseLeave={(e) => {
-              if (openLevel !== 'empresa') e.currentTarget.style.backgroundColor = 'transparent';
+              if (!isDisabled && openLevel !== 'empresa') e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
@@ -165,6 +209,13 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
               {selectedEmpresaName || 'EMPRESA'}
             </span>
           </button>
+          
+          {/* Tooltip cuando está deshabilitado */}
+          {isDisabled && (
+            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              Volver al Mapa primero.
+            </div>
+          )}
 
           {openLevel === 'empresa' && (
             <div className="ml-4 space-y-1">
@@ -197,20 +248,24 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
       {/* FUNDO */}
       {empresaSeleccionada && (
-        <div className="ml-8 space-y-1">
+        <div className="ml-8 space-y-1 relative group">
           <button
             onClick={handleFundoClick}
-            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            disabled={isDisabled}
+            className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
+              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
             style={{
               color: fundoSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: openLevel === 'fundo' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+              backgroundColor: !isDisabled && openLevel === 'fundo' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
-              if (openLevel !== 'fundo') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+              if (!isDisabled && openLevel !== 'fundo') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
             }}
             onMouseLeave={(e) => {
-              if (openLevel !== 'fundo') e.currentTarget.style.backgroundColor = 'transparent';
+              if (!isDisabled && openLevel !== 'fundo') e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
@@ -220,6 +275,13 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
               {selectedFundoName || 'FUNDO'}
             </span>
           </button>
+          
+          {/* Tooltip cuando está deshabilitado */}
+          {isDisabled && (
+            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              Volver al Mapa primero.
+            </div>
+          )}
 
           {openLevel === 'fundo' && (
             <div className="ml-4 space-y-1">
@@ -252,20 +314,24 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
       {/* UBICACIÓN */}
       {fundoSeleccionado && (
-        <div className="ml-12 space-y-1">
+        <div className="ml-12 space-y-1 relative group">
           <button
             onClick={handleUbicacionClick}
-            className="flex items-center w-full h-12 px-5 transition-all duration-200"
+            disabled={isDisabled}
+            className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
+              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
             style={{
               color: ubicacionSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: openLevel === 'ubicacion' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`
+              backgroundColor: !isDisabled && openLevel === 'ubicacion' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
-              if (openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
+              if (!isDisabled && openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.secondaryBgColor;
             }}
             onMouseLeave={(e) => {
-              if (openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = 'transparent';
+              if (!isDisabled && openLevel !== 'ubicacion') e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             <span className="text-xs font-semibold mr-2" style={{ minWidth: '15px' }}>
@@ -275,6 +341,13 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
               {selectedUbicacionName || 'UBICACIÓN'}
             </span>
           </button>
+          
+          {/* Tooltip cuando está deshabilitado */}
+          {isDisabled && (
+            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              Volver al Mapa primero.
+            </div>
+          )}
 
           {openLevel === 'ubicacion' && (
             <div className="ml-4 space-y-1">

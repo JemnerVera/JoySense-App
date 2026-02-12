@@ -315,7 +315,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   // Limpiar nodo cuando cambian los filtros globales y el nodo ya no es válido
   useEffect(() => {
     if (selectedNode && !nodoMatchesGlobalFilters(selectedNode)) {
-      console.log('[NodeStatusDashboard] Limpiando nodo seleccionado - no cumple filtros globales');
       setSelectedNode(null);
       setSelectedUbicacion(null);
       setNodoSearchTerm('');           // Limpiar búsqueda de nodos
