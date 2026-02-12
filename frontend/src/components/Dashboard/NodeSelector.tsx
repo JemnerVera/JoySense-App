@@ -62,7 +62,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const loadNodes = async () => {
     setLoading(true)
     setError(null)
-    console.log('[NodeSelector] loadNodes: Iniciando carga de nodos con localización...');
     try {
       // Construir filtros: si fundoId está definido, usarlo; sino empresaId; sino paisId
       // Esto asegura que el backend filtre correctamente en la jerarquía
@@ -74,16 +73,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         ? { paisId: paisSeleccionado }
         : undefined;
       const data = await JoySenseService.getNodosConLocalizacion(1000, filters)
-      console.log('[NodeSelector] loadNodes: Respuesta recibida:', {
-        count: data?.length || 0,
-        sample: data?.length > 0 ? data[0] : 'null',
-        data: data
-      });
       // Los datos ya vienen procesados del backend
       setNodes(data || [])
     } catch (err) {
       setError('Error al cargar nodos')
-      console.error('[NodeSelector] loadNodes: Error crítico cargando nodos:', err)
+      console.error('[NodeSelector] loadNodes:', err)
     } finally {
       setLoading(false)
     }
@@ -92,7 +86,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Limpiar filtros de entidad y ubicación cuando cambian los filtros globales
   // Esto asegura que el mapa siempre muestre los nodos correctos del filtro global
   useEffect(() => {
-    console.log('[NodeSelector] Detectado cambio de filtros globales - reseteando entidad, ubicación y nodo seleccionado');
     // Limpiar la selección de nodo
     setSelectedNode(null);
     // Resetear términos de búsqueda
@@ -152,7 +145,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
     setFilteredNodes(filtered)
-    console.log('[NodeSelector] Nodos filtrados:', filtered.length, 'de', nodes.length, 'total');
   }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
   // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
@@ -272,14 +264,13 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
 
   const handleMapNodeClick = (node: NodeData) => {
-    console.log('[NodeSelector] handleMapNodeClick:', node.nodo, node.nodoid);
     try {
       setSelectedNode(node)
       onNodeSelect(node)
       setIsSearchDropdownOpen(false)
       setSearchTerm('')
     } catch (error) {
-      console.error('Error al seleccionar nodo:', error);
+      console.error('[NodeSelector] handleMapNodeClick error:', error);
     }
 
     // Actualizar el ref de última ubicación procesada

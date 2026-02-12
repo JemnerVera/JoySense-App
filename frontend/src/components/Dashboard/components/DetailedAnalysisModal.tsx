@@ -130,15 +130,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
   const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
 
-  // DEBUG
-  console.log('[DetailedAnalysisModal] isOpen:', isOpen, 'selectedMetricForAnalysis:', selectedMetricForAnalysis?.title)
-  console.log('[DetailedAnalysisModal] chartData:', chartData.length, 'selectedDetailedMetric:', selectedDetailedMetric)
-  console.log('[DetailedAnalysisModal] visibleLines:', visibleLines.length, visibleLines.slice(0, 2))
-  console.log('[DetailedAnalysisModal] selectedNode:', selectedNode, 'comparisonNode:', comparisonNode)
-  if (chartData.length > 0) {
-    console.log('[DetailedAnalysisModal] Sample chartData point:', chartData[0])
-  }
-
   const contentWrapperClass = isFullscreenView
     ? 'bg-gray-50 dark:bg-neutral-900 w-full min-h-[calc(100vh-5rem)] overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
     : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`

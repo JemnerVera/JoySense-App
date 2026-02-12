@@ -110,7 +110,7 @@ function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
 export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters()
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, setShowDetailedAnalysis: setContextShowDetailedAnalysis } = useFilters()
   
   // Estados para datos del sistema
   const [metricas, setMetricas] = useState<any[]>([])
@@ -128,6 +128,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Estados para UI
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false)
   const [isModalExpanded, setIsModalExpanded] = useState(false)
+  const [showReturnToMapModal, setShowReturnToMapModal] = useState(false)  // ← Nuevo
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null)
   const [selectedMetricForAnalysis, setSelectedMetricForAnalysis] = useState<MetricConfig | null>(null)
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
@@ -136,6 +137,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
+  
+  // Sincronizar showDetailedAnalysis con el contexto de filtros
+  useEffect(() => {
+    setContextShowDetailedAnalysis(showDetailedAnalysis);
+  }, [showDetailedAnalysis]);
   
   // Generar métricas dinámicamente desde los datos cargados del backend
   // Si no hay métricas cargadas, usar un conjunto mínimo por defecto
@@ -245,7 +251,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const cached = medicionesCacheRef.current.get(cacheKey)
     const now = Date.now()
     if (cached && (now - cached.timestamp) < CACHE_TTL_MEDICIONES) {
-      console.log('[ModernDashboard] loadMediciones: Usando datos del caché para', cacheKey)
       setMediciones(cached.data)
       setLoading(false)
       return
@@ -576,7 +581,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (!hasRequiredFilters) {
       // Si no hay filtros y hay un nodo seleccionado, limpiar mediciones para evitar mostrar datos del nodo anterior
       if (selectedNode) {
-        console.log('[ModernDashboard] useEffect: Missing filters for selectedNode, clearing');
         setMediciones([])
         setLoading(false)
       }
@@ -587,7 +591,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const previousNodeId = currentRequestNodeIdRef.current
     const currentNodeId = selectedNode?.nodoid || null
     if (previousNodeId !== null && Number(previousNodeId) !== Number(currentNodeId)) {
-      console.log('[ModernDashboard] useEffect: Node changed from', previousNodeId, 'to', currentNodeId, '. Clearing mediciones.');
       setMediciones([])
       setLoading(true)
     }
@@ -609,13 +612,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // Debounce reducido cuando hay un nodo seleccionado (más rápido)
     const debounceTime = selectedNode ? 300 : 500
     
-    console.log('[ModernDashboard] useEffect: Setting timeout for loadMediciones in', debounceTime, 'ms');
-    
     // Debounce: esperar antes de cargar
     loadMedicionesTimeoutRef.current = setTimeout(() => {
       // Verificar que el nodo no haya cambiado durante el debounce
       if (Number(expectedNodeId) !== Number(selectedNode?.nodoid || null)) {
-        console.log('[ModernDashboard] useEffect: Node changed during debounce. Canceling.');
         return
       }
       
@@ -624,7 +624,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const stillHasRequiredFilters = selectedNode ? true : (filters.entidadId && (stillRequiresUbicacionId ? filters.ubicacionId : true))
       
       if (!stillHasRequiredFilters) {
-        console.log('[ModernDashboard] useEffect: Missing filters after debounce. Canceling.');
         return
       }
       
@@ -633,7 +632,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       currentRequestNodeIdRef.current = expectedNodeId
       
       // Cargar datos
-      console.log('[ModernDashboard] useEffect: Calling loadMediciones now.');
       loadMediciones(requestKey, expectedNodeId)
     }, debounceTime)
     
@@ -727,16 +725,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }));
       
       
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Final transformed data count:', transformedData.length);
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Unique sensors:', 
-        new Set(transformedData.map(m => m.localizacion?.sensor?.sensor)).size);
-      console.log('[ModernDashboard] loadMedicionesForDetailedAnalysis: Sample transformed data:', transformedData.length > 0 ? {
-        metrica: transformedData[0].localizacion?.metrica?.metrica,
-        sensor: transformedData[0].localizacion?.sensor?.sensor,
-        valor: transformedData[0].medicion,
-        fecha: transformedData[0].fecha
-      } : null);
-      
       setDetailedMediciones(transformedData)
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
@@ -768,13 +756,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           map.set(selectedNode.nodoid, nombres)
         }
         setLocalizacionesPorNodo(map)
-        
-        // Debug: mostrar localizaciones cargadas
-        console.log('[ModernDashboard] localizacionesPorNodo updated:', { 
-          nodoid: selectedNode.nodoid, 
-          nombres,
-          count: localizaciones.length 
-        });
       } catch (error) {
         console.error('Error cargando localizaciones:', error)
         setLocalizacionesPorNodo(new Map())
@@ -1057,9 +1038,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   }, [])
 
   const handleNodeClear = useCallback(() => {
-    console.log('[ModernDashboard] NodeSelector solicitó limpiar el nodo seleccionado');
     setSelectedNode(null);
-  }, [])
+    // Si está abierto el gráfico detallado, mostrar modal para volver al mapa
+    if (showDetailedAnalysis) {
+      setShowReturnToMapModal(true);
+    } else {
+      // Si no está en gráfico detallado, cerrar directamente
+      setShowDetailedAnalysis(false);
+    }
+  }, [showDetailedAnalysis])
 
   const handleFiltersUpdate = useCallback((newFilters: {
     entidadId: number | null;
@@ -1280,47 +1267,40 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const loadEntidades = async () => {
     try {
       const data = await JoySenseService.getEntidades()
-      console.log('[ModernDashboard] loadEntidades: Respuesta recibida:', { count: data?.length || 0, data });
       setEntidades(data)
     } catch (err) {
-      console.error("[ModernDashboard] loadEntidades: Error:", err)
+      console.error("[ModernDashboard] loadEntidades:", err)
     }
   }
 
   const loadUbicaciones = async () => {
-    console.log('[ModernDashboard] loadUbicaciones: Iniciando...');
     try {
       const data = await JoySenseService.getUbicaciones()
-      console.log('[ModernDashboard] loadUbicaciones: Respuesta recibida:', { count: data?.length || 0, data });
       setUbicaciones(data)
     } catch (err) {
-      console.error("[ModernDashboard] loadUbicaciones: Error:", err)
+      console.error("[ModernDashboard] loadUbicaciones:", err)
     }
   }
 
   const loadMetricas = async () => {
-    console.log('[ModernDashboard] loadMetricas: Iniciando...');
     try {
       const data = await JoySenseService.getMetricas()
-      console.log('[ModernDashboard] loadMetricas: Respuesta recibida:', { count: data?.length || 0, data });
       setMetricas(Array.isArray(data) ? data : [])
       if (Array.isArray(data) && data.length > 0) {
         setSelectedMetrica(data[0].metricaid)
       }
     } catch (err) {
-      console.error("[ModernDashboard] loadMetricas: Error:", err)
+      console.error("[ModernDashboard] loadMetricas:", err)
     }
   }
 
   const loadTipos = async () => {
-    console.log('[ModernDashboard] loadTipos: Iniciando...');
     try {
       const data = await JoySenseService.getTipos()
-      console.log('[ModernDashboard] loadTipos: Respuesta recibida:', { count: data?.length || 0, data });
       setTipos(Array.isArray(data) ? data : [])
       setTiposDisponibles(Array.isArray(data) ? data : [])
     } catch (err) {
-      console.error("[ModernDashboard] loadTipos: Error:", err)
+      console.error("[ModernDashboard] loadTipos:", err)
     }
   }
 
@@ -1558,18 +1538,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         const d = new Date(m.fecha).getTime();
         return d >= startDate.getTime() && d <= endDate.getTime();
       })
-      console.log('[ModernDashboard] processChartData applying global filters:', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        count: filteredMediciones.length
-      });
       timeSpan = endDate.getTime() - startDate.getTime()
     } else if (sortedMediciones.length > 0) {
       const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
       filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
     }
-
-    console.log('[ModernDashboard] processChartData DEBUG - Before grouping: filteredMediciones.length:', filteredMediciones.length, 'unique sensorids in filtered:', new Set(filteredMediciones.map(m => m.sensorid)).size);
     
     if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) return []
 
@@ -1601,14 +1574,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const useHours = false // No usaremos la granularidad de 1 hora completa anymore
     
     const startProcess = performance.now()
-    console.log('[ModernDashboard] processChartData granularidad:', { hoursSpan, daysSpan, pointCount, use30Minutes, use3Hours, useDays });
 
     // Obtener localizaciones de ambos nodos
     const allMediciones = [...filteredMediciones, ...filteredComparisonMediciones]
     const locsEnMediciones = Array.from(new Set(allMediciones.map(m => m.localizacionid).filter(id => id != null)))
-    
-    console.log('[ModernDashboard] processChartData DEBUG - locsEnMediciones:', locsEnMediciones);
-    console.log('[ModernDashboard] processChartData DEBUG - Unique sensorids:', new Set(allMediciones.map(m => m.sensorid)).size, Array.from(new Set(allMediciones.map(m => m.sensorid))));
     
     // Pre-calcular labels una sola vez para evitar búsquedas repetidas
     // En minigráficos: usar getSensorLabel (sin localización)
@@ -1782,12 +1751,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     })
 
     const endProcess = performance.now()
-    console.log(`[ModernDashboard] processChartData tiempo total: ${(endProcess - startProcess).toFixed(2)}ms para ${dataKey}`)
-    console.log(`[ModernDashboard] processChartData allLabels: ${Array.from(allLabelsArray).join(', ')}`)
-    console.log(`[ModernDashboard] processChartData sortedTimes.length: ${sortedTimes.length}, finalData.length: ${finalData.length}`)
-    if (finalData.length > 0) {
-      console.log(`[ModernDashboard] processChartData sample: ${JSON.stringify(finalData[0])}`)
-    }
 
     return finalData
   }
@@ -1886,11 +1849,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const startDateStr = toLocalDateString(yesterday)
     const endDateStr = toLocalDateString(today)
     
-    console.log('[ModernDashboard] openDetailedAnalysis: Setting initial 24h range', { 
-      startDateStr, 
-      endDateStr
-    });
-    
     // Limpiar estados temporales al abrir el modal
     setTempStartDate('')
     setTempEndDate('')
@@ -1975,8 +1933,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     })
     
-    console.log('[ModernDashboard] Unique metric IDs found:', Array.from(uniqueMetricIds));
-
     if (uniqueMetricIds.size === 0) {
       return getTranslatedMetrics
     }
@@ -2133,6 +2089,41 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           </div>
         )}
           </>
+        )}
+
+        {/* Modal: Volver al Mapa */}
+        {showReturnToMapModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-blue-500 font-mono uppercase">
+                  ⚠️ Filtros Globales Cambiad
+os
+                </h2>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-700 dark:text-gray-300 text-sm font-mono mb-2">
+                  Los filtros globales han cambiado. El nodo seleccionado ya no es válido para el nuevo filtro.
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm font-mono">
+                  Por favor, vuelve al mapa para seleccionar un nodo válido.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReturnToMapModal(false);
+                    setShowDetailedAnalysis(false);
+                  }}
+                  className="flex-1 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded font-mono text-sm font-bold transition-colors"
+                >
+                  Volver al Mapa
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Modal de Recomendaciones de Umbrales */}

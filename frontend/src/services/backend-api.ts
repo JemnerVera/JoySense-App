@@ -376,16 +376,6 @@ export class JoySenseService {
       const localizacionesSinNodo: any[] = [];
       const nodoidsUnicos = new Set<number>();
       
-      console.log('[getNodosConLocalizacion] Agrupando localizaciones:', {
-        totalLocalizaciones: data.length,
-        primerasLocalizaciones: data.slice(0, 5).map((l: any) => ({ 
-          nodoid: l.nodo?.nodoid, 
-          localizacionid: l.localizacionid,
-          tieneNodo: !!l.nodo,
-          nodoValido: !!(l.nodo && l.nodo.nodoid)
-        }))
-      });
-      
       // Primera pasada: validar y contar
       data.forEach((localizacion: any, index: number) => {
         // VALIDACIÓN CRÍTICA: Verificar que la localización tenga objeto nodo válido
@@ -405,10 +395,7 @@ export class JoySenseService {
       
       // Log de validación
       if (localizacionesSinNodo.length > 0) {
-        console.warn(`[getNodosConLocalizacion] ⚠️ ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido de ${data.length} totales:`, {
-          primeros: localizacionesSinNodo.slice(0, 10),
-          porcentaje: ((localizacionesSinNodo.length / data.length) * 100).toFixed(2) + '%'
-        });
+        console.warn(`[getNodosConLocalizacion] ⚠️ ${localizacionesSinNodo.length} localizaciones sin nodo válido`);
       }
       
       // Segunda pasada: agrupar nodos válidos
@@ -470,20 +457,10 @@ export class JoySenseService {
       
       const result = Array.from(nodesMap.values());
       
-      // Log detallado del resultado
-      console.log('[getNodosConLocalizacion] Resultado final:', {
-        nodosUnicos: result.length,
-        nodoidsUnicosEnDatos: nodoidsUnicos.size,
-        localizacionesProcesadas: data.length - localizacionesSinNodo.length,
-        localizacionesSinNodo: localizacionesSinNodo.length,
-        primerosNodos: result.slice(0, 5).map((n: any) => ({ nodoid: n.nodoid, nodo: n.nodo })),
-        validacion: result.length === nodoidsUnicos.size ? '✅ Coincide' : `⚠️ Diferencia: ${Math.abs(result.length - nodoidsUnicos.size)}`
-      });
-      
       // Validación final: asegurar que todos los nodos tienen datos válidos
       const nodosInvalidos = result.filter(n => !n.nodoid || !n.nodo);
       if (nodosInvalidos.length > 0) {
-        console.error(`[getNodosConLocalizacion] ERROR CRÍTICO: ${nodosInvalidos.length} nodos en resultado tienen datos inválidos`);
+        console.error(`[getNodosConLocalizacion] ${nodosInvalidos.length} nodos con datos inválidos`);
       }
       
       return result;
