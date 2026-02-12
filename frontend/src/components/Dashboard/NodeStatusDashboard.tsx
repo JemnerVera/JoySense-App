@@ -128,19 +128,30 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const nodoDropdownRef = useRef<HTMLDivElement>(null);
   const [ubicacionDropdownPosition, setUbicacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  
+  // Cache de información de fundos (para validar nodos contra filtros globales)
+  const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
 
-  // Cargar ubicaciones disponibles
+  // Cargar ubicaciones disponibles y fundos con su información
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [ubicacionesData, tiposData, sensoresData] = await Promise.all([
+        const [ubicacionesData, tiposData, sensoresData, fundosData] = await Promise.all([
           JoySenseService.getUbicaciones(),
           JoySenseService.getTipos(),
-          JoySenseService.getSensores()
+          JoySenseService.getSensores(),
+          JoySenseService.getFundos()
         ]);
         setUbicaciones(ubicacionesData || []);
         setTipos(tiposData || []);
         setSensores(sensoresData || []);
+        
+        // Crear un mapa de fundoid → fundo completo (con empresa y país)
+        const fundosMap = new Map();
+        (fundosData || []).forEach((fundo: any) => {
+          fundosMap.set(fundo.fundoid, fundo);
+        });
+        setFundosInfo(fundosMap);
       } catch (err: any) {
         console.error('[NodeStatusDashboard] Error cargando datos iniciales:', err);
       }
@@ -265,7 +276,60 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     };
   }, []);
 
-  // Limpiar nodo cuando cambia la ubicación
+  // Función para validar si un nodo cumple con los filtros globales actuales
+  const nodoMatchesGlobalFilters = useCallback((node: NodeData): boolean => {
+    // Si no hay filtros activos, aceptar el nodo
+    if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
+      return true;
+    }
+
+    if (!node.ubicacion) {
+      return false;
+    }
+
+    const fundoId = node.ubicacion.fundoid;
+    
+    // Verificar filtro de fundo (el más específico)
+    if (fundoSeleccionado && fundoSeleccionado !== '') {
+      if (fundoId?.toString() !== fundoSeleccionado) {
+        return false;
+      }
+    }
+
+    // Para empresa y país, usar el mapa de fundos
+    const fundoInfo = fundosInfo.get(fundoId);
+
+    // Verificar filtro de empresa
+    if (empresaSeleccionada && empresaSeleccionada !== '') {
+      const empresaId = fundoInfo?.empresaid;
+      if (empresaId?.toString() !== empresaSeleccionada) {
+        return false;
+      }
+    }
+
+    // Nota: El filtro de país se verifica principalmente a través de empresa
+    
+    return true;
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]);
+
+  // Limpiar nodo cuando cambian los filtros globales y el nodo ya no es válido
+  useEffect(() => {
+    if (selectedNode && !nodoMatchesGlobalFilters(selectedNode)) {
+      console.log('[NodeStatusDashboard] Limpiando nodo seleccionado - no cumple filtros globales');
+      setSelectedNode(null);
+      setSelectedUbicacion(null);
+      setNodoSearchTerm('');           // Limpiar búsqueda de nodos
+      setUbicacionSearchTerm('');      // Limpiar búsqueda de ubicaciones
+      setMediciones([]);
+      setAlertas([]);
+      setUmbrales([]);
+      setStatistics([]);
+      setLocalizacionesNodo([]);
+      setShowMapModal(false);
+      setSelectedMetricId(null);       // Limpiar métrica seleccionada
+      setSelectedBoxplotMetricId(null); // Limpiar boxplot si existe
+    }
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, selectedNode, nodoMatchesGlobalFilters]);
   useEffect(() => {
     if (selectedUbicacion && selectedNode && selectedNode.ubicacionid !== selectedUbicacion.ubicacionid) {
       setSelectedNode(null);
@@ -1360,10 +1424,48 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           </div>
         )}
 
-
+        {/* Mapa completo cuando NO hay nodo seleccionado */}
         {!selectedNode && !loading && (
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4" style={{ height: '70vh', minHeight: '500px' }}>
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                .node-status-map-container {
+                  width: 100%;
+                  height: 100%;
+                }
+                .node-status-map-container > div {
+                  height: 100% !important;
+                }
+                .node-status-map-container > div > div {
+                  height: 100% !important;
+                }
+              `
+            }} />
+            <div className="node-status-map-container h-full">
+              <InteractiveMap
+                nodes={filteredNodes}
+                selectedNode={selectedNode}
+                onNodeSelect={(node) => {
+                  setSelectedNode(node);
+                  // Establecer automáticamente la ubicación del nodo seleccionado
+                  if (node.ubicacionid) {
+                    const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === node.ubicacionid);
+                    if (ubicacionCorrespondiente) {
+                      setSelectedUbicacion(ubicacionCorrespondiente);
+                    }
+                  }
+                }}
+                loading={loading}
+                nodeMediciones={{}}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Mensaje cuando no hay nodos disponibles con los filtros actuales */}
+        {!selectedNode && !loading && filteredNodes.length === 0 && (
           <div className="flex items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
-            <p>Selecciona un nodo para ver el estado y mediciones.</p>
+            <p>No hay nodos disponibles con los filtros actuales.</p>
           </div>
         )}
 
