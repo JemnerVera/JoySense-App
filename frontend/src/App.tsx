@@ -1734,22 +1734,45 @@ const AppContentInternal: React.FC<{
               </Suspense>
             );
           default:
-            // NO redirigir automáticamente - permitir que el usuario seleccione una opción
-            // Si solo es 'dashboard' sin subTab, mostrar el mensaje de selección
             if (reporteTab === 'dashboard') {
-              // Retornar null para no renderizar nada aún (esperar selección del usuario)
-              return null;
+              return (
+                <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+                  <div className="text-center">
+                    <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                      <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">{t('subtabs.dashboard')}</h2>
+                      <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DE DASHBOARD PARA CONTINUAR</p>
+                    </div>
+                  </div>
+                </div>
+              );
             }
-        }
+            return null;
+      }
       }
       
       switch (reporteTab) {
         case 'dashboard':
-          // NO redirigir automáticamente - mostrar selección
-          return null;
+          return (
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="text-center">
+                <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                  <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">{t('subtabs.dashboard')}</h2>
+                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DE DASHBOARD PARA CONTINUAR</p>
+                </div>
+              </div>
+            </div>
+          );
         case 'historial':
-          // NO redirigir automáticamente - mostrar selección
-          return null;
+          return (
+            <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+              <div className="text-center">
+                <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                  <h2 className="text-2xl font-bold text-blue-500 mb-4 font-mono tracking-wider">HISTORIAL</h2>
+                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DE HISTORIAL PARA CONTINUAR</p>
+                </div>
+              </div>
+            </div>
+          );
         case 'historial-alertas':
           return <AlertasMain />;
         case 'historial-mensajes':
