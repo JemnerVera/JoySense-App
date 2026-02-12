@@ -199,15 +199,26 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     );
   }, [ubicaciones, ubicacionSearchTerm]);
 
-  // Filtrar nodos por término de búsqueda
-  const filteredNodesBySearch = useMemo(() => {
+  // Obtener localizaciones únicas de los nodos filtrados
+  const localizacionesDisponibles = useMemo(() => {
+    const localizacionesSet = new Set<string>();
+    filteredNodes.forEach((node: any) => {
+      if (node.localizacion) {
+        localizacionesSet.add(node.localizacion);
+      }
+    });
+    return Array.from(localizacionesSet).sort();
+  }, [filteredNodes]);
+
+  // Filtrar localizaciones por término de búsqueda
+  const filteredLocalizacionesBySearch = useMemo(() => {
     if (!nodoSearchTerm.trim()) {
-      return filteredNodes;
+      return localizacionesDisponibles;
     }
-    return filteredNodes.filter((node: any) =>
-      node.nodo?.toLowerCase().includes(nodoSearchTerm.toLowerCase())
+    return localizacionesDisponibles.filter((localizacion: string) =>
+      localizacion.toLowerCase().includes(nodoSearchTerm.toLowerCase())
     );
-  }, [filteredNodes, nodoSearchTerm]);
+  }, [localizacionesDisponibles, nodoSearchTerm]);
 
   // Calcular posición del dropdown de ubicación cuando se abre
   useEffect(() => {
@@ -1097,18 +1108,18 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             {/* Separador visual */}
             <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
 
-            {/* Selector de Nodo */}
+            {/* Selector de Localización */}
             <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
               <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
-                Nodo:
+                Localización:
               </label>
               <div className="relative">
                 <button
                   onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
                   className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
                 >
-                  <span className={selectedNode ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                    {selectedNode?.nodo || 'Selecciona Nodo'}
+                  <span className={selectedNode?.localizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                    {selectedNode?.localizacion || 'Selecciona Localización'}
                   </span>
                   <svg className={`w-4 h-4 transition-transform ${isNodoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1136,34 +1147,40 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
-                      {filteredNodesBySearch.length > 0 ? (
-                        filteredNodesBySearch.map((node: any) => (
-                          <button
-                            key={node.nodoid}
-                            onClick={() => {
-                              setSelectedNode(node);
-                              // Establecer automáticamente la ubicación del nodo seleccionado
-                              if (node.ubicacionid) {
-                                const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === node.ubicacionid);
-                                if (ubicacionCorrespondiente) {
-                                  setSelectedUbicacion(ubicacionCorrespondiente);
+                      {filteredLocalizacionesBySearch.length > 0 ? (
+                        filteredLocalizacionesBySearch.map((localizacion: string) => {
+                          // Obtener el primer nodo que tiene esta localización para poder seleccionarlo
+                          const nodoConLocalizacion = filteredNodes.find((n: any) => n.localizacion === localizacion);
+                          return (
+                            <button
+                              key={localizacion}
+                              onClick={() => {
+                                if (nodoConLocalizacion) {
+                                  setSelectedNode(nodoConLocalizacion);
+                                  // Establecer automáticamente la ubicación del nodo seleccionado
+                                  if (nodoConLocalizacion.ubicacionid) {
+                                    const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === nodoConLocalizacion.ubicacionid);
+                                    if (ubicacionCorrespondiente) {
+                                      setSelectedUbicacion(ubicacionCorrespondiente);
+                                    }
+                                  }
                                 }
-                              }
-                              setIsNodoDropdownOpen(false);
-                              setNodoSearchTerm('');
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
-                              selectedNode?.nodoid === node.nodoid
-                                ? 'bg-blue-500 text-white'
-                                : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
-                            }`}
-                          >
-                            {node.nodo}
-                          </button>
-                        ))
+                                setIsNodoDropdownOpen(false);
+                                setNodoSearchTerm('');
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                                selectedNode?.localizacion === localizacion
+                                  ? 'bg-blue-500 text-white'
+                                  : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                              }`}
+                            >
+                              {localizacion}
+                            </button>
+                          );
+                        })
                       ) : (
                         <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
-                          {selectedUbicacion ? 'No se encontraron nodos en esta ubicación' : 'No se encontraron nodos'}
+                          {selectedUbicacion ? 'No se encontraron localizaciones en esta ubicación' : 'No se encontraron localizaciones'}
                         </div>
                       )}
                     </div>
