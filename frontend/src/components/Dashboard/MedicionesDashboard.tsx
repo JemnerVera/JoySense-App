@@ -16,7 +16,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada } = useFilters();
 
   // Estados principales
   const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
@@ -25,6 +25,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [sensores, setSensores] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
+  const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map()); // Cache de info de fundos
   const [loading, setLoading] = useState(false);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
   const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
@@ -50,21 +51,34 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const localizacionDropdownRef = useRef<HTMLDivElement>(null);
   const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Cargar localizaciones, sensores y tipos al iniciar
+  // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         // Obtener localizaciones
         const localizacionesData = await JoySenseService.getLocalizaciones();
         
-        const [sensoresData, tiposData] = await Promise.all([
+        const [sensoresData, tiposData, fundosData] = await Promise.all([
           JoySenseService.getSensores(),
-          JoySenseService.getTipos()
+          JoySenseService.getTipos(),
+          JoySenseService.getFundos()
         ]);
 
         setLocalizaciones(localizacionesData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
+        
+        // Crear un mapa de fundoid → fundo completo (con empresa y país)
+        const fundosMap = new Map();
+        (fundosData || []).forEach((fundo: any) => {
+          fundosMap.set(fundo.fundoid, fundo);
+        });
+        setFundosInfo(fundosMap);
+        
+        console.log('[MedicionesDashboard] Datos iniciales cargados:', {
+          localizaciones: localizacionesData?.length,
+          fundos: fundosData?.length
+        });
       } catch (err) {
         console.error('Error cargando datos iniciales:', err);
         showError('Error', 'No se pudieron cargar los datos');
@@ -74,23 +88,88 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadInitialData();
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
+  // Función auxiliar para verificar si una localización cumple con los filtros globales
+  const localizacionMatchesGlobalFilters = useCallback((loc: any): boolean => {
+    // Si no hay filtros activos, aceptar la localización
+    if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
+      return true;
+    }
+
+    if (!loc.nodo) {
+      return false;
+    }
+    
+    // Navegar a través de la estructura de relaciones que SÍ existen
+    // nodo → ubicacion → fundo (solo tiene fundoid)
+    let nodo = loc.nodo;
+    if (Array.isArray(nodo)) {
+      nodo = nodo[0];
+    }
+    
+    if (!nodo || !nodo.ubicacion) {
+      return false;
+    }
+    
+    let ubicacion = nodo.ubicacion;
+    if (Array.isArray(ubicacion)) {
+      ubicacion = ubicacion[0];
+    }
+    
+    if (!ubicacion || !ubicacion.fundo) {
+      return false;
+    }
+    
+    let fundo = ubicacion.fundo;
+    if (Array.isArray(fundo)) {
+      fundo = fundo[0];
+    }
+    
+    if (!fundo) {
+      return false;
+    }
+    
+    const fundoId = fundo.fundoid;
+    
+    // Verificar filtro de fundo (el más específico)
+    if (fundoSeleccionado && fundoSeleccionado !== '') {
+      if (fundoId?.toString() !== fundoSeleccionado) {
+        return false;
+      }
+    }
+    
+    // Para empresa y país, necesitamos buscar en nuestro mapa de fundos
+    const fundoInfo = fundosInfo.get(fundoId);
+    
+    // Verificar filtro de empresa
+    if (empresaSeleccionada && empresaSeleccionada !== '') {
+      const empresaId = fundoInfo?.empresaid;
+      if (empresaId?.toString() !== empresaSeleccionada) {
+        return false;
+      }
+    }
+    
+    // Verificar filtro de país - necesitaríamos cargar empresas también
+    // Por ahora, si tenemos fundo + empresa, asumimos que país está OK si empresa coincide
+    // El filtrado de país se hará principalmente en empresa
+    
+    return true;
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]);
+
   // Agrupar localizaciones por nombre único (sin repetir)
   useEffect(() => {
     const localizacionesMap = new Map<string, any>();
     
     localizaciones.forEach((loc: Localizacion) => {
-      if (loc.localizacion && loc.nodoid && loc.nodo) {
+      if (loc.localizacion && loc.nodoid) {
         // Usar el nombre de localización como clave
         if (!localizacionesMap.has(loc.localizacion)) {
           localizacionesMap.set(loc.localizacion, {
             localizacionid: loc.localizacionid,
             localizacion: loc.localizacion,
             nodoid: loc.nodoid,
-            nodo: loc.nodo.nodo,
-            referencia: loc.nodo.nodo,  // Usar nodo.nodo como referencia
-            ubicacionid: loc.nodo.ubicacionid,
-            latitud: loc.latitud,         // Latitud viene de Localizacion, no de Nodo
-            longitud: loc.longitud        // Longitud viene de Localizacion, no de Nodo
+            latitud: loc.latitud,
+            longitud: loc.longitud,
+            nodo: loc.nodo                // Guardar el objeto nodo completo
           });
         }
       }
@@ -98,6 +177,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     
     setUniqueLocalizaciones(Array.from(localizacionesMap.values()));
   }, [localizaciones]);
+
+  // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
+  useEffect(() => {
+    if (selectedLocalizacion && !localizacionMatchesGlobalFilters(selectedLocalizacion)) {
+      console.log('[MedicionesDashboard] Limpiando localización seleccionada - no cumple filtros globales');
+      setSelectedLocalizacion(null);
+      setMediciones([]);
+      setAvailableMetrics([]);
+      setSelectedMetricId(null);
+    }
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, selectedLocalizacion, localizacionMatchesGlobalFilters]);
 
   // Sincronizar pendingDateRange con dateRange cuando cambia localización seleccionada
   useEffect(() => {
@@ -316,14 +406,19 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   // Filtrar localizaciones por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
-    // Filtrar por término de búsqueda
+    // Primero filtrar por filtros globales
+    const globalFiltered = uniqueLocalizaciones.filter((loc: any) => {
+      return localizacionMatchesGlobalFilters(loc);
+    });
+    
+    // Luego filtrar por término de búsqueda
     if (!localizacionSearchTerm.trim()) {
-      return uniqueLocalizaciones;
+      return globalFiltered;
     }
-    return uniqueLocalizaciones.filter((loc: any) =>
+    return globalFiltered.filter((loc: any) =>
       loc.localizacion?.toLowerCase().includes(localizacionSearchTerm.toLowerCase())
     );
-  }, [uniqueLocalizaciones, localizacionSearchTerm]);
+  }, [uniqueLocalizaciones, localizacionSearchTerm, localizacionMatchesGlobalFilters]);
 
   // Calcular posición del dropdown de localización cuando se abre
   useEffect(() => {
