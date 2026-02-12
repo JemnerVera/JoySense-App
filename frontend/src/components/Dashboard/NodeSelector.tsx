@@ -46,6 +46,15 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; fundoid: number } | null>(null)
   const nodeMedicionesLoadedRef = useRef<boolean>(false)
 
+  // Log para monitorear cambios en selectedNode
+  useEffect(() => {
+    console.log('🎭 NodeSelector: selectedNode cambió', {
+      selectedNodeId: selectedNode?.nodoid,
+      selectedNodeName: selectedNode?.nodo,
+      timestamp: new Date().toISOString()
+    });
+  }, [selectedNode])
+
   // Hook para acceder a los filtros globales del sidebar y header
   const { 
     paisSeleccionado,
@@ -86,7 +95,29 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Limpiar filtros de entidad y ubicación cuando cambian los filtros globales
   // Esto asegura que el mapa siempre muestre los nodos correctos del filtro global
   useEffect(() => {
+    console.log('🔄 NodeSelector: Cambiaron filtros globales', {
+      pais: paisSeleccionado,
+      empresa: empresaSeleccionada,
+      fundo: fundoSeleccionado
+    });
+    
+    // Solo limpiar si realmente cambiaron los filtros y no es por selección de nodo
+    if (selectedNode && selectedNode.ubicacion?.fundo?.empresa?.pais?.paisid && selectedNode.ubicacion.fundo.empresa.empresaid && selectedNode.ubicacion.fundoid) {
+      const selectedPais = selectedNode.ubicacion.fundo.empresa.pais.paisid.toString();
+      const selectedEmpresa = selectedNode.ubicacion.fundo.empresa.empresaid.toString();
+      const selectedFundo = selectedNode.ubicacion.fundoid.toString();
+      
+      // Si el nodo seleccionado aún pertenece a los filtros actuales, no limpiar
+      if (paisSeleccionado === selectedPais && 
+          empresaSeleccionada === selectedEmpresa && 
+          fundoSeleccionado === selectedFundo) {
+        console.log('🎯 NodeSelector: Nodo seleccionado aún pertenece a filtros, no limpiar');
+        return;
+      }
+    }
+    
     // Limpiar la selección de nodo
+    console.log('🧹 NodeSelector: Limpiando selección de nodo');
     setSelectedNode(null);
     // Resetear términos de búsqueda
     setSearchTerm('');
@@ -108,19 +139,42 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Filtrar nodos basado en filtros seleccionados y nodo seleccionado
   useEffect(() => {
     let filtered = nodes
+    
+    console.log('🔍 NodeSelector: Iniciando filtrado de nodos', {
+      totalNodes: nodes.length,
+      selectedNodeId: selectedNode?.nodoid,
+      selectedNodeName: selectedNode?.nodo,
+      selectedEntidadId,
+      selectedUbicacionId,
+      searchTerm
+    });
 
     // Si hay un nodo seleccionado, solo mostrar ese nodo
     if (selectedNode) {
       filtered = nodes.filter(node => node.nodoid === selectedNode.nodoid)
+      console.log('🎯 NodeSelector: Filtrado por nodo seleccionado', {
+        nodoId: selectedNode.nodoid,
+        nodosFiltrados: filtered.length,
+        nodos: filtered.map(n => ({ id: n.nodoid, nombre: n.nodo })),
+        timestamp: new Date().toISOString()
+      });
     }
     // Si no hay nodo seleccionado, aplicar filtros de entidad y ubicación
     else {
       if (selectedEntidadId) {
         filtered = filtered.filter(node => node.entidad?.entidadid === selectedEntidadId)
+        console.log('🏢 NodeSelector: Filtrado por entidad', {
+          entidadId: selectedEntidadId,
+          nodosRestantes: filtered.length
+        });
       }
 
       if (selectedUbicacionId) {
         filtered = filtered.filter(node => node.ubicacionid === selectedUbicacionId)
+        console.log('📍 NodeSelector: Filtrado por ubicación', {
+          ubicacionId: selectedUbicacionId,
+          nodosRestantes: filtered.length
+        });
       }
       
       // ⚠️ NOTA: NO aplicar filterNodesByGlobalFilters aquí porque el backend ya filtró los nodos
@@ -133,6 +187,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     // Aplicar filtro de búsqueda si hay término de búsqueda (incluye localización y referencia como en MEDICIÓN)
     const term = searchTerm.toLowerCase().trim()
     if (term) {
+      const beforeSearch = filtered.length
       filtered = filtered.filter(node =>
         node.nodo.toLowerCase().includes(term) ||
         node.ubicacion.ubicacion.toLowerCase().includes(term) ||
@@ -141,8 +196,17 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         node.ubicacion.fundo.fundo.toLowerCase().includes(term) ||
         node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term)
       )
+      console.log('🔍 NodeSelector: Filtrado por término de búsqueda', {
+        termino: term,
+        antes: beforeSearch,
+        despues: filtered.length
+      });
     }
 
+    console.log('✅ NodeSelector: Filtrado completado', {
+      nodosFinales: filtered.length,
+      nodos: filtered.map(n => ({ id: n.nodoid, nombre: n.nodo, ubicacion: n.ubicacion?.ubicacion }))
+    });
 
     setFilteredNodes(filtered)
   }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
@@ -215,6 +279,13 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [entidadSeleccionada, setUbicacionSeleccionada])
 
   const handleNodeSelect = (node: NodeData) => {
+    console.log('🖱️ NodeSelector: handleNodeSelect iniciado', {
+      nodoid: node.nodoid,
+      nodo: node.nodo,
+      localizacion: node.localizacion,
+      ubicacion: node.ubicacion.ubicacion
+    });
+    
     setSelectedNode(node)
     onNodeSelect(node)
     setIsSearchDropdownOpen(false)
@@ -228,12 +299,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     // Actualizar filtros del dashboard
     onFiltersUpdate({
-      entidadId: node.entidad.entidadid,
+      entidadId: node.entidad?.entidadid || 0,
       ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion.fundoid,
-      empresaId: node.ubicacion.fundo.empresa.empresaid,
-      paisId: node.ubicacion.fundo.empresa.pais.paisid
+      fundoId: node.ubicacion?.fundoid || 0,
+      empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
+      paisId: node.ubicacion?.fundo?.empresa?.pais?.paisid || 0
     })
+    
+    console.log('✅ NodeSelector: handleNodeSelect completado');
   }
 
   // Seleccionar automáticamente el primer nodo cuando cambia la ubicación en el filtro
@@ -264,29 +337,53 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
 
   const handleMapNodeClick = (node: NodeData) => {
+    console.log('🖱️ NodeSelector: handleMapNodeClick iniciado', {
+      nodoid: node.nodoid,
+      nodo: node.nodo,
+      localizacion: node.localizacion,
+      ubicacion: node.ubicacion.ubicacion
+    });
+    
     try {
+      console.log('✓ NodeSelector: Seteando selectedNode ANTES de sincronizar');
       setSelectedNode(node)
+      
+      console.log('✓ NodeSelector: Llamando a onNodeSelect del padre');
       onNodeSelect(node)
+      
+      console.log('✓ NodeSelector: Cerrando dropdown y limpiando search');
       setIsSearchDropdownOpen(false)
       setSearchTerm('')
     } catch (error) {
-      console.error('[NodeSelector] handleMapNodeClick error:', error);
+      console.error('❌ NodeSelector: handleMapNodeClick error:', error);
     }
 
     // Actualizar el ref de última ubicación procesada
     lastProcessedUbicacionId.current = node.ubicacionid
 
+    console.log('🔄 NodeSelector: Sincronizando filtros globales (esto podría causar reset)');
     // Sincronizar todos los filtros globales
     syncAllFilters(node)
 
+    console.log('📤 NodeSelector: Actualizando filtros del dashboard');
     // Actualizar filtros del dashboard
     onFiltersUpdate({
-      entidadId: node.entidad.entidadid,
+      entidadId: node.entidad?.entidadid || 0,
       ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion.fundoid,
-      empresaId: node.ubicacion.fundo.empresa.empresaid,
-      paisId: node.ubicacion.fundo.empresa.pais.paisid
+      fundoId: node.ubicacion?.fundoid || 0,
+      empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
+      paisId: node.ubicacion?.fundo?.empresa?.pais?.paisid || 0
     })
+    
+    // Verificar que el selectedNode no se perdió
+    setTimeout(() => {
+      console.log('🔍 NodeSelector: Verificando selectedNode después de sincronización', {
+        selectedNodeId: selectedNode?.nodoid,
+        timestamp: new Date().toISOString()
+      });
+    }, 100);
+    
+    console.log('✅ NodeSelector: handleMapNodeClick completado');
   }
 
   // Cerrar dropdown al hacer click fuera
