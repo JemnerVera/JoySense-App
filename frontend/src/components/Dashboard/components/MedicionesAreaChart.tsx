@@ -140,7 +140,7 @@ export function MedicionesAreaChart({
   return (
     <ReactECharts
       option={option}
-      style={{ height: 400, width: '100%' }}
+      style={{ height: 600, width: '100%' }}
       opts={{ renderer: 'canvas' }}
       notMerge={true}
     />

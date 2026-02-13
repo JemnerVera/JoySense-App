@@ -921,16 +921,46 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               )}
             </div>
           </div>
+
+          {/* Separador visual */}
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+          {/* Información del Nodo */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              Información del Nodo:
+            </label>
+            <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedLocalizacion?.localizacion || '--'}</span>
+              </div>
+              <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                <span className="text-xs text-gray-800 dark:text-white font-mono">
+                  {selectedLocalizacion?.nodo?.ubicacion?.ubicacion || '--'}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                <span className="text-xs text-gray-800 dark:text-white font-mono">
+                  {selectedLocalizacion?.nodo?.ubicacion?.fundo?.fundo || '--'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Gráfico */}
       {loading ? (
-        <div className="flex items-center justify-center h-96 bg-white dark:bg-neutral-800 rounded-lg p-6">
+        <div className="flex items-center justify-center h-[600px] bg-white dark:bg-neutral-800 rounded-lg p-6">
           <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
         </div>
       ) : chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-96 bg-white dark:bg-neutral-800 rounded-lg p-6">
+        <div className="flex items-center justify-center h-[600px] bg-white dark:bg-neutral-800 rounded-lg p-6">
           <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
         </div>
       ) : (
