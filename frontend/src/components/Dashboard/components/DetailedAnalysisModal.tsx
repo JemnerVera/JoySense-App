@@ -422,8 +422,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Leyenda compacta DENTRO de la barra de controles - CON CHECKBOXES */}
                   {visibleLines.length > 0 && (
-                    <div className="flex flex-col flex-shrink-0">
-                      <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Leyenda Loc. Actual:</label>
+                    <div className="flex flex-row items-start gap-3 flex-shrink-0">
                       {(() => {
                         const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
                         const comparisonNodeLines = visibleLines.filter(line => line.startsWith('comp_'))
@@ -456,18 +455,18 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }
                         
-                        return (
-                          <div className="flex flex-col gap-2">
-                            {/* Grupo Localización Principal */}
-                            {mainNodeLines.length > 0 && (
-                              <div>
+                        // Renderizar una sección de leyenda (actual o comparación)
+                        const renderLegendSection = (lines: string[], title: string, isComparison: boolean, colors: string[]) => {
+                          return (
+                            <div className="flex flex-row gap-3 items-start flex-shrink-0">
+                              {/* Primera columna - primeras 2 líneas */}
+                              <div className="flex flex-col flex-shrink-0">
+                                <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">{title}</label>
                                 <div className="flex flex-col gap-1">
-                                  {mainNodeLines.map((lineKey, idx) => {
+                                  {lines.slice(0, 2).map((lineKey, idx) => {
                                     const cleanedLabel = cleanLabel(lineKey)
-                                    const fullKey = `main:${cleanedLabel}`
-                                    const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                                    const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
                                     const strokeColor = colors[idx % colors.length]
-                                    // Por defecto mostrar todo si visibleTipos está vacío, o mostrar solo lo que está en visibleTipos
                                     const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
                                     
                                     return (
@@ -475,13 +474,19 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                         <input
                                           type="checkbox"
                                           checked={isVisible}
-                                          onChange={() => handleToggleLine(lineKey, false)}
+                                          onChange={() => handleToggleLine(lineKey, isComparison)}
                                           className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                                         />
-                                        <div 
-                                          className="w-2 h-0.5 rounded-full flex-shrink-0" 
-                                          style={{ backgroundColor: strokeColor }}
-                                        />
+                                        {isComparison ? (
+                                          <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
+                                          </svg>
+                                        ) : (
+                                          <div 
+                                            className="w-2 h-0.5 rounded-full flex-shrink-0" 
+                                            style={{ backgroundColor: strokeColor }}
+                                          />
+                                        )}
                                         <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
                                           {cleanedLabel}
                                         </span>
@@ -490,41 +495,65 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                   })}
                                 </div>
                               </div>
+                              
+                              {/* Segunda columna - líneas adicionales (si hay) */}
+                              {lines.length > 2 && (
+                                <div className="flex flex-col flex-shrink-0">
+                                  <label className="text-xs font-bold text-transparent font-mono mb-2 whitespace-nowrap uppercase">.</label>
+                                  <div className="flex flex-col gap-1">
+                                    {lines.slice(2).map((lineKey, idx) => {
+                                      const cleanedLabel = cleanLabel(lineKey)
+                                      const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
+                                      const strokeColor = colors[(idx + 2) % colors.length]
+                                      const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                                      
+                                      return (
+                                        <div key={lineKey} className="flex items-center gap-1 h-6">
+                                          <input
+                                            type="checkbox"
+                                            checked={isVisible}
+                                            onChange={() => handleToggleLine(lineKey, isComparison)}
+                                            className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                          />
+                                          {isComparison ? (
+                                            <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                              <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
+                                            </svg>
+                                          ) : (
+                                            <div 
+                                              className="w-2 h-0.5 rounded-full flex-shrink-0" 
+                                              style={{ backgroundColor: strokeColor }}
+                                            />
+                                          )}
+                                          <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
+                                            {cleanedLabel}
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        }
+                        
+                        const mainColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                        const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                        
+                        return (
+                          <>
+                            {/* Grupo Localización Principal */}
+                            {mainNodeLines.length > 0 && renderLegendSection(mainNodeLines, 'Leyenda Loc. Actual:', false, mainColors)}
+                            
+                            {/* Separador vertical - solo cuando hay comparación */}
+                            {mainNodeLines.length > 0 && comparisonNodeLines.length > 0 && (
+                              <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
                             )}
                             
                             {/* Grupo Localización Comparación */}
-                            {comparisonNodeLines.length > 0 && (
-                              <div>
-                                <div className="flex flex-col gap-1">
-                                  {comparisonNodeLines.map((lineKey, idx) => {
-                                    const cleanedLabel = cleanLabel(lineKey)
-                                    const fullKey = `comp:${cleanedLabel}`
-                                    const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
-                                    const strokeColor = comparisonColors[idx % comparisonColors.length]
-                                    const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
-                                    
-                                    return (
-                                      <div key={lineKey} className="flex items-center gap-1 h-6">
-                                        <input
-                                          type="checkbox"
-                                          checked={isVisible}
-                                          onChange={() => handleToggleLine(lineKey, true)}
-                                          disabled={false}
-                                          className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                        />
-                                        <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
-                                        </svg>
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
-                                          {cleanedLabel}
-                                        </span>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                            {comparisonNodeLines.length > 0 && renderLegendSection(comparisonNodeLines, 'Leyenda Loc. Comparación:', true, comparisonColors)}
+                          </>
                         )
                       })()}
                     </div>
