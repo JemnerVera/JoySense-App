@@ -351,10 +351,16 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   }, [filteredEntidades, selectedEntidad, setEntidadSeleccionada]);
 
   useEffect(() => {
-    if (selectedUbicacion && filteredUbicaciones.length > 0 && !filteredUbicaciones.find((u: any) => u.ubicacionid === selectedUbicacion.ubicacionid)) {
+    if (!selectedUbicacion || filteredUbicaciones.length === 0) return;
+    const selectedId = selectedUbicacion?.ubicacionid ?? (typeof selectedUbicacion === 'string' ? selectedUbicacion : null);
+    if (selectedId == null) return;
+    const listIsForCurrentFundo = fundoSeleccionado && filteredUbicaciones.every((u: any) => u.fundoid === parseInt(fundoSeleccionado));
+    const selectedIsInList = filteredUbicaciones.some((u: any) => String(u.ubicacionid) === String(selectedId));
+    // Solo limpiar si la lista es del fundo actual y la selección no está en la lista (evitar borrar cuando la lista es antigua o está cargando tras un setFiltersBatch)
+    if (listIsForCurrentFundo && !selectedIsInList) {
       setUbicacionSeleccionada(null);
     }
-  }, [filteredUbicaciones, selectedUbicacion, setUbicacionSeleccionada]);
+  }, [filteredUbicaciones, selectedUbicacion, setUbicacionSeleccionada, fundoSeleccionado]);
 
 
   const handleEntidadSelect = (entidad: any) => {

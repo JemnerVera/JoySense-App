@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export interface FiltersBatch {
+  paisId?: string;
+  empresaId?: string;
+  fundoId?: string;
+  ubicacion?: any | null;
+}
+
 interface FilterContextType {
   paisSeleccionado: string;
   empresaSeleccionada: string;
@@ -13,6 +20,7 @@ interface FilterContextType {
   setEntidadSeleccionada: (entidad: any | null) => void;
   setUbicacionSeleccionada: (ubicacion: any | null) => void;
   setShowDetailedAnalysis: (show: boolean) => void;
+  setFiltersBatch: (batch: FiltersBatch) => void;
   resetFilters: () => void;
 }
 
@@ -46,6 +54,13 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setUbicacionSeleccionada(null);
   };
 
+  const setFiltersBatch = (batch: FiltersBatch) => {
+    if (batch.paisId !== undefined) setPaisSeleccionado(batch.paisId);
+    if (batch.empresaId !== undefined) setEmpresaSeleccionada(batch.empresaId);
+    if (batch.fundoId !== undefined) setFundoSeleccionado(batch.fundoId);
+    if (batch.ubicacion !== undefined) setUbicacionSeleccionada(batch.ubicacion);
+  };
+
   const value: FilterContextType = {
     paisSeleccionado,
     empresaSeleccionada,
@@ -59,6 +74,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setEntidadSeleccionada,
     setUbicacionSeleccionada,
     setShowDetailedAnalysis,
+    setFiltersBatch,
     resetFilters,
   };
 

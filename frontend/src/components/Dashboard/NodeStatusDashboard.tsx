@@ -12,6 +12,7 @@ import { NodeData } from '../../types/NodeData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useFilters } from '../../contexts/FilterContext';
+import { useFilterSync } from '../../hooks/useFilterSync';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
 
@@ -62,7 +63,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
-  
+
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [selectedUbicacion, setSelectedUbicacion] = useState<any>(null);
@@ -131,25 +132,38 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   
   // Cache de información de fundos (para validar nodos contra filtros globales)
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
+  const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
 
   // Cargar ubicaciones disponibles y fundos con su información
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [ubicacionesData, tiposData, sensoresData, fundosData] = await Promise.all([
+        const [ubicacionesData, tiposData, sensoresData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getUbicaciones(),
           JoySenseService.getTipos(),
           JoySenseService.getSensores(),
-          JoySenseService.getFundos()
+          JoySenseService.getFundos(),
+          JoySenseService.getEmpresas()
         ]);
         setUbicaciones(ubicacionesData || []);
         setTipos(tiposData || []);
         setSensores(sensoresData || []);
         
-        // Crear un mapa de fundoid → fundo completo (con empresa y país)
+        // Crear un mapa de empresaid → empresa para enriquecer los fundos
+        const empresasMap = new Map();
+        (empresasData || []).forEach((empresa: any) => {
+          empresasMap.set(empresa.empresaid, empresa);
+        });
+        
+        // Crear un mapa de fundoid → fundo (enriquecido con empresa y paisid)
         const fundosMap = new Map();
         (fundosData || []).forEach((fundo: any) => {
-          fundosMap.set(fundo.fundoid, fundo);
+          const empresa = empresasMap.get(fundo.empresaid);
+          fundosMap.set(fundo.fundoid, {
+            ...fundo,
+            empresa: empresa, // Agregar empresa completa si existe
+            paisid: empresa?.paisid // Agregar paisid directamente para acceso rápido
+          });
         });
         setFundosInfo(fundosMap);
       } catch (err: any) {
@@ -1145,6 +1159,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                             key={ubicacion.ubicacionid}
                             onClick={() => {
                               setSelectedUbicacion(ubicacion);
+                              syncDashboardSelectionToGlobal(ubicacion, 'ubicacion');
                               setIsUbicacionDropdownOpen(false);
                               setUbicacionSearchTerm('');
                             }}
