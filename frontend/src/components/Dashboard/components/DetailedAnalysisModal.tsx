@@ -228,10 +228,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
           {/* Contenido principal */}
           <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-900 min-w-0">
-            <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
+            <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2 space-y-2' : 'p-6 space-y-4'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-0' : 'mb-0'}`}>
+              <div className={`flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-4' : 'mb-6'} pb-4 border-b border-gray-300 dark:border-neutral-700`}>
                 <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden flex-1 min-w-0">
                   
                   {/* Fecha Inicio */}
@@ -431,7 +431,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
               </div>
 
               {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
-              <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
+              <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-3 mt-2' : 'p-6 mt-4'} shadow-sm`}>
                 {/* Título de comparación si existe */}
                 {comparisonNode && (
                   <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-4'}`}>
