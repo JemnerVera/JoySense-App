@@ -444,22 +444,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
                           const newVisible = new Set(visibleTipos)
                           
-                          console.log('[DetailedAnalysisModal] handleToggleLine - lineKey:', lineKey, 'cleanedLabel:', cleanedLabel, 'fullKey:', fullKey)
-                          console.log('[DetailedAnalysisModal] antes:', Array.from(newVisible))
-                          
                           if (newVisible.has(fullKey)) {
                             newVisible.delete(fullKey)
                           } else {
                             newVisible.add(fullKey)
                           }
                           
-                          console.log('[DetailedAnalysisModal] después:', Array.from(newVisible))
-                          
                           if (onVisibleTiposChange) {
-                            console.log('[DetailedAnalysisModal] Llamando onVisibleTiposChange')
                             onVisibleTiposChange(newVisible)
-                          } else {
-                            console.log('[DetailedAnalysisModal] ERROR: onVisibleTiposChange no existe!')
                           }
                         }
                         
@@ -476,8 +468,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                     const strokeColor = colors[idx % colors.length]
                                     // Por defecto mostrar todo si visibleTipos está vacío, o mostrar solo lo que está en visibleTipos
                                     const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
-                                    
-                                    console.log('[DetailedAnalysisModal] Renderizando checkbox:', { lineKey, cleanedLabel, fullKey, isVisible, visibleTipos: Array.from(visibleTipos) })
                                     
                                     return (
                                       <div key={lineKey} className="flex items-center gap-1 h-6">

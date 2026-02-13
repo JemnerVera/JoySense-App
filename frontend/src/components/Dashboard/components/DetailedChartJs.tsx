@@ -82,13 +82,11 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   const [localVisibleTipos, setLocalVisibleTipos] = React.useState<Set<string>>(() => {
     // Inicializar con todas las líneas visibles
     const initial = new Set(visibleLines.map(line => cleanLabel(line)))
-    console.log('[DetailedChartJs] Inicializando localVisibleTipos:', Array.from(initial), 'visibleLines:', visibleLines, 'visibleTipos prop:', visibleTipos)
     return initial
   })
   
   // Sincronizar localVisibleTipos con la prop visibleTipos cuando cambia
   React.useEffect(() => {
-    console.log('[DetailedChartJs] useEffect: visibleTipos cambió:', Array.from(visibleTipos))
     // Si visibleTipos tiene items, usarlos directamente
     if (visibleTipos.size > 0) {
       setLocalVisibleTipos(new Set(visibleTipos))
@@ -108,11 +106,8 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
 
   // Filtrar líneas visibles basadas en checkboxes
   const filteredVisibleLines = useMemo(() => {
-    console.log('[DetailedChartJs] Calculando filteredVisibleLines:', { localVisibleTipos: Array.from(localVisibleTipos), visibleLines })
-    
     if (localVisibleTipos.size === 0) {
       // Si no hay nada seleccionado, mostrar todas las líneas
-      console.log('[DetailedChartJs] localVisibleTipos vacío, mostrando todas')
       return visibleLines
     }
     
@@ -124,11 +119,9 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
       const fullKey = prefix + cleanedLabel
       
       const isIncluded = Array.from(localVisibleTipos).some(vKey => vKey === cleanedLabel || vKey === fullKey)
-      console.log('[DetailedChartJs] Filtrando:', { lineKey, cleanedLabel, fullKey, isIncluded })
       return isIncluded
     })
     
-    console.log('[DetailedChartJs] Resultado filtrado:', filtered)
     return filtered
   }, [visibleLines, localVisibleTipos])
 
@@ -136,20 +129,14 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
     const cleanedLabel = cleanLabel(lineKey)
     const newVisible = new Set(localVisibleTipos)
     
-    console.log('[DetailedChartJs] handleToggleLine - lineKey:', lineKey, 'cleanedLabel:', cleanedLabel)
-    console.log('[DetailedChartJs] localVisibleTipos antes:', Array.from(localVisibleTipos))
-    
     if (newVisible.has(cleanedLabel)) {
       newVisible.delete(cleanedLabel)
     } else {
       newVisible.add(cleanedLabel)
     }
     
-    console.log('[DetailedChartJs] localVisibleTipos después:', Array.from(newVisible))
-    
     setLocalVisibleTipos(newVisible)
     if (onVisibleTiposChange) {
-      console.log('[DetailedChartJs] Llamando onVisibleTiposChange')
       onVisibleTiposChange(newVisible)
     }
   }
