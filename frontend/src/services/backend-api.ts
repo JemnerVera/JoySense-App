@@ -333,6 +333,45 @@ export class JoySenseService {
     }
   }
 
+  /**
+   * Obtiene localizaciones para el dashboard de Mediciones usando el mismo endpoint
+   * y paginación que MAPEO DE NODOS. Aplica filtros (fundoId, empresaId, paisId) en el backend
+   * para que al filtrar por fundo/empresa/país se devuelvan todas las localizaciones correctas
+   * (evita el límite de 1000 filas de getLocalizaciones que hacía que no aparecieran al filtrar).
+   */
+  static async getLocalizacionesParaMediciones(
+    limit: number = 1000,
+    filters?: { fundoId?: string | number; empresaId?: string | number; paisId?: string | number }
+  ): Promise<Localizacion[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const params = new URLSearchParams();
+      params.set('limit', String(limit));
+      if (filters?.fundoId != null && filters.fundoId !== '') params.set('fundoId', String(filters.fundoId));
+      if (filters?.empresaId != null && filters.empresaId !== '') params.set('empresaId', String(filters.empresaId));
+      if (filters?.paisId != null && filters.paisId !== '') params.set('paisId', String(filters.paisId));
+      const query = params.toString();
+      const data = await backendAPI.get(`/geografia/nodos-con-localizacion?${query}`, token || undefined);
+      if (!Array.isArray(data)) return [];
+      return data
+        .map((loc: any) => ({
+          localizacionid: loc.localizacionid,
+          localizacion: loc.localizacion,
+          nodoid: loc.nodo?.nodoid,
+          latitud: loc.latitud ?? loc.nodo?.latitud,
+          longitud: loc.longitud ?? loc.nodo?.longitud,
+          nodo: loc.nodo,
+          ...(loc.metricaid != null && { metricaid: loc.metricaid }),
+          ...(loc.metrica && { metrica: loc.metrica }),
+        }))
+        .filter((loc: any) => loc.nodoid != null);
+    } catch (error) {
+      console.error('Error in getLocalizacionesParaMediciones:', error);
+      throw error;
+    }
+  }
 
   static async getLocalizacionesByNodo(nodoid: number): Promise<Localizacion[]> {
     try {
