@@ -422,7 +422,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
-      <div className="w-full flex-1" style={{ minHeight: '0' }}>
+      <div className="w-full flex-1 min-h-0">
         <InteractiveMap
           nodes={filteredNodes}
           selectedNode={selectedNode}

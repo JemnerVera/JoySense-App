@@ -304,7 +304,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   return (
-    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-0 relative" style={{ height: '100%', width: '100%', minHeight: '500px' }}>
+    <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-0 relative" style={{ height: '100%', width: '100%' }}>
       <style dangerouslySetInnerHTML={{
         __html: `
           .custom-node-icon {
