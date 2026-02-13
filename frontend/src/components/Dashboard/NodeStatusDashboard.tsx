@@ -692,8 +692,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           // Resolución diaria
           fechaKey = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
         } else {
-          // Redondear a intervalos de 30 minutos para alinear series en minigráficos
-          const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
+          // Redondear a intervalos de 15 minutos para alinear series en minigráficos
+          const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
           const fechaObj = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMin);
           fechaKey = fechaObj.toISOString();
         }
@@ -701,7 +701,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         const label = getSeriesLabel(m);
         
         if (!grouped[fechaKey]) {
-          grouped[fechaKey] = { fechaKey, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), spanDays >= 2 ? 0 : date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 30) * 30) };
+          grouped[fechaKey] = { fechaKey, fechaOriginal: new Date(date.getFullYear(), date.getMonth(), date.getDate(), spanDays >= 2 ? 0 : date.getHours(), spanDays >= 2 ? 0 : Math.floor(date.getMinutes() / 15) * 15) };
         }
         
         const valor = m.medicion || m.valor;
@@ -763,8 +763,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       } else if (useHours) {
         timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
       } else {
-        // Usar 30 minutos para intervalos pequeños
-        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
+        // Usar 15 minutos para intervalos pequeños
+        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
         timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
       }
 
@@ -796,7 +796,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         let ts: number;
         if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
         else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
-        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 30) * 30).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
         allTimestamps.add(ts);
       })
     );
@@ -851,7 +851,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     // Lógica mejorada de granularidad:
     // - 2+ días: usar días
     // - 1-2 días: usar horas
-    // - < 1 día: usar 30 minutos (en lugar de 15)
+    // - < 1 día: usar 15 minutos
     let useDays = spanDays >= 2;
     let useHours = !useDays && spanHours >= 1;
     let use30Min = !useDays && !useHours;
@@ -875,8 +875,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       } else if (useHours) {
         timeKey = `${String(date.getHours()).padStart(2, '0')}:00`;
       } else {
-        // Usar 30 minutos para intervalos pequeños
-        const roundedMin = Math.floor(date.getMinutes() / 30) * 30;
+        // Usar 15 minutos para intervalos pequeños
+        const roundedMin = Math.floor(date.getMinutes() / 15) * 15;
         timeKey = `${String(date.getHours()).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
       }
 
@@ -908,7 +908,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         let ts: number;
         if (useDays) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
         else if (useHours) ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
-        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 30) * 30).getTime();
+        else ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), Math.floor(date.getMinutes() / 15) * 15).getTime();
         allTimestamps.add(ts);
       })
     );
