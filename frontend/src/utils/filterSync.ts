@@ -36,33 +36,25 @@ export function deriveHierarchyFromLocalizacion(
   localizacion: any,
   fundosInfo?: Map<number, any>
 ): DerivedHierarchy | null {
-  console.log('[filterSync] deriveHierarchyFromLocalizacion - input:', { localizacion, fundosInfoSize: fundosInfo?.size });
-
   if (!localizacion?.nodo) {
-    console.log('[filterSync] deriveHierarchyFromLocalizacion: no nodo');
     return null;
   }
 
   const nodo = unwrap(localizacion.nodo);
   if (!nodo?.ubicacion) {
-    console.log('[filterSync] deriveHierarchyFromLocalizacion: no ubicacion en nodo');
     return null;
   }
 
   const ubicacion = unwrap(nodo.ubicacion);
   if (!ubicacion) {
-    console.log('[filterSync] deriveHierarchyFromLocalizacion: ubicacion is null after unwrap');
     return null;
   }
 
   // Obtener fundoId desde ubicacion (el campo más confiable)
   const fundoId = ubicacion.fundoid;
   if (!fundoId) {
-    console.log('[filterSync] deriveHierarchyFromLocalizacion: no fundoId en ubicacion');
     return null;
   }
-
-  console.log('[filterSync] Derivando desde localizacion:', { fundoId, ubicacionid: ubicacion.ubicacionid });
 
   let empresaId: string | undefined;
   let paisId: string | undefined;
@@ -74,12 +66,7 @@ export function deriveHierarchyFromLocalizacion(
       empresaId = fundoInfo.empresaid?.toString();
       // El fundo puede tener empresa con paisid, o directamente paisid
       paisId = fundoInfo.empresa?.paisid?.toString() ?? fundoInfo.paisid?.toString();
-      console.log('[filterSync] Obtenido de fundosInfo:', { fundoId, empresaid: fundoInfo.empresaid, paisid: paisId });
-    } else {
-      console.warn('[filterSync] fundoId no encontrado en fundosInfo:', fundoId);
     }
-  } else {
-    console.warn('[filterSync] fundosInfo vacío o no disponible');
   }
 
   // Fallback: intentar obtener desde estructura anidada
@@ -93,7 +80,6 @@ export function deriveHierarchyFromLocalizacion(
         const pais = unwrap(empresa.pais);
         paisId = paisId ?? pais?.paisid?.toString();
       }
-      console.log('[filterSync] Fallback a estructura anidada:', { empresaId, paisId });
     }
   }
 
@@ -104,7 +90,6 @@ export function deriveHierarchyFromLocalizacion(
     ubicacion: ubicacion, // Retornar el objeto ubicacion completo, no un subset
   };
 
-  console.log('[filterSync] deriveHierarchyFromLocalizacion - resultado:', result);
   return result;
 }
 
@@ -119,12 +104,10 @@ export function deriveHierarchyFromUbicacion(
   fundosInfo?: Map<number, any>
 ): DerivedHierarchy | null {
   if (!ubicacion?.fundoid) {
-    console.log('[filterSync] deriveHierarchyFromUbicacion: no fundoid');
     return null;
   }
 
   const fundoId = Number(ubicacion.fundoid);
-  console.log('[filterSync] Derivando desde ubicacion:', { fundoId, ubicacionid: ubicacion.ubicacionid });
 
   let empresaId: string | undefined;
   let paisId: string | undefined;
@@ -135,12 +118,7 @@ export function deriveHierarchyFromUbicacion(
     if (fundoInfo) {
       empresaId = fundoInfo.empresaid?.toString();
       paisId = fundoInfo.empresa?.paisid?.toString() ?? fundoInfo.paisid?.toString();
-      console.log('[filterSync] Obtenido de fundosInfo:', { fundoId, empresaid: fundoInfo.empresaid, paisid: paisId });
-    } else {
-      console.warn('[filterSync] fundoId no encontrado en fundosInfo:', fundoId);
     }
-  } else {
-    console.warn('[filterSync] fundosInfo vacío o no disponible');
   }
 
   // Fallback: estructura anidada
@@ -154,7 +132,6 @@ export function deriveHierarchyFromUbicacion(
         const pais = unwrap(empresa.pais);
         paisId = paisId ?? pais?.paisid?.toString();
       }
-      console.log('[filterSync] Fallback a estructura anidada:', { empresaId, paisId });
     }
   }
 
@@ -165,7 +142,6 @@ export function deriveHierarchyFromUbicacion(
     ubicacion: ubicacion, // Retornar el objeto ubicacion completo, no un subset
   };
 
-  console.log('[filterSync] deriveHierarchyFromUbicacion - resultado:', result);
   return result;
 }
 

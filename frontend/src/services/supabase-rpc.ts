@@ -669,10 +669,6 @@ export class SupabaseRPCService {
         }
       }
 
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMedicionesNodoDetallado:', params);
-      }
-
       const { data, error } = await supabaseAuth
         .schema('joysense')
         .rpc('fn_get_mediciones_nodo_detallado', {
@@ -718,10 +714,6 @@ export class SupabaseRPCService {
     try {
       if (!params.nodoid || params.nodoid <= 0) {
         throw new Error('nodoid es requerido y debe ser > 0');
-      }
-
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMetricasDisponiblesPorNodo:', params);
       }
 
       const { data, error } = await supabaseAuth

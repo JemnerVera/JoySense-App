@@ -116,11 +116,6 @@ export function useMenuActions(
       hasSubMenus: boolean
     ) => {
       const fullTabId = `${parentId}-${level2Id}-${level3Id}`;
-      console.log('[handleSubMenuLevel3Click]', {
-        fullTabId,
-        hasSubMenus,
-        currentOpenSubMenusLevel3: Array.from(openSubMenusLevel3),
-      });
       onTabChange(fullTabId);
     },
     [onTabChange, openSubMenusLevel3]

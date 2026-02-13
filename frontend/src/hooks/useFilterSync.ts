@@ -15,8 +15,6 @@ export function useFilterSync(fundosInfo?: Map<number, any>) {
 
   const syncDashboardSelectionToGlobal = useCallback(
     (selection: any, type: 'localizacion' | 'ubicacion') => {
-      console.log('[useFilterSync] syncDashboardSelectionToGlobal called:', { type, selection, fundosInfoSize: fundosInfo?.size });
-      
       let derived;
 
       if (type === 'localizacion') {
@@ -26,11 +24,9 @@ export function useFilterSync(fundosInfo?: Map<number, any>) {
       }
 
       if (!derived) {
-        console.log('[useFilterSync] No derived hierarchy');
         return;
       }
 
-      console.log('[useFilterSync] Setting filters batch:', derived);
       // Only update fields that have values (non-empty strings)
       const batch: FiltersBatch = {};
       if (derived.paisId) batch.paisId = derived.paisId;
@@ -38,7 +34,6 @@ export function useFilterSync(fundosInfo?: Map<number, any>) {
       if (derived.fundoId) batch.fundoId = derived.fundoId;
       if (derived.ubicacion) batch.ubicacion = derived.ubicacion;
       
-      console.log('[useFilterSync] Final batch to set:', batch);
       setFiltersBatch(batch);
     },
     [setFiltersBatch, fundosInfo]
