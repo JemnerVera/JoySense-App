@@ -554,22 +554,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
   // para evitar doble renderizado cuando ubicacionId cambia después de seleccionar el nodo
   const useEffectDependencies = useMemo(() => {
-    const deps = [
+    // IMPORTANTE: Mantener un tamaño CONSISTENTE del array de dependencias
+    // para evitar warnings de React sobre cambios de tamaño
+    // Siempre incluir ubicacionId aunque sea undefined cuando hay nodo seleccionado
+    return [
       filters.entidadId, 
       filters.startDate,
       filters.endDate,
-      selectedNode?.nodoid
+      selectedNode?.nodoid,
+      // Incluir ubicacionId SOLO cuando NO hay nodo seleccionado
+      // Si hay nodo, usar null como placeholder para mantener tamaño consistente
+      !selectedNode ? filters.ubicacionId : null
       // CRÍTICO: NO incluir loadMediciones aquí
       // Es una función callback que cambia cuando sus dependencias cambian
       // Esto causaría un ciclo infinito
     ]
-    // Solo incluir ubicacionId si NO hay nodo seleccionado
-    // Cuando hay nodo, el nodoid es suficiente y ubicacionId puede cambiar sin afectar la carga
-    if (!selectedNode && filters.ubicacionId) {
-      deps.push(filters.ubicacionId)
-    }
-    return deps
-  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, selectedNode])
+  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, filters.ubicacionId, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
