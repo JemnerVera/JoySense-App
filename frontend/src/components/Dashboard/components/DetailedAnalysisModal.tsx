@@ -429,8 +429,38 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {visibleLines.length > 0 && (
                     <div className="flex flex-row items-start gap-3 flex-shrink-0">
                       {(() => {
+                        // Función para ordenar líneas por número de sonda
+                        const sortBySondaNumber = (lines: string[]): string[] => {
+                          return [...lines].sort((a, b) => {
+                            const cleanLabel = (label: string): string => {
+                              let cleaned = label.replace(/^comp_/, '')
+                              cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+                              const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+                              if (macetaMatch) {
+                                return macetaMatch[0]
+                              }
+                              return cleaned
+                            }
+                            
+                            const aMatch = cleanLabel(a).match(/Sonda\s+(\d+)cm/)
+                            const bMatch = cleanLabel(b).match(/Sonda\s+(\d+)cm/)
+                            
+                            if (aMatch && bMatch) {
+                              return parseInt(aMatch[1]) - parseInt(bMatch[1])
+                            }
+                            
+                            return 0
+                          })
+                        }
+                        
                         const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
-                        const comparisonNodeLines = visibleLines.filter(line => line.startsWith('comp_'))
+                        const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => line.startsWith('comp_')))
+                        
+                        console.log('=== CONTROL BAR LEGEND - DetailedAnalysisModal ===')
+                        console.log('visibleLines:', visibleLines)
+                        console.log('mainNodeLines:', mainNodeLines)
+                        console.log('comparisonNodeLines (sorted):', comparisonNodeLines)
+                        console.log('visibleTipos:', visibleTipos)
                         
                         // Helper para limpiar label
                         const cleanLabel = (label: string): string => {
@@ -468,11 +498,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                               <div className="flex flex-col flex-shrink-0">
                                 <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">{title}</label>
                                 <div className="flex flex-col gap-1">
-                                  {lines.slice(0, 2).map((lineKey, idx) => {
+                                  {lines.slice(0, 2).map((lineKey, sliceIdx) => {
+                                    const realIdx = sliceIdx  // realIdx para primera columna es 0, 1
                                     const cleanedLabel = cleanLabel(lineKey)
                                     const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                                    const strokeColor = colors[idx % colors.length]
+                                    const strokeColor = colors[realIdx % colors.length]
                                     const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                                    
+                                    console.log(`[CONTROL BAR - Col1] lineKey: ${lineKey}, cleanedLabel: ${cleanedLabel}, realIdx: ${realIdx}, strokeColor: ${strokeColor}, fullKey: ${fullKey}`)
                                     
                                     return (
                                       <div key={lineKey} className="flex items-center gap-1 h-6">
@@ -483,8 +516,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                           className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                                         />
                                         {isComparison ? (
-                                          <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
+                                          <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" />
                                           </svg>
                                         ) : (
                                           <div 
@@ -506,11 +539,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                 <div className="flex flex-col flex-shrink-0">
                                   <label className="text-xs font-bold text-transparent font-mono mb-2 whitespace-nowrap uppercase">.</label>
                                   <div className="flex flex-col gap-1">
-                                    {lines.slice(2).map((lineKey, idx) => {
+                                    {lines.slice(2).map((lineKey, sliceIdx) => {
+                                      const realIdx = sliceIdx + 2  // realIdx para segunda columna es 2, 3, 4...
                                       const cleanedLabel = cleanLabel(lineKey)
                                       const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                                      const strokeColor = colors[(idx + 2) % colors.length]
+                                      const strokeColor = colors[realIdx % colors.length]
                                       const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                                      
+                                      console.log(`[CONTROL BAR - Col2] lineKey: ${lineKey}, cleanedLabel: ${cleanedLabel}, realIdx: ${realIdx}, strokeColor: ${strokeColor}, fullKey: ${fullKey}`)
                                       
                                       return (
                                         <div key={lineKey} className="flex items-center gap-1 h-6">
@@ -521,8 +557,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                             className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                                           />
                                           {isComparison ? (
-                                            <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
+                                            <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                              <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" />
                                             </svg>
                                           ) : (
                                             <div 
@@ -545,6 +581,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         
                         const mainColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                         const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                        
+                        console.log('mainColors:', mainColors)
+                        console.log('comparisonColors:', comparisonColors)
                         
                         return (
                           <>
