@@ -1423,48 +1423,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           </div>
         )}
 
-        {/* Mapa completo cuando NO hay nodo seleccionado */}
+        {/* Mensaje cuando no hay nodo seleccionado - Use el botón "Nodo en Mapa" */}
         {!selectedNode && !loading && (
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4" style={{ height: '70vh', minHeight: '500px' }}>
-            <style dangerouslySetInnerHTML={{
-              __html: `
-                .node-status-map-container {
-                  width: 100%;
-                  height: 100%;
-                }
-                .node-status-map-container > div {
-                  height: 100% !important;
-                }
-                .node-status-map-container > div > div {
-                  height: 100% !important;
-                }
-              `
-            }} />
-            <div className="node-status-map-container h-full">
-              <InteractiveMap
-                nodes={filteredNodes}
-                selectedNode={selectedNode}
-                onNodeSelect={(node) => {
-                  setSelectedNode(node);
-                  // Establecer automáticamente la ubicación del nodo seleccionado
-                  if (node.ubicacionid) {
-                    const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === node.ubicacionid);
-                    if (ubicacionCorrespondiente) {
-                      setSelectedUbicacion(ubicacionCorrespondiente);
-                    }
-                  }
-                }}
-                loading={loading}
-                nodeMediciones={{}}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Mensaje cuando no hay nodos disponibles con los filtros actuales */}
-        {!selectedNode && !loading && filteredNodes.length === 0 && (
           <div className="flex items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
-            <p>No hay nodos disponibles con los filtros actuales.</p>
+            <p>Seleccione un nodo usando el botón "Nodo en Mapa"</p>
           </div>
         )}
 
