@@ -423,6 +423,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Leyenda compacta DENTRO de la barra de controles - CON CHECKBOXES */}
                   {visibleLines.length > 0 && (
                     <div className="flex flex-col flex-shrink-0">
+                      <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Leyenda Loc. Actual:</label>
                       {(() => {
                         const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
                         const comparisonNodeLines = visibleLines.filter(line => line.startsWith('comp_'))
@@ -456,11 +457,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         }
                         
                         return (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-2">
                             {/* Grupo Localización Principal */}
                             {mainNodeLines.length > 0 && (
                               <div>
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-col gap-1">
                                   {mainNodeLines.map((lineKey, idx) => {
                                     const cleanedLabel = cleanLabel(lineKey)
                                     const fullKey = `main:${cleanedLabel}`
@@ -494,7 +495,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                             {/* Grupo Localización Comparación */}
                             {comparisonNodeLines.length > 0 && (
                               <div>
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-col gap-1">
                                   {comparisonNodeLines.map((lineKey, idx) => {
                                     const cleanedLabel = cleanLabel(lineKey)
                                     const fullKey = `comp:${cleanedLabel}`
