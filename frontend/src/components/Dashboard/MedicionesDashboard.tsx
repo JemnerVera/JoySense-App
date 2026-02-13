@@ -5,7 +5,9 @@ import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useFilters } from '../../contexts/FilterContext';
+import { useFilterSync } from '../../hooks/useFilterSync';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
+import { localizacionMatchesGlobalFilters as localizacionMatchesGlobalFiltersUtil } from '../../utils/filterSync';
 import { Localizacion } from '../../types';
 import { MedicionesAreaChart } from './components/MedicionesAreaChart';
 
@@ -26,6 +28,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [sensores, setSensores] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map()); // Cache de info de fundos
+  const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
   const [loading, setLoading] = useState(false);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
   const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
@@ -58,27 +61,36 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         // Obtener localizaciones
         const localizacionesData = await JoySenseService.getLocalizaciones();
         
-        const [sensoresData, tiposData, fundosData] = await Promise.all([
+        const [sensoresData, tiposData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getSensores(),
           JoySenseService.getTipos(),
-          JoySenseService.getFundos()
+          JoySenseService.getFundos(),
+          JoySenseService.getEmpresas()
         ]);
 
         setLocalizaciones(localizacionesData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
         
-        // Crear un mapa de fundoid → fundo completo (con empresa y país)
+        // Crear un mapa de empresaid → empresa para enriquecer los fundos
+        const empresasMap = new Map();
+        (empresasData || []).forEach((empresa: any) => {
+          empresasMap.set(empresa.empresaid, empresa);
+        });
+        
+        // Crear un mapa de fundoid → fundo (enriquecido con empresa y paisid)
         const fundosMap = new Map();
         (fundosData || []).forEach((fundo: any) => {
-          fundosMap.set(fundo.fundoid, fundo);
+          const empresa = empresasMap.get(fundo.empresaid);
+          fundosMap.set(fundo.fundoid, {
+            ...fundo,
+            empresa: empresa, // Agregar empresa completa si existe
+            paisid: empresa?.paisid // Agregar paisid directamente para acceso rápido
+          });
         });
         setFundosInfo(fundosMap);
         
-        console.log('[MedicionesDashboard] Datos iniciales cargados:', {
-          localizaciones: localizacionesData?.length,
-          fundos: fundosData?.length
-        });
+
       } catch (err) {
         console.error('Error cargando datos iniciales:', err);
         showError('Error', 'No se pudieron cargar los datos');
@@ -88,72 +100,16 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadInitialData();
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
-  // Función auxiliar para verificar si una localización cumple con los filtros globales
-  const localizacionMatchesGlobalFilters = useCallback((loc: any): boolean => {
-    // Si no hay filtros activos, aceptar la localización
-    if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
-      return true;
-    }
-
-    if (!loc.nodo) {
-      return false;
-    }
-    
-    // Navegar a través de la estructura de relaciones que SÍ existen
-    // nodo → ubicacion → fundo (solo tiene fundoid)
-    let nodo = loc.nodo;
-    if (Array.isArray(nodo)) {
-      nodo = nodo[0];
-    }
-    
-    if (!nodo || !nodo.ubicacion) {
-      return false;
-    }
-    
-    let ubicacion = nodo.ubicacion;
-    if (Array.isArray(ubicacion)) {
-      ubicacion = ubicacion[0];
-    }
-    
-    if (!ubicacion || !ubicacion.fundo) {
-      return false;
-    }
-    
-    let fundo = ubicacion.fundo;
-    if (Array.isArray(fundo)) {
-      fundo = fundo[0];
-    }
-    
-    if (!fundo) {
-      return false;
-    }
-    
-    const fundoId = fundo.fundoid;
-    
-    // Verificar filtro de fundo (el más específico)
-    if (fundoSeleccionado && fundoSeleccionado !== '') {
-      if (fundoId?.toString() !== fundoSeleccionado) {
-        return false;
-      }
-    }
-    
-    // Para empresa y país, necesitamos buscar en nuestro mapa de fundos
-    const fundoInfo = fundosInfo.get(fundoId);
-    
-    // Verificar filtro de empresa
-    if (empresaSeleccionada && empresaSeleccionada !== '') {
-      const empresaId = fundoInfo?.empresaid;
-      if (empresaId?.toString() !== empresaSeleccionada) {
-        return false;
-      }
-    }
-    
-    // Verificar filtro de país - necesitaríamos cargar empresas también
-    // Por ahora, si tenemos fundo + empresa, asumimos que país está OK si empresa coincide
-    // El filtrado de país se hará principalmente en empresa
-    
-    return true;
-  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]);
+  // Función auxiliar para verificar si una localización cumple con los filtros globales (centralizada en filterSync)
+  const localizacionMatchesGlobalFilters = useCallback(
+    (loc: any): boolean =>
+      localizacionMatchesGlobalFiltersUtil(
+        loc,
+        { paisSeleccionado, empresaSeleccionada, fundoSeleccionado },
+        fundosInfo
+      ),
+    [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]
+  );
 
   // Agrupar localizaciones por nombre único (sin repetir)
   useEffect(() => {
@@ -181,7 +137,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
   useEffect(() => {
     if (selectedLocalizacion && !localizacionMatchesGlobalFilters(selectedLocalizacion)) {
-      console.log('[MedicionesDashboard] Limpiando localización seleccionada - no cumple filtros globales');
+
       setSelectedLocalizacion(null);
       setMediciones([]);
       setAvailableMetrics([]);
@@ -299,7 +255,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         });
 
         const medicionesData = data || [];
-        console.log('[MedicionesDashboard] Mediciones cargadas (todas las métricas):', medicionesData.length);
+
         setMediciones(medicionesData);
       } catch (err: any) {
         console.error('Error cargando mediciones:', err);
@@ -316,11 +272,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     loadMediciones();
   }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
-
-  // Debugging: Mostrar cambios en mediciones
-  useEffect(() => {
-    console.log('[MedicionesDashboard] mediciones actualizado:', mediciones.length);
-  }, [mediciones]);
 
   // Actualizar métricas disponibles basado en los datos REALES cargados
   // Esto es crítico para rangos largos donde el backend puede no devolver todas las métricas
@@ -339,8 +290,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         uniqueMetricIds.add(Number(metricaId));
       }
     });
-
-    console.log('[MedicionesDashboard] metricaid únicos en datos reales:', Array.from(uniqueMetricIds));
 
     // Crear mapeo de nombre a ID basado en los datos
     // Buscar en múltiples ubicaciones posibles del campo de nombre
@@ -388,15 +337,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         name: metricMap.get(id) || fallbackNames[id] || `Métrica ${id}`
       }));
 
-    console.log('[MedicionesDashboard] Métricas disponibles:', availableFromData);
-
     setAvailableMetrics(availableFromData);
 
     // Si el selectedMetricId actual no existe en los datos, seleccionar el primero disponible
     if (availableFromData.length > 0) {
       const selectedExists = availableFromData.find(m => m.id === selectedMetricId);
       if (!selectedExists) {
-        console.log('[MedicionesDashboard] selectedMetricId no existe en datos, cambiando a:', availableFromData[0].id);
         setSelectedMetricId(availableFromData[0].id);
       }
     } else {
@@ -489,7 +435,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       setSelectedMetricUnit('');
     }
     
-    console.log('[MedicionesDashboard] Mediciones filtradas por metricaid:', selectedMetricId, 'items:', filtered.length);
     return filtered;
   }, [mediciones, selectedMetricId]);
 
@@ -600,15 +545,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       granularityType = 'days';
     }
 
-    console.log('[MedicionesDashboard] chartData granularidad inicial:', { daysSpan, hoursSpan, granularityType });
-
     // Hacer grouping con granularidad inicial
     let { result, allLabelsArray, pointCount } = performGrouping(granularityType);
 
     // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
     const totalMediciones = medicionesFiltradasPorMetrica.length;
     if (pointCount <= 2 && totalMediciones >= 3 && granularityType !== 'minutes') {
-      console.log('[MedicionesDashboard] Fallback de granularidad: pocos puntos, cambiando...');
       if (granularityType === 'days') {
         // Cambiar de días a horas
         ({ result, allLabelsArray, pointCount } = performGrouping('hours'));
@@ -617,13 +559,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         // Cambiar de horas a minutos
         ({ result, allLabelsArray, pointCount } = performGrouping('minutes'));
       }
-    }
-
-    console.log('[MedicionesDashboard] chartData - granularidad final:', granularityType);
-    console.log('[MedicionesDashboard] chartData - allLabels:', allLabelsArray);
-    console.log('[MedicionesDashboard] chartData - result length:', result.length);
-    if (result.length > 0) {
-      console.log('[MedicionesDashboard] chartData - sample:', result[0]);
     }
 
     return result;
@@ -643,11 +578,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     });
     
     return Array.from(seriesSet).sort();
-  }, [chartData]);
-
-  // Debugging: Mostrar cambios en chartData
-  useEffect(() => {
-    console.log('[MedicionesDashboard] chartData actualizado:', chartData.length);
   }, [chartData]);
 
   return (
@@ -699,6 +629,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                           key={nodo.localizacionid}
                           onClick={() => {
                             setSelectedLocalizacion(nodo);
+                            syncDashboardSelectionToGlobal(nodo, 'localizacion');
                             setIsLocalizacionDropdownOpen(false);
                             setLocalizacionSearchTerm('');
                           }}

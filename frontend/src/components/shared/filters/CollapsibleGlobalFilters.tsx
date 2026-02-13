@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
+/** Objeto ubicación según tabla joysense.ubicacion (geografia.sql) */
+type UbicacionOption = { ubicacionid?: number; ubicacion?: string; fundoid?: number };
+
 interface CollapsibleGlobalFiltersProps {
   paisSeleccionado: string;
   empresaSeleccionada: string;
   fundoSeleccionado: string;
-  ubicacionSeleccionada: string;
+  /** ID (string) o objeto ubicación cuando viene del contexto sincronizado desde dashboard */
+  ubicacionSeleccionada: string | UbicacionOption | null;
   onPaisChange: (value: string) => void;
   onEmpresaChange: (value: string) => void;
   onFundoChange: (value: string) => void;
@@ -53,7 +57,18 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   const selectedPaisName = paisesOptions.find(p => p.id.toString() === paisSeleccionado)?.name || '';
   const selectedEmpresaName = empresasOptions.find(e => e.id.toString() === empresaSeleccionada)?.name || '';
   const selectedFundoName = fundosOptions.find(f => f.id.toString() === fundoSeleccionado)?.name || '';
-  const selectedUbicacionName = ubicacionesOptions.find(u => u.id.toString() === ubicacionSeleccionada)?.name || '';
+
+  // Ubicación: puede ser string (ID) desde sidebar o objeto { ubicacionid, ubicacion } desde sync dashboard
+  const ubicacionId = typeof ubicacionSeleccionada === 'string'
+    ? ubicacionSeleccionada
+    : (ubicacionSeleccionada && 'ubicacionid' in ubicacionSeleccionada)
+      ? String(ubicacionSeleccionada.ubicacionid ?? '')
+      : '';
+  const nameFromOptions = ubicacionId
+    ? ubicacionesOptions.find(u => u.id.toString() === ubicacionId)?.name ?? ''
+    : '';
+  const nameFromObject = typeof ubicacionSeleccionada === 'object' && ubicacionSeleccionada != null && ubicacionSeleccionada?.ubicacion;
+  const selectedUbicacionName = nameFromOptions || nameFromObject || '';
 
   const handlePaisClick = (e: React.MouseEvent) => {
     if (isDisabled) {
@@ -351,28 +366,31 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
           {openLevel === 'ubicacion' && (
             <div className="ml-4 space-y-1">
-              {ubicacionesOptions.map((ubicacion) => (
-                <button
-                  key={ubicacion.id}
-                  onClick={() => handleSelectUbicacion(ubicacion.id.toString())}
-                  className="flex items-center w-full h-10 px-4 transition-all duration-200"
-                  style={{
-                    color: ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-                    backgroundColor: ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent',
-                    borderLeft: ubicacionSeleccionada === ubicacion.id.toString() ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = ubicacionSeleccionada === ubicacion.id.toString() ? TEMPLATE_COLORS.borderColor : 'transparent';
-                  }}
-                >
-                  <span style={{ fontSize: '0.8rem' }}>
-                    {ubicacion.name.toUpperCase()}
-                  </span>
-                </button>
-              ))}
+              {ubicacionesOptions.map((ubicacion) => {
+                const isSelected = ubicacionId === ubicacion.id.toString();
+                return (
+                  <button
+                    key={ubicacion.id}
+                    onClick={() => handleSelectUbicacion(ubicacion.id.toString())}
+                    className="flex items-center w-full h-10 px-4 transition-all duration-200"
+                    style={{
+                      color: isSelected ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
+                      backgroundColor: isSelected ? TEMPLATE_COLORS.borderColor : 'transparent',
+                      borderLeft: isSelected ? `2px solid ${TEMPLATE_COLORS.secondaryTextColor}` : '2px solid transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = TEMPLATE_COLORS.borderColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? TEMPLATE_COLORS.borderColor : 'transparent';
+                    }}
+                  >
+                    <span style={{ fontSize: '0.8rem' }}>
+                      {ubicacion.name.toUpperCase()}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
