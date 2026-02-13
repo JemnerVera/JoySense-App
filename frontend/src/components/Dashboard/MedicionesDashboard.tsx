@@ -54,13 +54,23 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const localizacionDropdownRef = useRef<HTMLDivElement>(null);
   const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país
+  // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país.
+  // CRÍTICO: Usar el mismo endpoint que MAPEO DE NODOS (nodos-con-localizacion) con filtros,
+  // para que al filtrar por fundo/empresa/país se traigan todas las localizaciones con paginación
+  // correcta. getLocalizaciones() tiene límite ~1000 filas y al filtrar por fundo ZOE no aparecían.
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Obtener localizaciones
-        const localizacionesData = await JoySenseService.getLocalizaciones();
-        
+        const filters =
+          fundoSeleccionado != null && fundoSeleccionado !== ''
+            ? { fundoId: fundoSeleccionado }
+            : empresaSeleccionada != null && empresaSeleccionada !== ''
+              ? { empresaId: empresaSeleccionada }
+              : paisSeleccionado != null && paisSeleccionado !== ''
+                ? { paisId: paisSeleccionado }
+                : undefined;
+        const localizacionesData = await JoySenseService.getLocalizacionesParaMediciones(1000, filters);
+
         const [sensoresData, tiposData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getSensores(),
           JoySenseService.getTipos(),
