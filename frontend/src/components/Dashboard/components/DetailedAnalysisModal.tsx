@@ -131,11 +131,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
 
   const contentWrapperClass = isFullscreenView
-    ? 'bg-gray-50 dark:bg-neutral-900 w-full min-h-[calc(100vh-5rem)] overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
+    ? 'bg-gray-50 dark:bg-neutral-900 w-full h-full overflow-hidden flex flex-col transition-all duration-300 relative border border-gray-300 dark:border-neutral-700 rounded-xl'
     : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300 relative`
 
   return (
-    <div className={isFullscreenView ? 'w-full' : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4'}>
+    <div className={isFullscreenView ? 'w-full h-full' : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4'}>
       <div className={contentWrapperClass}>
         {/* Barra "Volver al mapa" + botones de métrica - solo en vista fullscreen */}
         {isFullscreenView && (
@@ -231,7 +231,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
             <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-2 p-2' : 'mb-6 p-4'}`}>
+              <div className={`flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-0' : 'mb-0'}`}>
                 <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden flex-1 min-w-0">
                   
                   {/* Fecha Inicio */}
