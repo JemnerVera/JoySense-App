@@ -78,7 +78,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       paisSeleccionado={paisSeleccionado}
       empresaSeleccionada={empresaSeleccionada}
       fundoSeleccionado={fundoSeleccionado}
-      ubicacionSeleccionada={ubicacionSeleccionada?.toString() || ''}
+      ubicacionSeleccionada={ubicacionSeleccionada}
       onPaisChange={handlePaisChange}
       onEmpresaChange={handleEmpresaChange}
       onFundoChange={handleFundoChange}
