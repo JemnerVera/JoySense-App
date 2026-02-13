@@ -201,9 +201,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
             <p key={`item-${index}`} style={{ color: entry.color, margin: '2px 0' }}>
               {cleanLabel(entry.name)}: {
                 typeof entry.value === 'number' 
-                  ? Math.abs(entry.value) >= 1 
-                    ? Math.round(entry.value).toString()
-                    : entry.value.toFixed(2)
+                  ? entry.value.toFixed(2)
                   : entry.value
               } {metricUnit}
             </p>

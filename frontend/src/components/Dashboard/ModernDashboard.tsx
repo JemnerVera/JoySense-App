@@ -92,6 +92,31 @@ const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; optimal: [
   'pressure': { min: 900, max: 1100, optimal: [1000, 1020] },
 };
 
+/** Trunca la fecha fin a la hora actual cuando es hoy (redondeada a 15 min) */
+function getEffectiveEndDate(endDateStr: string): Date {
+  const [eY, eM, eD] = endDateStr.split('-').map(Number)
+  const now = new Date()
+  // Usar UTC para comparación de fechas (evita problemas de timezone)
+  const isToday = now.getUTCFullYear() === eY && now.getUTCMonth() === eM - 1 && now.getUTCDate() === eD
+  if (isToday) {
+    const mins = Math.floor(now.getUTCMinutes() / 15) * 15
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), mins, 0, 0))
+  }
+  return new Date(eY, eM - 1, eD, 23, 59, 59, 999)
+}
+
+/** Formato para RPC: YYYY-MM-DD HH:mm:ss cuando es hoy, YYYY-MM-DD 23:59:59 cuando no */
+function formatEndDateForRpc(endDateStr: string): string {
+  const effective = getEffectiveEndDate(endDateStr)
+  const y = effective.getUTCFullYear()
+  const m = String(effective.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(effective.getUTCDate()).padStart(2, '0')
+  const h = String(effective.getUTCHours()).padStart(2, '0')
+  const min = String(effective.getUTCMinutes()).padStart(2, '0')
+  const s = String(effective.getUTCSeconds()).padStart(2, '0')
+  return `${y}-${m}-${d} ${h}:${min}:${s}`
+}
+
 // Función pura: convertir Metrica del backend a MetricConfig
 function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
   const normalizedDataKey = normalizeMetricDataKey(metrica.metrica);
@@ -230,6 +255,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Función para cargar mediciones (declarada antes del useEffect que la usa)
   const loadMediciones = useCallback(async (requestKey?: string, expectedNodeId?: number | null) => {
+    console.log('[loadMediciones] INICIO - selectedNode:', selectedNode?.nodo, 'requestKey:', requestKey)
 
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
     // Si no hay nodo seleccionado, requerir ambos filtros
@@ -237,6 +263,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
 
     if (!hasRequiredFilters) {
+      console.log('[loadMediciones] No hay filtros requeridos, retornando')
       setMediciones([])
       setLoading(false)
       return
@@ -296,6 +323,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         // 1. INTENTAR PRIMERO CON LOS FILTROS GLOBALES DE FECHA SI EXISTEN
         if (filters.startDate && filters.endDate) {
           const startDateFormatted = `${filters.startDate} 00:00:00`
+          // Usar 23:59:59 para el backend REST API (que podría no entender hora parcial)
           const endDateFormatted = `${filters.endDate} 23:59:59`
           
           try {
@@ -438,6 +466,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Verificar que allData sea un array
       if (!Array.isArray(allData)) {
+        console.log('[loadMediciones] allData no es array, setMediciones([]) - allData:', allData)
         // Solo actualizar si esta petición sigue siendo la actual
         if (currentRequestKeyRef.current === thisRequestKey) {
         setMediciones([])
@@ -445,6 +474,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         }
         return
       }
+      
+      console.log('[loadMediciones] allData.length:', allData.length, 'primer fecha:', allData[0]?.fecha, 'última fecha:', allData[allData.length-1]?.fecha)
 
       // Si ya se filtró por nodoid en el backend, no necesitamos filtrar de nuevo
       // El backend devuelve datos ordenados descendente (más recientes primero)
@@ -499,6 +530,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // No filtrar por tiempo aquí - cada métrica hará su propio filtrado de 3 horas
       // Transformar datos para agregar campos legacy
       const transformed = transformMedicionData(sortedData)
+      console.log('[loadMediciones] transformed.length:', transformed.length, 'actualizando state...')
       
       setMediciones(transformed)
       
@@ -675,10 +707,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // - Para rangos 30-60 días: retorna agregados por 6 horas (preserva sensores)
       // Esto mantiene ALL LOS SENSORES mientras reduce la cantidad de datos para rangos grandes
       
+      const effectiveEndDateStr = formatEndDateForRpc(endDateStr);
       const detailedData = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedNode.nodoid,
-        startDate: startDateStr,
-        endDate: endDateStr
+        startDate: `${startDateStr} 00:00:00`,
+        endDate: effectiveEndDateStr
       });
       
       if (!Array.isArray(detailedData)) {
@@ -688,6 +721,11 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
       // Transformar datos de la RPC al formato MedicionData
       // fn_get_mediciones_nodo_detallado retorna metrica_nombre, sensor_nombre, tipo_nombre
+      console.log('[loadMedicionesForDetailedAnalysis] Datos recibidos de RPC:', detailedData.length, 'registros')
+      if (detailedData.length > 0) {
+        console.log('[loadMedicionesForDetailedAnalysis] Primer registro:', detailedData[0].fecha)
+        console.log('[loadMedicionesForDetailedAnalysis] Último registro:', detailedData[detailedData.length-1].fecha)
+      }
       const transformedData: MedicionData[] = detailedData.map((rpcData: any) => ({
         medicionid: rpcData.medicionid || 0,
         localizacionid: rpcData.localizacionid || 0,
@@ -725,6 +763,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }));
       
       
+      console.log('[loadMedicionesForDetailedAnalysis] transformedData.length:', transformedData.length)
       setDetailedMediciones(transformedData)
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
@@ -824,30 +863,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setLoadingComparisonData(true)
     
     try {
-      // IMPORTANTE: Parsear fechas en zona horaria local para evitar problemas de UTC
-      const formatDate = (dateStr: string, isEnd: boolean = false) => {
-        const [year, month, day] = dateStr.split('-').map(Number)
-        // Crear fecha en zona horaria local
-        const date = new Date(year, month - 1, day)
-        
-        const yearStr = String(date.getFullYear())
-        const monthStr = String(date.getMonth() + 1).padStart(2, '0')
-        const dayStr = String(date.getDate()).padStart(2, '0')
-        if (isEnd) {
-          return `${yearStr}-${monthStr}-${dayStr} 23:59:59`
-        }
-        return `${yearStr}-${monthStr}-${dayStr} 00:00:00`
-      }
+      const startDateFormatted = `${detailedStartDate} 00:00:00`
+      const endDateFormatted = formatEndDateForRpc(detailedEndDate)
 
-      const startDateFormatted = formatDate(detailedStartDate, false)
-      const endDateFormatted = formatDate(detailedEndDate, true)
-
-      // IMPORTANTE: Crear fechas en zona horaria local para cálculo de días
       const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
       const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
-      
-      const [endYear, endMonth, endDay] = detailedEndDate.split('-').map(Number)
-      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
+      const endDate = getEffectiveEndDate(detailedEndDate)
       const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
       
       // OPTIMIZACIÓN: Usar límites más pequeños para comparación (no necesita tanta precisión)
@@ -1478,7 +1499,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       sourceMediciones = detailedMediciones
     }
     
-    if (!sourceMediciones.length || !tipos.length || !selectedNode) return []
+    console.log('[processChartData] dataKey:', dataKey, 'useCustomRange:', useCustomRange, 'sourceMediciones.length:', sourceMediciones.length, 'selectedNode:', selectedNode?.nodo)
+    
+    if (!sourceMediciones.length || !tipos.length || !selectedNode) {
+      console.log('[processChartData] Retornando [] - sourceMediciones.length:', sourceMediciones.length, 'tipos.length:', tipos.length, 'selectedNode:', !!selectedNode)
+      return []
+    }
 
     // 1. Filtrar por Nodo y Métrica (nodo principal)
     const metricMediciones = sourceMediciones.filter(m => {
@@ -1487,6 +1513,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
       return matchesMetricId(rawMetricName, dataKey)
     })
+    console.log('[processChartData] metricMediciones.length:', metricMediciones.length, 'dataKey:', dataKey, 'selectedNode.nodoid:', selectedNode.nodoid)
     
     // Si hay nodo de comparación, incluir también sus mediciones
     let comparisonMetricMediciones: MedicionData[] = []
@@ -1500,10 +1527,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
 
-    if (!metricMediciones.length && !comparisonMetricMediciones.length) return []
+    if (!metricMediciones.length && !comparisonMetricMediciones.length) {
+      console.log('[processChartData] No hay metricMediciones ni comparisonMetricMediciones')
+      return []
+    }
 
     // 2. Ordenar y Filtrar por Rango (si es fallback)
     const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+    console.log('[processChartData] sortedMediciones.length:', sortedMediciones.length, 'primer fecha:', sortedMediciones[0]?.fecha, 'última fecha:', sortedMediciones[sortedMediciones.length-1]?.fecha)
     const sortedComparisonMediciones = [...comparisonMetricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
     
     let filteredMediciones = sortedMediciones
@@ -1513,9 +1544,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (useCustomRange && detailedStartDate && detailedEndDate) {
       const [sY, sM, sD] = detailedStartDate.split('-').map(Number);
       const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
-      const [eY, eM, eD] = detailedEndDate.split('-').map(Number);
-      const endDate = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
-      
+      const endDate = getEffectiveEndDate(detailedEndDate);
 
       // Aplicar filtro de fecha siempre que sea un rango personalizado
       filteredMediciones = sortedMediciones.filter(m => {
@@ -1527,8 +1556,34 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return d >= startDate.getTime() && d <= endDate.getTime();
       })
       timeSpan = endDate.getTime() - startDate.getTime()
+    } else if (!useCustomRange && sortedMediciones.length > 0) {
+      // Minigráficos: intentar últimas 3 horas desde ahora
+      // NOTA: Los datos vienen con ISO timestamp que puede incluir timezone offset
+      // Comparamos directamente los timestamps en milisegundos (timezone-agnostic)
+      const now = Date.now()
+      const threeHoursAgo = now - 3 * 60 * 60 * 1000
+      console.log('[processChartData] Minigraficos: now:', new Date(now).toISOString(), 'threeHoursAgo:', new Date(threeHoursAgo).toISOString())
+      const recentData = sortedMediciones.filter(m => {
+        const d = new Date(m.fecha).getTime()
+        return d >= threeHoursAgo && d <= now
+      })
+      console.log('[processChartData] Minigraficos: recentData.length:', recentData.length)
+      
+      if (recentData.length > 0) {
+        // Si hay datos en últimas 3h, usarlos
+        console.log('[processChartData] Minigraficos: usando recentData')
+        filteredMediciones = recentData
+        timeSpan = 3 * 60 * 60 * 1000
+      } else {
+        // Fallback: usar últimas 3h desde el último dato disponible
+        const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
+        console.log('[processChartData] Minigraficos: FALLBACK, latest:', new Date(latest).toISOString())
+        filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
+        console.log('[processChartData] Minigraficos: FALLBACK, filteredMediciones.length:', filteredMediciones.length)
+        timeSpan = 3 * 60 * 60 * 1000
+      }
     } else if (filters.startDate && filters.endDate && sortedMediciones.length > 0) {
-      // Aplicar filtros globales de fecha si existen para los minigráficos
+      // Fallback: filtros globales (para otros usos si los hay)
       const [sY, sM, sD] = filters.startDate.split('-').map(Number);
       const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
       const [eY, eM, eD] = filters.endDate.split('-').map(Number);
@@ -1539,21 +1594,24 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         return d >= startDate.getTime() && d <= endDate.getTime();
       })
       timeSpan = endDate.getTime() - startDate.getTime()
-    } else if (sortedMediciones.length > 0) {
-      const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
-      filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
     }
     
-    if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) return []
+    console.log('[processChartData] Después de filtrar: filteredMediciones.length:', filteredMediciones.length)
+    
+    if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) {
+      console.log('[processChartData] RETORNANDO [] porque no hay datos después de filtrar')
+      return []
+    }
 
     // 3. Determinar Granularidad y Agrupar
     const hoursSpan = timeSpan / (1000 * 60 * 60)
     const daysSpan = hoursSpan / 24
     const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
+    console.log('[processChartData] timeSpan:', timeSpan, 'hoursSpan:', hoursSpan, 'daysSpan:', daysSpan, 'pointCount:', pointCount)
     
     // Decidir granularidad: 
-    // - Si hay 1 día o menos: agrupar por 15 MINUTOS
-    // - Si hay 1 a 7 días: agrupar por 3 HORAS
+    // - Si hay 1-2 días calendario (ej. ayer→hoy): agrupar por 15 MINUTOS
+    // - Si hay 2 a 7 días: agrupar por 3 HORAS
     // - Si hay más de 7 días: agrupar por DÍA
     let use15Minutes = false
     let use3Hours = false
@@ -1562,7 +1620,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (overrideGranularity) {
       useDays = overrideGranularity.useDays
     } else {
-      if (daysSpan <= 1) {
+      if (daysSpan <= 2) {
         use15Minutes = true
       } else if (daysSpan <= 7) {
         use3Hours = true
@@ -1751,6 +1809,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     })
 
     const endProcess = performance.now()
+    console.log('[processChartData] RETORNANDO finalData.length:', finalData.length, 'dataKey:', dataKey, 'useCustomRange:', useCustomRange)
 
     return finalData
   }
@@ -2032,7 +2091,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               setYAxisDomain({ min: null, max: null })
               setVisibleTipos(new Set())
             }}
-            onMetricChange={(metric) => setSelectedDetailedMetric(metric)}
+            onMetricChange={(metric) => {
+              setSelectedDetailedMetric(metric)
+              // Actualizar la métrica seleccionada para el análisis para que el tooltip tenga la unidad correcta
+              const selectedMetric = availableMetrics.find(m => m.dataKey === metric)
+              if (selectedMetric) {
+                setSelectedMetricForAnalysis(selectedMetric)
+              }
+            }}
             onComparisonNodeChange={(node) => setComparisonNode(node)}
             onDateRangeChange={(start, end) => {
               setDetailedStartDate(start)
@@ -2074,6 +2140,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
               const hasData = hasMetricDataOptimized(metric.dataKey)
               const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
               const chartData = memoizedChartData[metric.dataKey] || []
+              console.log('[Renderizar MetricMiniChart] metric:', metric.dataKey, 'chartData.length:', chartData.length, 'hasData:', hasData)
               
               return (
                 <MetricMiniChart
