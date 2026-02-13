@@ -72,15 +72,12 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
       const aMatch = aLabel.match(/Sonda\s+(\d+)cm/)
       const bMatch = bLabel.match(/Sonda\s+(\d+)cm/)
       
-      console.log(`Comparing: "${aLabel}" (${aMatch?.[1]}) vs "${bLabel}" (${bMatch?.[1]})`)
-      
       if (aMatch && bMatch) {
         return parseInt(aMatch[1]) - parseInt(bMatch[1])
       }
       
       return 0
     })
-    console.log('Sorted result:', sorted)
     return sorted
   }
 
@@ -247,13 +244,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
             const mainNodeLines = visibleLines.filter(line => !isComparisonLine(line))
             const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => isComparisonLine(line)))
             
-            console.log('=== LEGEND - DetailedChartJs ===')
-            console.log('visibleLines:', visibleLines)
-            console.log('mainNodeLines:', mainNodeLines)
-            console.log('comparisonNodeLines (sorted):', comparisonNodeLines)
-            console.log('colors:', colors)
-            console.log('comparisonColors:', comparisonColors)
-            
             return (
               <div className={`flex flex-col ${fillHeight ? 'gap-2' : 'gap-3'}`}>
                 {/* Grupo Localización Principal */}
@@ -304,8 +294,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                         const strokeColor = comparisonColors[comparisonIndex % comparisonColors.length]
                         const cleanedLabel = cleanLabel(lineKey)
                         const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
-                        
-                        console.log(`[LEGEND] lineKey: ${lineKey}, cleanedLabel: ${cleanedLabel}, comparisonIndex: ${comparisonIndex}, strokeColor: ${strokeColor}`)
                         
                         return (
                           <div key={lineKey} className="flex items-center gap-1.5">
@@ -382,11 +370,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
               const mainNodeLines = visibleLines.filter(line => !isComparisonLine(line))
               const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => isComparisonLine(line)))
               
-              console.log('=== CHART RENDER - DetailedChartJs ===')
-              console.log('filteredVisibleLines:', filteredVisibleLines)
-              console.log('mainNodeLines:', mainNodeLines)
-              console.log('comparisonNodeLines (sorted):', comparisonNodeLines)
-              
               return filteredVisibleLines.length > 0 ? (
                 filteredVisibleLines.map((lineKey) => {
                   const isComparison = isComparisonLine(lineKey)
@@ -396,11 +379,9 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
                   if (isComparison) {
                     const comparisonIndex = comparisonNodeLines.findIndex(line => line === lineKey)
                     strokeColor = comparisonColors[comparisonIndex % comparisonColors.length]
-                    console.log(`[CHART] lineKey: ${lineKey}, comparisonIndex: ${comparisonIndex}, strokeColor: ${strokeColor}`)
                   } else {
                     const mainIndex = mainNodeLines.findIndex(line => line === lineKey)
                     strokeColor = colors[mainIndex % colors.length]
-                    console.log(`[CHART] lineKey: ${lineKey}, mainIndex: ${mainIndex}, strokeColor: ${strokeColor}`)
                   }
                 
                 return (
