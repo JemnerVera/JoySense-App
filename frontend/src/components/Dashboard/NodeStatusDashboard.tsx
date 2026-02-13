@@ -1543,6 +1543,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         tick={{ fontSize: 10, fill: '#888' }}
                         tickLine={{ stroke: '#888' }}
                         domain={['auto', 'auto']}
+                        type="number"
+                        allowDecimals={true}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -1586,7 +1588,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
                         return allSeriesKeys.map((label, index) => (
                           <Line
-                            key={label}
+                            key={`line-${label}`}
                             type="monotone"
                             dataKey={label}
                             stroke={COLORS[index % COLORS.length]}
@@ -1631,7 +1633,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                               {/* Minigráfico (Sparkline) */}
                               <div className="w-1/3 h-12">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <LineChart data={sparklineData}>
+                                  <LineChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                                     {(() => {
                                       const seriesKeys = Array.from(
                                         new Set(
@@ -1643,7 +1645,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
                                       return seriesKeys.map((key, idx) => (
                                         <Line 
-                                          key={key}
+                                          key={`sparkline-${metricId}-${key}`}
                                           type="monotone" 
                                           dataKey={key} 
                                           stroke={COLORS[idx % COLORS.length]} 
@@ -1654,7 +1656,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                         />
                                       ));
                                     })()}
-                                    <YAxis hide domain={['auto', 'auto']} />
+                                    <YAxis hide domain={['auto', 'auto']} type="number" />
                                   </LineChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1723,7 +1725,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         };
                         return (
                           <Bar
-                            key={criticidad}
+                            key={`bar-alertas-${criticidad}`}
                             dataKey={criticidad}
                             fill={colorMap[criticidad] || COLORS[index % COLORS.length]}
                             name={criticidad}
