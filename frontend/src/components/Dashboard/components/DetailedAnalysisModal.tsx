@@ -456,12 +456,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
                         const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => line.startsWith('comp_')))
                         
-                        console.log('=== CONTROL BAR LEGEND - DetailedAnalysisModal ===')
-                        console.log('visibleLines:', visibleLines)
-                        console.log('mainNodeLines:', mainNodeLines)
-                        console.log('comparisonNodeLines (sorted):', comparisonNodeLines)
-                        console.log('visibleTipos:', visibleTipos)
-                        
                         // Helper para limpiar label
                         const cleanLabel = (label: string): string => {
                           let cleaned = label.replace(/^comp_/, '')
@@ -505,8 +499,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                     const strokeColor = colors[realIdx % colors.length]
                                     const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
                                     
-                                    console.log(`[CONTROL BAR - Col1] lineKey: ${lineKey}, cleanedLabel: ${cleanedLabel}, realIdx: ${realIdx}, strokeColor: ${strokeColor}, fullKey: ${fullKey}`)
-                                    
                                     return (
                                       <div key={lineKey} className="flex items-center gap-1 h-6">
                                         <input
@@ -546,8 +538,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                                       const strokeColor = colors[realIdx % colors.length]
                                       const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
                                       
-                                      console.log(`[CONTROL BAR - Col2] lineKey: ${lineKey}, cleanedLabel: ${cleanedLabel}, realIdx: ${realIdx}, strokeColor: ${strokeColor}, fullKey: ${fullKey}`)
-                                      
                                       return (
                                         <div key={lineKey} className="flex items-center gap-1 h-6">
                                           <input
@@ -581,9 +571,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         
                         const mainColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
                         const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
-                        
-                        console.log('mainColors:', mainColors)
-                        console.log('comparisonColors:', comparisonColors)
                         
                         return (
                           <>
