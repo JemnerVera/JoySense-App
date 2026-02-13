@@ -137,36 +137,39 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   return (
     <div className={isFullscreenView ? 'w-full h-full' : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4'}>
       <div className={contentWrapperClass}>
-        {/* Barra "Volver al mapa" + botones de métrica - solo en vista fullscreen */}
+        {/* Barra "Volver al mapa" + botones de métrica + leyenda - solo en vista fullscreen */}
         {isFullscreenView && (
-          <div className="flex items-center justify-between gap-4 px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600 rounded-t-xl">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              {t('dashboard.back_to_map')}
-            </button>
-            {/* Botones de métrica en el header */}
-            <div className="flex flex-wrap items-center gap-2">
-              {availableMetrics.length > 0 ? (
-                availableMetrics.map((metric) => (
-                  <button
-                    key={metric.id}
-                    onClick={() => onMetricChange(metric.dataKey)}
-                    disabled={loadingDetailedData}
-                    className={`relative px-3 py-1.5 font-mono tracking-wider transition-all duration-200 text-xs ${
-                      selectedDetailedMetric === metric.dataKey
-                        ? 'bg-white text-blue-600 dark:bg-neutral-800 dark:text-blue-400 shadow-md'
-                        : 'bg-blue-500/50 text-white hover:bg-blue-500/70'
-                    } rounded ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    <span className="truncate block max-w-[120px]">{metric.title}</span>
-                  </button>
-                ))
-              ) : null}
+          <div className="bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600 rounded-t-xl">
+            {/* Primera línea: Volver + Botones de métrica */}
+            <div className="flex items-center justify-between gap-4 px-6 py-2">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                {t('dashboard.back_to_map')}
+              </button>
+              {/* Botones de métrica en el header */}
+              <div className="flex flex-wrap items-center gap-2">
+                {availableMetrics.length > 0 ? (
+                  availableMetrics.map((metric) => (
+                    <button
+                      key={metric.id}
+                      onClick={() => onMetricChange(metric.dataKey)}
+                      disabled={loadingDetailedData}
+                      className={`relative px-3 py-1.5 font-mono tracking-wider transition-all duration-200 text-xs ${
+                        selectedDetailedMetric === metric.dataKey
+                          ? 'bg-white text-blue-600 dark:bg-neutral-800 dark:text-blue-400 shadow-md'
+                          : 'bg-blue-500/50 text-white hover:bg-blue-500/70'
+                      } rounded ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <span className="truncate block max-w-[120px]">{metric.title}</span>
+                    </button>
+                  ))
+                ) : null}
+              </div>
             </div>
           </div>
         )}
@@ -228,10 +231,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
           {/* Contenido principal */}
           <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-900 min-w-0">
-            <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2 space-y-2' : 'p-6 space-y-4'}`}>
+            <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2 space-y-1' : 'p-4 space-y-3'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`flex items-center justify-between gap-4 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-4' : 'mb-6'} pb-4 border-b border-gray-300 dark:border-neutral-700`}>
+              <div className={`flex items-center justify-between gap-3 overflow-x-auto flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-3'} pb-3 border-b border-gray-300 dark:border-neutral-700`}>
                 <div className="flex flex-nowrap items-center gap-4 overflow-x-hidden flex-1 min-w-0">
                   
                   {/* Fecha Inicio */}
@@ -413,28 +416,164 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       )}
                     </div>
                   </div>
+                  
+                  {/* Separador visual */}
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+                  {/* Leyenda compacta DENTRO de la barra de controles - CON CHECKBOXES */}
+                  {visibleLines.length > 0 && (
+                    <div className="flex flex-col flex-shrink-0">
+                      {(() => {
+                        const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
+                        const comparisonNodeLines = visibleLines.filter(line => line.startsWith('comp_'))
+                        
+                        // Helper para limpiar label
+                        const cleanLabel = (label: string): string => {
+                          let cleaned = label.replace(/^comp_/, '')
+                          cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+                          const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+                          if (macetaMatch) {
+                            return macetaMatch[0]
+                          }
+                          return cleaned
+                        }
+                        
+                        const handleToggleLine = (lineKey: string, isComparison: boolean) => {
+                          const cleanedLabel = cleanLabel(lineKey)
+                          // El formato correcto debe incluir el prefijo main: o comp:
+                          const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
+                          const newVisible = new Set(visibleTipos)
+                          
+                          console.log('[DetailedAnalysisModal] handleToggleLine - lineKey:', lineKey, 'cleanedLabel:', cleanedLabel, 'fullKey:', fullKey)
+                          console.log('[DetailedAnalysisModal] antes:', Array.from(newVisible))
+                          
+                          if (newVisible.has(fullKey)) {
+                            newVisible.delete(fullKey)
+                          } else {
+                            newVisible.add(fullKey)
+                          }
+                          
+                          console.log('[DetailedAnalysisModal] después:', Array.from(newVisible))
+                          
+                          if (onVisibleTiposChange) {
+                            console.log('[DetailedAnalysisModal] Llamando onVisibleTiposChange')
+                            onVisibleTiposChange(newVisible)
+                          } else {
+                            console.log('[DetailedAnalysisModal] ERROR: onVisibleTiposChange no existe!')
+                          }
+                        }
+                        
+                        return (
+                          <div className="flex flex-col gap-1">
+                            {/* Grupo Localización Principal */}
+                            {mainNodeLines.length > 0 && (
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {mainNodeLines.map((lineKey, idx) => {
+                                    const cleanedLabel = cleanLabel(lineKey)
+                                    const fullKey = `main:${cleanedLabel}`
+                                    const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                                    const strokeColor = colors[idx % colors.length]
+                                    // Por defecto mostrar todo si visibleTipos está vacío, o mostrar solo lo que está en visibleTipos
+                                    const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                                    
+                                    console.log('[DetailedAnalysisModal] Renderizando checkbox:', { lineKey, cleanedLabel, fullKey, isVisible, visibleTipos: Array.from(visibleTipos) })
+                                    
+                                    return (
+                                      <div key={lineKey} className="flex items-center gap-1 h-6">
+                                        <input
+                                          type="checkbox"
+                                          checked={isVisible}
+                                          onChange={() => handleToggleLine(lineKey, false)}
+                                          className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                        />
+                                        <div 
+                                          className="w-2 h-0.5 rounded-full flex-shrink-0" 
+                                          style={{ backgroundColor: strokeColor }}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
+                                          {cleanedLabel}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Grupo Localización Comparación */}
+                            {comparisonNodeLines.length > 0 && (
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {comparisonNodeLines.map((lineKey, idx) => {
+                                    const cleanedLabel = cleanLabel(lineKey)
+                                    const fullKey = `comp:${cleanedLabel}`
+                                    const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                                    const strokeColor = comparisonColors[idx % comparisonColors.length]
+                                    const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                                    
+                                    return (
+                                      <div key={lineKey} className="flex items-center gap-1 h-6">
+                                        <input
+                                          type="checkbox"
+                                          checked={isVisible}
+                                          onChange={() => handleToggleLine(lineKey, true)}
+                                          disabled={false}
+                                          className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                        />
+                                        <svg className="w-2 h-0.5 flex-shrink-0" viewBox="0 0 8 1" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <line x1="0" y1="0.5" x2="8" y2="0.5" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="2 1" />
+                                        </svg>
+                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
+                                          {cleanedLabel}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
                 </div>
-                {/* Info compacta: Ubicación, Fundo, Empresa - al extremo derecho (solo fullscreen) */}
+                {/* Info del nodo: Información del Nodo - al extremo derecho (solo fullscreen) */}
                 {isFullscreenView && selectedNode?.ubicacion && (
-                  <div className="flex-shrink-0 text-right text-xs font-mono text-gray-700 dark:text-neutral-300 border-l border-gray-400 dark:border-neutral-600 pl-4">
-                    <div>Ubicación: {selectedNode.ubicacion.ubicacion}</div>
-                    {selectedNode.ubicacion.fundo && (
-                      <>
-                        <div>Fundo: {selectedNode.ubicacion.fundo.fundo}</div>
-                        {selectedNode.ubicacion.fundo.empresa && (
-                          <div>Empresa: {selectedNode.ubicacion.fundo.empresa.empresa}</div>
-                        )}
-                      </>
-                    )}
+                  <div className="flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase block">
+                      Información del Nodo:
+                    </label>
+                    <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                        <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedNode?.localizacion || '--'}</span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                        <span className="text-xs text-gray-800 dark:text-white font-mono">
+                          {selectedNode?.ubicacion?.ubicacion || '--'}
+                        </span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                        <span className="text-xs text-gray-800 dark:text-white font-mono">
+                          {selectedNode?.ubicacion?.fundo?.fundo || '--'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
-              <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-3 mt-2' : 'p-6 mt-4'} shadow-sm`}>
+              <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-4'} shadow-sm`}>
                 {/* Título de comparación si existe */}
                 {comparisonNode && (
-                  <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-4'}`}>
+                  <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-2'}`}>
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
                       {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo} vs. {comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}
                     </h2>
@@ -456,12 +595,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     visibleLines={visibleLines}
                     yAxisDomain={yAxisDomain}
                     visibleTipos={visibleTipos}
+                    onVisibleTiposChange={onVisibleTiposChange}
                     metricUnit={selectedMetricForAnalysis?.unit || ''}
                     selectedNode={selectedNode}
                     comparisonNode={comparisonNode}
                     mainLocalizacionLabel={selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion}
                     comparisonLocalizacionLabel={comparisonNode?.localizacion || localizacionesPorNodo?.get(comparisonNode?.nodoid)?.[0] || comparisonNode?.ubicacion?.ubicacion}
                     fillHeight={isFullscreenView}
+                    showLegend={false}
                   />
                 ) : (
                   <div className="h-96 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 rounded-lg">

@@ -20,6 +20,7 @@ export interface DetailedChartJsProps {
   mainLocalizacionLabel?: string  // Etiqueta para leyenda (ej. "LOTE T1 HILERA 6")
   comparisonLocalizacionLabel?: string  // Etiqueta para comparación
   fillHeight?: boolean  // Cuando true, el gráfico ocupa todo el espacio disponible
+  showLegend?: boolean  // Cuando true, muestra la leyenda (default: true)
 }
 
 /**
@@ -39,6 +40,7 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   mainLocalizacionLabel,
   comparisonLocalizacionLabel,
   fillHeight = false,
+  showLegend = true,
 }) => {
   // Función para limpiar el label (remover "Punto XX" prefix y "comp_") - DEBE estar antes de useState
   const cleanLabel = (label: string): string => {
@@ -79,8 +81,22 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
   // Estado local para leyenda interactiva - inicializar con TODAS las líneas visibles
   const [localVisibleTipos, setLocalVisibleTipos] = React.useState<Set<string>>(() => {
     // Inicializar con todas las líneas visibles
-    return new Set(visibleLines.map(line => cleanLabel(line)))
+    const initial = new Set(visibleLines.map(line => cleanLabel(line)))
+    console.log('[DetailedChartJs] Inicializando localVisibleTipos:', Array.from(initial), 'visibleLines:', visibleLines, 'visibleTipos prop:', visibleTipos)
+    return initial
   })
+  
+  // Sincronizar localVisibleTipos con la prop visibleTipos cuando cambia
+  React.useEffect(() => {
+    console.log('[DetailedChartJs] useEffect: visibleTipos cambió:', Array.from(visibleTipos))
+    // Si visibleTipos tiene items, usarlos directamente
+    if (visibleTipos.size > 0) {
+      setLocalVisibleTipos(new Set(visibleTipos))
+    } else {
+      // Si está vacío, mostrar todas las líneas
+      setLocalVisibleTipos(new Set(visibleLines.map(line => cleanLabel(line))))
+    }
+  }, [visibleTipos, visibleLines])
 
   // Generar los datos para el gráfico
   const chartData = useMemo(() => {
@@ -92,23 +108,36 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
 
   // Filtrar líneas visibles basadas en checkboxes
   const filteredVisibleLines = useMemo(() => {
+    console.log('[DetailedChartJs] Calculando filteredVisibleLines:', { localVisibleTipos: Array.from(localVisibleTipos), visibleLines })
+    
     if (localVisibleTipos.size === 0) {
       // Si no hay nada seleccionado, mostrar todas las líneas
+      console.log('[DetailedChartJs] localVisibleTipos vacío, mostrando todas')
       return visibleLines
     }
     
     // Filtrar por lo que está seleccionado
-    return visibleLines.filter(lineKey => {
+    const filtered = visibleLines.filter(lineKey => {
       const cleanedLabel = cleanLabel(lineKey)
-      return Array.from(localVisibleTipos).some(vKey => 
-        cleanedLabel.includes(vKey) || vKey === cleanedLabel
-      )
+      const isComp = lineKey.startsWith('comp_')
+      const prefix = isComp ? 'comp:' : 'main:'
+      const fullKey = prefix + cleanedLabel
+      
+      const isIncluded = Array.from(localVisibleTipos).some(vKey => vKey === cleanedLabel || vKey === fullKey)
+      console.log('[DetailedChartJs] Filtrando:', { lineKey, cleanedLabel, fullKey, isIncluded })
+      return isIncluded
     })
+    
+    console.log('[DetailedChartJs] Resultado filtrado:', filtered)
+    return filtered
   }, [visibleLines, localVisibleTipos])
 
   const handleToggleLine = (lineKey: string) => {
     const cleanedLabel = cleanLabel(lineKey)
     const newVisible = new Set(localVisibleTipos)
+    
+    console.log('[DetailedChartJs] handleToggleLine - lineKey:', lineKey, 'cleanedLabel:', cleanedLabel)
+    console.log('[DetailedChartJs] localVisibleTipos antes:', Array.from(localVisibleTipos))
     
     if (newVisible.has(cleanedLabel)) {
       newVisible.delete(cleanedLabel)
@@ -116,8 +145,11 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
       newVisible.add(cleanedLabel)
     }
     
+    console.log('[DetailedChartJs] localVisibleTipos después:', Array.from(newVisible))
+    
     setLocalVisibleTipos(newVisible)
     if (onVisibleTiposChange) {
+      console.log('[DetailedChartJs] Llamando onVisibleTiposChange')
       onVisibleTiposChange(newVisible)
     }
   }
@@ -214,7 +246,93 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
 
   return (
     <div className={fillHeight ? 'flex flex-col min-h-0 flex-1' : ''}>
-      <div className={fillHeight ? 'min-h-[300px] flex-1' : 'h-96'}>
+      {/* Leyenda con checkboxes - ARRIBA del gráfico, separada en dos grupos */}
+      {showLegend && visibleLines.length > 0 && (
+        <div className={`border-b border-gray-300 dark:border-neutral-600 flex-shrink-0 ${fillHeight ? 'mb-2 pb-1' : 'mb-3 pb-2'} overflow-y-auto max-h-[25vh]`}>
+          {/* Obtener líneas del nodo principal y de comparación */}
+          {(() => {
+            const mainNodeLines = visibleLines.filter(line => !isComparisonLine(line))
+            const comparisonNodeLines = visibleLines.filter(line => isComparisonLine(line))
+            
+            return (
+              <div className={`flex flex-col ${fillHeight ? 'gap-2' : 'gap-3'}`}>
+                {/* Grupo Localización Principal */}
+                {mainNodeLines.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-2 px-2 font-mono">
+                      LOCALIZACIÓN PRINCIPAL {mainLocalizacionLabel ? `(${mainLocalizacionLabel})` : ''}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 justify-center">
+                      {mainNodeLines.map((lineKey) => {
+                        // Obtener el índice original de visibleLines para mantener colores consistentes
+                        const originalIndex = visibleLines.indexOf(lineKey)
+                        const strokeColor = colors[originalIndex % colors.length]
+                        const cleanedLabel = cleanLabel(lineKey)
+                        const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
+                        
+                        return (
+                          <div key={lineKey} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={isVisible}
+                              onChange={() => handleToggleLine(lineKey)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                            <div 
+                              className="w-4 h-1 rounded-full" 
+                              style={{ backgroundColor: strokeColor }}
+                            />
+                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
+                              {cleanedLabel}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Grupo Localización Comparación */}
+                {comparisonNodeLines.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-2 px-2 font-mono">
+                      LOCALIZACIÓN COMPARACIÓN {comparisonLocalizacionLabel ? `(${comparisonLocalizacionLabel})` : ''}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 justify-center">
+                      {sortBySondaNumber(comparisonNodeLines).map((lineKey) => {
+                        // Obtener el índice original de visibleLines para mantener colores consistentes
+                        const originalIndex = visibleLines.indexOf(lineKey)
+                        const strokeColor = comparisonColors[originalIndex % comparisonColors.length]
+                        const cleanedLabel = cleanLabel(lineKey)
+                        
+                        return (
+                          <div key={lineKey} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              disabled={true}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-not-allowed"
+                            />
+                            <svg className="w-4 h-1" viewBox="0 0 16 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <line x1="0" y1="1" x2="16" y2="1" stroke={strokeColor} strokeWidth="2" strokeDasharray="5 3" />
+                            </svg>
+                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
+                              {cleanedLabel}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      )}
+      
+      {/* Gráfico - ABAJO de la leyenda */}
+      <div className={fillHeight ? 'flex-1 min-h-0' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.2} />
@@ -287,91 +405,6 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
-      {/* Leyenda con checkboxes - Separada en dos grupos */}
-      {visibleLines.length > 0 && (
-        <div className={`border-t border-gray-300 dark:border-neutral-600 flex-shrink-0 ${fillHeight ? 'mt-2 pt-2' : 'mt-4 pt-4'}`}>
-          {/* Obtener líneas del nodo principal y de comparación */}
-          {(() => {
-            const mainNodeLines = visibleLines.filter(line => !isComparisonLine(line))
-            const comparisonNodeLines = visibleLines.filter(line => isComparisonLine(line))
-            
-            return (
-              <div className={`flex flex-col ${fillHeight ? 'gap-3' : 'gap-6'}`}>
-                {/* Grupo Localización Principal */}
-                {mainNodeLines.length > 0 && (
-                  <div>
-                    <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      LOCALIZACIÓN PRINCIPAL {mainLocalizacionLabel ? `(${mainLocalizacionLabel})` : ''}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-6 justify-center">
-                      {mainNodeLines.map((lineKey) => {
-                        // Obtener el índice original de visibleLines para mantener colores consistentes
-                        const originalIndex = visibleLines.indexOf(lineKey)
-                        const strokeColor = colors[originalIndex % colors.length]
-                        const cleanedLabel = cleanLabel(lineKey)
-                        const isVisible = localVisibleTipos.size === 0 || localVisibleTipos.has(cleanedLabel)
-                        
-                        return (
-                          <div key={lineKey} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={isVisible}
-                              onChange={() => handleToggleLine(lineKey)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            />
-                            <div 
-                              className="w-4 h-1 rounded-full" 
-                              style={{ backgroundColor: strokeColor }}
-                            />
-                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
-                              {cleanedLabel}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Grupo Localización Comparación */}
-                {comparisonNodeLines.length > 0 && (
-                  <div>
-                    <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 mb-3 px-2 font-mono">
-                      LOCALIZACIÓN COMPARACIÓN {comparisonLocalizacionLabel ? `(${comparisonLocalizacionLabel})` : ''}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-6 justify-center">
-                      {sortBySondaNumber(comparisonNodeLines).map((lineKey) => {
-                        // Obtener el índice original de visibleLines para mantener colores consistentes
-                        const originalIndex = visibleLines.indexOf(lineKey)
-                        const strokeColor = comparisonColors[originalIndex % comparisonColors.length]
-                        const cleanedLabel = cleanLabel(lineKey)
-                        
-                        return (
-                          <div key={lineKey} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={true}
-                              disabled={true}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-not-allowed"
-                            />
-                            <svg className="w-4 h-1" viewBox="0 0 16 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <line x1="0" y1="1" x2="16" y2="1" stroke={strokeColor} strokeWidth="2" strokeDasharray="5 3" />
-                            </svg>
-                            <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold">
-                              {cleanedLabel}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
-      )}
     </div>
   )
 }
