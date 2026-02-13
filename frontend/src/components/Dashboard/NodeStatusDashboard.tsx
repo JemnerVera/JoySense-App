@@ -652,13 +652,47 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     return map;
   }, [mediciones]);
 
+  // Mapeo de metricId a unidad
+  const metricUnitsMap = useMemo(() => {
+    const map: { [metricId: number]: string } = {};
+    mediciones.forEach((m: any) => {
+      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
+      if (metricId && !map[metricId]) {
+        const unidad = m.localizacion?.metrica?.unidad || '';
+        map[metricId] = unidad;
+      }
+    });
+    return map;
+  }, [mediciones]);
+
+  // Mapeo de seriesLabel a unidad (para el tooltip) - Filtrado según la métrica seleccionada
+  const seriesUnitsMap = useMemo(() => {
+    const map: { [label: string]: string } = {};
+    
+    // Filtrar mediciones por métrica seleccionada si existe
+    const filteredMediciones = selectedMetricId
+      ? mediciones.filter(m => (m.metricaid || m.localizacion?.metricaid || 0) === selectedMetricId)
+      : mediciones;
+    
+    filteredMediciones.forEach((m: any) => {
+      const label = m.seriesLabel || getSeriesLabel(m);
+      const metricId = m.metricaid || m.localizacion?.metricaid || 0;
+      if (label && !map[label]) {
+        const unidad = metricUnitsMap[metricId] || '';
+        map[label] = unidad;
+      }
+    });
+    return map;
+  }, [mediciones, getSeriesLabel, metricUnitsMap, selectedMetricId]);
+
   // Lista de métricas disponibles para los botones de selección
   const availableMetrics = useMemo(() => {
     return Object.keys(statistics).map(id => ({
       id: parseInt(id),
-      name: metricNamesMap[parseInt(id)] || `Métrica ${id}`
+      name: metricNamesMap[parseInt(id)] || `Métrica ${id}`,
+      unidad: metricUnitsMap[parseInt(id)] || ''
     })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [statistics, metricNamesMap]);
+  }, [statistics, metricNamesMap, metricUnitsMap]);
 
   // Preparar datos para los minigráficos de todas las métricas
   const allSparklineData = useMemo(() => {
@@ -1519,11 +1553,20 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           fontSize: '12px'
                         }}
                         itemStyle={{ padding: '2px 0' }}
-                        formatter={(value: any) => {
+                        formatter={(value: any, name: string) => {
+                          // Obtener la unidad usando el mapa de series
+                          const unidad = seriesUnitsMap[name] || '';
+                          
                           if (typeof value === 'number') {
-                            return value.toFixed(2);
+                            return [
+                              `${value.toFixed(2)} ${unidad}`.trim(),
+                              name
+                            ];
                           }
-                          return value;
+                          return [
+                            unidad ? `${value} ${unidad}` : value,
+                            name
+                          ];
                         }}
                       />
                       <Legend 
@@ -1567,6 +1610,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       {Object.entries(statistics).map(([metricIdStr, stats]) => {
                         const metricId = parseInt(metricIdStr);
                         const metricName = metricNamesMap[metricId] || `Métrica ${metricId}`;
+                        const metricUnit = metricUnitsMap[metricId] || '';
                         
                         // Datos para el minigráfico (sparkline)
                         const sparklineData = allSparklineData[metricId] || [];
@@ -1574,9 +1618,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         return (
                           <div key={metricId} className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-neutral-750 transition-colors">
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-gray-900 dark:text-white text-sm font-mono uppercase tracking-tight">{metricName}</h3>
+                              <h3 className="font-bold text-gray-900 dark:text-white text-sm font-mono uppercase tracking-tight">
+                                {metricName} {metricUnit && `(${metricUnit})`}
+                              </h3>
                               <div className="text-right">
-                                <span className="text-xs font-mono font-bold text-blue-500">{stats.ultimaMedicion}</span>
+                                <span className="text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{stats.ultimaMedicion.toFixed(2)} {metricUnit}</span>
                                 <p className="text-[10px] text-gray-400 font-mono">{new Date(stats.ultimaFecha).toLocaleDateString()}</p>
                               </div>
                             </div>
@@ -1613,22 +1659,22 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                 </ResponsiveContainer>
                               </div>
 
-                              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
-                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
-                                  <span className="text-gray-500 uppercase">Prom:</span>
-                                  <span className="font-bold text-gray-900 dark:text-white">{stats.promedio}</span>
+                              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">
+                                <div className="flex justify-between border-b border-gray-200 dark:border-neutral-600 pb-1">
+                                  <span className="text-gray-600 dark:text-gray-400 uppercase font-semibold">Prom:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.promedio.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
-                                  <span className="text-gray-500 uppercase">Mín:</span>
-                                  <span className="font-bold text-gray-900 dark:text-white">{stats.minimo}</span>
+                                <div className="flex justify-between border-b border-gray-200 dark:border-neutral-600 pb-1">
+                                  <span className="text-gray-600 dark:text-gray-400 uppercase font-semibold">Mín:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.minimo.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
-                                  <span className="text-gray-500 uppercase">Máx:</span>
-                                  <span className="font-bold text-gray-900 dark:text-white">{stats.maximo}</span>
+                                <div className="flex justify-between border-b border-gray-200 dark:border-neutral-600 pb-1">
+                                  <span className="text-gray-600 dark:text-gray-400 uppercase font-semibold">Máx:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.maximo.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-gray-100 dark:border-neutral-700 pb-0.5">
-                                  <span className="text-gray-500 uppercase">Desv:</span>
-                                  <span className="font-bold text-gray-900 dark:text-white">{stats.desviacion}</span>
+                                <div className="flex justify-between border-b border-gray-200 dark:border-neutral-600 pb-1">
+                                  <span className="text-gray-600 dark:text-gray-400 uppercase font-semibold">Desv:</span>
+                                  <span className="font-bold text-gray-900 dark:text-white">{stats.desviacion.toFixed(2)}</span>
                                 </div>
                               </div>
                             </div>
