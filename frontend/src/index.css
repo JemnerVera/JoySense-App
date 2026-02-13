@@ -52,3 +52,46 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0.8;
 }
+
+/* Estilos para scrollbar horizontal en barras de controles */
+/* Webkit browsers (Chrome, Safari, Edge) */
+.control-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.control-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.control-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.control-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Dark mode scrollbar */
+.dark .control-scrollbar::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .control-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark .control-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Firefox */
+.control-scrollbar {
+  scrollbar-color: #d1d5db #f3f4f6;
+  scrollbar-width: thin;
+}
+
+.dark .control-scrollbar {
+  scrollbar-color: #6b7280 #374151;
+}
