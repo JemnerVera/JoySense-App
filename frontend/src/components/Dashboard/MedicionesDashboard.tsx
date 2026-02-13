@@ -664,11 +664,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Rango de fechas */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Intervalo de Fechas:
             </label>
             <div className="flex items-center gap-2">
@@ -738,7 +738,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
           {selectedLocalizacion && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
             <div className="flex flex-col items-center flex-shrink-0">
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+              <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap invisible">Aplicar:</label>
               <button
                 onClick={() => {
                   // Validar fechas antes de aplicar
@@ -774,11 +774,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           )}
 
           {/* Separador visual */}
-          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Ajuste Eje Y */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Ajuste Eje Y:
             </label>
             <div className="flex items-center gap-2 h-8">
@@ -833,11 +833,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Métricas como botones */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Métrica:
             </label>
             <div className="flex items-center gap-2">
@@ -864,11 +864,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Información del Nodo */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Información del Nodo:
             </label>
             <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
@@ -896,7 +896,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       </div>
 
       {/* Gráfico */}
-      <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6">
+      <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6" style={{ maxHeight: 'calc(100vh - 220px)' }}>
         {loading ? (
           <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
             <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
@@ -906,7 +906,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700 mediciones-chart flex flex-col flex-1 min-h-0">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-200 dark:border-neutral-700 mediciones-chart flex flex-col flex-1 min-h-0">
           <style>{`
             .mediciones-chart ::-webkit-scrollbar {
               width: 8px;
