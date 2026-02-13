@@ -1552,10 +1552,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
     
     // Decidir granularidad: 
-    // - Si hay 1 día o menos: agrupar por 30 MINUTOS
+    // - Si hay 1 día o menos: agrupar por 15 MINUTOS
     // - Si hay 1 a 7 días: agrupar por 3 HORAS
     // - Si hay más de 7 días: agrupar por DÍA
-    let use30Minutes = false
+    let use15Minutes = false
     let use3Hours = false
     let useDays = false
     
@@ -1563,7 +1563,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       useDays = overrideGranularity.useDays
     } else {
       if (daysSpan <= 1) {
-        use30Minutes = true
+        use15Minutes = true
       } else if (daysSpan <= 7) {
         use3Hours = true
       } else {
@@ -1595,10 +1595,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Función auxiliar para generar timeKey consistentemente (DEBE estar antes de performGrouping)
-    // Granularidad: 30 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
+    // Granularidad: 15 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
     const getTimeKey = (date: Date): string => {
-      if (use30Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 30) * 30
+      if (use15Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 15) * 15
         return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
       }
       if (use3Hours) {
@@ -1664,7 +1664,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           groupedData = performGrouping(filteredMediciones, false)
           groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
         } else if (use3Hours) {
-          use30Minutes = true
+          use15Minutes = true
           use3Hours = false
           groupedData = performGrouping(filteredMediciones, false)
           groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
@@ -1673,13 +1673,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
 
     // 4. Formatear para Recharts - Combinar datos de ambos nodos
-    // Granularidad: 30 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
+    // Granularidad: 15 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
     const allTimestamps = new Set<number>()
     Object.values(groupedData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (use30Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 30) * 30
+      if (use15Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 15) * 15
         ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
       } else if (use3Hours) {
         const hours = Math.floor(date.getHours() / 3) * 3
@@ -1692,8 +1692,8 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     Object.values(groupedComparisonData).forEach(list => list.forEach(p => {
       const date = new Date(p.timestamp)
       let ts: number
-      if (use30Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 30) * 30
+      if (use15Minutes) {
+        const minutes = Math.floor(date.getMinutes() / 15) * 15
         ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
       } else if (use3Hours) {
         const hours = Math.floor(date.getHours() / 3) * 3
