@@ -1984,9 +1984,9 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // hasMetricDataHelper que recalculaba cada vez. Esto reduce significativamente las iteraciones.
 
   return (
-    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'min-h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue`}>
+    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue`}>
       {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
-      <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'container mx-auto px-4 py-8'}`}>
+      <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'container mx-auto px-4 py-8 h-full flex flex-col'}`}>
 
         {/* Error State */}
         {error && (

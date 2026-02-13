@@ -319,8 +319,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [])
 
   return (
-    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg px-4 py-2 mb-2 flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <h3 className="text-lg font-bold text-blue-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
 
         <div className="flex items-center gap-3">
@@ -422,7 +422,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
-      <div className="w-full" style={{ height: '600px', minHeight: '600px' }}>
+      <div className="w-full flex-1" style={{ minHeight: '0' }}>
         <InteractiveMap
           nodes={filteredNodes}
           selectedNode={selectedNode}
