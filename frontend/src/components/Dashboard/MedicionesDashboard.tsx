@@ -591,8 +591,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   }, [chartData]);
 
   return (
-    <div className="w-full p-6">
-      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-8">
+    <div className="w-full h-screen flex flex-col">
+      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0">
         <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
           <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
@@ -896,16 +896,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       </div>
 
       {/* Gráfico */}
-      {loading ? (
-        <div className="flex items-center justify-center h-[600px] bg-white dark:bg-neutral-800 rounded-lg p-6">
-          <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
-        </div>
-      ) : chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-[600px] bg-white dark:bg-neutral-800 rounded-lg p-6">
-          <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700 mediciones-chart">
+      <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6">
+        {loading ? (
+          <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
+            <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
+            <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-8 border border-gray-200 dark:border-neutral-700 mediciones-chart flex flex-col flex-1 min-h-0">
           <style>{`
             .mediciones-chart ::-webkit-scrollbar {
               width: 8px;
@@ -922,16 +923,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               background: #2563eb;
             }
           `}</style>
-          <MedicionesAreaChart
-            key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}`}
-            chartData={chartData}
-            allSeries={allSeries}
-            selectedMetricUnit={selectedMetricUnit}
-            yAxisDomain={yAxisDomain}
-            colors={COLORS}
-          />
-        </div>
-      )}
+            <MedicionesAreaChart
+              key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}`}
+              chartData={chartData}
+              allSeries={allSeries}
+              selectedMetricUnit={selectedMetricUnit}
+              yAxisDomain={yAxisDomain}
+              colors={COLORS}
+            />
+          </div>
+        )}
+      </div>
 
     </div>
   );
