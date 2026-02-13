@@ -139,7 +139,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       <div className={contentWrapperClass}>
         {/* Barra "Volver al mapa" + botones de métrica - solo en vista fullscreen */}
         {isFullscreenView && (
-          <div className="flex items-center justify-between gap-4 px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600">
+          <div className="flex items-center justify-between gap-4 px-6 py-2 bg-blue-600 dark:bg-blue-700 border-b border-blue-500 dark:border-blue-600 rounded-t-xl">
             <button
               onClick={onClose}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
@@ -431,7 +431,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
               </div>
 
               {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
-              <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
+              <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-6'}`}>
                 {/* Título de comparación si existe */}
                 {comparisonNode && (
                   <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-4'}`}>
