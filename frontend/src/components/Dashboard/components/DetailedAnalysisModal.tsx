@@ -234,7 +234,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
             <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2 space-y-1' : 'p-4 space-y-3'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-3'}`}>
+              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-3'} flex flex-col`}>
+                {/* Primera fila: controles principales */}
                 <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full px-2">
                   
                   {/* Fecha Inicio */}
@@ -585,28 +586,29 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     </div>
                   )}
                 </div>
-                {/* Info del nodo: Información del Nodo - al extremo derecho (solo fullscreen) */}
+
+                {/* Segunda fila: Información del Nodo (similar a MEDICION) - solo fullscreen */}
                 {isFullscreenView && selectedNode?.ubicacion && (
-                  <div className="flex-shrink-0">
-                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase block">
+                  <div className="flex flex-col items-center flex-shrink-0 mt-2 pt-2 border-t border-gray-300 dark:border-neutral-600">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                       Información del Nodo:
                     </label>
-                    <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
-                      <div className="flex items-center gap-2">
+                    <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue flex-nowrap flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedNode?.localizacion || '--'}</span>
+                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">{selectedNode?.localizacion || '--'}</span>
                       </div>
-                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
-                      <div className="flex items-center gap-2">
+                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono">
+                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">
                           {selectedNode?.ubicacion?.ubicacion || '--'}
                         </span>
                       </div>
-                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
-                      <div className="flex items-center gap-2">
+                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono">
+                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">
                           {selectedNode?.ubicacion?.fundo?.fundo || '--'}
                         </span>
                       </div>
