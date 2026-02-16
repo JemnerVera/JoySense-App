@@ -641,13 +641,13 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
           <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
-            <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+            <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
               Localización:
             </label>
             <div className="relative">
               <button
                 onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
-                className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
+                className="h-10 min-w-[180px] px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
               >
                 <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                   {selectedLocalizacion?.localizacion || 'Selecciona'}
@@ -672,7 +672,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                       value={localizacionSearchTerm}
                       onChange={(e) => setLocalizacionSearchTerm(e.target.value)}
                       placeholder="Buscar..."
-                      className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-base focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                       autoFocus
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -688,7 +688,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                             setIsLocalizacionDropdownOpen(false);
                             setLocalizacionSearchTerm('');
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                          className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                             selectedLocalizacion?.localizacionid === nodo.localizacionid
                               ? 'bg-blue-500 text-white'
                               : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
@@ -698,7 +698,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                         </button>
                       ))
                     ) : (
-                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+                      <div className="px-3 py-2 text-base text-gray-500 dark:text-neutral-400 font-mono">
                         No se encontraron resultados
                       </div>
                     )}
@@ -713,7 +713,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
           {/* Rango de fechas */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Intervalo de Fechas:
             </label>
             <div className="flex items-center gap-2">
@@ -742,10 +742,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                     endDate.setDate(endDate.getDate() - 90);
                     return endDate.toISOString().split('T')[0];
                   })()}
-                  className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                  className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
                   style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
                 />
-                <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Inicio</span>
+                <span className="text-sm text-gray-400 font-mono mt-1 uppercase">Inicio</span>
               </div>
               <div className="flex flex-col items-center">
                 <input
@@ -772,10 +772,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                     return startDate.toISOString().split('T')[0];
                   })()}
                   min={pendingDateRange.start}
-                  className="h-8 w-32 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                  className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
                   style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
                 />
-                <span className="text-[10px] text-gray-400 font-mono mt-1 uppercase">Fin</span>
+                <span className="text-sm text-gray-400 font-mono mt-1 uppercase">Fin</span>
               </div>
             </div>
           </div>
@@ -783,7 +783,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
           {selectedLocalizacion && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
             <div className="flex flex-col items-center flex-shrink-0">
-              <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap invisible">Aplicar:</label>
+              <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap invisible">Aplicar:</label>
               <button
                 onClick={() => {
                   // Validar fechas antes de aplicar
@@ -811,7 +811,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   });
                 }}
                 disabled={loading}
-                className="h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                className="h-10 px-4 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-base transition-colors whitespace-nowrap"
               >
                 Aplicar
               </button>
@@ -823,10 +823,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
           {/* Ajuste Eje Y */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Ajuste Eje Y:
             </label>
-            <div className="flex items-center gap-2 h-8">
+            <div className="flex items-center gap-2 h-10">
               <input
                 type="number"
                 step="0.1"
@@ -845,9 +845,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   }
                 }}
                 placeholder="Min"
-                className="h-8 w-14 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+                className="h-10 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
               />
-              <span className="text-gray-600 dark:text-neutral-400 text-xs">-</span>
+              <span className="text-gray-600 dark:text-neutral-400 text-base">-</span>
               <input
                 type="number"
                 step="0.1"
@@ -866,11 +866,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   }
                 }}
                 placeholder="Max"
-                className="h-8 w-14 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
+                className="h-10 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
               />
               <button
                 onClick={() => setYAxisDomain({ min: null, max: null })}
-                className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                className="h-10 px-3 bg-gray-500 hover:bg-gray-600 text-white rounded text-base font-mono"
               >
                 Reset
               </button>
@@ -882,12 +882,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
           {/* Métricas como botones */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Métrica:
             </label>
             <div className="flex items-center gap-2">
               {availableMetrics.length === 0 ? (
-                <span className="text-gray-500 dark:text-gray-400 font-mono text-xs">
+                <span className="text-gray-500 dark:text-gray-400 font-mono text-base">
                   Sin métricas
                 </span>
               ) : (
@@ -895,7 +895,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   <button
                     key={metric.id}
                     onClick={() => setSelectedMetricId(metric.id)}
-                    className={`h-8 px-3 rounded font-mono text-xs transition-colors whitespace-nowrap ${
+                    className={`h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap ${
                       selectedMetricId === metric.id
                         ? 'bg-blue-500 text-white'
                         : 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700'
@@ -913,25 +913,25 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
           {/* Información del Nodo */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
               Información del Nodo:
             </label>
-            <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
+            <div className="h-10 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedLocalizacion?.localizacion || '--'}</span>
+                <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                <span className="text-base text-gray-800 dark:text-white font-mono">{selectedLocalizacion?.localizacion || '--'}</span>
               </div>
               <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-                <span className="text-xs text-gray-800 dark:text-white font-mono">
+                <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                <span className="text-base text-gray-800 dark:text-white font-mono">
                   {selectedLocalizacion?.nodo?.ubicacion?.ubicacion || '--'}
                 </span>
               </div>
               <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                <span className="text-xs text-gray-800 dark:text-white font-mono">
+                <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                <span className="text-base text-gray-800 dark:text-white font-mono">
                   {selectedLocalizacion?.nodo?.ubicacion?.fundo?.fundo || '--'}
                 </span>
               </div>
