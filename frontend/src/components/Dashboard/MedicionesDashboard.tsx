@@ -663,7 +663,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   style={{
                     top: `${localizacionDropdownPosition.top}px`,
                     left: `${localizacionDropdownPosition.left}px`,
-                    width: `${localizacionDropdownPosition.width}px`
+                    width: `${Math.max(localizacionDropdownPosition.width * 1.5, 300)}px`
                   }}
                 >
                   <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
