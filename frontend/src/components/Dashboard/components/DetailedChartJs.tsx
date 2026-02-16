@@ -56,6 +56,12 @@ export const DetailedChartJs: React.FC<DetailedChartJsProps> = ({
       return macetaMatch[0]
     }
     
+    // Extraer solo la parte "Suelo - Sonda XXcm" si existe
+    const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
+    if (sueloMatch) {
+      return sueloMatch[0]
+    }
+    
     return cleaned
   }
   
