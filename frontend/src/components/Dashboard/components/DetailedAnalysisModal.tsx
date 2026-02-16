@@ -269,10 +269,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     />
                   </div>
 
-                  {/* Botón Aplicar */}
+{/* Botón Aplicar */}
                   {(tempStartDate || tempEndDate) && (
-                    <div className="flex flex-col flex-shrink-0">
-                      <label className="text-base font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <label className="text-base font-bold text-gray-700 dark:text-neutral-300 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
                       <button
                         onClick={() => {
                           onDateRangeChange(tempStartDate || detailedStartDate, tempEndDate || detailedEndDate)
@@ -289,9 +289,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Separador visual */}
                   <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                  {/* Ajuste Eje Y */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Ajuste Eje Y:</label>
+{/* Ajuste Eje Y */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Ajuste Eje Y:</label>
                     <div className="flex items-center gap-2 h-10">
                       <input
                         type="number"
@@ -346,9 +346,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Separador visual */}
                   <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                  {/* Analizar Fluctuación */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Analizar Fluctuación:</label>
+{/* Analizar Fluctuación */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Analizar Fluctuación:</label>
                     <div className="h-10 flex items-center">
                       <button
                         onClick={onAnalyzeFluctuation}
@@ -366,9 +366,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Separador visual */}
                   <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
-                  {/* Comparar con Localización */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Comparar con Localización:</label>
+{/* Comparar con Localización */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Comparar con Localización:</label>
                     <div className="flex items-center gap-2 h-10">
                       <select
                         value={comparisonNode?.nodoid || ''}
