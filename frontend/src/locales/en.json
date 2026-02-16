@@ -350,7 +350,7 @@
   "reports.table.message": "MESSAGE",
   "reports.table.date": "DATE",
   "dashboard.select_node": "SELECT NODE",
-  "dashboard.search_node_placeholder": "Search node by name, DevEUI, location...",
+  "dashboard.search_node_placeholder": "Search by location, node or DevEUI...",
   "dashboard.metrics.temperature": "Temperature",
   "dashboard.metrics.humidity": "Humidity",
   "dashboard.metrics.electroconductivity": "Electroconductivity",

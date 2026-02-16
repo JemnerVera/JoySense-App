@@ -343,7 +343,7 @@
   "reports.table.message": "MENSAJE",
   "reports.table.date": "FECHA",
   "dashboard.select_node": "SELECCIONAR NODO",
-  "dashboard.search_node_placeholder": "Buscar por nombre, código o ubicación",
+  "dashboard.search_node_placeholder": "Buscar por localización, ubicación o nodo",
   "dashboard.metrics.temperature": "Temperatura",
   "dashboard.metrics.humidity": "Humedad",
   "dashboard.metrics.electroconductivity": "Electroconductividad",
