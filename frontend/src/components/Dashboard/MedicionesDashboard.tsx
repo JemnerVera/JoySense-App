@@ -635,18 +635,31 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return Array.from(seriesSet).sort();
   }, [chartData]);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const delta = e.deltaY || e.deltaX;
+      if (Math.abs(delta) > 0) {
+        container.scrollLeft += delta;
+        e.preventDefault();
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   return (
     <div className="w-full h-screen flex flex-col">
-      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0">
+      <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0 overflow-hidden">
         <div 
-          className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue w-full px-2"
-          onWheel={(e) => {
-            if (e.deltaY !== 0) {
-              const container = e.currentTarget;
-              container.scrollLeft += e.deltaY;
-              e.preventDefault();
-            }
-          }}
+          ref={scrollContainerRef}
+          className="flex items-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden w-full px-2 py-1 scrollbar-thin"
+          style={{ scrollBehavior: 'smooth' }}
         >
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
           <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
