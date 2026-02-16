@@ -287,7 +287,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   )}
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
 {/* Ajuste Eje Y */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -344,7 +344,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   </div>
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
 {/* Analizar Fluctuación */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -364,7 +364,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   </div>
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
 {/* Comparar con Localización */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -418,7 +418,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   </div>
                   
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
                   {/* Leyenda compacta DENTRO de la barra de controles - CON CHECKBOXES */}
                   {visibleLines.length > 0 && (
@@ -574,7 +574,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                             
                             {/* Separador vertical - solo cuando hay comparación */}
                             {mainNodeLines.length > 0 && comparisonNodeLines.length > 0 && (
-                              <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                              <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
                             )}
                             
                             {/* Grupo Localización Comparación */}
@@ -584,6 +584,12 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       })()}
                     </div>
                   )}
+
+                  {/* Separador vertical entre Leyenda e Información del Nodo */}
+                  {visibleLines.length > 0 && isFullscreenView && selectedNode?.ubicacion && (
+                    <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+                  )}
+
 {/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
                   {isFullscreenView && selectedNode?.ubicacion && (
                     <div className="flex flex-col items-center flex-shrink-0">
