@@ -108,7 +108,7 @@ const AppContentInternal: React.FC<{
 
   const { user, loading } = useAuth();
   const { t } = useLanguage();
-  useFilters(); // Usar el hook aunque no necesitemos sus valores
+  const { setUbicacionSeleccionada } = useFilters();
 
   // Preload componentes críticos
   usePreloadCriticalComponents();
@@ -198,6 +198,26 @@ const AppContentInternal: React.FC<{
     setDashboardStartDate(filters.startDate);
     setDashboardEndDate(filters.endDate);
   };
+
+  // Sincronizar dashboardSelectedUbicacion con el contexto global de filtros
+  useEffect(() => {
+    console.log('[App SYNC EFFECT] dashboardSelectedUbicacion cambió:', {
+      ubicacionid: dashboardSelectedUbicacion?.ubicacionid,
+      ubicacion: dashboardSelectedUbicacion?.ubicacion,
+      esNull: dashboardSelectedUbicacion === null
+    });
+    
+    if (dashboardSelectedUbicacion) {
+      console.log('[App] ✓ Sincronizando ubicación al contexto global:', {
+        id: dashboardSelectedUbicacion.ubicacionid,
+        nombre: dashboardSelectedUbicacion.ubicacion
+      });
+      setUbicacionSeleccionada(dashboardSelectedUbicacion);
+    } else if (dashboardSelectedUbicacion === null) {
+      console.log('[App] ✓ Limpiando ubicación del contexto global');
+      setUbicacionSeleccionada(null);
+    }
+  }, [dashboardSelectedUbicacion?.ubicacionid, setUbicacionSeleccionada]);
 
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
@@ -1031,7 +1051,38 @@ const AppContentInternal: React.FC<{
     setDashboardSelectedEntidad(entidad);
   };
 
-  const handleDashboardUbicacionChange = (ubicacion: any) => {
+  const handleDashboardUbicacionChange = (ubicacionIdOrObject: any) => {
+    console.log('[App handleDashboardUbicacionChange] Recibido:', ubicacionIdOrObject, 'tipo:', typeof ubicacionIdOrObject);
+    console.log('[App handleDashboardUbicacionChange] Array ubicaciones disponible:', {
+      length: ubicaciones.length,
+      primeras: ubicaciones.slice(0, 3)
+    });
+    
+    let ubicacion = null;
+    
+    // Si es un string (ID), buscar el objeto ubicación
+    if (typeof ubicacionIdOrObject === 'string') {
+      const id = parseInt(ubicacionIdOrObject, 10);
+      console.log('[App handleDashboardUbicacionChange] Buscando ubicacionid:', id, 'en array de', ubicaciones.length, 'ubicaciones');
+      
+      // Debug: mostrar todas las ubicaciones disponibles
+      console.log('[App handleDashboardUbicacionChange] Ubicaciones disponibles:', ubicaciones.map(u => ({
+        ubicacionid: u.ubicacionid,
+        ubicacion: u.ubicacion
+      })));
+      
+      ubicacion = ubicaciones.find(u => u.ubicacionid === id) || null;
+      console.log('[App handleDashboardUbicacionChange] Resultado de búsqueda:', {
+        idBuscado: id,
+        ubicacionEncontrada: ubicacion
+      });
+    } else if (ubicacionIdOrObject && typeof ubicacionIdOrObject === 'object') {
+      // Si ya es un objeto, usarlo directamente
+      ubicacion = ubicacionIdOrObject;
+      console.log('[App handleDashboardUbicacionChange] Ya es objeto:', ubicacion);
+    }
+    
+    console.log('[App handleDashboardUbicacionChange] ✓ Estableciendo ubicación:', ubicacion);
     setDashboardSelectedUbicacion(ubicacion);
   };
 

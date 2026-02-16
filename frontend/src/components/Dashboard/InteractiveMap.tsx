@@ -186,12 +186,18 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Usar useMemo para evitar recalcular en cada render
   const nodesWithGPS = useMemo(() => {
-    return nodes.filter(n => {
+    const result = nodes.filter(n => {
       const lat = typeof n.latitud === 'string' ? parseFloat(n.latitud) : n.latitud;
       const lng = typeof n.longitud === 'string' ? parseFloat(n.longitud) : n.longitud;
       const isValid = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
       return isValid;
     });
+    console.log('[InteractiveMap] Nodos con GPS:', {
+      total: result.length,
+      nodesRecibidos: nodes.length,
+      ubicacionesUnicas: Array.from(new Set(nodes.map(n => n.ubicacionid)))
+    });
+    return result;
   }, [nodes])
   
   // Función para abrir el popup del nodo seleccionado con retry para asegurar que el marker exista

@@ -62,7 +62,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada } = useFilters();
 
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -207,11 +207,27 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       fundoSeleccionado
     );
     
+    console.log('[NodeStatusDashboard FILTEREDNODES] Nodos después de filtros globales:', {
+      total: filtered.length,
+      pais: paisSeleccionado,
+      empresa: empresaSeleccionada,
+      fundo: fundoSeleccionado,
+      ubicacionSeleccionada: selectedUbicacion?.ubicacionid
+    });
+    
     // Luego filtrar por ubicación seleccionada (filtro cascade)
     if (!selectedUbicacion) {
+      console.log('[NodeStatusDashboard FILTEREDNODES] ✓ Sin filtro de ubicación, retornando', filtered.length, 'nodos');
       return filtered;
     }
-    return filtered.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
+    
+    const result = filtered.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
+    console.log('[NodeStatusDashboard FILTEREDNODES] ✓ Con filtro de ubicación', selectedUbicacion.ubicacionid, '→', result.length, 'nodos');
+    if (result.length === 0 && filtered.length > 0) {
+      console.warn('[NodeStatusDashboard FILTEREDNODES] ⚠️ ADVERTENCIA: Filtro de ubicación resultó en 0 nodos');
+      console.log('Ubicaciones en nodos filtrados:', Array.from(new Set(filtered.map(n => n.ubicacionid))));
+    }
+    return result;
   }, [nodes, selectedUbicacion, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Filtrar ubicaciones por término de búsqueda
@@ -326,13 +342,38 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     return true;
   }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]);
 
+  // Sincronizar el filtro global de ubicación con el estado local
+  useEffect(() => {
+    console.log('[NodeStatusDashboard SYNC EFFECT] ubicacionSeleccionada:', ubicacionSeleccionada);
+    console.log('[NodeStatusDashboard SYNC EFFECT] selectedUbicacion:', selectedUbicacion);
+    
+    if (ubicacionSeleccionada) {
+      // Si la ubicación seleccionada es diferente por ID, actualizar el estado local
+      if (!selectedUbicacion || selectedUbicacion.ubicacionid !== ubicacionSeleccionada.ubicacionid) {
+        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO ubicación global:', {
+          id: ubicacionSeleccionada.ubicacionid,
+          nombre: ubicacionSeleccionada.ubicacion
+        });
+        setSelectedUbicacion(ubicacionSeleccionada);
+      } else {
+        console.log('[NodeStatusDashboard] - Ubicación ya sincronizada');
+      }
+    } else if (selectedUbicacion) {
+      // Si se limpió el filtro global, limpiar el estado local
+      console.log('[NodeStatusDashboard] ✓ LIMPIANDO ubicación seleccionada');
+      setSelectedUbicacion(null);
+    } else {
+      console.log('[NodeStatusDashboard] - Sin ubicación en contexto ni local');
+    }
+  }, [ubicacionSeleccionada]);
+
   // Limpiar nodo cuando cambian los filtros globales y el nodo ya no es válido
   useEffect(() => {
     if (selectedNode && !nodoMatchesGlobalFilters(selectedNode)) {
       setSelectedNode(null);
       setSelectedUbicacion(null);
-      setNodoSearchTerm('');           // Limpiar búsqueda de nodos
       setUbicacionSearchTerm('');      // Limpiar búsqueda de ubicaciones
+      setNodoSearchTerm('');           // Limpiar búsqueda de nodos
       setMediciones([]);
       setAlertas([]);
       setUmbrales([]);
@@ -1133,6 +1174,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             <button
               onClick={() => {
                 setSelectedUbicacion(null);
+                setUbicacionSeleccionada(null);
                 setSelectedNode(null);
                 setLocalizacionesNodo([]);
                 setUbicacionSearchTerm('');
@@ -1890,7 +1932,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                   }} />
                   <div className="node-status-map-container h-full">
                     <InteractiveMap
-                      nodes={nodes}
+                      nodes={filteredNodes}
                       selectedNode={selectedNode}
                       onNodeSelect={(node) => {
                         setSelectedNode(node);

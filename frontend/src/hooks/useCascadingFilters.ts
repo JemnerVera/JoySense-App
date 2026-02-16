@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useFilters } from '../contexts/FilterContext';
+import { useFilterData } from './useFilterData';
 
 export const useCascadingFilters = () => {
   const {
@@ -12,6 +13,9 @@ export const useCascadingFilters = () => {
     setFundoSeleccionado,
     setUbicacionSeleccionada,
   } = useFilters();
+  
+  // Obtener el array de ubicaciones para convertir IDs a objetos
+  const { ubicaciones = [] } = useFilterData('');
 
   // Función para manejar el cambio de país con cascada
   const handlePaisChange = useCallback((paisId: string) => {
@@ -39,8 +43,32 @@ export const useCascadingFilters = () => {
 
   // Función para manejar el cambio de ubicación
   const handleUbicacionChange = useCallback((ubicacionId: string) => {
-    setUbicacionSeleccionada(ubicacionId);
-  }, [setUbicacionSeleccionada]);
+    console.log('[useCascadingFilters] handleUbicacionChange recibido:', ubicacionId);
+    
+    if (!ubicacionId || ubicacionId === '') {
+      console.log('[useCascadingFilters] Limpiando ubicación');
+      setUbicacionSeleccionada(null);
+      return;
+    }
+    
+    // Convertir string ID a objeto ubicación
+    const id = parseInt(ubicacionId, 10);
+    const ubicacionObj = ubicaciones.find(u => u.ubicacionid === id);
+    
+    console.log('[useCascadingFilters] Búsqueda de ubicación:', {
+      idBuscado: id,
+      ubicacionesDisponibles: ubicaciones.length,
+      ubicacionEncontrada: ubicacionObj
+    });
+    
+    if (ubicacionObj) {
+      console.log('[useCascadingFilters] ✓ Estableciendo ubicación:', ubicacionObj);
+      setUbicacionSeleccionada(ubicacionObj);
+    } else {
+      console.warn('[useCascadingFilters] ⚠️ No se encontró ubicación con ID:', id);
+      setUbicacionSeleccionada(null);
+    }
+  }, [setUbicacionSeleccionada, ubicaciones]);
 
   // Función para resetear todos los filtros
   const resetAllFilters = useCallback(() => {
