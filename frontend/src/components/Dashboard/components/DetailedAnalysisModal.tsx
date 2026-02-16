@@ -151,7 +151,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 </svg>
                 {t('dashboard.back_to_map')}
               </button>
-              {/* Botones de métrica en el header */}
+{/* Botones de métrica en el header */}
               <div className="flex flex-wrap items-center gap-2">
                 {availableMetrics.length > 0 ? (
                   availableMetrics.map((metric) => (
@@ -159,13 +159,13 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       key={metric.id}
                       onClick={() => onMetricChange(metric.dataKey)}
                       disabled={loadingDetailedData}
-                      className={`relative px-3 py-1.5 font-mono tracking-wider transition-all duration-200 text-xs ${
+                      className={`relative px-4 py-2 font-mono font-bold tracking-wider transition-all duration-200 text-base uppercase ${
                         selectedDetailedMetric === metric.dataKey
                           ? 'bg-white text-blue-600 dark:bg-neutral-800 dark:text-blue-400 shadow-md'
                           : 'bg-blue-500/50 text-white hover:bg-blue-500/70'
                       } rounded ${loadingDetailedData ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
-                      <span className="truncate block max-w-[120px]">{metric.title}</span>
+                      <span className="truncate block">{metric.title}</span>
                     </button>
                   ))
                 ) : null}
