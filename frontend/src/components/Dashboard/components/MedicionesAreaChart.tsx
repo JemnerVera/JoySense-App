@@ -169,9 +169,46 @@ export function MedicionesAreaChart({
           fontFamily: 'Inter, sans-serif',
           fontSize: 14
         },
+        axisTick: {
+          alignWithLabel: true,
+          lineStyle: {
+            color: '#666'
+          }
+        },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: 'rgba(255, 255, 255, 0.2)',
+            type: 'dashed' as const
+          },
+          interval: (index: number) => {
+            const currentParts = xAxisData[index]?.split(' ');
+            const nextParts = xAxisData[index + 1]?.split(' ');
+            const currentDate = currentParts?.[0];
+            const nextDate = nextParts?.[0];
+            return currentDate !== nextDate;
+          }
+        },
         axisLabel: {
           color: '#ffffff',
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: 'Inter, sans-serif',
+          formatter: (value: string, index: number) => {
+            const parts = value.split(' ');
+            if (parts.length >= 2) {
+              const date = parts[0];
+              const time = parts[1];
+              if (index === 0) {
+                return `${time}\n${date}`;
+              }
+              const prevParts = xAxisData[index - 1]?.split(' ');
+              const prevDate = prevParts?.[0];
+              if (prevDate !== date) {
+                return `${time}\n${date}`;
+              }
+              return time;
+            }
+            return value;
+          }
         }
       },
       yAxis: {
