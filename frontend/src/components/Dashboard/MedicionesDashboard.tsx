@@ -158,7 +158,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Sincronizar pendingDateRange con dateRange cuando cambia localización seleccionada
   useEffect(() => {
     setPendingDateRange(dateRange);
-    setYAxisDomain({ min: null, max: null });
+    // El eje Y se ajustará automáticamente cuando cambien las mediciones
   }, [selectedLocalizacion]);
 
   // Validar rango máximo de 90 días
@@ -447,6 +447,51 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     
     return filtered;
   }, [mediciones, selectedMetricId]);
+
+  // Auto-ajustar eje Y cuando cambia la métrica seleccionada
+  useEffect(() => {
+    if (medicionesFiltradasPorMetrica.length === 0) {
+      setYAxisDomain({ min: null, max: null });
+      return;
+    }
+
+    // Calcular min y max de los valores actuales
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    let hasNegativeValues = false;
+
+    medicionesFiltradasPorMetrica.forEach((m: any) => {
+      const val = m.medicion;
+      if (typeof val === 'number' && !isNaN(val)) {
+        minValue = Math.min(minValue, val);
+        maxValue = Math.max(maxValue, val);
+        if (val < 0) {
+          hasNegativeValues = true;
+        }
+      }
+    });
+
+    if (minValue === Infinity || maxValue === -Infinity) {
+      setYAxisDomain({ min: null, max: null });
+      return;
+    }
+
+    // Calcular rango y agregar padding (10% en cada lado)
+    const range = maxValue - minValue;
+    const padding = range * 0.1; // 10% de padding
+
+    let calculatedMin = minValue - padding;
+    
+    // Si no hay valores negativos y el mínimo calculado es negativo, usar 0
+    if (!hasNegativeValues && calculatedMin < 0) {
+      calculatedMin = 0;
+    }
+
+    setYAxisDomain({
+      min: calculatedMin,
+      max: maxValue + padding
+    });
+  }, [medicionesFiltradasPorMetrica]);
 
   // Preparar datos para el gráfico (usando mediciones ya filtradas por métrica)
   const chartData = useMemo(() => {
