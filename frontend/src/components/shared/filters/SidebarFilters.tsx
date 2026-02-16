@@ -20,6 +20,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
     handleEmpresaChange,
     handleFundoChange,
     handleUbicacionChange,
+    resetAllFilters,
   } = useCascadingFilters();
   const { showDetailedAnalysis } = useFilters();
 
@@ -90,6 +91,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       fundosOptions={fundosOptions}
       ubicacionesOptions={ubicacionesOptions}
       isDisabled={showDetailedAnalysis}
+      onClearFilters={resetAllFilters}
     />
   );
 };

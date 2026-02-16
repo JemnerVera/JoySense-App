@@ -19,6 +19,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
     handleEmpresaChange,
     handleFundoChange,
     handleUbicacionChange,
+    resetAllFilters,
   } = useCascadingFilters();
 
   // Preparar datos para los selectores
@@ -87,6 +88,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       empresasOptions={empresasOptions}
       fundosOptions={fundosOptions}
       ubicacionesOptions={ubicacionesOptions}
+      onClearFilters={resetAllFilters}
     />
   );
 };

@@ -146,17 +146,28 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       // En este caso, como siempre pasamos filtros, NO es necesario.
     }
 
-    // Aplicar filtro de búsqueda si hay término de búsqueda (incluye localización y referencia como en MEDICIÓN)
+    // Aplicar filtro de búsqueda si hay término de búsqueda (priorizar localización)
     const term = searchTerm.toLowerCase().trim()
     if (term) {
-      filtered = filtered.filter(node =>
-        node.nodo.toLowerCase().includes(term) ||
-        node.ubicacion.ubicacion.toLowerCase().includes(term) ||
-        (node.localizacion?.toLowerCase().includes(term)) ||
-        (node.referencia?.toLowerCase().includes(term)) ||
-        node.ubicacion.fundo.fundo.toLowerCase().includes(term) ||
-        node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term)
-      )
+      // Filtrar por localización primero, luego por otros campos
+      filtered = filtered.filter(node => {
+        const localizacionMatch = node.localizacion?.toLowerCase().includes(term);
+        const nodoMatch = node.nodo.toLowerCase().includes(term);
+        const ubicacionMatch = node.ubicacion.ubicacion.toLowerCase().includes(term);
+        const fundoMatch = node.ubicacion.fundo.fundo.toLowerCase().includes(term);
+        const empresaMatch = node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term);
+        const paisMatch = node.ubicacion.fundo.empresa.pais.pais.toLowerCase().includes(term);
+        const referenciaMatch = node.referencia?.toLowerCase().includes(term);
+
+        return localizacionMatch || nodoMatch || ubicacionMatch || fundoMatch || empresaMatch || paisMatch || referenciaMatch;
+      });
+
+      // Ordenar para que los resultados que coinciden en localización aparezcan primero
+      filtered.sort((a, b) => {
+        const aLocalizacionMatch = a.localizacion?.toLowerCase().includes(term) ? 1 : 0;
+        const bLocalizacionMatch = b.localizacion?.toLowerCase().includes(term) ? 1 : 0;
+        return bLocalizacionMatch - aLocalizacionMatch;
+      });
     }
 
     setFilteredNodes(filtered)
@@ -397,22 +408,42 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                   {searchTerm.trim() ? 'No se encontraron nodos' : 'No hay nodos disponibles'}
                 </div>
               ) : (
-                filteredNodes.map((node) => (
-                  <button
-                    key={node.nodoid}
-                    onClick={() => handleNodeSelect(node)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
-                    title={`${node.nodo} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
-                  >
-                    <div className="font-medium text-gray-800 dark:text-white">{node.nodo}</div>
-                    <div className="text-sm text-gray-600 dark:text-neutral-400">
-                      {node.ubicacion.ubicacion} - {node.ubicacion.fundo.fundo}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-neutral-500">
-                      {node.ubicacion.fundo.empresa.empresa} - {node.ubicacion.fundo.empresa.pais.pais}
-                    </div>
-                  </button>
-                ))
+                <>
+                  {/* Contador de resultados */}
+                  <div className="sticky top-0 px-4 py-2 bg-gray-200 dark:bg-neutral-600 border-b border-gray-300 dark:border-neutral-500 text-xs font-semibold text-gray-700 dark:text-neutral-300">
+                    {filteredNodes.length} resultado{filteredNodes.length !== 1 ? 's' : ''} encontrado{filteredNodes.length !== 1 ? 's' : ''}
+                  </div>
+                  {filteredNodes.map((node) => (
+                    <button
+                      key={node.nodoid}
+                      onClick={() => handleNodeSelect(node)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
+                      title={`${node.localizacion || node.nodo} | ${node.nodo} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
+                    >
+                      {/* Línea 1: Localización - Nodo */}
+                      <div className="font-medium text-gray-800 dark:text-white">
+                        {node.localizacion ? (
+                          <span>
+                            {node.localizacion}
+                            <span className="text-xs text-gray-500 dark:text-neutral-400 ml-2 font-normal">
+                              {node.nodo}
+                            </span>
+                          </span>
+                        ) : (
+                          <span>{node.nodo}</span>
+                        )}
+                      </div>
+                      {/* Línea 2: Ubicación - Fundo */}
+                      <div className="text-sm text-gray-600 dark:text-neutral-400">
+                        {node.ubicacion.ubicacion} - {node.ubicacion.fundo.fundo}
+                      </div>
+                      {/* Línea 3: Empresa - País */}
+                      <div className="text-xs text-gray-500 dark:text-neutral-500">
+                        {node.ubicacion.fundo.empresa.empresa} - {node.ubicacion.fundo.empresa.pais.pais}
+                      </div>
+                    </button>
+                  ))}
+                </>
               )}
             </div>
           )}
