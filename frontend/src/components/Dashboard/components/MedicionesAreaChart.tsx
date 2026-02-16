@@ -163,13 +163,15 @@ export function MedicionesAreaChart({
         data: xAxisData,
         gridIndex: 0,
         axisLabel: {
-          color: '#ffffff'
+          color: '#ffffff',
+          fontFamily: 'Inter, sans-serif'
         }
       },
       yAxis: {
         ...yAxisConfig,
         axisLabel: {
-          color: '#ffffff'
+          color: '#ffffff',
+          fontFamily: 'Inter, sans-serif'
         }
       },
       dataZoom: [
@@ -195,7 +197,9 @@ export function MedicionesAreaChart({
         data: allSeries,
         top: 0,
         textStyle: {
-          color: '#ffffff'
+          color: '#ffffff',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif'
         }
       },
       series
