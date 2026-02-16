@@ -712,71 +712,70 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Rango de fechas */}
-          <div className="flex flex-col items-center flex-shrink-0">
-            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
-              Intervalo de Fechas:
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col items-center">
-                <input
-                  type="date"
-                  value={pendingDateRange.start}
-                  onChange={(e) => {
-                    const newStart = e.target.value;
-                    const endDate = new Date(pendingDateRange.end);
-                    const startDate = new Date(newStart);
-                    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-                    
-                    if (daysDiff > 90) {
-                      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
-                      const adjustedStart = new Date(endDate);
-                      adjustedStart.setDate(adjustedStart.getDate() - 90);
-                      setPendingDateRange({ start: adjustedStart.toISOString().split('T')[0], end: pendingDateRange.end });
-                    } else {
-                      setPendingDateRange({ ...pendingDateRange, start: newStart });
-                    }
-                  }}
-                  max={pendingDateRange.end}
-                  min={(() => {
-                    const endDate = new Date(pendingDateRange.end);
-                    endDate.setDate(endDate.getDate() - 90);
-                    return endDate.toISOString().split('T')[0];
-                  })()}
-                  className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
-                  style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
-                />
-                <span className="text-sm text-gray-400 font-mono mt-1 uppercase">Inicio</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <input
-                  type="date"
-                  value={pendingDateRange.end}
-                  onChange={(e) => {
-                    const newEnd = e.target.value;
-                    const startDate = new Date(pendingDateRange.start);
-                    const endDate = new Date(newEnd);
-                    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-                    
-                    if (daysDiff > 90) {
-                      showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
-                      const adjustedEnd = new Date(startDate);
-                      adjustedEnd.setDate(adjustedEnd.getDate() + 90);
-                      setPendingDateRange({ start: pendingDateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
-                    } else {
-                      setPendingDateRange({ ...pendingDateRange, end: newEnd });
-                    }
-                  }}
-                  max={(() => {
-                    const startDate = new Date(pendingDateRange.start);
-                    startDate.setDate(startDate.getDate() + 90);
-                    return startDate.toISOString().split('T')[0];
-                  })()}
-                  min={pendingDateRange.start}
-                  className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
-                  style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
-                />
-                <span className="text-sm text-gray-400 font-mono mt-1 uppercase">Fin</span>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Fecha Inicio
+              </label>
+              <input
+                type="date"
+                value={pendingDateRange.start}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  const endDate = new Date(pendingDateRange.end);
+                  const startDate = new Date(newStart);
+                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                  
+                  if (daysDiff > 90) {
+                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                    const adjustedStart = new Date(endDate);
+                    adjustedStart.setDate(adjustedStart.getDate() - 90);
+                    setPendingDateRange({ start: adjustedStart.toISOString().split('T')[0], end: pendingDateRange.end });
+                  } else {
+                    setPendingDateRange({ ...pendingDateRange, start: newStart });
+                  }
+                }}
+                max={pendingDateRange.end}
+                min={(() => {
+                  const endDate = new Date(pendingDateRange.end);
+                  endDate.setDate(endDate.getDate() - 90);
+                  return endDate.toISOString().split('T')[0];
+                })()}
+                className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
+                style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
+              />
+            </div>
+            <div className="flex flex-col items-center flex-shrink-0">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Fecha Fin
+              </label>
+              <input
+                type="date"
+                value={pendingDateRange.end}
+                onChange={(e) => {
+                  const newEnd = e.target.value;
+                  const startDate = new Date(pendingDateRange.start);
+                  const endDate = new Date(newEnd);
+                  const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+                  
+                  if (daysDiff > 90) {
+                    showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
+                    const adjustedEnd = new Date(startDate);
+                    adjustedEnd.setDate(adjustedEnd.getDate() + 90);
+                    setPendingDateRange({ start: pendingDateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
+                  } else {
+                    setPendingDateRange({ ...pendingDateRange, end: newEnd });
+                  }
+                }}
+                max={(() => {
+                  const startDate = new Date(pendingDateRange.start);
+                  startDate.setDate(startDate.getDate() + 90);
+                  return startDate.toISOString().split('T')[0];
+                })()}
+                min={pendingDateRange.start}
+                className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
+                style={{ colorScheme: 'dark', WebkitAppearance: 'none' }}
+              />
             </div>
           </div>
 
