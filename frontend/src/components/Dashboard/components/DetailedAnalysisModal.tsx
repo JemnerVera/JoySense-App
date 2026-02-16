@@ -234,13 +234,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
             <div className={`flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2 space-y-1' : 'p-4 space-y-3'}`}>
             
               {/* Barra de controles - Layout horizontal compacto como en v2 */}
-              <div className={`flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-3'} border-b border-gray-300 dark:border-neutral-700 overflow-x-auto control-scrollbar`}
-                style={{
-                  scrollBehavior: 'smooth'
-                }}
-              >
-                <div className="flex items-center justify-between gap-3 pb-3 min-w-max">
-                <div className="flex flex-nowrap items-center gap-4 flex-1 min-w-0">
+              <div className={`bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 flex-shrink-0 ${isFullscreenView ? 'mb-2' : 'mb-3'}`}>
+                <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full px-2">
                   
                   {/* Fecha Inicio */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -618,7 +613,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     </div>
                   </div>
                 )}
-                </div>
               </div>
 
               {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
