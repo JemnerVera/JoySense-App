@@ -187,7 +187,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     key={metric.id}
                     onClick={() => onMetricChange(metric.dataKey)}
                     disabled={loadingDetailedData}
-                    className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-sm text-left ${
+                    className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-base text-left ${
                       selectedDetailedMetric === metric.dataKey
                         ? 'bg-blue-500 text-white shadow-md'
                         : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
@@ -239,13 +239,13 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   
                   {/* Fecha Inicio */}
                   <div className="flex flex-col items-center flex-shrink-0">
-                    <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Inicio:</label>
+                    <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Inicio:</label>
                     <input
                       type="date"
                       value={tempStartDate || detailedStartDate}
                       onChange={(e) => setTempStartDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-10 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         colorScheme: 'dark',
                         WebkitAppearance: 'none'
@@ -255,13 +255,13 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Fecha Fin */}
                   <div className="flex flex-col items-center flex-shrink-0">
-                    <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Fin:</label>
+                    <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">Fecha Fin:</label>
                     <input
                       type="date"
                       value={tempEndDate || detailedEndDate}
                       onChange={(e) => setTempEndDate(e.target.value)}
                       disabled={loadingDetailedData}
-                      className="h-8 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-10 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         colorScheme: 'dark',
                         WebkitAppearance: 'none'
@@ -272,14 +272,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {/* Botón Aplicar */}
                   {(tempStartDate || tempEndDate) && (
                     <div className="flex flex-col flex-shrink-0">
-                      <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
+                      <label className="text-base font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
                       <button
                         onClick={() => {
                           onDateRangeChange(tempStartDate || detailedStartDate, tempEndDate || detailedEndDate)
                           setTempStartDate('')
                           setTempEndDate('')
                         }}
-                        className="h-8 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono transition-colors whitespace-nowrap"
+                        className="h-10 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-base font-mono transition-colors whitespace-nowrap"
                       >
                         Aplicar
                       </button>
@@ -291,8 +291,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Ajuste Eje Y */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Ajuste Eje Y:</label>
-                    <div className="flex items-center gap-2 h-8">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Ajuste Eje Y:</label>
+                    <div className="flex items-center gap-2 h-10">
                       <input
                         type="number"
                         step="0.1"
@@ -311,7 +311,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }}
                         placeholder="Min"
-                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                        className="h-10 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
                       />
                       <span className="text-gray-600 dark:text-neutral-400">-</span>
                       <input
@@ -332,11 +332,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }}
                         placeholder="Max"
-                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                        className="h-10 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
                       />
                       <button
                         onClick={() => onYAxisDomainChange({ min: null, max: null })}
-                        className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                        className="h-10 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-base font-mono"
                       >
                         Reset
                       </button>
@@ -348,12 +348,12 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Analizar Fluctuación */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Analizar Fluctuación:</label>
-                    <div className="h-8 flex items-center">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Analizar Fluctuación:</label>
+                    <div className="h-10 flex items-center">
                       <button
                         onClick={onAnalyzeFluctuation}
                         disabled={loadingDetailedData}
-                        className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                        className="h-10 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-base transition-colors flex items-center gap-2 whitespace-nowrap"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -368,8 +368,8 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Comparar con Localización */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Comparar con Localización:</label>
-                    <div className="flex items-center gap-2 h-8">
+                    <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Comparar con Localización:</label>
+                    <div className="flex items-center gap-2 h-10">
                       <select
                         value={comparisonNode?.nodoid || ''}
                         onChange={(e) => {
@@ -385,7 +385,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }}
                         disabled={loadingComparisonData}
-                        className="h-8 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white font-mono text-xs min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+                        className="h-10 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white font-mono text-base min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
                       >
                         <option value="" disabled hidden>Ninguno</option>
                         {availableNodes
@@ -403,7 +403,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           onClick={() => {
                             onComparisonNodeChange(null)
                           }}
-                          className="h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center"
+                          className="h-10 w-10 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-base font-mono flex items-center justify-center"
                           title="Cancelar comparación"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -485,7 +485,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                             <div className="flex flex-row gap-3 items-start flex-shrink-0">
                               {/* Primera columna - primeras 2 líneas */}
                               <div className="flex flex-col flex-shrink-0">
-                                <label className="text-xs font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">{title}</label>
+                                <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">{title}</label>
                                 <div className="flex flex-col gap-1">
                                   {lines.slice(0, 2).map((lineKey, sliceIdx) => {
                                     const realIdx = sliceIdx  // realIdx para primera columna es 0, 1
@@ -524,7 +524,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                               {/* Segunda columna - líneas adicionales (si hay) */}
                               {lines.length > 2 && (
                                 <div className="flex flex-col flex-shrink-0">
-                                  <label className="text-xs font-bold text-transparent font-mono mb-2 whitespace-nowrap uppercase">.</label>
+                                  <label className="text-base font-bold text-transparent font-mono mb-2 whitespace-nowrap uppercase">.</label>
                                   <div className="flex flex-col gap-1">
                                     {lines.slice(2).map((lineKey, sliceIdx) => {
                                       const realIdx = sliceIdx + 2  // realIdx para segunda columna es 2, 3, 4...
@@ -586,22 +586,22 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   )}
                   {/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
                   {isFullscreenView && selectedNode?.ubicacion && (
-                    <div className="flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded h-8 overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue flex-nowrap flex-shrink-0 ml-auto">
+                    <div className="flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded h-10 overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue flex-nowrap flex-shrink-0 ml-auto">
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">{selectedNode?.localizacion || '--'}</span>
+                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                        <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">{selectedNode?.localizacion || '--'}</span>
                       </div>
                       <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">
+                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+<span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
                           {selectedNode?.ubicacion?.ubicacion || '--'}
                         </span>
                       </div>
                       <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                        <span className="text-xs text-gray-800 dark:text-white font-mono whitespace-nowrap">
+                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+<span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
                           {selectedNode?.ubicacion?.fundo?.fundo || '--'}
                         </span>
                       </div>
