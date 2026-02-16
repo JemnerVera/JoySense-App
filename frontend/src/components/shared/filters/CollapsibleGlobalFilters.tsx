@@ -18,6 +18,7 @@ interface CollapsibleGlobalFiltersProps {
   fundosOptions: Array<{ id: string | number; name: string }>;
   ubicacionesOptions: Array<{ id: string | number; name: string }>;
   isDisabled?: boolean;
+  onClearFilters?: () => void;
 }
 
 const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
@@ -33,7 +34,8 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
   empresasOptions,
   fundosOptions,
   ubicacionesOptions,
-  isDisabled = false
+  isDisabled = false,
+  onClearFilters
 }) => {
   const [openLevel, setOpenLevel] = useState<string | null>(null);
 
@@ -134,9 +136,32 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
     setOpenLevel(null);
   };
 
+  // Verificar si hay filtros activos
+  const hasActiveFilters = !!(paisSeleccionado || empresaSeleccionada || fundoSeleccionado || ubicacionSeleccionada);
+
+  const handleClearFilters = () => {
+    if (onClearFilters) {
+      onClearFilters();
+    }
+  };
+
   return (
-    <div className="space-y-1">
-      {/* PAÍS */}
+    <div className="space-y-1 relative">
+      {/* Botón para limpiar filtros - esquina superior derecha */}
+      {hasActiveFilters && (
+        <button
+          onClick={handleClearFilters}
+          disabled={isDisabled}
+          className="absolute top-0 right-0 p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
+          title="Limpiar todos los filtros"
+          aria-label="Limpiar filtros"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+
       <div className="space-y-1 relative group">
         <button
           onClick={handlePaisClick}
