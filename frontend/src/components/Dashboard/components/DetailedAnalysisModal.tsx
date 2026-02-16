@@ -434,6 +434,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                               if (macetaMatch) {
                                 return macetaMatch[0]
                               }
+                              const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
+                              if (sueloMatch) {
+                                return sueloMatch[0]
+                              }
                               return cleaned
                             }
                             
@@ -458,6 +462,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
                           if (macetaMatch) {
                             return macetaMatch[0]
+                          }
+                          const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
+                          if (sueloMatch) {
+                            return sueloMatch[0]
                           }
                           return cleaned
                         }
