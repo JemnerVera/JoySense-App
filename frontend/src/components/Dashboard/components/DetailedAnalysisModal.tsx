@@ -291,7 +291,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Ajuste Eje Y */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Ajuste Eje Y:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Ajuste Eje Y:</label>
                     <div className="flex items-center gap-2 h-8">
                       <input
                         type="number"
@@ -348,7 +348,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Analizar Fluctuación */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Analizar Fluctuación:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Analizar Fluctuación:</label>
                     <div className="h-8 flex items-center">
                       <button
                         onClick={onAnalyzeFluctuation}
@@ -368,7 +368,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
                   {/* Comparar con Localización */}
                   <div className="flex flex-col flex-shrink-0">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Comparar con Localización:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">Comparar con Localización:</label>
                     <div className="flex items-center gap-2 h-8">
                       <select
                         value={comparisonNode?.nodoid || ''}

@@ -1180,7 +1180,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 setUbicacionSearchTerm('');
                 setNodoSearchTerm('');
               }}
-              className="absolute top-2 right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center transition-colors"
+              className="absolute top-2 right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-base font-mono flex items-center justify-center transition-colors"
               title="Cancelar selección"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1192,13 +1192,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
             {/* Selector de Ubicación */}
             <div className="flex flex-col items-center flex-shrink-0" ref={ubicacionDropdownRef}>
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Ubicación:
               </label>
               <div className="relative">
                 <button
                   onClick={() => setIsUbicacionDropdownOpen(!isUbicacionDropdownOpen)}
-                  className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
+                  className="h-10 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
                 >
                   <span className={selectedUbicacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                     {selectedUbicacion?.ubicacion || 'Selecciona Ubicación'}
@@ -1223,7 +1223,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         value={ubicacionSearchTerm}
                         onChange={(e) => setUbicacionSearchTerm(e.target.value)}
                         placeholder="Buscar..."
-                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-base focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                         autoFocus
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -1239,7 +1239,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                               setIsUbicacionDropdownOpen(false);
                               setUbicacionSearchTerm('');
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                            className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                               selectedUbicacion?.ubicacionid === ubicacion.ubicacionid
                                 ? 'bg-blue-500 text-white'
                                 : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
@@ -1249,7 +1249,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           </button>
                         ))
                       ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+                        <div className="px-3 py-2 text-base text-gray-500 dark:text-neutral-400 font-mono">
                           No se encontraron resultados
                         </div>
                       )}
@@ -1264,13 +1264,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
             {/* Selector de Localización */}
             <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Localización:
               </label>
               <div className="relative">
                 <button
                   onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
-                  className="h-8 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs flex items-center justify-between"
+                  className="h-10 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
                 >
                   <span className={selectedNode?.localizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
                     {selectedNode?.localizacion || 'Selecciona Localización'}
@@ -1295,7 +1295,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         value={nodoSearchTerm}
                         onChange={(e) => setNodoSearchTerm(e.target.value)}
                         placeholder="Buscar..."
-                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                        className="w-full px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white text-base focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                         autoFocus
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -1322,7 +1322,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                 setIsNodoDropdownOpen(false);
                                 setNodoSearchTerm('');
                               }}
-                              className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono tracking-wider ${
+                              className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                                 selectedNode?.localizacion === localizacion
                                   ? 'bg-blue-500 text-white'
                                   : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
@@ -1333,7 +1333,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           );
                         })
                       ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400 font-mono">
+                        <div className="px-3 py-2 text-base text-gray-500 dark:text-neutral-400 font-mono">
                           {selectedUbicacion ? 'No se encontraron localizaciones en esta ubicación' : 'No se encontraron localizaciones'}
                         </div>
                       )}
@@ -1348,12 +1348,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
             {/* Botón Nodo en Mapa */}
             <div className="flex flex-col items-center flex-shrink-0">
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Mapa:
               </label>
               <button
                 onClick={() => setShowMapModal(true)}
-                className="h-8 px-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                className="h-10 px-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-mono text-base transition-colors whitespace-nowrap"
                 title="Ver nodos en el mapa"
               >
                 Nodo en Mapa
@@ -1365,7 +1365,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
             {/* Intervalo de Fechas - Siempre visible pero deshabilitado hasta seleccionar nodo */}
             <div className="flex flex-col items-center flex-shrink-0">
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Intervalo de Fechas:
               </label>
               <div className="flex items-center gap-2">
@@ -1396,13 +1396,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       return endDate.toISOString().split('T')[0];
                     })()}
                     disabled={!selectedNode}
-                    className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       colorScheme: 'dark',
                       WebkitAppearance: 'none'
                     }}
                   />
-                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Inicio</span>
+                  <span className="text-base text-gray-400 font-mono mt-0.5 uppercase">Inicio</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <input
@@ -1431,13 +1431,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       return startDate.toISOString().split('T')[0];
                     })()}
                     disabled={!selectedNode}
-                    className="h-8 w-36 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       colorScheme: 'dark',
                       WebkitAppearance: 'none'
                     }}
                   />
-                  <span className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">Fin</span>
+                  <span className="text-base text-gray-400 font-mono mt-0.5 uppercase">Fin</span>
                 </div>
               </div>
             </div>
@@ -1445,7 +1445,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             {/* Botón Aplicar - aparece cuando hay cambios en las fechas */}
             {selectedNode && (pendingDateRange.start !== dateRange.start || pendingDateRange.end !== dateRange.end) && (
               <div className="flex flex-col items-center flex-shrink-0">
-                <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+                <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
                 <button
                   onClick={() => {
                     // Validar fechas antes de aplicar
@@ -1473,7 +1473,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                     });
                   }}
                   disabled={loading}
-                  className="h-8 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                  className="h-10 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-base transition-colors whitespace-nowrap"
                 >
                   Aplicar
                 </button>
@@ -1485,23 +1485,23 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
             {/* Información del Nodo - Siempre visible pero sin info hasta seleccionar nodo */}
             <div className="flex flex-col items-center flex-shrink-0">
-              <label className="text-xs font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
                 Información del Nodo:
               </label>
-              <div className="h-8 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
+              <div className="h-10 flex items-center gap-3 px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                  <span className="text-xs text-gray-800 dark:text-white font-mono">{localizacionesNodo.length > 0 ? localizacionesNodo.join(', ') : '--'}</span>
+                  <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                  <span className="text-base text-gray-800 dark:text-white font-mono">{localizacionesNodo.length > 0 ? localizacionesNodo.join(', ') : '--'}</span>
                 </div>
                 <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-                  <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.ubicacion || '--'}</span>
+                  <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                  <span className="text-base text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.ubicacion || '--'}</span>
                 </div>
                 <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                  <span className="text-xs text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.fundo?.fundo || '--'}</span>
+                  <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                  <span className="text-base text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.fundo?.fundo || '--'}</span>
                 </div>
               </div>
             </div>
@@ -1510,7 +1510,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-10 w-8 border-b-2 border-blue-500"></div>
           </div>
         )}
 
@@ -1532,7 +1532,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                   className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 border-l-4"
                   style={{ borderLeftColor: kpi.color }}
                 >
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 font-mono">{kpi.label}</p>
+                <p className="text-base text-gray-600 dark:text-gray-400 mb-1 font-mono">{kpi.label}</p>
                 <p className="text-2xl font-bold font-mono" style={{ color: kpi.color }}>
                   {kpi.value} {kpi.unit || ''}
                 </p>
@@ -1553,7 +1553,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         <button
                           key={metric.id}
                           onClick={() => setSelectedMetricId(metric.id)}
-                          className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                          className={`px-3 py-1 rounded text-base font-mono font-bold transition-all ${
                             selectedMetricId === metric.id
                               ? 'bg-blue-500 text-white shadow-md transform scale-105'
                               : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -1662,11 +1662,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         return (
                           <div key={metricId} className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-neutral-750 transition-colors">
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-gray-900 dark:text-white text-sm font-mono uppercase tracking-tight">
+                              <h3 className="font-bold text-gray-900 dark:text-white text-base font-mono uppercase tracking-tight">
                                 {metricName} {metricUnit && `(${metricUnit})`}
                               </h3>
                               <div className="text-right">
-                                <span className="text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{stats.ultimaMedicion.toFixed(2)} {metricUnit}</span>
+                                <span className="text-base font-mono font-bold text-blue-600 dark:text-blue-400">{stats.ultimaMedicion.toFixed(2)} {metricUnit}</span>
                                 <p className="text-[10px] text-gray-400 font-mono">{new Date(stats.ultimaFecha).toLocaleDateString()}</p>
                               </div>
                             </div>
@@ -1703,7 +1703,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                 </ResponsiveContainer>
                               </div>
 
-                              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">
+                              <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-base font-mono">
                                 <div className="flex justify-between border-b border-gray-200 dark:border-neutral-600 pb-1">
                                   <span className="text-gray-600 dark:text-gray-400 uppercase font-semibold">Prom:</span>
                                   <span className="font-bold text-gray-900 dark:text-white">{stats.promedio.toFixed(2)}</span>
@@ -1788,7 +1788,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => setSelectedBoxplotMetricId(null)}
-                          className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                          className={`px-3 py-1 rounded text-base font-mono font-bold transition-all ${
                             selectedBoxplotMetricId === null
                               ? 'bg-blue-500 text-white shadow-md transform scale-105'
                               : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -1800,7 +1800,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           <button
                             key={metric.id}
                             onClick={() => setSelectedBoxplotMetricId(metric.id)}
-                            className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                            className={`px-3 py-1 rounded text-base font-mono font-bold transition-all ${
                               selectedBoxplotMetricId === metric.id
                                 ? 'bg-blue-500 text-white shadow-md transform scale-105'
                                 : 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-gray-300 dark:hover:bg-neutral-600'
@@ -1880,11 +1880,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       className="border border-gray-200 dark:border-neutral-700 rounded-lg p-4"
                     >
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-2 font-mono">{umbral.metrica}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 font-mono">Umbral: {umbral.umbral}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 font-mono">
+                      <p className="text-base text-gray-600 dark:text-gray-400 mb-1 font-mono">Umbral: {umbral.umbral}</p>
+                      <p className="text-base text-gray-600 dark:text-gray-400 mb-1 font-mono">
                         Rango: {umbral.minimo} - {umbral.maximo}
                       </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                      <p className="text-base text-gray-600 dark:text-gray-400 font-mono">
                         Criticidad: {umbral.criticidad}
                       </p>
                     </div>
