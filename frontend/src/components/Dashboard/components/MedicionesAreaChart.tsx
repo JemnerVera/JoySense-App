@@ -162,6 +162,13 @@ export function MedicionesAreaChart({
         boundaryGap: false,
         data: xAxisData,
         gridIndex: 0,
+        name: 'Tiempo',
+        nameLocation: 'end' as const,
+        nameTextStyle: {
+          color: '#ffffff',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 14
+        },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif'
@@ -169,6 +176,14 @@ export function MedicionesAreaChart({
       },
       yAxis: {
         ...yAxisConfig,
+        name: 'Valor',
+        nameLocation: 'end' as const,
+        nameGap: 30,
+        nameTextStyle: {
+          color: '#ffffff',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 14
+        },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif'
