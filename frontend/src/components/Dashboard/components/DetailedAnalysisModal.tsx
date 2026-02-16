@@ -584,26 +584,31 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       })()}
                     </div>
                   )}
-                  {/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
+{/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
                   {isFullscreenView && selectedNode?.ubicacion && (
-                    <div className="flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded h-10 overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue flex-nowrap flex-shrink-0 ml-auto">
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                        <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">{selectedNode?.localizacion || '--'}</span>
-                      </div>
-                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-<span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
-                          {selectedNode?.ubicacion?.ubicacion || '--'}
-                        </span>
-                      </div>
-                      <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-<span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
-                          {selectedNode?.ubicacion?.fundo?.fundo || '--'}
-                        </span>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                        Información del Nodo:
+                      </label>
+                      <div className="flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded h-10 overflow-x-auto overflow-y-hidden dashboard-scrollbar-blue flex-nowrap">
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                          <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">{selectedNode?.localizacion || '--'}</span>
+                        </div>
+                        <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                          <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
+                            {selectedNode?.ubicacion?.ubicacion || '--'}
+                          </span>
+                        </div>
+                        <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                          <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
+                            {selectedNode?.ubicacion?.fundo?.fundo || '--'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
