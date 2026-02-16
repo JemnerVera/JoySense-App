@@ -709,7 +709,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Rango de fechas */}
           <div className="flex items-center gap-3">
@@ -818,7 +818,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           )}
 
           {/* Separador visual */}
-          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Ajuste Eje Y */}
           <div className="flex flex-col items-center flex-shrink-0">
@@ -877,7 +877,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Métricas como botones */}
           <div className="flex flex-col items-center flex-shrink-0">
@@ -908,7 +908,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
 
           {/* Separador visual */}
-          <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
           {/* Información del Nodo */}
           <div className="flex flex-col items-center flex-shrink-0">
