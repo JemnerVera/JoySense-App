@@ -510,7 +510,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
         if (granularityType === 'hours') {
-          const hours = Math.floor(date.getHours() / 3) * 3;
+          const hours = date.getHours();
           return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
         }
         // días
