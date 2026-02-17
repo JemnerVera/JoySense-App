@@ -641,7 +641,7 @@ export const useInsertForm = ({
         }
 
         setIsSubmitting(false)
-        setMessage?.({ type: 'success', text: 'Carpeta creada correctamente con ubicaciones y usuarios asignados' })
+        setMessage?.({ type: 'success', text: 'Carpeta compartida creada correctamente con ubicaciones y usuarios asignados' })
         const cleanData = initializeFormData()
         setFormDataState(cleanData)
         setFormErrors({})
