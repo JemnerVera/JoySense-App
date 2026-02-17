@@ -74,7 +74,7 @@ CARPETA PERSONAL*
       {/* 2. Localizaciones del grupo */}
       <div>
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
-          LOCALIZACIÓN DE GRUPO*
+          LOCALIZACIÓN*
         </label>
         <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
           <DualListbox
