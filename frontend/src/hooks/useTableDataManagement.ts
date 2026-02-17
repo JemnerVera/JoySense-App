@@ -75,9 +75,9 @@ export const useTableDataManagement = () => {
 
       // Cargar tablas problemáticas (con error recursivo) por separado para que no afecten a las demás
       const [ubicacionesResponse, localizacionesResponse, nodosResponse] = await Promise.allSettled([
-        safeLoad('ubicacion', 500),
-        safeLoad('localizacion', 500),
-        safeLoad('nodo', 500)
+        safeLoad('ubicacion', 10000),
+        safeLoad('localizacion', 10000),
+        safeLoad('nodo', 10000)
       ]);
 
       // Cargar el resto de las tablas (incluyendo tipos que es crítico)
