@@ -80,6 +80,11 @@ export function MedicionesAreaChart({
 }: MedicionesAreaChartProps) {
   const option = useMemo<EChartsOption>(() => {
     const xAxisData = chartData.map(d => d.fecha);
+    
+    // Log de todas las fechas únicas
+    const uniqueDates = new Set(xAxisData.map(x => x?.split(' ')[0] || x));
+    console.log(`[MedicionesAreaChart] Total puntos: ${xAxisData.length}, Fechas únicas: ${uniqueDates.size}, Fechas: ${Array.from(uniqueDates).join(', ')}`);
+    console.log('[MedicionesAreaChart] xAxisData completo:', xAxisData);
 
     const series = allSeries.map((name, idx) => {
       const color = colors[idx % colors.length];
@@ -182,32 +187,72 @@ export function MedicionesAreaChart({
             type: 'dashed' as const
           },
           interval: (index: number) => {
-            const currentParts = xAxisData[index]?.split(' ');
-            const nextParts = xAxisData[index + 1]?.split(' ');
-            const currentDate = currentParts?.[0];
-            const nextDate = nextParts?.[0];
-            return currentDate !== nextDate;
+            const current = xAxisData[index];
+            const next = xAxisData[index + 1];
+            
+            // Si el formato tiene espacio, es "HH:MM DD/MM", extraer fecha (parte [0])
+            // Si no, es solo "DD/MM"
+            const currentDate = current?.split(' ')[0] || current;
+            const nextDate = next?.split(' ')[0] || next;
+            
+            const shouldShowLine = currentDate !== nextDate;
+            
+            // Logs para debugging - mostrar TODOS los índices
+            if (index <= xAxisData.length - 2) {
+              console.log(`[splitLine index=${index}/${xAxisData.length}] current="${current}" → date="${currentDate}" | next="${next}" → date="${nextDate}" | showLine=${shouldShowLine}`);
+            }
+            
+            // Mostrar línea si cambia de día
+            return shouldShowLine;
           }
         },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
+          interval: 0,  // Mostrar todas las etiquetas (el formatter se encargará de formatearlas)
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
-            if (parts.length >= 2) {
-              const date = parts[0];
-              const time = parts[1];
-              if (index === 0) {
-                return `${time}\n${date}`;
+            const current = xAxisData[index];
+            const prev = xAxisData[index - 1];
+            
+            if (!parts || parts.length === 0) return '';
+            
+            const currentDate = parts[0];
+            const currentTime = parts[1];
+            
+            // Extraer fecha anterior
+            const prevDate = prev?.split(' ')[0];
+            
+            // SIEMPRE mostrar el primer elemento
+            if (index === 0) {
+              if (currentTime) {
+                return `${currentTime}\n${currentDate}`;
               }
-              const prevParts = xAxisData[index - 1]?.split(' ');
-              const prevDate = prevParts?.[0];
-              if (prevDate !== date) {
-                return `${time}\n${date}`;
-              }
-              return time;
+              return currentDate;
             }
-            return value;
+            
+            // SIEMPRE mostrar si cambia de día
+            if (prevDate !== currentDate) {
+              if (currentTime) {
+                return `${currentTime}\n${currentDate}`;
+              }
+              return currentDate;
+            }
+            
+            // Para el mismo día, mostrar solo algunas horas (cada 6 horas)
+            if (currentTime) {
+              const hourMatch = currentTime.match(/^(\d+):/);
+              if (hourMatch) {
+                const hour = parseInt(hourMatch[1], 10);
+                // Mostrar a las 0, 6, 12, 18 horas
+                if (hour % 6 === 0) {
+                  return currentTime;
+                }
+              }
+            }
+            
+            // No mostrar nada para los demás puntos
+            return '';
           }
         }
       },
