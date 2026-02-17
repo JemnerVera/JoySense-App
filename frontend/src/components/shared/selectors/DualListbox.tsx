@@ -56,6 +56,8 @@ const DualListbox: React.FC<DualListboxProps> = ({
 }) => {
   const [filterAvailable, setFilterAvailable] = useState('');
   const [filterSelected, setFilterSelected] = useState('');
+  const [checkedAvailable, setCheckedAvailable] = useState<Set<string>>(new Set());
+  const [checkedSelected, setCheckedSelected] = useState<Set<string>>(new Set());
 
   const valueNumbers = useMemo(() => value.map(Number), [value]);
 
@@ -96,15 +98,52 @@ const DualListbox: React.FC<DualListboxProps> = ({
   const moveRight = (opts: DualListboxOption[]) => {
     const ids = opts.flatMap(getOptionIds);
     addIds(ids);
+    setCheckedAvailable(new Set());
   };
 
   const moveLeft = (opts: DualListboxOption[]) => {
     const ids = opts.flatMap(getOptionIds);
     removeIds(ids);
+    setCheckedSelected(new Set());
   };
 
-  const moveAllRight = () => moveRight(availableOptions);
-  const moveAllLeft = () => moveLeft(selectedOptions);
+  const moveAllRight = () => {
+    moveRight(availableOptions);
+  };
+  
+  const moveAllLeft = () => {
+    moveLeft(selectedOptions);
+  };
+  
+  const moveSelectedRight = () => {
+    const selected = availableOptions.filter(opt => checkedAvailable.has(String(opt.value)));
+    moveRight(selected);
+  };
+  
+  const moveSelectedLeft = () => {
+    const selected = selectedOptions.filter(opt => checkedSelected.has(String(opt.value)));
+    moveLeft(selected);
+  };
+
+  const toggleAvailableCheck = (value: string) => {
+    const updated = new Set(checkedAvailable);
+    if (updated.has(value)) {
+      updated.delete(value);
+    } else {
+      updated.add(value);
+    }
+    setCheckedAvailable(updated);
+  };
+
+  const toggleSelectedCheck = (value: string) => {
+    const updated = new Set(checkedSelected);
+    if (updated.has(value)) {
+      updated.delete(value);
+    } else {
+      updated.add(value);
+    }
+    setCheckedSelected(updated);
+  };
 
   const themeClasses = {
     green: {
@@ -132,51 +171,65 @@ const DualListbox: React.FC<DualListboxProps> = ({
     isAvailable: boolean,
     filter: string,
     onFilterChange: (v: string) => void
-  ) => (
-    <div className="flex flex-col gap-2 flex-1 min-w-0">
-      <div className={`font-bold font-mono tracking-wider ${theme.accent}`}>
-        {isAvailable ? availableLabel : selectedLabel}
-      </div>
-      {canFilter && (
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={filter}
-          onChange={(e) => onFilterChange(e.target.value)}
-          className="w-full px-2 py-1.5 bg-neutral-900 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-          disabled={disabled}
-        />
-      )}
-      <div className={listBase}>
-        {items.length > 0 ? (
-          items.map((opt) => (
-            <div
-              key={String(opt.value)}
-              onClick={() => {
-                if (disabled) return;
-                if (isAvailable) {
-                  moveRight([opt]);
-                } else {
-                  moveLeft([opt]);
-                }
-              }}
-              className={`${itemBase} ${
-                isAvailable
-                  ? 'hover:bg-neutral-700'
-                  : `hover:bg-neutral-700 ${theme.selected}`
-              }`}
-            >
-              <span className="truncate">{opt.label.toUpperCase()}</span>
-            </div>
-          ))
-        ) : (
-          <div className="px-3 py-4 text-neutral-500 text-sm font-mono text-center">
-            {isAvailable ? 'NINGUNA DISPONIBLE' : 'NINGUNA SELECCIONADA'}
-          </div>
+  ) => {
+    const totalCount = isAvailable ? availableOptions.length : selectedOptions.length;
+    const filteredCount = items.length;
+    const showsAllItems = filteredCount === totalCount;
+    const checkedSet = isAvailable ? checkedAvailable : checkedSelected;
+    const toggleCheck = isAvailable ? toggleAvailableCheck : toggleSelectedCheck;
+    
+    return (
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className={`font-bold font-mono tracking-wider ${theme.accent}`}>
+          {isAvailable ? availableLabel : selectedLabel}
+        </div>
+        {canFilter && (
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={filter}
+            onChange={(e) => onFilterChange(e.target.value)}
+            className="w-full px-2 py-1.5 bg-neutral-900 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            disabled={disabled}
+          />
         )}
+        <div className={listBase}>
+          {items.length > 0 ? (
+            items.map((opt) => (
+              <div
+                key={String(opt.value)}
+                className={`${itemBase} ${
+                  isAvailable
+                    ? 'hover:bg-neutral-700'
+                    : `hover:bg-neutral-700 ${theme.selected}`
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checkedSet.has(String(opt.value))}
+                  onChange={() => toggleCheck(String(opt.value))}
+                  disabled={disabled}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span className="truncate">{opt.label.toUpperCase()}</span>
+              </div>
+            ))
+          ) : (
+            <div className="px-3 py-4 text-neutral-500 text-sm font-mono text-center">
+              {isAvailable ? 'NINGUNA DISPONIBLE' : 'NINGUNA SELECCIONADA'}
+            </div>
+          )}
+        </div>
+        <div className="text-xs font-mono text-neutral-400 text-center px-2 py-1">
+          {showsAllItems ? (
+            <span>Total: <span className={theme.accent}>{totalCount}</span></span>
+          ) : (
+            <span>Mostrando: <span className={theme.accent}>{filteredCount}</span> de <span className={theme.accent}>{totalCount}</span></span>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const btn =
     'p-2 rounded border border-neutral-600 bg-neutral-700 hover:bg-neutral-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
@@ -195,8 +248,8 @@ const DualListbox: React.FC<DualListboxProps> = ({
       <div className="flex flex-col justify-center gap-2">
         <button
           type="button"
-          onClick={() => moveRight(filteredAvailable)}
-          disabled={disabled || filteredAvailable.length === 0}
+          onClick={moveSelectedRight}
+          disabled={disabled || checkedAvailable.size === 0}
           className={btn}
           title="Agregar seleccionados"
         >
@@ -237,8 +290,8 @@ const DualListbox: React.FC<DualListboxProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => moveLeft(filteredSelected)}
-          disabled={disabled || filteredSelected.length === 0}
+          onClick={moveSelectedLeft}
+          disabled={disabled || checkedSelected.size === 0}
           className={btn}
           title="Quitar seleccionados"
         >
