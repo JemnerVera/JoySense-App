@@ -142,7 +142,24 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
   const hasLevel5Menus =
     level4Menu.subMenus && level4Menu.subMenus.length > 0;
   const level4MenuKey = level4ActiveTab;
-  const isLevel5Open = openSubMenusLevel3.has(level4MenuKey);
+  
+  // 🔍 FIX: isLevel5Open debe ser true si algún nivel 5 hijo está abierto en openSubMenusLevel3
+  // No solo si el nivel 4 está abierto
+  const isLevel5Open = hasLevel5Menus &&
+    level4Menu.subMenus!.some((level5Menu) => {
+      const level5Key = `${level4ActiveTab}-${level5Menu.id}`;
+      return openSubMenusLevel3.has(level5Key);
+    });
+
+  // 🔍 FIX: Verificar si algún nivel 5 dentro de este nivel 4 está abierto EN EL ESTADO
+  // No solo en activeTab, sino también si alguno está en openSubMenusLevel3
+  const hasActiveLevel5Child = hasLevel5Menus && 
+    level4Menu.subMenus!.some((level5Menu) => {
+      const level5Key = `${level4ActiveTab}-${level5Menu.id}`;
+      // Verificar tanto en activeTab como en openSubMenusLevel3
+      return activeTab.startsWith(level5Key) || openSubMenusLevel3.has(level5Key);
+    });
+
 
   const handleClick = () => {
     if (hasLevel5Menus) {
@@ -219,7 +236,7 @@ export const MenuItemLevel4: React.FC<MenuItemLevel4Props> = ({
           </>
         )}
       </button>
-      {hasLevel5Menus && isExpanded && (
+      {hasLevel5Menus && (isExpanded || isLevel4Active || hasActiveLevel5Child) && (
         <div
           ref={(el) => registerRef(level4MenuKey, el)}
           className="sub-menu-list"

@@ -257,7 +257,7 @@ const MenuItemLevel2Component: React.FC<MenuItemLevel2Props> = ({
             {subMenus.map((level3Menu) => {
               const hasLevel4Menus =
                 level3Menu.subMenus && level3Menu.subMenus.length > 0;
-              if (hasLevel4Menus && !isExpanded) return null;
+              if (hasLevel4Menus && !isExpanded && !isSubActive) return null;
               return (
                 <MenuItemLevel3
                   key={level3Menu.id}
