@@ -138,6 +138,161 @@ router.get('/:table/columns', async (req, res) => {
 });
 
 // ============================================================================
+// RUTA PARA ACTUALIZAR PK COMPUESTAS
+// IMPORTANTE: Esta ruta debe definirse ANTES de PUT /:table/:id
+// para evitar que "composite" sea interpretado como un ID
+// ============================================================================
+
+router.put('/:table/composite', async (req, res) => {
+  const { table } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
+  }
+  
+  try {
+    // Los parámetros de la PK vienen en el query string
+    const pkParams = { ...req.query };
+    delete pkParams.page;
+    delete pkParams.pageSize;
+    
+    if (Object.keys(pkParams).length === 0) {
+      return res.status(400).json({ 
+        error: 'Se requieren parámetros de PK en el query string' 
+      });
+    }
+    
+    // Construir query dinámico
+    const setClauses = Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`);
+    const whereClauses = Object.keys(pkParams).map((k, i) => `${k} = $${setClauses.length + i + 1}`);
+    
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    let updateQuery = userSupabase.schema(dbSchema).from(table).update(req.body);
+    
+    // Aplicar condiciones WHERE para la PK compuesta
+    Object.keys(pkParams).forEach(key => {
+      updateQuery = updateQuery.eq(key, pkParams[key]);
+    });
+    
+    const { data, error } = await updateQuery.select();
+    
+    if (error) {
+      throw error;
+    }
+    
+    clearMetadataCache(table);
+    
+    res.json(data || []);
+  } catch (error) {
+    logger.error(`Error en PUT /${table}/composite:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// RUTA PARA UPSERT EN PK COMPUESTAS
+// IMPORTANTE: Esta ruta hace INSERT OR UPDATE en tablas con PK compuesta
+// Si el registro existe, lo actualiza. Si no existe, lo inserta.
+// ============================================================================
+
+router.post('/:table/composite/upsert', async (req, res) => {
+  const { table } = req.params;
+  
+  if (!isTableAllowed(table)) {
+    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
+  }
+  
+  try {
+    // Los parámetros de la PK vienen en el query string
+    const pkParams = { ...req.query };
+    delete pkParams.page;
+    delete pkParams.pageSize;
+    
+    if (Object.keys(pkParams).length === 0) {
+      return res.status(400).json({ 
+        error: 'Se requieren parámetros de PK en el query string' 
+      });
+    }
+    
+    logger.info(`[UPSERT] Tabla: ${table}, PK: ${JSON.stringify(pkParams)}, Datos: ${JSON.stringify(req.body)}`);
+    
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    
+    // Intentar primero hacer SELECT para ver si existe el registro
+    let selectQuery = userSupabase.schema(dbSchema).from(table).select('*');
+    Object.keys(pkParams).forEach(key => {
+      selectQuery = selectQuery.eq(key, pkParams[key]);
+    });
+    
+    const { data: existingData, error: selectError } = await selectQuery.limit(1);
+    
+    if (selectError && !selectError.message.includes('does not exist')) {
+      logger.error(`[UPSERT] Error en SELECT: ${selectError.message}`);
+      throw selectError;
+    }
+    
+    let result;
+    
+    if (existingData && existingData.length > 0) {
+      // El registro existe, hacer UPDATE
+      logger.info(`[UPSERT] Registro existe (${existingData.length}), haciendo UPDATE`);
+      console.log(`[UPSERT] Registro existente:`, JSON.stringify(existingData[0]));
+      let updateQuery = userSupabase.schema(dbSchema).from(table).update(req.body);
+      Object.keys(pkParams).forEach(key => {
+        updateQuery = updateQuery.eq(key, pkParams[key]);
+      });
+      
+      const { data: updateData, error: updateError } = await updateQuery.select();
+      
+      if (updateError) {
+        logger.error(`[UPSERT] Error en UPDATE: ${updateError.message}`);
+        throw updateError;
+      }
+      
+      result = updateData || [];
+      logger.info(`[UPSERT] UPDATE completado. Registros actualizados: ${result.length}`);
+      console.log(`[UPSERT] Datos después del UPDATE:`, JSON.stringify(result));
+    } else {
+      // El registro no existe, hacer INSERT
+      logger.info(`[UPSERT] Registro no existe, haciendo INSERT`);
+      
+      // Datos a insertar = PK + datos del request
+      const dataToInsert = {
+        ...pkParams,
+        ...req.body
+      };
+      
+      const { data: insertData, error: insertError } = await userSupabase
+        .schema(dbSchema)
+        .from(table)
+        .insert(dataToInsert)
+        .select();
+      
+      if (insertError) {
+        logger.error(`[UPSERT] Error en INSERT: ${insertError.message}`);
+        throw insertError;
+      }
+      
+      result = insertData || [];
+      logger.info(`[UPSERT] INSERT completado. Registros insertados: ${result.length}`);
+      console.log(`[UPSERT] Datos después del INSERT:`, JSON.stringify(result));
+    }
+    
+    clearMetadataCache(table);
+    
+    res.json(result);
+  } catch (error) {
+    logger.error(`❌ Error en POST /${table}/composite/upsert:`, error.message);
+    if (error.code) logger.error(`   Código: ${error.code}`);
+    if (error.detail) logger.error(`   Detalle: ${error.detail}`);
+    if (error.hint) logger.error(`   Hint: ${error.hint}`);
+    res.status(500).json({ error: error.message, code: error.code });
+  }
+});
+
+// ============================================================================
 // RUTA GENÉRICA POST /:table
 // ============================================================================
 
@@ -484,57 +639,6 @@ router.put('/:table/:id', async (req, res) => {
       detail: error.detail,
       hint: error.hint
     });
-  }
-});
-
-// ============================================================================
-// RUTA PARA ACTUALIZAR PK COMPUESTAS
-// ============================================================================
-
-router.put('/:table/composite', async (req, res) => {
-  const { table } = req.params;
-  
-  if (!isTableAllowed(table)) {
-    return res.status(400).json({ error: `Tabla '${table}' no permitida` });
-  }
-  
-  try {
-    // Los parámetros de la PK vienen en el query string
-    const pkParams = { ...req.query };
-    delete pkParams.page;
-    delete pkParams.pageSize;
-    
-    if (Object.keys(pkParams).length === 0) {
-      return res.status(400).json({ 
-        error: 'Se requieren parámetros de PK en el query string' 
-      });
-    }
-    
-    // Construir query dinámico
-    const setClauses = Object.keys(req.body).map((k, i) => `${k} = $${i + 1}`);
-    const whereClauses = Object.keys(pkParams).map((k, i) => `${k} = $${setClauses.length + i + 1}`);
-    
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
-    let updateQuery = userSupabase.schema(dbSchema).from(table).update(req.body);
-    
-    // Aplicar condiciones WHERE para la PK compuesta
-    Object.keys(pkParams).forEach(key => {
-      updateQuery = updateQuery.eq(key, pkParams[key]);
-    });
-    
-    const { data, error } = await updateQuery.select();
-    
-    if (error) {
-      throw error;
-    }
-    
-    clearMetadataCache(table);
-    
-    res.json(data || []);
-  } catch (error) {
-    logger.error(`Error en PUT /${table}/composite:`, error);
-    res.status(500).json({ error: error.message });
   }
 });
 

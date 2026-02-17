@@ -247,8 +247,9 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     try {
       let result;
       if (typeof id === 'object') {
-        // Clave compuesta
-        result = await JoySenseService.updateTableRowByCompositeKey(tableName, id, data);
+        // Clave compuesta: usar UPSERT en lugar de UPDATE
+        // Esto asegura que si el registro no existe, se cree
+        result = await JoySenseService.upsertTableRowByCompositeKey(tableName, id, data);
       } else {
         result = await JoySenseService.updateTableRow(tableName, id, data);
       }

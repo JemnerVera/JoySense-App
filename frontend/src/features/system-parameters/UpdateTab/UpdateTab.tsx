@@ -125,9 +125,17 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     try {
       const localizacionesRes = await JoySenseService.getTableData('entidad_localizacion', 1000);
       const localizacionesData = Array.isArray(localizacionesRes) ? localizacionesRes : (localizacionesRes as any)?.data || [];
+      
+      // Obtener SOLO las localizaciones ACTIVAS (statusid === 1) para mostrar en la UI
       const localizacionidsForEntidad = localizacionesData
         .filter((l: any) => l.entidadid === entidadid && l.statusid === 1)
         .map((l: any) => l.localizacionid);
+
+      console.log('[UpdateTab] loadEntidadRelatedData:', {
+        entidadid,
+        allLocalizaciones: localizacionesData.filter((l: any) => l.entidadid === entidadid),
+        activeLocalizacionids: localizacionidsForEntidad
+      });
 
       setEntidadRelatedData({ localizacionids: localizacionidsForEntidad });
     } catch (error) {
@@ -297,8 +305,14 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   // Sincronizar entidadRelatedData a formData cuando se carga (para que handleUpdate tenga localizacionids)
   useEffect(() => {
     if (tableName === 'entidad' && selectedRow && !loadingRelated) {
+      console.log('[UpdateTab] Sincronizando entidadRelatedData:', {
+        entidadid: selectedRow.entidadid,
+        localizacionids: entidadRelatedData.localizacionids,
+        loadingRelated
+      });
       updateFormField('localizacionids', entidadRelatedData.localizacionids);
       updateFormField('_existingLocalizacionids', entidadRelatedData.localizacionids);
+      console.log('[UpdateTab] ✅ Datos sincronizados');
     }
   }, [tableName, selectedRow?.entidadid, entidadRelatedData.localizacionids, loadingRelated, updateFormField]);
 
@@ -507,25 +521,23 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 <GrupoForm
                   formData={{
                     entidad: formData.entidad || selectedRow?.entidad || '',
-                    localizacionids: entidadRelatedData.localizacionids,
+                    localizacionids: formData.localizacionids || entidadRelatedData.localizacionids,
                     entidadid: selectedRow?.entidadid
                   }}
                   setFormData={(dataOrFn) => {
                     if (typeof dataOrFn === 'function') {
                       const prev = {
                         entidad: formData.entidad || selectedRow?.entidad || '',
-                        localizacionids: entidadRelatedData.localizacionids,
+                        localizacionids: formData.localizacionids || entidadRelatedData.localizacionids,
                         entidadid: selectedRow?.entidadid
                       };
                       const next = dataOrFn(prev);
                       updateFormField('entidad', next.entidad);
                       updateFormField('localizacionids', next.localizacionids);
-                      setEntidadRelatedData({ localizacionids: next.localizacionids });
                     } else {
                       if (dataOrFn.entidad !== undefined) updateFormField('entidad', dataOrFn.entidad);
                       if (dataOrFn.localizacionids) {
                         updateFormField('localizacionids', dataOrFn.localizacionids);
-                        setEntidadRelatedData(prev => ({ ...prev, localizacionids: dataOrFn.localizacionids }));
                       }
                     }
                   }}
@@ -546,28 +558,26 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 <CarpetaForm
                   formData={{
                     carpeta: formData.carpeta || selectedRow?.carpeta || '',
-                    ubicacionids: carpetaRelatedData.ubicacionids,
-                    usuarioids: carpetaRelatedData.usuarioids,
+                    ubicacionids: formData.ubicacionids || carpetaRelatedData.ubicacionids,
+                    usuarioids: formData.usuarioids || carpetaRelatedData.usuarioids,
                     carpetaid: selectedRow?.carpetaid
                   }}
                   setFormData={(dataOrFn) => {
                     if (typeof dataOrFn === 'function') {
                       const prev = { 
                         carpeta: formData.carpeta || selectedRow?.carpeta || '', 
-                        ubicacionids: carpetaRelatedData.ubicacionids, 
-                        usuarioids: carpetaRelatedData.usuarioids,
+                        ubicacionids: formData.ubicacionids || carpetaRelatedData.ubicacionids, 
+                        usuarioids: formData.usuarioids || carpetaRelatedData.usuarioids,
                         carpetaid: selectedRow?.carpetaid
                       };
                       const next = dataOrFn(prev);
                       updateFormField('carpeta', next.carpeta);
-                      setCarpetaRelatedData({ 
-                        ubicacionids: next.ubicacionids, 
-                        usuarioids: next.usuarioids 
-                      });
+                      updateFormField('ubicacionids', next.ubicacionids);
+                      updateFormField('usuarioids', next.usuarioids);
                     } else {
                       if (dataOrFn.carpeta !== undefined) updateFormField('carpeta', dataOrFn.carpeta);
-                      if (dataOrFn.ubicacionids) setCarpetaRelatedData(prev => ({ ...prev, ubicacionids: dataOrFn.ubicacionids }));
-                      if (dataOrFn.usuarioids) setCarpetaRelatedData(prev => ({ ...prev, usuarioids: dataOrFn.usuarioids }));
+                      if (dataOrFn.ubicacionids) updateFormField('ubicacionids', dataOrFn.ubicacionids);
+                      if (dataOrFn.usuarioids) updateFormField('usuarioids', dataOrFn.usuarioids);
                     }
                   }}
                   ubicacionesOptions={getUniqueOptionsForField?.('ubicacionid') || []}

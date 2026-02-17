@@ -1346,6 +1346,23 @@ export class JoySenseService {
     }
   }
 
+  static async upsertTableRowByCompositeKey(tableName: TableName | string, compositeKey: Record<string, any>, data: Record<string, any>): Promise<any> {
+    try {
+      const keyParams = new URLSearchParams(compositeKey).toString();
+      const endpoint = `/generic/${tableName}/composite/upsert?${keyParams}`;
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const result = await backendAPI.post(endpoint, data, token || undefined);
+      return result;
+    } catch (error) {
+      console.error(`Error in upsertTableRowByCompositeKey for ${tableName}:`, error);
+      throw error;
+    }
+  }
+
   static async deleteTableRow(tableName: TableName | string, id: string): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}/${id}`;

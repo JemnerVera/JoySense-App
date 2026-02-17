@@ -72,6 +72,30 @@ export const useUpdateForm = ({
         return;
       }
       
+      // Para tabla 'entidad', inicializar campos de relaciones
+      if (tableName === 'entidad') {
+        setFormData(prev => ({
+          ...selectedRow,
+          localizacionids: selectedRow.localizacionids || [], // Será actualizado por UpdateTab
+          _existingLocalizacionids: selectedRow._existingLocalizacionids || selectedRow.localizacionids || [] // Será actualizado por UpdateTab
+        }));
+        setFormErrors({});
+        return;
+      }
+      
+      // Para tabla 'carpeta', inicializar campos de relaciones
+      if (tableName === 'carpeta') {
+        setFormData(prev => ({
+          ...selectedRow,
+          ubicacionids: selectedRow.ubicacionids || [],
+          usuarioids: selectedRow.usuarioids || [],
+          _existingUbicacionids: selectedRow._existingUbicacionids || selectedRow.ubicacionids || [],
+          _existingUsuarioids: selectedRow._existingUsuarioids || selectedRow.usuarioids || []
+        }));
+        setFormErrors({});
+        return;
+      }
+      
       // Para tabla 'usuario', cargar datos normalmente
       setFormData({ ...selectedRow });
       
@@ -354,6 +378,14 @@ export const useUpdateForm = ({
           !(formData.localizacionids || []).includes(id)
         );
 
+        console.log('[useUpdateForm] Entidad update:', {
+          entidadid,
+          existingLocalizacionids: formData._existingLocalizacionids,
+          selectedLocalizacionids: formData.localizacionids,
+          toAdd: localizacionidsToAdd,
+          toRemove: localizacionidsToRemove
+        });
+
         // Actualizar entidad
         const entidadPk = { entidadid };
         const entidadResult = await updateRow(entidadPk, entidadUpdateData);
@@ -362,14 +394,18 @@ export const useUpdateForm = ({
         }
 
         // Eliminar localizaciones no seleccionadas (statusid=0 en entidad_localizacion)
+        // Usar UPSERT para asegurar que el registro se actualice o cree si no existe
         const { JoySenseService } = await import('../services/backend-api');
+        console.log('[useUpdateForm] Desactivando localizaciones:', localizacionidsToRemove);
         for (const localizacionid of localizacionidsToRemove) {
           try {
-            await JoySenseService.updateTableRowByCompositeKey(
+            console.log(`[useUpdateForm] Desactivando localizacionid ${localizacionid}`);
+            await JoySenseService.upsertTableRowByCompositeKey(
               'entidad_localizacion',
               { entidadid, localizacionid },
               { statusid: 0, usermodifiedid: currentUserId, datemodified: now }
             );
+            console.log(`[useUpdateForm] ✅ Desactivada localizacionid ${localizacionid}`);
           } catch (error) {
             console.warn(`Error al desactivar localización ${localizacionid}:`, error);
           }
