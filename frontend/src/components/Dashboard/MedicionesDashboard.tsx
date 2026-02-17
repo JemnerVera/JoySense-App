@@ -502,6 +502,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const daysSpan = timeSpan / (1000 * 60 * 60 * 24);
     const hoursSpan = daysSpan * 24;
 
+    console.log('[chartData PREP] dateRange:', dateRange, 'daysSpan:', daysSpan, 'medicionesCount:', medicionesFiltradasPorMetrica.length);
+
     // Función auxiliar para hacer grouping con una granularidad específica
     const performGrouping = (granularityType: 'minutes' | 'hours' | 'days') => {
       const getTimeKey = (date: Date): string => {
@@ -615,6 +617,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         ({ result, allLabelsArray, pointCount } = performGrouping('minutes'));
       }
     }
+
+    console.log('[chartData FINAL] granularityType:', granularityType, 'pointCount:', pointCount, 'totalMediciones:', totalMediciones);
+    console.log('[chartData FINAL] result fechas:', result.map((r: any) => r.fecha));
 
     return result;
   }, [medicionesFiltradasPorMetrica, getSeriesLabel, dateRange.start, dateRange.end]);
