@@ -25,6 +25,9 @@ import {
   PermisosMain, PermisosMainRef
 } from './features';
 
+// Lazy load ReglaObjetoMain
+import ReglaObjetoMain from './features/rules/ReglaObjetoMain';
+
 // 4. Core Components (Essential UI)
 import LoginForm from './components/core/LoginForm';
 import ConfigurationPanel from './components/core/ConfigurationPanel';
@@ -121,6 +124,11 @@ const AppContentInternal: React.FC<{
     handleSubTabChangeFromProtectedButton?: (tab: 'status' | 'insert' | 'update' | 'massive') => void;
   }>(null);
 
+  // Ref para ReglaObjetoMain
+  const reglaObjetoMainRef = useRef<{ 
+    hasUnsavedChanges: () => boolean;
+    handleTabChange: (tab: 'status' | 'insert' | 'update') => void;
+  }>(null);
 
   const notificacionesMainRef = useRef<{ 
     handleTableChange: (table: string) => void; 
@@ -1424,7 +1432,36 @@ const AppContentInternal: React.FC<{
           );
         }
         
-        // Para otras tablas de regla (regla_umbral, regla_objeto), mostrar placeholder si no hay operación
+        // Caso especial: Si la tabla es 'regla_objeto', usar ReglaObjetoMain en lugar de SystemParameters
+        if (reglaTableName === 'regla_objeto') {
+          // Si no hay operación seleccionada, mostrar placeholder
+          if (!reglaOperation) {
+            return (
+              <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+                <div className="text-center">
+                  <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                    <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                    <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <ReglaObjetoMain
+              activeSubTab={reglaOperation as 'status' | 'insert' | 'update' || 'status'}
+              onSubTabChange={(tab: 'status' | 'insert' | 'update') => {
+                // Actualizar activeTab cuando cambia el subTab
+                const newActiveTab = `configuracion-notificaciones-regla-regla_objeto-${tab}`;
+                setActiveTab(newActiveTab);
+              }}
+              onFormDataChange={handleFormDataChange}
+            />
+          );
+        }
+        
+        // Para otras tablas de regla (regla_umbral), mostrar placeholder si no hay operación
         if (!reglaOperation) {
           return (
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -1438,7 +1475,7 @@ const AppContentInternal: React.FC<{
           );
         }
         
-        // Usar SystemParameters para las otras tablas de regla (regla_umbral, regla_objeto)
+        // Usar SystemParameters para las otras tablas de regla (regla_umbral)
         // IMPORTANTE: reglaTableName viene de selectedTable (fuente de verdad para REGLA)
         return (
           <SystemParametersWithSuspense 

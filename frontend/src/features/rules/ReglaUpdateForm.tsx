@@ -3,7 +3,7 @@
  * Permite seleccionar una regla y editar su cabecera y umbrales relacionados
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
@@ -100,10 +100,8 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         _reglaUmbralRows: []
       };
       setFormData(emptyFormData);
-      // Notificar al padre que no hay datos (limpiar detección de cambios)
-      onFormDataChange?.({});
     }
-  }, [selectedReglaid]);
+  }, [selectedReglaid]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const loadReglaData = useCallback(async (reglaid: number) => {
     setLoadingRegla(true);
@@ -163,12 +161,8 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       setReglaPerfilData(perfilesFiltrados);
       
       // Actualizar formData directamente - React debería detectar el cambio
+      // La notificación se hará a través del useEffect que monitorea formData
       setFormData(initialFormData);
-      // Notificar cambios al padre para detección de cambios sin guardar
-      // Solo notificar si hay una regla seleccionada (datos reales)
-      if (reglaid) {
-        onFormDataChange?.(initialFormData);
-      }
     } catch (error: any) {
       console.error('Error cargando datos de regla:', error);
       setMessage?.({ type: 'error', text: error.message || 'Error al cargar datos de la regla' });
@@ -177,15 +171,13 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
     }
   }, [reglasData, setMessage]);
 
-  // Wrapper para setFormData que notifica cambios al padre
+  // Wrapper para setFormData sin llamar a onFormDataChange (se hará en useEffect)
   const handleSetFormData = useCallback((data: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
     setFormData(prev => {
       const newData = typeof data === 'function' ? data(prev) : data;
-      // Notificar cambios al padre para detección de cambios sin guardar
-      onFormDataChange?.(newData);
       return newData;
     });
-  }, [onFormDataChange]);
+  }, []);
 
   // Función para actualizar un campo del formulario
   const updateFormField = useCallback((field: string, value: any) => {
@@ -194,6 +186,20 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       [field]: value
     }));
   }, [handleSetFormData]);
+
+  // Notificar cambios al padre DESPUÉS del render (en un effect)
+  const lastNotifiedDataRef = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    // Solo notificar si realmente hay cambios significativos
+    const formDataStr = JSON.stringify(formData);
+    const lastStr = JSON.stringify(lastNotifiedDataRef.current);
+    
+    if (formDataStr !== lastStr) {
+      lastNotifiedDataRef.current = formData;
+      onFormDataChange?.(formData);
+    }
+  }, [formData]);
 
   // Función para validar el formulario
   const validateForm = useCallback((): boolean => {
