@@ -511,11 +511,12 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           onEmpresasChange={handleEmpresaChange}
           onFundosChange={handleFundoChange}
           onUbicacionesChange={handleUbicacionChange}
-          disabled={disabled}
+          disabled={disabled || !formData.reglaid}
           themeColor="orange"
         />
 
         {/* Resumen de selección en cascada */}
+        {formData.reglaid && (
         <div className="mt-6 p-4 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-neutral-400 uppercase">Selección Actual:</span>
@@ -545,6 +546,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
             </div>
           </div>
         </div>
+        )}
         </div>
       </div>
     </div>
