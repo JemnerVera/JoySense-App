@@ -494,10 +494,18 @@ const AppContentInternal: React.FC<{
       
       // Si hay más de una parte y la última es una operación válida, extraer operación
       if (parts.length > 1 && validOperations.includes(parts[parts.length - 1])) {
-        const operation = parts[parts.length - 1] as 'status' | 'insert' | 'update' | 'massive';
+        const tableName = parts[0];
+        const operation = parts[parts.length - 1];
+        
+        // No permitir massive para entidad o carpeta
+        if ((tableName === 'entidad' || tableName === 'carpeta') && operation === 'massive') {
+          setActiveSubTab('status');
+          return;
+        }
+        
         setActiveSubTab((currentSubTab) => {
           if (currentSubTab !== operation) {
-            return operation;
+            return operation as 'status' | 'insert' | 'update' | 'massive';
           }
           return currentSubTab;
         });
@@ -936,6 +944,14 @@ const AppContentInternal: React.FC<{
   };
 
   const handleSubTabChange = (subTab: 'status' | 'insert' | 'update' | 'massive' | 'asignar') => {
+    // No permitir massive para entidad o carpeta
+    if (subTab === 'massive' && activeTab.startsWith('agrupacion-')) {
+      const tableName = activeTab.replace('agrupacion-', '').split('-')[0];
+      if (tableName === 'entidad' || tableName === 'carpeta') {
+        return;
+      }
+    }
+    
     setActiveSubTab(subTab as 'status' | 'insert' | 'update' | 'massive' | 'asignar');
     
     // Si estamos en AGRUPACIÓN, actualizar el activeTab para incluir la operación
