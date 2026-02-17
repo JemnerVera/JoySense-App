@@ -9,8 +9,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { MessageDisplay } from '../system-parameters/MessageDisplay';
-import { MultiSelectWithPlaceholder } from '../../components/shared/selectors';
-import { SelectWithPlaceholder } from '../../components/shared/selectors';
+import { DualListbox, SelectWithPlaceholder } from '../../components/shared/selectors';
 import { 
   getGeografiaLevelOrder, 
   areFuentesConsecutive, 
@@ -1126,21 +1125,26 @@ export function AsignarPermisosTab({
 
       {/* Selección de Perfiles, Origen y Fuentes - Una sola fila */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-4 mb-4 flex-shrink-0" style={{ position: 'relative', zIndex: 50 }}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ position: 'relative', zIndex: 50 }}>
+        <div className="grid grid-cols-1 gap-4" style={{ position: 'relative', zIndex: 50 }}>
           {/* Perfiles (múltiple) */}
           <div style={{ position: 'relative', zIndex: 100 }}>
-            <MultiSelectWithPlaceholder
+            <label className="block text-sm font-bold mb-2 font-mono text-orange-500">PERFILES</label>
+            <DualListbox
               value={selectedPerfiles}
               onChange={setSelectedPerfiles}
               options={perfilOptions}
               placeholder="Seleccione perfiles"
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
               disabled={false}
+              canFilter={true}
+              themeColor="orange"
+              availableLabel="DISPONIBLES"
+              selectedLabel="SELECCIONADOS"
             />
           </div>
 
           {/* Origen */}
           <div style={{ position: 'relative', zIndex: 100 }}>
+            <label className="block text-sm font-bold mb-2 font-mono text-orange-500">ORIGEN</label>
             <SelectWithPlaceholder
               value={selectedOrigen || null}
               onChange={(value) => {
@@ -1159,13 +1163,17 @@ export function AsignarPermisosTab({
 
           {/* Fuentes (múltiple) */}
           <div style={{ position: 'relative', zIndex: 100 }}>
-            <MultiSelectWithPlaceholder
+            <label className="block text-sm font-bold mb-2 font-mono text-orange-500">FUENTES</label>
+            <DualListbox
               value={selectedFuentes}
               onChange={setSelectedFuentes}
               options={fuenteOptions}
               placeholder={selectedOrigen ? 'Seleccione fuentes' : 'Seleccione origen primero'}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedOrigen || fuenteOptions.length === 0}
+              canFilter={true}
+              themeColor="orange"
+              availableLabel="DISPONIBLES"
+              selectedLabel="SELECCIONADOS"
             />
           </div>
         </div>
