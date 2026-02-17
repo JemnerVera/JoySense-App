@@ -560,8 +560,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
       const getTimeKey = (date: Date, granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number): string => {
         if (granularityType === 'minutes') {
-          // Para minutos, usar el intervalo especificado (por defecto 30)
-          const minuteInterval = interval || 30;
+          // Para minutos, usar el intervalo especificado (por defecto 15)
+          const minuteInterval = interval || 15;
           const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
           return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
@@ -657,7 +657,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     if (daysSpan <= 1) {
       granularityType = 'minutes';
-      minuteInterval = 30; // Cada 30 min para 1 día (~48 puntos)
+      minuteInterval = 15; // Cada 15 min para 1 día
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
       hourlyInterval = 1; // Cada hora
@@ -685,7 +685,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         ({ result, allLabelsArray, pointCount } = performGrouping('hours', undefined, 1));
       }
       if (pointCount <= 2) {
-        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30, undefined));
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 15, undefined));
       }
     }
 
