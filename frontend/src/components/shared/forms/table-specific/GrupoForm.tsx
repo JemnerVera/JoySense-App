@@ -76,19 +76,21 @@ CARPETA PERSONAL*
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           LOCALIZACIÓN DE GRUPO*
         </label>
-        <DualListbox
-          value={formData.localizacionids || []}
-          onChange={(localizacionids) =>
-            setFormData((prev) => ({ ...prev, localizacionids }))
-          }
-          options={localizacionesOptions}
-          placeholder="SELECCIONAR LOCALIZACIONES"
-          disabled={loading}
-          canFilter={true}
-          themeColor={themeColor}
-          availableLabel="DISPONIBLES"
-          selectedLabel="SELECCIONADOS"
-        />
+        <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
+          <DualListbox
+            value={formData.localizacionids || []}
+            onChange={(localizacionids) =>
+              setFormData((prev) => ({ ...prev, localizacionids }))
+            }
+            options={localizacionesOptions}
+            placeholder="SELECCIONAR LOCALIZACIONES"
+            disabled={loading}
+            canFilter={true}
+            themeColor={themeColor}
+            availableLabel="DISPONIBLES"
+            selectedLabel="SELECCIONADOS"
+          />
+        </div>
       </div>
 
       {/* Botones */}

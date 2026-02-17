@@ -180,7 +180,7 @@ const DualListbox: React.FC<DualListboxProps> = ({
     
     return (
       <div className="flex flex-col gap-2 flex-1 min-w-0">
-        <div className={`font-bold font-mono tracking-wider ${theme.accent}`}>
+        <div className={`font-bold font-mono tracking-wider ${theme.accent} text-opacity-70`}>
           {isAvailable ? availableLabel : selectedLabel}
         </div>
         {canFilter && (
