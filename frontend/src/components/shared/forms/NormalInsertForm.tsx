@@ -121,8 +121,16 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       const hasNombre = !!(formData.nombre && formData.nombre.trim() !== '');
       const hasUmbrales = !!(formData._reglaUmbralRows && formData._reglaUmbralRows.length > 0 && 
                             formData._reglaUmbralRows.some((row: any) => row.umbralid));
-      const hasPerfiles = !!(formData._perfilesSeleccionados && 
-                            Object.values(formData._perfilesSeleccionados).some((v: any) => v === 1));
+      
+      // Verificar perfiles: puede ser array o objeto
+      let hasPerfiles = false;
+      if (formData._perfilesSeleccionados) {
+        if (Array.isArray(formData._perfilesSeleccionados)) {
+          hasPerfiles = formData._perfilesSeleccionados.length > 0;
+        } else {
+          hasPerfiles = Object.values(formData._perfilesSeleccionados).some((v: any) => v === 1);
+        }
+      }
       
       return !hasNombre || !hasUmbrales || !hasPerfiles;
     }
