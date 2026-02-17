@@ -1894,6 +1894,48 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   // Ahora usamos las funciones con cache del hook useMetricCache en lugar de
   // hasMetricDataHelper que recalculaba cada vez. Esto reduce significativamente las iteraciones.
 
+  // Callbacks estables para DetailedAnalysisModal (memoizados para evitar re-renders innecesarios)
+  const handleYAxisDomainChange = useCallback((domain: { min: number | null; max: number | null }) => {
+    setYAxisDomain(domain)
+  }, [])
+
+  const handleMetricChange = useCallback((metric: string) => {
+    setSelectedDetailedMetric(metric)
+    // Actualizar la métrica seleccionada para el análisis para que el tooltip tenga la unidad correcta
+    const selectedMetric = availableMetrics.find(m => m.dataKey === metric)
+    if (selectedMetric) {
+      setSelectedMetricForAnalysis(selectedMetric)
+    }
+  }, [availableMetrics])
+
+  const handleDateRangeChange = useCallback((start: string, end: string) => {
+    setDetailedStartDate(start)
+    setDetailedEndDate(end)
+  }, [])
+
+  const handleComparisonNodeChange = useCallback((node: any | null) => {
+    setComparisonNode(node)
+  }, [])
+
+  const handleVisibleTiposChange = useCallback((tipos: Set<string>) => {
+    setVisibleTipos(tipos)
+  }, [])
+
+  const handleToggleExpand = useCallback(() => {
+    setIsModalExpanded(prev => !prev)
+  }, [])
+
+  const handleDetailedAnalysisClose = useCallback(() => {
+    setShowDetailedAnalysis(false)
+    setSelectedMetricForAnalysis(null)
+    setComparisonNode(null)
+    setComparisonMediciones([])
+    setLoadingComparisonData(false)
+    setIsModalExpanded(false)
+    setYAxisDomain({ min: null, max: null })
+    setVisibleTipos(new Set())
+  }, [])
+
   return (
     <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue`}>
       {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
@@ -1933,32 +1975,13 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             umbralesDisponibles={umbralesDisponibles}
             localizacionesPorNodo={localizacionesPorNodo}
             yAxisDomain={yAxisDomain}
-            onClose={() => {
-              setShowDetailedAnalysis(false)
-              setSelectedMetricForAnalysis(null)
-              setComparisonNode(null)
-              setComparisonMediciones([])
-              setLoadingComparisonData(false)
-              setIsModalExpanded(false)
-              setYAxisDomain({ min: null, max: null })
-              setVisibleTipos(new Set())
-            }}
-            onMetricChange={(metric) => {
-              setSelectedDetailedMetric(metric)
-              // Actualizar la métrica seleccionada para el análisis para que el tooltip tenga la unidad correcta
-              const selectedMetric = availableMetrics.find(m => m.dataKey === metric)
-              if (selectedMetric) {
-                setSelectedMetricForAnalysis(selectedMetric)
-              }
-            }}
-            onComparisonNodeChange={(node) => setComparisonNode(node)}
-            onDateRangeChange={(start, end) => {
-              setDetailedStartDate(start)
-              setDetailedEndDate(end)
-            }}
-            onYAxisDomainChange={(domain) => setYAxisDomain(domain)}
-            onVisibleTiposChange={(tipos) => setVisibleTipos(tipos)}
-            onToggleExpand={() => setIsModalExpanded(!isModalExpanded)}
+            onClose={handleDetailedAnalysisClose}
+            onMetricChange={handleMetricChange}
+            onComparisonNodeChange={handleComparisonNodeChange}
+            onDateRangeChange={handleDateRangeChange}
+            onYAxisDomainChange={handleYAxisDomainChange}
+            onVisibleTiposChange={handleVisibleTiposChange}
+            onToggleExpand={handleToggleExpand}
             onAnalyzeFluctuation={analyzeFluctuationAndRecommendThresholds}
             onLoadComparisonData={loadComparisonMediciones}
             getSeriesLabel={getSeriesLabel}

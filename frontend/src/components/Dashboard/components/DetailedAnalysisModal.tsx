@@ -102,11 +102,64 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
   const { t } = useLanguage()
   const [tempStartDate, setTempStartDate] = useState('')
   const [tempEndDate, setTempEndDate] = useState('')
+  const [userManuallySetYAxis, setUserManuallySetYAxis] = useState(false) // Track si usuario cambió eje Y manualmente
 
   // Calcular dominio del eje Y - pasarlo directamente a DetailedChartJs
   const calculateYAxisDomain = (): { min: number | null; max: number | null } => {
     return yAxisDomain
   }
+
+  // Auto-ajustar eje Y SOLO cuando cambian los datos (NO cuando cambia selectedDetailedMetric o datas)
+  // porque esos cambios ya actualizan detailedMediciones
+  useEffect(() => {
+    // Si el usuario está editando manualmente, no auto-ajustar
+    if (userManuallySetYAxis) {
+      return
+    }
+
+    if (detailedMediciones.length === 0) {
+      // No hay datos, dejar eje Y sin ajuste
+      return
+    }
+
+    // Calcular min y max de los valores actuales
+    let minValue = Infinity
+    let maxValue = -Infinity
+    let hasNegativeValues = false
+
+    detailedMediciones.forEach((m: MedicionData) => {
+      const val = m.medicion
+      if (typeof val === 'number' && !isNaN(val)) {
+        minValue = Math.min(minValue, val)
+        maxValue = Math.max(maxValue, val)
+        if (val < 0) {
+          hasNegativeValues = true
+        }
+      }
+    })
+
+    if (minValue === Infinity || maxValue === -Infinity) {
+      // No hay valores válidos
+      return
+    }
+
+    // Calcular rango y agregar padding (5% para mejor visualización)
+    const range = maxValue - minValue
+    const padding = Math.max(range * 0.05, 1) // Mínimo 1 unidad de padding
+
+    let calculatedMin = minValue - padding
+    
+    // Si no hay valores negativos y el mínimo calculado es negativo, usar 0
+    if (!hasNegativeValues && calculatedMin < 0) {
+      calculatedMin = 0
+    }
+
+    // SIEMPRE actualizar el eje Y cuando hay datos nuevos/diferentes
+    onYAxisDomainChange({
+      min: calculatedMin,
+      max: maxValue + padding
+    })
+  }, [detailedMediciones, userManuallySetYAxis, onYAxisDomainChange])
 
   // Obtener el chartData correctamente
   const chartData = useMemo(() => {
@@ -135,6 +188,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
     return Array.from(seriesSet).sort()
   }, [chartData, detailedMediciones, getSeriesLabel])
+
+  // Resetear flag de manual edit cuando se cierra el modal o cambia métrica
+  useEffect(() => {
+    setUserManuallySetYAxis(false)
+  }, [selectedDetailedMetric, isOpen])
 
   // AHORA SÍ, después de todos los hooks, podemos hacer el return condicional
   if (!isOpen || !selectedMetricForAnalysis) {
@@ -316,11 +374,16 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           const inputValue = e.target.value
                           if (inputValue === '') {
                             onYAxisDomainChange({ ...yAxisDomain, min: null })
+                            setUserManuallySetYAxis(false) // Limpiar flag cuando se vacía
                             return
                           }
                           const numValue = Number(inputValue)
                           if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
                             onYAxisDomainChange({ ...yAxisDomain, min: numValue })
+                            // Marcar como editado manualmente si ambos tienen valor
+                            if (yAxisDomain.max !== null) {
+                              setUserManuallySetYAxis(true)
+                            }
                           }
                         }}
                         placeholder="Min"
@@ -337,18 +400,26 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           const inputValue = e.target.value
                           if (inputValue === '') {
                             onYAxisDomainChange({ ...yAxisDomain, max: null })
+                            setUserManuallySetYAxis(false) // Limpiar flag cuando se vacía
                             return
                           }
                           const numValue = Number(inputValue)
                           if (!isNaN(numValue) && isFinite(numValue) && numValue >= -999999 && numValue <= 999999) {
                             onYAxisDomainChange({ ...yAxisDomain, max: numValue })
+                            // Marcar como editado manualmente si ambos tienen valor
+                            if (yAxisDomain.min !== null) {
+                              setUserManuallySetYAxis(true)
+                            }
                           }
                         }}
                         placeholder="Max"
                         className="h-10 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
                       />
                       <button
-                        onClick={() => onYAxisDomainChange({ min: null, max: null })}
+                        onClick={() => {
+                          onYAxisDomainChange({ min: null, max: null })
+                          setUserManuallySetYAxis(false) // Permitir auto-ajuste cuando hace reset
+                        }}
                         className="h-10 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-base font-mono"
                       >
                         Reset
