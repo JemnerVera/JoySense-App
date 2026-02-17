@@ -76,15 +76,27 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const [tipos, setTipos] = useState<any[]>([]);
   const [sensores, setSensores] = useState<any[]>([]);
   const [selectedMetricId, setSelectedMetricId] = useState<number | null>(null);
+  
+  // Función auxiliar para formatear fechas en zona horaria local (YYYY-MM-DD)
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = new Date();
+  const yesterday = new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000);
+
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: getLocalDateString(yesterday),
+    end: getLocalDateString(today)
   });
   
   // Estados para fechas temporales (antes de aplicar)
   const [pendingDateRange, setPendingDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: getLocalDateString(yesterday),
+    end: getLocalDateString(today)
   });
   
   const [showMapModal, setShowMapModal] = useState(false);
@@ -1036,7 +1048,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     alertas.forEach((a: any) => {
       const fechaOriginal = new Date(a.fecha);
       const fecha = fechaOriginal.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
-      const fechaKey = fechaOriginal.toISOString().split('T')[0]; // Usar fecha completa como key
+      const year = fechaOriginal.getFullYear();
+      const month = String(fechaOriginal.getMonth() + 1).padStart(2, '0');
+      const day = String(fechaOriginal.getDate()).padStart(2, '0');
+      const fechaKey = `${year}-${month}-${day}`; // Usar fecha completa como key en formato local
       const criticidad = a.criticidad || 'Desconocida';
       const valor = a.valor || 0;
       
@@ -1383,7 +1398,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
                         const adjustedStart = new Date(endDate);
                         adjustedStart.setDate(adjustedStart.getDate() - 90);
-                        setPendingDateRange({ start: adjustedStart.toISOString().split('T')[0], end: pendingDateRange.end });
+                        const year = adjustedStart.getFullYear();
+                        const month = String(adjustedStart.getMonth() + 1).padStart(2, '0');
+                        const day = String(adjustedStart.getDate()).padStart(2, '0');
+                        setPendingDateRange({ start: `${year}-${month}-${day}`, end: pendingDateRange.end });
                       } else {
                         setPendingDateRange({ ...pendingDateRange, start: newStart });
                       }
@@ -1393,7 +1411,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       if (!pendingDateRange.end) return undefined;
                       const endDate = new Date(pendingDateRange.end);
                       endDate.setDate(endDate.getDate() - 90);
-                      return endDate.toISOString().split('T')[0];
+                      const year = endDate.getFullYear();
+                      const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                      const day = String(endDate.getDate()).padStart(2, '0');
+                      return `${year}-${month}-${day}`;
                     })()}
                     disabled={!selectedNode}
                     className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1418,7 +1439,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                         showError('Límite excedido', 'El intervalo máximo permitido es 90 días');
                         const adjustedEnd = new Date(startDate);
                         adjustedEnd.setDate(adjustedEnd.getDate() + 90);
-                        setPendingDateRange({ start: pendingDateRange.start, end: adjustedEnd.toISOString().split('T')[0] });
+                        const year = adjustedEnd.getFullYear();
+                        const month = String(adjustedEnd.getMonth() + 1).padStart(2, '0');
+                        const day = String(adjustedEnd.getDate()).padStart(2, '0');
+                        setPendingDateRange({ start: pendingDateRange.start, end: `${year}-${month}-${day}` });
                       } else {
                         setPendingDateRange({ ...pendingDateRange, end: newEnd });
                       }
@@ -1428,7 +1452,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       if (!pendingDateRange.start) return undefined;
                       const startDate = new Date(pendingDateRange.start);
                       startDate.setDate(startDate.getDate() + 90);
-                      return startDate.toISOString().split('T')[0];
+                      const year = startDate.getFullYear();
+                      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                      const day = String(startDate.getDate()).padStart(2, '0');
+                      return `${year}-${month}-${day}`;
                     })()}
                     disabled={!selectedNode}
                     className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"

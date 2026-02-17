@@ -1518,9 +1518,15 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       if (!useCustomRange) {
         const now = new Date();
         const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        const getLocalDateString = (date: Date): string => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
         dateRange = {
-          start: threeHoursAgo.toISOString().split('T')[0],
-          end: now.toISOString().split('T')[0]
+          start: getLocalDateString(threeHoursAgo),
+          end: getLocalDateString(now)
         };
       } else {
         return [];
