@@ -694,7 +694,7 @@ export const useInsertForm = ({
         }
 
         setIsSubmitting(false)
-        setMessage?.({ type: 'success', text: 'Grupo creado correctamente con localizaciones asignadas' })
+        setMessage?.({ type: 'success', text: 'Carpeta personal creada correctamente con localizaciones asignadas' })
         const cleanData = initializeFormData()
         setFormDataState(cleanData)
         setFormErrors({})
