@@ -82,6 +82,48 @@ function isTableAllowed(table) {
 }
 
 // ============================================================================
+// RUTA ESPECIAL: GET /regla-filtradas/:tipo
+// ============================================================================
+// Obtiene reglas filtradas usando la función SQL fn_get_reglas_filtradas
+// Uso: /regla-filtradas/sin_objeto  o  /regla-filtradas/con_objeto
+
+router.get('/regla-filtradas/:tipo', async (req, res) => {
+  const { tipo } = req.params;
+  
+  if (!['sin_objeto', 'con_objeto'].includes(tipo)) {
+    return res.status(400).json({ 
+      error: `Tipo inválido. Use 'sin_objeto' o 'con_objeto'`
+    });
+  }
+  
+  try {
+    const userSupabase = req.supabase || baseSupabase;
+    const conObjeto = tipo === 'con_objeto';
+    
+    logger.info(`[GET /regla-filtradas/${tipo}] Llamando fn_get_reglas_filtradas con p_con_objeto=${conObjeto}`);
+    
+    const { data, error } = await userSupabase
+      .schema(dbSchema)
+      .rpc('fn_get_reglas_filtradas', { p_con_objeto: conObjeto });
+    
+    if (error) {
+      logger.error(`❌ Error en fn_get_reglas_filtradas:`, JSON.stringify(error));
+      throw new Error(`RPC Error: ${error.message || JSON.stringify(error)}`);
+    }
+    
+    logger.info(`✅ [GET /regla-filtradas/${tipo}] Retornando ${(data || []).length} reglas`);
+    res.json(data || []);
+  } catch (error) {
+    logger.error(`❌ Error en GET /regla-filtradas/${tipo}: ${error.message}`);
+    logger.error(`Detalles:`, error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.details || error.toString()
+    });
+  }
+});
+
+// ============================================================================
 // RUTA GENÉRICA GET /:table
 // ============================================================================
 
