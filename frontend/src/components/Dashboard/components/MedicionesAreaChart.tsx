@@ -25,44 +25,73 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Función para calcular el rango de fechas en días
+// Función para calcular el rango de fechas en días basado en fechas únicas
 function calculateDateRange(xAxisData: string[]): number {
   if (xAxisData.length < 2) return 0;
   
+  // Contar fechas únicas (DD/MM) en los datos
+  const uniqueDates = new Set<string>();
+  xAxisData.forEach(x => {
+    const dateOnly = x?.split(' ')[0];
+    if (dateOnly) {
+      uniqueDates.add(dateOnly);
+    }
+  });
+  
+  const uniqueDateCount = uniqueDates.size;
+  
+  // Si hay una sola fecha, es ≤ 1 día
+  if (uniqueDateCount === 1) {
+    return 0.5; // Indica 1 día o menos
+  }
+  
+  // Si hay dos fechas, calcular la diferencia en días
+  if (uniqueDateCount === 2) {
+    const firstDate = xAxisData[0]?.split(' ')[0];
+    const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
+    
+    if (!firstDate || !lastDate) return 1;
+    
+    const [d1, m1] = firstDate.split('/').map(Number);
+    const [d2, m2] = lastDate.split('/').map(Number);
+    
+    const currentYear = new Date().getFullYear();
+    let y1 = currentYear;
+    let y2 = currentYear;
+    
+    if (m2 < m1) {
+      y2 = currentYear + 1;
+    }
+    
+    const dateFirst = new Date(y1, m1 - 1, d1);
+    const dateLast = new Date(y2, m2 - 1, d2);
+    
+    const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  
+  // Para más de 2 fechas, usar el cálculo original
   const firstDate = xAxisData[0]?.split(' ')[0];
   const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
   
-  console.log('[calculateDateRange] firstDate:', firstDate, 'lastDate:', lastDate);
-  
-  if (!firstDate || !lastDate) return 0;
+  if (!firstDate || !lastDate) return uniqueDateCount;
   
   const [d1, m1] = firstDate.split('/').map(Number);
   const [d2, m2] = lastDate.split('/').map(Number);
   
-  // Usar el año actual como predeterminado
   const currentYear = new Date().getFullYear();
   let y1 = currentYear;
   let y2 = currentYear;
   
-  // Si el mes del final es menor que el del inicio, asumir que cambió de año
   if (m2 < m1) {
     y2 = currentYear + 1;
   }
   
-  console.log('[calculateDateRange] parsed d1:', d1, 'm1:', m1, 'y1:', y1);
-  console.log('[calculateDateRange] parsed d2:', d2, 'm2:', m2, 'y2:', y2);
-  
   const dateFirst = new Date(y1, m1 - 1, d1);
   const dateLast = new Date(y2, m2 - 1, d2);
   
-  console.log('[calculateDateRange] dateFirst:', dateFirst, 'dateLast:', dateLast);
-  
   const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  
-  console.log('[calculateDateRange] RESULT:', diffDays);
-  
-  return diffDays;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // Función para determinar el intervalo de etiquetas del eje X según el rango
@@ -156,7 +185,9 @@ export function MedicionesAreaChart({
     console.log('[MedicionesAreaChart] Últimas 3 fechas:', xAxisData.slice(-3));
     
     // DEBUG: Logs para interval y labels
-    if (dateRangeDays > 21) {
+    if (dateRangeDays <= 1) {
+      console.log(`[MedicionesAreaChart] CASO 1 DÍA: ${xAxisData.length} puntos`);
+    } else if (dateRangeDays > 21) {
       const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
       console.log(`[MedicionesAreaChart] INTERVALO CALCULADO: ${intervalValue} (para ${xAxisData.length} puntos, buscando ~8 etiquetas)`);
       console.log(`[MedicionesAreaChart] Esto significa: 1 etiqueta cada ${intervalValue} puntos`);
@@ -263,14 +294,9 @@ export function MedicionesAreaChart({
             type: 'solid' as const,
             width: 1
           },
-          interval: (() => {
-            if (dateRangeDays > 21) {
-              const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
-              console.log(`[splitLine] interval SET TO: ${intervalValue}`);
-              return intervalValue;
-            }
-            console.log(`[splitLine] using function for dateRangeDays=${dateRangeDays}`);
-            return (index: number) => {
+          interval: dateRangeDays > 21 
+            ? Math.max(1, Math.floor(xAxisData.length / 8))  // Mantener ~8 líneas de división
+            : (index: number) => {
               // Para intervalos <= 21 días: mostrar línea en cada cambio de día
               if (index >= xAxisData.length - 1) return false;
               const current = xAxisData[index];
@@ -279,18 +305,19 @@ export function MedicionesAreaChart({
               const nextDate = next?.split(' ')[0] || next;
               return currentDate !== nextDate;
             }
-          })()
         },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
           interval: (() => {
+            // Para > 21 días: mantener ~8 etiquetas constantes
             if (dateRangeDays > 21) {
               const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
-              console.log(`[axisLabel] interval SET TO: ${intervalValue}`);
+              console.log(`[axisLabel] dateRangeDays=${dateRangeDays} > 21, interval=${intervalValue}, totalPoints=${xAxisData.length}`);
               return intervalValue;
             }
-            console.log(`[axisLabel] interval SET TO: 0 (dateRangeDays=${dateRangeDays})`);
+            // Para todos los demás casos: dejar interval=0 y dejar que el formatter controle
+            console.log(`[axisLabel] dateRangeDays=${dateRangeDays}, interval=0 (formatter controla)`);
             return 0;
           })(),
           formatter: (value: string, index: number) => {
@@ -307,9 +334,24 @@ export function MedicionesAreaChart({
             // Para rangos > 21 días: mostrar solo fechas, respetando el intervalo
             if (dateRangeDays > 21) {
               if (index === 0 || index === xAxisData.length - 1) {
-                console.log(`[formatter] index=${index}, dateRangeDays=${dateRangeDays}, returning: ${currentDate}`);
+                console.log(`[formatter] dateRangeDays > 21, index=${index}, returning date: ${currentDate}`);
               }
               return currentDate;
+            }
+            
+            // Para 1 día: mostrar horas en punto (00:00, 01:00, 02:00, etc.)
+            if (dateRangeDays <= 1) {
+              if (!currentTime) {
+                return '';
+              }
+              // Solo mostrar si es en punto (:00)
+              if (currentTime.endsWith(':00')) {
+                if (index === 0 || index === xAxisData.length - 1) {
+                  console.log(`[formatter] 1día, index=${index}, time=${currentTime}, mostrando`);
+                }
+                return currentTime;
+              }
+              return '';
             }
             
             if (index === 0) {
@@ -327,15 +369,13 @@ export function MedicionesAreaChart({
               return currentDate;
             }
             
-            // Mostrar horas para rangos cortos
+            // Mostrar horas para rangos cortos (1-21 días)
             if (showTime && currentTime) {
               const hourMatch = currentTime.match(/^(\d+):/);
               if (hourMatch) {
                 const hour = parseInt(hourMatch[1], 10);
                 
-                if (dateRangeDays <= 1) {
-                  if (hour % 3 === 0) return currentTime;
-                } else if (dateRangeDays <= 7) {
+                if (dateRangeDays <= 7) {
                   if (hour % 6 === 0) return currentTime;
                 } else if (dateRangeDays <= 14) {
                   if (hour % 12 === 0) return currentTime;
