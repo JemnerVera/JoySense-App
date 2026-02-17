@@ -32,19 +32,14 @@ export function useMenuEffects(
   const prevActiveTabRef = useRef<string>('');
   const lastStateUpdateRef = useRef<string>('');
 
-  // Cuando se contrae, eliminar todos los niveles 4+
-  useEffect(() => {
-    if (!isExpanded) {
-      setOpenSubMenusLevel3((prev) => {
-        const newSet = new Set(prev);
-        Array.from(prev).forEach((key) => {
-          const parts = key.split('-');
-          if (parts.length >= 4) newSet.delete(key);
-        });
-        return newSet;
-      });
-    }
-  }, [isExpanded, setOpenSubMenusLevel3]);
+  // 🔍 FIX: Mantener el estado de openSubMenusLevel3 incluso cuando colapsa
+  // El condicional de renderizado en MenuItemLevel4 se encarga de mostrar/ocultar
+  // No eliminar nada del estado para que cuando se expanda, todo se muestre correctamente
+  // useEffect(() => {
+  //   if (!isExpanded) {
+  //     // No hacer nada - mantener el estado intacto
+  //   }
+  // }, [isExpanded]);
 
   // Sincronizar apertura/cierre de menús cuando cambia activeTab
   useEffect(() => {

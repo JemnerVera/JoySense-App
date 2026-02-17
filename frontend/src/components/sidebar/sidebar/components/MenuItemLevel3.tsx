@@ -151,10 +151,19 @@ const MenuItemLevel3Component: React.FC<MenuItemLevel3Props> = ({
     level3Menu.subMenus && level3Menu.subMenus.length > 0;
   const level3MenuKey = level3ActiveTab;
   
+  // 🔍 FIX: Verificar si algún nivel 5 dentro de este nivel 3 está activo
+  // Esto es necesario para renderizar nivel 4 incluso cuando está colapsado
+  const hasActiveLevel5InTree = hasLevel4Menus &&
+    level3Menu.subMenus!.some((level4Menu) => {
+      const level4Key = `${level3ActiveTab}-${level4Menu.id}`;
+      return activeTab.startsWith(level4Key + '-');
+    });
+  
   // Para nivel 3: El menú está abierto si:
   // 1. Está en openSubMenusLevel3, O
-  // 2. El activeTab corresponde a este elemento
-  const isLevel4Open = openSubMenusLevel3.has(level3MenuKey) || isLevel3Active;
+  // 2. El activeTab corresponde a este elemento, O
+  // 3. Hay un nivel 5 activo dentro del árbol
+  const isLevel4Open = openSubMenusLevel3.has(level3MenuKey) || isLevel3Active || hasActiveLevel5InTree;
 
   const handleClick = () => {
     onLevel3Click(parentId, level2Id, level3Menu.id, hasLevel4Menus || false);
@@ -233,7 +242,7 @@ const MenuItemLevel3Component: React.FC<MenuItemLevel3Props> = ({
           </>
         )}
       </button>
-      {hasLevel4Menus && isExpanded && (
+      {hasLevel4Menus && (isExpanded || isLevel3Active || hasActiveLevel5InTree) && (
         <div
           ref={(el) => registerRef(level3MenuKey, el)}
           className="sub-menu-list"
