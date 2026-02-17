@@ -452,7 +452,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
         <div className="space-y-4">
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider text-green-500`}>
-              {tableName === 'carpeta' ? 'SELECCIONAR CARPETA' : 'SELECCIONAR CARPETA PERSONAL*'}
+              {tableName === 'carpeta' ? 'SELECCIONAR CARPETA COMPARTIDA*' : 'SELECCIONAR CARPETA PERSONAL*'}
             </label>
             <select
               value={selectedRow?.carpetaid ?? selectedRow?.entidadid ?? ''}
@@ -471,7 +471,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
               }}
               className="w-1/3 px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white text-base font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              <option value="" disabled hidden>{tableName === 'carpeta' ? 'CARPETA*' : 'CARPETA PERSONAL*'}</option>
+              <option value="" disabled hidden>{tableName === 'carpeta' ? 'CARPETA COMPARTIDA' : 'CARPETA PERSONAL*'}</option>
               {tableData.map((row: any) => (
                 <option key={tableName === 'carpeta' ? row.carpetaid : row.entidadid} value={tableName === 'carpeta' ? row.carpetaid : row.entidadid}>
                   {tableName === 'carpeta' ? row.carpeta : row.entidad}
