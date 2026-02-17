@@ -71,6 +71,50 @@ function calculateNiceInterval(min: number, max: number): { min: number; max: nu
   };
 }
 
+// Función para calcular el rango de fechas en días
+function calculateDateRange(xAxisData: string[]): number {
+  if (xAxisData.length < 2) return 0;
+  
+  const firstDate = xAxisData[0]?.split(' ')[0];
+  const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
+  
+  if (!firstDate || !lastDate) return 0;
+  
+  const [d1, m1, y1] = firstDate.split('/').map(Number);
+  const [d2, m2, y2] = lastDate.split('/').map(Number);
+  
+  const dateFirst = new Date(y1, m1 - 1, d1);
+  const dateLast = new Date(y2, m2 - 1, d2);
+  
+  const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  
+  return diffDays;
+}
+
+// Función para determinar el intervalo de etiquetas del eje X según el rango
+function calculateXAxisInterval(dateRangeDays: number): {
+  showTime: boolean;
+  intervalDays: number;
+} {
+  if (dateRangeDays <= 1) {
+    // Menos de 1 día: mostrar horas cada 1-2 puntos
+    return { showTime: true, intervalDays: 0 }; // 0 significa que se maneja por horas
+  } else if (dateRangeDays <= 7) {
+    // 1-7 días: mostrar horas cada 6 horas
+    return { showTime: true, intervalDays: 0 };
+  } else if (dateRangeDays <= 14) {
+    // 1-2 semanas: mostrar horas pero solo cada 12 horas aprox
+    return { showTime: true, intervalDays: 0 };
+  } else if (dateRangeDays <= 28) {
+    // 2-4 semanas: solo fechas, sin horas
+    return { showTime: false, intervalDays: 1 };
+  } else {
+    // Más de 4 semanas: solo fechas cada 2-3 días
+    return { showTime: false, intervalDays: 3 };
+  }
+}
+
 function cleanLabel(label: string): string {
   let cleaned = label.replace(/^comp_/, '');
   cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim();
@@ -140,6 +184,10 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
 
   const option = useMemo<EChartsOption>(() => {
     const xAxisData = data.map(d => d.time || d.fecha || '');
+    
+    // Calcular rango de fechas e intervalo de etiquetas
+    const dateRangeDays = calculateDateRange(xAxisData);
+    const { showTime, intervalDays } = calculateXAxisInterval(dateRangeDays);
 
     // Crear series solo para líneas visibles
     const series = filteredVisibleLines.map((lineKey, idx) => {
@@ -279,20 +327,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
-          interval: (() => {
-            // Calcular intervalo dinámico basado en cantidad de puntos
-            // Si hay pocos puntos (< 24), mostrar todos; si hay muchos, mostrar menos
-            const pointCount = xAxisData.length;
-            if (pointCount <= 24) {
-              return 0; // Mostrar todos
-            } else if (pointCount <= 48) {
-              return 1; // Mostrar cada 2
-            } else if (pointCount <= 96) {
-              return 3; // Mostrar cada 4
-            } else {
-              return Math.ceil(pointCount / 24); // Mostrar aproximadamente 24 etiquetas
-            }
-          })(),
+          interval: 0,  // Mostrar todas las etiquetas potenciales
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
             const current = xAxisData[index];
@@ -308,7 +343,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
             
             // SIEMPRE mostrar el primer elemento
             if (index === 0) {
-              if (currentTime) {
+              if (showTime && currentTime) {
                 return `${currentTime}\n${currentDate}`;
               }
               return currentDate;
@@ -316,20 +351,53 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
             
             // SIEMPRE mostrar si cambia de día
             if (prevDate !== currentDate) {
-              if (currentTime) {
-                return `${currentTime}\n${currentDate}`;
+              // Calcular si debemos mostrar esta fecha según intervalDays
+              if (intervalDays > 0) {
+                // Para rangos grandes, mostrar según intervalo
+                // Contar cuántos cambios de día ha habido desde el inicio
+                let dayCounter = 1;
+                for (let i = 1; i <= index; i++) {
+                  const iDate = xAxisData[i]?.split(' ')[0];
+                  const iPrevDate = xAxisData[i - 1]?.split(' ')[0];
+                  if (iDate !== iPrevDate) {
+                    dayCounter++;
+                  }
+                }
+                
+                // Mostrar etiqueta cada intervalDays días
+                if (dayCounter % intervalDays === 1) {
+                  return currentDate;
+                }
+              } else {
+                // Para rangos pequeños, mostrar cambio de día
+                if (showTime && currentTime) {
+                  return `${currentTime}\n${currentDate}`;
+                }
+                return currentDate;
               }
-              return currentDate;
             }
             
-            // Para el mismo día, mostrar solo algunas horas (cada 6 horas)
-            if (currentTime) {
+            // Mostrar horas solo si showTime es true y no es fin de día
+            if (showTime && currentTime) {
               const hourMatch = currentTime.match(/^(\d+):/);
               if (hourMatch) {
                 const hour = parseInt(hourMatch[1], 10);
-                // Mostrar a las 0, 6, 12, 18 horas
-                if (hour % 6 === 0) {
-                  return currentTime;
+                
+                if (dateRangeDays <= 1) {
+                  // Menos de 1 día: mostrar cada 2-3 horas
+                  if (hour % 3 === 0) {
+                    return currentTime;
+                  }
+                } else if (dateRangeDays <= 7) {
+                  // 1-7 días: mostrar cada 6 horas
+                  if (hour % 6 === 0) {
+                    return currentTime;
+                  }
+                } else if (dateRangeDays <= 14) {
+                  // 1-2 semanas: mostrar cada 12 horas
+                  if (hour % 12 === 0) {
+                    return currentTime;
+                  }
                 }
               }
             }
