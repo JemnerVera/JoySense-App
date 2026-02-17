@@ -95,26 +95,18 @@ const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; optimal: [
 /** Trunca la fecha fin a la hora actual cuando es hoy (redondeada a 15 min) */
 function getEffectiveEndDate(endDateStr: string): Date {
   const [eY, eM, eD] = endDateStr.split('-').map(Number)
-  const now = new Date()
-  // Usar UTC para comparación de fechas (evita problemas de timezone)
-  const isToday = now.getUTCFullYear() === eY && now.getUTCMonth() === eM - 1 && now.getUTCDate() === eD
-  if (isToday) {
-    const mins = Math.floor(now.getUTCMinutes() / 15) * 15
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), mins, 0, 0))
-  }
-  return new Date(eY, eM - 1, eD, 23, 59, 59, 999)
+  // Simplemente retornar una Date del día especificado
+  // La RPC se encargará de sumar 1 día automáticamente
+  return new Date(Date.UTC(eY, eM - 1, eD, 0, 0, 0, 0))
 }
 
-/** Formato para RPC: YYYY-MM-DD HH:mm:ss cuando es hoy, YYYY-MM-DD 23:59:59 cuando no */
+/** Formato para RPC: YYYY-MM-DD (sin hora) - igual que MedicionesDashboard */
 function formatEndDateForRpc(endDateStr: string): string {
   const effective = getEffectiveEndDate(endDateStr)
   const y = effective.getUTCFullYear()
   const m = String(effective.getUTCMonth() + 1).padStart(2, '0')
   const d = String(effective.getUTCDate()).padStart(2, '0')
-  const h = String(effective.getUTCHours()).padStart(2, '0')
-  const min = String(effective.getUTCMinutes()).padStart(2, '0')
-  const s = String(effective.getUTCSeconds()).padStart(2, '0')
-  return `${y}-${m}-${d} ${h}:${min}:${s}`
+  return `${y}-${m}-${d}`
 }
 
 // Función pura: convertir Metrica del backend a MetricConfig
@@ -705,7 +697,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       const effectiveEndDateStr = formatEndDateForRpc(endDateStr);
       const detailedData = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedNode.nodoid,
-        startDate: `${startDateStr} 00:00:00`,
+        startDate: startDateStr,
         endDate: effectiveEndDateStr
       });
       
@@ -851,7 +843,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     setLoadingComparisonData(true)
     
     try {
-      const startDateFormatted = `${detailedStartDate} 00:00:00`
+      const startDateFormatted = detailedStartDate
       const endDateFormatted = formatEndDateForRpc(detailedEndDate)
 
       const [startYear, startMonth, startDay] = detailedStartDate.split('-').map(Number)
@@ -1582,10 +1574,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const daysSpan = hoursSpan / 24
     const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
     
-    // Decidir granularidad:
-    // - Si hay 1-2 días calendario (ej. ayer→hoy): agrupar por 15 MINUTOS
-    // - Si hay 2 a 7 días: agrupar por 3 HORAS
-    // - Si hay más de 7 días: agrupar por DÍA
+    // Decidir granularidad (replicar exactamente como MedicionesDashboard):
+    // - Si hay <= 1 día: agrupar por 30 MINUTOS (mostrar HH:MM)
+    // - Si hay 1 a 7 días: agrupar por HORAS (mostrar DD/MM HH:00)
+    // - Si hay más de 7 días: agrupar por DÍA (mostrar DD/MM)
     let use15Minutes = false
     let use3Hours = false
     let useDays = false
@@ -1593,7 +1585,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     if (overrideGranularity) {
       useDays = overrideGranularity.useDays
     } else {
-      if (daysSpan <= 2) {
+      if (daysSpan <= 1) {
         use15Minutes = true
       } else if (daysSpan <= 7) {
         use3Hours = true
@@ -1602,7 +1594,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       }
     }
     
-    const useHours = false // No usaremos la granularidad de 1 hora completa anymore
+    const useHours = false
     
     const startProcess = performance.now()
 
@@ -1611,32 +1603,31 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const locsEnMediciones = Array.from(new Set(allMediciones.map(m => m.localizacionid).filter(id => id != null)))
     
     // Pre-calcular labels una sola vez para evitar búsquedas repetidas
-    // En minigráficos: usar getSensorLabel (sin localización)
-    // En gráfico detallado: usar getSeriesLabel (con localización)
     const labelCache = new Map<number, string>()
     const getOrCacheLabel = (m: MedicionData): string => {
       const key = m.sensorid || 0
       if (!labelCache.has(key)) {
         const label = useCustomRange 
-          ? getSeriesLabel(m)  // Análisis detallado: incluir localización
-          : getSensorLabelHelper(m, sensores, tipos)  // Minigráficos: solo sensor
+          ? getSeriesLabel(m)
+          : getSensorLabelHelper(m, sensores, tipos)
         labelCache.set(key, label)
       }
       return labelCache.get(key)!
     }
     
-    // Función auxiliar para generar timeKey consistentemente (DEBE estar antes de performGrouping)
-    // Granularidad: 15 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
+    // Función auxiliar para generar timeKey (replicar exactamente como MedicionesDashboard)
     const getTimeKey = (date: Date): string => {
       if (use15Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 15) * 15
+        // <= 1 día: formato HH:MM (solo hora, agregación cada 30 minutos)
+        const minutes = Math.floor(date.getMinutes() / 30) * 30
         return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
       }
       if (use3Hours) {
-        const hours = Math.floor(date.getHours() / 3) * 3
+        // 1-7 días: formato DD/MM HH:00 (fecha + hora)
+        const hours = date.getHours()
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`
       }
-      // Por defecto, agrupar por día
+      // > 7 días: formato DD/MM (solo fecha)
       return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
     }
     
