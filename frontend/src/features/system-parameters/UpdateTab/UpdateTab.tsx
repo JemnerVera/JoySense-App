@@ -302,6 +302,23 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     }
   });
 
+  // Sincronizar carpetaRelatedData a formData cuando se carga (para que handleUpdate tenga ubicacionids y usuarioids)
+  useEffect(() => {
+    if (tableName === 'carpeta' && selectedRow && !loadingRelated) {
+      console.log('[UpdateTab] Sincronizando carpetaRelatedData:', {
+        carpetaid: selectedRow.carpetaid,
+        ubicacionids: carpetaRelatedData.ubicacionids,
+        usuarioids: carpetaRelatedData.usuarioids,
+        loadingRelated
+      });
+      updateFormField('ubicacionids', carpetaRelatedData.ubicacionids);
+      updateFormField('usuarioids', carpetaRelatedData.usuarioids);
+      updateFormField('_existingUbicacionids', carpetaRelatedData.ubicacionids);
+      updateFormField('_existingUsuarioids', carpetaRelatedData.usuarioids);
+      console.log('[UpdateTab] ✅ Datos sincronizados');
+    }
+  }, [tableName, selectedRow?.carpetaid, carpetaRelatedData.ubicacionids, carpetaRelatedData.usuarioids, loadingRelated, updateFormField]);
+
   // Sincronizar entidadRelatedData a formData cuando se carga (para que handleUpdate tenga localizacionids)
   useEffect(() => {
     if (tableName === 'entidad' && selectedRow && !loadingRelated) {
