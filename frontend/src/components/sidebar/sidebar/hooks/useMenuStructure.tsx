@@ -54,7 +54,7 @@ export function useMenuStructure() {
     return false;
   };
 
-  const createOps = (name: string) => createOperations(name, t);
+  const createOps = (name: string, allowMassive?: boolean) => createOperations(name, t, allowMassive);
   const dispositivosTables = useMemo(() => getDispositivosTables(), []);
   const usuariosTables = useMemo(() => getUsuariosTables(), []);
   const parametrosGeoTables = useMemo(() => getParametrosGeoTables(), []);
