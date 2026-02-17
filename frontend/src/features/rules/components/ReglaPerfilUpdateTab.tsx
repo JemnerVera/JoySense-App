@@ -83,41 +83,54 @@ export function ReglaPerfilUpdateTab({
     setMessage(null);
 
     try {
-      const perfilesStatus = formData._perfilesStatus || {};
       const errors: string[] = [];
+      
+      // Obtener lista de perfiles seleccionados (soportar ambos formatos)
+      let perfilesSeleccionados: number[] = [];
+      
+      if (Array.isArray(formData._perfilesSeleccionados)) {
+        // Nuevo formato: array de IDs del DualListbox
+        perfilesSeleccionados = formData._perfilesSeleccionados;
+      } else if (formData._perfilesStatus) {
+        // Formato antiguo: objeto con statusid
+        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+        perfilesSeleccionados = Object.entries(perfilesStatus)
+          .filter(([_, statusid]) => statusid === 1)
+          .map(([perfilid, _]) => parseInt(perfilid));
+      }
 
-      // Actualizar cada perfil
-      for (const [perfilid, statusid] of Object.entries(perfilesStatus)) {
-        const numPerfilid = Number(perfilid);
-        const numStatusid = Number(statusid);
-        
-        // Buscar si ya existe en reglaPerfiles
-        const existing = reglaPerfiles.find(rp => rp.perfilid === numPerfilid);
-        
-        if (existing) {
-          // Si ya existe y cambió el status, actualizar
-          if (existing.statusid !== numStatusid) {
-            const result = await JoySenseService.updateTableRow('regla_perfil', existing.regla_perfilid.toString(), {
-              statusid: numStatusid,
-              usermodifiedid: 1, // TODO: usar user actual
-              datemodified: new Date().toISOString()
-            });
-            if (result?.error) {
-              errors.push(`Error actualizando Perfil ${perfilid}: ${result.error}`);
-            }
-          }
-        } else if (numStatusid === 1) {
-          // Si no existe pero debe estar activo, crear
-          const result = await JoySenseService.insertTableRow('regla_perfil', {
-            reglaid: selectedReglaid,
-            perfilid: numPerfilid,
-            statusid: numStatusid,
-            usercreatedid: 1, // TODO: usar user actual
-            datecreated: new Date().toISOString()
-          });
-          if (result?.error) {
-            errors.push(`Error creando Perfil ${perfilid}: ${result.error}`);
-          }
+      // Obtener lista de perfiles que están actualmente en la regla
+      const perfilesActuales = reglaPerfiles
+        .filter(rp => rp.statusid === 1)
+        .map(rp => rp.perfilid);
+
+      // Perfiles a eliminar (estaban activos pero ya no están seleccionados)
+      const perfilesAEliminar = reglaPerfiles
+        .filter(rp => rp.statusid === 1 && !perfilesSeleccionados.includes(rp.perfilid));
+
+      // Perfiles a agregar (nuevos seleccionados que no están en la regla)
+      const perfilesAAgregar = perfilesSeleccionados
+        .filter(perfilid => !perfilesActuales.includes(perfilid));
+
+      // Eliminar perfiles
+      for (const perfil of perfilesAEliminar) {
+        const result = await JoySenseService.deleteTableRow('regla_perfil', perfil.regla_perfilid.toString());
+        if (result?.error) {
+          errors.push(`Error eliminando Perfil ${perfil.perfilid}: ${result.error}`);
+        }
+      }
+
+      // Agregar nuevos perfiles
+      for (const perfilid of perfilesAAgregar) {
+        const result = await JoySenseService.insertTableRow('regla_perfil', {
+          reglaid: selectedReglaid,
+          perfilid: perfilid,
+          statusid: 1,
+          usercreatedid: 1, // TODO: usar user actual
+          datecreated: new Date().toISOString()
+        });
+        if (result?.error) {
+          errors.push(`Error creando Perfil ${perfilid}: ${result.error}`);
         }
       }
 

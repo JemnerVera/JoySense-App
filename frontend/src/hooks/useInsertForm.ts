@@ -377,9 +377,16 @@ export const useInsertForm = ({
       }
       
       // Verificar que haya al menos un perfil seleccionado
+      // Soportar tanto _perfilesSeleccionados (array) como _perfilesStatus (objeto)
+      const perfilesSeleccionados = formData._perfilesSeleccionados as number[] | undefined
       const perfilesStatus = formData._perfilesStatus as Record<number, number> | undefined
-      if (!perfilesStatus || Object.values(perfilesStatus).filter(statusid => statusid === 1).length === 0) {
-        errors._perfilesStatus = 'Debe seleccionar al menos un perfil activo'
+      
+      const hasSelectedPerfiles = 
+        (Array.isArray(perfilesSeleccionados) && perfilesSeleccionados.length > 0) ||
+        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === 1).length > 0)
+      
+      if (!hasSelectedPerfiles) {
+        errors._perfilesSeleccionados = 'Debe seleccionar al menos un perfil'
       }
       
       setFormErrors(errors)
@@ -393,9 +400,16 @@ export const useInsertForm = ({
       }
       
       // Verificar que haya al menos un perfil seleccionado
+      // Soportar tanto _perfilesSeleccionados (array) como _perfilesStatus (objeto)
+      const perfilesSeleccionados = formData._perfilesSeleccionados as number[] | undefined
       const perfilesStatus = formData._perfilesStatus as Record<number, number> | undefined
-      if (!perfilesStatus || Object.values(perfilesStatus).filter(statusid => statusid === 1).length === 0) {
-        errors._perfilesStatus = 'Debe seleccionar al menos un perfil activo'
+      
+      const hasSelectedPerfiles = 
+        (Array.isArray(perfilesSeleccionados) && perfilesSeleccionados.length > 0) ||
+        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === 1).length > 0)
+      
+      if (!hasSelectedPerfiles) {
+        errors._perfilesSeleccionados = 'Debe seleccionar al menos un perfil'
       }
       
       setFormErrors(errors)
@@ -703,8 +717,7 @@ export const useInsertForm = ({
       }
 
       // Caso especial para tabla 'usuarioperfil': crear múltiples registros (uno por cada perfil seleccionado)
-      if (tableName === 'usuarioperfil' && formData._perfilesStatus) {
-        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+      if (tableName === 'usuarioperfil' && (formData._perfilesSeleccionados || formData._perfilesStatus)) {
         const usuarioid = formData.usuarioid;
         
         if (!usuarioid) {
@@ -716,22 +729,34 @@ export const useInsertForm = ({
         const userId = currentUserId || 1;
         const now = new Date().toISOString();
         
-        // Crear un array de registros, uno por cada perfil con statusid = 1
-        const recordsToInsert = Object.entries(perfilesStatus)
-          .filter(([_, statusid]) => statusid === 1)
-          .map(([perfilid, _]) => ({
-            usuarioid: usuarioid,
-            perfilid: parseInt(perfilid),
-            statusid: 1,
-            usercreatedid: userId,
-            datecreated: now,
-            usermodifiedid: userId,
-            datemodified: now
-          }));
+        // Obtener lista de perfiles seleccionados (soportar ambos formatos)
+        let perfilesASeleccionar: number[] = [];
         
-        if (recordsToInsert.length === 0) {
-          throw new Error('Debe seleccionar al menos un perfil activo');
+        if (Array.isArray(formData._perfilesSeleccionados)) {
+          // Nuevo formato: array de IDs
+          perfilesASeleccionar = formData._perfilesSeleccionados;
+        } else if (formData._perfilesStatus) {
+          // Formato antiguo: objeto con statusid
+          const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+          perfilesASeleccionar = Object.entries(perfilesStatus)
+            .filter(([_, statusid]) => statusid === 1)
+            .map(([perfilid, _]) => parseInt(perfilid));
         }
+        
+        if (perfilesASeleccionar.length === 0) {
+          throw new Error('Debe seleccionar al menos un perfil');
+        }
+        
+        // Crear un array de registros, uno por cada perfil seleccionado
+        const recordsToInsert = perfilesASeleccionar.map((perfilid) => ({
+          usuarioid: usuarioid,
+          perfilid: perfilid,
+          statusid: 1,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }));
         
         // Insertar múltiples registros
         const results = [];
@@ -751,8 +776,7 @@ export const useInsertForm = ({
       }
 
       // Caso especial para tabla 'regla_perfil': crear múltiples registros (uno por cada perfil seleccionado)
-      if (tableName === 'regla_perfil' && formData._perfilesStatus) {
-        const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+      if (tableName === 'regla_perfil' && (formData._perfilesSeleccionados || formData._perfilesStatus)) {
         const reglaid = formData.reglaid;
         
         if (!reglaid) {
@@ -764,22 +788,34 @@ export const useInsertForm = ({
         const userId = currentUserId || 1;
         const now = new Date().toISOString();
         
-        // Crear un array de registros, uno por cada perfil con statusid = 1
-        const recordsToInsert = Object.entries(perfilesStatus)
-          .filter(([_, statusid]) => statusid === 1)
-          .map(([perfilid, _]) => ({
-            reglaid: reglaid,
-            perfilid: parseInt(perfilid),
-            statusid: 1,
-            usercreatedid: userId,
-            datecreated: now,
-            usermodifiedid: userId,
-            datemodified: now
-          }));
+        // Obtener lista de perfiles seleccionados (soportar ambos formatos)
+        let perfilesASeleccionar: number[] = [];
         
-        if (recordsToInsert.length === 0) {
-          throw new Error('Debe seleccionar al menos un perfil activo');
+        if (Array.isArray(formData._perfilesSeleccionados)) {
+          // Nuevo formato: array de IDs
+          perfilesASeleccionar = formData._perfilesSeleccionados;
+        } else if (formData._perfilesStatus) {
+          // Formato antiguo: objeto con statusid
+          const perfilesStatus = formData._perfilesStatus as Record<number, number>;
+          perfilesASeleccionar = Object.entries(perfilesStatus)
+            .filter(([_, statusid]) => statusid === 1)
+            .map(([perfilid, _]) => parseInt(perfilid));
         }
+        
+        if (perfilesASeleccionar.length === 0) {
+          throw new Error('Debe seleccionar al menos un perfil');
+        }
+        
+        // Crear un array de registros, uno por cada perfil seleccionado
+        const recordsToInsert = perfilesASeleccionar.map((perfilid) => ({
+          reglaid: reglaid,
+          perfilid: perfilid,
+          statusid: 1,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }));
         
         // Insertar múltiples registros
         const results = [];
@@ -976,6 +1012,30 @@ export const useInsertForm = ({
             usermodifiedid: userId,
             datemodified: new Date().toISOString()
           });
+        }
+        
+        // Crear regla_perfil si hay perfiles seleccionados
+        if (formData._perfilesSeleccionados && (Array.isArray(formData._perfilesSeleccionados) && formData._perfilesSeleccionados.length > 0)) {
+          const perfilesSeleccionados = formData._perfilesSeleccionados as number[];
+          
+          for (const perfilid of perfilesSeleccionados) {
+            const reglaPerfilRecord: Record<string, any> = {
+              reglaid: reglaid,
+              perfilid: perfilid,
+              statusid: 1,
+              usercreatedid: userId,
+              usermodifiedid: userId
+            };
+            
+            try {
+              const perfilResult = await JoySenseService.insertTableRow('regla_perfil', reglaPerfilRecord);
+              if (!Array.isArray(perfilResult) && (perfilResult as any)?.error) {
+                console.warn(`Advertencia al asignar perfil ${perfilid}:`, (perfilResult as any).error);
+              }
+            } catch (error) {
+              console.warn(`Error al asignar perfil ${perfilid}:`, error);
+            }
+          }
         }
         
         // Finalmente, activar la regla (statusid=1)
