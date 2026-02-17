@@ -178,13 +178,6 @@ export function useMenuStructure() {
                       subMenus: createOps('configuracion-notificaciones-regla-regla'),
                     },
                     {
-                      id: 'regla_perfil',
-                      label: 'REGLA PERFIL',
-                      icon: getTableIcon('regla'),
-                      hasOperations: true,
-                      subMenus: createOps('configuracion-notificaciones-regla-regla_perfil'),
-                    },
-                    {
                       id: 'regla_objeto',
                       label: 'ALCANCE DE REGLA',
                       icon: getTableIcon('regla'),
