@@ -351,19 +351,19 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
           />
 
           {/* Botones de acción */}
-          <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-neutral-700">
-            <button
-              onClick={onCancel}
-              className="px-6 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider"
-            >
-              CANCELAR
-            </button>
+          <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={handleUpdate}
               disabled={isSubmitting || !selectedReglaid}
               className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium font-mono tracking-wider`}
             >
               {isSubmitting ? 'GUARDANDO...' : 'GUARDAR'}
+            </button>
+            <button
+              onClick={onCancel}
+              className={`px-6 py-2 border border-gray-300 dark:border-neutral-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors font-medium font-mono tracking-wider ${getThemeColor('text')}`}
+            >
+              CANCELAR
             </button>
           </div>
         </div>
