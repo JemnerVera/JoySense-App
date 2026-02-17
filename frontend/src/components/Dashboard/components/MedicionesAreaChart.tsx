@@ -233,33 +233,26 @@ export function MedicionesAreaChart({
         splitLine: {
           show: true,
           lineStyle: {
-            color: 'rgba(255, 255, 255, 0.2)',
-            type: 'dashed' as const
+            color: 'rgba(255, 255, 255, 0.3)',
+            type: 'solid' as const,
+            width: 1
           },
           interval: (index: number) => {
+            if (index >= xAxisData.length - 1) return false;
+            
             const current = xAxisData[index];
             const next = xAxisData[index + 1];
             
-            // Si el formato tiene espacio, es "HH:MM DD/MM", extraer fecha (parte [0])
-            // Si no, es solo "DD/MM"
             const currentDate = current?.split(' ')[0] || current;
             const nextDate = next?.split(' ')[0] || next;
             
-            const shouldShowLine = currentDate !== nextDate;
-            
-            // Logs para debugging - mostrar TODOS los índices
-            if (index <= xAxisData.length - 2) {
-              console.log(`[splitLine index=${index}/${xAxisData.length}] current="${current}" → date="${currentDate}" | next="${next}" → date="${nextDate}" | showLine=${shouldShowLine}`);
-            }
-            
-            // Mostrar línea si cambia de día
-            return shouldShowLine;
+            return currentDate !== nextDate;
           }
         },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
-          interval: 0,  // Mostrar todas las etiquetas potenciales
+          interval: 0,  // Mostrar todas las etiquetas
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
             const current = xAxisData[index];
@@ -269,11 +262,9 @@ export function MedicionesAreaChart({
             
             const currentDate = parts[0];
             const currentTime = parts[1];
-            
-            // Extraer fecha anterior
             const prevDate = prev?.split(' ')[0];
             
-            // SIEMPRE mostrar el primer elemento
+            // Primer elemento: siempre mostrar
             if (index === 0) {
               if (showTime && currentTime) {
                 return `${currentTime}\n${currentDate}`;
@@ -281,60 +272,30 @@ export function MedicionesAreaChart({
               return currentDate;
             }
             
-            // SIEMPRE mostrar si cambia de día
+            // Cambio de día: siempre mostrar la fecha
             if (prevDate !== currentDate) {
-              // Calcular si debemos mostrar esta fecha según intervalDays
-              if (intervalDays > 0) {
-                // Para rangos grandes, mostrar según intervalo
-                // Contar cuántos cambios de día ha habido desde el inicio
-                let dayCounter = 1;
-                for (let i = 1; i <= index; i++) {
-                  const iDate = xAxisData[i]?.split(' ')[0];
-                  const iPrevDate = xAxisData[i - 1]?.split(' ')[0];
-                  if (iDate !== iPrevDate) {
-                    dayCounter++;
-                  }
-                }
-                
-                // Mostrar etiqueta cada intervalDays días
-                if (dayCounter % intervalDays === 1) {
-                  return currentDate;
-                }
-              } else {
-                // Para rangos pequeños, mostrar cambio de día
-                if (showTime && currentTime) {
-                  return `${currentTime}\n${currentDate}`;
-                }
-                return currentDate;
+              if (showTime && currentTime) {
+                return `${currentTime}\n${currentDate}`;
               }
+              return currentDate;
             }
             
-            // Mostrar horas solo si showTime es true y no es fin de día
+            // Mostrar horas para rangos cortos
             if (showTime && currentTime) {
               const hourMatch = currentTime.match(/^(\d+):/);
               if (hourMatch) {
                 const hour = parseInt(hourMatch[1], 10);
                 
                 if (dateRangeDays <= 1) {
-                  // Menos de 1 día: mostrar cada 2-3 horas
-                  if (hour % 3 === 0) {
-                    return currentTime;
-                  }
+                  if (hour % 3 === 0) return currentTime;
                 } else if (dateRangeDays <= 7) {
-                  // 1-7 días: mostrar cada 6 horas
-                  if (hour % 6 === 0) {
-                    return currentTime;
-                  }
+                  if (hour % 6 === 0) return currentTime;
                 } else if (dateRangeDays <= 14) {
-                  // 1-2 semanas: mostrar cada 12 horas
-                  if (hour % 12 === 0) {
-                    return currentTime;
-                  }
+                  if (hour % 12 === 0) return currentTime;
                 }
               }
             }
             
-            // No mostrar nada para los demás puntos
             return '';
           }
         }
