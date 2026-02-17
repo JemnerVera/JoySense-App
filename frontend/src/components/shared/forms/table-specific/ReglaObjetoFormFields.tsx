@@ -4,8 +4,7 @@
 // Componente específico para renderizar formulario de asignación de objetos a reglas
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { SelectWithPlaceholder } from '../../../selectors';
-import { MultiSelectWithPlaceholder } from '../../../selectors';
+import { DualListbox, SelectWithPlaceholder } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
@@ -266,7 +265,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Nivel 1: País */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'pais' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>País</span>
               {activeLevel !== 'pais' && (
@@ -280,12 +279,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               )}
             </label>
             {activeLevel === 'pais' ? (
-              <MultiSelectWithPlaceholder
+              <DualListbox
                 value={selectedObjects}
                 onChange={setSelectedObjects}
                 options={paisOptions}
                 placeholder="SELECCIONAR PAÍSES"
                 disabled={disabled}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
               />
             ) : (
               <SelectWithPlaceholder
@@ -300,7 +303,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           </div>
 
           {/* Nivel 2: Empresa */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'empresa' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>Empresa</span>
               {selectedPais && activeLevel !== 'empresa' && (
@@ -314,12 +317,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               )}
             </label>
             {activeLevel === 'empresa' ? (
-              <MultiSelectWithPlaceholder
+              <DualListbox
                 value={selectedObjects}
                 onChange={setSelectedObjects}
                 options={empresaOptions}
                 placeholder="SELECCIONAR EMPRESAS"
                 disabled={disabled || !selectedPais}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
               />
             ) : (
               <SelectWithPlaceholder
@@ -334,7 +341,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           </div>
 
           {/* Nivel 3: Fundo */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'fundo' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>Fundo</span>
               {selectedEmpresa && activeLevel !== 'fundo' && (
@@ -348,12 +355,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               )}
             </label>
             {activeLevel === 'fundo' ? (
-              <MultiSelectWithPlaceholder
+              <DualListbox
                 value={selectedObjects}
                 onChange={setSelectedObjects}
                 options={fundoOptions}
                 placeholder="SELECCIONAR FUNDOS"
                 disabled={disabled || !selectedEmpresa}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
               />
             ) : (
               <SelectWithPlaceholder
@@ -368,7 +379,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           </div>
 
           {/* Nivel 4: Ubicación */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'ubicacion' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>Ubicación</span>
               {selectedFundo && activeLevel !== 'ubicacion' && (
@@ -382,12 +393,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               )}
             </label>
             {activeLevel === 'ubicacion' ? (
-              <MultiSelectWithPlaceholder
+              <DualListbox
                 value={selectedObjects}
                 onChange={setSelectedObjects}
                 options={ubicacionOptions}
                 placeholder="SELECCIONAR UBICACIONES"
                 disabled={disabled || !selectedFundo}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
               />
             ) : (
               <SelectWithPlaceholder
@@ -402,7 +417,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           </div>
 
           {/* Nivel 5: Nodo */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'nodo' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>Nodo</span>
               {selectedUbicacion && activeLevel !== 'nodo' && (
@@ -416,12 +431,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               )}
             </label>
             {activeLevel === 'nodo' ? (
-              <MultiSelectWithPlaceholder
+              <DualListbox
                 value={selectedObjects}
                 onChange={setSelectedObjects}
                 options={nodoOptions}
                 placeholder="SELECCIONAR NODOS"
                 disabled={disabled || !selectedUbicacion}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
               />
             ) : (
               <SelectWithPlaceholder
@@ -436,7 +455,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           </div>
 
           {/* Nivel 6: Localización */}
-          <div className="space-y-2">
+          <div className={`space-y-2 ${activeLevel === 'localizacion' ? 'md:col-span-3' : ''}`}>
             <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
               <span>Localización</span>
               {selectedNodo && activeLevel !== 'localizacion' && (
@@ -449,12 +468,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
                 </button>
               )}
             </label>
-            <MultiSelectWithPlaceholder
+            <DualListbox
               value={activeLevel === 'localizacion' ? selectedObjects : []}
               onChange={handleLocalizacionChange}
               options={localizacionOptions}
               placeholder={selectedNodo ? "SELECCIONAR LOCALIZACIONES" : "---"}
               disabled={disabled || !selectedNodo || activeLevel !== 'localizacion'}
+              canFilter={true}
+              themeColor="orange"
+              availableLabel="DISPONIBLES"
+              selectedLabel="SELECCIONADOS"
             />
           </div>
         </div>

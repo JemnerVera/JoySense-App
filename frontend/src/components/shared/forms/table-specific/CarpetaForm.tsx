@@ -4,7 +4,7 @@
 // Formulario unificado para crear/actualizar carpeta con ubicaciones y usuarios
 
 import React from 'react';
-import { MultiSelectWithPlaceholder } from '../../../selectors';
+import { DualListbox } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 
 export interface CarpetaFormData {
@@ -82,15 +82,18 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <p className="text-sm text-neutral-400 mb-2 font-mono">
           Seleccione las ubicaciones disponibles según su geografía
         </p>
-        <MultiSelectWithPlaceholder
+        <DualListbox
           value={formData.ubicacionids || []}
-          onChange={(value) =>
-            setFormData((prev) => ({ ...prev, ubicacionids: value }))
+          onChange={(ubicacionids) =>
+            setFormData((prev) => ({ ...prev, ubicacionids }))
           }
           options={ubicacionesOptions}
           placeholder="SELECCIONAR UBICACIONES"
           disabled={loading}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          canFilter={true}
+          themeColor={themeColor}
+          availableLabel="DISPONIBLES"
+          selectedLabel="SELECCIONADOS"
         />
       </div>
 
@@ -102,15 +105,18 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <p className="text-sm text-neutral-400 mb-2 font-mono">
           Usuarios con permisos para la geografía de las ubicaciones seleccionadas
         </p>
-        <MultiSelectWithPlaceholder
+        <DualListbox
           value={formData.usuarioids || []}
-          onChange={(value) =>
-            setFormData((prev) => ({ ...prev, usuarioids: value }))
+          onChange={(usuarioids) =>
+            setFormData((prev) => ({ ...prev, usuarioids }))
           }
           options={usuariosOptions}
           placeholder="SELECCIONAR USUARIOS"
           disabled={loading}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          canFilter={true}
+          themeColor={themeColor}
+          availableLabel="DISPONIBLES"
+          selectedLabel="SELECCIONADOS"
         />
       </div>
 

@@ -3,8 +3,8 @@
 // ============================================================================
 // Formulario unificado para crear/actualizar grupo con localizaciones
 
-import React, { useMemo } from 'react';
-import { MultiSelectWithPlaceholder } from '../../../selectors';
+import React from 'react';
+import { DualListbox } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 
 export interface GrupoFormData {
@@ -36,32 +36,6 @@ const GrupoForm: React.FC<GrupoFormProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Crear un mapa de valor de opción -> todos los IDs que representa
-  const valueToIdsMap = useMemo(() => {
-    const map = new Map<any, number[]>();
-    localizacionesOptions.forEach((opt: any) => {
-      if (opt._allIds) {
-        map.set(opt.value, opt._allIds);
-      }
-    });
-    return map;
-  }, [localizacionesOptions]);
-
-  // Crear un mapa inverso: IDs -> índice de opción (para mostrar cuáles están seleccionadas)
-  const idsToValueMap = useMemo(() => {
-    const map = new Map<number, any>();
-    localizacionesOptions.forEach((opt: any) => {
-      if (opt._allIds && Array.isArray(opt._allIds)) {
-        // Mapear el primer ID de cada grupo para identificar la opción seleccionada
-        // Así el selector sabe qué opciones mostrar como seleccionadas
-        opt._allIds.forEach((id: number) => {
-          map.set(id, opt.value);
-        });
-      }
-    });
-    return map;
-  }, [localizacionesOptions]);
-
   const themeClasses = {
     green: {
       text: 'text-green-500',
@@ -77,18 +51,6 @@ const GrupoForm: React.FC<GrupoFormProps> = ({
 
   const theme = themeClasses[themeColor];
   const isFormValid = (formData.entidad || '').trim().length > 0;
-
-  // Convertir los IDs actuales a sus valores de opción correspondientes para que el selector muestre qué está seleccionado
-  const selectedOptionValues = useMemo(() => {
-    const selected = new Set<any>();
-    formData.localizacionids.forEach((id: number) => {
-      const optionValue = idsToValueMap.get(id);
-      if (optionValue !== undefined) {
-        selected.add(optionValue);
-      }
-    });
-    return Array.from(selected);
-  }, [formData.localizacionids, idsToValueMap]);
 
   return (
     <div className="space-y-6">
@@ -114,30 +76,18 @@ const GrupoForm: React.FC<GrupoFormProps> = ({
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           LOCALIZACIÓN DE GRUPO*
         </label>
-        <MultiSelectWithPlaceholder
-          value={selectedOptionValues}
-          onChange={(selectedValues) => {
-            // Los valores seleccionados son los índices de las opciones (0, 1, 2, etc.)
-            // Necesitamos mapearlos a todos los localizacionids correspondientes
-            const allLocalizacionids = new Set<number>();
-            
-            selectedValues.forEach((v: any) => {
-              // Buscar en el mapa si este valor representa múltiples IDs
-              const ids = valueToIdsMap.get(v);
-              if (ids && Array.isArray(ids)) {
-                ids.forEach((id: number) => allLocalizacionids.add(id));
-              }
-            });
-            
-            setFormData((prev) => ({ 
-              ...prev, 
-              localizacionids: Array.from(allLocalizacionids).sort((a, b) => a - b)
-            }))
-          }}
+        <DualListbox
+          value={formData.localizacionids || []}
+          onChange={(localizacionids) =>
+            setFormData((prev) => ({ ...prev, localizacionids }))
+          }
           options={localizacionesOptions}
           placeholder="SELECCIONAR LOCALIZACIONES"
           disabled={loading}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white text-base font-mono focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          canFilter={true}
+          themeColor={themeColor}
+          availableLabel="DISPONIBLES"
+          selectedLabel="SELECCIONADOS"
         />
       </div>
 
