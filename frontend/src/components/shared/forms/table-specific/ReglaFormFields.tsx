@@ -381,7 +381,7 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
         </div>
         {/* Tabla de umbrales */}
         {reglaUmbralRows.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${isFieldsDisabled ? 'opacity-60 pointer-events-none' : ''}`}>
               <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-300 dark:border-neutral-600">
@@ -564,7 +564,17 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
               </tbody>
             </table>
             </div>
-        ) : null}
+        ) : (
+          <div className={`p-4 border border-neutral-600 rounded-lg text-center ${
+            isFieldsDisabled
+              ? 'bg-neutral-800/50 text-neutral-500'
+              : 'bg-neutral-800/50 text-gray-400'
+          } font-mono text-sm`}>
+            {isFieldsDisabled 
+              ? 'Completa el nombre de la regla para agregar umbrales'
+              : 'Haz clic en "+ AGREGAR UMBRAL" para comenzar'}
+          </div>
+        )}
       </div>
 
       {/* Sección de Perfiles - DualListbox */}
