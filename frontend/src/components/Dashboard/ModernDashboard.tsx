@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { flushSync } from "react-dom"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, Legend } from "recharts"
 import { JoySenseService } from "../../services/backend-api"
 import SupabaseRPCService from "../../services/supabase-rpc"
 import { NodeSelector } from "./NodeSelector"

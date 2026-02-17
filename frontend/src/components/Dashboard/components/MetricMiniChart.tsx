@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react'
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
+import ReactECharts from 'echarts-for-react'
+import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import type { MetricConfig } from '../types'
 
 interface MetricMiniChartProps {
@@ -13,7 +15,7 @@ interface MetricMiniChartProps {
 
 /**
  * Componente memoizado para renderizar un minigráfico de métrica
- * Evita re-renderizados innecesarios cuando cambian otros props
+ * Usa ECharts con lógica sofisticada del eje X similar a MedicionesAreaChart
  */
 function MetricMiniChartComponent({
   metric,
@@ -52,6 +54,221 @@ function MetricMiniChartComponent({
 
   const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899', '#10b981']
 
+  // Función para calcular el rango de fechas en días
+  const calculateDateRange = (xAxisData: string[]): number => {
+    if (xAxisData.length < 2) return 0;
+    
+    const firstDate = xAxisData[0]?.split(' ')[0];
+    const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
+    
+    if (!firstDate || !lastDate) return 0;
+    
+    const [d1, m1, y1] = firstDate.split('/').map(Number);
+    const [d2, m2, y2] = lastDate.split('/').map(Number);
+    
+    const dateFirst = new Date(y1 || new Date().getFullYear(), m1 - 1, d1);
+    const dateLast = new Date(y2 || new Date().getFullYear(), m2 - 1, d2);
+    
+    const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+    return diffDays;
+  };
+
+  // Función para determinar el intervalo de etiquetas del eje X según el rango
+  // SINCRONIZADO con MedicionesAreaChart.tsx
+  const calculateXAxisInterval = (dateRangeDays: number): { showTime: boolean; intervalDays: number } => {
+    if (dateRangeDays <= 1) {
+      return { showTime: true, intervalDays: 0 };
+    } else if (dateRangeDays <= 7) {
+      return { showTime: true, intervalDays: 0 };
+    } else if (dateRangeDays <= 21) {
+      return { showTime: true, intervalDays: 0 };
+    } else if (dateRangeDays <= 28) {
+      return { showTime: false, intervalDays: 1 };
+    } else {
+      return { showTime: false, intervalDays: 3 };
+    }
+  };
+
+  // Crear opción de ECharts
+  const option = useMemo<EChartsOption>(() => {
+    if (!chartData || chartData.length === 0) {
+      return { xAxis: { data: [] }, yAxis: {}, series: [] };
+    }
+
+    const xAxisData = chartData.map(d => d.time || '');
+    
+    // Calcular rango de fechas e intervalo de etiquetas
+    const dateRangeDays = calculateDateRange(xAxisData);
+    const { showTime, intervalDays } = calculateXAxisInterval(dateRangeDays);
+
+    // Crear series
+    const series = seriesKeys.map((seriesKey, idx) => ({
+      name: labelSimplification[seriesKey],
+      type: 'line' as const,
+      symbol: 'none' as const,
+      sampling: 'lttb' as const,
+      itemStyle: {
+        color: colors[idx % colors.length]
+      },
+      lineStyle: {
+        color: colors[idx % colors.length],
+        width: 2
+      },
+      data: chartData.map(d => {
+        const val = d[seriesKey];
+        return typeof val === 'number' && !isNaN(val) ? val : null;
+      })
+    }));
+
+    return {
+      tooltip: {
+        trigger: 'axis' as const,
+        position: (pt: [number, number]) => [pt[0], '10%'],
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        formatter: (params: any) => {
+          if (!Array.isArray(params)) return '';
+          const lines: string[] = [];
+          params.forEach((p: any) => {
+            const val = p.value;
+            const display =
+              typeof val === 'number' && !isNaN(val) ? `${val.toFixed(1)} ${metric.unit}` : '-';
+            lines.push(`${p.marker} ${p.seriesName}: ${display}`);
+          });
+          const date = params[0]?.axisValue || '';
+          return `${date}<br/>${lines.join('<br/>')}`;
+        }
+      },
+      grid: {
+        left: '2%',
+        right: '2%',
+        bottom: '8%',
+        top: '5%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category' as const,
+        boundaryGap: false,
+        data: xAxisData,
+        axisLine: {
+          show: true,
+          lineStyle: { color: '#666' }
+        },
+        axisTick: {
+          alignWithLabel: true,
+          lineStyle: { color: '#666' }
+        },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: 'rgba(255, 255, 255, 0.1)',
+            type: 'solid' as const,
+            width: 1
+          },
+          interval: dateRangeDays > 7 
+            ? Math.max(1, Math.floor(xAxisData.length / 4))  // ~4 líneas para minigráfico
+            : (index: number) => {
+              if (index >= xAxisData.length - 1) return false;
+              const current = xAxisData[index];
+              const next = xAxisData[index + 1];
+              const currentDate = current?.split(' ')[0] || current;
+              const nextDate = next?.split(' ')[0] || next;
+              return currentDate !== nextDate;
+            }
+        },
+        axisLabel: {
+          color: '#9ca3af',
+          fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+          fontSize: 10,
+          interval: (() => {
+            if (dateRangeDays > 7) {
+              return Math.max(1, Math.floor(xAxisData.length / 4));
+            }
+            return 0;
+          })(),
+          formatter: (value: string, index: number) => {
+            const parts = value.split(' ');
+            const current = xAxisData[index];
+            const prev = xAxisData[index - 1];
+            
+            if (!parts || parts.length === 0) return '';
+            
+            const currentDate = parts[0];
+            const currentTime = parts[1];
+            const prevDate = prev?.split(' ')[0];
+            
+            // Para rangos > 7 días: mostrar solo fechas
+            if (dateRangeDays > 7) {
+              return currentDate;
+            }
+            
+            // Para 1 día: mostrar horas cada 3 horas
+            if (dateRangeDays <= 1) {
+              if (!currentTime) return '';
+              if (currentTime.endsWith(':00')) {
+                const hourMatch = currentTime.match(/^(\d+):/);
+                if (hourMatch) {
+                  const hour = parseInt(hourMatch[1], 10);
+                  if (hour % 3 === 0) return currentTime;
+                }
+              }
+              return '';
+            }
+            
+            if (index === 0) {
+              if (showTime && currentTime) {
+                return `${currentTime}\n${currentDate}`;
+              }
+              return currentDate;
+            }
+            
+            // Cambio de día: siempre mostrar la fecha
+            if (prevDate !== currentDate) {
+              if (showTime && currentTime) {
+                return `${currentTime}\n${currentDate}`;
+              }
+              return currentDate;
+            }
+            
+            // Mostrar horas para rangos cortos (1-7 días)
+            if (showTime && currentTime) {
+              const hourMatch = currentTime.match(/^(\d+):/);
+              if (hourMatch) {
+                const hour = parseInt(hourMatch[1], 10);
+                if (dateRangeDays <= 7) {
+                  if (hour % 6 === 0) return currentTime;
+                }
+              }
+            }
+            
+            return '';
+          }
+        }
+      },
+      yAxis: {
+        type: 'value' as const,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: '#9ca3af',
+          fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
+          fontSize: 10
+        }
+      },
+      legend: {
+        show: seriesKeys.length > 1,
+        bottom: 0,
+        textStyle: {
+          color: '#9ca3af',
+          fontSize: 9,
+          fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
+        }
+      },
+      series
+    };
+  }, [chartData, seriesKeys, labelSimplification, metric.unit]);
+
   return (
     <div
       className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500/20 p-6 group ${
@@ -85,83 +302,13 @@ function MetricMiniChartComponent({
 
       <div className="h-32 mb-4">
         {hasData ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <XAxis
-                dataKey="time"
-                axisLine={false}
-                tickLine={false}
-                tick={{
-                  fontSize: 10,
-                  fill: '#9ca3af',
-                  fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace"
-                }}
-                interval={(() => {
-                  if (chartData.length <= 5) return 0
-                  if (chartData.length <= 10) return 1
-                  return Math.floor(chartData.length / 4)
-                })()}
-              />
-              <YAxis hide domain={['auto', 'auto']} />
-              {seriesKeys.map((seriesKey, index) => (
-                <Line
-                  key={seriesKey}
-                  type="monotone"
-                  dataKey={seriesKey}
-                  name={labelSimplification[seriesKey]}
-                  stroke={colors[index % colors.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{
-                    r: 4,
-                    fill: colors[index % colors.length],
-                    stroke: colors[index % colors.length],
-                    strokeWidth: 2
-                  }}
-                  strokeOpacity={0.8}
-                  connectNulls={true}
-                  isAnimationActive={false}
-                />
-              ))}
-              <Legend
-                verticalAlign="bottom"
-                height={20}
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{
-                  fontSize: '9px',
-                  fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                  paddingTop: '10px'
-                }}
-              />
-              <Tooltip
-                labelFormatter={(label) => {
-                  const isDate = label && typeof label === 'string' && label.includes('/')
-                  return (
-                    <span style={{ fontSize: '12px', opacity: 0.7, display: 'block', marginTop: '4px' }}>
-                      {isDate ? label : `${t('dashboard.tooltip.hour')} ${label}`}
-                    </span>
-                  )
-                }}
-                formatter={(value: number, name: string) => {
-                  const simplifiedName = labelSimplification[name] || name
-                  return [
-                    <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                      {simplifiedName}: {value ? value.toFixed(1) : '--'} {metric.unit}
-                    </span>
-                  ]
-                }}
-                contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#ffffff',
-                  fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                  padding: '8px 12px'
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div style={{ width: '100%', height: '100%' }}>
+            <ReactECharts
+              option={option}
+              style={{ width: '100%', height: '100%' }}
+              opts={{ renderer: 'canvas' }}
+            />
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800/30">
             <div className="text-center text-blue-700 dark:text-blue-400 mb-3">
