@@ -93,6 +93,7 @@ function calculateDateRange(xAxisData: string[]): number {
 }
 
 // Función para determinar el intervalo de etiquetas del eje X según el rango
+// SINCRONIZADO con MedicionesAreaChart.tsx
 function calculateXAxisInterval(dateRangeDays: number): {
   showTime: boolean;
   intervalDays: number;
@@ -103,11 +104,11 @@ function calculateXAxisInterval(dateRangeDays: number): {
   } else if (dateRangeDays <= 7) {
     // 1-7 días: mostrar horas cada 6 horas
     return { showTime: true, intervalDays: 0 };
-  } else if (dateRangeDays <= 14) {
-    // 1-2 semanas: mostrar horas pero solo cada 12 horas aprox
+  } else if (dateRangeDays <= 21) {
+    // 1-3 semanas: mostrar horas (más detalle como si fuera > 3 semanas)
     return { showTime: true, intervalDays: 0 };
   } else if (dateRangeDays <= 28) {
-    // 2-4 semanas: solo fechas, sin horas
+    // 3-4 semanas: solo fechas, sin horas
     return { showTime: false, intervalDays: 1 };
   } else {
     // Más de 4 semanas: solo fechas cada 2-3 días
@@ -306,28 +307,33 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
         splitLine: {
           show: true,
           lineStyle: {
-            color: 'rgba(255, 255, 255, 0.2)',
-            type: 'dashed' as const
+            color: 'rgba(255, 255, 255, 0.3)',
+            type: 'solid' as const,
+            width: 1
           },
-          interval: (index: number) => {
-            const current = xAxisData[index];
-            const next = xAxisData[index + 1];
-            
-            // Si el formato tiene espacio, es "HH:MM DD/MM", extraer fecha (parte [0])
-            // Si no, es solo "DD/MM"
-            const currentDate = current?.split(' ')[0] || current;
-            const nextDate = next?.split(' ')[0] || next;
-            
-            const shouldShowLine = currentDate !== nextDate;
-            
-            // Mostrar línea si cambia de día
-            return shouldShowLine;
-          }
+          interval: dateRangeDays > 7 
+            ? Math.max(1, Math.floor(xAxisData.length / 8))  // Mantener ~8 líneas de división
+            : (index: number) => {
+              // Para intervalos <= 7 días: mostrar línea en cada cambio de día
+              if (index >= xAxisData.length - 1) return false;
+              const current = xAxisData[index];
+              const next = xAxisData[index + 1];
+              const currentDate = current?.split(' ')[0] || current;
+              const nextDate = next?.split(' ')[0] || next;
+              return currentDate !== nextDate;
+            }
         },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
-          interval: 0,  // Mostrar todas las etiquetas potenciales
+          interval: (() => {
+            // Para > 7 días: mantener ~8 etiquetas constantes
+            if (dateRangeDays > 7) {
+              return Math.max(1, Math.floor(xAxisData.length / 8));
+            }
+            // Para todos los demás casos: dejar interval=0 y dejar que el formatter controle
+            return 0;
+          })(),
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
             const current = xAxisData[index];
@@ -337,11 +343,33 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
             
             const currentDate = parts[0];
             const currentTime = parts[1];
-            
-            // Extraer fecha anterior
             const prevDate = prev?.split(' ')[0];
             
-            // SIEMPRE mostrar el primer elemento
+            // Para rangos > 7 días: mostrar solo fechas, respetando el intervalo
+            if (dateRangeDays > 7) {
+              if (index === 0 || index === xAxisData.length - 1) {
+                console.log(`[formatter] dateRangeDays > 7, index=${index}, returning date: ${currentDate}`);
+              }
+              return currentDate;
+            }
+            
+            // Para 1 día: mostrar horas cada 3 horas (00:00, 03:00, 06:00, etc.)
+            if (dateRangeDays <= 1) {
+              if (!currentTime) {
+                return '';
+              }
+              // Solo mostrar si termina en :00
+              if (currentTime.endsWith(':00')) {
+                const hourMatch = currentTime.match(/^(\d+):/);
+                if (hourMatch) {
+                  const hour = parseInt(hourMatch[1], 10);
+                  // Mostrar cada 3 horas (0, 3, 6, 9, 12, 15, 18, 21)
+                  if (hour % 3 === 0) return currentTime;
+                }
+              }
+              return '';
+            }
+            
             if (index === 0) {
               if (showTime && currentTime) {
                 return `${currentTime}\n${currentDate}`;
@@ -349,60 +377,26 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
               return currentDate;
             }
             
-            // SIEMPRE mostrar si cambia de día
+            // Cambio de día: siempre mostrar la fecha
             if (prevDate !== currentDate) {
-              // Calcular si debemos mostrar esta fecha según intervalDays
-              if (intervalDays > 0) {
-                // Para rangos grandes, mostrar según intervalo
-                // Contar cuántos cambios de día ha habido desde el inicio
-                let dayCounter = 1;
-                for (let i = 1; i <= index; i++) {
-                  const iDate = xAxisData[i]?.split(' ')[0];
-                  const iPrevDate = xAxisData[i - 1]?.split(' ')[0];
-                  if (iDate !== iPrevDate) {
-                    dayCounter++;
-                  }
-                }
-                
-                // Mostrar etiqueta cada intervalDays días
-                if (dayCounter % intervalDays === 1) {
-                  return currentDate;
-                }
-              } else {
-                // Para rangos pequeños, mostrar cambio de día
-                if (showTime && currentTime) {
-                  return `${currentTime}\n${currentDate}`;
-                }
-                return currentDate;
+              if (showTime && currentTime) {
+                return `${currentTime}\n${currentDate}`;
               }
+              return currentDate;
             }
             
-            // Mostrar horas solo si showTime es true y no es fin de día
+            // Mostrar horas para rangos cortos (1-7 días)
             if (showTime && currentTime) {
               const hourMatch = currentTime.match(/^(\d+):/);
               if (hourMatch) {
                 const hour = parseInt(hourMatch[1], 10);
                 
-                if (dateRangeDays <= 1) {
-                  // Menos de 1 día: mostrar cada 2-3 horas
-                  if (hour % 3 === 0) {
-                    return currentTime;
-                  }
-                } else if (dateRangeDays <= 7) {
-                  // 1-7 días: mostrar cada 6 horas
-                  if (hour % 6 === 0) {
-                    return currentTime;
-                  }
-                } else if (dateRangeDays <= 14) {
-                  // 1-2 semanas: mostrar cada 12 horas
-                  if (hour % 12 === 0) {
-                    return currentTime;
-                  }
+                if (dateRangeDays <= 7) {
+                  if (hour % 6 === 0) return currentTime;
                 }
               }
             }
             
-            // No mostrar nada para los demás puntos
             return '';
           }
         }
