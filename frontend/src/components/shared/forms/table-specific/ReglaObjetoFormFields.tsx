@@ -296,6 +296,8 @@ interface ReglaObjetoFormFieldsProps {
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   isFieldRequired: (columnName: string) => boolean;
   disabled?: boolean;
+  /** 'create' = selector de regla + detalles + cascada; 'update' = solo detalles read-only + cascada */
+  mode?: 'create' | 'update';
   // Datos para la cascada
   paisesData?: any[];
   empresasData?: any[];
@@ -316,6 +318,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   getUniqueOptionsForField,
   isFieldRequired,
   disabled = false,
+  mode = 'create',
   paisesData = [],
   empresasData = [],
   fundosData = [],
@@ -327,18 +330,19 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Estado para reglas filtradas
+  // Estado para reglas filtradas (solo en modo create)
   const [filteredReglas, setFilteredReglas] = useState<any[]>([]);
   const [filteredReglasLoaded, setFilteredReglasLoaded] = useState(false);
 
-  // Cargar reglas filtradas al montar (sin regla_objeto para crear)
+  // Ref para evitar que la sincronización pise la carga inicial en modo update
+  const initialLoadCompleteRef = useRef(false);
+
+  // Cargar reglas filtradas al montar (solo en modo create, sin regla_objeto)
   useEffect(() => {
+    if (mode !== 'create') return;
     const loadFilteredReglas = async () => {
       try {
-        console.log('[ReglaObjetoFormFields] Cargando reglas filtradas...');
-        // Para el formulario de crear, cargar reglas SIN regla_objeto
         const filtered = await JoySenseService.getCustomEndpoint('/regla-filtradas/sin_objeto');
-        console.log('[ReglaObjetoFormFields] Reglas filtradas recibidas:', filtered);
         setFilteredReglas(Array.isArray(filtered) ? filtered : []);
         setFilteredReglasLoaded(true);
       } catch (error) {
@@ -348,7 +352,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
       }
     };
     loadFilteredReglas();
-  }, []);
+  }, [mode]);
 
   // Estados locales para la cascada: arrays de IDs seleccionados en cada nivel
   const [selectedPaises, setSelectedPaises] = useState<number[]>([]);
@@ -356,15 +360,24 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
   const [selectedUbicaciones, setSelectedUbicaciones] = useState<number[]>([]);
 
-  // Limpiar selecciones cuando se resetea el formulario
+  // Limpiar selecciones cuando se resetea el formulario o cuando _objetosSeleccionados es vacío
   useEffect(() => {
     if (!formData.reglaid || formData.reglaid === null || formData.reglaid === undefined) {
       setSelectedPaises([]);
       setSelectedEmpresas([]);
       setSelectedFundos([]);
       setSelectedUbicaciones([]);
+      if (mode === 'update') initialLoadCompleteRef.current = false;
+    } else if (mode === 'update' && (!formData._objetosSeleccionados || formData._objetosSeleccionados.length === 0)) {
+      // Si es update pero no hay objetos seleccionados, limpiar la cascada
+      setSelectedPaises([]);
+      setSelectedEmpresas([]);
+      setSelectedFundos([]);
+      setSelectedUbicaciones([]);
+      setActiveLevel('pais');
+      initialLoadCompleteRef.current = true; // Permitir sincronización
     }
-  }, [formData.reglaid]);
+  }, [formData.reglaid, formData._objetosSeleccionados, mode]);
 
   // Refs para evitar bucles infinitos en la sincronización con el padre
   const lastSyncRef = useRef<{
@@ -375,6 +388,70 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 
   // Nivel activo de la cascada (cuál es el nivel que estamos usando para el multi-select)
   const [activeLevel, setActiveLevel] = useState<string>('pais');
+
+  // Inicializar campos de cascada cuando se cargan objetos existentes (para UPDATE)
+  // Resolver cadena de padres para empresa/fundo/ubicación para que las columnas muestren opciones
+  useEffect(() => {
+    if (mode !== 'update') return;
+    if (!formData._objetosSeleccionados || !Array.isArray(formData._objetosSeleccionados) || formData._objetosSeleccionados.length === 0) {
+      initialLoadCompleteRef.current = false;
+      return;
+    }
+
+    initialLoadCompleteRef.current = false; // Bloquear sync hasta terminar carga
+    const fuente = fuentesData?.find(f => f.fuenteid === formData.fuenteid);
+    const nivel = fuente?.fuente?.toLowerCase() || 'pais';
+    const objetoid = formData._objetosSeleccionados[0];
+
+    switch (nivel) {
+      case 'pais':
+        setSelectedPaises(formData._objetosSeleccionados);
+        setSelectedEmpresas([]);
+        setSelectedFundos([]);
+        setSelectedUbicaciones([]);
+        setActiveLevel('pais');
+        break;
+      case 'empresa': {
+        const empresa = empresasData?.find(e => e.empresaid === objetoid);
+        const paisid = empresa?.paisid;
+        setSelectedPaises(paisid != null ? [paisid] : []);
+        setSelectedEmpresas(formData._objetosSeleccionados);
+        setSelectedFundos([]);
+        setSelectedUbicaciones([]);
+        setActiveLevel('empresa');
+        break;
+      }
+      case 'fundo': {
+        const fundo = fundosData?.find(f => f.fundoid === objetoid);
+        const empresaid = fundo?.empresaid;
+        const empresa = empresaid != null ? empresasData?.find(e => e.empresaid === empresaid) : null;
+        const paisid = empresa?.paisid;
+        setSelectedPaises(paisid != null ? [paisid] : []);
+        setSelectedEmpresas(empresaid != null ? [empresaid] : []);
+        setSelectedFundos(formData._objetosSeleccionados);
+        setSelectedUbicaciones([]);
+        setActiveLevel('fundo');
+        break;
+      }
+      case 'ubicacion': {
+        const ubicacion = ubicacionesData?.find(u => u.ubicacionid === objetoid);
+        const fundoid = ubicacion?.fundoid;
+        const fundo = fundoid != null ? fundosData?.find(f => f.fundoid === fundoid) : null;
+        const empresaid = fundo?.empresaid;
+        const empresa = empresaid != null ? empresasData?.find(e => e.empresaid === empresaid) : null;
+        const paisid = empresa?.paisid;
+        setSelectedPaises(paisid != null ? [paisid] : []);
+        setSelectedEmpresas(empresaid != null ? [empresaid] : []);
+        setSelectedFundos(fundoid != null ? [fundoid] : []);
+        setSelectedUbicaciones(formData._objetosSeleccionados);
+        setActiveLevel('ubicacion');
+        break;
+      }
+      default:
+        break;
+    }
+    initialLoadCompleteRef.current = true;
+  }, [mode, formData._objetosSeleccionados, formData.regla_objetoid, formData.fuenteid, fuentesData, empresasData, fundosData, ubicacionesData]);
 
   // Obtener la regla seleccionada y sus detalles
   const selectedRegla = useMemo(() => {
@@ -399,10 +476,13 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   };
 
   // Sincronizar con formData._objetosSeleccionados, fuenteid y origenid
+  // En modo update, no sincronizar hasta que la carga inicial esté completa para no pisar valores
   useEffect(() => {
+    if (mode === 'update' && !initialLoadCompleteRef.current) return;
+
     const currentSelectedObjects = getCurrentSelectedObjects();
     const objetosStr = JSON.stringify(currentSelectedObjects);
-    const fuente = fuentesData.find(f => f.fuente?.toLowerCase() === activeLevel.toLowerCase());
+    const fuente = fuentesData?.find(f => f.fuente?.toLowerCase() === activeLevel.toLowerCase());
     const fuenteid = fuente?.fuenteid || null;
 
     // Solo actualizar si algo relevante cambió
@@ -413,12 +493,12 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
     ) {
       // Actualizar objetos seleccionados
       updateField('_objetosSeleccionados', currentSelectedObjects);
-      
+
       // Actualizar fuenteid
       if (fuenteid) {
         updateField('fuenteid', fuenteid);
       }
-      
+
       // origenid siempre es 1 (Geografía)
       updateField('origenid', 1);
 
@@ -429,7 +509,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         activeLevel
       };
     }
-  }, [selectedPaises, selectedEmpresas, selectedFundos, selectedUbicaciones, activeLevel, fuentesData, updateField]);
+  }, [mode, selectedPaises, selectedEmpresas, selectedFundos, selectedUbicaciones, activeLevel, fuentesData, updateField]);
 
   // Manejadores de cambio para los niveles de la cascada
   const handlePaisChange = (values: number[]) => {
@@ -501,86 +581,91 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* SELECCIÓN DE REGLA */}
+      {/* REGLA: selector (create) o solo detalles read-only (update) */}
       <div className="bg-neutral-800/30 rounded-lg p-4 border border-neutral-700/50">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-1">
-            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
-              REGLA*
-            </label>
-            <SelectWithPlaceholder
-              value={formData.reglaid || ''}
-              onChange={(val) => updateField('reglaid', val ? Number(val) : null)}
-              options={(filteredReglasLoaded ? filteredReglas : reglasData || []).map(r => ({ value: r.reglaid, label: r.nombre }))}
-              placeholder="SELECCIONAR REGLA"
-              themeColor="orange"
-              disabled={disabled}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-lg font-bold mb-2 font-mono tracking-wider text-neutral-400">
-              DETALLES DE LA REGLA
-            </label>
-            {renderReglaDetails()}
-          </div>
+            {mode === 'create' && (
+              <div className="md:col-span-1">
+                <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+                  REGLA*
+                </label>
+                <SelectWithPlaceholder
+                  value={formData.reglaid || ''}
+                  onChange={(val) => updateField('reglaid', val ? Number(val) : null)}
+                  options={(filteredReglasLoaded ? filteredReglas : reglasData || []).map(r => ({ value: r.reglaid, label: r.nombre }))}
+                  placeholder="SELECCIONAR REGLA"
+                  themeColor="orange"
+                  disabled={disabled}
+                />
+              </div>
+            )}
+            <div className={mode === 'create' ? 'md:col-span-2' : 'md:col-span-3'}>
+              <label className="block text-lg font-bold mb-2 font-mono tracking-wider text-neutral-400">
+                DETALLES DE LA REGLA
+              </label>
+              {renderReglaDetails()}
+            </div>
           </div>
         </div>
       </div>
 
       {/* SELECCIÓN DE OBJETOS (CASCADA CUÁDRUPLE) */}
       <div className="bg-neutral-800/30 rounded-lg p-4 border border-neutral-700/50">
+        <label className={`block text-lg font-bold mb-4 font-mono tracking-wider ${getThemeColor('text')}`}>
+          SELECCIONAR OBJETOS *
+        </label>
         <div className="space-y-6">
           {/* Cascading Listbox */}
-        <CascadingListbox
-          paises={paisesData.map(p => ({ id: p.paisid, label: p.pais }))}
-          empresas={empresasData.map(e => ({ id: e.empresaid, label: e.empresa, parentId: e.paisid }))}
-          fundos={fundosData.map(f => ({ id: f.fundoid, label: f.fundo, parentId: f.empresaid }))}
-          ubicaciones={ubicacionesData.map(u => ({ id: u.ubicacionid, label: u.ubicacion, parentId: u.fundoid }))}
-          selectedPaises={selectedPaises}
-          selectedEmpresas={selectedEmpresas}
-          selectedFundos={selectedFundos}
-          selectedUbicaciones={selectedUbicaciones}
-          onPaisesChange={handlePaisChange}
-          onEmpresasChange={handleEmpresaChange}
-          onFundosChange={handleFundoChange}
-          onUbicacionesChange={handleUbicacionChange}
-          disabled={disabled || !formData.reglaid}
-          themeColor="orange"
-        />
+          <CascadingListbox
+            paises={paisesData.map(p => ({ id: p.paisid, label: p.pais }))}
+            empresas={empresasData.map(e => ({ id: e.empresaid, label: e.empresa, parentId: e.paisid }))}
+            fundos={fundosData.map(f => ({ id: f.fundoid, label: f.fundo, parentId: f.empresaid }))}
+            ubicaciones={ubicacionesData.map(u => ({ id: u.ubicacionid, label: u.ubicacion, parentId: u.fundoid }))}
+            selectedPaises={selectedPaises}
+            selectedEmpresas={selectedEmpresas}
+            selectedFundos={selectedFundos}
+            selectedUbicaciones={selectedUbicaciones}
+            onPaisesChange={handlePaisChange}
+            onEmpresasChange={handleEmpresaChange}
+            onFundosChange={handleFundoChange}
+            onUbicacionesChange={handleUbicacionChange}
+            disabled={disabled || !formData.reglaid}
+            themeColor="orange"
+          />
 
-        {/* Resumen de selección en cascada */}
-        {formData.reglaid && (
-        <div className="mt-6 p-4 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-neutral-400 uppercase">Selección Actual:</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1">
-              <span className="text-neutral-500 text-[10px]">PAÍSES</span>
-              <span className="text-orange-500 font-bold block">{selectedPaises.length}</span>
+          {/* Resumen de selección en cascada */}
+          {formData.reglaid && (
+            <div className="mt-6 p-4 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400 uppercase">Selección Actual:</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <span className="text-neutral-500 text-[10px]">PAÍSES</span>
+                  <span className="text-orange-500 font-bold block">{selectedPaises.length}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-neutral-500 text-[10px]">EMPRESAS</span>
+                  <span className={`font-bold block ${selectedPaises.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                    {selectedEmpresas.length}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-neutral-500 text-[10px]">FUNDOS</span>
+                  <span className={`font-bold block ${selectedEmpresas.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                    {selectedFundos.length}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-neutral-500 text-[10px]">UBICACIONES</span>
+                  <span className={`font-bold block ${selectedFundos.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                    {selectedUbicaciones.length}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-neutral-500 text-[10px]">EMPRESAS</span>
-              <span className={`font-bold block ${selectedPaises.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
-                {selectedEmpresas.length}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-neutral-500 text-[10px]">FUNDOS</span>
-              <span className={`font-bold block ${selectedEmpresas.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
-                {selectedFundos.length}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-neutral-500 text-[10px]">UBICACIONES</span>
-              <span className={`font-bold block ${selectedFundos.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
-                {selectedUbicaciones.length}
-              </span>
-            </div>
-          </div>
-        </div>
-        )}
+          )}
         </div>
       </div>
     </div>

@@ -534,9 +534,53 @@ export function useReglasOperations({
     }
   }, [config, updateRow, user, loadTableData, selectedTable, reloadReglas]);
 
+  // Función para manejar la actualización de regla_objeto
+  const handleReglaObjetoUpdate = useCallback(async (reglaObjetoid: number, data: Record<string, any>): Promise<OperationResult> => {
+    try {
+      // 1. Validar que haya objetos seleccionados
+      const objetosSeleccionados = data._objetosSeleccionados || [];
+      if (!Array.isArray(objetosSeleccionados) || objetosSeleccionados.length === 0) {
+        return { success: false, error: 'Debe seleccionar al menos un objeto' };
+      }
+
+      // 2. Validar que se haya seleccionado una regla
+      if (!data.reglaid) {
+        return { success: false, error: 'Debe seleccionar una regla' };
+      }
+
+      // 3. Cada regla_objeto tiene UN solo objeto. Tomar el primero de la selección
+      const objetoid = objetosSeleccionados[0];
+
+      // 4. Actualizar el regla_objeto con el nuevo objeto
+      const updateData: Record<string, any> = {
+        reglaid: data.reglaid,
+        fuenteid: data.fuenteid,
+        origenid: data.origenid || 1,
+        objetoid: objetoid,
+        usermodifiedid: user?.user_metadata?.usuarioid || 1,
+        datemodified: new Date().toISOString()
+      };
+
+      const result = await updateRow(reglaObjetoid.toString(), updateData);
+      if (!result.success) {
+        return { success: false, error: `Error al actualizar alcance de regla: ${result.error || 'Error desconocido'}` };
+      }
+
+      // 5. Recargar datos
+      await loadTableData(selectedTable);
+      await reloadReglas();
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error actualizando regla_objeto:', error);
+      return { success: false, error: error.message || 'Error al actualizar el alcance de regla' };
+    }
+  }, [updateRow, user, loadTableData, selectedTable, reloadReglas]);
+
   return {
     handleInsert,
     handleUpdate,
-    handleReglaUpdate
+    handleReglaUpdate,
+    handleReglaObjetoUpdate
   };
 }
