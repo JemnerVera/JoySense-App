@@ -4,7 +4,7 @@
 // Componente específico para renderizar formulario combinado REGLA + REGLA_UMBRAL
 
 import React, { useState, useEffect } from 'react';
-import { SelectWithPlaceholder } from '../../../selectors';
+import { SelectWithPlaceholder, DualListbox } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
@@ -567,53 +567,42 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
         ) : null}
       </div>
 
-      {/* Sección de Perfiles */}
-      <div className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">PERFILES</h3>
+      {/* Sección de Perfiles - DualListbox */}
+      {perfilesData && perfilesData.length > 0 && (
+        <div className="mt-8">
+          <label className={`block text-xl font-bold mb-4 font-mono tracking-wider ${getThemeColor('text')}`}>
+            PERFILES
+          </label>
+          <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
+            <DualListbox
+              value={
+                Array.isArray(formData._perfilesSeleccionados)
+                  ? formData._perfilesSeleccionados
+                  : Object.entries(formData._perfilesSeleccionados || {})
+                      .filter(([_, status]) => status === 1)
+                      .map(([perfilId, _]) => parseInt(perfilId))
+              }
+              onChange={(perfiles) => {
+                const newFormData = {
+                  ...formData,
+                  _perfilesSeleccionados: perfiles
+                };
+                setFormData(newFormData);
+              }}
+              options={perfilesData.map((perfil: any) => ({
+                value: perfil.perfilid,
+                label: perfil.perfil || `Perfil ${perfil.perfilid}`
+              }))}
+              placeholder="SELECCIONAR PERFILES"
+              disabled={isFieldsDisabled}
+              canFilter={true}
+              themeColor="orange"
+              availableLabel="DISPONIBLES"
+              selectedLabel="SELECCIONADOS"
+            />
+          </div>
         </div>
-        
-        {perfilesData && perfilesData.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {perfilesData.map((perfil: any) => {
-              const perfilId = perfil.perfilid;
-              const perfilNombre = perfil.perfil || `Perfil ${perfilId}`;
-              const perfilesSeleccionados = formData._perfilesSeleccionados || {};
-              const isSelected = perfilesSeleccionados[perfilId] === 1;
-
-              return (
-                <button
-                  key={perfilId}
-                  type="button"
-                  onClick={() => {
-                    if (!isFieldsDisabled) {
-                      const newPerfiles = { ...perfilesSeleccionados };
-                      newPerfiles[perfilId] = isSelected ? 0 : 1;
-                      const newFormData = {
-                        ...formData,
-                        _perfilesSeleccionados: newPerfiles
-                      };
-                      setFormData(newFormData);
-                    }
-                  }}
-                  disabled={isFieldsDisabled}
-                  className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
-                    isSelected
-                      ? 'bg-orange-500 text-white border-2 border-orange-600'
-                      : 'bg-neutral-700 text-neutral-300 border-2 border-neutral-600 hover:bg-neutral-600'
-                  } ${isFieldsDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  {perfilNombre}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-sm text-gray-400 dark:text-neutral-500 font-mono">
-            No hay perfiles disponibles
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
