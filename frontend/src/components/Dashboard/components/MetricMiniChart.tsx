@@ -38,6 +38,18 @@ function MetricMiniChartComponent({
     return uniqueKeys.sort()
   }, [chartData])
 
+  // Mapeo de etiquetas completas a etiquetas simples (solo sensor)
+  // Extrae "Suelo - Sonda 20cm" de "LOTE 124 HILERA 56 (Suelo - Sonda 20cm)"
+  const labelSimplification = useMemo(() => {
+    const map: { [key: string]: string } = {}
+    seriesKeys.forEach(key => {
+      // Extraer la parte dentro de paréntesis si existe
+      const match = key.match(/\(([^)]+)\)/)
+      map[key] = match ? match[1] : key
+    })
+    return map
+  }, [seriesKeys])
+
   const colors = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899', '#10b981']
 
   return (
@@ -96,6 +108,7 @@ function MetricMiniChartComponent({
                   key={seriesKey}
                   type="monotone"
                   dataKey={seriesKey}
+                  name={labelSimplification[seriesKey]}
                   stroke={colors[index % colors.length]}
                   strokeWidth={2}
                   dot={false}
@@ -130,11 +143,14 @@ function MetricMiniChartComponent({
                     </span>
                   )
                 }}
-                formatter={(value: number, name: string) => [
-                  <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                    {name}: {value ? value.toFixed(1) : '--'} {metric.unit}
-                  </span>
-                ]}
+                formatter={(value: number, name: string) => {
+                  const simplifiedName = labelSimplification[name] || name
+                  return [
+                    <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
+                      {simplifiedName}: {value ? value.toFixed(1) : '--'} {metric.unit}
+                    </span>
+                  ]
+                }}
                 contentStyle={{
                   backgroundColor: '#1f2937',
                   border: '1px solid #374151',
