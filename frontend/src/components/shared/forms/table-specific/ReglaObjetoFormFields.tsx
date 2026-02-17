@@ -48,13 +48,11 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Estados locales para la cascada
-  const [selectedPais, setSelectedPais] = useState<number | null>(null);
-  const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null);
-  const [selectedFundo, setSelectedFundo] = useState<number | null>(null);
-  const [selectedUbicacion, setSelectedUbicacion] = useState<number | null>(null);
-  const [selectedNodo, setSelectedNodo] = useState<number | null>(null);
-  const [selectedObjects, setSelectedObjects] = useState<number[]>([]);
+  // Estados locales para la cascada: arrays de IDs seleccionados en cada nivel
+  const [selectedPaises, setSelectedPaises] = useState<number[]>([]);
+  const [selectedEmpresas, setSelectedEmpresas] = useState<number[]>([]);
+  const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
+  const [selectedUbicaciones, setSelectedUbicaciones] = useState<number[]>([]);
 
   // Refs para evitar bucles infinitos en la sincronización con el padre
   const lastSyncRef = useRef<{
@@ -72,9 +70,26 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
     return reglasData.find(r => r.reglaid === formData.reglaid);
   }, [formData.reglaid, reglasData]);
 
+  // Determinar qué objetos están actualmente seleccionados (según el nivel activo)
+  const getCurrentSelectedObjects = (): number[] => {
+    switch(activeLevel) {
+      case 'pais':
+        return selectedPaises;
+      case 'empresa':
+        return selectedEmpresas;
+      case 'fundo':
+        return selectedFundos;
+      case 'ubicacion':
+        return selectedUbicaciones;
+      default:
+        return [];
+    }
+  };
+
   // Sincronizar con formData._objetosSeleccionados, fuenteid y origenid
   useEffect(() => {
-    const objetosStr = JSON.stringify(selectedObjects);
+    const currentSelectedObjects = getCurrentSelectedObjects();
+    const objetosStr = JSON.stringify(currentSelectedObjects);
     const fuente = fuentesData.find(f => f.fuente?.toLowerCase() === activeLevel.toLowerCase());
     const fuenteid = fuente?.fuenteid || null;
 
@@ -85,7 +100,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
       activeLevel !== lastSyncRef.current.activeLevel
     ) {
       // Actualizar objetos seleccionados
-      updateField('_objetosSeleccionados', selectedObjects);
+      updateField('_objetosSeleccionados', currentSelectedObjects);
       
       // Actualizar fuenteid
       if (fuenteid) {
@@ -102,86 +117,69 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         activeLevel
       };
     }
-  }, [selectedObjects, activeLevel, fuentesData, updateField]);
+  }, [selectedPaises, selectedEmpresas, selectedFundos, selectedUbicaciones, activeLevel, fuentesData, updateField]);
 
   // Opciones para los selects de la cascada
   const paisOptions = useMemo(() => 
     paisesData.map(p => ({ value: p.paisid, label: p.pais })), [paisesData]);
 
   const empresaOptions = useMemo(() => {
-    const filtered = empresasData.filter(e => !selectedPais || Number(e.paisid) === Number(selectedPais));
+    if (selectedPaises.length === 0) return [];
+    const filtered = empresasData.filter(e => selectedPaises.includes(Number(e.paisid)));
     return filtered.map(e => ({ value: e.empresaid, label: e.empresa }));
-  }, [empresasData, selectedPais]);
+  }, [empresasData, selectedPaises]);
 
   const fundoOptions = useMemo(() => {
-    const filtered = fundosData.filter(f => !selectedEmpresa || Number(f.empresaid) === Number(selectedEmpresa));
+    if (selectedEmpresas.length === 0) return [];
+    const filtered = fundosData.filter(f => selectedEmpresas.includes(Number(f.empresaid)));
     return filtered.map(f => ({ value: f.fundoid, label: f.fundo }));
-  }, [fundosData, selectedEmpresa]);
+  }, [fundosData, selectedEmpresas]);
 
   const ubicacionOptions = useMemo(() => {
-    const filtered = ubicacionesData.filter(u => !selectedFundo || Number(u.fundoid) === Number(selectedFundo));
+    if (selectedFundos.length === 0) return [];
+    const filtered = ubicacionesData.filter(u => selectedFundos.includes(Number(u.fundoid)));
     return filtered.map(u => ({ value: u.ubicacionid, label: u.ubicacion }));
-  }, [ubicacionesData, selectedFundo]);
-
-  const nodoOptions = useMemo(() => {
-    const filtered = nodosData.filter(n => !selectedUbicacion || Number(n.ubicacionid) === Number(selectedUbicacion));
-    return filtered.map(n => ({ value: n.nodoid, label: n.nombre || n.nodo }));
-  }, [nodosData, selectedUbicacion]);
-
-  const localizacionOptions = useMemo(() => {
-    const filtered = localizacionesData.filter(l => !selectedNodo || Number(l.nodoid) === Number(selectedNodo));
-    return filtered.map(l => ({ value: l.localizacionid, label: l.localizacion }));
-  }, [localizacionesData, selectedNodo]);
+  }, [ubicacionesData, selectedFundos]);
 
   // Manejadores de cambio para los niveles de la cascada
-  const handlePaisChange = (val: any) => {
-    const id = val ? Number(val) : null;
-    setSelectedPais(id);
-    setSelectedEmpresa(null);
-    setSelectedFundo(null);
-    setSelectedUbicacion(null);
-    setSelectedNodo(null);
-    setSelectedObjects([]);
-    setActiveLevel(id ? 'empresa' : 'pais');
+  const handlePaisChange = (values: number[]) => {
+    setSelectedPaises(values);
+    // Si se borra la selección, volver a nivel pais
+    if (values.length === 0) {
+      setSelectedEmpresas([]);
+      setSelectedFundos([]);
+      setSelectedUbicaciones([]);
+      setActiveLevel('pais');
+    } else {
+      // Si hay selecciones, cambiar a empresa
+      setActiveLevel('empresa');
+    }
   };
 
-  const handleEmpresaChange = (val: any) => {
-    const id = val ? Number(val) : null;
-    setSelectedEmpresa(id);
-    setSelectedFundo(null);
-    setSelectedUbicacion(null);
-    setSelectedNodo(null);
-    setSelectedObjects([]);
-    setActiveLevel(id ? 'fundo' : 'empresa');
+  const handleEmpresaChange = (values: number[]) => {
+    setSelectedEmpresas(values);
+    if (values.length === 0) {
+      setSelectedFundos([]);
+      setSelectedUbicaciones([]);
+      setActiveLevel('empresa');
+    } else {
+      setActiveLevel('fundo');
+    }
   };
 
-  const handleFundoChange = (val: any) => {
-    const id = val ? Number(val) : null;
-    setSelectedFundo(id);
-    setSelectedUbicacion(null);
-    setSelectedNodo(null);
-    setSelectedObjects([]);
-    setActiveLevel(id ? 'ubicacion' : 'fundo');
+  const handleFundoChange = (values: number[]) => {
+    setSelectedFundos(values);
+    if (values.length === 0) {
+      setSelectedUbicaciones([]);
+      setActiveLevel('fundo');
+    } else {
+      setActiveLevel('ubicacion');
+    }
   };
 
-  const handleUbicacionChange = (val: any) => {
-    const id = val ? Number(val) : null;
-    setSelectedUbicacion(id);
-    setSelectedNodo(null);
-    setSelectedObjects([]);
-    setActiveLevel(id ? 'nodo' : 'ubicacion');
-  };
-
-  const handleNodoChange = (val: any) => {
-    const id = val ? Number(val) : null;
-    setSelectedNodo(id);
-    setSelectedObjects([]);
-    setActiveLevel(id ? 'localizacion' : 'nodo');
-  };
-
-  const handleLocalizacionChange = (values: number[]) => {
-    setSelectedObjects(values);
-    setActiveLevel('localizacion');
+  const handleUbicacionChange = (values: number[]) => {
+    setSelectedUbicaciones(values);
+    setActiveLevel('ubicacion');
   };
 
   // Renderizar detalles de la regla
@@ -263,230 +261,114 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           <div className="h-px flex-1 bg-neutral-700"></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Nivel 1: País */}
-          <div className={`space-y-2 ${activeLevel === 'pais' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>País</span>
-              {activeLevel !== 'pais' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('pais'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
-            </label>
-            {activeLevel === 'pais' ? (
-              <DualListbox
-                value={selectedObjects}
-                onChange={setSelectedObjects}
-                options={paisOptions}
-                placeholder="SELECCIONAR PAÍSES"
-                disabled={disabled}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            ) : (
-              <SelectWithPlaceholder
-                value={selectedPais}
-                onChange={handlePaisChange}
-                options={paisOptions}
-                placeholder="SELECCIONAR PAÍS"
-                themeColor="orange"
-                disabled={disabled}
-              />
-            )}
-          </div>
-
-          {/* Nivel 2: Empresa */}
-          <div className={`space-y-2 ${activeLevel === 'empresa' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>Empresa</span>
-              {selectedPais && activeLevel !== 'empresa' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('empresa'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
-            </label>
-            {activeLevel === 'empresa' ? (
-              <DualListbox
-                value={selectedObjects}
-                onChange={setSelectedObjects}
-                options={empresaOptions}
-                placeholder="SELECCIONAR EMPRESAS"
-                disabled={disabled || !selectedPais}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            ) : (
-              <SelectWithPlaceholder
-                value={selectedEmpresa}
-                onChange={handleEmpresaChange}
-                options={empresaOptions}
-                placeholder={selectedPais ? "SELECCIONAR EMPRESA" : "---"}
-                themeColor="orange"
-                disabled={disabled || !selectedPais}
-              />
-            )}
-          </div>
-
-          {/* Nivel 3: Fundo */}
-          <div className={`space-y-2 ${activeLevel === 'fundo' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>Fundo</span>
-              {selectedEmpresa && activeLevel !== 'fundo' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('fundo'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
-            </label>
-            {activeLevel === 'fundo' ? (
-              <DualListbox
-                value={selectedObjects}
-                onChange={setSelectedObjects}
-                options={fundoOptions}
-                placeholder="SELECCIONAR FUNDOS"
-                disabled={disabled || !selectedEmpresa}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            ) : (
-              <SelectWithPlaceholder
-                value={selectedFundo}
-                onChange={handleFundoChange}
-                options={fundoOptions}
-                placeholder={selectedEmpresa ? "SELECCIONAR FUNDO" : "---"}
-                themeColor="orange"
-                disabled={disabled || !selectedEmpresa}
-              />
-            )}
-          </div>
-
-          {/* Nivel 4: Ubicación */}
-          <div className={`space-y-2 ${activeLevel === 'ubicacion' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>Ubicación</span>
-              {selectedFundo && activeLevel !== 'ubicacion' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('ubicacion'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
-            </label>
-            {activeLevel === 'ubicacion' ? (
-              <DualListbox
-                value={selectedObjects}
-                onChange={setSelectedObjects}
-                options={ubicacionOptions}
-                placeholder="SELECCIONAR UBICACIONES"
-                disabled={disabled || !selectedFundo}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            ) : (
-              <SelectWithPlaceholder
-                value={selectedUbicacion}
-                onChange={handleUbicacionChange}
-                options={ubicacionOptions}
-                placeholder={selectedFundo ? "SELECCIONAR UBICACIÓN" : "---"}
-                themeColor="orange"
-                disabled={disabled || !selectedFundo}
-              />
-            )}
-          </div>
-
-          {/* Nivel 5: Nodo */}
-          <div className={`space-y-2 ${activeLevel === 'nodo' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>Nodo</span>
-              {selectedUbicacion && activeLevel !== 'nodo' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('nodo'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
-            </label>
-            {activeLevel === 'nodo' ? (
-              <DualListbox
-                value={selectedObjects}
-                onChange={setSelectedObjects}
-                options={nodoOptions}
-                placeholder="SELECCIONAR NODOS"
-                disabled={disabled || !selectedUbicacion}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            ) : (
-              <SelectWithPlaceholder
-                value={selectedNodo}
-                onChange={handleNodoChange}
-                options={nodoOptions}
-                placeholder={selectedUbicacion ? "SELECCIONAR NODO" : "---"}
-                themeColor="orange"
-                disabled={disabled || !selectedUbicacion}
-              />
-            )}
-          </div>
-
-          {/* Nivel 6: Localización */}
-          <div className={`space-y-2 ${activeLevel === 'localizacion' ? 'md:col-span-3' : ''}`}>
-            <label className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
-              <span>Localización</span>
-              {selectedNodo && activeLevel !== 'localizacion' && (
-                <button 
-                  type="button"
-                  onClick={() => { setActiveLevel('localizacion'); setSelectedObjects([]); }}
-                  className="text-[10px] text-orange-500 hover:underline"
-                >
-                  MULTISELECCIÓN
-                </button>
-              )}
+        <div className="space-y-6">
+          {/* Nivel 1: País (SIEMPRE VISIBLE) */}
+          <div className="space-y-2">
+            <label className="text-xs font-mono text-neutral-400 uppercase">
+              PAÍS{selectedPaises.length > 0 && <span className="text-orange-500 ml-2">({selectedPaises.length})</span>}
             </label>
             <DualListbox
-              value={activeLevel === 'localizacion' ? selectedObjects : []}
-              onChange={handleLocalizacionChange}
-              options={localizacionOptions}
-              placeholder={selectedNodo ? "SELECCIONAR LOCALIZACIONES" : "---"}
-              disabled={disabled || !selectedNodo || activeLevel !== 'localizacion'}
+              value={selectedPaises}
+              onChange={handlePaisChange}
+              options={paisOptions}
+              placeholder="SELECCIONAR PAÍSES"
+              disabled={disabled}
               canFilter={true}
               themeColor="orange"
               availableLabel="DISPONIBLES"
               selectedLabel="SELECCIONADOS"
             />
           </div>
+
+          {/* Nivel 2: Empresa (VISIBLE SOLO SI HAY PAÍSES SELECCIONADOS) */}
+          {selectedPaises.length > 0 && (
+            <div className="space-y-2 pt-4 border-t border-neutral-700">
+              <label className="text-xs font-mono text-neutral-400 uppercase">
+                EMPRESA{selectedEmpresas.length > 0 && <span className="text-orange-500 ml-2">({selectedEmpresas.length})</span>}
+              </label>
+              <DualListbox
+                value={selectedEmpresas}
+                onChange={handleEmpresaChange}
+                options={empresaOptions}
+                placeholder="SELECCIONAR EMPRESAS"
+                disabled={disabled || empresaOptions.length === 0}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
+              />
+            </div>
+          )}
+
+          {/* Nivel 3: Fundo (VISIBLE SOLO SI HAY EMPRESAS SELECCIONADAS) */}
+          {selectedEmpresas.length > 0 && (
+            <div className="space-y-2 pt-4 border-t border-neutral-700">
+              <label className="text-xs font-mono text-neutral-400 uppercase">
+                FUNDO{selectedFundos.length > 0 && <span className="text-orange-500 ml-2">({selectedFundos.length})</span>}
+              </label>
+              <DualListbox
+                value={selectedFundos}
+                onChange={handleFundoChange}
+                options={fundoOptions}
+                placeholder="SELECCIONAR FUNDOS"
+                disabled={disabled || fundoOptions.length === 0}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
+              />
+            </div>
+          )}
+
+          {/* Nivel 4: Ubicación (VISIBLE SOLO SI HAY FUNDOS SELECCIONADOS) */}
+          {selectedFundos.length > 0 && (
+            <div className="space-y-2 pt-4 border-t border-neutral-700">
+              <label className="text-xs font-mono text-neutral-400 uppercase">
+                UBICACIÓN{selectedUbicaciones.length > 0 && <span className="text-orange-500 ml-2">({selectedUbicaciones.length})</span>}
+              </label>
+              <DualListbox
+                value={selectedUbicaciones}
+                onChange={handleUbicacionChange}
+                options={ubicacionOptions}
+                placeholder="SELECCIONAR UBICACIONES"
+                disabled={disabled || ubicacionOptions.length === 0}
+                canFilter={true}
+                themeColor="orange"
+                availableLabel="DISPONIBLES"
+                selectedLabel="SELECCIONADOS"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Resumen de selección */}
-        <div className="mt-4 p-3 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs">
+        {/* Resumen de selección en cascada */}
+        <div className="mt-6 p-4 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-neutral-400 uppercase">Nivel Activo: <span className="text-orange-500 font-bold">{activeLevel.toUpperCase()}</span></span>
-            <span className="text-neutral-400 uppercase">Objetos Seleccionados: <span className="text-orange-500 font-bold">{selectedObjects.length}</span></span>
+            <span className="text-neutral-400 uppercase">Selección Actual:</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <span className="text-neutral-500 text-[10px]">PAÍSES</span>
+              <span className="text-orange-500 font-bold block">{selectedPaises.length}</span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-neutral-500 text-[10px]">EMPRESAS</span>
+              <span className={`font-bold block ${selectedPaises.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                {selectedEmpresas.length}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-neutral-500 text-[10px]">FUNDOS</span>
+              <span className={`font-bold block ${selectedEmpresas.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                {selectedFundos.length}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-neutral-500 text-[10px]">UBICACIONES</span>
+              <span className={`font-bold block ${selectedFundos.length === 0 ? 'text-neutral-600' : 'text-orange-500'}`}>
+                {selectedUbicaciones.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>
