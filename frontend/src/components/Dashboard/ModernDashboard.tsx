@@ -1547,7 +1547,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
       const getTimeKey = (date: Date): string => {
         if (granularityType === 'minutes') {
-          const minuteInterval = interval || 30;
+          const minuteInterval = interval || 15;
           const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
           return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
@@ -1627,7 +1627,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
     if (daysSpan <= 1) {
       granularityType = 'minutes';
-      minuteInterval = 30;
+      minuteInterval = 15;
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
       hourlyInterval = 1;
@@ -1655,7 +1655,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         ({ result, allLabelsArray, pointCount } = performGrouping('hours', undefined, 1));
       }
       if (pointCount <= 2) {
-        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30, undefined));
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 15, undefined));
       }
     }
 

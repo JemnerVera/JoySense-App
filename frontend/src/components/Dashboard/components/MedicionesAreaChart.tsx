@@ -191,6 +191,7 @@ export function MedicionesAreaChart({
         type: 'line' as const,
         symbol: 'none' as const,
         sampling: 'lttb' as const,
+        connectNulls: true,
         itemStyle: {
           color
         },
@@ -384,6 +385,14 @@ export function MedicionesAreaChart({
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
           fontSize: 14
+        },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: 'rgba(255, 255, 255, 0.25)',
+            type: 'solid' as const,
+            width: 1
+          }
         },
         axisLabel: {
           color: '#ffffff',
