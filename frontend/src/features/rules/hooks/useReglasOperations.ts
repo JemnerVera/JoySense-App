@@ -471,6 +471,58 @@ export function useReglasOperations({
         }
       }
 
+      // 6. Actualizar perfiles
+      const perfilesSeleccionados = data._perfilesSeleccionados;
+      let perfilesActivos: number[] = [];
+      
+      if (perfilesSeleccionados) {
+        if (Array.isArray(perfilesSeleccionados)) {
+          perfilesActivos = perfilesSeleccionados;
+        } else if (typeof perfilesSeleccionados === 'object') {
+          perfilesActivos = Object.entries(perfilesSeleccionados)
+            .filter(([_, statusid]) => statusid === 1)
+            .map(([perfilid]) => parseInt(perfilid));
+        }
+      }
+
+      // Obtener perfiles existentes de la regla - solo activos (statusid: 1)
+      const existingPerfiles = await JoySenseService.getTableData('regla_perfil', 1000);
+      const existingPerfilesFiltrados = (existingPerfiles || []).filter((rp: any) =>
+        rp.reglaid === reglaid && rp.statusid === 1
+      );
+
+      // Desactivar perfiles que ya no están seleccionados
+      const existingPerfilIds = existingPerfilesFiltrados.map((rp: any) => rp.perfilid);
+      for (const existingPerfil of existingPerfilesFiltrados) {
+        if (!perfilesActivos.includes(existingPerfil.perfilid)) {
+          await JoySenseService.updateTableRow('regla_perfil', existingPerfil.regla_perfilid.toString(), {
+            statusid: 0,
+            usermodifiedid: userId,
+            datemodified: now
+          });
+        }
+      }
+
+      // Agregar o mantener perfiles
+      for (const perfilid of perfilesActivos) {
+        const existingPerfil = existingPerfilesFiltrados.find((rp: any) => rp.perfilid === perfilid);
+        
+        if (!existingPerfil) {
+          // Insertar nuevo perfil
+          const reglaPerfilRecord: Record<string, any> = {
+            reglaid: reglaid,
+            perfilid: perfilid,
+            statusid: 1,
+            usercreatedid: userId,
+            datecreated: now,
+            usermodifiedid: userId,
+            datemodified: now
+          };
+          await JoySenseService.insertTableRow('regla_perfil', reglaPerfilRecord);
+        }
+        // Si ya existe, no hace falta hacer nada (se mantiene activo)
+      }
+
       // Recargar datos
       await loadTableData(selectedTable);
       await reloadReglas();
