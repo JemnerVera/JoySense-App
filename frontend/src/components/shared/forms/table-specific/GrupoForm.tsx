@@ -57,7 +57,7 @@ const GrupoForm: React.FC<GrupoFormProps> = ({
       {/* 1. Nombre del grupo */}
       <div>
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
-          GRUPO*
+CARPETA PERSONAL*
         </label>
         <input
           type="text"
@@ -65,8 +65,8 @@ const GrupoForm: React.FC<GrupoFormProps> = ({
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, entidad: e.target.value }))
           }
-          placeholder="GRUPO"
-          className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono ${theme.focus} border-neutral-600`}
+          placeholder="CARPETA PERSONAL"
+          className={`w-1/3 px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono ${theme.focus} border-neutral-600`}
           disabled={loading}
         />
       </div>
