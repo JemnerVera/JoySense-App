@@ -32,16 +32,35 @@ function calculateDateRange(xAxisData: string[]): number {
   const firstDate = xAxisData[0]?.split(' ')[0];
   const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
   
+  console.log('[calculateDateRange] firstDate:', firstDate, 'lastDate:', lastDate);
+  
   if (!firstDate || !lastDate) return 0;
   
-  const [d1, m1, y1] = firstDate.split('/').map(Number);
-  const [d2, m2, y2] = lastDate.split('/').map(Number);
+  const [d1, m1] = firstDate.split('/').map(Number);
+  const [d2, m2] = lastDate.split('/').map(Number);
+  
+  // Usar el año actual como predeterminado
+  const currentYear = new Date().getFullYear();
+  let y1 = currentYear;
+  let y2 = currentYear;
+  
+  // Si el mes del final es menor que el del inicio, asumir que cambió de año
+  if (m2 < m1) {
+    y2 = currentYear + 1;
+  }
+  
+  console.log('[calculateDateRange] parsed d1:', d1, 'm1:', m1, 'y1:', y1);
+  console.log('[calculateDateRange] parsed d2:', d2, 'm2:', m2, 'y2:', y2);
   
   const dateFirst = new Date(y1, m1 - 1, d1);
   const dateLast = new Date(y2, m2 - 1, d2);
   
+  console.log('[calculateDateRange] dateFirst:', dateFirst, 'dateLast:', dateLast);
+  
   const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  
+  console.log('[calculateDateRange] RESULT:', diffDays);
   
   return diffDays;
 }
@@ -135,6 +154,13 @@ export function MedicionesAreaChart({
     console.log(`[MedicionesAreaChart] Rango de fechas: ${dateRangeDays} días | showTime=${showTime}, intervalDays=${intervalDays}`);
     console.log('[MedicionesAreaChart] Primeras 3 fechas:', xAxisData.slice(0, 3));
     console.log('[MedicionesAreaChart] Últimas 3 fechas:', xAxisData.slice(-3));
+    
+    // DEBUG: Logs para interval y labels
+    if (dateRangeDays > 21) {
+      const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
+      console.log(`[MedicionesAreaChart] INTERVALO CALCULADO: ${intervalValue} (para ${xAxisData.length} puntos, buscando ~8 etiquetas)`);
+      console.log(`[MedicionesAreaChart] Esto significa: 1 etiqueta cada ${intervalValue} puntos`);
+    }
 
     const series = allSeries.map((name, idx) => {
       const color = colors[idx % colors.length];
@@ -237,22 +263,36 @@ export function MedicionesAreaChart({
             type: 'solid' as const,
             width: 1
           },
-          interval: (index: number) => {
-            if (index >= xAxisData.length - 1) return false;
-            
-            const current = xAxisData[index];
-            const next = xAxisData[index + 1];
-            
-            const currentDate = current?.split(' ')[0] || current;
-            const nextDate = next?.split(' ')[0] || next;
-            
-            return currentDate !== nextDate;
-          }
+          interval: (() => {
+            if (dateRangeDays > 21) {
+              const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
+              console.log(`[splitLine] interval SET TO: ${intervalValue}`);
+              return intervalValue;
+            }
+            console.log(`[splitLine] using function for dateRangeDays=${dateRangeDays}`);
+            return (index: number) => {
+              // Para intervalos <= 21 días: mostrar línea en cada cambio de día
+              if (index >= xAxisData.length - 1) return false;
+              const current = xAxisData[index];
+              const next = xAxisData[index + 1];
+              const currentDate = current?.split(' ')[0] || current;
+              const nextDate = next?.split(' ')[0] || next;
+              return currentDate !== nextDate;
+            }
+          })()
         },
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
-          interval: 0,  // Mostrar todas las etiquetas
+          interval: (() => {
+            if (dateRangeDays > 21) {
+              const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
+              console.log(`[axisLabel] interval SET TO: ${intervalValue}`);
+              return intervalValue;
+            }
+            console.log(`[axisLabel] interval SET TO: 0 (dateRangeDays=${dateRangeDays})`);
+            return 0;
+          })(),
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
             const current = xAxisData[index];
@@ -264,7 +304,14 @@ export function MedicionesAreaChart({
             const currentTime = parts[1];
             const prevDate = prev?.split(' ')[0];
             
-            // Primer elemento: siempre mostrar
+            // Para rangos > 21 días: mostrar solo fechas, respetando el intervalo
+            if (dateRangeDays > 21) {
+              if (index === 0 || index === xAxisData.length - 1) {
+                console.log(`[formatter] index=${index}, dateRangeDays=${dateRangeDays}, returning: ${currentDate}`);
+              }
+              return currentDate;
+            }
+            
             if (index === 0) {
               if (showTime && currentTime) {
                 return `${currentTime}\n${currentDate}`;
