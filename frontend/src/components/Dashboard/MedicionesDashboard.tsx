@@ -832,11 +832,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 }}
                 max={pendingDateRange.end}
                 min={(() => {
-                  const endDate = new Date(pendingDateRange.end);
-                  endDate.setDate(endDate.getDate() - 90);
-                  const year = endDate.getFullYear();
-                  const month = String(endDate.getMonth() + 1).padStart(2, '0');
-                  const day = String(endDate.getDate()).padStart(2, '0');
+                  const today = new Date();
+                  today.setDate(today.getDate() - 90);
+                  const year = today.getFullYear();
+                  const month = String(today.getMonth() + 1).padStart(2, '0');
+                  const day = String(today.getDate()).padStart(2, '0');
                   return `${year}-${month}-${day}`;
                 })()}
                 className="h-10 w-40 pl-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base"
@@ -869,11 +869,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   }
                 }}
                 max={(() => {
-                  const startDate = new Date(pendingDateRange.start);
-                  startDate.setDate(startDate.getDate() + 90);
-                  const year = startDate.getFullYear();
-                  const month = String(startDate.getMonth() + 1).padStart(2, '0');
-                  const day = String(startDate.getDate()).padStart(2, '0');
+                  const today = new Date();
+                  const year = today.getFullYear();
+                  const month = String(today.getMonth() + 1).padStart(2, '0');
+                  const day = String(today.getDate()).padStart(2, '0');
                   return `${year}-${month}-${day}`;
                 })()}
                 min={pendingDateRange.start}
