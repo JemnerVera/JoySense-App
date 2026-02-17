@@ -69,7 +69,7 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
             setFormData((prev) => ({ ...prev, carpeta: e.target.value }))
           }
           placeholder="CARPETA COMPARTIDA"
-          className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono ${theme.focus} border-neutral-600`}
+          className={`w-1/3 px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono ${theme.focus} border-neutral-600`}
           disabled={loading}
         />
       </div>
@@ -79,19 +79,21 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           UBICACIONES
         </label>
-        <DualListbox
-          value={formData.ubicacionids || []}
-          onChange={(ubicacionids) =>
-            setFormData((prev) => ({ ...prev, ubicacionids }))
-          }
-          options={ubicacionesOptions}
-          placeholder="SELECCIONAR UBICACIONES"
-          disabled={loading}
-          canFilter={true}
-          themeColor={themeColor}
-          availableLabel="DISPONIBLES"
-          selectedLabel="SELECCIONADOS"
-        />
+        <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
+          <DualListbox
+            value={formData.ubicacionids || []}
+            onChange={(ubicacionids) =>
+              setFormData((prev) => ({ ...prev, ubicacionids }))
+            }
+            options={ubicacionesOptions}
+            placeholder="SELECCIONAR UBICACIONES"
+            disabled={loading}
+            canFilter={true}
+            themeColor={themeColor}
+            availableLabel="DISPONIBLES"
+            selectedLabel="SELECCIONADOS"
+          />
+        </div>
       </div>
 
       {/* 3. Usuarios con permisos para la geografía */}
@@ -99,42 +101,48 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           USUARIOS
         </label>
-        <DualListbox
-          value={formData.usuarioids || []}
-          onChange={(usuarioids) =>
-            setFormData((prev) => ({ ...prev, usuarioids }))
-          }
-          options={usuariosOptions}
-          placeholder="SELECCIONAR USUARIOS"
-          disabled={loading}
-          canFilter={true}
-          themeColor={themeColor}
-          availableLabel="DISPONIBLES"
-          selectedLabel="SELECCIONADOS"
-        />
+        <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
+          <DualListbox
+            value={formData.usuarioids || []}
+            onChange={(usuarioids) =>
+              setFormData((prev) => ({ ...prev, usuarioids }))
+            }
+            options={usuariosOptions}
+            placeholder="SELECCIONAR USUARIOS"
+            disabled={loading}
+            canFilter={true}
+            themeColor={themeColor}
+            availableLabel="DISPONIBLES"
+            selectedLabel="SELECCIONADOS"
+          />
+        </div>
       </div>
 
       {/* Botones */}
-      <div className="flex gap-4 pt-4">
+      <div className="flex gap-4 justify-center pt-4">
         <button
           type="button"
           onClick={onSave}
           disabled={loading || !isFormValid}
-          className={`px-6 py-2 rounded-lg font-mono font-bold tracking-wider text-white transition-colors ${
+          className={`px-8 py-2 rounded-lg font-mono font-bold tracking-wider text-white transition-colors ${
             loading || !isFormValid
               ? 'opacity-50 cursor-not-allowed bg-neutral-600'
               : `${theme.button}`
           }`}
         >
-          {loading ? t('common.loading') || 'GUARDANDO...' : isUpdate ? t('common.update') || 'ACTUALIZAR' : t('common.save') || 'GUARDAR'}
+          {loading ? t('loading') || 'GUARDANDO...' : isUpdate ? t('update') || 'ACTUALIZAR' : t('save') || 'GUARDAR'}
         </button>
         <button
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="px-6 py-2 rounded-lg font-mono font-bold tracking-wider bg-neutral-700 hover:bg-neutral-600 text-white border border-neutral-600 transition-colors disabled:opacity-50"
+          className={`px-8 py-2 rounded-lg font-mono font-bold tracking-wider text-white transition-colors ${
+            loading 
+              ? 'opacity-50 cursor-not-allowed bg-neutral-600'
+              : `${theme.button}`
+          }`}
         >
-          {t('common.cancel') || 'CANCELAR'}
+          {t('cancel') || 'CANCELAR'}
         </button>
       </div>
     </div>
