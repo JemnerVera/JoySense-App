@@ -1538,17 +1538,22 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     const hoursSpan = daysSpan * 24;
 
     // Función auxiliar para hacer grouping con granularidad específica
-    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days') => {
+    // Misma lógica que MedicionesDashboard: NUNCA usar 'days' para evitar pérdida de líneas de sensores
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
       const getTimeKey = (date: Date): string => {
         if (granularityType === 'minutes') {
-          const minutes = Math.floor(date.getMinutes() / 30) * 30
-          return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+          const minuteInterval = interval || 30;
+          const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
         if (granularityType === 'hours') {
-          const hours = date.getHours()
-          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`
+          let hours = date.getHours();
+          if (hourlyInterval && hourlyInterval > 1) {
+            hours = Math.floor(hours / hourlyInterval) * hourlyInterval;
+          }
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
         }
-        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
 
       const groupedByTime = new Map<string, Map<string, { values: number[], timestamp: number }>>();
@@ -1558,7 +1563,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
         const date = new Date(m.fecha);
         const timeKey = getTimeKey(date);
-        const label = getSensorLabelHelper(m, sensores, tipos);
+        const label = getSeriesLabel(m);
 
         if (!groupedByTime.has(timeKey)) {
           groupedByTime.set(timeKey, new Map());
@@ -1609,29 +1614,43 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       return { result, allLabelsArray, pointCount: result.length };
     };
 
-    // Determinar granularidad inicial
-    let granularityType: 'minutes' | 'hours' | 'days' = 'days';
+    // Determinar granularidad inicial - NUNCA usar 'days' para evitar pérdida de líneas de sensores
+    // Misma lógica que MedicionesDashboard
+    let granularityType: 'minutes' | 'hours' | 'days' = 'hours';
+    let minuteInterval = 30;
+    let hourlyInterval: number | undefined = undefined;
+
     if (daysSpan <= 1) {
       granularityType = 'minutes';
+      minuteInterval = 30;
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
+      hourlyInterval = 1;
+    } else if (daysSpan <= 14) {
+      granularityType = 'hours';
+      hourlyInterval = 2;
+    } else if (daysSpan <= 28) {
+      granularityType = 'hours';
+      hourlyInterval = 4;
+    } else if (daysSpan <= 60) {
+      granularityType = 'hours';
+      hourlyInterval = 4;
     } else {
-      granularityType = 'days';
+      granularityType = 'hours';
+      hourlyInterval = 6;
     }
 
     // Hacer grouping con granularidad inicial
-    let { result, allLabelsArray, pointCount } = performGrouping(granularityType);
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType, minuteInterval, hourlyInterval);
 
-    // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
+    // Fallback: si hay muy pocos puntos pero muchas mediciones, usar granularidad más fina
     const totalMediciones = nodeMediciones.length;
-    if (pointCount <= 2 && totalMediciones >= 3 && granularityType !== 'minutes') {
-      if (granularityType === 'days') {
-        granularityType = 'hours';
-        ({ result, allLabelsArray, pointCount } = performGrouping(granularityType));
+    if (pointCount <= 2 && totalMediciones >= 3) {
+      if (granularityType === 'hours') {
+        ({ result, allLabelsArray, pointCount } = performGrouping('hours', undefined, 1));
       }
-      if (pointCount <= 2 && granularityType === 'hours') {
-        granularityType = 'minutes';
-        ({ result, allLabelsArray, pointCount } = performGrouping(granularityType));
+      if (pointCount <= 2) {
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30, undefined));
       }
     }
 

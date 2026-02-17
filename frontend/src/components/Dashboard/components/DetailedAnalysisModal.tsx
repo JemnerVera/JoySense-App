@@ -113,14 +113,28 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
     return memoizedDetailedChartData[selectedDetailedMetric] || []
   }, [memoizedDetailedChartData, selectedDetailedMetric])
 
-  // Obtener líneas para renderizar - DESDE LAS CLAVES DEL CHARTDATA, no de las mediciones
+  // Obtener líneas para renderizar - INCLUIR TODOS los sensores de detailedMediciones
+  // para que nunca se pierda una línea (igual que allSeries en MedicionesDashboard)
   const visibleLines = useMemo(() => {
-    if (chartData.length === 0) return []
-    
-    // Obtener todas las claves del primer punto (excluyendo 'time')
-    const allLabels = Object.keys(chartData[0] || {}).filter(k => k !== 'time')
-    return allLabels
-  }, [chartData])
+    const seriesSet = new Set<string>()
+
+    // 1. Incluir todos los sensores que tienen datos en detailedMediciones
+    detailedMediciones.forEach((m: MedicionData) => {
+      if (m.medicion !== null && m.medicion !== undefined) {
+        const label = getSeriesLabel(m)
+        seriesSet.add(label)
+      }
+    })
+
+    // 2. Complementar con claves de chartData (por si hay datos que no pasaron el filtro anterior)
+    if (chartData.length > 0) {
+      Object.keys(chartData[0] || {}).forEach(k => {
+        if (k !== 'time') seriesSet.add(k)
+      })
+    }
+
+    return Array.from(seriesSet).sort()
+  }, [chartData, detailedMediciones, getSeriesLabel])
 
   // AHORA SÍ, después de todos los hooks, podemos hacer el return condicional
   if (!isOpen || !selectedMetricForAnalysis) {
