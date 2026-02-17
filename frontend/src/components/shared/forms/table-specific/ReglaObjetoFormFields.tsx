@@ -468,16 +468,11 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   return (
     <div className="space-y-8">
       {/* SELECCIÓN DE REGLA */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-neutral-700"></div>
-          <h3 className="text-lg font-mono font-bold text-orange-500 tracking-widest uppercase">1. Configuración de Regla</h3>
-          <div className="h-px flex-1 bg-neutral-700"></div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-neutral-800/30 rounded-lg p-4 border border-neutral-700/50">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1">
-            <label className={`block text-sm font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
               REGLA*
             </label>
             <SelectWithPlaceholder
@@ -490,23 +485,19 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-bold mb-2 font-mono tracking-wider text-neutral-400">
+            <label className="block text-lg font-bold mb-2 font-mono tracking-wider text-neutral-400">
               DETALLES DE LA REGLA
             </label>
             {renderReglaDetails()}
+          </div>
           </div>
         </div>
       </div>
 
       {/* SELECCIÓN DE OBJETOS (CASCADA CUÁDRUPLE) */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-neutral-700"></div>
-          <h3 className="text-lg font-mono font-bold text-orange-500 tracking-widest uppercase">2. Selección de Objetos Geográficos</h3>
-          <div className="h-px flex-1 bg-neutral-700"></div>
-        </div>
-
-        {/* Cascading Listbox */}
+      <div className="bg-neutral-800/30 rounded-lg p-4 border border-neutral-700/50">
+        <div className="space-y-6">
+          {/* Cascading Listbox */}
         <CascadingListbox
           paises={paisesData.map(p => ({ id: p.paisid, label: p.pais }))}
           empresas={empresasData.map(e => ({ id: e.empresaid, label: e.empresa, parentId: e.paisid }))}
@@ -553,6 +544,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
               </span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
