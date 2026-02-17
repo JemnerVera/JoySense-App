@@ -105,11 +105,11 @@ function calculateXAxisInterval(dateRangeDays: number): {
   } else if (dateRangeDays <= 7) {
     // 1-7 días: mostrar horas cada 6 horas
     return { showTime: true, intervalDays: 0 };
-  } else if (dateRangeDays <= 14) {
-    // 1-2 semanas: mostrar horas pero solo cada 12 horas aprox
+  } else if (dateRangeDays <= 21) {
+    // 1-3 semanas: mostrar horas (más detalle como si fuera > 3 semanas)
     return { showTime: true, intervalDays: 0 };
   } else if (dateRangeDays <= 28) {
-    // 2-4 semanas: solo fechas, sin horas
+    // 3-4 semanas: solo fechas, sin horas
     return { showTime: false, intervalDays: 1 };
   } else {
     // Más de 4 semanas: solo fechas cada 2-3 días
@@ -285,10 +285,10 @@ export function MedicionesAreaChart({
             type: 'solid' as const,
             width: 1
           },
-          interval: dateRangeDays > 21 
+          interval: dateRangeDays > 7 
             ? Math.max(1, Math.floor(xAxisData.length / 8))  // Mantener ~8 líneas de división
             : (index: number) => {
-              // Para intervalos <= 21 días: mostrar línea en cada cambio de día
+              // Para intervalos <= 7 días: mostrar línea en cada cambio de día
               if (index >= xAxisData.length - 1) return false;
               const current = xAxisData[index];
               const next = xAxisData[index + 1];
@@ -301,8 +301,8 @@ export function MedicionesAreaChart({
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
           interval: (() => {
-            // Para > 21 días: mantener ~8 etiquetas constantes
-            if (dateRangeDays > 21) {
+            // Para > 7 días: mantener ~8 etiquetas constantes
+            if (dateRangeDays > 7) {
               return Math.max(1, Math.floor(xAxisData.length / 8));
             }
             // Para todos los demás casos: dejar interval=0 y dejar que el formatter controle
@@ -319,10 +319,10 @@ export function MedicionesAreaChart({
             const currentTime = parts[1];
             const prevDate = prev?.split(' ')[0];
             
-            // Para rangos > 21 días: mostrar solo fechas, respetando el intervalo
-            if (dateRangeDays > 21) {
+            // Para rangos > 7 días: mostrar solo fechas, respetando el intervalo
+            if (dateRangeDays > 7) {
               if (index === 0 || index === xAxisData.length - 1) {
-                console.log(`[formatter] dateRangeDays > 21, index=${index}, returning date: ${currentDate}`);
+                console.log(`[formatter] dateRangeDays > 7, index=${index}, returning date: ${currentDate}`);
               }
               return currentDate;
             }
@@ -359,7 +359,7 @@ export function MedicionesAreaChart({
               return currentDate;
             }
             
-            // Mostrar horas para rangos cortos (1-21 días)
+            // Mostrar horas para rangos cortos (1-7 días)
             if (showTime && currentTime) {
               const hourMatch = currentTime.match(/^(\d+):/);
               if (hourMatch) {
@@ -367,8 +367,6 @@ export function MedicionesAreaChart({
                 
                 if (dateRangeDays <= 7) {
                   if (hour % 6 === 0) return currentTime;
-                } else if (dateRangeDays <= 14) {
-                  if (hour % 12 === 0) return currentTime;
                 }
               }
             }

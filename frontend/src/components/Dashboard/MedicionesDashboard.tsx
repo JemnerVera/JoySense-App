@@ -661,9 +661,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
       hourlyInterval = 1; // Cada hora
-    } else if (daysSpan <= 14) {
+    } else if (daysSpan <= 21) {
       granularityType = 'hours';
-      hourlyInterval = 2; // Cada 2 horas
+      hourlyInterval = 2; // Cada 2 horas - igual a > 21 días para más detalle
     } else if (daysSpan <= 28) {
       granularityType = 'hours';
       hourlyInterval = 4; // Cada 4 horas
