@@ -60,7 +60,7 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
       {/* 1. Nombre de carpeta */}
       <div>
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
-          NOMBRE DE CARPETA *
+          CARPETA COMPARTIDA *
         </label>
         <input
           type="text"
@@ -68,7 +68,7 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, carpeta: e.target.value }))
           }
-          placeholder="NOMBRE DE LA CARPETA"
+          placeholder="CARPETA COMPARTIDA"
           className={`w-full px-3 py-2 bg-neutral-800 border rounded-lg text-white text-base font-mono ${theme.focus} border-neutral-600`}
           disabled={loading}
         />
@@ -79,9 +79,6 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           UBICACIONES
         </label>
-        <p className="text-sm text-neutral-400 mb-2 font-mono">
-          Seleccione las ubicaciones disponibles según su geografía
-        </p>
         <DualListbox
           value={formData.ubicacionids || []}
           onChange={(ubicacionids) =>
@@ -102,9 +99,6 @@ const CarpetaForm: React.FC<CarpetaFormProps> = ({
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${theme.text}`}>
           USUARIOS
         </label>
-        <p className="text-sm text-neutral-400 mb-2 font-mono">
-          Usuarios con permisos para la geografía de las ubicaciones seleccionadas
-        </p>
         <DualListbox
           value={formData.usuarioids || []}
           onChange={(usuarioids) =>
