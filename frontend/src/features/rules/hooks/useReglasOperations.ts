@@ -173,12 +173,21 @@ export function useReglasOperations({
 
       // 3. Crear REGLA_PERFIL para los perfiles seleccionados
       const perfilesSeleccionados = formState.data._perfilesSeleccionados;
-      if (perfilesSeleccionados && Object.keys(perfilesSeleccionados).length > 0) {
-        const perfilesActivos = Object.entries(perfilesSeleccionados)
-          .filter(([_, statusid]) => statusid === 1)
-          .map(([perfilid]) => parseInt(perfilid));
+      let perfilesActivos: number[] = [];
+      
+      if (perfilesSeleccionados) {
+        if (Array.isArray(perfilesSeleccionados)) {
+          // Formato array [perfilId1, perfilId2]
+          perfilesActivos = perfilesSeleccionados;
+        } else if (typeof perfilesSeleccionados === 'object') {
+          // Formato objeto {perfilId: 1, perfilId: 2}
+          perfilesActivos = Object.entries(perfilesSeleccionados)
+            .filter(([_, statusid]) => statusid === 1)
+            .map(([perfilid]) => parseInt(perfilid));
+        }
+      }
 
-        for (const perfilid of perfilesActivos) {
+      for (const perfilid of perfilesActivos) {
           const reglaPerfilRecord: Record<string, any> = {
             reglaid: reglaid,
             perfilid: perfilid,
@@ -198,7 +207,6 @@ export function useReglasOperations({
             console.warn(`Error al asignar perfil ${perfilid}:`, error);
           }
         }
-      }
 
       // 4. Crear regla_objeto global (objetoid=NULL) para cumplir con el constraint de scope
       // origenid=1 es GEOGRAFÍA, necesitamos obtener fuenteid de cualquier fuente geográfica
@@ -253,7 +261,14 @@ export function useReglasOperations({
 
       // 6. Si se asignaron perfiles, activar la regla automáticamente
       // Si no se asignaron perfiles, la regla permanece inactiva
-      const tienePerfilesAsignados = perfilesSeleccionados && Object.values(perfilesSeleccionados).some((v: any) => v === 1);
+      let tienePerfilesAsignados = false;
+      if (perfilesSeleccionados) {
+        if (Array.isArray(perfilesSeleccionados)) {
+          tienePerfilesAsignados = perfilesSeleccionados.length > 0;
+        } else if (typeof perfilesSeleccionados === 'object') {
+          tienePerfilesAsignados = Object.values(perfilesSeleccionados).some((v: any) => v === 1);
+        }
+      }
       
       if (tienePerfilesAsignados) {
         // Activar la regla (statusid=1) porque ya tiene perfiles
@@ -270,10 +285,9 @@ export function useReglasOperations({
       
       setMessage({ 
         type: 'success', 
-        text: 'Regla y umbrales creados correctamente. Ahora asigna perfiles desde la pestaña "REGLA & PERFIL" para activarla.' 
+        text: 'Regla(s), umbral(es) y perfil(es) creados correctamente' 
       });
       resetForm();
-      onSubTabChange?.('status');
       loadTableData(selectedTable);
       
       // Recargar umbrales para actualizar el catálogo si se creó uno nuevo
