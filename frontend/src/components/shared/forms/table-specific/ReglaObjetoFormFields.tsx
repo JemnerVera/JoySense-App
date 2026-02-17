@@ -8,6 +8,284 @@ import { DualListbox, SelectWithPlaceholder } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
+// ============================================================================
+// CASCADING LISTBOX (Componente interno)
+// ============================================================================
+interface CascadingLevel {
+  id: number;
+  label: string;
+  parentId?: number;
+}
+
+interface CascadingListboxProps {
+  paises: CascadingLevel[];
+  empresas: CascadingLevel[];
+  fundos: CascadingLevel[];
+  ubicaciones: CascadingLevel[];
+  selectedPaises: number[];
+  selectedEmpresas: number[];
+  selectedFundos: number[];
+  selectedUbicaciones: number[];
+  onPaisesChange: (ids: number[]) => void;
+  onEmpresasChange: (ids: number[]) => void;
+  onFundosChange: (ids: number[]) => void;
+  onUbicacionesChange: (ids: number[]) => void;
+  disabled?: boolean;
+  themeColor?: 'green' | 'orange';
+}
+
+const CascadingListbox: React.FC<CascadingListboxProps> = ({
+  paises,
+  empresas,
+  fundos,
+  ubicaciones,
+  selectedPaises,
+  selectedEmpresas,
+  selectedFundos,
+  selectedUbicaciones,
+  onPaisesChange,
+  onEmpresasChange,
+  onFundosChange,
+  onUbicacionesChange,
+  disabled = false,
+  themeColor = 'orange'
+}) => {
+  const [filterPais, setFilterPais] = useState('');
+  const [filterEmpresa, setFilterEmpresa] = useState('');
+  const [filterFundo, setFilterFundo] = useState('');
+  const [filterUbicacion, setFilterUbicacion] = useState('');
+
+  const filteredPaises = useMemo(() => {
+    if (!filterPais.trim()) return paises;
+    return paises.filter(p => p.label.toLowerCase().includes(filterPais.toLowerCase()));
+  }, [paises, filterPais]);
+
+  const empresasDisponibles = useMemo(() => {
+    if (selectedPaises.length === 0) return [];
+    return empresas.filter(e => selectedPaises.includes(e.parentId || 0));
+  }, [empresas, selectedPaises]);
+
+  const filteredEmpresas = useMemo(() => {
+    if (!filterEmpresa.trim()) return empresasDisponibles;
+    return empresasDisponibles.filter(e => e.label.toLowerCase().includes(filterEmpresa.toLowerCase()));
+  }, [empresasDisponibles, filterEmpresa]);
+
+  const fundosDisponibles = useMemo(() => {
+    if (selectedEmpresas.length === 0) return [];
+    return fundos.filter(f => selectedEmpresas.includes(f.parentId || 0));
+  }, [fundos, selectedEmpresas]);
+
+  const filteredFundos = useMemo(() => {
+    if (!filterFundo.trim()) return fundosDisponibles;
+    return fundosDisponibles.filter(f => f.label.toLowerCase().includes(filterFundo.toLowerCase()));
+  }, [fundosDisponibles, filterFundo]);
+
+  const ubicacionesDisponibles = useMemo(() => {
+    if (selectedFundos.length === 0) return [];
+    return ubicaciones.filter(u => selectedFundos.includes(u.parentId || 0));
+  }, [ubicaciones, selectedFundos]);
+
+  const filteredUbicaciones = useMemo(() => {
+    if (!filterUbicacion.trim()) return ubicacionesDisponibles;
+    return ubicacionesDisponibles.filter(u => u.label.toLowerCase().includes(filterUbicacion.toLowerCase()));
+  }, [ubicacionesDisponibles, filterUbicacion]);
+
+  const togglePais = (id: number) => {
+    const updated = new Set(selectedPaises);
+    if (updated.has(id)) {
+      updated.delete(id);
+    } else {
+      updated.add(id);
+    }
+    onPaisesChange(Array.from(updated).sort((a, b) => a - b));
+    onEmpresasChange([]);
+    onFundosChange([]);
+    onUbicacionesChange([]);
+  };
+
+  const toggleEmpresa = (id: number) => {
+    const updated = new Set(selectedEmpresas);
+    if (updated.has(id)) {
+      updated.delete(id);
+    } else {
+      updated.add(id);
+    }
+    onEmpresasChange(Array.from(updated).sort((a, b) => a - b));
+    onFundosChange([]);
+    onUbicacionesChange([]);
+  };
+
+  const toggleFundo = (id: number) => {
+    const updated = new Set(selectedFundos);
+    if (updated.has(id)) {
+      updated.delete(id);
+    } else {
+      updated.add(id);
+    }
+    onFundosChange(Array.from(updated).sort((a, b) => a - b));
+    onUbicacionesChange([]);
+  };
+
+  const toggleUbicacion = (id: number) => {
+    const updated = new Set(selectedUbicaciones);
+    if (updated.has(id)) {
+      updated.delete(id);
+    } else {
+      updated.add(id);
+    }
+    onUbicacionesChange(Array.from(updated).sort((a, b) => a - b));
+  };
+
+  const themeClasses = {
+    green: {
+      accent: 'text-green-500',
+      header: 'text-green-400',
+      highlight: 'bg-green-600/80',
+      selectedBg: 'bg-green-600/20',
+      borderFocus: 'focus:ring-green-500',
+      hoverBg: 'hover:bg-neutral-700'
+    },
+    orange: {
+      accent: 'text-orange-500',
+      header: 'text-orange-400',
+      highlight: 'bg-orange-600/80',
+      selectedBg: 'bg-orange-600/20',
+      borderFocus: 'focus:ring-orange-500',
+      hoverBg: 'hover:bg-neutral-700'
+    }
+  };
+
+  const theme = themeClasses[themeColor];
+
+  const ColumnLevel = ({
+    title,
+    items,
+    selectedIds,
+    onToggle,
+    disabled: colDisabled,
+    filter,
+    onFilterChange,
+    showColumn
+  }: {
+    title: string;
+    items: CascadingLevel[];
+    selectedIds: number[];
+    onToggle: (id: number) => void;
+    disabled: boolean;
+    filter: string;
+    onFilterChange: (val: string) => void;
+    showColumn: boolean;
+  }) => {
+    if (!showColumn) return null;
+
+    const selectedSet = new Set(selectedIds);
+
+    return (
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className={`font-bold font-mono tracking-wider ${theme.header} text-opacity-70 flex justify-between items-center`}>
+          <span>{title.toUpperCase()}</span>
+          <span className={`text-sm ${theme.accent}`}>({selectedIds.length})</span>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={filter}
+          onChange={(e) => onFilterChange(e.target.value)}
+          className={`w-full px-2 py-1.5 bg-neutral-900 border border-neutral-600 rounded text-white text-sm font-mono placeholder-neutral-500 focus:outline-none focus:ring-1 ${theme.borderFocus}`}
+          disabled={colDisabled}
+        />
+
+        <div className="border border-neutral-600 rounded-lg bg-neutral-800 text-white font-mono text-sm h-[250px] overflow-y-auto custom-scrollbar flex flex-col">
+          {items.length > 0 ? (
+            items.map((item) => (
+              <div
+                key={item.id}
+                className={`px-3 py-2 cursor-pointer transition-colors flex items-center gap-2 border-b border-neutral-700 last:border-b-0 ${
+                  selectedSet.has(item.id)
+                    ? `${theme.highlight} ${theme.selectedBg}`
+                    : theme.hoverBg
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSet.has(item.id)}
+                  onChange={() => onToggle(item.id)}
+                  disabled={colDisabled}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span className="truncate text-xs">{item.label.toUpperCase()}</span>
+              </div>
+            ))
+          ) : (
+            <div className="px-3 py-4 text-neutral-500 text-xs font-mono text-center flex items-center justify-center h-full">
+              NINGUNO DISPONIBLE
+            </div>
+          )}
+        </div>
+
+        <div className="text-xs font-mono text-neutral-400 text-center px-2 py-1">
+          Total: <span className={theme.accent}>{items.length}</span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`flex gap-3 items-stretch ${disabled ? 'opacity-60' : ''}`}>
+      <ColumnLevel
+        title="País"
+        items={filteredPaises}
+        selectedIds={selectedPaises}
+        onToggle={togglePais}
+        disabled={disabled}
+        filter={filterPais}
+        onFilterChange={setFilterPais}
+        showColumn={true}
+      />
+
+      {selectedPaises.length > 0 && (
+        <ColumnLevel
+          title="Empresa"
+          items={filteredEmpresas}
+          selectedIds={selectedEmpresas}
+          onToggle={toggleEmpresa}
+          disabled={disabled || empresasDisponibles.length === 0}
+          filter={filterEmpresa}
+          onFilterChange={setFilterEmpresa}
+          showColumn={true}
+        />
+      )}
+
+      {selectedEmpresas.length > 0 && (
+        <ColumnLevel
+          title="Fundo"
+          items={filteredFundos}
+          selectedIds={selectedFundos}
+          onToggle={toggleFundo}
+          disabled={disabled || fundosDisponibles.length === 0}
+          filter={filterFundo}
+          onFilterChange={setFilterFundo}
+          showColumn={true}
+        />
+      )}
+
+      {selectedFundos.length > 0 && (
+        <ColumnLevel
+          title="Ubicación"
+          items={filteredUbicaciones}
+          selectedIds={selectedUbicaciones}
+          onToggle={toggleUbicacion}
+          disabled={disabled || ubicacionesDisponibles.length === 0}
+          filter={filterUbicacion}
+          onFilterChange={setFilterUbicacion}
+          showColumn={true}
+        />
+      )}
+    </div>
+  );
+};
+
 interface ReglaObjetoFormFieldsProps {
   visibleColumns: any[];
   formData: Record<string, any>;
@@ -119,62 +397,29 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
     }
   }, [selectedPaises, selectedEmpresas, selectedFundos, selectedUbicaciones, activeLevel, fuentesData, updateField]);
 
-  // Opciones para los selects de la cascada
-  const paisOptions = useMemo(() => 
-    paisesData.map(p => ({ value: p.paisid, label: p.pais })), [paisesData]);
-
-  const empresaOptions = useMemo(() => {
-    if (selectedPaises.length === 0) return [];
-    const filtered = empresasData.filter(e => selectedPaises.includes(Number(e.paisid)));
-    return filtered.map(e => ({ value: e.empresaid, label: e.empresa }));
-  }, [empresasData, selectedPaises]);
-
-  const fundoOptions = useMemo(() => {
-    if (selectedEmpresas.length === 0) return [];
-    const filtered = fundosData.filter(f => selectedEmpresas.includes(Number(f.empresaid)));
-    return filtered.map(f => ({ value: f.fundoid, label: f.fundo }));
-  }, [fundosData, selectedEmpresas]);
-
-  const ubicacionOptions = useMemo(() => {
-    if (selectedFundos.length === 0) return [];
-    const filtered = ubicacionesData.filter(u => selectedFundos.includes(Number(u.fundoid)));
-    return filtered.map(u => ({ value: u.ubicacionid, label: u.ubicacion }));
-  }, [ubicacionesData, selectedFundos]);
-
   // Manejadores de cambio para los niveles de la cascada
   const handlePaisChange = (values: number[]) => {
     setSelectedPaises(values);
-    // Si se borra la selección, volver a nivel pais
-    if (values.length === 0) {
-      setSelectedEmpresas([]);
-      setSelectedFundos([]);
-      setSelectedUbicaciones([]);
-      setActiveLevel('pais');
-    } else {
-      // Si hay selecciones, cambiar a empresa
-      setActiveLevel('empresa');
-    }
+    // Limpiar selecciones posteriores automáticamente
+    setSelectedEmpresas([]);
+    setSelectedFundos([]);
+    setSelectedUbicaciones([]);
+    setActiveLevel(values.length > 0 ? 'empresa' : 'pais');
   };
 
   const handleEmpresaChange = (values: number[]) => {
     setSelectedEmpresas(values);
-    if (values.length === 0) {
-      setSelectedFundos([]);
-      setSelectedUbicaciones([]);
-      setActiveLevel('empresa');
-    } else {
-      setActiveLevel('fundo');
-    }
+    // Limpiar selecciones posteriores automáticamente
+    setSelectedFundos([]);
+    setSelectedUbicaciones([]);
+    setActiveLevel(values.length > 0 ? 'fundo' : 'empresa');
   };
 
   const handleFundoChange = (values: number[]) => {
     setSelectedFundos(values);
-    if (values.length === 0) {
-      setSelectedUbicaciones([]);
-      setActiveLevel('fundo');
-    } else {
-      setActiveLevel('ubicacion');
-    }
+    // Limpiar selecciones posteriores automáticamente
+    setSelectedUbicaciones([]);
+    setActiveLevel(values.length > 0 ? 'ubicacion' : 'fundo');
   };
 
   const handleUbicacionChange = (values: number[]) => {
@@ -253,7 +498,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         </div>
       </div>
 
-      {/* SELECCIÓN DE OBJETOS (CASCADA) */}
+      {/* SELECCIÓN DE OBJETOS (CASCADA CUÁDRUPLE) */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-neutral-700"></div>
@@ -261,85 +506,23 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
           <div className="h-px flex-1 bg-neutral-700"></div>
         </div>
 
-        <div className="space-y-6">
-          {/* Nivel 1: País (SIEMPRE VISIBLE) */}
-          <div className="space-y-2">
-            <label className="text-xs font-mono text-neutral-400 uppercase">
-              PAÍS{selectedPaises.length > 0 && <span className="text-orange-500 ml-2">({selectedPaises.length})</span>}
-            </label>
-            <DualListbox
-              value={selectedPaises}
-              onChange={handlePaisChange}
-              options={paisOptions}
-              placeholder="SELECCIONAR PAÍSES"
-              disabled={disabled}
-              canFilter={true}
-              themeColor="orange"
-              availableLabel="DISPONIBLES"
-              selectedLabel="SELECCIONADOS"
-            />
-          </div>
-
-          {/* Nivel 2: Empresa (VISIBLE SOLO SI HAY PAÍSES SELECCIONADOS) */}
-          {selectedPaises.length > 0 && (
-            <div className="space-y-2 pt-4 border-t border-neutral-700">
-              <label className="text-xs font-mono text-neutral-400 uppercase">
-                EMPRESA{selectedEmpresas.length > 0 && <span className="text-orange-500 ml-2">({selectedEmpresas.length})</span>}
-              </label>
-              <DualListbox
-                value={selectedEmpresas}
-                onChange={handleEmpresaChange}
-                options={empresaOptions}
-                placeholder="SELECCIONAR EMPRESAS"
-                disabled={disabled || empresaOptions.length === 0}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            </div>
-          )}
-
-          {/* Nivel 3: Fundo (VISIBLE SOLO SI HAY EMPRESAS SELECCIONADAS) */}
-          {selectedEmpresas.length > 0 && (
-            <div className="space-y-2 pt-4 border-t border-neutral-700">
-              <label className="text-xs font-mono text-neutral-400 uppercase">
-                FUNDO{selectedFundos.length > 0 && <span className="text-orange-500 ml-2">({selectedFundos.length})</span>}
-              </label>
-              <DualListbox
-                value={selectedFundos}
-                onChange={handleFundoChange}
-                options={fundoOptions}
-                placeholder="SELECCIONAR FUNDOS"
-                disabled={disabled || fundoOptions.length === 0}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            </div>
-          )}
-
-          {/* Nivel 4: Ubicación (VISIBLE SOLO SI HAY FUNDOS SELECCIONADOS) */}
-          {selectedFundos.length > 0 && (
-            <div className="space-y-2 pt-4 border-t border-neutral-700">
-              <label className="text-xs font-mono text-neutral-400 uppercase">
-                UBICACIÓN{selectedUbicaciones.length > 0 && <span className="text-orange-500 ml-2">({selectedUbicaciones.length})</span>}
-              </label>
-              <DualListbox
-                value={selectedUbicaciones}
-                onChange={handleUbicacionChange}
-                options={ubicacionOptions}
-                placeholder="SELECCIONAR UBICACIONES"
-                disabled={disabled || ubicacionOptions.length === 0}
-                canFilter={true}
-                themeColor="orange"
-                availableLabel="DISPONIBLES"
-                selectedLabel="SELECCIONADOS"
-              />
-            </div>
-          )}
-        </div>
+        {/* Cascading Listbox */}
+        <CascadingListbox
+          paises={paisesData.map(p => ({ id: p.paisid, label: p.pais }))}
+          empresas={empresasData.map(e => ({ id: e.empresaid, label: e.empresa, parentId: e.paisid }))}
+          fundos={fundosData.map(f => ({ id: f.fundoid, label: f.fundo, parentId: f.empresaid }))}
+          ubicaciones={ubicacionesData.map(u => ({ id: u.ubicacionid, label: u.ubicacion, parentId: u.fundoid }))}
+          selectedPaises={selectedPaises}
+          selectedEmpresas={selectedEmpresas}
+          selectedFundos={selectedFundos}
+          selectedUbicaciones={selectedUbicaciones}
+          onPaisesChange={handlePaisChange}
+          onEmpresasChange={handleEmpresaChange}
+          onFundosChange={handleFundoChange}
+          onUbicacionesChange={handleUbicacionChange}
+          disabled={disabled}
+          themeColor="orange"
+        />
 
         {/* Resumen de selección en cascada */}
         <div className="mt-6 p-4 bg-neutral-900/50 rounded border border-neutral-700 font-mono text-xs space-y-2">
