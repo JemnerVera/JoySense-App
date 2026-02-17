@@ -133,10 +133,17 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
         const endDate = new Date();
         const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+        const getLocalDateString = (date: Date): string => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
         const medicionesAgregadasData = await SupabaseRPCService.getMedicionesAgregadas({
           nodoid: selectedNode.nodoid,
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
+          startDate: getLocalDateString(startDate),
+          endDate: getLocalDateString(endDate),
           intervalMinutes: 60 // 1 hora de intervalo para 30 días
         });
 
@@ -203,14 +210,22 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
     // Crear un mapa de fechas de alerta para referencia rápida
     const alertasPorFecha = new Map<string, any>();
     alertasOrdenadas.forEach(a => {
-      const fechaKey = new Date(a.fecha).toISOString().split('T')[0];
+      const fecha = new Date(a.fecha);
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+      const day = String(fecha.getDate()).padStart(2, '0');
+      const fechaKey = `${year}-${month}-${day}`;
       if (!alertasPorFecha.has(fechaKey)) {
         alertasPorFecha.set(fechaKey, a);
       }
     });
     
     return sorted.map(m => {
-      const fechaKey = new Date(m.fecha).toISOString().split('T')[0];
+      const fecha = new Date(m.fecha);
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+      const day = String(fecha.getDate()).padStart(2, '0');
+      const fechaKey = `${year}-${month}-${day}`;
       const alertaEnEstaFecha = alertasPorFecha.get(fechaKey);
       
       return {

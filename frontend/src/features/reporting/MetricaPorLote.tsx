@@ -67,8 +67,15 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
         
-        setEndDate(today.toISOString().split('T')[0]);
-        setStartDate(yesterday.toISOString().split('T')[0]);
+        const getLocalDateString = (date: Date): string => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
+        setEndDate(getLocalDateString(today));
+        setStartDate(getLocalDateString(yesterday));
       } catch (err: any) {
         console.error('Error cargando datos iniciales:', err);
         setError('Error al cargar métricas y fundos');

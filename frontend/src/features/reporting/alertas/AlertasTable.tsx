@@ -95,10 +95,17 @@ const AlertasTable: React.FC = () => {
   const [startDate, setStartDate] = useState<string>(() => {
     const date = new Date();
     date.setDate(date.getDate() - 7);
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
   const [endDate, setEndDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
 
   const loadAlertas = async (page: number = 1) => {
@@ -383,9 +390,18 @@ const AlertasTable: React.FC = () => {
               setStartDate(() => {
                 const date = new Date();
                 date.setDate(date.getDate() - 7);
-                return date.toISOString().split('T')[0];
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
               });
-              setEndDate(() => new Date().toISOString().split('T')[0]);
+              setEndDate(() => {
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              });
               setLocalizacionSearchTerm('');
             }}
             className="absolute top-2 right-2 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono flex items-center justify-center transition-colors"

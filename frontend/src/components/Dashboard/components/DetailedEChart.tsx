@@ -279,7 +279,20 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
         axisLabel: {
           color: '#ffffff',
           fontFamily: 'Inter, sans-serif',
-          interval: 0,  // Mostrar todas las etiquetas (el formatter se encargará de formatearlas)
+          interval: (() => {
+            // Calcular intervalo dinámico basado en cantidad de puntos
+            // Si hay pocos puntos (< 24), mostrar todos; si hay muchos, mostrar menos
+            const pointCount = xAxisData.length;
+            if (pointCount <= 24) {
+              return 0; // Mostrar todos
+            } else if (pointCount <= 48) {
+              return 1; // Mostrar cada 2
+            } else if (pointCount <= 96) {
+              return 3; // Mostrar cada 4
+            } else {
+              return Math.ceil(pointCount / 24); // Mostrar aproximadamente 24 etiquetas
+            }
+          })(),
           formatter: (value: string, index: number) => {
             const parts = value.split(' ');
             const current = xAxisData[index];
