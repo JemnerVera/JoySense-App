@@ -356,12 +356,14 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
   return (
     <div className="space-y-6">
       {/* Campos de la regla */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {visibleColumns.map(col => renderReglaField(col))}
+      <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {visibleColumns.map(col => renderReglaField(col))}
+        </div>
       </div>
 
       {/* Tabla de umbrales */}
-      <div className="mt-8">
+      <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold font-mono tracking-wider text-orange-500">UMBRALES</h3>
           <button
@@ -386,8 +388,8 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
               <thead>
                 <tr className="border-b border-gray-300 dark:border-neutral-600">
                   <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">UMBRAL</th>
-                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">OPERADOR</th>
                   <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">AGRUPADOR</th>
+                  <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">OPERADOR</th>
                   <th className="px-3 py-2 text-left font-mono font-bold text-orange-500">ORDEN</th>
                   <th className="px-3 py-2 text-left font-mono font-bold text-orange-500"></th>
                 </tr>
@@ -415,52 +417,6 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                       disabled={isFieldsDisabled}
                       allowExternalChange={true}
                     />
-                      </td>
-
-                      {/* Operador - Botones AND/OR */}
-                      <td className="px-3 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!isFieldsDisabled) {
-                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'AND');
-                          }
-                        }}
-                        disabled={isFieldsDisabled}
-                        className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
-                          disabled
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
-                        } ${
-                          row.operador_logico === 'AND'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
-                        }`}
-                      >
-                        AND
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!isFieldsDisabled) {
-                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'OR');
-                          }
-                        }}
-                        disabled={isFieldsDisabled}
-                        className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
-                          disabled
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
-                        } ${
-                          row.operador_logico === 'OR'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
-                        }`}
-                      >
-                        OR
-                      </button>
-                    </div>
                       </td>
 
                       {/* Agrupador - Botones Inicio/Fin */}
@@ -515,6 +471,52 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
                         }`}
                       >
                         FIN
+                      </button>
+                    </div>
+                      </td>
+
+                      {/* Operador - Botones AND/OR */}
+                      <td className="px-3 py-2">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isFieldsDisabled) {
+                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'AND');
+                          }
+                        }}
+                        disabled={isFieldsDisabled}
+                        className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
+                          row.operador_logico === 'AND'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                        }`}
+                      >
+                        AND
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isFieldsDisabled) {
+                            handleUpdateUmbralRow(row.tempId!, 'operador_logico', 'OR');
+                          }
+                        }}
+                        disabled={isFieldsDisabled}
+                        className={`px-3 py-1 font-mono text-sm rounded transition-colors ${
+                          disabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        } ${
+                          row.operador_logico === 'OR'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                        }`}
+                      >
+                        OR
                       </button>
                     </div>
                       </td>
@@ -579,38 +581,36 @@ export const ReglaFormFields: React.FC<ReglaFormFieldsProps> = ({
 
       {/* Sección de Perfiles - DualListbox */}
       {perfilesData && perfilesData.length > 0 && (
-        <div className="mt-8">
+        <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
           <label className={`block text-xl font-bold mb-4 font-mono tracking-wider ${getThemeColor('text')}`}>
             PERFILES
           </label>
-          <div className="border border-neutral-600 rounded-lg p-4 bg-neutral-800/50">
-            <DualListbox
-              value={
-                Array.isArray(formData._perfilesSeleccionados)
-                  ? formData._perfilesSeleccionados
-                  : Object.entries(formData._perfilesSeleccionados || {})
-                      .filter(([_, status]) => status === 1)
-                      .map(([perfilId, _]) => parseInt(perfilId))
-              }
-              onChange={(perfiles) => {
-                const newFormData = {
-                  ...formData,
-                  _perfilesSeleccionados: perfiles
-                };
-                setFormData(newFormData);
-              }}
-              options={perfilesData.map((perfil: any) => ({
-                value: perfil.perfilid,
-                label: perfil.perfil || `Perfil ${perfil.perfilid}`
-              }))}
-              placeholder="SELECCIONAR PERFILES"
-              disabled={isFieldsDisabled}
-              canFilter={true}
-              themeColor="orange"
-              availableLabel="DISPONIBLES"
-              selectedLabel="SELECCIONADOS"
-            />
-          </div>
+          <DualListbox
+            value={
+              Array.isArray(formData._perfilesSeleccionados)
+                ? formData._perfilesSeleccionados
+                : Object.entries(formData._perfilesSeleccionados || {})
+                    .filter(([_, status]) => status === 1)
+                    .map(([perfilId, _]) => parseInt(perfilId))
+            }
+            onChange={(perfiles) => {
+              const newFormData = {
+                ...formData,
+                _perfilesSeleccionados: perfiles
+              };
+              setFormData(newFormData);
+            }}
+            options={perfilesData.map((perfil: any) => ({
+              value: perfil.perfilid,
+              label: perfil.perfil || `Perfil ${perfil.perfilid}`
+            }))}
+            placeholder="SELECCIONAR PERFILES"
+            disabled={isFieldsDisabled}
+            canFilter={true}
+            themeColor="orange"
+            availableLabel="DISPONIBLES"
+            selectedLabel="SELECCIONADOS"
+          />
         </div>
       )}
     </div>
