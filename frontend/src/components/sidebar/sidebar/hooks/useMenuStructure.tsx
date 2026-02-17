@@ -167,12 +167,12 @@ export function useMenuStructure() {
               if (table.name === 'regla') {
                 return {
                   id: 'regla',
-                  label: 'REGLAS',
+                  label: 'ALERTAS',
                   icon: getTableIcon(table.name),
                   subMenus: [
                     {
                       id: 'regla',
-                      label: 'REGLA (REGLA & UMBRAL)',
+                      label: 'REGLAS',
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOps('configuracion-notificaciones-regla-regla'),
@@ -186,7 +186,7 @@ export function useMenuStructure() {
                     },
                     {
                       id: 'regla_objeto',
-                      label: 'REGLA OBJETO',
+                      label: 'ALCANCE DE REGLA',
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOps('configuracion-notificaciones-regla-regla_objeto'),
