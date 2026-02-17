@@ -723,35 +723,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      // Detectar si es trackpad (deltaX y deltaY son muy pequeños) vs rueda de ratón
-      const isTrackpad = Math.abs(e.deltaX) > 0 || (Math.abs(e.deltaY) < 50 && Math.abs(e.deltaX) < 50);
-      
-      if (isTrackpad) {
-        // Para trackpad: usar ambos ejes (preferir deltaX horizontal)
-        const scrollAmount = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-        if (Math.abs(scrollAmount) > 0) {
-          container.scrollLeft += scrollAmount;
-          e.preventDefault();
-        }
-      } else {
-        // Para rueda de ratón: solo usar el eje vertical para scroll horizontal
-        const delta = e.deltaY || e.deltaX;
-        if (Math.abs(delta) > 0) {
-          container.scrollLeft += delta;
-          e.preventDefault();
-        }
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
-
   return (
     <div className="w-full h-screen flex flex-col">
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0 overflow-hidden">
