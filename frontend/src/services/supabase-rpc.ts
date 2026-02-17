@@ -609,13 +609,15 @@ export class SupabaseRPCService {
         console.log('[SupabaseRPCService] getMedicionesAgregadasPorRango:', params);
       }
 
-      const { data, error } = await supabaseAuth
+      const query1 = supabaseAuth
         .schema('joysense')
         .rpc('fn_get_mediciones_agregadas_por_rango', {
           p_localizacionids: params.localizacionids,
           p_start_date: params.startDate,
           p_end_date: params.endDate
-        });
+        }) as any;
+      
+      const { data, error } = await query1.range(0, 99999);
 
       if (error) {
         // Si la función aún no existe, retornar array vacío
@@ -669,14 +671,17 @@ export class SupabaseRPCService {
         }
       }
 
-      const { data, error } = await supabaseAuth
+      const query = supabaseAuth
         .schema('joysense')
         .rpc('fn_get_mediciones_nodo_detallado', {
           p_end_date: params.endDate ? `${params.endDate}` : null,
           p_metricaid: params.metricaid || null,
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate}` : null
-        });
+        }) as any; // Type assertion for query builder support
+      
+      const { data, error } = await query.range(0, 99999); // Bypass límite 1000 filas; 100k suficiente para intervalos con muchos puntos
+
 
       if (error) {
         // Si la función aún no existe, retornar array vacío
@@ -771,13 +776,15 @@ export class SupabaseRPCService {
         console.log('[SupabaseRPCService] getMedicionesNodoCompleto:', params);
       }
 
-      const { data, error } = await supabaseAuth
+      const query2 = supabaseAuth
         .schema('joysense')
         .rpc('fn_get_mediciones_nodo_completo', {
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
           p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        });
+        }) as any;
+      
+      const { data, error } = await query2.range(0, 99999);
 
       if (error) {
         // Si la función aún no existe, retornar array vacío

@@ -519,19 +519,22 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     console.log('[chartData PREP] dateRange:', dateRange, 'daysSpan:', daysSpan, 'medicionesCount:', medicionesFiltradasPorMetrica.length);
 
     // Función auxiliar para hacer grouping con una granularidad específica
-    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number) => {
-      const getTimeKey = (date: Date, granularityType: 'minutes' | 'hours' | 'days', interval?: number): string => {
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
+      const getTimeKey = (date: Date, granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number): string => {
         if (granularityType === 'minutes') {
           // Para minutos, usar el intervalo especificado (por defecto 30)
           const minuteInterval = interval || 30;
           const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
-          return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
         if (granularityType === 'hours') {
-          const hours = date.getHours();
+          let hours = date.getHours();
+          if (hourlyInterval && hourlyInterval > 1) {
+            hours = Math.floor(hours / hourlyInterval) * hourlyInterval;
+          }
           return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
         }
-        // días
+        // días (evitar usar - preferir hours con interval)
         return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
 
@@ -552,7 +555,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         if (m.medicion === null || m.medicion === undefined) return;
 
         const date = new Date(m.fecha);
-        const timeKey = getTimeKey(date, granularityType, interval);
+        const timeKey = getTimeKey(date, granularityType, interval, hourlyInterval);
         const label = getOrCacheLabel(m);
 
         if (!groupedByTime.has(timeKey)) {
@@ -608,32 +611,43 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return { result, allLabelsArray, pointCount: result.length };
     };
 
-    // Determinar granularidad inicial
-    let granularityType: 'minutes' | 'hours' | 'days' = 'days';
-    let minuteInterval = 30; // Intervalo por defecto para minutos
-    
+    // Determinar granularidad inicial - NUNCA usar 'days' para evitar pérdida de líneas de sensores
+    // Usar siempre horas (con intervalos) o minutos para mantener todos los sensores visibles
+    let granularityType: 'minutes' | 'hours' | 'days' = 'hours';
+    let minuteInterval = 30;
+    let hourlyInterval: number | undefined = undefined;
+
     if (daysSpan <= 1) {
       granularityType = 'minutes';
-      minuteInterval = 180; // 3 horas = 180 minutos (para 24h da ~8 puntos)
+      minuteInterval = 30; // Cada 30 min para 1 día (~48 puntos)
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
+      hourlyInterval = 1; // Cada hora
+    } else if (daysSpan <= 14) {
+      granularityType = 'hours';
+      hourlyInterval = 2; // Cada 2 horas
+    } else if (daysSpan <= 28) {
+      granularityType = 'hours';
+      hourlyInterval = 4; // Cada 4 horas
+    } else if (daysSpan <= 60) {
+      granularityType = 'hours';
+      hourlyInterval = 4; // Cada 4 horas - mantener resolución para 1-2 meses
     } else {
-      granularityType = 'days';
+      granularityType = 'hours';
+      hourlyInterval = 6; // Cada 6 horas solo para > 2 meses
     }
 
     // Hacer grouping con granularidad inicial
-    let { result, allLabelsArray, pointCount } = performGrouping(granularityType, minuteInterval);
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType, minuteInterval, hourlyInterval);
 
-    // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
+    // Fallback: si hay muy pocos puntos pero muchas mediciones, usar granularidad más fina
     const totalMediciones = medicionesFiltradasPorMetrica.length;
-    if (pointCount <= 2 && totalMediciones >= 3 && granularityType !== 'minutes') {
-      if (granularityType === 'days') {
-        // Cambiar de días a horas
-        ({ result, allLabelsArray, pointCount } = performGrouping('hours'));
+    if (pointCount <= 2 && totalMediciones >= 3) {
+      if (granularityType === 'hours') {
+        ({ result, allLabelsArray, pointCount } = performGrouping('hours', undefined, 1));
       }
-      if (pointCount <= 2 && granularityType === 'hours') {
-        // Cambiar de horas a minutos (usar intervalo más pequeño)
-        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30));
+      if (pointCount <= 2) {
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30, undefined));
       }
     }
 
@@ -644,10 +658,20 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   }, [medicionesFiltradasPorMetrica, getSeriesLabel, dateRange.start, dateRange.end]);
 
   // Obtener todas las series únicas para el gráfico
+  // CRÍTICO: Incluir TODOS los sensores de medicionesFiltradasPorMetrica para que nunca se pierda una línea
+  // (incluso con intervalos largos > 1 mes donde el agrupamiento puede dejar gaps)
   const allSeries = useMemo(() => {
-    if (chartData.length === 0) return [];
-    
     const seriesSet = new Set<string>();
+
+    // 1. Incluir todos los sensores que tienen datos en las mediciones
+    medicionesFiltradasPorMetrica.forEach((m: any) => {
+      if (m.medicion !== null && m.medicion !== undefined) {
+        const label = getSeriesLabel(m);
+        seriesSet.add(label);
+      }
+    });
+
+    // 2. Complementar con labels de chartData (por si hay datos que no pasaron el filtro anterior)
     chartData.forEach((item: any) => {
       Object.keys(item).forEach(key => {
         if (key !== 'fecha' && typeof item[key] === 'number') {
@@ -655,9 +679,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         }
       });
     });
-    
+
     return Array.from(seriesSet).sort();
-  }, [chartData]);
+  }, [chartData, medicionesFiltradasPorMetrica, getSeriesLabel]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
