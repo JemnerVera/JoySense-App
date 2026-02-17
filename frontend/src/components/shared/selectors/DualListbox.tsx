@@ -161,7 +161,7 @@ const DualListbox: React.FC<DualListboxProps> = ({
   const theme = themeClasses[themeColor];
 
   const listBase =
-    'border border-neutral-600 rounded-lg bg-neutral-800 text-white font-mono text-sm h-[280px] overflow-y-auto custom-scrollbar';
+    'border border-neutral-600 rounded-lg bg-neutral-800 text-white font-mono text-sm h-[200px] overflow-y-auto custom-scrollbar';
 
   const itemBase =
     'px-3 py-2 cursor-pointer transition-colors flex items-center gap-2';
