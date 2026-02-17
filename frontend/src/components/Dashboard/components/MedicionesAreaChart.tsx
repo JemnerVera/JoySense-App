@@ -83,8 +83,9 @@ export function MedicionesAreaChart({
     
     // Log de todas las fechas únicas
     const uniqueDates = new Set(xAxisData.map(x => x?.split(' ')[0] || x));
-    console.log(`[MedicionesAreaChart] Total puntos: ${xAxisData.length}, Fechas únicas: ${uniqueDates.size}, Fechas: ${Array.from(uniqueDates).join(', ')}`);
-    console.log('[MedicionesAreaChart] xAxisData completo:', xAxisData);
+    console.log(`[MedicionesAreaChart] Total puntos: ${xAxisData.length}, Fechas únicas: ${uniqueDates.size}, Fechas: ${Array.from(uniqueDates).sort().join(', ')}`);
+    console.log('[MedicionesAreaChart] Primeras 3 fechas:', xAxisData.slice(0, 3));
+    console.log('[MedicionesAreaChart] Últimas 3 fechas:', xAxisData.slice(-3));
 
     const series = allSeries.map((name, idx) => {
       const color = colors[idx % colors.length];

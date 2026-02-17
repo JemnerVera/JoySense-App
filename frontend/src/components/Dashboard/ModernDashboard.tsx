@@ -313,16 +313,12 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
         // 1. INTENTAR PRIMERO CON LOS FILTROS GLOBALES DE FECHA SI EXISTEN
         if (filters.startDate && filters.endDate) {
-          const startDateFormatted = `${filters.startDate} 00:00:00`
-          // Usar 23:59:59 para el backend REST API (que podría no entender hora parcial)
-          const endDateFormatted = `${filters.endDate} 23:59:59`
-          
           try {
-            const data = await JoySenseService.getMediciones({
+            // Usar la misma RPC que MedicionesDashboard para consistencia
+            const data = await SupabaseRPCService.getMedicionesNodoDetallado({
               nodoid: selectedNode.nodoid,
-              startDate: startDateFormatted,
-              endDate: endDateFormatted,
-              limit: DATA_LIMITS.RANGE_SELECTED
+              startDate: filters.startDate,
+              endDate: filters.endDate
             })
             
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
@@ -331,6 +327,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
             }
           } catch (error: any) {
             // Fallback a estrategia progresiva si hay error de timeout/500
+            console.error('ModernDashboard: Error cargando con RPC getMedicionesNodoDetallado:', error)
           }
         }
 
@@ -1469,311 +1466,175 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Procesar datos para gráficos - específico por métrica y tipo de sensor
   const processChartData = (dataKey: string, useCustomRange: boolean = false, overrideGranularity?: { useDays: boolean, useHours: boolean }) => {
-    // CRÍTICO: Para gráfico detallado, SIEMPRE usar detailedMediciones
-    // Para minigráficos, usar mediciones normales
-    let sourceMediciones = mediciones
+    // SOLUCIÓN FINAL: Copiar EXACTAMENTE la lógica de MedicionesDashboard que funciona
     
-    if (useCustomRange) {
-      // En modo gráfico detallado, SIEMPRE usar datos detallados
-      // Si no hay datos detallados, retornar vacío (no caer a minigráficos)
-      sourceMediciones = detailedMediciones
-    }
+    // Determinar qué datos usar
+    const sourceData = useCustomRange ? detailedMediciones : mediciones;
+    const startDateParam = useCustomRange ? detailedStartDate : (filters.startDate || '');
+    const endDateParam = useCustomRange ? detailedEndDate : (filters.endDate || '');
     
-    if (!sourceMediciones.length || !tipos.length || !selectedNode) {
-      return []
-    }
+    if (!sourceData || sourceData.length === 0) return [];
 
-    // 1. Filtrar por Nodo y Métrica (nodo principal)
-    const metricMediciones = sourceMediciones.filter(m => {
-      if (Number(m.nodoid) !== Number(selectedNode.nodoid)) return false
-      const rawMetricName = m.localizacion?.metrica?.metrica || ''
-      const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
-      return matchesMetricId(rawMetricName, dataKey)
-    })
-    
-    // Si hay nodo de comparación
-    let comparisonMetricMediciones: MedicionData[] = []
-    if (comparisonNode && comparisonMediciones.length > 0) {
-      comparisonMetricMediciones = comparisonMediciones.filter(m => {
-        if (Number(m.nodoid) !== Number(comparisonNode.nodoid)) return false
-        const rawMetricName = m.localizacion?.metrica?.metrica || ''
-        const metricName = rawMetricName.replace(/[\r\n]/g, ' ').trim().toLowerCase()
-        return matchesMetricId(rawMetricName, dataKey)
-      })
-    }
-    
-
-    if (!metricMediciones.length && !comparisonMetricMediciones.length) {
-      return []
-    }
-
-    // 2. Ordenar y Filtrar por Rango (si es fallback)
-    const sortedMediciones = [...metricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-    const sortedComparisonMediciones = [...comparisonMetricMediciones].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-    
-    let filteredMediciones = sortedMediciones
-    let filteredComparisonMediciones = sortedComparisonMediciones
-    let timeSpan = 3 * 60 * 60 * 1000
-    
-    if (useCustomRange && detailedStartDate && detailedEndDate) {
-      const [sY, sM, sD] = detailedStartDate.split('-').map(Number);
-      const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
-      const endDate = getEffectiveEndDate(detailedEndDate);
-
-      // Aplicar filtro de fecha siempre que sea un rango personalizado
-      filteredMediciones = sortedMediciones.filter(m => {
-        const d = new Date(m.fecha).getTime();
-        return d >= startDate.getTime() && d <= endDate.getTime();
-      })
-      filteredComparisonMediciones = sortedComparisonMediciones.filter(m => {
-        const d = new Date(m.fecha).getTime();
-        return d >= startDate.getTime() && d <= endDate.getTime();
-      })
-      timeSpan = endDate.getTime() - startDate.getTime()
-    } else if (!useCustomRange && sortedMediciones.length > 0) {
-      // Minigráficos: intentar últimas 3 horas desde ahora
-      // NOTA: Los datos vienen con ISO timestamp que puede incluir timezone offset
-      // Comparamos directamente los timestamps en milisegundos (timezone-agnostic)
-      const now = Date.now()
-      const threeHoursAgo = now - 3 * 60 * 60 * 1000
-      const recentData = sortedMediciones.filter(m => {
-        const d = new Date(m.fecha).getTime()
-        return d >= threeHoursAgo && d <= now
-      })
+    // Filtrar mediciones por nodo Y por métrica
+    let nodeMediciones = sourceData.filter(m => {
+      const matchNode = Number(m.nodoid) === Number(selectedNode?.nodoid);
+      if (!matchNode) return false;
       
-      if (recentData.length > 0) {
-        // Si hay datos en últimas 3h, usarlos
-        filteredMediciones = recentData
-        timeSpan = 3 * 60 * 60 * 1000
+      // Filtrar por métrica dinámicamente usando el nombre
+      const rawMetricName = m.localizacion?.metrica?.metrica || '';
+      const metricName = rawMetricName
+        .replace(/\r\n/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ')
+        .trim()
+        .toLowerCase();
+      
+      // Mapeo dinámico de dataKey a nombres de métrica
+      if (dataKey === 'temperatura' && (
+        metricName.includes('temperatura') || metricName.includes('temp')
+      )) return true;
+      
+      if (dataKey === 'humedad' && (
+        metricName.includes('humedad') || metricName.includes('humidity')
+      )) return true;
+      
+      if (dataKey === 'conductividad' && (
+        metricName.includes('conductividad') || 
+        metricName.includes('electroconductividad') ||
+        metricName.includes('conductivity')
+      )) return true;
+      
+      // Para otras métricas, hacer coincidir por nombre
+      return metricName.includes(dataKey.toLowerCase());
+    });
+    
+    if (!nodeMediciones.length) return [];
+
+    // Determinar rango de fechas
+    let dateRange = { start: startDateParam || '', end: endDateParam || '' };
+    
+    // Si no hay filtros y no es modo custom, usar últimas 3 horas
+    if (!dateRange.start || !dateRange.end) {
+      if (!useCustomRange) {
+        const now = new Date();
+        const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        dateRange = {
+          start: threeHoursAgo.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0]
+        };
       } else {
-        // Fallback: usar últimas 3h desde el último dato disponible
-        const latest = new Date(sortedMediciones[sortedMediciones.length - 1].fecha).getTime()
-        filteredMediciones = sortedMediciones.filter(m => new Date(m.fecha).getTime() >= latest - 3 * 60 * 60 * 1000)
-        timeSpan = 3 * 60 * 60 * 1000
+        return [];
       }
-    } else if (filters.startDate && filters.endDate && sortedMediciones.length > 0) {
-      // Fallback: filtros globales (para otros usos si los hay)
-      const [sY, sM, sD] = filters.startDate.split('-').map(Number);
-      const startDate = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
-      const [eY, eM, eD] = filters.endDate.split('-').map(Number);
-      const endDate = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
-      
-      filteredMediciones = sortedMediciones.filter(m => {
-        const d = new Date(m.fecha).getTime();
-        return d >= startDate.getTime() && d <= endDate.getTime();
-      })
-      timeSpan = endDate.getTime() - startDate.getTime()
-    }
-    
-    if (filteredMediciones.length === 0 && filteredComparisonMediciones.length === 0) {
-      return []
     }
 
-    // 3. Determinar Granularidad y Agrupar
-    const hoursSpan = timeSpan / (1000 * 60 * 60)
-    const daysSpan = hoursSpan / 24
-    const pointCount = filteredMediciones.length + filteredComparisonMediciones.length
-    
-    // Decidir granularidad (replicar exactamente como MedicionesDashboard):
-    // - Si hay <= 1 día: agrupar por 30 MINUTOS (mostrar HH:MM)
-    // - Si hay 1 a 7 días: agrupar por HORAS (mostrar DD/MM HH:00)
-    // - Si hay más de 7 días: agrupar por DÍA (mostrar DD/MM)
-    let use15Minutes = false
-    let use3Hours = false
-    let useDays = false
-    
-    if (overrideGranularity) {
-      useDays = overrideGranularity.useDays
+    const timeSpan = new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime();
+    const daysSpan = timeSpan / (1000 * 60 * 60 * 24);
+    const hoursSpan = daysSpan * 24;
+
+    // Función auxiliar para hacer grouping con granularidad específica
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days') => {
+      const getTimeKey = (date: Date): string => {
+        if (granularityType === 'minutes') {
+          const minutes = Math.floor(date.getMinutes() / 30) * 30
+          return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+        }
+        if (granularityType === 'hours') {
+          const hours = date.getHours()
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`
+        }
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+      };
+
+      const groupedByTime = new Map<string, Map<string, { values: number[], timestamp: number }>>();
+
+      nodeMediciones.forEach((m: any) => {
+        if (m.medicion === null || m.medicion === undefined) return;
+
+        const date = new Date(m.fecha);
+        const timeKey = getTimeKey(date);
+        const label = getSensorLabelHelper(m, sensores, tipos);
+
+        if (!groupedByTime.has(timeKey)) {
+          groupedByTime.set(timeKey, new Map());
+        }
+
+        const timeEntry = groupedByTime.get(timeKey)!;
+        if (!timeEntry.has(label)) {
+          timeEntry.set(label, { values: [], timestamp: date.getTime() });
+        }
+
+        timeEntry.get(label)!.values.push(parseFloat(m.medicion));
+      });
+
+      // Recolectar todos los labels únicos
+      const allLabels = new Set<string>();
+      groupedByTime.forEach(timeEntry => {
+        timeEntry.forEach((_, label) => allLabels.add(label));
+      });
+      const allLabelsArray = Array.from(allLabels).sort();
+
+      // Obtener tiempos ordenados
+      const sortedTimes = Array.from(groupedByTime.entries())
+        .sort((a, b) => {
+          const aTimestamp = Math.min(...Array.from(a[1].values()).map(v => v.timestamp || 0));
+          const bTimestamp = Math.min(...Array.from(b[1].values()).map(v => v.timestamp || 0));
+          return aTimestamp - bTimestamp;
+        })
+        .map(([timeKey]) => timeKey);
+
+      // Construir resultado final
+      const result = sortedTimes.map(timeKey => {
+        const entry: any = { time: timeKey };
+
+        allLabelsArray.forEach(label => {
+          entry[label] = undefined;
+        });
+
+        const timeEntry = groupedByTime.get(timeKey)!;
+        timeEntry.forEach(({ values }, label) => {
+          if (values.length > 0) {
+            entry[label] = values.reduce((a, b) => a + b, 0) / values.length;
+          }
+        });
+
+        return entry;
+      });
+
+      return { result, allLabelsArray, pointCount: result.length };
+    };
+
+    // Determinar granularidad inicial
+    let granularityType: 'minutes' | 'hours' | 'days' = 'days';
+    if (daysSpan <= 1) {
+      granularityType = 'minutes';
+    } else if (daysSpan <= 7) {
+      granularityType = 'hours';
     } else {
-      if (daysSpan <= 1) {
-        use15Minutes = true
-      } else if (daysSpan <= 7) {
-        use3Hours = true
-      } else {
-        useDays = true
-      }
-    }
-    
-    const useHours = false
-    
-    const startProcess = performance.now()
-
-    // Obtener localizaciones de ambos nodos
-    const allMediciones = [...filteredMediciones, ...filteredComparisonMediciones]
-    const locsEnMediciones = Array.from(new Set(allMediciones.map(m => m.localizacionid).filter(id => id != null)))
-    
-    // Pre-calcular labels una sola vez para evitar búsquedas repetidas
-    const labelCache = new Map<number, string>()
-    const getOrCacheLabel = (m: MedicionData): string => {
-      const key = m.sensorid || 0
-      if (!labelCache.has(key)) {
-        const label = useCustomRange 
-          ? getSeriesLabel(m)
-          : getSensorLabelHelper(m, sensores, tipos)
-        labelCache.set(key, label)
-      }
-      return labelCache.get(key)!
-    }
-    
-    // Función auxiliar para generar timeKey (replicar exactamente como MedicionesDashboard)
-    const getTimeKey = (date: Date): string => {
-      if (use15Minutes) {
-        // <= 1 día: formato HH:MM (solo hora, agregación cada 30 minutos)
-        const minutes = Math.floor(date.getMinutes() / 30) * 30
-        return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-      }
-      if (use3Hours) {
-        // 1-7 días: formato DD/MM HH:00 (fecha + hora)
-        const hours = date.getHours()
-        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`
-      }
-      // > 7 días: formato DD/MM (solo fecha)
-      return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
-    }
-    
-    const performGrouping = (data: any[], isComparison: boolean = false) => {
-      const grouped: { [locid: number]: any[] } = {}
-      locsEnMediciones.forEach(id => { grouped[id] = [] })
-      
-      data.forEach(m => {
-        const date = new Date(m.fecha)
-        const timeKey = getTimeKey(date)
-        
-        let label = getOrCacheLabel(m)
-        // Prefixar con "comp_" si es comparación para distinguir líneas
-        if (isComparison) {
-          label = `comp_${label}`
-        }
-        
-        // CRÍTICO: Buscar NO SOLO por timeKey, sino también por LABEL (sensor)
-        // Esto asegura que diferentes sensores en la misma localización no se sobrescriban
-        const existing = (grouped[m.localizacionid] || []).find(p => p.time === timeKey && p.label === label)
-        if (existing) {
-          // Si ya existe un punto para este SENSOR específico en este TIEMPO, promediar
-          existing.value = (existing.value * existing.count + m.medicion) / (existing.count + 1)
-          existing.count += 1
-        } else {
-          // Crear nuevo punto para este SENSOR+TIEMPO
-          grouped[m.localizacionid].push({ timestamp: date.getTime(), time: timeKey, value: m.medicion, count: 1, label })
-        }
-      })
-      return grouped
+      granularityType = 'days';
     }
 
-    let groupedData = performGrouping(filteredMediciones, false)
-    let groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
-    
-    // Fallback de resolución si hay muy pocos puntos (solo si no hay override)
-    // Esta lógica se mantiene igual: si hay muy pocos datos, se recalcula con la granularidad anterior
-    if (!overrideGranularity) {
-      const countTotalPoints = (grouped: any) => {
-        let total = 0
-        locsEnMediciones.forEach(id => {
-          total += (grouped[id] || []).length
-        })
-        return total
+    // Hacer grouping con granularidad inicial
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType);
+
+    // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
+    const totalMediciones = nodeMediciones.length;
+    if (pointCount <= 2 && totalMediciones >= 3 && granularityType !== 'minutes') {
+      if (granularityType === 'days') {
+        granularityType = 'hours';
+        ({ result, allLabelsArray, pointCount } = performGrouping(granularityType));
       }
-      
-      const totalPoints = countTotalPoints(groupedData) + countTotalPoints(groupedComparisonData)
-      const totalMediciones = filteredMediciones.length + filteredComparisonMediciones.length
-      
-      // Si hay muy pocos datos agrupados pero muchas mediciones raw, cambiar granularidad
-      if (totalPoints <= 2 && totalMediciones >= 3) {
-        // Pasar de granularidad gruesa a más fina
-        if (useDays) {
-          use3Hours = true
-          useDays = false
-          groupedData = performGrouping(filteredMediciones, false)
-          groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
-        } else if (use3Hours) {
-          use15Minutes = true
-          use3Hours = false
-          groupedData = performGrouping(filteredMediciones, false)
-          groupedComparisonData = performGrouping(filteredComparisonMediciones, true)
-        }
+      if (pointCount <= 2 && granularityType === 'hours') {
+        granularityType = 'minutes';
+        ({ result, allLabelsArray, pointCount } = performGrouping(granularityType));
       }
     }
 
-    // 4. Formatear para Recharts - Combinar datos de ambos nodos
-    // Granularidad: 15 min (<= 1 día), 3 horas (1-7 días), día (> 7 días)
-    const allTimestamps = new Set<number>()
-    Object.values(groupedData).forEach(list => list.forEach(p => {
-      const date = new Date(p.timestamp)
-      let ts: number
-      if (use15Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 15) * 15
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
-      } else if (use3Hours) {
-        const hours = Math.floor(date.getHours() / 3) * 3
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours).getTime()
-      } else {
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-      }
-      allTimestamps.add(ts)
-    }))
-    Object.values(groupedComparisonData).forEach(list => list.forEach(p => {
-      const date = new Date(p.timestamp)
-      let ts: number
-      if (use15Minutes) {
-        const minutes = Math.floor(date.getMinutes() / 15) * 15
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minutes).getTime()
-      } else if (use3Hours) {
-        const hours = Math.floor(date.getHours() / 3) * 3
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours).getTime()
-      } else {
-        ts = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-      }
-      allTimestamps.add(ts)
-    }))
-
-    const sortedTimes = Array.from(allTimestamps).sort((a, b) => a - b).map(ts => {
-      const date = new Date(ts)
-      return getTimeKey(date)
-    })
-
-    // Recolectar todas las líneas únicas (labels) que existen en los datos
-    const allLabels = new Set<string>()
-    Object.values(groupedData).forEach(list => list.forEach(p => allLabels.add(p.label)))
-    Object.values(groupedComparisonData).forEach(list => list.forEach(p => allLabels.add(p.label)))
-    const allLabelsArray = Array.from(allLabels).sort()
-    
-    const finalData = sortedTimes.map(time => {
-      const entry: any = { time }
-      // Inicializar todos los labels con undefined (Recharts lo trata como "sin dato")
-      allLabelsArray.forEach(label => {
-        entry[label] = undefined
-      })
-      
-      locsEnMediciones.forEach(id => {
-        // CRÍTICO: Usar .filter() en lugar de .find() para obtener TODOS los puntos
-        // Esto asegura que si hay múltiples sensores en la misma localización,
-        // todos se muestren en el gráfico, no solo el primero
-        const points = (groupedData[id] || []).filter(p => p.time === time)
-        points.forEach(point => {
-          let val = point.value
-          if (useCustomRange) {
-            const { min, max } = yAxisDomain
-            if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
-          }
-          if (val !== undefined && val !== null) { entry[point.label] = val }
-        })
-        
-        // Incluir datos de comparación
-        const compPoints = (groupedComparisonData[id] || []).filter(p => p.time === time)
-        compPoints.forEach(compPoint => {
-          let val = compPoint.value
-          if (useCustomRange) {
-            const { min, max } = yAxisDomain
-            if ((min !== null && val < min) || (max !== null && val > max)) val = undefined
-          }
-          if (val !== undefined && val !== null) { entry[compPoint.label] = val }
-        })
-      })
-      return entry
-    })
-
-    return finalData
+    return result;
   }
+
+  // ========== USO DE CACHE OPTIMIZADO EN LUGAR DE FUNCIONES REPETIDAS ==========
+  // Ahora usamos las funciones con cache del hook useMetricCache en lugar de
+  // hasMetricDataHelper que recalculaba cada vez. Esto reduce significativamente las iteraciones.
 
   const getMetricName = (metricaid: number): string | null => {
     const metricMap: { [key: number]: string } = {
