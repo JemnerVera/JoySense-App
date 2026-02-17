@@ -14,12 +14,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react"
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine, Legend } from "recharts"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import type { MedicionData, MetricConfig } from "../types"
 import type { Nodo, Tipo } from "../../../types"
 import { getMetricIdFromDataKey } from "../utils/metricUtils"
-import DetailedChartJs from "./DetailedChartJs"
+import DetailedEChart from "./DetailedEChart"
 
 export interface DetailedAnalysisModalProps {
   isOpen: boolean
@@ -650,7 +649,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     </div>
                   </div>
                 ) : chartData && chartData.length > 0 ? (
-                  <DetailedChartJs 
+                  <DetailedEChart 
                     data={chartData}
                     visibleLines={visibleLines}
                     yAxisDomain={yAxisDomain}
