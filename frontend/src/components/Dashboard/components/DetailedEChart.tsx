@@ -71,25 +71,74 @@ function calculateNiceInterval(min: number, max: number): { min: number; max: nu
   };
 }
 
-// Función para calcular el rango de fechas en días
+// Función para calcular el rango de fechas en días basado en fechas únicas
+// SINCRONIZADO con MedicionesAreaChart.tsx
 function calculateDateRange(xAxisData: string[]): number {
   if (xAxisData.length < 2) return 0;
   
+  // Contar fechas únicas (DD/MM) en los datos
+  const uniqueDates = new Set<string>();
+  xAxisData.forEach(x => {
+    const dateOnly = x?.split(' ')[0];
+    if (dateOnly) {
+      uniqueDates.add(dateOnly);
+    }
+  });
+  
+  const uniqueDateCount = uniqueDates.size;
+  
+  // Si hay una sola fecha, es ≤ 1 día
+  if (uniqueDateCount === 1) {
+    return 0.5; // Indica 1 día o menos
+  }
+  
+  // Si hay dos fechas, calcular la diferencia en días
+  if (uniqueDateCount === 2) {
+    const firstDate = xAxisData[0]?.split(' ')[0];
+    const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
+    
+    if (!firstDate || !lastDate) return 1;
+    
+    const [d1, m1] = firstDate.split('/').map(Number);
+    const [d2, m2] = lastDate.split('/').map(Number);
+    
+    const currentYear = new Date().getFullYear();
+    let y1 = currentYear;
+    let y2 = currentYear;
+    
+    if (m2 < m1) {
+      y2 = currentYear + 1;
+    }
+    
+    const dateFirst = new Date(y1, m1 - 1, d1);
+    const dateLast = new Date(y2, m2 - 1, d2);
+    
+    const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  
+  // Para más de 2 fechas, usar el cálculo original
   const firstDate = xAxisData[0]?.split(' ')[0];
   const lastDate = xAxisData[xAxisData.length - 1]?.split(' ')[0];
   
-  if (!firstDate || !lastDate) return 0;
+  if (!firstDate || !lastDate) return uniqueDateCount;
   
-  const [d1, m1, y1] = firstDate.split('/').map(Number);
-  const [d2, m2, y2] = lastDate.split('/').map(Number);
+  const [d1, m1] = firstDate.split('/').map(Number);
+  const [d2, m2] = lastDate.split('/').map(Number);
+  
+  const currentYear = new Date().getFullYear();
+  let y1 = currentYear;
+  let y2 = currentYear;
+  
+  if (m2 < m1) {
+    y2 = currentYear + 1;
+  }
   
   const dateFirst = new Date(y1, m1 - 1, d1);
   const dateLast = new Date(y2, m2 - 1, d2);
   
   const diffTime = Math.abs(dateLast.getTime() - dateFirst.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  
-  return diffDays;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // Función para determinar el intervalo de etiquetas del eje X según el rango
