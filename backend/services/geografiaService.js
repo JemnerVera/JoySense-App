@@ -543,14 +543,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     throw nodError;
   }
   logger.info(`[getNodosConLocalizacionDashboardFallback] Query devolvió ${(nodos || []).length} nodos (statusid=1)`);
-  
-  // Log detallado de los primeros nodos
-  if (nodos && nodos.length > 0) {
-    const nodosIds = nodos.map(n => n.nodoid).sort((a,b)=>a-b);
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Primeros 5 nodos: ${nodos.slice(0, 5).map(n => `nodoid=${n.nodoid}, statusid=${n.statusid}`).join('; ')}`);
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Todos los nodoid del query: ${nodosIds.slice(0, 30).join(',')}`);
-  }
-
+   
   if (!nodos || nodos.length === 0) {
     logger.info(`[getNodosConLocalizacionDashboardFallback] Sin nodos, retornando []`);
     return [];
@@ -572,8 +565,6 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     const start = page * pageSize;
     const end = start + pageSize - 1;
     
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Paginación: página ${page}, rango [${start}-${end}], pageSize=${pageSize}`);
-    
     const localizacionesRes = await supabase
       .schema(dbSchema)
       .from('localizacion')
@@ -588,19 +579,15 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     }
     
     const pageData = localizacionesRes.data || [];
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Página ${page} obtuvo ${pageData.length} localizaciones`);
     
     if (pageData.length === 0) {
       hasMore = false;
-      logger.info(`[getNodosConLocalizacionDashboardFallback] Página ${page} vacía, deteniendo paginación`);
     } else {
       localizacionesData = localizacionesData.concat(pageData);
-      logger.info(`[getNodosConLocalizacionDashboardFallback] Progreso: ${localizacionesData.length} localizaciones obtenidas hasta ahora (de página ${page})`);
       page++;
-      // Si obtuvimos menos de pageSize, no hay más datos (última página)
       if (pageData.length < pageSize) {
         hasMore = false;
-        logger.info(`[getNodosConLocalizacionDashboardFallback] Última página detectada (${pageData.length} < ${pageSize}), deteniendo paginación`);
+        logger.info(`[getNodosConLocalizacionDashboardFallback] Última página (${pageData.length} < ${pageSize})`);
       }
     }
   }
@@ -620,11 +607,9 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   
   if (!countError && totalLocalizacionesEsperadas !== null) {
     if (localizacionesData.length < totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ ADVERTENCIA: Se obtuvieron ${localizacionesData.length} localizaciones pero se esperaban ${totalLocalizacionesEsperadas}. Puede haber un problema con la paginación.`);
-    } else if (localizacionesData.length === totalLocalizacionesEsperadas) {
-      logger.info(`[getNodosConLocalizacionDashboardFallback] ✅ Validación exitosa: Se obtuvieron todas las ${localizacionesData.length} localizaciones esperadas`);
-    } else {
-      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ ADVERTENCIA: Se obtuvieron ${localizacionesData.length} localizaciones pero se esperaban ${totalLocalizacionesEsperadas}. Puede haber duplicados o un problema con el conteo.`);
+      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se esperaban ${totalLocalizacionesEsperadas} pero se obtuvieron ${localizacionesData.length}`);
+    } else if (localizacionesData.length > totalLocalizacionesEsperadas) {
+      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se obtuvieron ${localizacionesData.length} pero se esperaban ${totalLocalizacionesEsperadas}`);
     }
   } else if (countError) {
     logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ No se pudo validar el total esperado de localizaciones:`, countError);
@@ -632,8 +617,6 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   
   // Log de nodoid únicos en las localizaciones
   const nodoidEnLocalizaciones = [...new Set(localizacionesData.map(l => l.nodoid))].sort((a,b)=>a-b);
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Obtenidas ${localizacionesData.length} localizaciones para los nodos (en ${page} páginas, nodoidList.length=${nodoidList.length})`);
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Nodoid únicos en localizaciones: ${nodoidEnLocalizaciones.length} nodos únicos (${nodoidEnLocalizaciones.slice(0, 30).join(',')}${nodoidEnLocalizaciones.length > 30 ? '...' : ''})`);
 
   // Obtener entidades_localizacion
   const locIds = localizacionesData.map(l => l.localizacionid);
@@ -665,15 +648,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   // OPTIMIZACIÓN: Filtrar localizaciones para asegurar que solo procesemos las que pertenecen a nodos válidos
   // Esto evita el problema de localizaciones con nodoids que no están en la lista de nodos obtenidos
   const nodoidSet = new Set(nodoidList);
-  const localizacionesValidas = localizacionesData.filter(loc => {
-    if (!nodoidSet.has(loc.nodoid)) {
-      logger.warn(`[getNodosConLocalizacionDashboardFallback] Filtrando localización ${loc.localizacionid} con nodoid=${loc.nodoid} que no está en la lista de nodos`);
-      return false;
-    }
-    return true;
-  });
-  
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Filtrando localizaciones: ${localizacionesData.length} totales, ${localizacionesValidas.length} válidas después del filtro`);
+  const localizacionesValidas = localizacionesData.filter(loc => nodoidSet.has(loc.nodoid));
 
   // Formatear respuesta: retornar como si vinieran de localizaciones (compatibilidad con frontend)
   // Crear Map de nodoid→nodo para búsqueda O(1) en lugar de O(n)
@@ -731,20 +706,12 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     });
   });
 
-  // Log de nodos sin localizaciones (información útil para debugging)
-  if (nodosSinLocalizaciones.size > 0) {
-    logger.warn(`[getNodosConLocalizacionDashboardFallback] ${nodosSinLocalizaciones.size} nodos no tienen localizaciones: ${Array.from(nodosSinLocalizaciones).sort((a,b)=>a-b).slice(0, 10).join(',')}`);
-  }
-  
-  // Validación final: asegurar que todas las localizaciones en resultado tienen nodo válido
   const localizacionesSinNodo = resultado.filter(r => !r.nodo || !r.nodo.nodoid);
   if (localizacionesSinNodo.length > 0) {
-    logger.error(`[getNodosConLocalizacionDashboardFallback] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones en resultado NO tienen objeto nodo válido`);
-  } else {
-    logger.info(`[getNodosConLocalizacionDashboardFallback] ✅ Validación exitosa: Todas las ${resultado.length} localizaciones tienen objeto nodo válido`);
+    logger.error(`[getNodosConLocalizacionDashboardFallback] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido`);
   }
   
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos únicos, ${localizacionesValidas.length} localizaciones válidas procesadas)`);
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos)`);
   return resultado;
 };
 
