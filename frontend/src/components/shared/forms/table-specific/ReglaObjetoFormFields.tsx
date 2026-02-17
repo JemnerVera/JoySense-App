@@ -332,6 +332,16 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   const [selectedFundos, setSelectedFundos] = useState<number[]>([]);
   const [selectedUbicaciones, setSelectedUbicaciones] = useState<number[]>([]);
 
+  // Limpiar selecciones cuando se resetea el formulario
+  useEffect(() => {
+    if (!formData.reglaid || formData.reglaid === null || formData.reglaid === undefined) {
+      setSelectedPaises([]);
+      setSelectedEmpresas([]);
+      setSelectedFundos([]);
+      setSelectedUbicaciones([]);
+    }
+  }, [formData.reglaid]);
+
   // Refs para evitar bucles infinitos en la sincronización con el padre
   const lastSyncRef = useRef<{
     objetos: string;
