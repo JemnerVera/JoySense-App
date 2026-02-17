@@ -29,18 +29,21 @@ import {
 type TFunction = (key: string) => string;
 
 export function createOperations(tableName: string, t: TFunction): SubMenuLevel4[] {
-  const operations: SubMenuLevel4[] = [
+  const baseOperations: SubMenuLevel4[] = [
     { id: 'status', label: t('parameters.operations.status'), icon: <IconStatus /> },
     { id: 'insert', label: t('parameters.operations.create'), icon: <IconInsert /> },
     { id: 'update', label: t('parameters.operations.update'), icon: <IconUpdate /> },
-    { id: 'massive', label: t('parameters.operations.massive'), icon: <IconMassive /> },
   ];
 
   if (tableName.startsWith('permisos-')) {
-    operations.push({ id: 'asignar', label: 'ASIGNAR', icon: <IconAsignar /> });
+    baseOperations.push({ id: 'asignar', label: 'ASIGNAR', icon: <IconAsignar /> });
   }
 
-  return operations;
+  if (!tableName.includes('entidad') && !tableName.includes('carpeta')) {
+    baseOperations.push({ id: 'massive', label: t('parameters.operations.massive'), icon: <IconMassive /> });
+  }
+
+  return baseOperations;
 }
 
 export function getTableIcon(tableName: string): React.ReactNode {
