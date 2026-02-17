@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DualListbox, SelectWithPlaceholder } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
+import { JoySenseService } from '../../../../services/backend-api';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
 // ============================================================================
@@ -326,6 +327,29 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 }) => {
   const { t } = useLanguage();
 
+  // Estado para reglas filtradas
+  const [filteredReglas, setFilteredReglas] = useState<any[]>([]);
+  const [filteredReglasLoaded, setFilteredReglasLoaded] = useState(false);
+
+  // Cargar reglas filtradas al montar (sin regla_objeto para crear)
+  useEffect(() => {
+    const loadFilteredReglas = async () => {
+      try {
+        console.log('[ReglaObjetoFormFields] Cargando reglas filtradas...');
+        // Para el formulario de crear, cargar reglas SIN regla_objeto
+        const filtered = await JoySenseService.getCustomEndpoint('/regla-filtradas/sin_objeto');
+        console.log('[ReglaObjetoFormFields] Reglas filtradas recibidas:', filtered);
+        setFilteredReglas(Array.isArray(filtered) ? filtered : []);
+        setFilteredReglasLoaded(true);
+      } catch (error) {
+        console.error('[ReglaObjetoFormFields] Error cargando reglas filtradas:', error);
+        setFilteredReglas([]);
+        setFilteredReglasLoaded(false);
+      }
+    };
+    loadFilteredReglas();
+  }, []);
+
   // Estados locales para la cascada: arrays de IDs seleccionados en cada nivel
   const [selectedPaises, setSelectedPaises] = useState<number[]>([]);
   const [selectedEmpresas, setSelectedEmpresas] = useState<number[]>([]);
@@ -488,7 +512,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
             <SelectWithPlaceholder
               value={formData.reglaid || ''}
               onChange={(val) => updateField('reglaid', val ? Number(val) : null)}
-              options={reglasData.map(r => ({ value: r.reglaid, label: r.nombre }))}
+              options={(filteredReglasLoaded ? filteredReglas : reglasData || []).map(r => ({ value: r.reglaid, label: r.nombre }))}
               placeholder="SELECCIONAR REGLA"
               themeColor="orange"
               disabled={disabled}

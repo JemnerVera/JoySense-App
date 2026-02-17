@@ -1000,6 +1000,27 @@ export class JoySenseService {
   }
 
   /**
+   * Método para obtener datos con endpoint personalizado
+   * Útil para endpoints especiales como /regla-filtradas/:tipo
+   */
+  static async getCustomEndpoint(endpoint: string): Promise<any[]> {
+    try {
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(`/generic${endpoint}`, token || undefined);
+      const result = Array.isArray(data) ? data : (data?.data || []);
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Error in getCustomEndpoint for ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtiene el usuarioid del usuario actual usando la función RPC
    * Esta función evita problemas de RLS al usar auth.uid() directamente en PostgreSQL
    */
