@@ -28,7 +28,7 @@ import {
 
 type TFunction = (key: string) => string;
 
-export function createOperations(tableName: string, t: TFunction): SubMenuLevel4[] {
+export function createOperations(tableName: string, t: TFunction, allowMassive?: boolean): SubMenuLevel4[] {
   const baseOperations: SubMenuLevel4[] = [
     { id: 'status', label: t('parameters.operations.status'), icon: <IconStatus /> },
     { id: 'insert', label: t('parameters.operations.create'), icon: <IconInsert /> },
@@ -39,7 +39,7 @@ export function createOperations(tableName: string, t: TFunction): SubMenuLevel4
     baseOperations.push({ id: 'asignar', label: 'ASIGNAR', icon: <IconAsignar /> });
   }
 
-  if (!tableName.includes('entidad') && !tableName.includes('carpeta')) {
+  if (allowMassive === true) {
     baseOperations.push({ id: 'massive', label: t('parameters.operations.massive'), icon: <IconMassive /> });
   }
 
@@ -71,7 +71,7 @@ export function getTableIcon(tableName: string): React.ReactNode {
 export function createTablesLevel3(
   tables: TableConfig[],
   parentId: string,
-  createOps: (name: string) => SubMenuLevel4[],
+  createOps: (name: string, allowMassive?: boolean) => SubMenuLevel4[],
   getIcon: (name: string) => React.ReactNode
 ): SubMenuLevel3[] {
   return tables.map((table) => ({
@@ -79,6 +79,6 @@ export function createTablesLevel3(
     label: table.displayName.toUpperCase(),
     icon: getIcon(table.name),
     hasOperations: true,
-    subMenus: createOps(`${parentId}-${table.name}`),
+    subMenus: createOps(`${parentId}-${table.name}`, table.allowMassive),
   }));
 }
