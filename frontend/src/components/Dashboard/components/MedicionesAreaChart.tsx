@@ -183,15 +183,6 @@ export function MedicionesAreaChart({
     console.log(`[MedicionesAreaChart] Rango de fechas: ${dateRangeDays} días | showTime=${showTime}, intervalDays=${intervalDays}`);
     console.log('[MedicionesAreaChart] Primeras 3 fechas:', xAxisData.slice(0, 3));
     console.log('[MedicionesAreaChart] Últimas 3 fechas:', xAxisData.slice(-3));
-    
-    // DEBUG: Logs para interval y labels
-    if (dateRangeDays <= 1) {
-      console.log(`[MedicionesAreaChart] CASO 1 DÍA: ${xAxisData.length} puntos`);
-    } else if (dateRangeDays > 21) {
-      const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
-      console.log(`[MedicionesAreaChart] INTERVALO CALCULADO: ${intervalValue} (para ${xAxisData.length} puntos, buscando ~8 etiquetas)`);
-      console.log(`[MedicionesAreaChart] Esto significa: 1 etiqueta cada ${intervalValue} puntos`);
-    }
 
     const series = allSeries.map((name, idx) => {
       const color = colors[idx % colors.length];
@@ -312,12 +303,9 @@ export function MedicionesAreaChart({
           interval: (() => {
             // Para > 21 días: mantener ~8 etiquetas constantes
             if (dateRangeDays > 21) {
-              const intervalValue = Math.max(1, Math.floor(xAxisData.length / 8));
-              console.log(`[axisLabel] dateRangeDays=${dateRangeDays} > 21, interval=${intervalValue}, totalPoints=${xAxisData.length}`);
-              return intervalValue;
+              return Math.max(1, Math.floor(xAxisData.length / 8));
             }
             // Para todos los demás casos: dejar interval=0 y dejar que el formatter controle
-            console.log(`[axisLabel] dateRangeDays=${dateRangeDays}, interval=0 (formatter controla)`);
             return 0;
           })(),
           formatter: (value: string, index: number) => {
@@ -339,17 +327,19 @@ export function MedicionesAreaChart({
               return currentDate;
             }
             
-            // Para 1 día: mostrar horas en punto (00:00, 01:00, 02:00, etc.)
+            // Para 1 día: mostrar horas cada 3 horas (00:00, 03:00, 06:00, etc.)
             if (dateRangeDays <= 1) {
               if (!currentTime) {
                 return '';
               }
-              // Solo mostrar si es en punto (:00)
+              // Solo mostrar si termina en :00
               if (currentTime.endsWith(':00')) {
-                if (index === 0 || index === xAxisData.length - 1) {
-                  console.log(`[formatter] 1día, index=${index}, time=${currentTime}, mostrando`);
+                const hourMatch = currentTime.match(/^(\d+):/);
+                if (hourMatch) {
+                  const hour = parseInt(hourMatch[1], 10);
+                  // Mostrar cada 3 horas (0, 3, 6, 9, 12, 15, 18, 21)
+                  if (hour % 3 === 0) return currentTime;
                 }
-                return currentTime;
               }
               return '';
             }
