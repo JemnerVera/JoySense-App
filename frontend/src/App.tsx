@@ -380,11 +380,11 @@ const AppContentInternal: React.FC<{
       } else if (activeTab === 'configuracion-notificaciones-regla') {
         // Si solo es 'configuracion-notificaciones-regla' sin tabla específica, NO establecer selectedTable
         // Esto permite que se muestre ReglaSidebar (Sidebar 3) en lugar de ReglaOperationsSidebar (Sidebar 4)
-        // Si selectedTable es una tabla de regla válida (regla, regla_perfil, regla_umbral, regla_objeto), mantenerla
+        // Si selectedTable es una tabla de regla válida (regla, regla_umbral, regla_objeto), mantenerla
         // Esto permite que cuando se hace clic en REGLA desde ReglaSidebar, se muestre el contenido principal
-        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
+        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
           // Mantener selectedTable para mostrar el contenido principal o ReglaOperationsSidebar
-        } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_perfil' && selectedTable !== 'regla_umbral' && selectedTable !== 'regla_objeto') {
+        } else if (selectedTable && selectedTable !== 'regla' && selectedTable !== 'regla_umbral' && selectedTable !== 'regla_objeto') {
           // Limpiar selectedTable si no es una tabla de regla válida
           setSelectedTable('');
         }
@@ -446,9 +446,6 @@ const AppContentInternal: React.FC<{
       } else if (activeTab.startsWith('alertas-regla_umbral-')) {
         // Para alertas-regla_umbral-xxx
         subTab = activeTab.replace('alertas-regla_umbral-', '') as 'status' | 'insert' | 'update';
-      } else if (activeTab.startsWith('alertas-regla_perfil-')) {
-        // Para alertas-regla_perfil-xxx
-        subTab = activeTab.replace('alertas-regla_perfil-', '') as 'status' | 'insert' | 'update';
       } else if (activeTab.startsWith('alertas-alerta_regla-')) {
         // Para alertas-alerta_regla-xxx
         subTab = activeTab.replace('alertas-alerta_regla-', '') as 'status' | 'insert' | 'update';
@@ -636,7 +633,7 @@ const AppContentInternal: React.FC<{
       setActiveSubTab('status');
     }
     
-    // Si cambiamos entre tablas de alertas (regla, regla_objeto, regla_umbral, regla_perfil, alerta_regla)
+    // Si cambiamos entre tablas de alertas (regla, regla_objeto, regla_umbral, alerta_regla)
     // y el tab ya incluye '-status', '-insert', o '-update', extraer el subTab
     // Si no incluye ninguno, resetear a 'status'
     if (tab.startsWith('alertas-regla') || tab.startsWith('alertas-alerta_regla')) {
@@ -797,7 +794,7 @@ const AppContentInternal: React.FC<{
       } else {
         newActiveTab = `configuracion-notificaciones-${table}`;
       }
-    } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
+    } else if (table === 'regla' || table === 'regla_umbral' || table === 'regla_objeto') {
       newActiveTab = `configuracion-notificaciones-regla-${table}`;
     } else if (table === 'permisos-geo' || table === 'permisos-conf') {
       newActiveTab = `configuracion-permisos-${table}`;
@@ -883,7 +880,7 @@ const AppContentInternal: React.FC<{
           setActiveTab(`configuracion-notificaciones-${table}`);
           setActiveSubTab('status');
         }
-      } else if (table === 'regla' || table === 'regla_perfil' || table === 'regla_umbral' || table === 'regla_objeto') {
+      } else if (table === 'regla' || table === 'regla_umbral' || table === 'regla_objeto') {
         // Tablas de regla seleccionadas desde ReglaSidebar
         // IMPORTANTE: Para REGLA, handleTableSelect es la ÚNICA fuente de verdad
         // NO depende del useEffect de sincronización (igual que DISPOSITIVOS pero con 4 niveles)
@@ -1011,7 +1008,7 @@ const AppContentInternal: React.FC<{
       let basePath: string;
       
       if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
-        // Extraer hasta la tabla de regla (regla, regla_perfil, regla_objeto, etc.)
+        // Extraer hasta la tabla de regla (regla, regla_objeto, etc.)
         // Formato: 'configuracion-notificaciones-regla-regla' o 'configuracion-notificaciones-regla-regla-status'
         const afterReglaPrefix = activeTab.replace('configuracion-notificaciones-regla-', '');
         const reglaParts = afterReglaPrefix.split('-');
@@ -1357,7 +1354,7 @@ const AppContentInternal: React.FC<{
         let reglaTab = '';
         
         // PRIORIDAD 1: Usar selectedTable si es una tabla de regla válida
-        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_perfil' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
+        if (selectedTable && (selectedTable === 'regla' || selectedTable === 'regla_umbral' || selectedTable === 'regla_objeto')) {
           reglaTab = selectedTable;
         } else if (activeTab.startsWith('configuracion-notificaciones-regla-')) {
           // PRIORIDAD 2: Extraer de activeTab solo si selectedTable no está disponible
@@ -1381,8 +1378,8 @@ const AppContentInternal: React.FC<{
         }
         
         // Extraer la operación del activeTab completo
-        // Formato: 'configuracion-notificaciones-regla-regla_perfil-status'
-        // O: 'configuracion-notificaciones-regla-regla_perfil'
+        // Formato: 'configuracion-notificaciones-regla-regla_objeto-status'
+        // O: 'configuracion-notificaciones-regla-regla_objeto'
         // CRÍTICO: Usar reglaTab (que viene de selectedTable) como fuente de verdad
         const reglaTableName = reglaTab; // reglaTab ya viene de selectedTable (fuente de verdad)
         let reglaOperation = '';
@@ -1427,7 +1424,7 @@ const AppContentInternal: React.FC<{
           );
         }
         
-        // Para otras tablas de regla (regla_perfil, regla_umbral, regla_objeto), mostrar placeholder si no hay operación
+        // Para otras tablas de regla (regla_umbral, regla_objeto), mostrar placeholder si no hay operación
         if (!reglaOperation) {
           return (
             <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -1441,7 +1438,7 @@ const AppContentInternal: React.FC<{
           );
         }
         
-        // Usar SystemParameters para las otras tablas de regla (regla_perfil, regla_umbral, regla_objeto)
+        // Usar SystemParameters para las otras tablas de regla (regla_umbral, regla_objeto)
         // IMPORTANTE: reglaTableName viene de selectedTable (fuente de verdad para REGLA)
         return (
           <SystemParametersWithSuspense 
@@ -1927,7 +1924,7 @@ const AppContentInternal: React.FC<{
       );
     }
 
-    // Manejar sub-rutas de ALERTAS para tablas relacionadas (regla_objeto, regla_umbral, regla_perfil)
+    // Manejar sub-rutas de ALERTAS para tablas relacionadas (regla_objeto, regla_umbral)
     if (activeTab.startsWith('alertas-regla_objeto-')) {
       const alertasSubTab = activeTab.replace('alertas-regla_objeto-', '') as 'status' | 'insert' | 'update';
       return (
@@ -1945,18 +1942,6 @@ const AppContentInternal: React.FC<{
       return (
         <AlertasTableMain
           tableName="regla_umbral"
-          activeSubTab={alertasSubTab || 'status'}
-          onSubTabChange={handleAlertasReglaChange}
-          onFormDataChange={handleFormDataChange}
-        />
-      );
-    }
-
-    if (activeTab.startsWith('alertas-regla_perfil-')) {
-      const alertasSubTab = activeTab.replace('alertas-regla_perfil-', '') as 'status' | 'insert' | 'update';
-      return (
-        <AlertasTableMain
-          tableName="regla_perfil"
           activeSubTab={alertasSubTab || 'status'}
           onSubTabChange={handleAlertasReglaChange}
           onFormDataChange={handleFormDataChange}
@@ -2389,17 +2374,6 @@ const AppContentInternal: React.FC<{
                               };
                               breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
                             }
-                          } else if (activeTab.startsWith('alertas-regla_perfil-')) {
-                            breadcrumb += ` / ${t('alerts.rule_profile').toUpperCase()}`;
-                            const subTab = activeTab.replace('alertas-regla_perfil-', '');
-                            if (subTab) {
-                              const subTabNames: { [key: string]: string } = {
-                                'status': t('subtabs.status'),
-                                'insert': t('subtabs.insert'),
-                                'update': t('subtabs.update')
-                              };
-                              breadcrumb += ` / ${subTabNames[subTab]?.toUpperCase() || subTab.toUpperCase()}`;
-                            }
                           } else if (activeTab.startsWith('alertas-alerta_regla-')) {
                             breadcrumb += ` / ${t('alerts.rule_alert').toUpperCase()}`;
                             const subTab = activeTab.replace('alertas-alerta_regla-', '');
@@ -2540,9 +2514,8 @@ const AppContentInternal: React.FC<{
                                 
                                 if (reglaTable) {
                                   const reglaTableNames: Record<string, string> = {
-                                    'regla': 'REGLA & UMBRAL',
-                                    'regla_perfil': 'REGLA DE PERFIL',
-                                    'regla_objeto': 'REGLA DE OBJETO'
+                                    'regla': 'REGLAS',
+                                    'regla_objeto': 'ALCANCE DE REGLA'
                                   };
                                   breadcrumb += ` / ${reglaTableNames[reglaTable]?.toUpperCase() || reglaTable.toUpperCase()}`;
                                   
