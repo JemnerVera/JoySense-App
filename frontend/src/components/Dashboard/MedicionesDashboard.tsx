@@ -31,6 +31,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
   const [loading, setLoading] = useState(false);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
+  const [allMetricsFromInitialLoad, setAllMetricsFromInitialLoad] = useState<{ id: number; name: string }[]>([]);  // ← NUEVO: Almacenar todas las métricas de la carga inicial
   const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
 
   // Estados de filtro
@@ -253,10 +254,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadMetricas();
   }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
 
-  // Cargar mediciones cuando cambia localización o rango de fechas (NO por métrica)
+  // Cargar mediciones cuando cambia localización o rango de fechas (TODAS las métricas para el selector)
   useEffect(() => {
     if (!selectedLocalizacion?.nodoid) {
       setMediciones([]);
+      setAllMetricsFromInitialLoad([]);  // ← Limpiar métricas
       return;
     }
 
@@ -270,17 +272,79 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const loadMediciones = async () => {
       try {
         setLoading(true);
-        // Cargar datos de TODAS las métricas (sin filtro metricaid)
+        // Cargar datos de TODAS las métricas para que el selector muestre todas las disponibles
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
-          // NO pasar metricaid - cargar todo y filtrar en frontend
+          // NO pasar metricaid - cargar todo para detectar métricas disponibles
         });
 
         const medicionesData = data || [];
 
         setMediciones(medicionesData);
+        
+        // CRÍTICO: Detectar todas las métricas en la carga inicial y guardarlas
+        // Esto se usa para mostrar los botones, independientemente de cuál métrica esté seleccionada
+        const uniqueMetricIds = new Set<number>();
+        medicionesData.forEach(m => {
+          const metricaId = m.metricaid || m.localizacion?.metricaid;
+          if (metricaId) {
+            uniqueMetricIds.add(Number(metricaId));
+          }
+        });
+
+        // Crear mapeo de nombre a ID basado en los datos iniciales
+        const metricMap = new Map<number, string>();
+        medicionesData.forEach(m => {
+          const metricaId = m.metricaid || m.localizacion?.metricaid;
+          
+          let metricaNombre = 
+            m.localizacion?.metrica?.metrica ||
+            m.metrica_nombre ||
+            m.metrica ||
+            m.localizacion?.metrica ||
+            null;
+
+          if (metricaNombre && typeof metricaNombre === 'object' && 'metrica' in metricaNombre) {
+            metricaNombre = metricaNombre.metrica;
+          }
+
+          if (typeof metricaNombre === 'string') {
+            metricaNombre = metricaNombre.replace(/[\r\n]/g, ' ').trim();
+          }
+
+          if (metricaId && !metricMap.has(Number(metricaId))) {
+            if (metricaNombre) {
+              metricMap.set(Number(metricaId), metricaNombre);
+            }
+          }
+        });
+
+        // Mapeo manual de IDs a nombres si no se encontró en los datos
+        const fallbackNames: { [key: number]: string } = {
+          1: 'Temperatura',
+          2: 'Humedad',
+          3: 'Electroconductividad'
+        };
+
+        // Guardar todas las métricas detectadas en la carga inicial
+        const allMetricsDetected = Array.from(uniqueMetricIds)
+          .sort()
+          .map(id => ({
+            id,
+            name: metricMap.get(id) || fallbackNames[id] || `Métrica ${id}`
+          }));
+
+        setAllMetricsFromInitialLoad(allMetricsDetected);
+        
+        // Actualizar availableMetrics con todas las métricas iniciales
+        setAvailableMetrics(allMetricsDetected);
+        
+        // Seleccionar primera métrica si no hay seleccionada
+        if (allMetricsDetected.length > 0 && !selectedMetricId) {
+          setSelectedMetricId(allMetricsDetected[0].id);
+        }
       } catch (err: any) {
         console.error('Error cargando mediciones:', err);
         if (err.message && err.message.includes('90 días')) {
@@ -289,6 +353,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           showError('Error', 'Error al cargar mediciones');
         }
         setMediciones([]);
+        setAllMetricsFromInitialLoad([]);
       } finally {
         setLoading(false);
       }
@@ -297,82 +362,53 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadMediciones();
   }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
 
-  // Actualizar métricas disponibles basado en los datos REALES cargados
-  // Esto es crítico para rangos largos donde el backend puede no devolver todas las métricas
+  // OPTIMIZACIÓN: Cargar datos SOLO de la métrica seleccionada cuando se cambia
+  // Esto evita alcanzar el límite de filas de Supabase cuando hay múltiples métricas
+  // Se ejecuta DESPUÉS de que ya tenemos la lista de métricas disponibles
   useEffect(() => {
-    if (mediciones.length === 0) {
-      setAvailableMetrics([]);
-      setSelectedMetricId(null);
+    if (!selectedLocalizacion?.nodoid || !selectedMetricId) {
       return;
     }
 
-    // Obtener los metricaid únicos que realmente existen en los datos
-    const uniqueMetricIds = new Set<number>();
-    mediciones.forEach(m => {
-      const metricaId = m.metricaid || m.localizacion?.metricaid;
-      if (metricaId) {
-        uniqueMetricIds.add(Number(metricaId));
-      }
-    });
+    // Validar rango de fechas
+    const adjustedRange = validateDateRange(dateRange.start, dateRange.end);
+    if (adjustedRange) {
+      return;
+    }
 
-    // Crear mapeo de nombre a ID basado en los datos
-    // Buscar en múltiples ubicaciones posibles del campo de nombre
-    const metricMap = new Map<number, string>();
-    mediciones.forEach(m => {
-      const metricaId = m.metricaid || m.localizacion?.metricaid;
-      
-      // Intentar obtener el nombre de varias posibles ubicaciones
-      let metricaNombre = 
-        m.localizacion?.metrica?.metrica ||  // Estructura expandida
-        m.metrica_nombre ||                   // Campo directo en medicion
-        m.metrica ||                          // Campo directo alternativo
-        m.localizacion?.metrica ||            // Métrica como objeto
-        null;
-
-      // Si metricaNombre es un objeto, intentar extraer el campo 'metrica'
-      if (metricaNombre && typeof metricaNombre === 'object' && 'metrica' in metricaNombre) {
-        metricaNombre = metricaNombre.metrica;
-      }
-
-      // Limpieza de espacios en blanco y saltos de línea
-      if (typeof metricaNombre === 'string') {
-        metricaNombre = metricaNombre.replace(/[\r\n]/g, ' ').trim();
-      }
-
-      if (metricaId && !metricMap.has(Number(metricaId))) {
-        if (metricaNombre) {
-          metricMap.set(Number(metricaId), metricaNombre);
+    const loadMedicionesOptimizadas = async () => {
+      try {
+        // Solo establecer loading si es la primera carga de datos
+        // Para cambios de métrica, permitir que se mantenga visible el gráfico anterior
+        if (mediciones.length === 0) {
+          setLoading(true);
         }
-      }
-    });
 
-    // Mapeo manual de IDs a nombres si no se encontró en los datos
-    const fallbackNames: { [key: number]: string } = {
-      1: 'Temperatura',
-      2: 'Humedad',
-      3: 'Electroconductividad'
+        // OPTIMIZACIÓN: Cargar datos SOLO de la métrica seleccionada
+        const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+          nodoid: selectedLocalizacion.nodoid,
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          metricaid: selectedMetricId  // Pasar la métrica seleccionada para filtrar en la BD
+        });
+
+        const medicionesData = data || [];
+
+        setMediciones(medicionesData);
+      } catch (err: any) {
+        console.error('Error cargando mediciones optimizadas:', err);
+        // No mostrar error, solo loguear
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Construir lista de métricas disponibles basado en datos reales
-    const availableFromData = Array.from(uniqueMetricIds)
-      .sort()
-      .map(id => ({
-        id,
-        name: metricMap.get(id) || fallbackNames[id] || `Métrica ${id}`
-      }));
+    loadMedicionesOptimizadas();
+  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, selectedMetricId, validateDateRange]);
 
-    setAvailableMetrics(availableFromData);
-
-    // Si el selectedMetricId actual no existe en los datos, seleccionar el primero disponible
-    if (availableFromData.length > 0) {
-      const selectedExists = availableFromData.find(m => m.id === selectedMetricId);
-      if (!selectedExists) {
-        setSelectedMetricId(availableFromData[0].id);
-      }
-    } else {
-      setSelectedMetricId(null);
-    }
-  }, [mediciones]);
+  // YA NO es necesario actualizar availableMetrics cuando cambian mediciones
+  // Porque ahora usamos allMetricsFromInitialLoad que se mantiene constante
+  // Este useEffect se puede remover o dejar como es (será un no-op)
 
   // Filtrar localizaciones por filtros globales y término de búsqueda
   const filteredNodos = useMemo(() => {
@@ -435,12 +471,14 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return tipoName;
   }, [sensores, tipos]);
 
-  // Filtrar mediciones por métrica seleccionada (filtrado en frontend)
+  // Filtrar mediciones por métrica seleccionada (ya vienen filtradas del backend, pero aplicar filtro por si acaso)
   const medicionesFiltradasPorMetrica = useMemo(() => {
     if (!selectedMetricId || mediciones.length === 0) {
       return [];
     }
     
+    // Como la RPC ya devuelve solo la métrica seleccionada, simplemente retornar los datos
+    // Pero aplicar un filtro defensivo por si los datos no están completamente filtrados
     const filtered = mediciones.filter(m => {
       const metricaId = m.metricaid || m.metrica_nombre;
       return Number(metricaId) === Number(selectedMetricId);

@@ -692,10 +692,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Esto mantiene ALL LOS SENSORES mientras reduce la cantidad de datos para rangos grandes
       
       const effectiveEndDateStr = formatEndDateForRpc(endDateStr);
+      
+      // OPTIMIZACIÓN: Obtener ID de métrica seleccionada para filtrar
+      // Esto evita alcanzar el límite de filas de Supabase cuando hay múltiples métricas
+      const metricId = selectedDetailedMetric ? getMetricIdFromDataKey(selectedDetailedMetric) : undefined;
+      
       const detailedData = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedNode.nodoid,
         startDate: startDateStr,
-        endDate: effectiveEndDateStr
+        endDate: effectiveEndDateStr,
+        metricaid: metricId  // Pasar ID de métrica seleccionada
       });
       
       if (!Array.isArray(detailedData)) {
@@ -753,7 +759,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     } finally {
       setLoadingDetailedData(false)
     }
-  }, [selectedNode])
+  }, [selectedNode, selectedDetailedMetric])
 
   // Cargar localizaciones del nodo seleccionado
   useEffect(() => {
