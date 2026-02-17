@@ -209,6 +209,10 @@ const ReglasMain = forwardRef<ReglasMainRef, ReglasMainProps>(({
       setUpdateFormData({});
       resetForm();
     }
+    // Limpiar mensaje cuando cambia a cualquier pestaña (excepto insert donde ya se limpia)
+    if (activeSubTab !== 'insert') {
+      setMessage(null);
+    }
   }, [activeSubTab, setTableData, setLoading, resetForm]);
 
   const handleRowSelect = useCallback((row: any) => {
