@@ -127,6 +127,17 @@ export function useMenuStructure() {
         requiredMenu: 'CONFIGURACIÓN',
         subMenus: [
           {
+            id: 'parametros-geo',
+            label: 'PARÁMETROS GEO',
+            icon: <IconPais />,
+            subMenus: createTablesLevel3(
+              parametrosGeoTables,
+              'configuracion-parametros-geo',
+              createOps,
+              getTableIcon
+            ),
+          },
+          {
             id: 'dispositivos',
             label: 'DISPOSITIVOS',
             icon: <IconDispositivos />,
@@ -144,17 +155,6 @@ export function useMenuStructure() {
             subMenus: createTablesLevel3(
               usuariosTables,
               'configuracion-usuarios',
-              createOps,
-              getTableIcon
-            ),
-          },
-          {
-            id: 'parametros-geo',
-            label: 'PARÁMETROS GEO',
-            icon: <IconPais />,
-            subMenus: createTablesLevel3(
-              parametrosGeoTables,
-              'configuracion-parametros-geo',
               createOps,
               getTableIcon
             ),
