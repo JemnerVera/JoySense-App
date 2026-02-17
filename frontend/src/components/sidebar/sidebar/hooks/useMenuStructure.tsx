@@ -96,7 +96,7 @@ export function useMenuStructure() {
       },
       {
         id: 'agrupacion',
-        label: 'AGRUPACIÓN',
+        label: 'CARPETA',
         icon: <IconAgrupacion />,
         color: 'green',
         requiresPermission: true,
@@ -104,14 +104,14 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'entidad',
-            label: 'GRUPO',
+            label: 'PERSONAL',
             icon: <IconEntidad />,
             hasOperations: true,
             subMenus: createOps('agrupacion-entidad'),
           },
           {
             id: 'carpeta',
-            label: 'CARPETA',
+            label: 'COMPARTIDA',
             icon: <IconCarpeta />,
             hasOperations: true,
             subMenus: createOps('agrupacion-carpeta'),
