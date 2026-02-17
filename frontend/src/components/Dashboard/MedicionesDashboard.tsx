@@ -519,10 +519,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     console.log('[chartData PREP] dateRange:', dateRange, 'daysSpan:', daysSpan, 'medicionesCount:', medicionesFiltradasPorMetrica.length);
 
     // Función auxiliar para hacer grouping con una granularidad específica
-    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days') => {
-      const getTimeKey = (date: Date): string => {
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number) => {
+      const getTimeKey = (date: Date, granularityType: 'minutes' | 'hours' | 'days', interval?: number): string => {
         if (granularityType === 'minutes') {
-          const minutes = Math.floor(date.getMinutes() / 30) * 30;
+          // Para minutos, usar el intervalo especificado (por defecto 30)
+          const minuteInterval = interval || 30;
+          const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
           return `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
         if (granularityType === 'hours') {
@@ -550,7 +552,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         if (m.medicion === null || m.medicion === undefined) return;
 
         const date = new Date(m.fecha);
-        const timeKey = getTimeKey(date);
+        const timeKey = getTimeKey(date, granularityType, interval);
         const label = getOrCacheLabel(m);
 
         if (!groupedByTime.has(timeKey)) {
@@ -608,8 +610,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     // Determinar granularidad inicial
     let granularityType: 'minutes' | 'hours' | 'days' = 'days';
+    let minuteInterval = 30; // Intervalo por defecto para minutos
+    
     if (daysSpan <= 1) {
       granularityType = 'minutes';
+      minuteInterval = 180; // 3 horas = 180 minutos (para 24h da ~8 puntos)
     } else if (daysSpan <= 7) {
       granularityType = 'hours';
     } else {
@@ -617,7 +622,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     }
 
     // Hacer grouping con granularidad inicial
-    let { result, allLabelsArray, pointCount } = performGrouping(granularityType);
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType, minuteInterval);
 
     // Fallback: si hay muy pocos puntos pero muchas mediciones, cambiar granularidad
     const totalMediciones = medicionesFiltradasPorMetrica.length;
@@ -627,8 +632,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         ({ result, allLabelsArray, pointCount } = performGrouping('hours'));
       }
       if (pointCount <= 2 && granularityType === 'hours') {
-        // Cambiar de horas a minutos
-        ({ result, allLabelsArray, pointCount } = performGrouping('minutes'));
+        // Cambiar de horas a minutos (usar intervalo más pequeño)
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 30));
       }
     }
 
@@ -661,10 +666,23 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      const delta = e.deltaY || e.deltaX;
-      if (Math.abs(delta) > 0) {
-        container.scrollLeft += delta;
-        e.preventDefault();
+      // Detectar si es trackpad (deltaX y deltaY son muy pequeños) vs rueda de ratón
+      const isTrackpad = Math.abs(e.deltaX) > 0 || (Math.abs(e.deltaY) < 50 && Math.abs(e.deltaX) < 50);
+      
+      if (isTrackpad) {
+        // Para trackpad: usar ambos ejes (preferir deltaX horizontal)
+        const scrollAmount = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        if (Math.abs(scrollAmount) > 0) {
+          container.scrollLeft += scrollAmount;
+          e.preventDefault();
+        }
+      } else {
+        // Para rueda de ratón: solo usar el eje vertical para scroll horizontal
+        const delta = e.deltaY || e.deltaX;
+        if (Math.abs(delta) > 0) {
+          container.scrollLeft += delta;
+          e.preventDefault();
+        }
       }
     };
 
@@ -884,7 +902,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toFixed(1) : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
@@ -905,7 +923,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toFixed(1) : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
