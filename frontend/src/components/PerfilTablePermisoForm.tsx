@@ -1,13 +1,13 @@
 /**
- * Formulario especializado para crear permisos geográficos
- * Diseño intuitivo con selección de perfil, geografía y permisos
+ * Formulario especializado para crear permisos de configuración (TABLA)
+ * Diseño intuitivo con selección de perfil, tabla y permisos
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
 
-interface PerfilGeografiaPermisoFormProps {
+interface PerfilTablePermisoFormProps {
   formData: Record<string, any>;
   setFormData: (data: Record<string, any>) => void;
   updateFormField?: (field: string, value: any) => void;
@@ -16,23 +16,23 @@ interface PerfilGeografiaPermisoFormProps {
   onCancel: () => void;
   // Datos relacionados
   perfilesData?: any[];
-  paisesData?: any[];
-  empresasData?: any[];
-  fundosData?: any[];
-  ubicacionesData?: any[];
-  nodosData?: any[];
-  localizacionesData?: any[];
   fuentesData?: any[];
-  origenesData?: any[];
+  sensoresData?: any[];
+  usuariosData?: any[];
+  perfilesTableData?: any[];
+  tiposData?: any[];
+  metricasData?: any[];
+  entidadesData?: any[];
+  reglasData?: any[];
   // Funciones auxiliares
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   // Tema de color
   themeColor?: 'orange' | 'red' | 'blue' | 'green';
 }
 
-type GeografiaType = 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'nodo' | 'localizacion' | null;
+type TablaType = 'sensor' | 'usuario' | 'perfil' | 'tipo' | 'metrica' | 'entidad' | 'regla' | null;
 
-const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
+const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
   formData,
   setFormData,
   updateFormField,
@@ -40,40 +40,18 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
   onInsert,
   onCancel,
   perfilesData = [],
-  paisesData = [],
-  empresasData = [],
-  fundosData = [],
-  ubicacionesData = [],
-  nodosData = [],
-  localizacionesData = [],
   fuentesData = [],
-  origenesData = [],
+  sensoresData = [],
+  usuariosData = [],
+  perfilesTableData = [],
+  tiposData = [],
+  metricasData = [],
+  entidadesData = [],
+  reglasData = [],
   getUniqueOptionsForField,
   themeColor = 'orange'
 }) => {
   const { t } = useLanguage();
-  
-  // Helper para obtener origenid de GEOGRAFÍA
-  const getGeografiaOrigenId = useMemo(() => {
-    return origenesData.find(o => {
-      const nombre = (o.origen || '').toUpperCase().trim();
-      return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
-    })?.origenid || null;
-  }, [origenesData]);
-  
-  // Helper para obtener fuenteid según el tipo de geografía
-  const getFuenteIdByType = (type: GeografiaType): number | null => {
-    if (!type) return null;
-    const fuente = fuentesData.find(f => 
-      f.fuente?.toLowerCase() === type.toLowerCase()
-    );
-    console.log(`🔍 [PerfilGeografiaPermisoForm] getFuenteIdByType(${type}):`, {
-      fuentesData: fuentesData,
-      found: fuente,
-      fuenteid: fuente?.fuenteid
-    });
-    return fuente?.fuenteid || null;
-  };
   
   // Helper para obtener clases de color según el tema
   const getThemeColor = (type: 'text' | 'bg' | 'hover' | 'focus' | 'border') => {
@@ -110,8 +88,25 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     return colors[themeColor]?.[type] || colors.orange[type];
   };
   
-  // Estado local para el tipo de geografía seleccionado
-  const [geografiaType, setGeografiaType] = useState<GeografiaType>(null);
+  // Estado local para el tipo de tabla seleccionado
+  const [tablaType, setTablaType] = useState<TablaType>(null);
+  
+  // Helper para obtener origenid de TABLA
+  const getTablaOrigenId = useMemo(() => {
+    return fuentesData.find(o => {
+      const nombre = (o.fuente || '').toUpperCase().trim();
+      return nombre === 'TABLA';
+    })?.origenid || null;
+  }, [fuentesData]);
+
+  // Helper para obtener fuenteid según el tipo de tabla
+  const getFuenteIdByType = (type: TablaType): number | null => {
+    if (!type) return null;
+    const fuente = fuentesData.find(f => 
+      f.fuente?.toLowerCase() === type.toLowerCase()
+    );
+    return fuente?.fuenteid || null;
+  };
   
   // Inicializar valores por defecto
   useEffect(() => {
@@ -145,35 +140,14 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     }
   }, []); // Solo al montar
 
-  // Determinar el tipo de geografía basado en los datos del formulario
-  useEffect(() => {
-    if (formData.paisid) {
-      setGeografiaType('pais');
-    } else if (formData.empresaid) {
-      setGeografiaType('empresa');
-    } else if (formData.fundoid) {
-      setGeografiaType('fundo');
-    } else if (formData.ubicacionid) {
-      setGeografiaType('ubicacion');
-    } else if (formData.nodoid) {
-      setGeografiaType('nodo');
-    } else if (formData.localizacionid) {
-      setGeografiaType('localizacion');
-    } else {
-      setGeografiaType(null);
-    }
-  }, [formData.paisid, formData.empresaid, formData.fundoid, formData.ubicacionid, formData.nodoid, formData.localizacionid]);
-
-  // Limpiar otros campos de geografía cuando se selecciona un tipo
-  const handleGeografiaTypeChange = (type: GeografiaType) => {
-    console.log('✏️ [PerfilGeografiaPermisoForm] handleGeografiaTypeChange:', type);
-    setGeografiaType(type);
+  // Limpiar otros campos de tabla cuando se selecciona un tipo
+  const handleTablaTypeChange = (type: TablaType) => {
+    setTablaType(type);
     const newData = { ...formData };
     
-    // Establecer origenid si aún no está establecido
-    if (!newData.origenid && getGeografiaOrigenId) {
-      newData.origenid = getGeografiaOrigenId;
-      console.log('📌 Set origenid:', getGeografiaOrigenId);
+    // Establecer origenid (TABLA) si aún no está establecido
+    if (!newData.origenid && getTablaOrigenId) {
+      newData.origenid = getTablaOrigenId;
     }
     
     // Establecer fuenteid según el tipo
@@ -181,24 +155,16 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
       const fuenteId = getFuenteIdByType(type);
       if (fuenteId) {
         newData.fuenteid = fuenteId;
-        console.log('📌 Set fuenteid:', fuenteId);
-      } else {
-        console.warn('⚠️ No fuenteid found for type:', type);
       }
     }
     
-    // Limpiar todos los campos de geografía
-    delete newData.paisid;
-    delete newData.empresaid;
-    delete newData.fundoid;
-    delete newData.ubicacionid;
-    delete newData.nodoid;
-    delete newData.localizacionid;
+    // Limpiar campo objetoid
+    delete newData.objetoid;
     
     setFormData(newData);
     if (updateFormField) {
-      if (!formData.origenid && getGeografiaOrigenId) {
-        updateFormField('origenid', getGeografiaOrigenId);
+      if (!formData.origenid && getTablaOrigenId) {
+        updateFormField('origenid', getTablaOrigenId);
       }
       if (type) {
         const fuenteId = getFuenteIdByType(type);
@@ -206,60 +172,19 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
           updateFormField('fuenteid', fuenteId);
         }
       }
-      updateFormField('paisid', null);
-      updateFormField('empresaid', null);
-      updateFormField('fundoid', null);
-      updateFormField('ubicacionid', null);
-      updateFormField('nodoid', null);
-      updateFormField('localizacionid', null);
+      updateFormField('objetoid', null);
     }
   };
 
-  // Handler para cambio de perfil - limpiar geografía y permisos
-  const handlePerfilChange = (value: any) => {
-    const newData: Record<string, any> = { ...formData, perfilid: value };
-    
-    // Mantener origenid si ya está establecido, o establecerlo
-    if (!newData.origenid && getGeografiaOrigenId) {
-      newData.origenid = getGeografiaOrigenId;
-    }
-    
-    // Limpiar geografía cuando cambia el perfil
-    delete newData.paisid;
-    delete newData.empresaid;
-    delete newData.fundoid;
-    delete newData.ubicacionid;
-    delete newData.nodoid;
-    delete newData.localizacionid;
-    delete newData.fuenteid; // Limpiar fuenteid también
-    
-    setFormData(newData);
-    if (updateFormField) {
-      updateFormField('perfilid', value);
-      if (!formData.origenid && getGeografiaOrigenId) {
-        updateFormField('origenid', getGeografiaOrigenId);
-      }
-      updateFormField('paisid', null);
-      updateFormField('empresaid', null);
-      updateFormField('fundoid', null);
-      updateFormField('ubicacionid', null);
-      updateFormField('nodoid', null);
-      updateFormField('localizacionid', null);
-      updateFormField('fuenteid', null);
-    }
-    
-    // Resetear tipo de geografía
-    setGeografiaType(null);
-  };
-
-  // Opciones para el combobox de geografía
-  const geografiaOptions = useMemo(() => [
-    { value: 'pais', label: 'País' },
-    { value: 'empresa', label: 'Empresa' },
-    { value: 'fundo', label: 'Fundo' },
-    { value: 'ubicacion', label: 'Ubicación' },
-    { value: 'nodo', label: 'Nodo' },
-    { value: 'localizacion', label: 'Localización' }
+  // Opciones para el combobox de tabla
+  const tablaOptions = useMemo(() => [
+    { value: 'sensor', label: 'Sensor' },
+    { value: 'usuario', label: 'Usuario' },
+    { value: 'perfil', label: 'Perfil' },
+    { value: 'tipo', label: 'Tipo' },
+    { value: 'metrica', label: 'Métrica' },
+    { value: 'entidad', label: 'Entidad' },
+    { value: 'regla', label: 'Regla' }
   ], []);
 
   // Opciones para perfiles
@@ -273,128 +198,89 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     }));
   }, [perfilesData, getUniqueOptionsForField]);
 
-  // Opciones para el combobox dinámico según la geografía seleccionada
-  const geografiaOptionsDynamic = useMemo(() => {
-    if (!geografiaType) return [];
+  // Opciones para el combobox dinámico según la tabla seleccionada
+  const tablaOptionsDynamic = useMemo(() => {
+    if (!tablaType) return [];
     
-    let options: Array<{value: any, label: string}> = [];
-    
-    switch (geografiaType) {
-      case 'pais':
+    switch (tablaType) {
+      case 'sensor':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('paisid');
-        } else {
-          options = paisesData.map(p => ({
-            value: p.paisid,
-            label: p.pais || `País ${p.paisid}`
-          }));
+          return getUniqueOptionsForField('sensorid');
         }
-        console.log('🌍 [PerfilGeografiaPermisoForm] PAIS options:', options, 'paisesData:', paisesData);
-        break;
-      case 'empresa':
+        return sensoresData.map(s => ({
+          value: s.sensorid,
+          label: s.sensor || `Sensor ${s.sensorid}`
+        }));
+      case 'usuario':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('empresaid');
-        } else {
-          options = empresasData.map(e => ({
-            value: e.empresaid,
-            label: e.empresa || `Empresa ${e.empresaid}`
-          }));
+          return getUniqueOptionsForField('usuarioid');
         }
-        console.log('🏢 [PerfilGeografiaPermisoForm] EMPRESA options:', options, 'empresasData:', empresasData);
-        break;
-      case 'fundo':
+        return usuariosData.map(u => ({
+          value: u.usuarioid,
+          label: u.login || `Usuario ${u.usuarioid}`
+        }));
+      case 'perfil':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('fundoid');
-        } else {
-          options = fundosData.map(f => ({
-            value: f.fundoid,
-            label: f.fundo || `Fundo ${f.fundoid}`
-          }));
+          return getUniqueOptionsForField('perfilid');
         }
-        console.log('🌱 [PerfilGeografiaPermisoForm] FUNDO options:', options, 'fundosData:', fundosData);
-        break;
-      case 'ubicacion':
+        return perfilesTableData.map(p => ({
+          value: p.perfilid,
+          label: p.perfil || `Perfil ${p.perfilid}`
+        }));
+      case 'tipo':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('ubicacionid');
-        } else {
-          options = ubicacionesData.map(u => ({
-            value: u.ubicacionid,
-            label: u.ubicacion || `Ubicación ${u.ubicacionid}`
-          }));
+          return getUniqueOptionsForField('tipoid');
         }
-        console.log('📍 [PerfilGeografiaPermisoForm] UBICACION options:', options, 'ubicacionesData:', ubicacionesData);
-        break;
-      case 'nodo':
+        return tiposData.map(t => ({
+          value: t.tipoid,
+          label: t.tipo || `Tipo ${t.tipoid}`
+        }));
+      case 'metrica':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('nodoid');
-        } else {
-          options = nodosData.map(n => ({
-            value: n.nodoid,
-            label: n.nodo || `Nodo ${n.nodoid}`
-          }));
+          return getUniqueOptionsForField('metricaid');
         }
-        console.log('🔌 [PerfilGeografiaPermisoForm] NODO options:', options, 'nodosData:', nodosData);
-        break;
-      case 'localizacion':
+        return metricasData.map(m => ({
+          value: m.metricaid,
+          label: m.metrica || `Métrica ${m.metricaid}`
+        }));
+      case 'entidad':
         if (getUniqueOptionsForField) {
-          options = getUniqueOptionsForField('localizacionid');
-        } else {
-          options = localizacionesData.map(l => ({
-            value: l.localizacionid,
-            label: l.localizacion || `Localización ${l.localizacionid}`
-          }));
+          return getUniqueOptionsForField('entidadid');
         }
-        console.log('🗺️ [PerfilGeografiaPermisoForm] LOCALIZACION options:', options, 'localizacionesData:', localizacionesData);
-        break;
+        return entidadesData.map(e => ({
+          value: e.entidadid,
+          label: e.entidad || `Entidad ${e.entidadid}`
+        }));
+      case 'regla':
+        if (getUniqueOptionsForField) {
+          return getUniqueOptionsForField('reglaid');
+        }
+        return reglasData.map(r => ({
+          value: r.reglaid,
+          label: r.nombre || `Regla ${r.reglaid}`
+        }));
+      default:
+        return [];
     }
-    
-    return options;
-  }, [geografiaType, paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, getUniqueOptionsForField]);
+  }, [tablaType, sensoresData, usuariosData, perfilesTableData, tiposData, metricasData, entidadesData, reglasData, getUniqueOptionsForField]);
 
-  // Handler para cambiar el valor de geografía dinámico
-  const handleGeografiaValueChange = (value: any) => {
-    if (!geografiaType) return;
+  // Handler para cambiar el valor de tabla dinámico
+  const handleTablaValueChange = (value: any) => {
+    if (!tablaType) return;
     
     const newData = { ...formData };
     
     // Establecer origenid y fuenteid si no están establecidos
-    if (!newData.origenid && getGeografiaOrigenId) {
-      newData.origenid = getGeografiaOrigenId;
+    if (!newData.origenid && getTablaOrigenId) {
+      newData.origenid = getTablaOrigenId;
     }
-    const fuenteId = getFuenteIdByType(geografiaType);
+    const fuenteId = getFuenteIdByType(tablaType);
     if (fuenteId) {
       newData.fuenteid = fuenteId;
     }
     
-    // Limpiar todos los campos de geografía primero
-    delete newData.paisid;
-    delete newData.empresaid;
-    delete newData.fundoid;
-    delete newData.ubicacionid;
-    delete newData.nodoid;
-    delete newData.localizacionid;
-    
-    // Establecer el campo correspondiente
-    switch (geografiaType) {
-      case 'pais':
-        newData.paisid = value;
-        break;
-      case 'empresa':
-        newData.empresaid = value;
-        break;
-      case 'fundo':
-        newData.fundoid = value;
-        break;
-      case 'ubicacion':
-        newData.ubicacionid = value;
-        break;
-      case 'nodo':
-        newData.nodoid = value;
-        break;
-      case 'localizacion':
-        newData.localizacionid = value;
-        break;
-    }
+    // Establecer el campo objetoid
+    newData.objetoid = value;
     
     // Asegurar que statusid tenga valor por defecto
     if (!newData.statusid) {
@@ -403,35 +289,22 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     
     setFormData(newData);
     if (updateFormField) {
-      if (!formData.origenid && getGeografiaOrigenId) {
-        updateFormField('origenid', getGeografiaOrigenId);
+      if (!formData.origenid && getTablaOrigenId) {
+        updateFormField('origenid', getTablaOrigenId);
       }
       if (fuenteId) {
         updateFormField('fuenteid', fuenteId);
       }
-      const fieldName = `${geografiaType}id`;
-      updateFormField(fieldName, value);
+      updateFormField('objetoid', value);
       if (!formData.statusid) {
         updateFormField('statusid', 1);
       }
     }
   };
 
-  // Obtener el valor actual de la geografía seleccionada
-  const getCurrentGeografiaValue = () => {
-    if (!geografiaType) return null;
-    switch (geografiaType) {
-      case 'pais':
-        return formData.paisid || null;
-      case 'empresa':
-        return formData.empresaid || null;
-      case 'fundo':
-        return formData.fundoid || null;
-      case 'ubicacion':
-        return formData.ubicacionid || null;
-      default:
-        return null;
-    }
+  // Obtener el valor actual de la tabla seleccionada
+  const getCurrentTablaValue = () => {
+    return formData.objetoid || null;
   };
 
   // Handler para checkboxes
@@ -443,18 +316,44 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     }
   };
 
+  // Handler para cambio de perfil - limpiar tabla y permisos
+  const handlePerfilChange = (value: any) => {
+    const newData: Record<string, any> = { ...formData, perfilid: value };
+    
+    // Mantener origenid si ya está establecido, o establecerlo
+    if (!newData.origenid && getTablaOrigenId) {
+      newData.origenid = getTablaOrigenId;
+    }
+    
+    // Limpiar tabla
+    delete newData.objetoid;
+    delete newData.fuenteid;
+    
+    setFormData(newData);
+    if (updateFormField) {
+      updateFormField('perfilid', value);
+      if (!formData.origenid && getTablaOrigenId) {
+        updateFormField('origenid', getTablaOrigenId);
+      }
+      updateFormField('objetoid', null);
+      updateFormField('fuenteid', null);
+    }
+    
+    // Resetear tipo de tabla
+    setTablaType(null);
+  };
 
   // Determinar si los campos están habilitados según la cascada
   const isPerfilEnabled = true; // Siempre habilitado
-  const isGeografiaEnabled = !!formData.perfilid;
-  const isGeografiaValueEnabled = !!formData.perfilid && !!geografiaType;
-  const isPermisosEnabled = !!formData.perfilid && !!geografiaType && !!getCurrentGeografiaValue();
-  const isStatusEnabled = !!formData.perfilid && !!geografiaType && !!getCurrentGeografiaValue();
+  const isTablaEnabled = !!formData.perfilid;
+  const isTablaValueEnabled = !!formData.perfilid && !!tablaType;
+  const isPermisosEnabled = !!formData.perfilid && !!tablaType && !!getCurrentTablaValue();
+  const isStatusEnabled = !!formData.perfilid && !!tablaType && !!getCurrentTablaValue();
 
   return (
     <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
       <div className="space-y-6">
-        {/* Fila 1: PERFIL y GEOGRAFÍA */}
+        {/* Fila 1: PERFIL y TABLA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Perfil */}
           <div>
@@ -472,47 +371,49 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             />
           </div>
 
-          {/* Tipo de Geografía */}
+          {/* Tipo de Tabla */}
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-              isGeografiaEnabled ? getThemeColor('text') : 'text-gray-500'
+              isTablaEnabled ? getThemeColor('text') : 'text-gray-500'
             }`}>
-              GEOGRAFÍA *
+              TABLA *
             </label>
             <SelectWithPlaceholder
-              value={geografiaType || ''}
-              onChange={(value) => handleGeografiaTypeChange(value as GeografiaType)}
-              options={geografiaOptions}
-              placeholder="GEOGRAFÍA"
-              disabled={!isGeografiaEnabled}
+              value={tablaType || ''}
+              onChange={(value) => handleTablaTypeChange(value as TablaType)}
+              options={tablaOptions}
+              placeholder="TABLA"
+              disabled={!isTablaEnabled}
             />
           </div>
         </div>
 
-        {/* Fila 2: Combobox dinámico de geografía + Checkboxes */}
-        {geografiaType && (
+        {/* Fila 2: Combobox dinámico de tabla + Checkboxes */}
+        {tablaType && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Combobox dinámico según geografía seleccionada */}
+            {/* Combobox dinámico según tabla seleccionada */}
             <div>
               <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-                isGeografiaValueEnabled ? getThemeColor('text') : 'text-gray-500'
+                isTablaValueEnabled ? getThemeColor('text') : 'text-gray-500'
               }`}>
-                {geografiaType === 'pais' ? 'PAÍS' : 
-                 geografiaType === 'empresa' ? 'EMPRESA' :
-                 geografiaType === 'fundo' ? 'FUNDO' : 
-                 geografiaType === 'ubicacion' ? 'UBICACIÓN' :
-                 geografiaType === 'nodo' ? 'NODO' : 'LOCALIZACIÓN'} *
+                {tablaType === 'sensor' ? 'SENSOR' : 
+                 tablaType === 'usuario' ? 'USUARIO' :
+                 tablaType === 'perfil' ? 'PERFIL' : 
+                 tablaType === 'tipo' ? 'TIPO' :
+                 tablaType === 'metrica' ? 'MÉTRICA' :
+                 tablaType === 'entidad' ? 'ENTIDAD' : 'REGLA'} *
               </label>
               <SelectWithPlaceholder
-                value={getCurrentGeografiaValue() || ''}
-                onChange={handleGeografiaValueChange}
-                options={geografiaOptionsDynamic}
-                placeholder={geografiaType === 'pais' ? 'PAÍS' : 
-                             geografiaType === 'empresa' ? 'EMPRESA' :
-                             geografiaType === 'fundo' ? 'FUNDO' : 
-                             geografiaType === 'ubicacion' ? 'UBICACIÓN' :
-                             geografiaType === 'nodo' ? 'NODO' : 'LOCALIZACIÓN'}
-                disabled={!isGeografiaValueEnabled}
+                value={getCurrentTablaValue() || ''}
+                onChange={handleTablaValueChange}
+                options={tablaOptionsDynamic}
+                placeholder={tablaType === 'sensor' ? 'SENSOR' : 
+                             tablaType === 'usuario' ? 'USUARIO' :
+                             tablaType === 'perfil' ? 'PERFIL' : 
+                             tablaType === 'tipo' ? 'TIPO' :
+                             tablaType === 'metrica' ? 'MÉTRICA' :
+                             tablaType === 'entidad' ? 'ENTIDAD' : 'REGLA'}
+                disabled={!isTablaValueEnabled}
               />
             </div>
 
@@ -626,7 +527,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">
           <button
             onClick={onInsert}
-            disabled={loading || !formData.perfilid || !geografiaType || !getCurrentGeografiaValue()}
+            disabled={loading || !formData.perfilid || !tablaType || !getCurrentTablaValue()}
             className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider`}
           >
             {loading ? 'Guardando...' : 'Crear'}
@@ -644,4 +545,4 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
   );
 };
 
-export default PerfilGeografiaPermisoForm;
+export default PerfilTablePermisoForm;
