@@ -1181,7 +1181,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">DISPOSITIVOS</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de dispositivos</p>
               </div>
             </div>
           </div>
@@ -1257,7 +1257,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">USUARIOS</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de usuarios</p>
               </div>
             </div>
           </div>
@@ -1313,7 +1313,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">PARAMETROS GEO</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de parámetros geo</p>
               </div>
             </div>
           </div>
@@ -1378,7 +1378,7 @@ const AppContentInternal: React.FC<{
               <div className="text-center">
                 <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                   <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REGLA</h2>
-                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                  <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de reglas</p>
                 </div>
               </div>
             </div>
@@ -1510,7 +1510,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">NOTIFICACIONES</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de notificaciones</p>
               </div>
             </div>
           </div>
@@ -1561,7 +1561,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">PERMISOS</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de permisos</p>
               </div>
             </div>
           </div>
@@ -1597,7 +1597,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES ADMINISTRADOR</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de reportes administrador</p>
               </div>
             </div>
           </div>
@@ -1614,7 +1614,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">REPORTES ADMINISTRADOR</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de reportes administrador</p>
               </div>
             </div>
           </div>
@@ -1650,7 +1650,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">AGRUPACIÓN</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">SELECCIONA UNA OPCIÓN DE AGRUPACIÓN PARA CONTINUAR</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de carpeta (PERSONAL o COMPARTIDA)</p>
               </div>
             </div>
           </div>
@@ -1672,7 +1672,7 @@ const AppContentInternal: React.FC<{
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">AGRUPACIÓN</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una tabla del sidebar</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de carpeta (PERSONAL o COMPARTIDA)</p>
               </div>
             </div>
           </div>
@@ -1681,12 +1681,13 @@ const AppContentInternal: React.FC<{
 
       // Si tabla está seleccionada pero no hay operación, mostrar placeholder
       if (parts.length === 1 || (parts.length > 1 && !validOperations.includes(parts[parts.length - 1]))) {
+        const agrupacionLabel = agrupacionTable === 'entidad' ? 'PERSONAL' : agrupacionTable === 'carpeta' ? 'COMPARTIDA' : '';
         return (
           <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
             <div className="text-center">
               <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
                 <h2 className="text-2xl font-bold text-green-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
-                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de {agrupacionLabel.toLowerCase()}</p>
               </div>
             </div>
           </div>
