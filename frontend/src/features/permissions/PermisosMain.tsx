@@ -652,13 +652,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
               }}
               perfilesData={perfilesData}
               fuentesData={fuentesData}
-              sensoresData={sensorsData}
-              usuariosData={userData}
-              perfilesTableData={perfilesData}
-              tiposData={tiposData}
-              metricasData={metricasData}
-              entidadesData={entidadesData}
-              reglasData={reglasData}
+              origenesData={origenesData}
               getUniqueOptionsForField={getUniqueOptionsForField}
               themeColor="orange"
             />
