@@ -145,14 +145,14 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
     }
   };
 
-  return (
-    <div className="space-y-1 relative">
-      {/* Botón para limpiar filtros - esquina superior derecha */}
+return (
+    <div className="space-y-1 relative z-40">
+{/* Botón para limpiar filtros - esquina superior derecha */}
       {hasActiveFilters && (
         <button
           onClick={handleClearFilters}
           disabled={isDisabled}
-          className="absolute top-0 right-0 p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
+          className="absolute top-0 right-0 p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20 z-50"
           title="Limpiar todos los filtros"
           aria-label="Limpiar filtros"
         >
