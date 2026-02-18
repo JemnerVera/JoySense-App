@@ -1,9 +1,10 @@
 /**
  * Formulario especializado para crear permisos de configuración (TABLA)
  * Diseño intuitivo con selección de perfil, tabla y permisos
+ * SIN necesidad de especificar objeto específico (sin objetoid)
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -17,13 +18,7 @@ interface PerfilTablePermisoFormProps {
   // Datos relacionados
   perfilesData?: any[];
   fuentesData?: any[];
-  sensoresData?: any[];
-  usuariosData?: any[];
-  perfilesTableData?: any[];
-  tiposData?: any[];
-  metricasData?: any[];
-  entidadesData?: any[];
-  reglasData?: any[];
+  origenesData?: any[];
   // Funciones auxiliares
   getUniqueOptionsForField?: (columnName: string) => Array<{value: any, label: string}>;
   // Tema de color
@@ -41,13 +36,7 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
   onCancel,
   perfilesData = [],
   fuentesData = [],
-  sensoresData = [],
-  usuariosData = [],
-  perfilesTableData = [],
-  tiposData = [],
-  metricasData = [],
-  entidadesData = [],
-  reglasData = [],
+  origenesData = [],
   getUniqueOptionsForField,
   themeColor = 'orange'
 }) => {
@@ -93,11 +82,11 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
   
   // Helper para obtener origenid de TABLA
   const getTablaOrigenId = useMemo(() => {
-    return fuentesData.find(o => {
-      const nombre = (o.fuente || '').toUpperCase().trim();
+    return origenesData.find(o => {
+      const nombre = (o.origen || '').toUpperCase().trim();
       return nombre === 'TABLA';
     })?.origenid || null;
-  }, [fuentesData]);
+  }, [origenesData]);
 
   // Helper para obtener fuenteid según el tipo de tabla
   const getFuenteIdByType = (type: TablaType): number | null => {
@@ -105,6 +94,11 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
     const fuente = fuentesData.find(f => 
       f.fuente?.toLowerCase() === type.toLowerCase()
     );
+    console.log(`🔍 [PerfilTablePermisoForm] getFuenteIdByType(${type}):`, {
+      fuentesData: fuentesData,
+      found: fuente,
+      fuenteid: fuente?.fuenteid
+    });
     return fuente?.fuenteid || null;
   };
   
@@ -140,14 +134,16 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
     }
   }, []); // Solo al montar
 
-  // Limpiar otros campos de tabla cuando se selecciona un tipo
+  // Cambiar tipo de tabla y establecer origenid y fuenteid
   const handleTablaTypeChange = (type: TablaType) => {
+    console.log('✏️ [PerfilTablePermisoForm] handleTablaTypeChange:', type);
     setTablaType(type);
     const newData = { ...formData };
     
     // Establecer origenid (TABLA) si aún no está establecido
     if (!newData.origenid && getTablaOrigenId) {
       newData.origenid = getTablaOrigenId;
+      console.log('📌 Set origenid:', getTablaOrigenId);
     }
     
     // Establecer fuenteid según el tipo
@@ -155,11 +151,13 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
       const fuenteId = getFuenteIdByType(type);
       if (fuenteId) {
         newData.fuenteid = fuenteId;
+        console.log('📌 Set fuenteid:', fuenteId);
+      } else {
+        console.warn('⚠️ No fuenteid found for type:', type);
       }
     }
     
-    // Limpiar campo objetoid
-    delete newData.objetoid;
+    // NO establecer objetoid (no se usa en permisos config)
     
     setFormData(newData);
     if (updateFormField) {
@@ -172,7 +170,6 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
           updateFormField('fuenteid', fuenteId);
         }
       }
-      updateFormField('objetoid', null);
     }
   };
 
@@ -198,114 +195,6 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
     }));
   }, [perfilesData, getUniqueOptionsForField]);
 
-  // Opciones para el combobox dinámico según la tabla seleccionada
-  const tablaOptionsDynamic = useMemo(() => {
-    if (!tablaType) return [];
-    
-    switch (tablaType) {
-      case 'sensor':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('sensorid');
-        }
-        return sensoresData.map(s => ({
-          value: s.sensorid,
-          label: s.sensor || `Sensor ${s.sensorid}`
-        }));
-      case 'usuario':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('usuarioid');
-        }
-        return usuariosData.map(u => ({
-          value: u.usuarioid,
-          label: u.login || `Usuario ${u.usuarioid}`
-        }));
-      case 'perfil':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('perfilid');
-        }
-        return perfilesTableData.map(p => ({
-          value: p.perfilid,
-          label: p.perfil || `Perfil ${p.perfilid}`
-        }));
-      case 'tipo':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('tipoid');
-        }
-        return tiposData.map(t => ({
-          value: t.tipoid,
-          label: t.tipo || `Tipo ${t.tipoid}`
-        }));
-      case 'metrica':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('metricaid');
-        }
-        return metricasData.map(m => ({
-          value: m.metricaid,
-          label: m.metrica || `Métrica ${m.metricaid}`
-        }));
-      case 'entidad':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('entidadid');
-        }
-        return entidadesData.map(e => ({
-          value: e.entidadid,
-          label: e.entidad || `Entidad ${e.entidadid}`
-        }));
-      case 'regla':
-        if (getUniqueOptionsForField) {
-          return getUniqueOptionsForField('reglaid');
-        }
-        return reglasData.map(r => ({
-          value: r.reglaid,
-          label: r.nombre || `Regla ${r.reglaid}`
-        }));
-      default:
-        return [];
-    }
-  }, [tablaType, sensoresData, usuariosData, perfilesTableData, tiposData, metricasData, entidadesData, reglasData, getUniqueOptionsForField]);
-
-  // Handler para cambiar el valor de tabla dinámico
-  const handleTablaValueChange = (value: any) => {
-    if (!tablaType) return;
-    
-    const newData = { ...formData };
-    
-    // Establecer origenid y fuenteid si no están establecidos
-    if (!newData.origenid && getTablaOrigenId) {
-      newData.origenid = getTablaOrigenId;
-    }
-    const fuenteId = getFuenteIdByType(tablaType);
-    if (fuenteId) {
-      newData.fuenteid = fuenteId;
-    }
-    
-    // Establecer el campo objetoid
-    newData.objetoid = value;
-    
-    // Asegurar que statusid tenga valor por defecto
-    if (!newData.statusid) {
-      newData.statusid = 1;
-    }
-    
-    setFormData(newData);
-    if (updateFormField) {
-      if (!formData.origenid && getTablaOrigenId) {
-        updateFormField('origenid', getTablaOrigenId);
-      }
-      if (fuenteId) {
-        updateFormField('fuenteid', fuenteId);
-      }
-      updateFormField('objetoid', value);
-      if (!formData.statusid) {
-        updateFormField('statusid', 1);
-      }
-    }
-  };
-
-  // Obtener el valor actual de la tabla seleccionada
-  const getCurrentTablaValue = () => {
-    return formData.objetoid || null;
-  };
 
   // Handler para checkboxes
   const handleCheckboxChange = (field: string, checked: boolean) => {
@@ -316,7 +205,7 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
     }
   };
 
-  // Handler para cambio de perfil - limpiar tabla y permisos
+  // Handler para cambio de perfil - limpiar tabla
   const handlePerfilChange = (value: any) => {
     const newData: Record<string, any> = { ...formData, perfilid: value };
     
@@ -325,8 +214,7 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
       newData.origenid = getTablaOrigenId;
     }
     
-    // Limpiar tabla
-    delete newData.objetoid;
+    // Limpiar tabla seleccionada
     delete newData.fuenteid;
     
     setFormData(newData);
@@ -335,7 +223,6 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
       if (!formData.origenid && getTablaOrigenId) {
         updateFormField('origenid', getTablaOrigenId);
       }
-      updateFormField('objetoid', null);
       updateFormField('fuenteid', null);
     }
     
@@ -346,9 +233,8 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
   // Determinar si los campos están habilitados según la cascada
   const isPerfilEnabled = true; // Siempre habilitado
   const isTablaEnabled = !!formData.perfilid;
-  const isTablaValueEnabled = !!formData.perfilid && !!tablaType;
-  const isPermisosEnabled = !!formData.perfilid && !!tablaType && !!getCurrentTablaValue();
-  const isStatusEnabled = !!formData.perfilid && !!tablaType && !!getCurrentTablaValue();
+  const isPermisosEnabled = !!formData.perfilid && !!tablaType;
+  const isStatusEnabled = !!formData.perfilid && !!tablaType;
 
   return (
     <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-xl p-6">
@@ -388,104 +274,75 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
           </div>
         </div>
 
-        {/* Fila 2: Combobox dinámico de tabla + Checkboxes */}
+        {/* Fila 2: Checkboxes de permisos */}
         {tablaType && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Combobox dinámico según tabla seleccionada */}
-            <div>
-              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-                isTablaValueEnabled ? getThemeColor('text') : 'text-gray-500'
-              }`}>
-                {tablaType === 'sensor' ? 'SENSOR' : 
-                 tablaType === 'usuario' ? 'USUARIO' :
-                 tablaType === 'perfil' ? 'PERFIL' : 
-                 tablaType === 'tipo' ? 'TIPO' :
-                 tablaType === 'metrica' ? 'MÉTRICA' :
-                 tablaType === 'entidad' ? 'ENTIDAD' : 'REGLA'} *
+          <div className="mb-6">
+            <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
+              isPermisosEnabled ? 'text-orange-500' : 'text-gray-500'
+            }`}>
+              PERMISOS
+            </label>
+            <div className="space-y-3">
+              <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={formData.puede_ver ?? true}
+                  disabled={!isPermisosEnabled}
+                  onChange={(e) => {
+                    if (isPermisosEnabled) {
+                      handleCheckboxChange('puede_ver', e.target.checked);
+                    }
+                  }}
+                  className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
+                    !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className={`font-mono tracking-wider ${
+                  isPermisosEnabled ? 'text-white' : 'text-gray-500'
+                }`}>
+                  PUEDE VER
+                </span>
               </label>
-              <SelectWithPlaceholder
-                value={getCurrentTablaValue() || ''}
-                onChange={handleTablaValueChange}
-                options={tablaOptionsDynamic}
-                placeholder={tablaType === 'sensor' ? 'SENSOR' : 
-                             tablaType === 'usuario' ? 'USUARIO' :
-                             tablaType === 'perfil' ? 'PERFIL' : 
-                             tablaType === 'tipo' ? 'TIPO' :
-                             tablaType === 'metrica' ? 'MÉTRICA' :
-                             tablaType === 'entidad' ? 'ENTIDAD' : 'REGLA'}
-                disabled={!isTablaValueEnabled}
-              />
-            </div>
-
-            {/* Checkboxes de permisos */}
-            <div>
-              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${
-                isPermisosEnabled ? 'text-orange-500' : 'text-gray-500'
-              }`}>
-                PERMISOS
+              <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={formData.puede_insertar ?? false}
+                  disabled={!isPermisosEnabled}
+                  onChange={(e) => {
+                    if (isPermisosEnabled) {
+                      handleCheckboxChange('puede_insertar', e.target.checked);
+                    }
+                  }}
+                  className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
+                    !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className={`font-mono tracking-wider ${
+                  isPermisosEnabled ? 'text-white' : 'text-gray-500'
+                }`}>
+                  PUEDE INSERTAR
+                </span>
               </label>
-              <div className="space-y-3">
-                <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.puede_ver ?? true}
-                    disabled={!isPermisosEnabled}
-                    onChange={(e) => {
-                      if (isPermisosEnabled) {
-                        handleCheckboxChange('puede_ver', e.target.checked);
-                      }
-                    }}
-                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
-                      !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  />
-                  <span className={`font-mono tracking-wider ${
-                    isPermisosEnabled ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    PUEDE VER
-                  </span>
-                </label>
-                <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.puede_insertar ?? false}
-                    disabled={!isPermisosEnabled}
-                    onChange={(e) => {
-                      if (isPermisosEnabled) {
-                        handleCheckboxChange('puede_insertar', e.target.checked);
-                      }
-                    }}
-                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
-                      !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  />
-                  <span className={`font-mono tracking-wider ${
-                    isPermisosEnabled ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    PUEDE INSERTAR
-                  </span>
-                </label>
-                <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.puede_actualizar ?? false}
-                    disabled={!isPermisosEnabled}
-                    onChange={(e) => {
-                      if (isPermisosEnabled) {
-                        handleCheckboxChange('puede_actualizar', e.target.checked);
-                      }
-                    }}
-                    className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
-                      !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  />
-                  <span className={`font-mono tracking-wider ${
-                    isPermisosEnabled ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    PUEDE ACTUALIZAR
-                  </span>
-                </label>
-              </div>
+              <label className={`flex items-center space-x-3 ${isPermisosEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={formData.puede_actualizar ?? false}
+                  disabled={!isPermisosEnabled}
+                  onChange={(e) => {
+                    if (isPermisosEnabled) {
+                      handleCheckboxChange('puede_actualizar', e.target.checked);
+                    }
+                  }}
+                  className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
+                    !isPermisosEnabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className={`font-mono tracking-wider ${
+                  isPermisosEnabled ? 'text-white' : 'text-gray-500'
+                }`}>
+                  PUEDE ACTUALIZAR
+                </span>
+              </label>
             </div>
           </div>
         )}
@@ -527,7 +384,7 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center mt-6">
           <button
             onClick={onInsert}
-            disabled={loading || !formData.perfilid || !tablaType || !getCurrentTablaValue()}
+            disabled={loading || !formData.perfilid || !tablaType}
             className={`px-6 py-2 ${getThemeColor('bg')} text-white rounded-lg ${getThemeColor('hover')} disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono tracking-wider`}
           >
             {loading ? 'Guardando...' : 'Crear'}
