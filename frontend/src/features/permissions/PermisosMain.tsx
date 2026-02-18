@@ -24,6 +24,8 @@ import { InsertTab } from '../system-parameters/InsertTab/InsertTab';
 import { UpdateTab } from '../system-parameters/UpdateTab/UpdateTab';
 import { AsignarPermisosTab } from './AsignarPermisosTab';
 import { PermisosSkillTree } from './PermisosSkillTree';
+import PerfilGeografiaPermisoForm from '../../components/PerfilGeografiaPermisoForm';
+import PerfilTablePermisoForm from '../../components/PerfilTablePermisoForm';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
 import { TableName, PRIMARY_KEY_MAP } from '../../types';
 
@@ -124,6 +126,11 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     perfilesData,
     origenesData,
     fuentesData,
+    sensorsData,
+    tiposData,
+    metricasData,
+    entidadesData,
+    reglasData,
     loadTableData,
     setTableData,
     setColumns,
@@ -269,11 +276,27 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
 
   // Cargar datos relacionados al montar
   useEffect(() => {
+    console.log('📊 [PermisosMain] Loading related tables data...');
     loadRelatedTablesData();
     if (activeSubTab !== 'status') {
       loadRelatedData();
     }
   }, [activeSubTab, loadRelatedData, loadRelatedTablesData]);
+  
+  // Log cuando se cargan los datos
+  useEffect(() => {
+    console.log('📊 [PermisosMain] Related data loaded:', {
+      paisesData: paisesData.length,
+      empresasData: empresasData.length,
+      fundosData: fundosData.length,
+      ubicacionesData: ubicacionesData.length,
+      nodosData: nodosData.length,
+      localizacionesData: localizacionesData.length,
+      perfilesData: perfilesData.length,
+      fuentesData: fuentesData.length,
+      origenesData: origenesData.length
+    });
+  }, [paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, perfilesData, fuentesData, origenesData]);
 
   // Cargar datos de la tabla cuando cambia el subTab
   // Para 'insert' también necesitamos cargar las columnas (aunque no los datos)
@@ -424,19 +447,94 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     }
   }, [formState.data, formState.errors, validateForm, selectedRow, updateRow, user, getPrimaryKeyValue, loadTableData, onSubTabChange, resetForm, selectedTable]);
 
-  // Función helper para obtener opciones únicas
+  // Función helper para obtener opciones únicas - MEJORADA para usar datos directos
   const getUniqueOptionsForField = useCallback((columnName: string): Array<{value: any, label: string}> => {
-    const relatedTable = crudRelatedData[columnName.replace('id', '')] || 
-                        crudRelatedData[columnName] || [];
+    console.log(`🔍 [PermisosMain] getUniqueOptionsForField(${columnName})`);
     
-    if (!Array.isArray(relatedTable) || relatedTable.length === 0) {
+    let dataArray: any[] = [];
+    let displayField = '';
+    
+    // Mapear columnName a los datos correspondientes
+    switch (columnName) {
+      case 'perfilid':
+        dataArray = perfilesData;
+        displayField = 'perfil';
+        break;
+      case 'origenid':
+        dataArray = origenesData;
+        displayField = 'origen';
+        break;
+      case 'fuenteid':
+        dataArray = fuentesData;
+        displayField = 'fuente';
+        break;
+      case 'paisid':
+        dataArray = paisesData;
+        displayField = 'pais';
+        break;
+      case 'empresaid':
+        dataArray = empresasData;
+        displayField = 'empresa';
+        break;
+      case 'fundoid':
+        dataArray = fundosData;
+        displayField = 'fundo';
+        break;
+      case 'ubicacionid':
+        dataArray = ubicacionesData;
+        displayField = 'ubicacion';
+        break;
+      case 'nodoid':
+        dataArray = nodosData;
+        displayField = 'nodo';
+        break;
+      case 'localizacionid':
+        dataArray = localizacionesData;
+        displayField = 'localizacion';
+        break;
+      case 'sensorid':
+        dataArray = sensorsData;
+        displayField = 'sensor';
+        break;
+      case 'tipoid':
+        dataArray = tiposData;
+        displayField = 'tipo';
+        break;
+      case 'metricaid':
+        dataArray = metricasData;
+        displayField = 'metrica';
+        break;
+      case 'entidadid':
+        dataArray = entidadesData;
+        displayField = 'entidad';
+        break;
+      case 'reglaid':
+        dataArray = reglasData;
+        displayField = 'nombre';
+        break;
+      case 'usuarioid':
+        dataArray = userData;
+        displayField = 'login';
+        break;
+      default:
+        // Fallback: intentar obtener del crudRelatedData
+        const relatedTable = crudRelatedData[columnName.replace('id', '')] || 
+                            crudRelatedData[columnName] || [];
+        dataArray = Array.isArray(relatedTable) ? relatedTable : [];
+        displayField = columnName.replace('id', '');
+    }
+    
+    console.log(`  ➜ dataArray for ${columnName}:`, dataArray, 'displayField:', displayField);
+    
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      console.warn(`  ⚠️ No data found for ${columnName}`);
       return [];
     }
 
     // Filtrar opciones de origen según el tipo de permisos
-    let filteredTable = relatedTable;
+    let filteredTable = dataArray;
     if (columnName === 'origenid' && permisosTipo && selectedTable === 'permiso') {
-      filteredTable = relatedTable.filter((item: any) => {
+      filteredTable = dataArray.filter((item: any) => {
         const nombre = (item.origen || '').toUpperCase().trim();
         if (permisosTipo === 'permisos-geo') {
           return nombre === 'GEOGRAFÍA' || nombre === 'GEOGRAFIA';
@@ -445,33 +543,23 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         }
         return true;
       });
+      console.log(`  ➜ Filtered origenid options:`, filteredTable);
     }
 
-    return filteredTable.map((item: any) => {
-      const value = item[columnName] || item[`${columnName.replace('id', '')}id`];
-      let label = '';
-      
-      if (columnName === 'perfilid') {
-        label = item.perfil || `Perfil ${value}`;
-      } else if (columnName === 'origenid') {
-        label = item.origen || `Origen ${value}`;
-      } else if (columnName === 'fuenteid') {
-        label = item.fuente || `Fuente ${value}`;
-      } else if (columnName === 'paisid') {
-        label = item.pais || `País ${value}`;
-      } else if (columnName === 'empresaid') {
-        label = item.empresa || `Empresa ${value}`;
-      } else if (columnName === 'fundoid') {
-        label = item.fundo || `Fundo ${value}`;
-      } else if (columnName === 'ubicacionid') {
-        label = item.ubicacion || `Ubicación ${value}`;
-      } else {
-        label = String(value);
-      }
+    const result = filteredTable.map((item: any) => {
+      const value = item[columnName] || item[displayField + 'id'] || item.id;
+      const label = item[displayField] || String(value);
       
       return { value, label };
     });
-  }, [crudRelatedData, permisosTipo, selectedTable]);
+    
+    console.log(`  ✅ Final options for ${columnName}:`, result);
+    return result;
+  }, [
+    perfilesData, origenesData, fuentesData, paisesData, empresasData, fundosData, 
+    ubicacionesData, nodosData, localizacionesData, sensorsData, tiposData, metricasData, 
+    entidadesData, reglasData, userData, crudRelatedData, permisosTipo, selectedTable
+  ]);
 
   // Construir relatedData para StatusTab y UpdateTab
   const relatedData = useMemo(() => ({
@@ -521,6 +609,63 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         );
       
       case 'insert':
+        // Usar formulario especializado para permisos geográficos
+        if (selectedTable === 'permiso' && permisosTipo === 'permisos-geo') {
+          return (
+            <PerfilGeografiaPermisoForm
+              formData={formState.data}
+              setFormData={setFormData}
+              updateFormField={updateFormField}
+              loading={formState.isSubmitting}
+              onInsert={handleInsert}
+              onCancel={() => {
+                resetForm();
+                setMessage(null);
+              }}
+              perfilesData={perfilesData}
+              paisesData={paisesData}
+              empresasData={empresasData}
+              fundosData={fundosData}
+              ubicacionesData={ubicacionesData}
+              nodosData={nodosData}
+              localizacionesData={localizacionesData}
+              fuentesData={fuentesData}
+              origenesData={origenesData}
+              getUniqueOptionsForField={getUniqueOptionsForField}
+              themeColor="orange"
+            />
+          );
+        }
+        
+        // Usar formulario especializado para permisos de configuración (tabla)
+        if (selectedTable === 'permiso' && permisosTipo === 'permisos-conf') {
+          return (
+            <PerfilTablePermisoForm
+              formData={formState.data}
+              setFormData={setFormData}
+              updateFormField={updateFormField}
+              loading={formState.isSubmitting}
+              onInsert={handleInsert}
+              onCancel={() => {
+                resetForm();
+                setMessage(null);
+              }}
+              perfilesData={perfilesData}
+              fuentesData={fuentesData}
+              sensoresData={sensorsData}
+              usuariosData={userData}
+              perfilesTableData={perfilesData}
+              tiposData={tiposData}
+              metricasData={metricasData}
+              entidadesData={entidadesData}
+              reglasData={reglasData}
+              getUniqueOptionsForField={getUniqueOptionsForField}
+              themeColor="orange"
+            />
+          );
+        }
+        
+        // Usar formulario genérico para otras tablas
         return (
           <InsertTab
             tableName={selectedTable}
