@@ -554,7 +554,31 @@ const AppContentInternal: React.FC<{
       }
     }
     
-    // Si es permisos-permiso, NO resetear el activeSubTab aquí - dejarlo que se maneje por el callback onSubTabChange
+    // Manejar operaciones de PERMISOS (configuracion-permisos-[permisos-geo|permisos-conf]-[operacion])
+    // Extrae la operación (status, insert, update, asignar) del activeTab y la establece como activeSubTab
+    if (activeTab.startsWith('configuracion-permisos-')) {
+      const afterPermisos = activeTab.replace('configuracion-permisos-', '');
+      const parts = afterPermisos.split('-');
+      
+      // La estructura es: permisos-geo-status o permisos-conf-insert
+      // parts[0] = permisos, parts[1] = geo/conf, parts[2] = operación
+      // O simplemente: permisos-geo (sin operación)
+      if (parts.length >= 3) {
+        const operation = parts[parts.length - 1];
+        const validOperations = ['status', 'insert', 'update', 'asignar'];
+        
+        if (validOperations.includes(operation)) {
+          setActiveSubTab((currentSubTab) => {
+            if (currentSubTab !== operation) {
+              return operation as 'status' | 'insert' | 'update' | 'asignar';
+            }
+            return currentSubTab;
+          });
+        }
+      }
+      // Si solo tiene tipo de permisos sin operación, NO cambiar activeSubTab
+      // Dejar que se maneje a través de la navegación del usuario
+    }
   }, [activeTab]);
 
   const {
@@ -1552,7 +1576,11 @@ const AppContentInternal: React.FC<{
     // Manejar configuracion-permisos
     if (activeTab.startsWith('configuracion-permisos')) {
       // Extraer el tipo de permisos (permisos-geo o permisos-conf)
-      const permisosTipo = activeTab.replace('configuracion-permisos', '').replace(/^-/, '');
+      const afterPrefix = activeTab.replace('configuracion-permisos', '').replace(/^-/, '');
+      const parts = afterPrefix.split('-');
+      
+      // parts[0] = permisos, parts[1] = geo/conf, parts[2] = operación (si existe)
+      const permisosTipo = parts.length >= 2 ? `${parts[0]}-${parts[1]}` : '';
       
       // Si no hay tipo seleccionado, mostrar mensaje
       if (!permisosTipo || permisosTipo === '') {
@@ -1568,7 +1596,24 @@ const AppContentInternal: React.FC<{
         );
       }
       
-      // Si hay tipo seleccionado, mostrar PermisosMain con la tabla 'permiso'
+      // Si hay tipo seleccionado pero sin operación, mostrar mensaje de seleccionar operación
+      const validOperations = ['status', 'insert', 'update', 'asignar'];
+      const hasOperation = parts.length >= 3 && validOperations.includes(parts[2]);
+      
+      if (!hasOperation) {
+        return (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <div className="text-center">
+              <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+                <h2 className="text-2xl font-bold text-orange-500 mb-4 font-mono tracking-wider">OPERACIONES</h2>
+                <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // Si hay tipo seleccionado con operación, mostrar PermisosMain con la tabla 'permiso'
       // El filtro por origen se manejará dentro de PermisosMain
       return (
         <PermisosMain
