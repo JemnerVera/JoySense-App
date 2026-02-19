@@ -53,20 +53,12 @@ router.get('/test-db', async (req, res) => {
     tests: {}
   };
   
-  // Test 0: Identidad Real en la DB
+  // Test 0: Identidad Real en la DB (fn_obtener_diagnostico_sesion eliminada - no existe en Supabase)
   try {
-    const { data, error } = await supabase.schema('joysense').rpc('fn_obtener_diagnostico_sesion');
-    if (error) {
-      // Intento manual si la función no existe
-      const { data: qData, error: qError } = await supabase.from('usuario').select('login').limit(1);
-      results.db_context = {
-        error: error.message,
-        code: error.code,
-        manual_select_usuario: qError ? `FALLÓ: ${qError.message}` : 'EXITOSO'
-      };
-    } else {
-      results.db_context = data;
-    }
+    const { data: qData, error: qError } = await supabase.from('usuario').select('login').limit(1);
+    results.db_context = {
+      manual_select_usuario: qError ? `FALLÓ: ${qError.message}` : 'EXITOSO'
+    };
   } catch (e) {
     results.db_context = { exception: e.message };
   }

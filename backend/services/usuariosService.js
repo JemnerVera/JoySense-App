@@ -455,30 +455,9 @@ const search = async (supabase, query) => {
     });
 };
 
-/**
- * Búsqueda de usuarios con información de empresas
- */
-const searchWithEmpresas = async (supabase, query, excludeWithProfiles) => {
-  if (!query || query.length < 2) return [];
-  
-  const { data, error } = await supabase
-    .schema('joysense')
-    .rpc('fn_obtener_usuarios_con_empresas', {
-      p_query: query,
-      p_exclude_with_profiles: excludeWithProfiles === 'true' || excludeWithProfiles === true
-    });
-  
-  if (error) throw error;
-  
-  return (data || []).map(u => ({
-    usuarioid: u.usuarioid,
-    firstname: u.firstname,
-    lastname: u.lastname,
-    login: u.login,
-    label: u.label || `${u.display_name || u.firstname || ''} ${u.lastname || ''} - ${u.empresas || 'Sin empresa'}`.trim(),
-    displayName: u.display_name || `${u.firstname || ''} ${u.lastname || ''}`.trim() || u.login
-  }));
-};
+
+// ELIMINADA: searchWithEmpresas - usaba fn_obtener_usuarios_con_empresas que no existe en Supabase
+// Usa search() en su lugar
 
 module.exports = {
   getUsuarios,
@@ -502,6 +481,5 @@ module.exports = {
   getCorreos,
   createCorreo,
   updateCorreo,
-  search,
-  searchWithEmpresas
+  search
 };

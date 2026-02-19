@@ -248,46 +248,6 @@ export class SupabaseRPCService {
    * @param params Parámetros de la consulta
    * @returns Array de estadísticas por métrica
    */
-  static async getEstadisticasMediciones(params: {
-    nodoid: number;
-    metricaid?: number;
-    startDate?: string;
-    endDate?: string;
-  }): Promise<EstadisticaMedicion[]> {
-    try {
-      // Validación
-      if (!params.nodoid || params.nodoid <= 0) {
-        throw new Error('nodoid inválido');
-      }
-
-      if (this.DEBUG) {
-        logger.debug('SupabaseRPCService', 'getEstadisticasMediciones', { nodoid: params.nodoid });
-      }
-
-      const { data, error } = await supabaseAuth
-        .schema('joysense')
-        .rpc('fn_get_mediciones_estadisticas', {
-          p_nodoid: params.nodoid,
-          p_metricaid: params.metricaid || null,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        });
-
-      if (error) {
-        throw new Error(`RPC error: ${error.message}`);
-      }
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
-    } catch (err: any) {
-      logger.error('SupabaseRPCService', 'Error in getEstadisticasMediciones', { error: err?.message });
-      throw err;
-    }
-  }
-
   /**
    * Obtiene alertas filtradas por nodo
    * Evita cargar todas las alertas y luego filtrar en frontend
@@ -470,46 +430,6 @@ export class SupabaseRPCService {
    * @param params Parámetros de la consulta
    * @returns Array de umbrales con estadísticas
    */
-  static async getUmbralesConEstadisticas(params: {
-    fundoIds: number[];
-    startDate?: string;
-    endDate?: string;
-  }): Promise<UmbralConEstadisticas[]> {
-    try {
-      if (!params.fundoIds || params.fundoIds.length === 0) {
-        throw new Error('fundoIds es requerido');
-      }
-
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getUmbralesConEstadisticas:', params);
-      }
-
-      const { data, error } = await supabaseAuth
-        .schema('joysense')
-        .rpc('fn_get_umbrales_con_estadisticas', {
-          p_fundoid: params.fundoIds,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        });
-
-      if (error) {
-        throw new Error(`RPC error: ${error.message}`);
-      }
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
-    } catch (err: any) {
-      console.error(
-        '[SupabaseRPCService] Error en getUmbralesConEstadisticas:',
-        err
-      );
-      throw err;
-    }
-  }
-
   /**
    * Obtiene nodos con alertas activas
    * Evita cargar todos los nodos y filtrar después
@@ -750,60 +670,6 @@ export class SupabaseRPCService {
       }));
     } catch (err: any) {
       console.error('[SupabaseRPCService] Error en getMetricasDisponiblesPorNodo:', err);
-      throw err;
-    }
-  }
-
-  /**
-   * Obtiene TODAS las mediciones de un nodo con información completa de sensores.
-   * A diferencia de getMedicionesNodoDetallado, esta función devuelve TODAS las localizaciones
-   * del nodo, incluso si NO tienen mediciones en el rango específico.
-   * Esto garantiza que TODOS los sensores se muestren en los gráficos.
-   * @param params Parámetros de la consulta
-   * @returns Array de mediciones con información completa de sensores
-   */
-  static async getMedicionesNodoCompleto(params: {
-    nodoid: number;
-    startDate: string;
-    endDate: string;
-  }): Promise<any[]> {
-    try {
-      if (!params.nodoid || params.nodoid <= 0) {
-        throw new Error('nodoid es requerido y debe ser > 0');
-      }
-
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMedicionesNodoCompleto:', params);
-      }
-
-      const query2 = supabaseAuth
-        .schema('joysense')
-        .rpc('fn_get_mediciones_nodo_completo', {
-          p_nodoid: params.nodoid,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        }) as any;
-      
-      const { data, error } = await query2.range(0, 99999);
-
-      if (error) {
-        // Si la función aún no existe, retornar array vacío
-        if (error.message.includes('does not exist')) {
-          console.warn(
-            '[SupabaseRPCService] fn_get_mediciones_nodo_completo no existe aún'
-          );
-          return [];
-        }
-        throw new Error(`RPC error: ${error.message}`);
-      }
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
-    } catch (err: any) {
-      console.error('[SupabaseRPCService] Error en getMedicionesNodoCompleto:', err);
       throw err;
     }
   }

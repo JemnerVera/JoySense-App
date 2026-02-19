@@ -430,17 +430,8 @@ const search = async (req, res) => {
 /**
  * Búsqueda de usuarios con empresas
  */
-const searchWithEmpresas = async (req, res) => {
-  try {
-    const userSupabase = req.supabase || baseSupabase;
-    const { query, excludeWithProfiles } = req.query;
-    const result = await usuariosService.searchWithEmpresas(userSupabase, query, excludeWithProfiles);
-    res.json(result);
-  } catch (error) {
-    logger.error('Error en searchWithEmpresas:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
+
+// ELIMINADA: searchWithEmpresas - usaba fn_obtener_usuarios_con_empresas que no existe
 
 module.exports = {
   getUsuarios,
@@ -469,6 +460,5 @@ module.exports = {
   getCorreoColumns,
   postCorreo,
   putCorreo,
-  search,
-  searchWithEmpresas
+  search
 };
