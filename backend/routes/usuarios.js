@@ -74,6 +74,5 @@ router.put('/correo/:id', usuariosController.putCorreo);
 // BÚSQUEDA DE USUARIOS
 // ============================================================================
 router.get('/search', usuariosController.search);
-router.get('/search-with-empresas', usuariosController.searchWithEmpresas);
 
 module.exports = router;
