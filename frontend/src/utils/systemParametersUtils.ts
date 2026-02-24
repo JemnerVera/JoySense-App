@@ -218,6 +218,14 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'sensorid': 'Sensor',
     'id_device': 'ID del Dispositivo',
     'sensorvalorerrorid': 'ID DEL ERROR',
+    // Campos de audit_log_umbral
+    'auditid': 'ID DE AUDITORIA',
+    'old_minimo': 'MINIMO ANTIGUO',
+    'new_minimo': 'MINIMO NUEVO',
+    'old_maximo': 'MAXIMO ANTIGUO',
+    'new_maximo': 'MAXIMO NUEVO',
+    'usermodifiedid': 'USUARIO',
+    'datemodified': 'FECHA',
     // Campos de reglas
     'reglaid': 'Regla',
     'regla_objetoid': 'ID',
