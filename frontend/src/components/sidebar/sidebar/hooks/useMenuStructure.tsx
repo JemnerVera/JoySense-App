@@ -192,7 +192,7 @@ export function useMenuStructure() {
                 label: table.displayName.toUpperCase(),
                 icon: getTableIcon(table.name),
                 hasOperations: true,
-                subMenus: createOps(`configuracion-notificaciones-${table.name}`),
+                subMenus: createOps(`configuracion-notificaciones-${table.name}`, table.allowMassive),
               };
             }),
           },
