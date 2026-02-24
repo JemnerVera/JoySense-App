@@ -480,13 +480,13 @@ router.post('/:table', async (req, res) => {
     
     // ========================================================================
     // SINCRONIZAR CON SUPABASE AUTH (Solo para tabla 'usuario')
-    // Recomendación del DBA: llamar fn_sync_usuario_con_auth_wait después de crear
+    // Se debe llamar fn_sync_usuario_con_auth_wait después de crear el usuario
     // ========================================================================
     if (table === 'usuario' && data && data[0]) {
       const newUsuario = data[0];
       if (newUsuario.usuarioid) {
         try {
-          // Llamar a fn_sync_usuario_con_auth_wait según recomendación del DBA
+          // Llamar a fn_sync_usuario_con_auth_wait para sincronizar con Supabase Auth
           // IMPORTANTE: Especificar schema joysense explícitamente
           const { data: syncResult, error: syncError } = await userSupabase
             .schema('joysense')
