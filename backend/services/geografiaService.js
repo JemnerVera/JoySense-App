@@ -550,8 +550,8 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   }
 
   // OPTIMIZACIÓN: Obtener localizaciones con paginación correcta
-  // CRÍTICO: Supabase tiene un límite máximo de 1000 filas por query con .range()
-  // Por lo tanto, debemos usar pageSize=1000 y paginar hasta obtener TODAS las localizaciones
+  // Supabase tiene un límite máximo de 1000 filas por query con .range()
+  // Se usa pageSize=1000 y se pagina hasta obtener TODAS las localizaciones
   const nodoidList = nodos.map(n => n.nodoid);
   logger.info(`[getNodosConLocalizacionDashboardFallback] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   

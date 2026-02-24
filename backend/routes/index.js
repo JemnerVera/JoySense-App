@@ -100,7 +100,7 @@ router.get('/detect', async (req, res) => {
 // ============================================================================
 // MIDDLEWARE GLOBAL
 // ============================================================================
-// NOTA: Ya no necesitamos setUserContext - Supabase API maneja RLS automáticamente
+// setUserContext ya no es necesario - Supabase API maneja RLS automáticamente
 // El backend se autentica como admin@joysense.com al iniciar
 // router.use(optionalAuth);        // Opcional si necesitas verificar usuario en requests
 // router.use(setUserContext);      // Ya no necesario - Supabase maneja RLS

@@ -502,7 +502,7 @@ router.post('/:table', async (req, res) => {
 
           if (syncResult && !syncError) {
             // La función fn_sync_usuario_con_auth_wait ya actualiza el useruuid automáticamente
-            // Solo necesitamos obtener el usuario actualizado
+            // Se obtiene el usuario actualizado
             const { data: updatedData, error: updateError } = await userSupabase
               .schema(dbSchema)
               .from('usuario')
@@ -769,10 +769,10 @@ async function runTableDiagnostics() {
         }
         
         // 2-4. RLS y permisos: Simplificado - Supabase API maneja RLS automáticamente
-        // No podemos consultar information_schema o pg_class desde Supabase API
-        // Asumimos que RLS está habilitado si hay políticas (comportamiento por defecto)
-        tableInfo.rls.enabled = true; // Supabase generalmente tiene RLS habilitado
-        tableInfo.rls.policies = []; // No podemos consultar políticas desde API
+        // La API de Supabase no permite consultar information_schema o pg_class directamente
+        // Se asume que RLS está habilitado si hay políticas (comportamiento por defecto)
+        tableInfo.rls.enabled = true; // Supabase por defecto tiene RLS habilitado
+        tableInfo.rls.policies = []; // No es posible consultar políticas desde la API
         tableInfo.permissions = {
           SELECT: true, // Supabase API permite SELECT si RLS lo permite
           INSERT: true,
@@ -806,11 +806,11 @@ async function runTableDiagnostics() {
           tableInfo.testResults.error = `SELECT failed: ${selectError.message}`;
         }
         
-        // Test INSERT - Simplificado: Solo verificar si podemos hacer INSERT
-        // No intentamos INSERT real porque no podemos hacer rollback en Supabase API
+        // Test INSERT - Simplificado: Solo verificar si es posible hacer INSERT
+        // No se intenta INSERT real porque Supabase API no permite rollback
         if (tableInfo.testResults.canSelect && !tableInfo.testResults.error) {
-          // Si podemos hacer SELECT, asumimos que podemos hacer INSERT si RLS lo permite
-          // No podemos probar INSERT real sin crear datos
+          // Si SELECT funciona, se asume que INSERT es posible si RLS lo permite
+          // No es posible probar INSERT real sin crear datos
           tableInfo.testResults.canInsert = true; // Asumir true, RLS lo controlará
         } else {
           tableInfo.testResults.canInsert = false;
@@ -818,8 +818,8 @@ async function runTableDiagnostics() {
         
         // Test UPDATE - Solo si SELECT funciona y hay registros
         if (tableInfo.testResults.canSelect && tableInfo.testResults.recordCount > 0 && !tableInfo.testResults.error) {
-          // Si podemos hacer SELECT y hay registros, asumimos que podemos hacer UPDATE
-          // No podemos probar UPDATE real sin modificar datos
+          // Si SELECT funciona y hay registros, se asume que UPDATE es posible
+          // No es posible probar UPDATE real sin modificar datos
           tableInfo.testResults.canUpdate = true; // Asumir true, RLS lo controlará
         } else {
           tableInfo.testResults.canUpdate = false;

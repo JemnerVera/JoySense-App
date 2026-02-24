@@ -95,8 +95,8 @@ export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOpt
       // Para tablas que no tienen estos campos directamente, buscar en relaciones
       if (tableName === 'nodo' && (empresaSeleccionada || fundoSeleccionado)) {
         // Los nodos están relacionados con ubicaciones a través de localizacion
-        // Si hay filtros de empresa/fundo, necesitamos verificar las ubicaciones relacionadas
-        // Por ahora, si no hay campos directos, no filtrar
+        // Si hay filtros de empresa/fundo, se verifican las ubicaciones relacionadas
+        // Si no hay campos directos, no se filtra
         // TODO: Implementar lógica de relaciones si es necesario
       }
 

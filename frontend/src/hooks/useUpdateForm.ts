@@ -492,8 +492,8 @@ export const useUpdateForm = ({
         // Eliminar perfiles
         for (const pk of perfilesAEliminar) {
           try {
-            // Para eliminar, necesitamos usar DELETE, pero como no tenemos deleteRow aquí,
-            // actualizamos statusid a 0
+            // Para eliminar, se usa DELETE, pero como no está disponible en este contexto,
+            // se actualiza statusid a 0
             const result = await updateRow(pk, {
               statusid: 0,
               usermodifiedid: currentUserId,

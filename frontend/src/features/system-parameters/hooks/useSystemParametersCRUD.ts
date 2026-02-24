@@ -126,9 +126,9 @@ export const useSystemParametersCRUD = ({
       rawUser: JSON.stringify(user, null, 2)
     })
     
-    // NOTA: En useSystemParametersCRUD no podemos usar async fácilmente en handleInsert
-    // Por ahora usamos la lógica anterior, pero idealmente debería usar la misma función helper
-    // Para diagnóstico, intentar obtener usuarioid de user_metadata primero
+    // En useSystemParametersCRUD no es posible usar async fácilmente en handleInsert
+    // Se usa la lógica anterior, pero idealmente debería usar la misma función helper
+    // Para diagnóstico, se intenta obtener usuarioid de user_metadata primero
     const userId = 
       user?.user_metadata?.usuarioid || 
       1
