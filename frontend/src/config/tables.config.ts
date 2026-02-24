@@ -889,7 +889,10 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'attempts', label: 'Intentos', type: 'number', readonly: true },
       { name: 'next_try_at', label: 'Próximo Intento', type: 'datetime', readonly: true },
       { name: 'last_error', label: 'Último Error', type: 'text', readonly: true },
-      { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true }
+      { name: 'last_response', label: 'Última Respuesta', type: 'text', readonly: true },
+      { name: 'usercreatedid', label: 'Usuario Creador', type: 'number', readonly: true },
+      { name: 'datecreated', label: 'Fecha Creación', type: 'datetime', readonly: true },
+      { name: 'statusid', label: 'Estado', type: 'number', readonly: true }
     ]
   }
 };
