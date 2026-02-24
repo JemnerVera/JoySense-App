@@ -18,8 +18,8 @@ export const validateUmbralData = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  // 1. Validar campos obligatorios según schema actual
-  // NOTA: umbral NO tiene localizacionid ni criticidadid según SCHEMA_14.01.2026.SQL
+  // 1. Validar campos obligatorios según estructura de la tabla
+  // umbral no tiene localizacionid ni criticidadid
   // Campos requeridos: umbral (nombre), minimo, maximo, operador
   
   if (!formData.umbral || (typeof formData.umbral === 'string' && formData.umbral.trim() === '')) {
@@ -101,8 +101,8 @@ export const validateUmbralUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
 
-  // 1. Validar campos obligatorios según schema actual
-  // NOTA: umbral NO tiene localizacionid ni criticidadid según SCHEMA_14.01.2026.SQL
+  // 1. Validar campos obligatorios según estructura de la tabla
+  // umbral no tiene localizacionid ni criticidadid
   // Campos requeridos: umbral (nombre), minimo, maximo, operador
   
   if (!formData.umbral || (typeof formData.umbral === 'string' && formData.umbral.trim() === '')) {
@@ -200,7 +200,7 @@ export const checkUmbralDependencies = async (umbralid: number): Promise<boolean
 // ============================================================================
 // PERFILUMBRAL VALIDATIONS
 // ============================================================================
-// NOTA: perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
+// perfilumbral fue reemplazado por regla_perfil y regla_umbral
 // Las funciones validatePerfilUmbralData y validatePerfilUmbralUpdate fueron eliminadas
 
 // ============================================================================

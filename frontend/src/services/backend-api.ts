@@ -405,7 +405,7 @@ export class JoySenseService {
       const data = await backendAPI.get(`/geografia/nodos-con-localizacion?${query}`, token || undefined);
       
       // Transformar datos de localizacion a formato NodeData
-      // El backend retorna localizacion con nodo dentro, necesitamos transformarlo
+      // El backend retorna localizacion con nodo dentro, se transforma al formato requerido
       if (!Array.isArray(data)) {
         return [];
       }

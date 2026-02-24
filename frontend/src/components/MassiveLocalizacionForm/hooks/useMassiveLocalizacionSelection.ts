@@ -72,8 +72,8 @@ export const useMassiveLocalizacionSelection = ({
 
     if (!selectedNodo) return;
 
-    // No necesitamos hacer lookup de localizaciones
-    // Ya que el usuario ingresa el nombre directamente
+    // No se requiere lookup de localizaciones
+    // El usuario ingresa el nombre directamente
   }, [selectedNodo]);
 
   return {

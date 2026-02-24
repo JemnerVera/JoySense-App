@@ -62,8 +62,8 @@ export const useSystemParametersUtils = ({
         filteredData = filteredData.filter((n: any) => nodoIds.has(n.nodoid));
       }
 
-      // NOTA: La tabla 'tipo' NO tiene campo 'entidadid' según SCHEMA_05.01.2026.sql
-      // Por lo tanto, NO filtramos tipos por entidadid
+      // La tabla 'tipo' no tiene campo 'entidadid'
+      // Por lo tanto, no se filtran tipos por entidadid
       // Si se necesita filtrar tipos, debe hacerse a través de otra relación (ej: sensor -> tipo)
       if (field === 'tipoid' && filters.entidadid) {
         // La tabla tipo NO tiene entidadid, así que ignoramos este filtro

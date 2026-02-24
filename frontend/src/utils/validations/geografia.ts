@@ -678,7 +678,7 @@ export const validateLocalizacionData = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
   
-  // 1. Validar campos obligatorios según schema actual
+  // 1. Validar campos obligatorios según estructura de la tabla
   // Schema: nodoid, sensorid, metricaid, localizacion (requeridos)
   // latitud, longitud, referencia (opcionales)
   if (!formData.nodoid) {
@@ -751,7 +751,7 @@ export const validateLocalizacionUpdate = async (
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
 
-  // 1. Validar campos obligatorios según schema actual
+  // 1. Validar campos obligatorios según estructura de la tabla
   // Schema: nodoid, sensorid, metricaid, localizacion (requeridos)
   // latitud, longitud, referencia (opcionales)
   if (!formData.nodoid) {
@@ -806,10 +806,9 @@ export const validateLocalizacionUpdate = async (
     }
   }
   
-  // 3. Validar restricción "unico_nodo_activo" (solo si se está activando)
-  // Según el schema actual, no hay constraint único explícito para nodo activo
-  // Pero validamos que no haya duplicados de la combinación nodoid + sensorid + metricaid
-  // (ya validado en el paso 2)
+  // Validar restricción único_nodo_activo (solo si se está activando)
+  // No existe constraint único explícito para nodo activo
+  // Se valida que no haya duplicados de nodoid + sensorid + metricaid
   
   // 4. Generar mensaje amigable para actualización
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);

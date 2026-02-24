@@ -137,7 +137,7 @@ export const validateTipoData = async (
     });
   }
   
-  // 2. Validar duplicados si hay datos existentes (según schema actual, solo se valida por 'tipo' único)
+  // 2. Validar duplicados (solo se valida por 'tipo' único)
   if (existingData && existingData.length > 0) {
     const tipoExists = existingData.some(item => 
       item.tipo && item.tipo.toLowerCase() === formData.tipo?.toLowerCase()
@@ -225,12 +225,12 @@ export const checkTipoDependencies = async (tipoid: number): Promise<boolean> =>
     if (hasSensores) return true;
     
     const metricasensores = await JoySenseService.getTableData('metricasensor');
-    // Según el schema actual, metricasensor NO tiene tipoid (solo tiene sensorid, metricaid, statusid)
+    // metricasensor solo tiene sensorid, metricaid, statusid (sin tipoid)
     // Por lo tanto, no hay dependencias directas de tipo -> metricasensor
     const hasMetricasensores = false;
     if (hasMetricasensores) return true;
     
-    // Nota: umbral ya no tiene tipoid según el schema actual
+    // umbral no tiene tipoid (asociado a localizaciones, no directamente a tipos)
     // Los umbrales ahora están asociados a localizaciones, no directamente a tipos
     return false;
   } catch (error) {
@@ -354,10 +354,10 @@ export const validateNodoUpdate = async (
 
 export const checkNodoDependencies = async (nodoid: number): Promise<boolean> => {
   try {
-    // Según el schema actual:
-    // - sensor NO tiene nodoid (solo tiene sensorid, tipoid, statusid)
-    // - metricasensor NO tiene nodoid (solo tiene sensorid, metricaid, statusid)
-    // - localizacion SÍ tiene nodoid
+    // Estructura de relaciones:
+    // - sensor: sin nodoid
+    // - metricasensor: sin nodoid
+    // - localizacion: tiene nodoid
     const localizaciones = await JoySenseService.getLocalizaciones();
     const hasLocalizaciones = localizaciones.some(localizacion => localizacion.nodoid === nodoid);
     return hasLocalizaciones;
@@ -505,7 +505,7 @@ export const checkMetricaDependencies = async (metricaid: number): Promise<boole
     const hasMetricasensores = metricasensores.some(metricasensor => metricasensor.metricaid === metricaid);
     if (hasMetricasensores) return true;
     
-    // Nota: umbral ya no tiene metricaid según el schema actual
+    // umbral no tiene metricaid directo (asociado a localizaciones, que tienen metricaid)
     // Los umbrales ahora están asociados a localizaciones, que a su vez tienen metricaid
     // Verificar a través de localizaciones
     try {

@@ -71,7 +71,7 @@ export const useSystemParametersSync = ({
   }, [onFormDataChange]);
 
   // Sync selectedTable con prop
-  // Cuando cambia propSelectedTable, también debemos resetear el formulario
+  // Cuando cambia propSelectedTable, también se resetea el formulario
   // para evitar que el cambio de activeSubTab (que viene después) detecte cambios sin guardar
   const prevPropSelectedTableRef = useRef<string>('');
   const tableJustChangedRef = useRef<boolean>(false);
@@ -157,9 +157,9 @@ export const useSystemParametersSync = ({
   }, [formState.data, activeSubTab]);
 
   // Sincronizar activeSubTab con prop cuando cambia desde fuera
-  // NOTA: Cuando propActiveSubTab cambia, significa que App.tsx ya actualizó el estado
-  // Necesitamos validar si ese cambio es válido antes de proceder
-  // Si hay cambios sin guardar, debemos REVERTIR el cambio en App.tsx
+  // Cuando propActiveSubTab cambia, indica que App.tsx ya actualizó el estado
+  // Se valida si ese cambio es válido antes de proceder
+  // Si hay cambios sin guardar, se REVierte el cambio en App.tsx
   const lastPropActiveSubTabRef = useRef<string>('');
   const lastValidatedTabRef = useRef<string>('');
   const isProcessingSyncRef = useRef<boolean>(false);
@@ -180,8 +180,8 @@ export const useSystemParametersSync = ({
     
     // Solo procesar si el prop cambió y es diferente al último validado
     // Y si no hay un procesamiento en curso
-    // IMPORTANTE: Si activeSubTab ya coincide con propActiveSubTab, significa que el cambio
-    // ya fue procesado por ProtectedSubTabButton, así que no necesitamos validar de nuevo
+    // IMPORTANTE: Si activeSubTab ya coincide con propActiveSubTab, indica que el cambio
+    // ya fue procesado por ProtectedSubTabButton, por lo que no es necesaria validación adicional
     if (propActiveSubTab && 
         propActiveSubTab !== activeSubTab && 
         propActiveSubTab !== lastPropActiveSubTabRef.current &&
@@ -207,12 +207,12 @@ export const useSystemParametersSync = ({
       
       // Resetear el ref después de un delay para permitir futuros cambios
       setTimeout(() => {
-        // Si después del delay el activeSubTab NO cambió a propActiveSubTab,
-        // significa que el cambio fue bloqueado y debemos revertir propActiveSubTab
+        // Si después del delay activeSubTab NO cambió a propActiveSubTab,
+        // indica que el cambio fue bloqueado y se requiere revertir en App.tsx
         if (activeSubTab !== propActiveSubTab && propActiveSubTab !== lastValidatedTabRef.current) {
-          // El cambio fue bloqueado - necesitamos revertir en App.tsx
-          // Pero esto puede causar un loop, así que mejor no hacer nada aquí
-          // El modal ya debería haber prevenido el cambio visualmente
+          // El cambio fue bloqueado - se requiere revertir en App.tsx
+          // Esto puede causar un loop, por lo que no se realiza acción aquí
+          // El modal ya previno el cambio visualmente
         } else if (activeSubTab === propActiveSubTab) {
           // El cambio fue exitoso
           lastValidatedTabRef.current = propActiveSubTab;

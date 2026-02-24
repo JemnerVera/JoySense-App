@@ -209,8 +209,8 @@ export function useReglasOperations({
         }
 
       // 4. Crear regla_objeto global (objetoid=NULL) para cumplir con el constraint de scope
-      // origenid=1 es GEOGRAFÍA, necesitamos obtener fuenteid de cualquier fuente geográfica
-      // Usamos 'localizacion' como fuente por defecto para scope global
+      // origenid=1 es GEOGRAFÍA, se obtiene fuenteid de cualquier fuente geográfica
+      // Se usa 'localizacion' como fuente por defecto para scope global
       try {
         // Obtener fuenteid desde la tabla fuente directamente
         const fuentesData = await JoySenseService.getTableData('fuente', 100);
@@ -244,8 +244,8 @@ export function useReglasOperations({
         console.warn('Error al crear regla_objeto automáticamente:', error);
       }
 
-      // 5. Si requiere_escalamiento=true, debemos crear regla_escalamiento antes de activar
-      // Por ahora, si requiere_escalamiento=true, lo cambiamos a false para evitar el error
+      // 5. Si requiere_escalamiento=true, se requiere crear regla_escalamiento antes de activar
+      // Por defecto, si requiere_escalamiento=true, se cambia a false para evitar el error
       // El usuario puede configurar el escalamiento después
       const requiereEscalamiento = reglaData.requiere_escalamiento === true || reglaData.requiere_escalamiento === 'true' || reglaData.requiere_escalamiento === 1;
       
