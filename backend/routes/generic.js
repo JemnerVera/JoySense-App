@@ -81,9 +81,7 @@ function isTableAllowed(table) {
   return ALLOWED_TABLES.includes(table.toLowerCase());
 }
 
-// ============================================================================
 // RUTA ESPECIAL: GET /regla-filtradas/:tipo
-// ============================================================================
 // Obtiene reglas filtradas usando la función SQL fn_get_reglas_filtradas
 // Uso: /regla-filtradas/sin_objeto  o  /regla-filtradas/con_objeto
 
@@ -123,9 +121,7 @@ router.get('/regla-filtradas/:tipo', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA GENÉRICA GET /:table
-// ============================================================================
 
 router.get('/:table', async (req, res) => {
   const { table } = req.params;
@@ -154,9 +150,7 @@ router.get('/:table', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA GENÉRICA GET /:table/columns
-// ============================================================================
 
 router.get('/:table/columns', async (req, res) => {
   const { table } = req.params;
@@ -179,11 +173,8 @@ router.get('/:table/columns', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA PARA ACTUALIZAR PK COMPUESTAS
-// IMPORTANTE: Esta ruta debe definirse ANTES de PUT /:table/:id
-// para evitar que "composite" sea interpretado como un ID
-// ============================================================================
+// Debe definirse ANTES de PUT /:table/:id para evitar que "composite" sea interpretado como un ID
 
 router.put('/:table/composite', async (req, res) => {
   const { table } = req.params;
@@ -232,11 +223,8 @@ router.put('/:table/composite', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA PARA UPSERT EN PK COMPUESTAS
-// IMPORTANTE: Esta ruta hace INSERT OR UPDATE en tablas con PK compuesta
-// Si el registro existe, lo actualiza. Si no existe, lo inserta.
-// ============================================================================
+// INSERT OR UPDATE en tablas con PK compuesta
 
 router.post('/:table/composite/upsert', async (req, res) => {
   const { table } = req.params;
@@ -334,9 +322,7 @@ router.post('/:table/composite/upsert', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA GENÉRICA POST /:table
-// ============================================================================
 
 router.post('/:table', async (req, res) => {
   const { table } = req.params;
@@ -347,12 +333,10 @@ router.post('/:table', async (req, res) => {
   
   try {
     // Preparar datos para inserción
-    // Si es un array, es una inserción masiva. Si es un objeto, es una inserción simple.
+    // Array = inserción masiva, Objeto = inserción simple
     let dataToInsert = Array.isArray(req.body) ? req.body : { ...req.body };
     
-    // ========================================================================
-    // LIMPIAR PKs CON VALORES 0 O NULL (dejar que identity las genere)
-    // ========================================================================
+    // Limpiar PKs con valores 0 o null (dejar que identity las genere)
     const pk = PK_MAPPING[table.toLowerCase()];
     if (pk && pk !== null) {
       if (Array.isArray(dataToInsert)) {
@@ -370,19 +354,17 @@ router.post('/:table', async (req, res) => {
       }
     }
     
-    // ========================================================================
-    // AGREGAR CAMPOS DE AUDITORÍA (usercreatedid, usermodifiedid) AUTOMÁTICAMENTE
-    // ========================================================================
+    // Agregar campos de auditoría automáticamente
     if (req.user) {
       try {
         let usuarioid = null;
         
-        // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
+        // 1. Obtener joysense_usuarioid del user_metadata
         if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
           usuarioid = req.user.user_metadata.joysense_usuarioid;
         }
         
-        // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
+        // 2. Si no está en metadata, buscar por useruuid en la BD
         if (!usuarioid) {
           const userAuthId = req.user.id || req.user.sub;
           if (userAuthId) {
@@ -433,21 +415,20 @@ router.post('/:table', async (req, res) => {
         });
       }
       
-      // Guardar el password en texto plano temporalmente para la sincronización
-      // (fn_sync_usuario_con_auth_wait lo necesita para crear el usuario en Supabase Auth)
+      // Guardar el password en texto plano para sincronización con Supabase Auth
       let plainPassword = null;
       
       // Si viene 'password' en lugar de 'password_hash', hashearlo
       if (dataToInsert.password && !dataToInsert.password_hash) {
-        plainPassword = dataToInsert.password; // Guardar password en texto plano
+        plainPassword = dataToInsert.password;
         const password_hash = await bcrypt.hash(dataToInsert.password, 10);
         dataToInsert.password_hash = password_hash;
-        delete dataToInsert.password; // Eliminar password en texto plano del objeto a insertar
+        delete dataToInsert.password;
       }
       
-      // Asegurar que password_hash esté presente (usar hash por defecto si no viene)
+      // Asegurar que password_hash esté presente
       if (!dataToInsert.password_hash) {
-        plainPassword = dataToInsert.password || 'temporal123'; // Guardar password en texto plano
+        plainPassword = dataToInsert.password || 'temporal123';
         const defaultPassword = plainPassword;
         dataToInsert.password_hash = await bcrypt.hash(defaultPassword, 10);
         if (dataToInsert.password) {
@@ -455,19 +436,13 @@ router.post('/:table', async (req, res) => {
         }
       }
       
-      // Guardar el password en texto plano en req para usarlo después en la sincronización
       req.tempPlainPassword = plainPassword;
-      
-      // NOTA: La sincronización con Supabase Auth se realiza automáticamente después del INSERT
-      // Ver código de sincronización más abajo
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    // IMPORTANTE: Confiar en req.supabase del middleware optionalAuth (igual que GET)
-    // El middleware ya configura correctamente el cliente con el token para RLS
     const userSupabase = req.supabase || baseSupabase;
     
-    // IMPORTANTE: Para RLS, el token debe estar presente. Verificar que el cliente tenga el token
+    // Insertar datos
     const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(dataToInsert).select();
     
     if (error) {
@@ -478,16 +453,12 @@ router.post('/:table', async (req, res) => {
       throw error;
     }
     
-    // ========================================================================
-    // SINCRONIZAR CON SUPABASE AUTH (Solo para tabla 'usuario')
-    // Se debe llamar fn_sync_usuario_con_auth_wait después de crear el usuario
-    // ========================================================================
+    // Sincronizar con Supabase Auth (solo para tabla 'usuario')
     if (table === 'usuario' && data && data[0]) {
       const newUsuario = data[0];
       if (newUsuario.usuarioid) {
         try {
-          // Llamar a fn_sync_usuario_con_auth_wait para sincronizar con Supabase Auth
-          // IMPORTANTE: Especificar schema joysense explícitamente
+          // Llamar a fn_sync_usuario_con_auth_wait
           const { data: syncResult, error: syncError } = await userSupabase
             .schema('joysense')
             .rpc('fn_sync_usuario_con_auth_wait', {
@@ -501,8 +472,7 @@ router.post('/:table', async (req, res) => {
           }
 
           if (syncResult && !syncError) {
-            // La función fn_sync_usuario_con_auth_wait ya actualiza el useruuid automáticamente
-            // Se obtiene el usuario actualizado
+            // Obtener usuario actualizado
             const { data: updatedData, error: updateError } = await userSupabase
               .schema(dbSchema)
               .from('usuario')
@@ -569,9 +539,7 @@ router.post('/:table', async (req, res) => {
   }
 });
 
-// ============================================================================
 // RUTA GENÉRICA PUT /:table/:id
-// ============================================================================
 
 router.put('/:table/:id', async (req, res) => {
   const { table, id } = req.params;
@@ -592,19 +560,17 @@ router.put('/:table/:id', async (req, res) => {
     // Preparar datos para actualización
     let dataToUpdate = { ...req.body };
     
-    // ========================================================================
-    // AGREGAR CAMPO DE AUDITORÍA usermodifiedid AUTOMÁTICAMENTE
-    // ========================================================================
+    // Agregar campo de auditoría usermodifiedid automáticamente
     if (req.user) {
       try {
         let usuarioid = null;
         
-        // 1. Intentar obtener joysense_usuarioid del user_metadata (PRIMERA OPCIÓN - MÁS RÁPIDO)
+        // 1. Obtener joysense_usuarioid del user_metadata
         if (req.user.user_metadata && req.user.user_metadata.joysense_usuarioid) {
           usuarioid = req.user.user_metadata.joysense_usuarioid;
         }
         
-        // 2. Si no está en metadata, buscar por useruuid en la BD (SEGUNDA OPCIÓN)
+        // 2. Si no está en metadata, buscar por useruuid en la BD
         if (!usuarioid) {
           const userAuthId = req.user.id || req.user.sub;
           if (userAuthId) {
@@ -624,7 +590,7 @@ router.put('/:table/:id', async (req, res) => {
           }
         }
         
-        // 3. Si encontramos el usuarioid, agregarlo a los datos
+        // 3. Agregar usuarioid a los datos
         if (usuarioid) {
           dataToUpdate.usermodifiedid = usuarioid;
         } else {
@@ -636,15 +602,13 @@ router.put('/:table/:id', async (req, res) => {
     }
     
     if (table === 'usuario') {
-      // Si viene 'password' en lugar de 'password_hash', hashearlo
+      // Hashear password si viene como texto plano
       if (dataToUpdate.password !== undefined) {
-        // Solo hashear si realmente hay un valor nuevo de password (no vacío)
         if (dataToUpdate.password && typeof dataToUpdate.password === 'string' && dataToUpdate.password.trim() !== '') {
           const password_hash = await bcrypt.hash(dataToUpdate.password, 10);
           dataToUpdate.password_hash = password_hash;
         }
-        // SIEMPRE eliminar password en texto plano (no debe llegar a la BD)
-        // Crear un nuevo objeto sin el campo password
+        // Eliminar password en texto plano
         const { password, ...rest } = dataToUpdate;
         dataToUpdate = rest;
       }
@@ -684,9 +648,7 @@ router.put('/:table/:id', async (req, res) => {
   }
 });
 
-// ============================================================================
 // INFORMACIÓN DE TABLAS
-// ============================================================================
 
 router.get('/meta/tables', async (req, res) => {
   res.json({
@@ -705,14 +667,11 @@ router.get('/meta/clear-cache', async (req, res) => {
   });
 });
 
-// ============================================================================
-// FUNCIÓN DE DIAGNÓSTICO (reutilizable)
-// ============================================================================
+// FUNCIÓN DE DIAGNÓSTICO
 
 async function runTableDiagnostics() {
   try {
     // Obtener información del usuario autenticado en Supabase
-    // Usar el cliente base ya que esto se ejecuta al iniciar el servidor
     const { data: { user }, error: userError } = await baseSupabase.auth.getUser();
     const currentUser = user?.email || 'admin@joysense.com';
     
@@ -768,19 +727,18 @@ async function runTableDiagnostics() {
           continue;
         }
         
-        // 2-4. RLS y permisos: Simplificado - Supabase API maneja RLS automáticamente
-        // La API de Supabase no permite consultar information_schema o pg_class directamente
-        // Se asume que RLS está habilitado si hay políticas (comportamiento por defecto)
-        tableInfo.rls.enabled = true; // Supabase por defecto tiene RLS habilitado
-        tableInfo.rls.policies = []; // No es posible consultar políticas desde la API
+        // RLS y permisos: Supabase API maneja RLS automáticamente
+        // No es posible consultar information_schema o pg_class directamente
+        tableInfo.rls.enabled = true;
+        tableInfo.rls.policies = [];
         tableInfo.permissions = {
-          SELECT: true, // Supabase API permite SELECT si RLS lo permite
+          SELECT: true,
           INSERT: true,
           UPDATE: true,
           DELETE: true
         };
         
-        // 5. Pruebas reales de operaciones usando Supabase API
+        // Pruebas de operaciones usando Supabase API
         // Test SELECT
         try {
           const { data: selectData, error: selectError, count: recordCount } = await baseSupabase
@@ -806,21 +764,16 @@ async function runTableDiagnostics() {
           tableInfo.testResults.error = `SELECT failed: ${selectError.message}`;
         }
         
-        // Test INSERT - Simplificado: Solo verificar si es posible hacer INSERT
-        // No se intenta INSERT real porque Supabase API no permite rollback
+        // Test INSERT
         if (tableInfo.testResults.canSelect && !tableInfo.testResults.error) {
-          // Si SELECT funciona, se asume que INSERT es posible si RLS lo permite
-          // No es posible probar INSERT real sin crear datos
-          tableInfo.testResults.canInsert = true; // Asumir true, RLS lo controlará
+          tableInfo.testResults.canInsert = true;
         } else {
           tableInfo.testResults.canInsert = false;
         }
         
-        // Test UPDATE - Solo si SELECT funciona y hay registros
+        // Test UPDATE
         if (tableInfo.testResults.canSelect && tableInfo.testResults.recordCount > 0 && !tableInfo.testResults.error) {
-          // Si SELECT funciona y hay registros, se asume que UPDATE es posible
-          // No es posible probar UPDATE real sin modificar datos
-          tableInfo.testResults.canUpdate = true; // Asumir true, RLS lo controlará
+          tableInfo.testResults.canUpdate = true;
         } else {
           tableInfo.testResults.canUpdate = false;
         }
@@ -906,9 +859,7 @@ async function runTableDiagnostics() {
   }
 }
 
-// ============================================================================
-// DIAGNÓSTICO DE TABLAS - CHECKLIST DE CONEXIÓN Y PERMISOS (ENDPOINT)
-// ============================================================================
+// DIAGNÓSTICO DE TABLAS - CHECKLIST DE CONEXIÓN Y PERMISOS
 
 router.get('/meta/diagnostics', async (req, res) => {
   try {
