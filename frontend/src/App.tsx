@@ -579,6 +579,33 @@ const AppContentInternal: React.FC<{
       // Si solo tiene tipo de permisos sin operación, NO cambiar activeSubTab
       // Dejar que se maneje a través de la navegación del usuario
     }
+
+    // Manejar operaciones de NOTIFICACIONES (criticidad, umbral)
+    // Rutas: configuracion-notificaciones-[criticidad|umbral]-[operacion]
+    if (activeTab.startsWith('configuracion-notificaciones-criticidad-') || 
+        activeTab.startsWith('configuracion-notificaciones-umbral-')) {
+      const parts = activeTab.split('-');
+      const validOperations = ['status', 'insert', 'update', 'massive'];
+      
+      // Estructura: ['configuracion', 'notificaciones', 'criticidad', 'status'] -> 4 partes
+      if (parts.length >= 4 && validOperations.includes(parts[parts.length - 1])) {
+        const operation = parts[parts.length - 1] as 'status' | 'insert' | 'update' | 'massive';
+        setActiveSubTab((currentSubTab) => {
+          if (currentSubTab !== operation) {
+            return operation;
+          }
+          return currentSubTab;
+        });
+      } else {
+        // Sin operación en la ruta, resetear a 'status' solo si no hay una operación válida ya establecida
+        setActiveSubTab((currentSubTab) => {
+          if (validOperations.includes(currentSubTab)) {
+            return currentSubTab;
+          }
+          return 'status';
+        });
+      }
+    }
   }, [activeTab]);
 
   const {
