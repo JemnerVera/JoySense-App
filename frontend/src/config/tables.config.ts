@@ -623,14 +623,15 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: false,
     allowDelete: false,
     fields: [
-      { name: 'auditid', label: 'ID', type: 'number', readonly: true },
-      { name: 'umbralid', label: 'Umbral', type: 'number', readonly: true },
-      { name: 'accion', label: 'Acción', type: 'text', readonly: true },
-      { name: 'old_minimo', label: 'Min Anterior', type: 'number', readonly: true },
-      { name: 'new_minimo', label: 'Min Nuevo', type: 'number', readonly: true },
-      { name: 'old_maximo', label: 'Max Anterior', type: 'number', readonly: true },
-      { name: 'new_maximo', label: 'Max Nuevo', type: 'number', readonly: true },
-      { name: 'datemodified', label: 'Fecha', type: 'datetime', readonly: true }
+      { name: 'auditid', label: 'ID DE AUDITORIA', type: 'number', readonly: true },
+      { name: 'umbralid', label: 'UMBRAL', type: 'number', readonly: true },
+      { name: 'accion', label: 'ACCIÓN', type: 'text', readonly: true },
+      { name: 'old_minimo', label: 'MINIMO ANTIGUO', type: 'number', readonly: true },
+      { name: 'new_minimo', label: 'MINIMO NUEVO', type: 'number', readonly: true },
+      { name: 'old_maximo', label: 'MAXIMO ANTIGUO', type: 'number', readonly: true },
+      { name: 'new_maximo', label: 'MAXIMO NUEVO', type: 'number', readonly: true },
+      { name: 'usermodifiedid', label: 'USUARIO', type: 'number', readonly: true },
+      { name: 'datemodified', label: 'FECHA', type: 'datetime', readonly: true }
     ]
   },
 
