@@ -416,7 +416,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowUpdate: false,
     allowDelete: false,
     fields: [
-      { name: 'sensorvalorerrorid', label: 'ID', type: 'number', readonly: true },
+      { name: 'sensorvalorerrorid', label: 'ID DEL ERROR', type: 'number', readonly: true },
       { name: 'id_device', label: 'ID del Dispositivo', type: 'text', readonly: true },
       { name: 'error', label: 'Error', type: 'text', readonly: true },
       { name: 'valor', label: 'Valor', type: 'number', readonly: true },

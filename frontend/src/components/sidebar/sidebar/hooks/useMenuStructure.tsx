@@ -31,6 +31,7 @@ import {
   IconPermisos,
   IconTable,
   IconAjustes,
+  IconSensor,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -221,6 +222,12 @@ export function useMenuStructure() {
             id: 'reportes-administrador',
             label: 'REPORTES ADMINISTRADOR',
             icon: <IconTable />,
+            subMenus: [
+              { id: 'sensor_valor_error', label: 'SENSOR VALOR ERROR', icon: <IconSensor /> },
+              { id: 'audit_log_umbral', label: 'AUDIT LOG UMBRAL', icon: <IconCriticidad /> },
+              { id: 'msg_outbox', label: 'MSG OUTBOX', icon: <IconMensajes /> },
+              { id: 'auth_outbox', label: 'AUTH OUTBOX', icon: <IconMensajes /> },
+            ],
           },
         ],
       },
