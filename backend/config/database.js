@@ -4,7 +4,7 @@
  * Usuario: admin@joysense.com (autenticado vía Supabase Auth)
  * 
  * IMPORTANTE: Usa Supabase API directamente - RLS funciona automáticamente
- * según las indicaciones del DBA: "backend_user YA NO SIRVE"
+ * El usuario backend_user ya no es necesario
  */
 
 // Cargar dotenv solo si existe archivo .env (desarrollo local)

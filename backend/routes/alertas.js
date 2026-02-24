@@ -606,8 +606,8 @@ router.get('/umbrales-por-lote', async (req, res) => {
     }
     
     // Paso 5: Verificar qu├® reglas aplican a las localizaciones encontradas
-    // Usar regla_objeto para verificar si la regla aplica a alguna de nuestras localizaciones
-    // Necesitamos obtener los IDs geogr├íficos de nuestras localizaciones
+    // Usar regla_objeto para verificar si la regla aplica a las localizaciones del usuario
+    // Obtener los IDs geográficos de las localizaciones del usuario
     const { data: nodosParaReglas, error: nodosParaReglasError } = await userSupabase
       .schema(dbSchema)
       .from('nodo')
@@ -690,7 +690,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
     const fuenteNodo = fuenteMap.get('nodo');
     const fuenteLocalizacion = fuenteMap.get('localizacion');
     
-    // Obtener reglas que aplican a nuestras localizaciones a trav├®s de regla_objeto
+    // Obtener reglas que aplican a las localizaciones del usuario a través de regla_objeto
     // Una regla aplica si tiene un regla_objeto con:
     // - objetoid IS NULL (global)
     // - fuenteid = fuentePais y objetoid = algun paisid
@@ -711,7 +711,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
       throw reglasObjetoError;
     }
     
-    // Filtrar reglas que aplican a nuestras localizaciones
+    // Filtrar reglas que aplican a las localizaciones del usuario
     const reglasQueAplican = new Set();
     
     if (reglasObjeto) {
@@ -945,9 +945,9 @@ router.get('/umbrales-por-lote', async (req, res) => {
       const localizacionesDelUmbral = new Set();
       
       reglasDelUmbral.forEach(reglaid => {
-        // Si la regla aplica a alguna de nuestras localizaciones, agregarla
+        // Si la regla aplica a alguna de las localizaciones del usuario, agregarla
         if (reglasQueAplican.has(reglaid)) {
-          // La regla aplica a todas nuestras localizaciones (o a un subconjunto seg├║n regla_objeto)
+          // La regla aplica a todas las localizaciones del usuario (o a un subconjunto según regla_objeto)
           // Por simplicidad, asignamos todas las localizaciones que coinciden con la m├®trica
           localizaciones.forEach(loc => {
             // Si el umbral tiene metricaid, solo aplica a localizaciones con esa m├®trica

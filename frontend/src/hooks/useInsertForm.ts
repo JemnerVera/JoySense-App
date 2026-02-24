@@ -1227,7 +1227,7 @@ export const useInsertForm = ({
               text: result.data.syncMessage || 'Usuario creado. Sincronizando con sistema de autenticación...' 
             })
             
-            // Reintentar sincronización automáticamente (según recomendación del DBA)
+            // Reintentar sincronización automáticamente
             retryUserSync(usuarioid, setMessage, () => {
               // Callback cuando la sincronización se complete exitosamente
               const cleanData = initializeFormData()
@@ -1314,7 +1314,7 @@ export const useInsertForm = ({
 
 /**
  * Reintentar sincronización de usuario automáticamente
- * Según recomendación del DBA: si sync retorna NULL, reintentar en 1-2 segundos
+ * Si sync retorna NULL, reintentar en 1-2 segundos
  * @param usuarioid ID del usuario a sincronizar
  * @param setMessage Función para mostrar mensajes al usuario
  * @param onSuccess Callback cuando la sincronización se complete exitosamente
@@ -1366,7 +1366,7 @@ function retryUserSync(
         })
       }
     }
-  }, 2000) // Reintentar cada 2 segundos (según recomendación del DBA)
+  }, 2000) // Reintentar cada 2 segundos
   
   // Cleanup: cancelar intervalo si el componente se desmonta
   return () => clearInterval(retryInterval)

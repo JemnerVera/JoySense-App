@@ -82,7 +82,7 @@ export const supabaseAuth = createClient(config.url, config.key);
 
 // Funciones de autenticación
 export const authService = {
-  // Iniciar sesión usando Supabase API directamente (según indicaciones del DBA)
+  // Iniciar sesión usando Supabase API directamente
   async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     // Logs de debug (solo en modo debug)
     logger.debug('[AUTH] Iniciando proceso de autenticación');
