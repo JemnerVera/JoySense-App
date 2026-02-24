@@ -49,7 +49,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
         <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.records')}</div>
         <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>{tableData.length}</div>
@@ -57,14 +57,7 @@ export function TableStatsDisplay({ tableData, userData, themeColor = 'orange' }
 
       <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
         <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_update')}</div>
-        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>{new Date().toLocaleDateString('es-ES')}</div>
-      </div>
-
-      <div className="bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg p-4 text-center">
-        <div className="text-gray-600 dark:text-neutral-400 text-sm mb-1 font-mono tracking-wider">{t('status.last_user')}</div>
-        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>
-          {getLastUser()}
-        </div>
+        <div className={`text-2xl font-bold font-mono ${getValueColor()}`}>{new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}</div>
       </div>
     </div>
   );
