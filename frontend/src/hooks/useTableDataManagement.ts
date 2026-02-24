@@ -418,11 +418,19 @@ export const useTableDataManagement = () => {
       }
       
       // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
+      // Para tablas muy grandes (sensor_valor_error con 3M+ registros), usar límite bajo
       let dataResponse;
+      const tablesWithNoLimit = ['metricasensor', 'localizacion'];
+      const tablesWithLowLimit = ['sensor_valor_error', 'audit_log_umbral', 'msg_outbox', 'auth_outbox'];
+      
       try {
-        dataResponse = (selectedTable === 'metricasensor' || selectedTable === 'localizacion')
-          ? await JoySenseService.getTableData(selectedTable)
-          : await JoySenseService.getTableData(selectedTable, 1000);
+        if (tablesWithNoLimit.includes(selectedTable || '')) {
+          dataResponse = await JoySenseService.getTableData(selectedTable);
+        } else if (tablesWithLowLimit.includes(selectedTable || '')) {
+          dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
+        } else {
+          dataResponse = await JoySenseService.getTableData(selectedTable, 1000);
+        }
       } catch (dataError) {
         // Si falla obtener datos, usar array vacío (tabla no accesible vía API)
         console.warn(`Error getting data for table ${selectedTable}, using empty array:`, dataError);

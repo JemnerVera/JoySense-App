@@ -980,9 +980,21 @@ export class JoySenseService {
   // OPERACIONES CRUD GENÉRICAS
   // --------------------------------------------------------------------------
 
-  static async getTableData(tableName: TableName | string, limit?: number): Promise<any[]> {
+  static async getTableData(tableName: TableName | string, limit?: number, filters?: Record<string, any>): Promise<any[]> {
     try {
-      const endpoint = limit ? `/generic/${tableName}?limit=${limit}` : `/generic/${tableName}`;
+      let endpoint = limit ? `/generic/${tableName}?limit=${limit}` : `/generic/${tableName}`;
+      
+      // Agregar filtros adicionales a la query string
+      if (filters && Object.keys(filters).length > 0) {
+        const filterParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            filterParams.append(key, String(value));
+          }
+        });
+        const filterString = filterParams.toString();
+        endpoint += filterString ? `&${filterString}` : '';
+      }
       
       // Obtener token de sesión de Supabase para enviarlo al backend
       const { supabaseAuth } = await import('./supabase-auth');

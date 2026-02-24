@@ -98,6 +98,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     }
 
     // Obtener total de registros usando count (solo si se usa paginación)
+    // Para tablas muy grandes (3M+ registros), el count puede fallar - lo manejamos graceful
     let totalRecords = null;
     if (usePagination) {
       const { dbSchema } = require('../config/database');
@@ -113,22 +114,19 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
         countQuery = countQuery.ilike(searchFilters[0].field, searchFilters[0].value);
       }
       
-      const { count, error: countError } = await countQuery;
-      
-      if (countError) {
-        const errorMessage = countError.message || (typeof countError === 'string' ? countError : JSON.stringify(countError)) || 'Error desconocido en count';
-        logger.error(`❌ [paginateAndFilter] Error obteniendo count para ${tableName}: [${countError.code || 'N/A'}] ${errorMessage}`);
-        if (countError.details) logger.error(`   Detalles: ${countError.details}`);
-        if (countError.hint) logger.error(`   Hint: ${countError.hint}`);
+      try {
+        const { count, error: countError } = await countQuery;
         
-        const error = new Error(errorMessage);
-        if (countError.code) error.code = countError.code;
-        if (countError.details) error.details = countError.details;
-        if (countError.hint) error.hint = countError.hint;
-        throw error;
+        if (countError) {
+          logger.warn(`⚠️ [paginateAndFilter] Count falló para ${tableName}, continuando sin total: ${countError.message}`);
+          totalRecords = null;
+        } else {
+          totalRecords = count;
+        }
+      } catch (countCatchError) {
+        logger.warn(`⚠️ [paginateAndFilter] Count exception para ${tableName}, continuando sin total: ${countCatchError.message}`);
+        totalRecords = null;
       }
-      
-      totalRecords = count;
     }
     
     // Construir query de datos
@@ -167,8 +165,14 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     
     const ascending = sortOrder !== 'desc';
     
+    // Para tablas muy grandes con limit simple, NO aplicar ORDER BY (evita timeout)
+    // Solo aplicar ordenamiento cuando hay paginación explícita o cuando se especifica sortBy
+    const tablesWithoutIndexOrder = ['sensor_valor_error', 'audit_log_umbral'];
+    const skipOrderForLargeTables = simpleLimit && !sortBy && tablesWithoutIndexOrder.includes(tableName);
+    
     // Ordenar por el campo especificado
-    if (finalSortBy === 'datecreated') {
+    if (!skipOrderForLargeTables) {
+      if (finalSortBy === 'datecreated') {
       // Ordenar por datecreated primero, luego por datemodified como desempate (si existe)
       dataQuery = dataQuery.order('datecreated', { ascending });
       // Solo agregar datemodified si la tabla lo tiene (no todas las tablas lo tienen)
@@ -194,6 +198,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       // Ordenar por el campo especificado
       dataQuery = dataQuery.order(finalSortBy, { ascending });
     }
+    } // Fin skipOrderForLargeTables
 
     // Aplicar paginación
     if (usePagination) {
