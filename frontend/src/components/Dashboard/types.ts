@@ -52,12 +52,10 @@ export interface MetricConfig {
 
 export interface ModernDashboardProps {
   filters: {
-    entidadId: number | null;
     ubicacionId: number | null;
     startDate: string;
     endDate: string;
   };
   onFiltersChange: (filters: any) => void;
-  onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
 }

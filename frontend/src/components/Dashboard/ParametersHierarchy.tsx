@@ -37,7 +37,7 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   onResetFilters
 }) => {
   // Hook para acceder a los filtros globales
-  const { entidadSeleccionada, ubicacionSeleccionada } = useFilters()
+  const { ubicacionSeleccionada } = useFilters()
   
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [metricas, setMetricas] = useState<any[]>([]);
@@ -106,11 +106,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   };
 
     loadMediciones();
-  }, [entidadSeleccionada, ubicacionSeleccionada, startDate, endDate]);
+  }, [ubicacionSeleccionada, startDate, endDate]);
 
   // Preparar filtros para el ModernDashboard usando contexto global
   const filters = {
-    entidadId: entidadSeleccionada?.entidadid || null,
     ubicacionId: ubicacionSeleccionada?.ubicacionid || null,
     startDate: startDate || '',
     endDate: endDate || ''
@@ -149,7 +148,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
     <ModernDashboard 
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      onEntidadChange={onEntidadChange}
       onUbicacionChange={onUbicacionChange}
     />
   );

@@ -73,7 +73,6 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
     paisSeleccionado, 
     empresaSeleccionada, 
     fundoSeleccionado,
-    entidadSeleccionada,
     ubicacionSeleccionada
   } = useFilters();
   
@@ -90,8 +89,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   const globalSelectedEmpresa = empresaSeleccionada ? empresasToUse.find(e => e.empresaid === parseInt(empresaSeleccionada)) : null;
   const globalSelectedFundo = fundoSeleccionado ? fundosToUse.find(f => f.fundoid === parseInt(fundoSeleccionado)) : null;
   
-  // Usar valores del contexto global para entidad y ubicación
-  const globalSelectedEntidad = entidadSeleccionada || selectedEntidad;
+  // Usar valores del contexto global para ubicación
   const globalSelectedUbicacion = ubicacionSeleccionada || selectedUbicacion;
   
   
