@@ -66,11 +66,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const localizacionDropdownRef = useRef<HTMLDivElement>(null);
   const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  // Evitar ejecución ganda (React StrictMode en desarrollo)
+  const initialDataLoaded = useRef(false);
+
   // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país.
   // CRÍTICO: Usar el mismo endpoint que MAPEO DE NODOS (nodos-con-localizacion) con filtros,
   // para que al filtrar por fundo/empresa/país se traigan todas las localizaciones con paginación
   // correcta. getLocalizaciones() tiene límite ~1000 filas y al filtrar por fundo ZOE no aparecían.
   useEffect(() => {
+    if (initialDataLoaded.current) return;
+    initialDataLoaded.current = true;
+
     const loadInitialData = async () => {
       try {
         const filters =
