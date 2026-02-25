@@ -2,7 +2,10 @@
  * Índice de Hooks - JoySense
  * 
  * Hooks consolidados y esenciales para la aplicación.
- * Los hooks marcados como @deprecated serán eliminados en futuras versiones.
+ * 
+ * NOTA: La migración completa a useTableCRUD está en progreso.
+ * Estos hooks legacy SON NECESARIOS actualmente y funcionan correctamente.
+ * Solo se eliminarán después de que los componentes sean migrados.
  */
 
 // ============================================================================
@@ -87,91 +90,120 @@ export { useDataLossProtection } from './useDataLossProtection';
 export { useUnsavedChanges } from './useUnsavedChanges';
 
 // ============================================================================
-// HOOKS LEGACY (Deprecated - Usar useTableCRUD en su lugar)
+// HOOKS LEGACY (Necesarios actualmente - Migración pendiente)
 // ============================================================================
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para gestión de datos de tablas y datos relacionados.
+ * Necesario para SystemParameters y otros componentes que requieren 
+ * acceso a múltiples tablas relacionadas (userData, paisesData, etc.)
+ * 
+ * @pending Migration to useTableCRUD - requiere ampliar para cargar todas las tablas relacionadas
  */
 export { useTableDataManagement } from './useTableDataManagement';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para carga de datos de una tabla específica.
+ * Usado por: tests, y algunos componentes legacy.
+ * @pending Migration to useTableCRUD
  */
 export { useTableData } from './useTableData';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para datos de tabla con optimizaciones.
+ * @pending Migration to useTableCRUD
  */
 export { useOptimizedTableData } from './useOptimizedTableData';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para operaciones de inserción.
+ * Usado por: MassiveOperations, useFormRendering
+ * @pending Migration to useTableCRUD.insertRow
  */
 export { useInsertOperations } from './useInsertOperations';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para operaciones de actualización.
+ * Usado por: MassiveOperations
+ * @pending Migration to useTableCRUD.updateRow
  */
 export { useUpdateOperations } from './useUpdateOperations';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para estado del formulario.
+ * @pending Migration to useTableCRUD.formState
  */
 export { useFormState } from './useFormState';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para validación de formularios.
+ * Usado por: useFormRendering
+ * @pending Migration to useTableCRUD.validateForm
  */
 export { useFormValidation } from './useFormValidation';
 
 /**
- * @deprecated Use useTableCRUD.formState instead
+ * Hook para detección de cambios en formulario.
+ * @pending Migration to useTableCRUD.formState.isDirty
  */
 export { default as useFormChangeDetection } from './useFormChangeDetection';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para búsqueda y filtrado.
+ * Usado por: useUpdateTable, useStatusTable
+ * @pending Migration a useTableCRUD
  */
 export { useSearchAndFilter } from './useSearchAndFilter';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para operaciones de búsqueda.
+ * Usado por: useTableRendering
+ * @pending Migration a useTableCRUD
  */
 export { useSearchOperations } from './useSearchOperations';
 
 /**
- * @deprecated Integrated in useTableCRUD
+ * Hook para renderizado de formularios.
+ * Usado por: ParameterForm
+ * @pending Migration a useTableCRUD o componente de formulario genérico
  */
 export { useFormRendering } from './useFormRendering';
 
 /**
- * @deprecated Integrated in useTableCRUD
+ * Hook para renderizado de tablas.
+ * @pending Migration a useTableCRUD
  */
 export { useTableRendering } from './useTableRendering';
 
 /**
- * @deprecated Use useTableCRUD or useUnsavedChanges instead
+ * Hook para interceptar cambios.
+ * @pending Migration a useTableCRUD.formState.isDirty
  */
 export { useChangeInterceptor } from './useChangeInterceptor';
 
 /**
- * @deprecated Use useUnsavedChanges instead
+ * Hook para detección simple de cambios.
+ * Usado por: ProtectedTableSelector, ProtectedParameterButton
+ * @pending Migration a useUnsavedChanges
  */
 export { useSimpleChangeDetection } from './useSimpleChangeDetection';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para validación de cambios de tabla.
+ * @pending Migration a useTableCRUD
  */
 export { useTableChangeValidation } from './useTableChangeValidation';
 
 /**
- * @deprecated Use useTableCRUD with config instead
+ * Hook para habilitación progresiva de campos.
+ * Usado por: NormalInsertForm, useFormRendering
+ * @pending Migration a useTableCRUD
  */
 export { useProgressiveEnablement } from './useProgressiveEnablement';
 
 /**
- * @deprecated Use useTableCRUD instead
+ * Hook para estado de SystemParameters.
+ * @pending Migration a useTableCRUD
  */
 export { useSystemParametersState } from './useSystemParametersState';
 
