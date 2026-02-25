@@ -7,6 +7,7 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
 import { useFilters } from "../../contexts/FilterContext"
 import { filterNodesByGlobalFilters } from "../../utils/filterNodesUtils"
+import { transformMedicionData } from "../../utils/medicionTransform"
 import { useMedicionesLoader, useSystemData } from "./hooks"
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
@@ -32,30 +33,6 @@ import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
 import { NodeData } from "../../types/NodeData"
 import { useOptimizedChartData } from "./hooks/useOptimizedChartData"
 import { useMetricCache } from "./hooks/useMetricCache"
-
-// Helper para transformar datos del backend al formato MedicionData con campos legacy
-function transformMedicionData(data: any[]): MedicionData[] {
-  return data.map(m => {
-    // CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
-    const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
-    const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null
-    
-    return {
-      ...m,
-      // Normalizar localizacion para que no sea un array
-      localizacion: localizacion ? {
-        ...localizacion,
-        sensor: sensor
-      } : null,
-      // Extraer campos desde localizacion si existen
-      metricaid: Number(m.metricaid ?? localizacion?.metricaid ?? 0),
-      nodoid: Number(m.nodoid ?? localizacion?.nodoid ?? 0),
-      sensorid: Number(m.sensorid ?? localizacion?.sensorid ?? 0),
-      tipoid: Number(m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0),
-      ubicacionid: Number(m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0)
-    }
-  })
-}
 
 // Mapeo de colores por nombre de métrica (puede extenderse por empresa)
 const METRIC_COLOR_MAP: { [key: string]: string } = {

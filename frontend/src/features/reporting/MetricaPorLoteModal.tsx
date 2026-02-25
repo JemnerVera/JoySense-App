@@ -3,6 +3,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import { JoySenseService } from '../../services/backend-api';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { flushSync } from 'react-dom';
+import { transformMedicionData } from '../../utils/medicionTransform';
 
 interface MetricaPorLoteModalProps {
   isOpen: boolean;
@@ -43,30 +44,6 @@ interface MedicionData {
   nodoid: number;
   tipoid: number;
   metricaid: number;
-}
-
-// Helper para transformar datos del backend al formato MedicionData con campos legacy
-// CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
-function transformMedicionData(data: any[]): MedicionData[] {
-  return data.map(m => {
-    // CRÍTICO: Manejar el caso donde localizacion puede ser un array (resultado de Supabase)
-    const localizacion = m.localizacion ? (Array.isArray(m.localizacion) ? m.localizacion[0] : m.localizacion) : null
-    const sensor = localizacion?.sensor ? (Array.isArray(localizacion.sensor) ? localizacion.sensor[0] : localizacion.sensor) : null
-    
-    return {
-      ...m,
-      // Normalizar localizacion para que no sea un array
-      localizacion: localizacion ? {
-        ...localizacion,
-        sensor: sensor
-      } : null,
-      // Extraer campos desde localizacion si existen
-      metricaid: m.metricaid ?? localizacion?.metricaid ?? 0,
-      nodoid: m.nodoid ?? localizacion?.nodoid ?? 0,
-      tipoid: m.tipoid ?? sensor?.tipoid ?? localizacion?.sensor?.tipoid ?? 0,
-      ubicacionid: m.ubicacionid ?? localizacion?.nodo?.ubicacionid ?? 0
-    }
-  })
 }
 
 // Helper para transformar datos agregados de la función RPC al formato MedicionData
