@@ -172,6 +172,7 @@ exports.getMedicionesDashboard = async (supabase, { nodoid, startDate, endDate, 
 /**
  * Obtiene mediciones con carga manual de métricas y sensores.
  */
+/**
  * Resuelve nodoid -> localizaciones si es necesario.
  */
 exports.getMedicionesWithDetails = async (supabase, { localizacionId, nodoid, startDate, endDate, limit = 1000, getAll = false }) => {
