@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFormRendering } from '../../hooks/useFormRendering';
-import { useSystemParametersCRUD } from '../../hooks/useSystemParametersCRUD';
+import { useTableCRUD } from '../../hooks/useTableCRUD';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ParameterFormProps {
   selectedTable: string;
@@ -31,8 +32,14 @@ export function ParameterForm({
   const [localFormData, setLocalFormData] = useState<Record<string, any>>(formData);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
+  const { user } = useAuth();
   const { getFieldProps, getFormValidation, shouldShowField } = useFormRendering(selectedTable, localFormData);
-  const { handleInsert, handleUpdate, isProcessing, operationError } = useSystemParametersCRUD();
+  const { insertRow, updateRow, formState, getPrimaryKeyValue, resetForm } = useTableCRUD({ 
+    tableName: selectedTable,
+    autoLoad: false 
+  });
+
+  const isProcessing = formState.isSubmitting;
 
   // Sincronizar datos locales con props
   useEffect(() => {
@@ -61,16 +68,33 @@ export function ParameterForm({
         return;
       }
 
+      const userId = user?.user_metadata?.usuarioid || 1;
+      const now = new Date().toISOString();
+
       let result;
       if (isUpdate) {
-        result = await handleUpdate(selectedTable, localFormData, originalData, existingData);
+        const dataWithAudit = {
+          ...localFormData,
+          usermodifiedid: userId,
+          datemodified: now
+        };
+        const pk = getPrimaryKeyValue(originalData);
+        result = await updateRow(pk, dataWithAudit);
       } else {
-        result = await handleInsert(selectedTable, localFormData, existingData);
+        const dataWithAudit = {
+          ...localFormData,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        };
+        result = await insertRow(dataWithAudit);
       }
 
       if (result.success) {
-        onSuccess(result.message || 'Operación exitosa');
+        onSuccess(isUpdate ? 'Registro actualizado correctamente' : 'Registro creado correctamente');
         setValidationErrors([]);
+        resetForm();
       } else {
         onError(result.error || 'Error en la operación');
       }
@@ -236,22 +260,6 @@ export function ParameterForm({
                   ))}
                 </ul>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Mostrar errores de operación */}
-      {operationError && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{operationError}</p>
             </div>
           </div>
         </div>

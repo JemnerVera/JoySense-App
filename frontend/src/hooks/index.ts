@@ -108,11 +108,6 @@ export { useOptimizedTableData } from './useOptimizedTableData';
 /**
  * @deprecated Use useTableCRUD instead
  */
-export { useSystemParametersCRUD } from './useSystemParametersCRUD';
-
-/**
- * @deprecated Use useTableCRUD instead
- */
 export { useInsertOperations } from './useInsertOperations';
 
 /**
