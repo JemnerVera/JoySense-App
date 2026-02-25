@@ -224,9 +224,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
 
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
-    // Si no hay nodo seleccionado, requerir ambos filtros
+    // Si no hay nodo seleccionado, requerir ubicacionId
     const requiresUbicacionId = !selectedNode
-    const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
+    const hasRequiredFilters = selectedNode ? true : (requiresUbicacionId ? filters.ubicacionId : true)
 
     if (!hasRequiredFilters) {
       setMediciones([])

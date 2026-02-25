@@ -11,13 +11,11 @@ interface FilterContextType {
   paisSeleccionado: string;
   empresaSeleccionada: string;
   fundoSeleccionado: string;
-  entidadSeleccionada: any | null;
   ubicacionSeleccionada: any | null;
   showDetailedAnalysis: boolean;
   setPaisSeleccionado: (pais: string) => void;
   setEmpresaSeleccionada: (empresa: string) => void;
   setFundoSeleccionado: (fundo: string) => void;
-  setEntidadSeleccionada: (entidad: any | null) => void;
   setUbicacionSeleccionada: (ubicacion: any | null) => void;
   setShowDetailedAnalysis: (show: boolean) => void;
   setFiltersBatch: (batch: FiltersBatch) => void;
@@ -42,7 +40,6 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [paisSeleccionado, setPaisSeleccionado] = useState<string>('');
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState<string>('');
   const [fundoSeleccionado, setFundoSeleccionado] = useState<string>('');
-  const [entidadSeleccionada, setEntidadSeleccionada] = useState<any | null>(null);
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<any | null>(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState<boolean>(false);
 
@@ -50,7 +47,6 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setPaisSeleccionado('');
     setEmpresaSeleccionada('');
     setFundoSeleccionado('');
-    setEntidadSeleccionada(null);
     setUbicacionSeleccionada(null);
   };
 
@@ -65,13 +61,11 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     paisSeleccionado,
     empresaSeleccionada,
     fundoSeleccionado,
-    entidadSeleccionada,
     ubicacionSeleccionada,
     showDetailedAnalysis,
     setPaisSeleccionado,
     setEmpresaSeleccionada,
     setFundoSeleccionado,
-    setEntidadSeleccionada,
     setUbicacionSeleccionada,
     setShowDetailedAnalysis,
     setFiltersBatch,
