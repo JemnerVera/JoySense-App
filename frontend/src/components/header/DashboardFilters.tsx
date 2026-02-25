@@ -6,13 +6,13 @@ import OverlayDropdown from '../shared/ui/buttons/PushDropdown';
 
 interface DashboardFiltersProps {
   onFiltersChange?: (filters: {
-    entidadId: number | null;
+    entidadId: number | null; // Mantenido por compatibilidad, siempre null
     ubicacionId: number | null;
     startDate: string;
     endDate: string;
   }) => void;
-  showDateFilters?: boolean; // Nueva prop para controlar si mostrar filtros de fecha
-  showActiveFiltersCount?: boolean; // Nueva prop para controlar si mostrar contador de filtros activos
+  showDateFilters?: boolean;
+  showActiveFiltersCount?: boolean;
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
@@ -24,21 +24,17 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     paisSeleccionado, 
     empresaSeleccionada, 
     fundoSeleccionado,
-    entidadSeleccionada,
     ubicacionSeleccionada,
     setPaisSeleccionado,
     setEmpresaSeleccionada,
     setFundoSeleccionado,
-    setEntidadSeleccionada,
     setUbicacionSeleccionada
   } = useFilters();
 
   const { paises, empresas, fundos } = useCompleteFilterData('');
   
-  // Estados para entidades y ubicaciones filtradas
-  const [entidades, setEntidades] = useState<any[]>([]);
+  // Estados para ubicaciones filtradas
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
-  const [loadingEntidades, setLoadingEntidades] = useState(false);
   const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
   
   // OPTIMIZACIÓN: Caché de nodos con GPS para evitar llamadas múltiples
@@ -47,33 +43,21 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   const isLoadingNodosRef = useRef<boolean>(false);
   const CACHE_TTL = 60000; // 60 segundos
 
-  // Usar directamente el contexto global como fuente de verdad (eliminar estados locales)
-  const selectedEntidad = entidadSeleccionada;
+  // Usar directamente el contexto global como fuente de verdad
   const selectedUbicacion = ubicacionSeleccionada;
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
   // Estados para dropdowns
-  const [isEntidadDropdownOpen, setIsEntidadDropdownOpen] = useState(false);
   const [isUbicacionDropdownOpen, setIsUbicacionDropdownOpen] = useState(false);
   const [isFechasDropdownOpen, setIsFechasDropdownOpen] = useState(false);
 
-  const entidadDropdownRef = useRef<HTMLDivElement>(null);
   const ubicacionDropdownRef = useRef<HTMLDivElement>(null);
   const fechasDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Forzar re-render cuando cambien los valores del contexto global
-  useEffect(() => {
-    // Este useEffect se ejecuta cuando cambian los valores del contexto
-    // y fuerza el re-render del componente
-  }, [entidadSeleccionada, ubicacionSeleccionada, entidades.length, ubicaciones.length]);
 
   // Cerrar dropdowns cuando se hace click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (entidadDropdownRef.current && !entidadDropdownRef.current.contains(event.target as Node)) {
-        setIsEntidadDropdownOpen(false);
-      }
       if (ubicacionDropdownRef.current && !ubicacionDropdownRef.current.contains(event.target as Node)) {
         setIsUbicacionDropdownOpen(false);
       }
@@ -94,65 +78,13 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   useEffect(() => {
     if (onFiltersChange) {
       onFiltersChange({
-        entidadId: selectedEntidad?.entidadid || null,
+        entidadId: null, // Entidad eliminada de filtros
         ubicacionId: selectedUbicacion?.ubicacionid || null,
         startDate,
         endDate
       });
     }
-  }, [selectedEntidad, selectedUbicacion, startDate, endDate, onFiltersChange]);
-
-  // Cargar entidades basadas en el fundo seleccionado
-  useEffect(() => {
-    const cargarEntidades = async () => {
-      if (!fundoSeleccionado) {
-        setEntidades([]);
-        return;
-      }
-
-      try {
-        setLoadingEntidades(true);
-        
-        // Obtener todas las entidades
-        const entidadesData = await JoySenseService.getTableData('entidad');
-        
-        // Obtener ubicaciones del fundo seleccionado
-        const ubicacionesData = await JoySenseService.getTableData('ubicacion');
-        const ubicacionesDelFundo = ubicacionesData.filter((ubicacion: any) => 
-          ubicacion.fundoid === parseInt(fundoSeleccionado)
-        );
-        
-        // Obtener localizaciones para encontrar entidades relacionadas
-        const localizacionesData = await JoySenseService.getTableData('localizacion');
-        
-        // Encontrar entidades que tienen ubicaciones en este fundo
-        const entidadIds = new Set();
-        ubicacionesDelFundo.forEach((ubicacion: any) => {
-          const localizacionesDeUbicacion = localizacionesData.filter((loc: any) => 
-            loc.ubicacionid === ubicacion.ubicacionid
-          );
-          localizacionesDeUbicacion.forEach((loc: any) => {
-            entidadIds.add(loc.entidadid);
-          });
-        });
-        
-        
-        // Filtrar entidades
-        const entidadesFiltradas = entidadesData.filter((entidad: any) => 
-          entidadIds.has(entidad.entidadid)
-        );
-        
-        setEntidades(entidadesFiltradas);
-      } catch (error) {
-        console.error('❌ Error cargando entidades:', error);
-        setEntidades([]);
-      } finally {
-        setLoadingEntidades(false);
-      }
-    };
-
-    cargarEntidades();
-  }, [fundoSeleccionado, selectedEntidad]); // Agregar selectedEntidad para forzar recarga cuando cambia
+  }, [selectedUbicacion, startDate, endDate, onFiltersChange]);
 
   // OPTIMIZACIÓN: Función memoizada para obtener nodos con GPS con caché y debouncing
   const obtenerNodosConGPS = useCallback(async (filters: { fundoId?: string; empresaId?: string; paisId?: string } | undefined): Promise<number[]> => {
@@ -215,7 +147,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     }
   }, []);
 
-  // Cargar ubicaciones basadas en el fundo seleccionado y entidad seleccionada
+  // Cargar ubicaciones basadas en el fundo seleccionado
   useEffect(() => {
     // Limpiar timeout anterior si existe
     if (debounceTimeoutRef.current) {
@@ -255,21 +187,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
           ubicacionesConGPS.includes(ubicacion.ubicacionid)
         );
         
-        // Si hay una entidad seleccionada, filtrar también por entidad
-        if (selectedEntidad) {
-          const localizacionesData = await JoySenseService.getTableData('localizacion');
-          
-          // Obtener ubicaciones que están relacionadas con la entidad seleccionada
-          const ubicacionIds = localizacionesData
-            .filter((loc: any) => loc.entidadid === selectedEntidad.entidadid)
-            .map((loc: any) => loc.ubicacionid);
-          
-          // Filtrar ubicaciones que están en el fundo Y en la entidad
-          ubicacionesFiltradas = ubicacionesFiltradas.filter((ubicacion: any) => 
-            ubicacionIds.includes(ubicacion.ubicacionid)
-          );
-        }
-        
         setUbicaciones(ubicacionesFiltradas);
       } catch (error) {
         console.error('❌ Error cargando ubicaciones:', error);
@@ -285,90 +202,25 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [fundoSeleccionado, selectedEntidad, empresaSeleccionada, paisSeleccionado, obtenerNodosConGPS]);
-
-  // Forzar recarga de entidades cuando se limpia la selección y hay fundo seleccionado
-  // Esto asegura que las listas se actualicen después de cancelar la selección del nodo
-  useEffect(() => {
-    // Si hay fundo seleccionado pero no entidad seleccionada y las entidades están vacías
-    // o si cambió selectedEntidad a null, recargar
-    if (fundoSeleccionado && !selectedEntidad) {
-      // Verificar si necesitamos recargar
-      const shouldReload = entidades.length === 0;
-      
-      if (shouldReload) {
-        const cargarEntidades = async () => {
-          try {
-            setLoadingEntidades(true);
-            
-            const entidadesData = await JoySenseService.getTableData('entidad');
-            const ubicacionesData = await JoySenseService.getTableData('ubicacion');
-            const ubicacionesDelFundo = ubicacionesData.filter((ubicacion: any) => 
-              ubicacion.fundoid === parseInt(fundoSeleccionado)
-            );
-            
-            const localizacionesData = await JoySenseService.getTableData('localizacion');
-            
-            const entidadIds = new Set();
-            ubicacionesDelFundo.forEach((ubicacion: any) => {
-              const localizacionesDeUbicacion = localizacionesData.filter((loc: any) => 
-                loc.ubicacionid === ubicacion.ubicacionid
-              );
-              localizacionesDeUbicacion.forEach((loc: any) => {
-                entidadIds.add(loc.entidadid);
-              });
-            });
-            
-            const entidadesFiltradas = entidadesData.filter((entidad: any) => 
-              entidadIds.has(entidad.entidadid)
-            );
-            
-            setEntidades(entidadesFiltradas);
-          } catch (error) {
-            console.error('❌ Error recargando entidades:', error);
-          } finally {
-            setLoadingEntidades(false);
-          }
-        };
-        
-        cargarEntidades();
-      }
-    }
-  }, [fundoSeleccionado, selectedEntidad]);
-
-  // Filtrar entidades basadas en el fundo seleccionado
-  const filteredEntidades = entidades;
+  }, [fundoSeleccionado, empresaSeleccionada, paisSeleccionado, obtenerNodosConGPS]);
 
   // Las ubicaciones ya están filtradas en el useEffect
   const filteredUbicaciones = ubicaciones;
 
   // Limpiar selecciones cuando cambian los filtros padre
-  // PERO solo si las listas ya están cargadas (no vacías)
-  useEffect(() => {
-    if (selectedEntidad && filteredEntidades.length > 0 && !filteredEntidades.find((e: any) => e.entidadid === selectedEntidad.entidadid)) {
-      setEntidadSeleccionada(null);
-    }
-  }, [filteredEntidades, selectedEntidad, setEntidadSeleccionada]);
-
   useEffect(() => {
     if (!selectedUbicacion || filteredUbicaciones.length === 0) return;
     const selectedId = selectedUbicacion?.ubicacionid ?? (typeof selectedUbicacion === 'string' ? selectedUbicacion : null);
     if (selectedId == null) return;
     const listIsForCurrentFundo = fundoSeleccionado && filteredUbicaciones.every((u: any) => u.fundoid === parseInt(fundoSeleccionado));
     const selectedIsInList = filteredUbicaciones.some((u: any) => String(u.ubicacionid) === String(selectedId));
-    // Solo limpiar si la lista es del fundo actual y la selección no está en la lista (evitar borrar cuando la lista es antigua o está cargando tras un setFiltersBatch)
+    // Solo limpiar si la lista es del fundo actual y la selección no está en la lista
     if (listIsForCurrentFundo && !selectedIsInList) {
       setUbicacionSeleccionada(null);
     }
   }, [filteredUbicaciones, selectedUbicacion, setUbicacionSeleccionada, fundoSeleccionado]);
 
 
-  const handleEntidadSelect = (entidad: any) => {
-    setEntidadSeleccionada(entidad); // Solo actualizar contexto global
-    setIsEntidadDropdownOpen(false);
-    // Limpiar ubicación
-    setUbicacionSeleccionada(null); // Limpiar contexto global
-  };
 
   const handleUbicacionSelect = (ubicacion: any) => {
     setUbicacionSeleccionada(ubicacion); // Solo actualizar contexto global
@@ -400,7 +252,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     paisSeleccionado && 'País',
     empresaSeleccionada && 'Empresa',
     fundoSeleccionado && 'Fundo',
-    selectedEntidad && 'Entidad',
     selectedUbicacion && 'Ubicación',
     startDate && endDate && 'Fechas'
   ].filter(Boolean).length;
@@ -414,7 +265,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         setPaisSeleccionado('');
         setEmpresaSeleccionada('');
         setFundoSeleccionado('');
-        setEntidadSeleccionada(null);
         setUbicacionSeleccionada(null);
         setStartDate('');
         setEndDate('');
@@ -424,7 +274,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setPaisSeleccionado, setEmpresaSeleccionada, setFundoSeleccionado, setEntidadSeleccionada, setUbicacionSeleccionada]);
+  }, [setPaisSeleccionado, setEmpresaSeleccionada, setFundoSeleccionado, setUbicacionSeleccionada]);
 
   return (
     <div className="flex items-center space-x-3">
@@ -436,7 +286,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             paisSeleccionado && `País: ${selectedPais?.pais || 'Seleccionado'}`,
             empresaSeleccionada && `Empresa: ${selectedEmpresa?.empresa || 'Seleccionada'}`,
             fundoSeleccionado && `Fundo: ${selectedFundo?.fundo || 'Seleccionado'}`,
-            selectedEntidad && `Entidad: ${selectedEntidad?.entidad || 'Seleccionada'}`,
             selectedUbicacion && `Ubicación: ${selectedUbicacion?.ubicacion || 'Seleccionada'}`,
             startDate && endDate && `Fechas: ${formatDateRange()}`
           ].filter(Boolean).join(', ')}`}
@@ -454,7 +303,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
               setPaisSeleccionado('');
               setEmpresaSeleccionada('');
               setFundoSeleccionado('');
-              setEntidadSeleccionada(null);
               setUbicacionSeleccionada(null);
               setStartDate('');
               setEndDate('');
