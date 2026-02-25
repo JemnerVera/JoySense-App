@@ -1898,7 +1898,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [])
 
   return (
-    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-y-auto dashboard-scrollbar-blue`}>
+    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-x-hidden overflow-y-auto dashboard-scrollbar-blue`}>
       {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
       <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'w-full px-2 py-2 h-full flex flex-col'}`}>
 
