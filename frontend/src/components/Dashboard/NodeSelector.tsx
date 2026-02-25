@@ -7,10 +7,9 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils'
 
 interface NodeSelectorProps {
-  selectedEntidadId: number | null
   selectedUbicacionId: number | null
   onNodeSelect: (nodeData: NodeData) => void
-  onNodeClear?: () => void  // ← Nuevo callback
+  onNodeClear?: () => void
   onFiltersUpdate: (filters: {
     entidadId: number | null;
     ubicacionId: number | null;
@@ -18,18 +17,14 @@ interface NodeSelectorProps {
     empresaId?: number | null;
     paisId?: number | null;
   }) => void
-  // Callbacks para actualizar filtros del header
-  onEntidadChange?: (entidad: any) => void
   onUbicacionChange?: (ubicacion: any) => void
 }
 
 export const NodeSelector: React.FC<NodeSelectorProps> = ({
-  selectedEntidadId,
   selectedUbicacionId,
   onNodeSelect,
   onNodeClear,
   onFiltersUpdate,
-  onEntidadChange,
   onUbicacionChange
 }) => {
   const { t } = useLanguage();
@@ -56,9 +51,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setPaisSeleccionado, 
     setEmpresaSeleccionada, 
     setFundoSeleccionado,
-    setEntidadSeleccionada,
-    setUbicacionSeleccionada,
-    entidadSeleccionada
+    setUbicacionSeleccionada
   } = useFilters()
 
   const loadNodes = async () => {
@@ -129,12 +122,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     if (selectedNode) {
       filtered = nodes.filter(node => node.nodoid === selectedNode.nodoid)
     }
-    // Si no hay nodo seleccionado, aplicar filtros de entidad y ubicación
+    // Si no hay nodo seleccionado, aplicar solo filtro de ubicación
     else {
-      if (selectedEntidadId) {
-        filtered = filtered.filter(node => node.entidad?.entidadid === selectedEntidadId)
-      }
-
       if (selectedUbicacionId) {
         filtered = filtered.filter(node => node.ubicacionid === selectedUbicacionId)
       }
@@ -171,7 +160,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
 
     setFilteredNodes(filtered)
-  }, [nodes, selectedNode, selectedEntidadId, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
+  }, [nodes, selectedNode, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
   // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
   useEffect(() => {
@@ -209,36 +198,14 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       setFundoSeleccionado(node.ubicacion.fundoid.toString())
     }
 
-    // 2. Actualizar filtros del header (entidad, ubicación) usando contexto global
-    // Primero actualizar entidad para que las ubicaciones se recarguen
-    if (node.entidad) {
-      setEntidadSeleccionada(node.entidad)
-      
-      // Guardar la ubicación pendiente para establecerla después de que se recarguen las ubicaciones
-      pendingUbicacion.current = {
-        ubicacionid: node.ubicacionid,
-        ubicacion: node.ubicacion.ubicacion,
-        ubicacionabrev: node.ubicacion.ubicacionabrev,
-        fundoid: node.ubicacion.fundoid
-      }
-    }
+    // 2. Actualizar ubicación usando contexto global
+    setUbicacionSeleccionada({
+      ubicacionid: node.ubicacionid,
+      ubicacion: node.ubicacion.ubicacion,
+      ubicacionabrev: node.ubicacion.ubicacionabrev,
+      fundoid: node.ubicacion.fundoid
+    })
   }
-
-  // useEffect para establecer la ubicación después de que la entidad se haya actualizado y las ubicaciones se hayan recargado
-  useEffect(() => {
-    // Solo establecer ubicación si hay una pendiente y la entidad está seleccionada
-    if (pendingUbicacion.current && entidadSeleccionada) {
-      // Esperar un tiempo para que el useEffect de ubicaciones en DashboardFilters se ejecute
-      const timeoutId = setTimeout(() => {
-        if (pendingUbicacion.current) {
-          setUbicacionSeleccionada(pendingUbicacion.current)
-          pendingUbicacion.current = null // Limpiar después de establecer
-        }
-      }, 400) // Delay suficiente para que se recarguen las ubicaciones
-
-      return () => clearTimeout(timeoutId)
-    }
-  }, [entidadSeleccionada, setUbicacionSeleccionada])
 
   const handleNodeSelect = (node: NodeData) => {
     setSelectedNode(node)
@@ -352,11 +319,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                 })
 
                 // También limpiar los filtros del header
-                if (onEntidadChange) onEntidadChange(null)
                 if (onUbicacionChange) onUbicacionChange(null)
 
                 // Limpiar también el contexto global de filtros
-                setEntidadSeleccionada(null)
                 setUbicacionSeleccionada(null)
                 
                 // Limpiar el ref de última ubicación procesada y ubicación pendiente

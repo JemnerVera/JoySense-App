@@ -100,7 +100,7 @@ function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
   };
 }
 
-export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onUbicacionChange }: ModernDashboardProps) {
+export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }: ModernDashboardProps) {
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, setShowDetailedAnalysis: setContextShowDetailedAnalysis } = useFilters()
@@ -109,8 +109,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
   const [metricas, setMetricas] = useState<any[]>([])
   const [tipos, setTipos] = useState<any[]>([])
   const [sensores, setSensores] = useState<any[]>([])
-  const [entidades, setEntidades] = useState<any[]>([])
-  const [ubicaciones, setUbicaciones] = useState<any[]>([])
   
   // Estados para mediciones
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
@@ -239,7 +237,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // OPTIMIZACIÓN: Crear clave de caché basada en nodoid + rango de fechas
     const cacheKey = selectedNode 
       ? `node_${selectedNode.nodoid}_${filters.startDate || 'no-date'}_${filters.endDate || 'no-date'}`
-      : `ent_${filters.entidadId}_ubic_${filters.ubicacionId || 'none'}`
+      : `ubic_${filters.ubicacionId || 'none'}`
     
     // Verificar caché antes de hacer la petición
     const cached = medicionesCacheRef.current.get(cacheKey)
@@ -251,7 +249,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Crear una clave única para esta petición
-    const thisRequestKey = requestKey || `${filters.entidadId}-${filters.ubicacionId}-${selectedNode?.nodoid || 'none'}-${Date.now()}`
+    const thisRequestKey = requestKey || `${filters.ubicacionId}-${selectedNode?.nodoid || 'none'}-${Date.now()}`
     const thisNodeId = expectedNodeId !== undefined ? expectedNodeId : selectedNode?.nodoid || null
     
     // Verificar si esta petición ya fue invalidada por una nueva selección
@@ -408,7 +406,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           const endDateStr = formatDate(endDate)
 
           const dataSinNodo = await JoySenseService.getMediciones({
-            entidadId: filters.entidadId || undefined,
             ubicacionId: filters.ubicacionId || undefined,
             startDate: startDateStr,
             endDate: endDateStr,
@@ -540,7 +537,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
         setLoading(false)
       }
     }
-  }, [filters.entidadId, filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid])
+  }, [filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid])
 
   // Crear array de dependencias estable para evitar warnings de React
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
@@ -550,7 +547,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     // para evitar warnings de React sobre cambios de tamaño
     // Siempre incluir ubicacionId aunque sea undefined cuando hay nodo seleccionado
     return [
-      filters.entidadId, 
       filters.startDate,
       filters.endDate,
       selectedNode?.nodoid,
@@ -561,14 +557,14 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       // Es una función callback que cambia cuando sus dependencias cambian
       // Esto causaría un ciclo infinito
     ]
-  }, [filters.entidadId, filters.startDate, filters.endDate, selectedNode?.nodoid, filters.ubicacionId, selectedNode])
+  }, [filters.startDate, filters.endDate, selectedNode?.nodoid, filters.ubicacionId, selectedNode])
 
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)
-    // Si no hay nodo seleccionado, requerir ambos filtros
+    // Si no hay nodo seleccionado, requerir ubicacionId (entidadId ya no es necesario)
     const requiresUbicacionId = !selectedNode
-    const hasRequiredFilters = selectedNode ? true : (filters.entidadId && (requiresUbicacionId ? filters.ubicacionId : true))
+    const hasRequiredFilters = selectedNode ? true : (requiresUbicacionId ? filters.ubicacionId : true)
     
     if (!hasRequiredFilters) {
       // Si no hay filtros y hay un nodo seleccionado, limpiar mediciones para evitar mostrar datos del nodo anterior
@@ -593,7 +589,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     }
     
     // Crear una clave única para esta petición basada solo en el nodo (no en ubicacionId que puede cambiar)
-    const requestKey = `${filters.entidadId}-${selectedNode?.nodoid || 'none'}-${Date.now()}`
+    const requestKey = `${selectedNode?.nodoid || 'none'}-${Date.now()}`
     const expectedNodeId = selectedNode?.nodoid || null
     
     // Invalidar peticiones anteriores solo si el nodo cambió
@@ -613,7 +609,7 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
       
       // Verificar nuevamente que los filtros requeridos estén disponibles
       const stillRequiresUbicacionId = !selectedNode
-      const stillHasRequiredFilters = selectedNode ? true : (filters.entidadId && (stillRequiresUbicacionId ? filters.ubicacionId : true))
+      const stillHasRequiredFilters = selectedNode ? true : (stillRequiresUbicacionId ? filters.ubicacionId : true)
       
       if (!stillHasRequiredFilters) {
         return
@@ -1036,7 +1032,6 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
     paisId?: number | null;
   }) => {
     onFiltersChange({
-      entidadId: newFilters.entidadId,
       ubicacionId: newFilters.ubicacionId,
       startDate: filters.startDate,
       endDate: filters.endDate
@@ -1237,26 +1232,16 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
 
   // Cargar entidades, ubicaciones, métricas, tipos y sensores
   useEffect(() => {
-    loadEntidades()
     loadUbicaciones()
     loadMetricas()
     loadTipos()
     loadSensores()
   }, [])
 
-  const loadEntidades = async () => {
-    try {
-      const data = await JoySenseService.getEntidades()
-      setEntidades(data)
-    } catch (err) {
-      console.error("[ModernDashboard] loadEntidades:", err)
-    }
-  }
-
   const loadUbicaciones = async () => {
     try {
       const data = await JoySenseService.getUbicaciones()
-      setUbicaciones(data)
+      // Ya no necesitamos guardar ubicaciones en estado local
     } catch (err) {
       console.error("[ModernDashboard] loadUbicaciones:", err)
     }
@@ -1967,12 +1952,10 @@ export function ModernDashboard({ filters, onFiltersChange, onEntidadChange, onU
           <>
         {/* Node Selector Console */}
         <NodeSelector
-          selectedEntidadId={filters.entidadId}
           selectedUbicacionId={filters.ubicacionId}
           onNodeSelect={handleNodeSelect}
           onNodeClear={handleNodeClear}
           onFiltersUpdate={handleFiltersUpdate}
-          onEntidadChange={onEntidadChange}
           onUbicacionChange={onUbicacionChange}
         />
 
