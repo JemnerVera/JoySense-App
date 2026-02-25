@@ -283,7 +283,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
       // Carga inicial rápida: solo 100 mediciones
       const data = await JoySenseService.getMediciones({
         ubicacionId,
-        entidadId: selectedEntidad?.entidadid,
         limit: 100 // Carga rápida inicial
       });
       // Verificar que data sea un array
@@ -297,7 +296,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
       try {
         const countData = await JoySenseService.getMediciones({
           ubicacionId,
-          entidadId: selectedEntidad?.entidadid,
           countOnly: true
         });
         if (!Array.isArray(countData) && countData.count !== undefined) {
@@ -324,7 +322,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
         ubicacionId: selectedUbicacion.ubicacionid,
         startDate,
         endDate,
-        entidadId: selectedEntidad?.entidadid,
         getAll: true // Cargar todas las mediciones
       });
       // Verificar que data sea un array
@@ -349,7 +346,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
         ubicacionId: selectedUbicacion.ubicacionid,
         startDate,
         endDate,
-        entidadId: selectedEntidad?.entidadid,
         limit: 100 // Carga rápida con filtros
       });
       
@@ -366,7 +362,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
           ubicacionId: selectedUbicacion.ubicacionid,
           startDate,
           endDate,
-          entidadId: selectedEntidad?.entidadid,
           countOnly: true
         });
         if (!Array.isArray(countData) && countData.count !== undefined) {
