@@ -1968,8 +1968,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
         {/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
-          <div className="flex justify-center mb-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 max-w-full w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mb-2">
             {availableMetrics.map((metric) => {
               const hasData = hasMetricDataOptimized(metric.dataKey)
               const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
@@ -1987,7 +1986,6 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
                 />
               )
             })}
-            </div>
           </div>
         )}
         </>

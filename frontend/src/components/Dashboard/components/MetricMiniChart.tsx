@@ -144,7 +144,7 @@ function MetricMiniChartComponent({
       grid: {
         left: '2%',
         right: '2%',
-        bottom: '8%',
+        bottom: '14%',
         top: '5%',
         containLabel: true
       },
@@ -267,7 +267,7 @@ function MetricMiniChartComponent({
       },
       legend: {
         show: seriesKeys.length > 1,
-        bottom: 0,
+        bottom: 2,
         textStyle: {
           color: '#9ca3af',
           fontSize: 9,
@@ -280,36 +280,34 @@ function MetricMiniChartComponent({
 
   return (
     <div
-      className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500/20 p-6 group ${
+      className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500/20 p-4 group ${
         !hasData ? 'opacity-60' : ''
       }`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="text-2xl text-gray-800 dark:text-white">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          <div className="text-xl text-gray-800 dark:text-white">
             {metric.id === 'temperatura' ? '🌡' : metric.id === 'humedad' ? '💧' : '⚡'}
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white font-mono tracking-wider">
-              {metric.title}
-            </h3>
-          </div>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white font-mono tracking-wider">
+            {metric.title}
+          </h3>
         </div>
-        {!hasData && (
-          <span className="px-2 py-1 text-xs font-bold rounded-full border bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 font-mono tracking-wider">
-            NODO OBSERVADO
+        <div className="flex items-baseline space-x-1">
+          <span className="text-2xl font-bold text-blue-500 font-mono">
+            {hasData && typeof currentValue === 'number' ? currentValue.toFixed(1) : '--'}
           </span>
-        )}
+          <span className="text-xs text-neutral-400 font-mono">{metric.unit}</span>
+        </div>
       </div>
 
-      <div className="flex items-baseline justify-end space-x-2 mb-4">
-        <span className="text-3xl font-bold text-blue-500 font-mono">
-          {hasData && typeof currentValue === 'number' ? currentValue.toFixed(1) : '--'}
+      {!hasData && (
+        <span className="px-2 py-1 text-xs font-bold rounded-full border bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 font-mono tracking-wider mb-2">
+          NODO OBSERVADO
         </span>
-        <span className="text-sm text-neutral-400 font-mono">{metric.unit}</span>
-      </div>
+      )}
 
-      <div className="h-32 mb-4">
+      <div className="h-28 mb-2">
         {hasData ? (
           <div style={{ width: '100%', height: '100%' }}>
             <ReactECharts
@@ -331,7 +329,7 @@ function MetricMiniChartComponent({
       {hasData && (
         <button
           onClick={() => onOpenAnalysis(metric)}
-          className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 text-sm font-mono"
+          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 text-xs font-mono mx-auto block"
         >
           📈 Análisis Detallado
         </button>
