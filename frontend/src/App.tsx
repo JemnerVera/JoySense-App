@@ -191,17 +191,14 @@ const AppContentInternal: React.FC<{
 
   // Handler para filtros del dashboard desde DashboardFilters
   const handleDashboardFiltersChange = (filters: {
-    entidadId: number | null;
     ubicacionId: number | null;
     startDate: string;
     endDate: string;
   }) => {
     
-    // Encontrar la entidad y ubicación por ID
-    const entidad = entidades.find(e => e.entidadid === filters.entidadId);
+    // Encontrar la ubicación por ID
     const ubicacion = ubicaciones.find(u => u.ubicacionid === filters.ubicacionId);
     
-    setDashboardSelectedEntidad(entidad || null);
     setDashboardSelectedUbicacion(ubicacion || null);
     setDashboardStartDate(filters.startDate);
     setDashboardEndDate(filters.endDate);
@@ -1843,12 +1840,10 @@ const AppContentInternal: React.FC<{
                 selectedPais={null}
                 selectedEmpresa={null}
                 selectedFundo={dashboardSelectedFundo}
-                selectedEntidad={dashboardSelectedEntidad}
                 selectedUbicacion={dashboardSelectedUbicacion}
                 startDate={dashboardStartDate}
                 endDate={dashboardEndDate}
                 onFundoChange={handleDashboardFundoChange}
-                onEntidadChange={handleDashboardEntidadChange}
                 onUbicacionChange={handleDashboardUbicacionChange}
                 onDateFilter={handleDashboardDateFilter}
                 onResetFilters={handleDashboardReset}
@@ -2165,12 +2160,10 @@ const AppContentInternal: React.FC<{
             selectedPais={null}
             selectedEmpresa={null}
             selectedFundo={dashboardSelectedFundo}
-            selectedEntidad={dashboardSelectedEntidad}
             selectedUbicacion={dashboardSelectedUbicacion}
             startDate={dashboardStartDate}
             endDate={dashboardEndDate}
             onFundoChange={handleDashboardFundoChange}
-            onEntidadChange={handleDashboardEntidadChange}
             onUbicacionChange={handleDashboardUbicacionChange}
             onDateFilter={handleDashboardDateFilter}
             onResetFilters={handleDashboardReset}
@@ -2734,10 +2727,8 @@ const AppContentInternal: React.FC<{
                       ubicaciones={ubicaciones}
                       entidades={entidades}
                       selectedFundo={dashboardSelectedFundo}
-                      selectedEntidad={dashboardSelectedEntidad}
                       selectedUbicacion={dashboardSelectedUbicacion}
                       onFundoChange={handleDashboardFundoChange}
-                      onEntidadChange={handleDashboardEntidadChange}
                       onUbicacionChange={handleDashboardUbicacionChange}
                       startDate={dashboardStartDate}
                       endDate={dashboardEndDate}

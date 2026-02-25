@@ -1025,7 +1025,6 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [showDetailedAnalysis])
 
   const handleFiltersUpdate = useCallback((newFilters: {
-    entidadId: number | null;
     ubicacionId: number | null;
     fundoId?: number | null;
     empresaId?: number | null;

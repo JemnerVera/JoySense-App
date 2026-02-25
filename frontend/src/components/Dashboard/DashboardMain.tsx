@@ -5,12 +5,10 @@ interface DashboardMainProps {
   selectedPais?: any;
   selectedEmpresa?: any;
   selectedFundo?: any;
-  selectedEntidad?: any;
   selectedUbicacion?: any;
   startDate?: string;
   endDate?: string;
   onFundoChange?: (fundo: any) => void;
-  onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
   onDateFilter?: (start: string, end: string) => void;
   onResetFilters?: () => void;
@@ -20,12 +18,10 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
   selectedPais,
   selectedEmpresa,
   selectedFundo,
-  selectedEntidad,
   selectedUbicacion,
   startDate,
   endDate,
   onFundoChange,
-  onEntidadChange,
   onUbicacionChange,
   onDateFilter,
   onResetFilters
@@ -37,12 +33,10 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
         selectedPais={selectedPais}
         selectedEmpresa={selectedEmpresa}
         selectedFundo={selectedFundo}
-        selectedEntidad={selectedEntidad}
         selectedUbicacion={selectedUbicacion}
         startDate={startDate}
         endDate={endDate}
         onFundoChange={onFundoChange}
-        onEntidadChange={onEntidadChange}
         onUbicacionChange={onUbicacionChange}
         onDateFilter={onDateFilter}
         onResetFilters={onResetFilters}
