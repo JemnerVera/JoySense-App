@@ -7,14 +7,12 @@ interface DynamicHierarchyProps {
   selectedPais?: any;
   selectedEmpresa?: any;
   selectedFundo?: any;
-  selectedEntidad?: any;
   selectedUbicacion?: any;
   startDate?: string;
   endDate?: string;
   onPaisChange?: (pais: any) => void;
   onEmpresaChange?: (empresa: any) => void;
   onFundoChange?: (fundo: any) => void;
-  onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
   onDateFilter?: (start: string, end: string) => void;
   onResetFilters?: () => void;
@@ -24,14 +22,12 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   selectedPais,
   selectedEmpresa,
   selectedFundo,
-  selectedEntidad,
   selectedUbicacion,
   startDate,
   endDate,
   onPaisChange,
   onEmpresaChange,
   onFundoChange,
-  onEntidadChange,
   onUbicacionChange,
   onDateFilter,
   onResetFilters
@@ -73,7 +69,7 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   // Cargar mediciones cuando cambien los filtros
   useEffect(() => {
     const loadMediciones = async () => {
-      if (!selectedEntidad?.entidadid || !selectedUbicacion?.ubicacionid || !startDate || !endDate) {
+      if (!selectedUbicacion?.ubicacionid || !startDate || !endDate) {
         setMediciones([]);
         return;
       }
@@ -83,14 +79,12 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
 
       try {
         console.log('🔍 DynamicHierarchy: Cargando mediciones con filtros:', {
-          entidadId: selectedEntidad.entidadid,
           ubicacionId: selectedUbicacion.ubicacionid,
           startDate,
           endDate
         });
 
         const data = await JoySenseService.getMediciones({
-          entidadId: selectedEntidad.entidadid,
           ubicacionId: selectedUbicacion.ubicacionid,
           startDate,
           endDate

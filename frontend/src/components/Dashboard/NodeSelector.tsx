@@ -11,7 +11,6 @@ interface NodeSelectorProps {
   onNodeSelect: (nodeData: NodeData) => void
   onNodeClear?: () => void
   onFiltersUpdate: (filters: {
-    entidadId: number | null;
     ubicacionId: number | null;
     fundoId?: number | null;
     empresaId?: number | null;
@@ -101,7 +100,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setSearchTerm('');
     // Notificar al padre que se han reseteado los filtros
     onFiltersUpdate({
-      entidadId: null,
       ubicacionId: null
     });
     // Notificar al padre que se ha limpiado el nodo
@@ -221,7 +219,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     // Actualizar filtros del dashboard
     onFiltersUpdate({
-      entidadId: node.entidad?.entidadid || 0,
       ubicacionId: node.ubicacionid,
       fundoId: node.ubicacion?.fundoid || 0,
       empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
@@ -274,7 +271,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
     // Actualizar filtros del dashboard
     onFiltersUpdate({
-      entidadId: node.entidad?.entidadid || 0,
       ubicacionId: node.ubicacionid,
       fundoId: node.ubicacion?.fundoid || 0,
       empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
@@ -311,8 +307,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
                 // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
                 onFiltersUpdate({
-                  entidadId: null, // Sin filtro de entidad
-                  ubicacionId: null, // Sin filtro de ubicación
+                  ubicacionId: null,
                   fundoId: null,
                   empresaId: null,
                   paisId: null

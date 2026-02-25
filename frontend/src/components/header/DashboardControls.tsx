@@ -8,15 +8,11 @@ interface DashboardControlsProps {
   onPaisChange: (pais: any) => void;
   onEmpresaChange: (empresa: any) => void;
   onResetFilters: () => void;
-  // Nuevas props para conectar con el dashboard
   fundos?: any[];
   ubicaciones?: any[];
-  entidades?: any[];
   selectedFundo?: any;
-  selectedEntidad?: any;
   selectedUbicacion?: any;
   onFundoChange?: (fundo: any) => void;
-  onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
   startDate?: string;
   endDate?: string;
@@ -29,12 +25,9 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   onResetFilters,
   fundos = [],
   ubicaciones = [],
-  entidades = [],
   selectedFundo,
-  selectedEntidad,
   selectedUbicacion,
   onFundoChange,
-  onEntidadChange,
   onUbicacionChange,
   startDate = '',
   endDate = '',
@@ -45,18 +38,15 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     selectedEmpresa: !!selectedEmpresa,
     fundos: fundos.length,
     ubicaciones: ubicaciones.length,
-    entidades: entidades.length,
     selectedFundo: !!selectedFundo,
-    selectedEntidad: !!selectedEntidad,
     selectedUbicacion: !!selectedUbicacion
   });
   
   // Debug específico para el problema de ubicaciones
   console.log('🔍 DashboardControls - Debug ubicaciones:', {
     selectedFundo: selectedFundo,
-    selectedEntidad: selectedEntidad,
     ubicaciones: ubicaciones,
-    condicionUbicacion: !!(selectedPais && selectedEmpresa && selectedFundo && selectedEntidad)
+    condicionUbicacion: !!(selectedPais && selectedEmpresa && selectedFundo)
   });
   // Función helper para formatear fechas correctamente
   const formatDateForDisplay = (dateString: string) => {
@@ -73,7 +63,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     }
   };
   const [isFundoDropdownOpen, setIsFundoDropdownOpen] = useState(false);
-  const [isEntidadDropdownOpen, setIsEntidadDropdownOpen] = useState(false);
   const [isUbicacionDropdownOpen, setIsUbicacionDropdownOpen] = useState(false);
   const [isFechasDropdownOpen, setIsFechasDropdownOpen] = useState(false);
   const [localStartDate, setLocalStartDate] = useState('');
@@ -81,7 +70,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   
   const fundoDropdownRef = useRef<HTMLDivElement>(null);
-  const entidadDropdownRef = useRef<HTMLDivElement>(null);
   const ubicacionDropdownRef = useRef<HTMLDivElement>(null);
   const fechasDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -96,9 +84,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (fundoDropdownRef.current && !fundoDropdownRef.current.contains(event.target as Node)) {
         setIsFundoDropdownOpen(false);
-      }
-      if (entidadDropdownRef.current && !entidadDropdownRef.current.contains(event.target as Node)) {
-        setIsEntidadDropdownOpen(false);
       }
       if (ubicacionDropdownRef.current && !ubicacionDropdownRef.current.contains(event.target as Node)) {
         setIsUbicacionDropdownOpen(false);
@@ -116,14 +101,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
 
   const toggleFundoDropdown = () => {
     setIsFundoDropdownOpen(!isFundoDropdownOpen);
-    setIsEntidadDropdownOpen(false);
-    setIsUbicacionDropdownOpen(false);
-    setIsFechasDropdownOpen(false);
-  };
-
-  const toggleEntidadDropdown = () => {
-    setIsEntidadDropdownOpen(!isEntidadDropdownOpen);
-    setIsFundoDropdownOpen(false);
     setIsUbicacionDropdownOpen(false);
     setIsFechasDropdownOpen(false);
   };
@@ -131,14 +108,12 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   const toggleUbicacionDropdown = () => {
     setIsUbicacionDropdownOpen(!isUbicacionDropdownOpen);
     setIsFundoDropdownOpen(false);
-    setIsEntidadDropdownOpen(false);
     setIsFechasDropdownOpen(false);
   };
 
   const toggleFechasDropdown = () => {
     setIsFechasDropdownOpen(!isFechasDropdownOpen);
     setIsFundoDropdownOpen(false);
-    setIsEntidadDropdownOpen(false);
     setIsUbicacionDropdownOpen(false);
   };
 
@@ -147,13 +122,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
       onFundoChange(fundo);
     }
     setIsFundoDropdownOpen(false);
-  };
-
-  const handleEntidadSelect = (entidad: any) => {
-    if (onEntidadChange) {
-      onEntidadChange(entidad);
-    }
-    setIsEntidadDropdownOpen(false);
   };
 
   const handleUbicacionSelect = (ubicacion: any) => {
@@ -185,7 +153,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     
     // Cerrar todos los dropdowns
     setIsFundoDropdownOpen(false);
-    setIsEntidadDropdownOpen(false);
     setIsUbicacionDropdownOpen(false);
     setIsFechasDropdownOpen(false);
     setShowResetConfirmation(false);

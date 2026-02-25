@@ -22,17 +22,14 @@ interface UserHeaderProps {
   ubicaciones?: any[];
   entidades?: any[];
   selectedFundo?: any;
-  selectedEntidad?: any;
   selectedUbicacion?: any;
   onFundoChange?: (fundo: any) => void;
-  onEntidadChange?: (entidad: any) => void;
   onUbicacionChange?: (ubicacion: any) => void;
   startDate?: string;
   endDate?: string;
   onDateFilter?: (start: string, end: string) => void;
   // Callback para filtros del dashboard
   onDashboardFiltersChange?: (filters: {
-    entidadId: number | null;
     ubicacionId: number | null;
     startDate: string;
     endDate: string;
@@ -54,12 +51,9 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   // Nuevas props para el dashboard
   fundos = [],
   ubicaciones = [],
-  entidades = [],
   selectedFundo,
-  selectedEntidad,
   selectedUbicacion,
   onFundoChange,
-  onEntidadChange,
   onUbicacionChange,
   startDate = '',
   endDate = '',
