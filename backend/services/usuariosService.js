@@ -454,11 +454,6 @@ const search = async (supabase, query) => {
       };
     });
 };
-
-
-// ELIMINADA: searchWithEmpresas - usaba fn_obtener_usuarios_con_empresas que no existe en Supabase
-// Usa search() en su lugar
-
 module.exports = {
   getUsuarios,
   getColumns,
