@@ -8,6 +8,7 @@ import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils'
 
 interface NodeSelectorProps {
   selectedUbicacionId: number | null
+  selectedNodeFromParent?: NodeData | null
   onNodeSelect: (nodeData: NodeData) => void
   onNodeClear?: () => void
   onFiltersUpdate: (filters: {
@@ -21,6 +22,7 @@ interface NodeSelectorProps {
 
 export const NodeSelector: React.FC<NodeSelectorProps> = ({
   selectedUbicacionId,
+  selectedNodeFromParent,
   onNodeSelect,
   onNodeClear,
   onFiltersUpdate,
@@ -293,9 +295,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }, [])
 
   return (
-    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg px-4 py-2 mb-2 flex flex-col flex-1 min-h-0">
-      <div className="flex items-center justify-between mb-2 flex-shrink-0">
-        <h3 className="text-lg font-bold text-blue-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
+    <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg px-2 py-1 mb-1 flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between mb-1 flex-shrink-0">
+        <h3 className="text-sm font-bold text-blue-500 font-mono tracking-wider">{t('dashboard.select_node')}</h3>
 
         <div className="flex items-center gap-3">
           {/* Botón de cancelar selección - Al costado izquierdo del searchbar */}
@@ -303,9 +305,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
             <button
               onClick={() => {
                 setSelectedNode(null)
-                onNodeSelect(null as any) // Notificar que se canceló la selección
+                onNodeSelect(null as any)
 
-                // Limpiar filtros del dashboard para mostrar todos los nodos disponibles
                 onFiltersUpdate({
                   ubicacionId: null,
                   fundoId: null,
@@ -313,28 +314,25 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                   paisId: null
                 })
 
-                // También limpiar los filtros del header
                 if (onUbicacionChange) onUbicacionChange(null)
 
-                // Limpiar también el contexto global de filtros
                 setUbicacionSeleccionada(null)
                 
-                // Limpiar el ref de última ubicación procesada y ubicación pendiente
                 lastProcessedUbicacionId.current = null
                 pendingUbicacion.current = null
               }}
-              className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-mono tracking-wider transition-colors flex items-center gap-2"
+              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded font-mono tracking-wider transition-colors flex items-center gap-1"
               title="Cancelar selección"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <span className="text-sm">CANCELAR</span>
+              <span className="text-xs">CANCELAR</span>
             </button>
           )}
 
           {/* Combobox con searchbar */}
-        <div className="relative w-96" ref={searchDropdownRef}>
+        <div className="relative w-72" ref={searchDropdownRef}>
           <div className="relative">
             <input
               type="text"
@@ -345,7 +343,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
               placeholder={t('dashboard.search_node_placeholder')}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-mono text-sm"
+              className="w-full px-3 py-1 bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 font-mono text-xs"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <svg className="w-4 h-4 text-gray-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,7 +411,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
 
       {/* Mapa con nodos filtrados */}
-      <div className="w-full flex-1 min-h-0">
+      <div className={`w-full flex-1 min-h-0 ${selectedNodeFromParent ? 'h-[30%]' : 'h-full'}`}>
         <InteractiveMap
           nodes={filteredNodes}
           selectedNode={selectedNode}

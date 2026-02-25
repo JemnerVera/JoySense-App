@@ -1898,9 +1898,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [])
 
   return (
-    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-screen'} bg-gray-50 dark:bg-neutral-900 overflow-x-hidden overflow-y-auto dashboard-scrollbar-blue`}>
+    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-[calc(100vh-80px)]'} bg-gray-50 dark:bg-neutral-900 overflow-x-hidden overflow-hidden`}>
       {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
-      <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'w-full px-2 py-2 h-full flex flex-col'}`}>
+      <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'w-full px-2 py-1 h-full flex flex-col'}`}>
 
         {/* Error State */}
         {error && (
@@ -1952,6 +1952,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         {/* Node Selector Console */}
         <NodeSelector
           selectedUbicacionId={filters.ubicacionId}
+          selectedNodeFromParent={selectedNode}
           onNodeSelect={handleNodeSelect}
           onNodeClear={handleNodeClear}
           onFiltersUpdate={handleFiltersUpdate}
@@ -1968,7 +1969,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
         {/* Metrics Cards - Solo mostrar cuando hay un nodo seleccionado Y no está cargando */}
         {!loading && !error && availableMetrics.length > 0 && selectedNode && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 w-full mb-1">
             {availableMetrics.map((metric) => {
               const hasData = hasMetricDataOptimized(metric.dataKey)
               const currentValue = hasData ? getCurrentValueOptimized(metric.dataKey) : 0
