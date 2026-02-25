@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 
 interface DashboardLineChartProps {
-  entidadId: number | null;
   ubicacionId: number | null;
   startDate: string;
   endDate: string;
@@ -21,7 +20,6 @@ interface MeasurementData {
 }
 
 export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
-  entidadId,
   ubicacionId,
   startDate,
   endDate
@@ -43,7 +41,7 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
   // Cargar datos de mediciones
   const loadMeasurementData = async () => {
     
-    if (!entidadId || !ubicacionId || !startDate || !endDate) {
+    if (!ubicacionId || !startDate || !endDate) {
       setMeasurementData([]);
       return;
     }
@@ -54,7 +52,6 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
 
       // Obtener datos reales de mediciones del backend
       const medicionesResponse = await JoySenseService.getMediciones({
-        entidadId,
         ubicacionId,
         startDate,
         endDate
@@ -134,7 +131,7 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
 
   useEffect(() => {
     loadMeasurementData();
-  }, [entidadId, ubicacionId, startDate, endDate]);
+  }, [ubicacionId, startDate, endDate]);
 
   const toggleMetrica = (metricaId: number) => {
     setSelectedMetricas(prev => 
@@ -193,12 +190,12 @@ export const DashboardLineChart: React.FC<DashboardLineChartProps> = ({
     );
   }
 
-  if (!entidadId || !ubicacionId) {
+  if (!ubicacionId) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="text-gray-500 text-4xl mb-2">📊</div>
-          <p className="text-gray-400">Selecciona entidad y ubicación para ver el gráfico</p>
+          <p className="text-gray-400">Selecciona ubicación para ver el gráfico</p>
         </div>
       </div>
     );
