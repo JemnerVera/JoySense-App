@@ -294,11 +294,10 @@ const updateNodo = async (supabase, id, data) => {
 // ============================================================================
 
 /**
- * [METODO FALLBACK] Reconstruye localizaciones cargando métricas y sensores manualmente.
- * Evita errores PGRST200 (relaciones no encontradas).
+ * Obtiene localizaciones con métricas y sensores relacionados.
  */
-const _getLocalizacionesFallback = async (supabase, { nodoid, ubicacionId }) => {
-  logger.info(`[geografiaService] Ejecutando Fallback para getLocalizaciones (nodoid: ${nodoid || 'N/A'})`);
+const _getLocalizacionesWithMetrics = async (supabase, { nodoid, ubicacionId }) => {
+  logger.info(`[geografiaService] Obteniendo localizaciones con métricas (nodoid: ${nodoid || 'N/A'})`);
   
   let query = supabase
     .schema(dbSchema)
@@ -380,20 +379,17 @@ const _getLocalizacionesFallback = async (supabase, { nodoid, ubicacionId }) => 
 };
 
 /**
- * Obtener localizaciones con sus relaciones.
- * Intenta usar RPC optimizado, si falla usa el Fallback manual.
+ * Obtiene localizaciones con sus relaciones.
  */
 const getLocalizaciones = async (supabase, { nodoid, ubicacionId }) => {
-  // [METODO DIRECTO] - RLS maneja los permisos correctamente
-  // Eliminado RPC fn_get_localizaciones_detalle ya que RLS funciona mejor
-  return await _getLocalizacionesFallback(supabase, { nodoid, ubicacionId });
+  return await _getLocalizacionesWithMetrics(supabase, { nodoid, ubicacionId });
 };
 
 /**
- * Obtener lista simple de localizaciones.
+ * Obtiene lista simple de localizaciones.
  */
 const getLocalizacionesSimple = async (supabase) => {
-  return await _getLocalizacionesFallback(supabase, {});
+  return await _getLocalizacionesWithMetrics(supabase, {});
 };
 
 /**
@@ -426,8 +422,7 @@ const updateLocalizacion = async (supabase, id, data) => {
 };
 
 /**
- * Resuelve los nodoid que pertenecen al fundo/empresa/país indicado (para filtrar antes del limit).
- * Así al elegir fundo CALIFORNIA se devuelven todos los nodos de ese fundo, no solo los primeros N globales.
+ * Resuelve los nodoid que pertenecen al fundo/empresa/país indicado.
  */
 const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId }) => {
   const fid = fundoId != null && fundoId !== '' ? parseInt(fundoId, 10) : null;
@@ -489,14 +484,13 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   const nodoids = await _resolveNodoidsByGeografia(supabase, { fundoId, empresaId, paisId });
   const hasFilter = Array.isArray(nodoids);
   if (hasFilter && nodoids.length === 0) {
-    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Filtro aplicado pero sin nodoids, retornando []`);
+    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Filtro geográfico sin resultados`);
     return [];
   }
 
-  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Ejecutando Fallback (limit: ${limit}, filtro geografía: ${hasFilter ? 'sí (nodoids: ' + nodoids?.length + ')' : 'no'})`);
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Consultando nodos (limit: ${limit}, filtro: ${hasFilter ? 'sí (' + nodoids?.length + ' nodos)' : 'no'})`);
 
-  // CAMBIO CRÍTICO: Consultar NODO directamente en lugar de LOCALIZACION
-  // Así el limit se aplica a nodos (no a localizaciones), y obtenemos todos los nodos
+  // Consultar nodos activos (aplica limit a nodos, no a localizaciones)
   let query = supabase
     .schema(dbSchema)
     .from('nodo')
@@ -532,7 +526,6 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     .limit(parseInt(limit, 10) || 1000);
 
   if (hasFilter) {
-    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Aplicando filtro .in('nodoid', ${nodoids?.length} nodos)`);
     query = query.in('nodoid', nodoids);
   }
 
@@ -549,17 +542,15 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     return [];
   }
 
-  // OPTIMIZACIÓN: Obtener localizaciones con paginación correcta
-  // Supabase tiene un límite máximo de 1000 filas por query con .range()
-  // Se usa pageSize=1000 y se pagina hasta obtener TODAS las localizaciones
+  // Obtener todas las localizaciones para los nodos obtenidos (paginación para >1000 filas)
   const nodoidList = nodos.map(n => n.nodoid);
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   
   let localizacionesData = [];
-  const pageSize = 1000; // Límite máximo de Supabase para .range() - NO cambiar a valores mayores
+  const pageSize = 1000;
   let page = 0;
   let hasMore = true;
-  const maxPages = 50; // Aumentado para permitir hasta 50,000 localizaciones (50 páginas * 1000)
+  const maxPages = 50;
   
   while (hasMore && page < maxPages) {
     const start = page * pageSize;
@@ -593,11 +584,10 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   }
   
   if (page >= maxPages) {
-    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar. Total obtenido: ${localizacionesData.length}`);
+    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Límite de páginas alcanzado (${maxPages}). Total: ${localizacionesData.length}`);
   }
   
-  // VALIDACIÓN FINAL: Verificar que se obtuvieron todas las localizaciones esperadas
-  // Obtener el total esperado de localizaciones para estos nodos
+  // Validar total de localizaciones obtenidas
   const { count: totalLocalizacionesEsperadas, error: countError } = await supabase
     .schema(dbSchema)
     .from('localizacion')
@@ -607,12 +597,12 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   
   if (!countError && totalLocalizacionesEsperadas !== null) {
     if (localizacionesData.length < totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se esperaban ${totalLocalizacionesEsperadas} pero se obtuvieron ${localizacionesData.length}`);
+      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Diferencia en total: esperado=${totalLocalizacionesEsperadas}, obtenido=${localizacionesData.length}`);
     } else if (localizacionesData.length > totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se obtuvieron ${localizacionesData.length} pero se esperaban ${totalLocalizacionesEsperadas}`);
+      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Diferencia en total: obtenido=${localizacionesData.length}, esperado=${totalLocalizacionesEsperadas}`);
     }
   } else if (countError) {
-    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ No se pudo validar el total esperado de localizaciones:`, countError);
+    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] No se pudo validar total de localizaciones:`, countError);
   }
   
   // Log de nodoid únicos en las localizaciones
@@ -645,13 +635,11 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     metricasMap = new Map((metricasRes.data || []).map(m => [m.metricaid, m]));
   }
 
-  // OPTIMIZACIÓN: Filtrar localizaciones para asegurar que solo procesemos las que pertenecen a nodos válidos
-  // Esto evita el problema de localizaciones con nodoids que no están en la lista de nodos obtenidos
+  // Filtrar localizaciones que pertenecen a nodos válidos
   const nodoidSet = new Set(nodoidList);
   const localizacionesValidas = localizacionesData.filter(loc => nodoidSet.has(loc.nodoid));
 
-  // Formatear respuesta: retornar como si vinieran de localizaciones (compatibilidad con frontend)
-  // Crear Map de nodoid→nodo para búsqueda O(1) en lugar de O(n)
+  // Formatear respuesta
   const nodosMap = new Map(nodos.map(n => [n.nodoid, n]));
   const resultado = [];
   const nodosSinLocalizaciones = new Set(nodoidList); // Trackear nodos que no tienen localizaciones
@@ -659,9 +647,9 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   localizacionesValidas.forEach(loc => {
     const nodoRaw = nodosMap.get(loc.nodoid);
     
-    // VALIDACIÓN CRÍTICA: Asegurar que el nodo existe
+    // Verificar que el nodo existe
     if (!nodoRaw) {
-      logger.error(`[getNodosConLocalizacionDashboardPrincipal] ERROR CRÍTICO: Localización ${loc.localizacionid} tiene nodoid=${loc.nodoid} pero el nodo no está en nodosMap`);
+      logger.error(`[getNodosConLocalizacionDashboardPrincipal] Localización ${loc.localizacionid} con nodoid inválido: ${loc.nodoid}`);
       return;
     }
     
@@ -673,7 +661,7 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     const empresaRaw = fundoRaw?.empresa ? (Array.isArray(fundoRaw.empresa) ? fundoRaw.empresa[0] : fundoRaw.empresa) : null;
     const paisRaw = empresaRaw?.pais ? (Array.isArray(empresaRaw.pais) ? empresaRaw.pais[0] : empresaRaw.pais) : null;
 
-    // VALIDACIÓN: Asegurar que formattedNodo nunca sea null
+    // Estructurar datos del nodo
     const formattedNodo = {
       ...nodoRaw,
       ubicacion: ubicacionRaw ? {
@@ -708,7 +696,7 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
 
   const localizacionesSinNodo = resultado.filter(r => !r.nodo || !r.nodo.nodoid);
   if (localizacionesSinNodo.length > 0) {
-    logger.error(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido`);
+    logger.error(`[getNodosConLocalizacionDashboardPrincipal] ${localizacionesSinNodo.length} localizaciones sin nodo válido`);
   }
   
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos)`);
@@ -716,10 +704,8 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
 };
 
 /**
- * Obtener nodos con localización para el dashboard.
- * Intenta método principal primero, si falla usa fallback simple.
- * Acepta filtros opcionales fundoId, empresaId, paisId para devolver solo nodos de esa geografía
- * (evita que el limit recorte por orden global y falten puntos en el mapa).
+ * Obtiene nodos con sus localizaciones para el dashboard.
+ * Acepta filtros opcionales: fundoId, empresaId, paisId.
  */
 const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
   const limit = query.limit != null ? parseInt(query.limit, 10) : 1000;
@@ -734,10 +720,10 @@ const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
   };
 
   try {
-    logger.info(`[getNodosConLocalizacionDashboard] Ejecutando método PRINCIPAL`);
+    logger.info(`[getNodosConLocalizacionDashboard] Ejecutando método principal`);
     return await _getNodosConLocalizacionDashboardPrincipal(supabase, params);
   } catch (error) {
-    logger.warn(`[getNodosConLocalizacionDashboard] Método principal falló: ${error.message}. Ejecutando fallback...`);
+    logger.warn(`[getNodosConLocalizacionDashboard] Método principal falló: ${error.message}. Usando fallback...`);
     try {
       return await _getNodosConLocalizacionDashboardFallback(supabase, params);
     } catch (fallbackError) {
@@ -748,8 +734,7 @@ const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
 };
 
 /**
- * [FALLBACK SIMPLE] Consulta básica de nodos con localizaciones.
- * Versión simplificada sin paginación compleja para casos de emergencia.
+ * Fallback: Consulta básica de nodos con localizaciones (sin paginación).
  */
 const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fundoId, empresaId, paisId }) => {
   logger.info(`[getNodosConLocalizacionDashboardFallback] Ejecutando fallback simple (limit=${limit})`);

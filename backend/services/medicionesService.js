@@ -29,7 +29,7 @@ exports.getMedicionesCount = async (supabase, { localizacionId, startDate, endDa
 };
 
 /**
- * [METODO FALLBACK] Carga métricas y sensores manualmente para evitar errores de PGRST200.
+ * Carga métricas y sensores manualmente para enriquecer las mediciones.
  */
 const _loadMedicionesDetailsFallback = async (supabase, data) => {
   if (!data || data.length === 0) return [];
@@ -99,7 +99,6 @@ const _loadMedicionesDetailsFallback = async (supabase, data) => {
 
 /**
  * Obtiene mediciones con filtros y carga datos relacionados.
- * Utiliza carga manual de detalles (Fallback) por defecto para máxima compatibilidad.
  */
 exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, limit = 1000, getAll = false }) => {
   let query = supabase
@@ -165,16 +164,14 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
 
 /**
  * Obtiene mediciones optimizadas para el dashboard.
- * Método directo usando RLS para control de permisos.
  */
 exports.getMedicionesDashboard = async (supabase, { nodoid, startDate, endDate, limit = 1000, getAll = false }) => {
-  // [METODO DIRECTO] - RLS ya maneja los permisos correctamente
-  // Eliminado RPC fn_get_mediciones_dashboard ya que RLS funciona mejor
   return await this.getMedicionesWithDetails(supabase, { nodoid, startDate, endDate, limit, getAll });
 };
 
 /**
- * Obtiene mediciones con carga manual de métricas y sensores (Fallback manual).
+ * Obtiene mediciones con carga manual de métricas y sensores.
+ */
  * Resuelve nodoid -> localizaciones si es necesario.
  */
 exports.getMedicionesWithDetails = async (supabase, { localizacionId, nodoid, startDate, endDate, limit = 1000, getAll = false }) => {
@@ -371,7 +368,6 @@ exports.getSensorValorError = async (supabase, { limit = 100 }) => {
 
 /**
  * Obtiene las últimas mediciones por lote para un dashboard.
- * Utiliza carga manual de detalles (Fallback) para máxima compatibilidad.
  */
 exports.getUltimasMedicionesPorLote = async (supabase, { fundoIds, metricaId, startDate, endDate }) => {
   const fundoIdArray = String(fundoIds).split(',').map(Number);
