@@ -427,12 +427,6 @@ const search = async (req, res) => {
   }
 };
 
-/**
- * Búsqueda de usuarios con empresas
- */
-
-// ELIMINADA: searchWithEmpresas - usaba fn_obtener_usuarios_con_empresas que no existe
-
 module.exports = {
   getUsuarios,
   getUsuarioColumns,
