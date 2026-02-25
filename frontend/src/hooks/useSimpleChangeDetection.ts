@@ -271,18 +271,6 @@ export const useSimpleChangeDetection = () => {
 
     // Para formularios múltiples, verificar si hay datos
     const hasMultipleDataChanges = (() => {
-      if (selectedTable === 'sensor' && activeSubTab === 'massive') {
-        // Para sensor masivo, solo verificar si hay nodo seleccionado
-        const hasNodo = formData.nodoid && formData.nodoid !== null;
-        return hasNodo;
-      }
-      
-      if (selectedTable === 'metricasensor' && activeSubTab === 'massive') {
-        // Para metricasensor masivo, solo verificar si hay entidad seleccionada
-        const hasEntidad = formData.entidadid && formData.entidadid !== null;
-        return hasEntidad;
-      }
-      
       // Para sensor y metricasensor en pestaña "Crear", verificar estados específicos
       if (selectedTable === 'sensor' && activeSubTab === 'insert') {
         // Verificar si multipleData tiene la estructura extendida

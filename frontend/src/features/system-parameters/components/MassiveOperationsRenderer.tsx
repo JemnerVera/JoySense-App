@@ -4,8 +4,6 @@
 
 import React from 'react';
 import { MassiveUmbralForm, MassiveLocalizacionForm } from '../../../components/shared/forms';
-// import { MassiveSensorForm } from '../../../components/shared/forms';
-// import { MassiveMetricaSensorForm } from '../../../components/shared/forms';
 
 interface MassiveOperationsRendererProps {
   selectedTable: string;
@@ -24,7 +22,6 @@ interface MassiveOperationsRendererProps {
   getFundoName: (fundoId: string) => string;
   onFormDataChange?: (massiveFormData: Record<string, any>) => void;
   localizacionesData?: any[];
-  entidadesData?: any[];
 }
 
 export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps> = ({
@@ -41,8 +38,7 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
   getEmpresaName,
   getFundoName,
   onFormDataChange,
-  localizacionesData,
-  entidadesData
+  localizacionesData
 }) => {
   if (!config?.allowMassive) return null;
 
@@ -66,20 +62,6 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
     );
   }
 
-  // Si es la tabla sensor, renderizar el formulario masivo de sensores
-  if (selectedTable === 'sensor') {
-    // return (
-    //   <MassiveSensorForm
-    //     getUniqueOptionsForField={getUniqueOptionsForField}
-    //     onApply={onApply}
-    //     onCancel={onCancel}
-    //     loading={formState.isSubmitting}
-    //     entidadesData={entidadesData || []}
-    //   />
-    // );
-    return <div>Formulario sensor masivo no disponible temporalmente</div>;
-  }
-
   // Si es la tabla localizacion, renderizar el formulario masivo de localizaciones
   if (selectedTable === 'localizacion') {
     return (
@@ -99,21 +81,7 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
     );
   }
 
-  // Si es la tabla metricasensor, renderizar el formulario masivo de metricasensor
-  if (selectedTable === 'metricasensor') {
-    // return (
-    //   <MassiveMetricaSensorForm
-    //     getUniqueOptionsForField={getUniqueOptionsForField}
-    //     onApply={onApply}
-    //     onCancel={onCancel}
-    //     loading={formState.isSubmitting}
-    //     onFormDataChange={onFormDataChange}
-    //   />
-    // );
-    return <div>Formulario métrica sensor masivo no disponible temporalmente</div>;
-  }
-
-  // Para otras tablas, mostrar mensaje de "próximamente"
+  // Para otras tablas, mostrar mensaje de no disponible
   return (
     <div className="text-center py-12">
       <div className="text-6xl mb-4">🚧</div>
@@ -121,9 +89,8 @@ export const MassiveOperationsRenderer: React.FC<MassiveOperationsRendererProps>
         Operaciones Masivas
       </h3>
       <p className="text-gray-500 dark:text-gray-400">
-        Las operaciones masivas para {config.displayName} estarán disponibles próximamente.
+        Las operaciones masivas para {config.displayName} no están disponibles.
       </p>
     </div>
   );
 };
-

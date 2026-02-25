@@ -1138,7 +1138,6 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
                   }
                 }}
                 localizacionesData={localizacionesData || []}
-                entidadesData={relatedDataForStatus.entidadesData || []}
               />
             )}
           </div>
