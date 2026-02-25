@@ -480,20 +480,20 @@ const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId
 };
 
 /**
- * [METODO FALLBACK MEJORADO] Consulta NODO directamente en lugar de localizacion.
+ * [METODO PRINCIPAL] Consulta NODO directamente en lugar de localizacion.
  * Esto garantiza que el limit se aplique sobre nodos (no localizaciones).
  * Si se envían fundoId/empresaId/paisId, primero se resuelven los nodoids y se filtra por ellos.
  */
-const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fundoId, empresaId, paisId }) => {
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Iniciando con limit=${limit}, fundoId=${fundoId}, empresaId=${empresaId}, paisId=${paisId}`);
+const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fundoId, empresaId, paisId }) => {
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Iniciando con limit=${limit}, fundoId=${fundoId}, empresaId=${empresaId}, paisId=${paisId}`);
   const nodoids = await _resolveNodoidsByGeografia(supabase, { fundoId, empresaId, paisId });
   const hasFilter = Array.isArray(nodoids);
   if (hasFilter && nodoids.length === 0) {
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Filtro aplicado pero sin nodoids, retornando []`);
+    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Filtro aplicado pero sin nodoids, retornando []`);
     return [];
   }
 
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Ejecutando Fallback (limit: ${limit}, filtro geografía: ${hasFilter ? 'sí (nodoids: ' + nodoids?.length + ')' : 'no'})`);
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Ejecutando Fallback (limit: ${limit}, filtro geografía: ${hasFilter ? 'sí (nodoids: ' + nodoids?.length + ')' : 'no'})`);
 
   // CAMBIO CRÍTICO: Consultar NODO directamente en lugar de LOCALIZACION
   // Así el limit se aplica a nodos (no a localizaciones), y obtenemos todos los nodos
@@ -532,20 +532,20 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     .limit(parseInt(limit, 10) || 1000);
 
   if (hasFilter) {
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Aplicando filtro .in('nodoid', ${nodoids?.length} nodos)`);
+    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Aplicando filtro .in('nodoid', ${nodoids?.length} nodos)`);
     query = query.in('nodoid', nodoids);
   }
 
   const { data: nodos, error: nodError } = await query;
 
   if (nodError) {
-    logger.error(`[getNodosConLocalizacionDashboardFallback] Error en query de nodos:`, nodError);
+    logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error en query de nodos:`, nodError);
     throw nodError;
   }
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Query devolvió ${(nodos || []).length} nodos (statusid=1)`);
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Query devolvió ${(nodos || []).length} nodos (statusid=1)`);
    
   if (!nodos || nodos.length === 0) {
-    logger.info(`[getNodosConLocalizacionDashboardFallback] Sin nodos, retornando []`);
+    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Sin nodos, retornando []`);
     return [];
   }
 
@@ -553,7 +553,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   // Supabase tiene un límite máximo de 1000 filas por query con .range()
   // Se usa pageSize=1000 y se pagina hasta obtener TODAS las localizaciones
   const nodoidList = nodos.map(n => n.nodoid);
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Obteniendo localizaciones para ${nodoidList.length} nodos`);
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   
   let localizacionesData = [];
   const pageSize = 1000; // Límite máximo de Supabase para .range() - NO cambiar a valores mayores
@@ -574,7 +574,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
       .range(start, end);
     
     if (localizacionesRes.error) {
-      logger.error(`[getNodosConLocalizacionDashboardFallback] Error en paginación página ${page}:`, localizacionesRes.error);
+      logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error en paginación página ${page}:`, localizacionesRes.error);
       throw localizacionesRes.error;
     }
     
@@ -587,13 +587,13 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
       page++;
       if (pageData.length < pageSize) {
         hasMore = false;
-        logger.info(`[getNodosConLocalizacionDashboardFallback] Última página (${pageData.length} < ${pageSize})`);
+        logger.info(`[getNodosConLocalizacionDashboardPrincipal] Última página (${pageData.length} < ${pageSize})`);
       }
     }
   }
   
   if (page >= maxPages) {
-    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar. Total obtenido: ${localizacionesData.length}`);
+    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se alcanzó el límite de páginas (${maxPages}). Puede haber más localizaciones sin cargar. Total obtenido: ${localizacionesData.length}`);
   }
   
   // VALIDACIÓN FINAL: Verificar que se obtuvieron todas las localizaciones esperadas
@@ -607,12 +607,12 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   
   if (!countError && totalLocalizacionesEsperadas !== null) {
     if (localizacionesData.length < totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se esperaban ${totalLocalizacionesEsperadas} pero se obtuvieron ${localizacionesData.length}`);
+      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se esperaban ${totalLocalizacionesEsperadas} pero se obtuvieron ${localizacionesData.length}`);
     } else if (localizacionesData.length > totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ Se obtuvieron ${localizacionesData.length} pero se esperaban ${totalLocalizacionesEsperadas}`);
+      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ Se obtuvieron ${localizacionesData.length} pero se esperaban ${totalLocalizacionesEsperadas}`);
     }
   } else if (countError) {
-    logger.warn(`[getNodosConLocalizacionDashboardFallback] ⚠️ No se pudo validar el total esperado de localizaciones:`, countError);
+    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ No se pudo validar el total esperado de localizaciones:`, countError);
   }
   
   // Log de nodoid únicos en las localizaciones
@@ -661,7 +661,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     
     // VALIDACIÓN CRÍTICA: Asegurar que el nodo existe
     if (!nodoRaw) {
-      logger.error(`[getNodosConLocalizacionDashboardFallback] ERROR CRÍTICO: Localización ${loc.localizacionid} tiene nodoid=${loc.nodoid} pero el nodo no está en nodosMap`);
+      logger.error(`[getNodosConLocalizacionDashboardPrincipal] ERROR CRÍTICO: Localización ${loc.localizacionid} tiene nodoid=${loc.nodoid} pero el nodo no está en nodosMap`);
       return;
     }
     
@@ -691,7 +691,7 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
 
     // VALIDACIÓN FINAL: Solo agregar si formattedNodo es válido
     if (!formattedNodo || !formattedNodo.nodoid) {
-      logger.error(`[getNodosConLocalizacionDashboardFallback] ERROR: formattedNodo inválido para localización ${loc.localizacionid}`);
+      logger.error(`[getNodosConLocalizacionDashboardPrincipal] ERROR: formattedNodo inválido para localización ${loc.localizacionid}`);
       return;
     }
 
@@ -708,16 +708,16 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
 
   const localizacionesSinNodo = resultado.filter(r => !r.nodo || !r.nodo.nodoid);
   if (localizacionesSinNodo.length > 0) {
-    logger.error(`[getNodosConLocalizacionDashboardFallback] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido`);
+    logger.error(`[getNodosConLocalizacionDashboardPrincipal] ⚠️ ERROR CRÍTICO: ${localizacionesSinNodo.length} localizaciones sin objeto nodo válido`);
   }
   
-  logger.info(`[getNodosConLocalizacionDashboardFallback] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos)`);
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos)`);
   return resultado;
 };
 
 /**
  * Obtener nodos con localización para el dashboard.
- * Método directo usando RLS para control de permisos.
+ * Intenta método principal primero, si falla usa fallback simple.
  * Acepta filtros opcionales fundoId, empresaId, paisId para devolver solo nodos de esa geografía
  * (evita que el limit recorte por orden global y falten puntos en el mapa).
  */
@@ -726,12 +726,91 @@ const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
   const fundoId = query.fundoId ?? query.fundoid ?? null;
   const empresaId = query.empresaId ?? query.empresaid ?? null;
   const paisId = query.paisId ?? query.paisid ?? null;
-  return await _getNodosConLocalizacionDashboardFallback(supabase, {
+  const params = {
     limit: Number.isFinite(limit) ? limit : 1000,
     fundoId: fundoId != null ? String(fundoId) : null,
     empresaId: empresaId != null ? String(empresaId) : null,
     paisId: paisId != null ? String(paisId) : null
+  };
+
+  try {
+    logger.info(`[getNodosConLocalizacionDashboard] Ejecutando método PRINCIPAL`);
+    return await _getNodosConLocalizacionDashboardPrincipal(supabase, params);
+  } catch (error) {
+    logger.warn(`[getNodosConLocalizacionDashboard] Método principal falló: ${error.message}. Ejecutando fallback...`);
+    try {
+      return await _getNodosConLocalizacionDashboardFallback(supabase, params);
+    } catch (fallbackError) {
+      logger.error(`[getNodosConLocalizacionDashboard] Fallback también falló: ${fallbackError.message}`);
+      throw fallbackError;
+    }
+  }
+};
+
+/**
+ * [FALLBACK SIMPLE] Consulta básica de nodos con localizaciones.
+ * Versión simplificada sin paginación compleja para casos de emergencia.
+ */
+const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fundoId, empresaId, paisId }) => {
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Ejecutando fallback simple (limit=${limit})`);
+  const nodoids = await _resolveNodoidsByGeografia(supabase, { fundoId, empresaId, paisId });
+  const hasFilter = Array.isArray(nodoids);
+
+  let query = supabase
+    .schema(dbSchema)
+    .from('nodo')
+    .select(`
+      nodoid,
+      nodo,
+      latitud,
+      longitud,
+      referencia,
+      ubicacionid,
+      ubicacion:ubicacionid(
+        ubicacionid,
+        ubicacion,
+        fundoid,
+        fundo:fundoid(fundoid, fundo, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais)))
+      )
+    `)
+    .eq('statusid', 1)
+    .order('nodoid', { ascending: true })
+    .limit(parseInt(limit, 10) || 1000);
+
+  if (hasFilter && nodoids.length > 0) {
+    query = query.in('nodoid', nodoids);
+  }
+
+  const { data: nodos, error: nodError } = await query;
+  if (nodError) throw nodError;
+  if (!nodos || nodos.length === 0) return [];
+
+  const nodoidList = nodos.map(n => n.nodoid);
+  const { data: localizaciones, error: locError } = await supabase
+    .schema(dbSchema)
+    .from('localizacion')
+    .select('localizacionid, localizacion, nodoid, metricaid')
+    .in('nodoid', nodoidList);
+
+  if (locError) throw locError;
+
+  const nodosMap = new Map(nodos.map(n => [n.nodoid, n]));
+  const resultado = (localizaciones || []).map(loc => {
+    const nodoRaw = nodosMap.get(loc.nodoid);
+    return {
+      localizacionid: loc.localizacionid,
+      localizacion: loc.localizacion,
+      nodoid: loc.nodoid,
+      latitud: nodoRaw?.latitud,
+      longitud: nodoRaw?.longitud,
+      referencia: nodoRaw?.referencia,
+      nodo: nodoRaw,
+      metricaid: loc.metricaid
+    };
   });
+
+  logger.info(`[getNodosConLocalizacionDashboardFallback] Retornando ${resultado.length} localizaciones (de ${nodos.length} nodos)`);
+  return resultado;
 };
 
 /**
