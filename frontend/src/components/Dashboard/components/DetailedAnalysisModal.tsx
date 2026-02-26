@@ -171,25 +171,47 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
     return memoizedDetailedChartData[selectedDetailedMetric] || []
   }, [memoizedDetailedChartData, selectedDetailedMetric])
 
-  // Procesar datos de comparación y combinarlos con chartData
-  const combinedChartData = useMemo(() => {
-    const mainData = chartData
+  // Procesar datos de comparación SEPARADAMENTE (sin combinar con mainData)
+  const comparisonChartData = useMemo(() => {
     if (!comparisonNode || !comparisonMediciones.length || !selectedDetailedMetric) {
-      return mainData
+      return []
     }
 
     const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
     const comparisonMetricData = comparisonMediciones.filter(m => m.metricaid === metricId)
     
     if (!comparisonMetricData.length) {
-      return mainData
+      return []
     }
 
     const startDate = new Date(detailedStartDate + 'T00:00:00')
     const endDate = new Date(detailedEndDate + 'T23:59:59')
+    
     const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
-    const useDays = daysDiff > 30
-    const useHours = daysDiff <= 7
+    
+    // Detectar granularidad de mainData para usar la misma
+    const mainHasMinutes = chartData.some(d => d.time && d.time.includes(':') && d.time.match(/:\d{2}$/))
+    
+    let granularityType: 'minutes' | 'hours' | 'days' = 'hours'
+    let minuteInterval = 15
+    let hourlyInterval: number | undefined = undefined
+    
+    if (daysDiff <= 1 || mainHasMinutes) {
+      granularityType = 'minutes'
+      minuteInterval = 15
+    } else if (daysDiff <= 7) {
+      granularityType = 'hours'
+      hourlyInterval = 1
+    } else if (daysDiff <= 14) {
+      granularityType = 'hours'
+      hourlyInterval = 2
+    } else if (daysDiff <= 28) {
+      granularityType = 'hours'
+      hourlyInterval = 4
+    } else {
+      granularityType = 'hours'
+      hourlyInterval = 6
+    }
 
     const filteredData = comparisonMetricData.filter(m => {
       const medicionDate = new Date(m.fecha)
@@ -204,20 +226,23 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       const fechaObj = new Date(medicion.fecha)
       let timeKey: string
       
-      if (useDays) {
+      if (granularityType === 'minutes') {
         const day = String(fechaObj.getDate()).padStart(2, '0')
         const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
-        timeKey = `${day}/${month}`
-      } else if (useHours) {
+        const minutes = Math.floor(fechaObj.getMinutes() / minuteInterval) * minuteInterval
+        timeKey = `${day}/${month} ${String(fechaObj.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      } else if (granularityType === 'hours') {
         const day = String(fechaObj.getDate()).padStart(2, '0')
         const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
-        const hour = String(fechaObj.getHours()).padStart(2, '0')
-        timeKey = `${day}/${month} ${hour}:00`
+        let hours = fechaObj.getHours()
+        if (hourlyInterval && hourlyInterval > 1) {
+          hours = Math.floor(hours / hourlyInterval) * hourlyInterval
+        }
+        timeKey = `${day}/${month} ${String(hours).padStart(2, '0')}:00`
       } else {
         const day = String(fechaObj.getDate()).padStart(2, '0')
         const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
-        const hour = Math.floor(fechaObj.getHours() / 4) * 4
-        timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`
+        timeKey = `${day}/${month}`
       }
 
       if (!dataByTimeAndLabel.has(timeKey)) {
@@ -239,13 +264,14 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       const parseTime = (t: string) => {
         const [datePart, hourPart] = t.split(' ')
         const [day, month] = datePart.split('/').map(Number)
-        const hour = hourPart ? parseInt(hourPart.replace(':00', '')) : 0
-        return new Date(2000, month - 1, day, hour).getTime()
+        const hourPartNum = hourPart ? parseInt(hourPart.replace(':00', '').split(':')[0]) : 0
+        const minutePart = hourPart && hourPart.includes(':') ? parseInt(hourPart.split(':')[1]) : 0
+        return new Date(2000, month - 1, day, hourPartNum, minutePart).getTime()
       }
       return parseTime(a) - parseTime(b)
     })
 
-    const comparisonChartData = allTimes.map(timeKey => {
+    return allTimes.map(timeKey => {
       const entry: any = { time: timeKey }
       const timeData = dataByTimeAndLabel.get(timeKey)!
       
@@ -255,65 +281,28 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       
       return entry
     })
-
-    if (!mainData.length) {
-      return comparisonChartData
-    }
-
-    const mainTimes = new Set(mainData.map(d => d.time))
-    const comparisonTimes = new Set(comparisonChartData.map(d => d.time))
-    const allTimesSet = new Set([...Array.from(mainTimes), ...Array.from(comparisonTimes)])
-
-    const combined = Array.from(allTimesSet).sort((a, b) => {
-      const parseTime = (t: string) => {
-        const [datePart, hourPart] = t.split(' ')
-        const [day, month] = datePart.split('/').map(Number)
-        const hour = hourPart ? parseInt(hourPart.replace(':00', '')) : 0
-        return new Date(2000, month - 1, day, hour).getTime()
-      }
-      return parseTime(a) - parseTime(b)
-    }).map(time => {
-      const mainEntry = mainData.find(d => d.time === time) || {}
-      const compEntry = comparisonChartData.find(d => d.time === time) || {}
-      
-      return { time, ...mainEntry, ...compEntry }
-    })
-
-    return combined
-  }, [chartData, comparisonNode, comparisonMediciones, selectedDetailedMetric, detailedStartDate, detailedEndDate, getSeriesLabel])
+  }, [comparisonNode, comparisonMediciones, selectedDetailedMetric, detailedStartDate, detailedEndDate, chartData, getSeriesLabel])
 
   // Obtener líneas para renderizar - INCLUIR TODOS los sensores de detailedMediciones Y comparisonMediciones
-  // para que nunca se pierda una línea (igual que allSeries en MedicionesDashboard)
   const visibleLines = useMemo(() => {
     const seriesSet = new Set<string>()
 
-    // 1. Incluir todos los sensores que tienen datos en detailedMediciones
-    detailedMediciones.forEach((m: MedicionData) => {
-      if (m.medicion !== null && m.medicion !== undefined) {
-        const label = getSeriesLabel(m)
-        seriesSet.add(label)
-      }
-    })
-
-    // 1b. Incluir todos los sensores que tienen datos en comparisonMediciones
-    if (comparisonNode && comparisonMediciones.length > 0) {
-      comparisonMediciones.forEach((m: MedicionData) => {
-        if (m.medicion !== null && m.medicion !== undefined) {
-          const label = `comp_${getSeriesLabel(m)}`
-          seriesSet.add(label)
-        }
+    // 1. Incluir todos los sensores que tienen datos en chartData (main)
+    if (chartData.length > 0) {
+      Object.keys(chartData[0] || {}).forEach(k => {
+        if (k !== 'time') seriesSet.add(k)
       })
     }
 
-    // 2. Complementar con claves de combinedChartData (por si hay datos que no pasaron el filtro anterior)
-    if (combinedChartData.length > 0) {
-      Object.keys(combinedChartData[0] || {}).forEach(k => {
+    // 2. Incluir todos los sensores que tienen datos en comparisonChartData
+    if (comparisonChartData.length > 0) {
+      Object.keys(comparisonChartData[0] || {}).forEach(k => {
         if (k !== 'time') seriesSet.add(k)
       })
     }
 
     return Array.from(seriesSet).sort()
-  }, [combinedChartData, detailedMediciones, comparisonMediciones, comparisonNode, getSeriesLabel])
+  }, [chartData, comparisonChartData])
 
   // Resetear flag de manual edit cuando se cierra el modal o cambia métrica
   useEffect(() => {
@@ -859,9 +848,10 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       </div>
                     </div>
                   </div>
-                ) : combinedChartData && combinedChartData.length > 0 ? (
+                ) : chartData && chartData.length > 0 ? (
                   <DetailedEChart 
-                    data={combinedChartData}
+                    data={chartData}
+                    comparisonData={comparisonChartData}
                     visibleLines={visibleLines}
                     yAxisDomain={yAxisDomain}
                     visibleTipos={visibleTipos}

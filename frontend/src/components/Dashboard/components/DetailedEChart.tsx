@@ -13,6 +13,7 @@ import { hexToRgba, calculateDateRange, calculateXAxisInterval, calculateNiceInt
 
 export interface DetailedEChartProps {
   data: any[];
+  comparisonData?: any[];
   visibleLines: string[];
   yAxisDomain?: { min: number | null; max: number | null };
   loading?: boolean;
@@ -46,6 +47,7 @@ function cleanLabel(label: string): string {
 
 export const DetailedEChart: React.FC<DetailedEChartProps> = ({
   data,
+  comparisonData = [],
   visibleLines,
   yAxisDomain = { min: null, max: null },
   loading = false,
@@ -95,7 +97,12 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
   }, [visibleLines, visibleTipos]);
 
   const option = useMemo<EChartsOption>(() => {
-    const xAxisData = data.map(d => d.time || d.fecha || '');
+    // Usar solo los tiempos del dataset principal para evitar gaps en las líneas
+    // Los datos de comparación se mostrarán donde coincidan los tiempos
+    const xAxisData = data.map(d => d.time || d.fecha || '')
+    
+    // Crear mapa para acceso rápido a datos de comparación por tiempo
+    const compDataMap = new Map(comparisonData.map(d => [d.time || d.fecha, d]))
     
     // Calcular rango de fechas e intervalo de etiquetas
     const dateRangeDays = calculateDateRange(xAxisData);
@@ -138,9 +145,19 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
             { offset: 1, color: hexToRgba(color, 0.05) }
           ])
         },
-        data: data.map(d => {
-          const val = d[lineKey];
-          return typeof val === 'number' && !isNaN(val) ? val : null;
+        // Para comparison lines, buscar en compDataMap; para main, usar data directamente
+        data: xAxisData.map(timeKey => {
+          if (isComp) {
+            const compData = compDataMap.get(timeKey)
+            if (!compData) return null
+            const val = compData[lineKey]
+            return typeof val === 'number' && !isNaN(val) ? val : null
+          } else {
+            const d = data.find(item => (item.time || item.fecha) === timeKey)
+            if (!d) return null
+            const val = d[lineKey]
+            return typeof val === 'number' && !isNaN(val) ? val : null
+          }
         })
       };
     });
