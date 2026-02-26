@@ -117,17 +117,22 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       return
     }
 
-    if (detailedMediciones.length === 0) {
+    const allData = [...detailedMediciones]
+    if (comparisonNode && comparisonMediciones.length > 0) {
+      allData.push(...comparisonMediciones)
+    }
+
+    if (allData.length === 0) {
       // No hay datos, dejar eje Y sin ajuste
       return
     }
 
-    // Calcular min y max de los valores actuales
+    // Calcular min y max de los valores actuales (incluyendo comparación)
     let minValue = Infinity
     let maxValue = -Infinity
     let hasNegativeValues = false
 
-    detailedMediciones.forEach((m: MedicionData) => {
+    allData.forEach((m: MedicionData) => {
       const val = m.medicion
       if (typeof val === 'number' && !isNaN(val)) {
         minValue = Math.min(minValue, val)
@@ -159,14 +164,125 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       min: calculatedMin,
       max: maxValue + padding
     })
-  }, [detailedMediciones, userManuallySetYAxis, onYAxisDomainChange])
+  }, [detailedMediciones, comparisonMediciones, comparisonNode, userManuallySetYAxis, onYAxisDomainChange])
 
   // Obtener el chartData correctamente
   const chartData = useMemo(() => {
     return memoizedDetailedChartData[selectedDetailedMetric] || []
   }, [memoizedDetailedChartData, selectedDetailedMetric])
 
-  // Obtener líneas para renderizar - INCLUIR TODOS los sensores de detailedMediciones
+  // Procesar datos de comparación y combinarlos con chartData
+  const combinedChartData = useMemo(() => {
+    const mainData = chartData
+    if (!comparisonNode || !comparisonMediciones.length || !selectedDetailedMetric) {
+      return mainData
+    }
+
+    const metricId = getMetricIdFromDataKey(selectedDetailedMetric)
+    const comparisonMetricData = comparisonMediciones.filter(m => m.metricaid === metricId)
+    
+    if (!comparisonMetricData.length) {
+      return mainData
+    }
+
+    const startDate = new Date(detailedStartDate + 'T00:00:00')
+    const endDate = new Date(detailedEndDate + 'T23:59:59')
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
+    const useDays = daysDiff > 30
+    const useHours = daysDiff <= 7
+
+    const filteredData = comparisonMetricData.filter(m => {
+      const medicionDate = new Date(m.fecha)
+      return medicionDate >= startDate && medicionDate <= endDate
+    })
+
+    const dataByTimeAndLabel = new Map<string, { [label: string]: { sum: number; count: number } }>()
+
+    filteredData.forEach((medicion) => {
+      if (medicion.medicion == null || isNaN(medicion.medicion)) return
+      
+      const fechaObj = new Date(medicion.fecha)
+      let timeKey: string
+      
+      if (useDays) {
+        const day = String(fechaObj.getDate()).padStart(2, '0')
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
+        timeKey = `${day}/${month}`
+      } else if (useHours) {
+        const day = String(fechaObj.getDate()).padStart(2, '0')
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
+        const hour = String(fechaObj.getHours()).padStart(2, '0')
+        timeKey = `${day}/${month} ${hour}:00`
+      } else {
+        const day = String(fechaObj.getDate()).padStart(2, '0')
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0')
+        const hour = Math.floor(fechaObj.getHours() / 4) * 4
+        timeKey = `${day}/${month} ${String(hour).padStart(2, '0')}:00`
+      }
+
+      if (!dataByTimeAndLabel.has(timeKey)) {
+        dataByTimeAndLabel.set(timeKey, {})
+      }
+
+      const timeData = dataByTimeAndLabel.get(timeKey)!
+      const label = `comp_${getSeriesLabel(medicion)}`
+      
+      if (!timeData[label]) {
+        timeData[label] = { sum: 0, count: 0 }
+      }
+      
+      timeData[label].sum += parseFloat(medicion.medicion.toString())
+      timeData[label].count += 1
+    })
+
+    const allTimes = Array.from(dataByTimeAndLabel.keys()).sort((a, b) => {
+      const parseTime = (t: string) => {
+        const [datePart, hourPart] = t.split(' ')
+        const [day, month] = datePart.split('/').map(Number)
+        const hour = hourPart ? parseInt(hourPart.replace(':00', '')) : 0
+        return new Date(2000, month - 1, day, hour).getTime()
+      }
+      return parseTime(a) - parseTime(b)
+    })
+
+    const comparisonChartData = allTimes.map(timeKey => {
+      const entry: any = { time: timeKey }
+      const timeData = dataByTimeAndLabel.get(timeKey)!
+      
+      Object.entries(timeData).forEach(([label, data]) => {
+        entry[label] = data.count > 0 ? data.sum / data.count : undefined
+      })
+      
+      return entry
+    })
+
+    if (!mainData.length) {
+      return comparisonChartData
+    }
+
+    const mainTimes = new Set(mainData.map(d => d.time))
+    const comparisonTimes = new Set(comparisonChartData.map(d => d.time))
+    const allTimesSet = new Set([...Array.from(mainTimes), ...Array.from(comparisonTimes)])
+
+    const combined = Array.from(allTimesSet).sort((a, b) => {
+      const parseTime = (t: string) => {
+        const [datePart, hourPart] = t.split(' ')
+        const [day, month] = datePart.split('/').map(Number)
+        const hour = hourPart ? parseInt(hourPart.replace(':00', '')) : 0
+        return new Date(2000, month - 1, day, hour).getTime()
+      }
+      return parseTime(a) - parseTime(b)
+    }).map(time => {
+      const mainEntry = mainData.find(d => d.time === time) || {}
+      const compEntry = comparisonChartData.find(d => d.time === time) || {}
+      
+      return { time, ...mainEntry, ...compEntry }
+    })
+
+    return combined
+  }, [chartData, comparisonNode, comparisonMediciones, selectedDetailedMetric, detailedStartDate, detailedEndDate, getSeriesLabel])
+
+  // Obtener líneas para renderizar - INCLUIR TODOS los sensores de detailedMediciones Y comparisonMediciones
   // para que nunca se pierda una línea (igual que allSeries en MedicionesDashboard)
   const visibleLines = useMemo(() => {
     const seriesSet = new Set<string>()
@@ -179,15 +295,25 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
       }
     })
 
-    // 2. Complementar con claves de chartData (por si hay datos que no pasaron el filtro anterior)
-    if (chartData.length > 0) {
-      Object.keys(chartData[0] || {}).forEach(k => {
+    // 1b. Incluir todos los sensores que tienen datos en comparisonMediciones
+    if (comparisonNode && comparisonMediciones.length > 0) {
+      comparisonMediciones.forEach((m: MedicionData) => {
+        if (m.medicion !== null && m.medicion !== undefined) {
+          const label = `comp_${getSeriesLabel(m)}`
+          seriesSet.add(label)
+        }
+      })
+    }
+
+    // 2. Complementar con claves de combinedChartData (por si hay datos que no pasaron el filtro anterior)
+    if (combinedChartData.length > 0) {
+      Object.keys(combinedChartData[0] || {}).forEach(k => {
         if (k !== 'time') seriesSet.add(k)
       })
     }
 
     return Array.from(seriesSet).sort()
-  }, [chartData, detailedMediciones, getSeriesLabel])
+  }, [combinedChartData, detailedMediciones, comparisonMediciones, comparisonNode, getSeriesLabel])
 
   // Resetear flag de manual edit cuando se cierra el modal o cambia métrica
   useEffect(() => {
@@ -733,9 +859,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       </div>
                     </div>
                   </div>
-                ) : chartData && chartData.length > 0 ? (
+                ) : combinedChartData && combinedChartData.length > 0 ? (
                   <DetailedEChart 
-                    data={chartData}
+                    data={combinedChartData}
                     visibleLines={visibleLines}
                     yAxisDomain={yAxisDomain}
                     visibleTipos={visibleTipos}
