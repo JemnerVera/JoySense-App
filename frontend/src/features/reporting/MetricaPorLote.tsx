@@ -13,6 +13,8 @@ interface LoteMetricaData {
   localizacion: string;
   valoresPorSensor: { [sensorKey: string]: { valor: number; fecha: string; tipoNombre: string; sensorNombre: string } };
   medicionCount: number;
+  fundo?: string;
+  ubicacion?: string;
 }
 
 const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
@@ -236,13 +238,23 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       });
 
       // Crear array de datos
-      const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => ({
-        localizacionid: data.localizacionIds[0],
-        localizacionids: data.localizacionIds,
-        localizacion: data.localizacion,
-        valoresPorSensor: data.valoresPorSensor,
-        medicionCount: data.medicionCount
-      }));
+      const lotesArray: LoteMetricaData[] = Array.from(loteMap.values()).map((data) => {
+        // Buscar la primera localización para obtener fundo y ubicación
+        const firstLocId = data.localizacionIds[0];
+        const locData = localizaciones.find((l: any) => l.localizacionid === firstLocId);
+        const nodoData = locData?.nodo;
+        const ubicData = nodoData?.ubicacion;
+        
+        return {
+          localizacionid: data.localizacionIds[0],
+          localizacionids: data.localizacionIds,
+          localizacion: data.localizacion,
+          valoresPorSensor: data.valoresPorSensor,
+          medicionCount: data.medicionCount,
+          fundo: ubicData?.fundo?.fundo || '',
+          ubicacion: ubicData?.ubicacion || ''
+        };
+      });
 
       // Ordenar según el orden seleccionado
       lotesArray.sort((a, b) => {
@@ -326,6 +338,8 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
           startDate={startDate}
           endDate={endDate}
           isFullscreenView={true}
+          fundo={selectedLote.fundo}
+          ubicacion={selectedLote.ubicacion}
         />
       </div>
     );
