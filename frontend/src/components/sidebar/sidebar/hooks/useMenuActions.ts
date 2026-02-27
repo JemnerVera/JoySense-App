@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { slideToggle } from '../../../../utils/sidebarAnimations';
+import { slideToggle, slideDown, slideUp } from '../../../../utils/sidebarAnimations';
 
 type MenuState = {
   openSubMenus: Set<string>;
@@ -47,49 +47,56 @@ export function useMenuActions(
 
   const handleMenuClick = useCallback(
     async (tabId: string, hasSubMenus: boolean) => {
-      console.log('[DEBUG handleMenuClick] tabId:', tabId, 'hasSubMenus:', hasSubMenus, 'openSubMenus:', Array.from(openSubMenus));
+      console.log('[handleMenuClick] INICIO tabId:', tabId, 'hasSubMenus:', hasSubMenus);
       
       if (!hasSubMenus) {
-        console.log('[DEBUG handleMenuClick] No submenus, closing all and navigating');
         await closeAllMenus();
         onTabChange(tabId);
         return;
       }
 
-      // Cerrar CUALQUIER menú de nivel 1 que esté visualmente abierto
-      // Esto asegura que se cierre el menú anterior aunque no esté en el estado
       const level1Tabs = ['reportes', 'agrupacion', 'configuracion', 'ajustes'];
+      const menusToClose: Promise<void>[] = [];
+      
+      // PRIMERO: Actualizar el estado ANTES de las animaciones
+      // Esto asegura que React renderice los estilos correctos desde el inicio
+      const newOpenSubMenus = new Set([tabId]);
+      setOpenSubMenus(newOpenSubMenus);
+      setOpenSubMenusLevel3(new Set());
+      
       for (const menuId of level1Tabs) {
         const element = subMenuRefs.current[menuId];
+        console.log('[handleMenuClick] Verificando menu:', menuId, 'element:', !!element);
         if (element) {
           const style = window.getComputedStyle(element);
+          console.log('[handleMenuClick] Menu:', menuId, 'display:', style.display, 'height:', style.height);
           if (style.display !== 'none' && style.height !== '0px' && style.height !== '0') {
-            console.log('[DEBUG handleMenuClick] Force closing visually open menu:', menuId);
-            await slideToggle(element);
+            console.log('[handleMenuClick] Cerrando menu visual:', menuId);
+            // Usar slideUp directamente para cerrar
+            menusToClose.push(slideUp(element));
           }
         }
       }
 
+      if (menusToClose.length > 0) {
+        console.log('[handleMenuClick] Esperando cierre de menus...');
+        await Promise.all(menusToClose);
+        // Delay para que el cierre se note visualmente
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       const subMenuElement = subMenuRefs.current[tabId];
+      console.log('[handleMenuClick] subMenuElement encontrado:', !!subMenuElement, 'tabId:', tabId);
       if (!subMenuElement) {
-        console.log('[DEBUG handleMenuClick] No subMenuElement found for:', tabId);
+        console.log('[handleMenuClick] No subMenuElement, navigando a:', tabId);
         onTabChange(tabId);
-        setOpenSubMenus(new Set([tabId]));
-        setOpenSubMenusLevel3(new Set());
         return;
       }
-      const isOpen = openSubMenus.has(tabId);
-      console.log('[DEBUG handleMenuClick] isOpen:', isOpen, 'for tabId:', tabId);
+      
+      console.log('[handleMenuClick] Llamando onTabChange con:', tabId);
       onTabChange(tabId);
-      if (!isOpen) {
-        await slideToggle(subMenuElement);
-        setOpenSubMenus(new Set([tabId]));
-        setOpenSubMenusLevel3(new Set());
-      } else {
-        await slideToggle(subMenuElement);
-        setOpenSubMenus(new Set());
-        setOpenSubMenusLevel3(new Set());
-      }
+      
+      console.log('[handleMenuClick] FIN - el estado ya maneja la apertura');
     },
     [
       openSubMenus,

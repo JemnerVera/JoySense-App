@@ -3,7 +3,7 @@
  * Basadas en la plantilla de Estilo_Sidebar
  */
 
-const ANIMATION_DURATION = 300;
+const ANIMATION_DURATION = 400;
 
 export const slideUp = (target: HTMLElement, duration: number = ANIMATION_DURATION): Promise<void> => {
   return new Promise((resolve) => {
