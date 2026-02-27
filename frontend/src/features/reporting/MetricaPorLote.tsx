@@ -315,7 +315,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   // Si está en vista completa, mostrar solo el gráfico (sin overlay, ocupa el espacio disponible)
   if (isFullscreenView && showModal && selectedLote) {
     return (
-      <div className="w-full h-[calc(100vh-120px)] bg-gray-50 dark:bg-black">
+      <div className="w-full h-full bg-gray-50 dark:bg-black p-2">
         <MetricaPorLoteModal
           isOpen={showModal}
           onClose={handleCloseModal}
