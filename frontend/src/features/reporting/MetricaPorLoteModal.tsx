@@ -1265,11 +1265,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   if (!isOpen) return null;
 
   const contentWrapperClass = isFullscreenView
-    ? 'w-full h-full min-h-0 flex flex-col transition-all duration-300 relative'
+    ? 'w-full h-full flex flex-col transition-all duration-300 relative'
     : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`;
 
   const overlayClass = isFullscreenView
-    ? 'w-full h-full min-h-0 flex'
+    ? 'w-full h-full flex flex-col'
     : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
 
   return (
@@ -1277,7 +1277,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       <div className={overlayClass}>
         <div className={contentWrapperClass}>
           {/* Header con botón Volver + botones de métricas */}
-          <div className={`flex items-center justify-between ${isFullscreenView ? 'p-2' : 'p-4'} border-b border-gray-300 dark:border-neutral-700 ${isFullscreenView ? 'bg-blue-600' : ''}`}>
+          <div className={`flex items-center justify-between flex-shrink-0 ${isFullscreenView ? 'p-2' : 'p-4'} border-b border-gray-300 dark:border-neutral-700 ${isFullscreenView ? 'bg-blue-600' : ''}`}>
             {/* Botón Volver solo en fullscreen */}
             {isFullscreenView && (
               <button
@@ -1398,8 +1398,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
           </div>
           
           {/* Contenido */}
-          <div className={`flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-neutral-900 ${isFullscreenView ? 'p-1' : 'p-6'}`}>
-            <div className={`h-full flex flex-col min-h-0 ${isFullscreenView ? 'p-1' : 'p-6'}`}>
+          <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 dark:bg-neutral-900">
+            <div className="h-full flex flex-col min-h-0 p-1">
               {/* Mensaje de validación de fechas */}
               {detailedStartDate && detailedEndDate && new Date(detailedStartDate) > new Date(detailedEndDate) && (
                 <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
