@@ -204,8 +204,8 @@ export function MetricaPorLoteChart({
       grid: {
         left: '3%',
         right: '4%',
-        bottom: '15%',
-        top: '10%',
+        bottom: '12%',
+        top: '5%',
         containLabel: true
       },
       xAxis: {
@@ -255,7 +255,7 @@ export function MetricaPorLoteChart({
       yAxis: yAxisConfig,
       legend: {
         data: series.map(s => s.name),
-        bottom: 0,
+        top: 0,
         textStyle: {
           color: '#9ca3af',
           fontSize: 12,
@@ -277,7 +277,7 @@ export function MetricaPorLoteChart({
           end: 100,
           xAxisIndex: 0,
           height: 25,
-          bottom: '5px',
+          bottom: 35,
           textStyle: {
             color: '#999'
           }
