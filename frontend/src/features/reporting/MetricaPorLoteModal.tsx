@@ -1659,12 +1659,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
               {/* Gráfico */}
               <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg flex-1 flex flex-col ${isFullscreenView ? 'p-1' : 'p-6'}`}>
-                <div className={`flex items-center justify-between ${isFullscreenView ? 'mb-1' : 'mb-4'}`}>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
-                    {localizacionNombre}
-                    {comparisonLote && ` vs ${comparisonLote.localizacion}`}
-                  </h3>
-                </div>
+                {!isFullscreenView && (
+                  <div className={`flex items-center justify-between ${isFullscreenView ? 'mb-1' : 'mb-4'}`}>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
+                      {localizacionNombre}
+                      {comparisonLote && ` vs ${comparisonLote.localizacion}`}
+                    </h3>
+                  </div>
+                )}
                 {(() => {
                   if (loading) {
                     return (
