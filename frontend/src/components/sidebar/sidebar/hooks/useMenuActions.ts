@@ -53,11 +53,13 @@ export function useMenuActions(
         return;
       }
 
+      // CAMBIAR EL COLOR INMEDIATAMENTE antes de las animaciones
+      onTabChange(tabId);
+
       const level1Tabs = ['reportes', 'agrupacion', 'configuracion', 'ajustes'];
       const menusToClose: Promise<void>[] = [];
       
       // Actualizar el estado ANTES de las animaciones
-      // Esto asegura que React renderice los estilos correctos desde el inicio
       const newOpenSubMenus = new Set([tabId]);
       setOpenSubMenus(newOpenSubMenus);
       setOpenSubMenusLevel3(new Set());
@@ -76,14 +78,6 @@ export function useMenuActions(
         await Promise.all(menusToClose);
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-
-      const subMenuElement = subMenuRefs.current[tabId];
-      if (!subMenuElement) {
-        onTabChange(tabId);
-        return;
-      }
-      
-      onTabChange(tabId);
     },
     [
       openSubMenus,
