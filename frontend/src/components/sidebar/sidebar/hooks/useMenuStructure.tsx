@@ -40,23 +40,18 @@ export function useMenuStructure() {
   const isLoadingPermissions = menuLoading;
 
   const hasAccessToMenu = (menuName: string): boolean => {
-    console.log('[DEBUG hasAccessToMenu] Checking menuName:', menuName, 'menuAccess length:', menuAccess.length);
     const hasDirectAccess = menuAccess.some(
       (item) => item.menu === menuName && item.tiene_acceso
     );
-    console.log('[DEBUG hasAccessToMenu] hasDirectAccess:', hasDirectAccess, 'for:', menuName);
     if (hasDirectAccess) return true;
 
     const parentMenu = menuAccess.find((m) => m.menu === menuName);
-    console.log('[DEBUG hasAccessToMenu] parentMenu:', parentMenu);
     if (parentMenu) {
       const hasChildAccess = menuAccess.some(
         (item) => item.padreid === parentMenu.menuid && item.tiene_acceso
       );
-      console.log('[DEBUG hasAccessToMenu] hasChildAccess:', hasChildAccess, 'for parent:', parentMenu.menuid);
       return hasChildAccess;
     }
-    console.log('[DEBUG hasAccessToMenu] No parent found for:', menuName);
     return false;
   };
 
@@ -253,17 +248,12 @@ export function useMenuStructure() {
       },
     ];
 
-    console.log('[DEBUG useMenuStructure] All tabs created:', tabs.map(t => t.id));
-    console.log('[DEBUG useMenuStructure] menuAccess:', menuAccess);
-
     if (isLoadingPermissions) return [];
 
     const filteredTabs = tabs.filter((tab) => {
-      console.log('[DEBUG useMenuStructure] Checking tab:', tab.id, 'requiresPermission:', tab.requiresPermission);
       if (!tab.requiresPermission) return true;
       if (tab.id === 'agrupacion') {
         const result = hasAccessToMenu('CARPETA');
-        console.log('[DEBUG useMenuStructure] agrupacion hasAccessToMenu CARPETA:', result);
         if (result) return true;
         return (
           hasAccess('GRUPO') ||
@@ -273,21 +263,11 @@ export function useMenuStructure() {
           hasAccess('ENTIDAD LOCALIZACION')
         );
       }
-      if (tab.id === 'configuracion') {
-        const result = hasAccessToMenu('CONFIGURACIÓN');
-        console.log('[DEBUG useMenuStructure] configuracion hasAccessToMenu:', result);
-        return result;
-      }
+      if (tab.id === 'configuracion') return hasAccessToMenu('CONFIGURACIÓN');
       if (tab.id === 'reportes') return hasAccessToMenu('REPORTES');
-      if (tab.id === 'ajustes') {
-        const result = hasAccessToMenu('AJUSTES');
-        console.log('[DEBUG useMenuStructure] ajustes hasAccessToMenu:', result);
-        return result;
-      }
+      if (tab.id === 'ajustes') return hasAccessToMenu('AJUSTES');
       return false;
     });
-
-    console.log('[DEBUG useMenuStructure] Filtered tabs:', filteredTabs.map(t => t.id));
 
     return filteredTabs;
   }, [

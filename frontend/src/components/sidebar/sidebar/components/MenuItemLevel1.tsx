@@ -112,8 +112,6 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
   const hasSubMenus = tab.subMenus && tab.subMenus.length > 0;
   const isSubMenuOpen = openSubMenus.has(tab.id);
 
-  console.log('[DEBUG MenuItemLevel1] Rendering tab:', tab.id, 'activeTab:', activeTab, 'isActive:', isActive, 'hasSubMenus:', hasSubMenus, 'isSubMenuOpen:', isSubMenuOpen);
-
   const handleRegisterRef = (key: string, el: HTMLDivElement | null) => {
     registerLevel3Ref(key, el);
   };
@@ -125,10 +123,7 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
       } ${isSubMenuOpen ? 'open' : ''}`}
     >
       <button
-        onClick={() => {
-          console.log('[DEBUG MenuItemLevel1] Button click, tabId:', tab.id, 'hasSubMenus:', hasSubMenus);
-          onMenuClick(tab.id, hasSubMenus || false);
-        }}
+        onClick={() => onMenuClick(tab.id, hasSubMenus || false)}
         className={`flex items-center h-14 cursor-pointer transition-all duration-300 border-0 relative ${
           isExpanded ? 'justify-start' : 'justify-center'
         }`}
@@ -237,43 +232,4 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
   );
 };
 
-// Comparación custom para memo que maneja Sets correctamente
-const arePropsEqual = (prevProps: MenuItemLevel1Props, nextProps: MenuItemLevel1Props) => {
-  // Comparar propiedades simples
-  if (
-    prevProps.tab.id !== nextProps.tab.id ||
-    prevProps.isExpanded !== nextProps.isExpanded ||
-    prevProps.activeTab !== nextProps.activeTab ||
-    prevProps.colors.textColor !== nextProps.colors.textColor ||
-    prevProps.colors.secondaryTextColor !== nextProps.colors.secondaryTextColor ||
-    prevProps.colors.secondaryBgColor !== nextProps.colors.secondaryBgColor
-  ) {
-    return false;
-  }
-
-  // Comparar Sets - PERO solo si afecta a ESTE elemento específico
-  // openSubMenus: verifica si este tab está abierto o cerrado
-  const prevSubMenuOpen = prevProps.openSubMenus.has(prevProps.tab.id);
-  const nextSubMenuOpen = nextProps.openSubMenus.has(nextProps.tab.id);
-  if (prevSubMenuOpen !== nextSubMenuOpen) {
-    return false;
-  }
-
-  // openSubMenusLevel3: verifica si ALGUNO de los submenus DE ESTE ELEMENTO cambió
-  // Esto es importante para detectar si se abrió/cerró algo dentro
-  const prevLevel3Keys = Array.from(prevProps.openSubMenusLevel3).filter(key => key.startsWith(`${prevProps.tab.id}-`));
-  const nextLevel3Keys = Array.from(nextProps.openSubMenusLevel3).filter(key => key.startsWith(`${nextProps.tab.id}-`));
-  
-  if (prevLevel3Keys.length !== nextLevel3Keys.length) {
-    return false;
-  }
-  for (const key of prevLevel3Keys) {
-    if (!nextProps.openSubMenusLevel3.has(key)) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-export const MenuItemLevel1 = memo(MenuItemLevel1Component, arePropsEqual);
+export const MenuItemLevel1 = React.memo(MenuItemLevel1Component);
