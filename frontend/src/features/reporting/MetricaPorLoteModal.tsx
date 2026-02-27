@@ -14,6 +14,7 @@ interface MetricaPorLoteModalProps {
   metricaNombre: string;
   startDate: string;
   endDate: string;
+  isFullscreenView?: boolean;
 }
 
 interface ChartDataPoint {
@@ -115,7 +116,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   metricaId: initialMetricaId,
   metricaNombre: initialMetricaNombre,
   startDate: initialStartDate,
-  endDate: initialEndDate
+  endDate: initialEndDate,
+  isFullscreenView = false
 }) => {
   // Estados principales
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -1262,12 +1264,32 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
   if (!isOpen) return null;
 
+  const contentWrapperClass = isFullscreenView
+    ? 'w-full h-full overflow-hidden flex flex-col transition-all duration-300 relative'
+    : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`;
+
+  const overlayClass = isFullscreenView
+    ? 'w-full h-full flex'
+    : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div className={`bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`}>
-          {/* Header con botones de métricas */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-neutral-700">
+      <div className={overlayClass}>
+        <div className={contentWrapperClass}>
+          {/* Header con botón Volver + botones de métricas */}
+          <div className={`flex items-center justify-between ${isFullscreenView ? 'p-2' : 'p-4'} border-b border-gray-300 dark:border-neutral-700 ${isFullscreenView ? 'bg-blue-600' : ''}`}>
+            {/* Botón Volver solo en fullscreen */}
+            {isFullscreenView && (
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver
+              </button>
+            )}
             {/* Botones de métricas centrados */}
             <div className="flex-1 flex justify-center">
               <div className="flex space-x-2">
