@@ -47,24 +47,41 @@ export function useMenuActions(
 
   const handleMenuClick = useCallback(
     async (tabId: string, hasSubMenus: boolean) => {
+      console.log('[DEBUG handleMenuClick] tabId:', tabId, 'hasSubMenus:', hasSubMenus, 'openSubMenus:', Array.from(openSubMenus));
+      
       if (!hasSubMenus) {
+        console.log('[DEBUG handleMenuClick] No submenus, closing all and navigating');
         await closeAllMenus();
         onTabChange(tabId);
         return;
       }
+
+      // Cerrar CUALQUIER menú de nivel 1 que esté visualmente abierto
+      // Esto asegura que se cierre el menú anterior aunque no esté en el estado
+      const level1Tabs = ['reportes', 'agrupacion', 'configuracion', 'ajustes'];
+      for (const menuId of level1Tabs) {
+        const element = subMenuRefs.current[menuId];
+        if (element) {
+          const style = window.getComputedStyle(element);
+          if (style.display !== 'none' && style.height !== '0px' && style.height !== '0') {
+            console.log('[DEBUG handleMenuClick] Force closing visually open menu:', menuId);
+            await slideToggle(element);
+          }
+        }
+      }
+
       const subMenuElement = subMenuRefs.current[tabId];
       if (!subMenuElement) {
+        console.log('[DEBUG handleMenuClick] No subMenuElement found for:', tabId);
         onTabChange(tabId);
+        setOpenSubMenus(new Set([tabId]));
+        setOpenSubMenusLevel3(new Set());
         return;
       }
       const isOpen = openSubMenus.has(tabId);
+      console.log('[DEBUG handleMenuClick] isOpen:', isOpen, 'for tabId:', tabId);
       onTabChange(tabId);
       if (!isOpen) {
-        const otherOpenMenus = Array.from(openSubMenus);
-        for (const otherMenuId of otherOpenMenus) {
-          const otherElement = subMenuRefs.current[otherMenuId];
-          if (otherElement) await slideToggle(otherElement);
-        }
         await slideToggle(subMenuElement);
         setOpenSubMenus(new Set([tabId]));
         setOpenSubMenusLevel3(new Set());
