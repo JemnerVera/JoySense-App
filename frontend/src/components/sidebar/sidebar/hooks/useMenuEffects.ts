@@ -43,12 +43,10 @@ export function useMenuEffects(
 
   // Sincronizar apertura/cierre de menús cuando cambia activeTab
   useEffect(() => {
-    console.log('[useMenuEffects] activeTab:', activeTab);
     if (!activeTab || !isExpanded) return;
 
-    // ✅ IMPORTANTE: Solo ejecutar si activeTab REALMENTE cambió
+    // Solo ejecutar si activeTab REALMENTE cambió
     if (prevActiveTabRef.current === activeTab) {
-      console.log('[useMenuEffects] Same activeTab, skipping');
       return;
     }
     prevActiveTabRef.current = activeTab;
@@ -61,7 +59,6 @@ export function useMenuEffects(
     // Si solo es un nivel 1 (sin guión), no hacer nada en useEffects
     // handleMenuClick ya maneja la apertura/cierre de menús nivel 1
     if (!tab || !tab.subMenus || tab.subMenus.length === 0 || parts.length <= 1) {
-      console.log('[useMenuEffects] Nivel 1 only, skipping');
       return;
     }
 

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { slideToggle, slideDown, slideUp } from '../../../../utils/sidebarAnimations';
+import { slideToggle, slideUp } from '../../../../utils/sidebarAnimations';
 
 type MenuState = {
   openSubMenus: Set<string>;
@@ -47,8 +47,6 @@ export function useMenuActions(
 
   const handleMenuClick = useCallback(
     async (tabId: string, hasSubMenus: boolean) => {
-      console.log('[handleMenuClick] INICIO tabId:', tabId, 'hasSubMenus:', hasSubMenus);
-      
       if (!hasSubMenus) {
         await closeAllMenus();
         onTabChange(tabId);
@@ -58,7 +56,7 @@ export function useMenuActions(
       const level1Tabs = ['reportes', 'agrupacion', 'configuracion', 'ajustes'];
       const menusToClose: Promise<void>[] = [];
       
-      // PRIMERO: Actualizar el estado ANTES de las animaciones
+      // Actualizar el estado ANTES de las animaciones
       // Esto asegura que React renderice los estilos correctos desde el inicio
       const newOpenSubMenus = new Set([tabId]);
       setOpenSubMenus(newOpenSubMenus);
@@ -66,37 +64,26 @@ export function useMenuActions(
       
       for (const menuId of level1Tabs) {
         const element = subMenuRefs.current[menuId];
-        console.log('[handleMenuClick] Verificando menu:', menuId, 'element:', !!element);
         if (element) {
           const style = window.getComputedStyle(element);
-          console.log('[handleMenuClick] Menu:', menuId, 'display:', style.display, 'height:', style.height);
           if (style.display !== 'none' && style.height !== '0px' && style.height !== '0') {
-            console.log('[handleMenuClick] Cerrando menu visual:', menuId);
-            // Usar slideUp directamente para cerrar
             menusToClose.push(slideUp(element));
           }
         }
       }
 
       if (menusToClose.length > 0) {
-        console.log('[handleMenuClick] Esperando cierre de menus...');
         await Promise.all(menusToClose);
-        // Delay para que el cierre se note visualmente
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       const subMenuElement = subMenuRefs.current[tabId];
-      console.log('[handleMenuClick] subMenuElement encontrado:', !!subMenuElement, 'tabId:', tabId);
       if (!subMenuElement) {
-        console.log('[handleMenuClick] No subMenuElement, navigando a:', tabId);
         onTabChange(tabId);
         return;
       }
       
-      console.log('[handleMenuClick] Llamando onTabChange con:', tabId);
       onTabChange(tabId);
-      
-      console.log('[handleMenuClick] FIN - el estado ya maneja la apertura');
     },
     [
       openSubMenus,
