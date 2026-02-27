@@ -101,6 +101,31 @@ export function MetricaPorLoteChart({
         });
       });
 
+    // Calcular el dominio del eje Y automáticamente desde los datos
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+    series.forEach((s: any) => {
+      if (s.data) {
+        s.data.forEach((val: number | null) => {
+          if (val !== null && typeof val === 'number' && !isNaN(val)) {
+            dataMin = Math.min(dataMin, val);
+            dataMax = Math.max(dataMax, val);
+          }
+        });
+      }
+    });
+
+    // Si no hay datos válidos, usar rango por defecto
+    if (dataMin === Infinity || dataMax === -Infinity) {
+      dataMin = 0;
+      dataMax = 100;
+    }
+
+    // Agregar un pequeño margen (10%) al dominio
+    const margin = (dataMax - dataMin) * 0.1 || 1;
+    const autoMin = dataMin - margin;
+    const autoMax = dataMax + margin;
+
     let yAxisConfig: any = {
       type: 'value' as const,
       axisLine: { show: false },
@@ -121,12 +146,15 @@ export function MetricaPorLoteChart({
           }
           return value.toFixed(1);
         }
-      }
+      },
+      min: autoMin,
+      max: autoMax
     };
 
+    // Si el usuario configuró un dominio específico, usarlo
     if (yAxisDomain.min !== null || yAxisDomain.max !== null) {
-      yAxisConfig.min = yAxisDomain.min;
-      yAxisConfig.max = yAxisDomain.max;
+      if (yAxisDomain.min !== null) yAxisConfig.min = yAxisDomain.min;
+      if (yAxisDomain.max !== null) yAxisConfig.max = yAxisDomain.max;
     }
 
     const interval = (() => {
@@ -176,7 +204,7 @@ export function MetricaPorLoteChart({
       grid: {
         left: '3%',
         right: '4%',
-        bottom: '15%',
+        bottom: '10%',
         top: '10%',
         containLabel: true
       },
@@ -257,7 +285,7 @@ export function MetricaPorLoteChart({
   return (
     <ReactECharts
       option={option}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: '100%', width: '100%', minHeight: '300px' }}
       opts={{ renderer: 'canvas' }}
       notMerge={true}
     />

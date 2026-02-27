@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { JoySenseService } from '../../services/backend-api';
+import { MetricaPorLoteChart } from './components/MetricaPorLoteChart';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { flushSync } from 'react-dom';
 import { transformMedicionData } from '../../utils/medicionTransform';
@@ -1265,11 +1265,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   if (!isOpen) return null;
 
   const contentWrapperClass = isFullscreenView
-    ? 'w-full h-full overflow-hidden flex flex-col transition-all duration-300 relative'
+    ? 'w-full h-full min-h-0 flex flex-col transition-all duration-300 relative'
     : `bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full ${isModalExpanded ? 'max-w-[95vw]' : 'max-w-7xl'} max-h-[95vh] overflow-hidden flex flex-col transition-all duration-300`;
 
   const overlayClass = isFullscreenView
-    ? 'w-full h-full flex'
+    ? 'w-full h-full min-h-0 flex'
     : 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
 
   return (
@@ -1398,8 +1398,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
           </div>
           
           {/* Contenido */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-neutral-900 scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
-            <div className="p-6">
+          <div className={`flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-neutral-900 ${isFullscreenView ? 'p-1' : 'p-6'}`}>
+            <div className={`h-full flex flex-col min-h-0 ${isFullscreenView ? 'p-1' : 'p-6'}`}>
               {/* Mensaje de validación de fechas */}
               {detailedStartDate && detailedEndDate && new Date(detailedStartDate) > new Date(detailedEndDate) && (
                 <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
@@ -1633,8 +1633,8 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
               </div>
 
               {/* Gráfico */}
-              <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className={`bg-gray-100 dark:bg-neutral-800 rounded-lg flex-1 flex flex-col ${isFullscreenView ? 'p-1' : 'p-6'}`}>
+                <div className={`flex items-center justify-between ${isFullscreenView ? 'mb-1' : 'mb-4'}`}>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-white font-mono tracking-wider">
                     {localizacionNombre}
                     {comparisonLote && ` vs ${comparisonLote.localizacion}`}
@@ -1675,137 +1675,19 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
                   return (
                     <>
-                      <div className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={finalChartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis
-                              dataKey="fechaFormatted"
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                              angle={-45}
-                              textAnchor="end"
-                              height={80}
-                              interval={(() => {
-                                if (finalChartData.length <= 8) return 0;
-                                if (finalChartData.length <= 20) return 1;
-                                return Math.floor(finalChartData.length / 6);
-                              })()}
-                            />
-                            <YAxis
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fontSize: 12, fill: "#9ca3af", fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace" }}
-                              domain={([dataMin, dataMax]) => {
-                                if (yAxisDomain.min !== null || yAxisDomain.max !== null) {
-                                  const min = yAxisDomain.min !== null ? yAxisDomain.min : dataMin;
-                                  const max = yAxisDomain.max !== null ? yAxisDomain.max : dataMax;
-                                  return [min, max];
-                                }
-                                return [dataMin, dataMax];
-                              }}
-                              allowDataOverflow={false}
-                              tickFormatter={(value) => {
-                                if (Math.abs(value) >= 1) {
-                                  return Math.round(value).toString();
-                                } else {
-                                  return value.toFixed(1);
-                                }
-                              }}
-                            />
-                            <Tooltip
-                              labelFormatter={(label) => {
-                                const isDate = label && typeof label === 'string' && label.includes('/');
-                                if (isDate) {
-                                  let year = new Date(detailedStartDate).getFullYear();
-                                  if (label.includes(' ')) {
-                                    return `Fecha: ${label}`;
-                                  } else {
-                                    return `Fecha: ${label}/${year}`;
-                                  }
-                                }
-                                return `Hora: ${label}`;
-                              }}
-                              formatter={(value: number, name: string) => {
-                                const isComparison = name.startsWith('comp_');
-                                const rawName = isComparison ? name.replace('comp_', '') : name;
-                                
-                                let displayName: string;
-                                if (isComparison) {
-                                  displayName = `${rawName} (${comparisonLote?.localizacion || 'Comparación'})`;
-                                } else {
-                                  displayName = comparisonLote 
-                                    ? `${rawName} (${localizacionNombre})`
-                                    : rawName;
-                                }
-                                return [
-                                  <span key="value" style={{ fontSize: '14px', fontWeight: 'bold', display: 'block' }}>
-                                    {displayName}: {value != null ? value.toFixed(1) : '--'} {currentMetric?.unit || ''}
-                                  </span>
-                                ];
-                              }}
-                              contentStyle={{
-                                backgroundColor: "#1f2937",
-                                border: "1px solid #374151",
-                                borderRadius: "8px",
-                                color: "#ffffff",
-                                fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
-                                padding: "8px 12px"
-                              }}
-                            />
-                            {/* Líneas del lote principal */}
-                            {tipoKeys
-                              .filter(tipoKey => visibleTipos.has(tipoKey))
-                              .map((tipoKey, index) => {
-                                // Recalcular el índice basado en la posición original en tipoKeys
-                                const originalIndex = tipoKeys.indexOf(tipoKey);
-                                return (
-                                  <Line
-                                    key={tipoKey}
-                                    type="monotone"
-                                    dataKey={tipoKey}
-                                    stroke={colors[originalIndex % colors.length]}
-                                    strokeWidth={3}
-                                    dot={{ r: 4, fill: colors[originalIndex % colors.length] }}
-                                    activeDot={{ r: 6, fill: colors[originalIndex % colors.length] }}
-                                    connectNulls={true}
-                                    isAnimationActive={true}
-                                    animationDuration={300}
-                                  />
-                                );
-                              })}
-                            {/* Líneas del lote de comparación */}
-                            {comparisonKeys
-                              .filter(compKey => {
-                                const originalKey = compKey.replace('comp_', '');
-                                return visibleTipos.has(originalKey);
-                              })
-                              .map((compKey, index) => {
-                                const originalKey = compKey.replace('comp_', '');
-                                let tipoIndex = tipoKeys.indexOf(originalKey);
-                                if (tipoIndex === -1) {
-                                  tipoIndex = index;
-                                }
-                                const strokeColor = comparisonColors[tipoIndex % comparisonColors.length];
-                                return (
-                                  <Line
-                                    key={compKey}
-                                    type="monotone"
-                                    dataKey={compKey}
-                                    stroke={strokeColor}
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                    dot={{ r: 3, fill: strokeColor }}
-                                    activeDot={{ r: 5, fill: strokeColor }}
-                                    connectNulls={true}
-                                    isAnimationActive={true}
-                                    animationDuration={300}
-                                  />
-                                );
-                              })}
-                          </LineChart>
-                        </ResponsiveContainer>
+                      <div className={isFullscreenView ? 'h-full min-h-[300px]' : 'h-96'}>
+                        <MetricaPorLoteChart
+                          chartData={finalChartData}
+                          tipoKeys={tipoKeys}
+                          comparisonKeys={comparisonKeys}
+                          colors={colors}
+                          comparisonColors={comparisonColors}
+                          yAxisDomain={yAxisDomain}
+                          visibleTipos={visibleTipos}
+                          localizacionNombre={localizacionNombre}
+                          comparisonLote={comparisonLote}
+                          metricUnit={currentMetric?.unit || ''}
+                        />
                       </div>
                       {/* Leyenda con checkboxes - siempre visible cuando hay datos */}
                       {finalChartData.length > 0 && (
