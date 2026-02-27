@@ -15,6 +15,8 @@ interface MetricaPorLoteModalProps {
   startDate: string;
   endDate: string;
   isFullscreenView?: boolean;
+  fundo?: string;
+  ubicacion?: string;
 }
 
 interface ChartDataPoint {
@@ -117,7 +119,9 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   metricaNombre: initialMetricaNombre,
   startDate: initialStartDate,
   endDate: initialEndDate,
-  isFullscreenView = false
+  isFullscreenView = false,
+  fundo,
+  ubicacion
 }) => {
   // Estados principales
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -1411,13 +1415,34 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
               )}
 
               {/* Controles */}
-              <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-4 mb-6">
-                <div className="flex flex-wrap items-start gap-4 justify-center">
+              <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-2 mb-2">
+                <div className="flex items-center gap-4 overflow-x-auto">
+                  {/* Información del Lote - al extremo derecho en fullscreen */}
+                  {isFullscreenView && (
+                    <>
+                      <div className="flex flex-col items-center flex-shrink-0 ml-auto">
+                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+                          Información del Lote:
+                        </label>
+                        <div className="h-8 flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm">
+                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                          <span className="text-gray-800 dark:text-white font-mono whitespace-nowrap">{localizacionNombre}</span>
+                          <span className="text-gray-400">|</span>
+                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                          <span className="text-gray-800 dark:text-white font-mono">{ubicacion || '--'}</span>
+                          <span className="text-gray-400">|</span>
+                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                          <span className="text-gray-800 dark:text-white font-mono">{fundo || '--'}</span>
+                        </div>
+                      </div>
+                      <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
+                    </>
+                  )}
                   {/* Intervalo de Fechas */}
                   <div className="flex flex-col flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Inicio:</label>
+                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Inicio:</label>
                         <input
                           type="date"
                           value={tempStartDate || detailedStartDate}
@@ -1436,7 +1461,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                         />
                       </div>
                       <div className="flex flex-col">
-                        <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap">Fecha Fin:</label>
+                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Fin:</label>
                         <input
                           type="date"
                           value={tempEndDate || detailedEndDate}
@@ -1504,7 +1529,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
                   {/* Ajuste del eje Y */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Ajuste Eje Y:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase">Ajuste Eje Y:</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -1561,7 +1586,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
                   {/* Botón de análisis de fluctuación */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2">Analizar Fluctuación:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase">Analizar:</label>
                     <button
                       onClick={analyzeFluctuationAndRecommendThresholds}
                       disabled={loading || !mediciones.length}
@@ -1579,7 +1604,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
 
                   {/* Selector de lote para comparación */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 tracking-wider">Comparar con Loc.:</label>
+                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase tracking-wider">Comparar con Loc.:</label>
                     <div className="flex items-center gap-2">
                       <select
                         value={comparisonLote?.localizacionid || ''}
@@ -1689,128 +1714,6 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           metricUnit={currentMetric?.unit || ''}
                         />
                       </div>
-                      {/* Leyenda con checkboxes - siempre visible cuando hay datos */}
-                      {finalChartData.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-300 dark:border-neutral-600">
-                          {comparisonLote ? (
-                            // Leyenda cuando hay comparación
-                            <div className="flex flex-wrap items-center gap-6 justify-center">
-                              {/* Leyenda del lote principal */}
-                              <div className="flex flex-col gap-2">
-                                <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
-                                  {localizacionNombre}
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                  {tipoKeys.map((tipoKey, index) => {
-                                    const isVisible = visibleTipos.has(tipoKey);
-                                    return (
-                                      <div key={tipoKey} className="flex items-center gap-2">
-                                        <input
-                                          type="checkbox"
-                                          checked={isVisible}
-                                          onChange={(e) => {
-                                            const newVisibleTipos = new Set(visibleTipos);
-                                            if (e.target.checked) {
-                                              newVisibleTipos.add(tipoKey);
-                                            } else {
-                                              newVisibleTipos.delete(tipoKey);
-                                            }
-                                            setVisibleTipos(newVisibleTipos);
-                                          }}
-                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-600"
-                                        />
-                                        <div 
-                                          className="w-4 h-0.5" 
-                                          style={{ backgroundColor: colors[index % colors.length] }}
-                                        />
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
-                                          {tipoKey}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                              
-                              {/* Separador */}
-                              <div className="w-px h-12 bg-gray-300 dark:bg-neutral-600"></div>
-                              
-                              {/* Leyenda del lote de comparación */}
-                              <div className="flex flex-col gap-2">
-                                <div className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono">
-                                  {comparisonLote.localizacion}
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                  {tipoKeys.map((tipoKey, index) => {
-                                    const compKey = `comp_${tipoKey}`;
-                                    const hasComparisonData = finalChartData.some(point => point[compKey] !== undefined && point[compKey] !== null);
-                                    if (!hasComparisonData) return null;
-                                    
-                                    const isVisible = visibleTipos.has(tipoKey);
-                                    return (
-                                      <div key={compKey} className="flex items-center gap-2">
-                                        <input
-                                          type="checkbox"
-                                          checked={isVisible}
-                                          onChange={(e) => {
-                                            const newVisibleTipos = new Set(visibleTipos);
-                                            if (e.target.checked) {
-                                              newVisibleTipos.add(tipoKey);
-                                            } else {
-                                              newVisibleTipos.delete(tipoKey);
-                                            }
-                                            setVisibleTipos(newVisibleTipos);
-                                          }}
-                                          className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-600"
-                                        />
-                                        <div 
-                                          className="w-4 h-0.5 border-dashed border-t-2" 
-                                          style={{ borderColor: comparisonColors[index % comparisonColors.length] }}
-                                        />
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
-                                          {tipoKey}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            // Leyenda cuando solo hay un lote
-                            <div className="flex flex-wrap items-center gap-3 justify-center">
-                              {tipoKeys.map((tipoKey, index) => {
-                                const isVisible = visibleTipos.has(tipoKey);
-                                return (
-                                  <div key={tipoKey} className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={isVisible}
-                                      onChange={(e) => {
-                                        const newVisibleTipos = new Set(visibleTipos);
-                                        if (e.target.checked) {
-                                          newVisibleTipos.add(tipoKey);
-                                        } else {
-                                          newVisibleTipos.delete(tipoKey);
-                                        }
-                                        setVisibleTipos(newVisibleTipos);
-                                      }}
-                                      className="w-4 h-4 rounded border-gray-300 dark:border-neutral-600 text-blue-500 focus:ring-blue-600"
-                                    />
-                                    <div 
-                                      className="w-4 h-0.5" 
-                                      style={{ backgroundColor: colors[index % colors.length] }}
-                                    />
-                                    <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono">
-                                      {tipoKey}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </>
                   );
                 })()}
