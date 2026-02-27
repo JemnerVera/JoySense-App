@@ -43,10 +43,12 @@ export function useMenuEffects(
 
   // Sincronizar apertura/cierre de menús cuando cambia activeTab
   useEffect(() => {
+    console.log('[DEBUG useMenuEffects] activeTab:', activeTab, 'isExpanded:', isExpanded);
     if (!activeTab || !isExpanded) return;
 
     // ✅ IMPORTANTE: Solo ejecutar si activeTab REALMENTE cambió
     if (prevActiveTabRef.current === activeTab) {
+      console.log('[DEBUG useMenuEffects] Same activeTab, skipping');
       return;
     }
     prevActiveTabRef.current = activeTab;

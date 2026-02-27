@@ -112,6 +112,8 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
   const hasSubMenus = tab.subMenus && tab.subMenus.length > 0;
   const isSubMenuOpen = openSubMenus.has(tab.id);
 
+  console.log('[DEBUG MenuItemLevel1] Rendering tab:', tab.id, 'activeTab:', activeTab, 'isActive:', isActive, 'hasSubMenus:', hasSubMenus, 'isSubMenuOpen:', isSubMenuOpen);
+
   const handleRegisterRef = (key: string, el: HTMLDivElement | null) => {
     registerLevel3Ref(key, el);
   };
@@ -123,7 +125,10 @@ const MenuItemLevel1Component: React.FC<MenuItemLevel1Props> = ({
       } ${isSubMenuOpen ? 'open' : ''}`}
     >
       <button
-        onClick={() => onMenuClick(tab.id, hasSubMenus || false)}
+        onClick={() => {
+          console.log('[DEBUG MenuItemLevel1] Button click, tabId:', tab.id, 'hasSubMenus:', hasSubMenus);
+          onMenuClick(tab.id, hasSubMenus || false);
+        }}
         className={`flex items-center h-14 cursor-pointer transition-all duration-300 border-0 relative ${
           isExpanded ? 'justify-start' : 'justify-center'
         }`}

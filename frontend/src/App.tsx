@@ -752,6 +752,7 @@ const AppContentInternal: React.FC<{
 
   // Handlers para cambios de pestaña
   const handleTabChange = (tab: string) => {
+    console.log('[DEBUG handleTabChange] tab:', tab, 'current activeTab:', activeTabRef.current);
     // Guardar el activeTab actual antes de cualquier cambio
     const currentTab = activeTabRef.current;
     
