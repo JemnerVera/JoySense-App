@@ -204,7 +204,7 @@ export function MetricaPorLoteChart({
       grid: {
         left: '3%',
         right: '4%',
-        bottom: '10%',
+        bottom: '15%',
         top: '10%',
         containLabel: true
       },
@@ -231,9 +231,25 @@ export function MetricaPorLoteChart({
           color: '#9ca3af',
           fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace",
           fontSize: 12,
-          rotate: 45,
+          rotate: 0,
           interval,
-          formatter: (value: string) => value
+          formatter: (value: string) => {
+            // value viene en formato "26/02/2026 00:00" o similar
+            const parts = value.split(' ');
+            if (parts.length >= 2) {
+              // Fila 2: fecha (26/02)
+              // Fila 1: hora (00:00)
+              return `{name|${parts[1]}}\n{name|${parts[0]}}`;
+            }
+            return value;
+          },
+          rich: {
+            name: {
+              color: '#9ca3af',
+              fontSize: 11,
+              lineHeight: 16
+            }
+          }
         }
       },
       yAxis: yAxisConfig,
