@@ -37,6 +37,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedLote, setSelectedLote] = useState<LoteMetricaData | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [isFullscreenView, setIsFullscreenView] = useState(false);
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [isFundoDropdownOpen, setIsFundoDropdownOpen] = useState(false);
   const [isMetricaDropdownOpen, setIsMetricaDropdownOpen] = useState(false);
@@ -293,11 +294,13 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const handleRowClick = (lote: LoteMetricaData) => {
     setSelectedLote(lote);
     setShowModal(true);
+    setIsFullscreenView(true);
   };
 
   // Cerrar modal
   const handleCloseModal = () => {
     setShowModal(false);
+    setIsFullscreenView(false);
     setSelectedLote(null);
   };
 
@@ -308,6 +311,25 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
     const end = new Date(endDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
     return `${start} - ${end}`;
   };
+
+  // Si está en vista completa, mostrar solo el gráfico (sin overlay, ocupa el espacio disponible)
+  if (isFullscreenView && showModal && selectedLote) {
+    return (
+      <div className="w-full h-[calc(100vh-120px)] bg-gray-50 dark:bg-black">
+        <MetricaPorLoteModal
+          isOpen={showModal}
+          onClose={handleCloseModal}
+          localizacionIds={selectedLote.localizacionids}
+          localizacionNombre={selectedLote.localizacion}
+          metricaId={selectedMetrica || 1}
+          metricaNombre={selectedMetrica ? metricas.find(m => m.metricaid === selectedMetrica)?.metrica || 'Métrica' : 'Métrica'}
+          startDate={startDate}
+          endDate={endDate}
+          isFullscreenView={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
@@ -676,20 +698,6 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
           </div>
         )}
       </div>
-
-      {/* Modal con gráfico */}
-      {showModal && selectedLote && selectedMetrica && (
-        <MetricaPorLoteModal
-          isOpen={showModal}
-          onClose={handleCloseModal}
-          localizacionIds={selectedLote.localizacionids}
-          localizacionNombre={selectedLote.localizacion}
-          metricaId={selectedMetrica}
-          metricaNombre={metricas.find(m => m.metricaid === selectedMetrica)?.metrica || 'Métrica'}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      )}
     </div>
   );
 };
