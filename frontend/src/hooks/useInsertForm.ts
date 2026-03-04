@@ -458,13 +458,18 @@ export const useInsertForm = ({
       
       // Verificar que haya al menos un canal seleccionado
       const canalesGrid = formData._canalesGrid as Array<{canalid: number, canal: string, status: boolean, identificador: string}> | undefined
-      if (!canalesGrid || canalesGrid.filter(c => c.status === true).length === 0) {
+      const canalesSeleccionados = canalesGrid?.filter(c => c.status === true) || [];
+      
+      if (!canalesGrid || canalesSeleccionados.length === 0) {
         errors._canalesGrid = 'Debe seleccionar al menos un canal activo'
       } else {
-        // Verificar que todos los canales seleccionados tengan identificador
-        const canalesSinIdentificador = canalesGrid.filter(c => c.status === true && !c.identificador?.trim())
+        // Separar canales por tipo
+        const canaleSinTelegram = canalesSeleccionados.filter(c => c.canal.toLowerCase() !== 'telegram');
+        
+        // Para canales NO-Telegram: requieren identificador
+        const canalesSinIdentificador = canaleSinTelegram.filter(c => !c.identificador?.trim());
         if (canalesSinIdentificador.length > 0) {
-          errors._canalesGrid = 'Todos los canales seleccionados deben tener un identificador'
+          errors._canalesGrid = 'Todos los canales seleccionados (excepto Telegram) deben tener un identificador';
         }
       }
       
@@ -1119,8 +1124,12 @@ export const useInsertForm = ({
         const now = new Date().toISOString();
         
         // Crear un array de registros, uno por cada canal con status = true
+        // IMPORTANTE: Excluir Telegram (se inserta automáticamente vía webhook)
         const recordsToInsert = canalesGrid
-          .filter(c => c.status === true && c.identificador?.trim())
+          .filter(c => {
+            const isTelegram = c.canal.toLowerCase() === 'telegram';
+            return c.status === true && c.identificador?.trim() && !isTelegram;
+          })
           .map(c => ({
             usuarioid: usuarioid,
             canalid: c.canalid,
@@ -1133,7 +1142,7 @@ export const useInsertForm = ({
           }));
         
         if (recordsToInsert.length === 0) {
-          throw new Error('Debe seleccionar al menos un canal activo con identificador');
+          throw new Error('Debe seleccionar al menos un canal activo con identificador (Telegram se enlaza automáticamente)');
         }
         
         // Insertar múltiples registros
@@ -1148,7 +1157,7 @@ export const useInsertForm = ({
         }
         
         setIsSubmitting(false);
-        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} canal(es) al usuario correctamente` });
+        setMessage?.({ type: 'success', text: `Se asignaron ${results.length} canal(es) al usuario correctamente. Telegram se enlazará automáticamente.` });
         resetForm();
         return;
       }
