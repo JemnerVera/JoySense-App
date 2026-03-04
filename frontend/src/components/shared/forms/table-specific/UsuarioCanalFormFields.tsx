@@ -56,6 +56,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
   
   // Estado para el grid de canales
   const [canalesGrid, setCanalesGrid] = useState<CanalRow[]>([]);
+  const [loadingGrid, setLoadingGrid] = useState(false);
   
   // Estados para Telegram
   const [telegramCodigoPorCanal, setTelegramCodigoPorCanal] = useState<Record<number, string>>({});
@@ -71,6 +72,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         setCanalesGrid([]);
         setTelegramCodigoPorCanal({});
         setMessagesTelegram({});
+        setLoadingGrid(false);
         return;
       }
 
@@ -81,6 +83,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         correosDataLength: correosData.length,
         isUpdateMode
       });
+
+      setLoadingGrid(true);
 
       try {
         const usuariosData = await JoySenseService.getTableData('usuario', 1000);
@@ -266,6 +270,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         console.error('[UsuarioCanalFormFields] Error cargando datos del usuario:', error);
         setUsuarioSeleccionado(null);
         setCanalesGrid([]);
+      } finally {
+        setLoadingGrid(false);
       }
     };
 
@@ -354,7 +360,16 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
       )}
 
       {/* Grid de Canales - Solo mostrar si hay un usuario seleccionado */}
-      {formData.usuarioid && canalesGrid.length > 0 && (
+      {formData.usuarioid && loadingGrid && (
+        <div className="flex items-center justify-center py-8">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+            <span className="text-gray-600 dark:text-gray-400 font-mono">Cargando canales...</span>
+          </div>
+        </div>
+      )}
+      
+      {formData.usuarioid && !loadingGrid && canalesGrid.length > 0 && (
         <div className="space-y-2">
           <label className={`block text-base font-bold font-mono tracking-wider ${getThemeColor('text')}`}>
             CANALES DE NOTIFICACIÓN
