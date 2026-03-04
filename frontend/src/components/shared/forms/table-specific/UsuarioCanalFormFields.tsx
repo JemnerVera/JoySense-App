@@ -377,6 +377,15 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                   const isDisabled = row.existente && !isUpdateMode;
                   const isCheckedAndExisting = row.existente && row.status && !isUpdateMode;
                   
+                  // Definir qué canales pueden editar identificador en modo actualización
+                  const isWhatsApp = row.canalid === 1;
+                  const isEmail = row.canalid === 3;
+                  // Solo editable si: modo actualizar Y el canal existe Y es WhatsApp o Email
+                  const canEditIdentificador = isUpdateMode && row.existente && (isWhatsApp || isEmail);
+                  
+                  // En modo actualizar, si el canal no existe, mostrar mensaje de usar Crear
+                  const showUseCreateMessage = isUpdateMode && !row.existente;
+                  
                   return (
                     <tr key={row.canalid} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
                       <td className="border border-gray-300 dark:border-neutral-600 px-2 py-2 text-center">
@@ -384,13 +393,15 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                           type="checkbox"
                           checked={row.status}
                           onChange={(e) => handleStatusChange(row.canalid, e.target.checked)}
-                          disabled={isDisabled}
+                          disabled={showUseCreateMessage}
                           className={`w-5 h-5 rounded focus:ring-2 focus:ring-orange-500 appearance-none border-2 ${
                             isCheckedAndExisting 
                               ? 'bg-orange-600 border-orange-600 checked:bg-orange-600 checked:border-orange-600' 
+                              : row.status && !showUseCreateMessage
+                              ? 'bg-orange-600 border-orange-600 checked:bg-orange-600 checked:border-orange-600'
                               : 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 checked:bg-orange-600 checked:border-orange-600'
-                          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={row.status && !isDisabled ? { backgroundColor: '#ea580c', borderColor: '#ea580c' } : isDisabled ? { opacity: 0.5 } : {}}
+                          } ${showUseCreateMessage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          style={row.status && !showUseCreateMessage ? { backgroundColor: '#ea580c', borderColor: '#ea580c' } : showUseCreateMessage ? { opacity: 0.5 } : {}}
                         />
                       </td>
                       <td className="border border-gray-300 dark:border-neutral-600 px-4 py-2 font-mono text-sm text-gray-900 dark:text-white">
@@ -403,7 +414,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                               <div className="text-xs text-gray-500 dark:text-gray-400 italic">
                                 Habilita el canal
                               </div>
-                            ) : isDisabled ? (
+                            ) : row.existente && telegramCodigo ? (
                               <div className="relative">
                                 <input
                                   type="text"
@@ -416,6 +427,10 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                   </svg>
                                 </span>
+                              </div>
+                            ) : isUpdateMode && !telegramCodigo ? (
+                              <div className="text-xs text-orange-600 dark:text-orange-400 italic">
+                                Genera un código para enlazar Telegram
                               </div>
                             ) : (
                               <>
@@ -459,15 +474,19 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                               </>
                             )}
                           </div>
+                        ) : showUseCreateMessage ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                            Usa Crear para agregar este canal
+                          </div>
                         ) : (
                           <div className="relative">
                             <input
                               type="text"
                               value={row.identificador}
                               onChange={(e) => handleIdentificadorChange(row.canalid, e.target.value)}
-                              disabled={!row.status || isDisabled}
+                              disabled={!row.status || isDisabled || !canEditIdentificador || showUseCreateMessage}
                               className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                                (!row.status || isDisabled) ? 'opacity-50 cursor-not-allowed' : ''
+                                (!row.status || isDisabled || !canEditIdentificador || showUseCreateMessage) ? 'opacity-50 cursor-not-allowed' : ''
                               }`}
                               placeholder={
                                 row.canal.toLowerCase() === 'whatsapp' 
@@ -477,7 +496,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                                   : 'Identificador del canal'
                               }
                             />
-                            {isDisabled && (
+                            {(isDisabled || !canEditIdentificador || showUseCreateMessage) && (
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" title="Canal existente - solo lectura">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
