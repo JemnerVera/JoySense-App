@@ -31,7 +31,9 @@ interface CanalRow {
   identificador: string;
   telegramCodigo?: string;
   generandoCodigo?: boolean;
-  existente?: boolean;
+  existente: boolean;
+  tieneEntrada: boolean;
+  statusIdReal: number;
 }
 
 export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
@@ -160,6 +162,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             
             const esExistente = canalExistente && parseStatusToBoolean(canalExistente.statusid);
             const estadoExistente = esExistente && parseStatusToBoolean(canalExistente.statusid);
+            const tieneEntrada = !!canalExistente;
+            const statusIdReal = canalExistente ? Number(canalExistente.statusid) : 0;
             
             console.log('[UsuarioCanalFormFields] Procesando canal:', {
               canalid: canal.canalid,
@@ -209,7 +213,9 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
               canal: canal.canal,
               status: esExistente ? estadoExistente : false,
               identificador: identificador,
-              existente: esExistente
+              existente: esExistente,
+              tieneEntrada: tieneEntrada,
+              statusIdReal: statusIdReal
             };
           });
           
@@ -374,17 +380,22 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                   const telegramCodigo = telegramCodigoPorCanal[row.canalid];
                   const generando = generandoCodigoPorCanal[row.canalid];
                   const mensaje = messagesTelegram[row.canalid];
-                  const isDisabled = row.existente && !isUpdateMode;
+                  
+                  // Checkbox habilitado: si no tiene entrada O tiene entrada con statusid:0
+                  const canCheck = !row.tieneEntrada || row.statusIdReal === 0;
+                  const isDisabled = !canCheck && !isUpdateMode;
                   const isCheckedAndExisting = row.existente && row.status && !isUpdateMode;
                   
                   // Definir qué canales pueden editar identificador en modo actualización
                   const isWhatsApp = row.canalid === 1;
                   const isEmail = row.canalid === 3;
-                  // Solo editable si: modo actualizar Y el canal existe Y es WhatsApp o Email
-                  const canEditIdentificador = isUpdateMode && row.existente && (isWhatsApp || isEmail);
+                  // Para WhatsApp/Email: editable si no hay entrada O entrada tiene statusid:0
+                  // Para Telegram: es el botón de generar código (no editable directamente)
+                  const canEditIdentificador = (isWhatsApp || isEmail) && 
+                    (!row.tieneEntrada || row.statusIdReal === 0);
                   
-                  // En modo actualizar, si el canal no existe, mostrar mensaje de usar Crear
-                  const showUseCreateMessage = isUpdateMode && !row.existente;
+                  // Mostrar mensaje de usar Crear solo si hay entrada activa (statusid=1)
+                  const showUseCreateMessage = isUpdateMode && row.tieneEntrada && row.statusIdReal === 1;
                   
                   return (
                     <tr key={row.canalid} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
@@ -393,15 +404,15 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                           type="checkbox"
                           checked={row.status}
                           onChange={(e) => handleStatusChange(row.canalid, e.target.checked)}
-                          disabled={showUseCreateMessage}
+                          disabled={!canCheck}
                           className={`w-5 h-5 rounded focus:ring-2 focus:ring-orange-500 appearance-none border-2 ${
                             isCheckedAndExisting 
                               ? 'bg-orange-600 border-orange-600 checked:bg-orange-600 checked:border-orange-600' 
-                              : row.status && !showUseCreateMessage
+                              : row.status && canCheck
                               ? 'bg-orange-600 border-orange-600 checked:bg-orange-600 checked:border-orange-600'
                               : 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 checked:bg-orange-600 checked:border-orange-600'
-                          } ${showUseCreateMessage ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={row.status && !showUseCreateMessage ? { backgroundColor: '#ea580c', borderColor: '#ea580c' } : showUseCreateMessage ? { opacity: 0.5 } : {}}
+                          } ${!canCheck ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          style={row.status && canCheck ? { backgroundColor: '#ea580c', borderColor: '#ea580c' } : !canCheck ? { opacity: 0.5 } : {}}
                         />
                       </td>
                       <td className="border border-gray-300 dark:border-neutral-600 px-4 py-2 font-mono text-sm text-gray-900 dark:text-white">
@@ -428,50 +439,25 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                                   </svg>
                                 </span>
                               </div>
-                            ) : isUpdateMode && !telegramCodigo ? (
-                              <div className="text-xs text-orange-600 dark:text-orange-400 italic">
-                                Genera un código para enlazar Telegram
-                              </div>
+                            ) : !telegramCodigo && (!row.tieneEntrada || row.statusIdReal === 0) ? (
+                              <button
+                                type="button"
+                                onClick={() => handleGenerarCodigoTelegram(row.canalid, formData.usuarioid)}
+                                disabled={generando}
+                                className="px-2 py-1 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-mono text-xs rounded font-bold transition-colors whitespace-nowrap"
+                                title="Se enviará un código por email. No necesitas guardar el formulario."
+                              >
+                                {generando ? 'GENERANDO...' : 'GENERAR CÓDIGO'}
+                              </button>
                             ) : (
-                              <>
-                                {!telegramCodigo ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleGenerarCodigoTelegram(row.canalid, formData.usuarioid)}
-                                    disabled={generando}
-                                    className="px-2 py-1 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-mono text-xs rounded font-bold transition-colors whitespace-nowrap"
-                                    title="Se enviará un código por email. No necesitas guardar el formulario."
-                                  >
-                                    {generando ? 'GENERANDO...' : 'GENERAR CÓDIGO'}
-                                  </button>
-                                ) : (
-                                  <div className="space-y-0.5">
-                                    <div className="p-1 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded">
-                                      <input
-                                        type="text"
-                                        value={telegramCodigo}
-                                        readOnly
-                                        className="w-full px-1 py-0.5 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded font-mono text-xs text-green-900 dark:text-green-300 text-center font-bold"
-                                      />
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(telegramCodigo);
-                                        alert('Código copiado al portapapeles');
-                                      }}
-                                      className="w-full px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs rounded font-semibold transition-colors"
-                                    >
-                                      COPIAR
-                                    </button>
-                                  </div>
-                                )}
-                                {mensaje && (
-                                  <div className="text-xs text-orange-600 dark:text-orange-400 italic">
-                                    {mensaje}
-                                  </div>
-                                )}
-                              </>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                Canal activo - usa Crear para modificar
+                              </div>
+                            )}
+                            {mensaje && (
+                              <div className="text-xs text-orange-600 dark:text-orange-400 italic">
+                                {mensaje}
+                              </div>
                             )}
                           </div>
                         ) : showUseCreateMessage ? (
@@ -484,9 +470,9 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                               type="text"
                               value={row.identificador}
                               onChange={(e) => handleIdentificadorChange(row.canalid, e.target.value)}
-                              disabled={!row.status || isDisabled || !canEditIdentificador || showUseCreateMessage}
+                              disabled={!row.status || isDisabled || !canEditIdentificador}
                               className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                                (!row.status || isDisabled || !canEditIdentificador || showUseCreateMessage) ? 'opacity-50 cursor-not-allowed' : ''
+                                (!row.status || isDisabled || !canEditIdentificador) ? 'opacity-50 cursor-not-allowed' : ''
                               }`}
                               placeholder={
                                 row.canal.toLowerCase() === 'whatsapp' 
@@ -496,7 +482,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                                   : 'Identificador del canal'
                               }
                             />
-                            {(isDisabled || !canEditIdentificador || showUseCreateMessage) && (
+                            {(isDisabled || !canEditIdentificador) && (
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" title="Canal existente - solo lectura">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
